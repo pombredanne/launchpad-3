@@ -297,6 +297,15 @@ k            </description>
                 production database.
             </description>
         </key>
+        <key name="is_edge" datatype="boolean" default="false">
+            <description>
+                If true, the main template will display "EDGE" in the
+                footer. This, along with the displayed version number which
+                is one level ahead of the current production version, will
+                further alert users that the server is running pre-production
+                level code. Also displayed on edge is a unique site message.
+            </description>
+        </key>
         <key name="site_message" datatype="string" default="">
             <description>
             If this is provided, the message given in the string will appear
@@ -1117,6 +1126,18 @@ k            </description>
           <description>
               The default value of the update interval of a code import from
               Subversion, in seconds.
+          </description>
+        </key>
+        <key name="bazaar_branch_store" datatype="string"
+             required="no" default="sftp://hoover@escudero/srv/importd/www/">
+          <description>
+            Where the Bazaar imports are stored.
+          </description>
+        </key>
+        <key name="foreign_tree_store" datatype="string"
+             required="no" default="sftp://hoover@escudero/srv/importd/sources/">
+          <description>
+            Where the tarballs of foreign branches are uploaded for storage.
           </description>
         </key>
     </sectiontype>

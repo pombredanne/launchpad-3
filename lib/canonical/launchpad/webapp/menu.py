@@ -19,15 +19,16 @@ __all__ = [
     ]
 
 import cgi
+
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
-from canonical.lp import decorates
+from zope.component import getMultiAdapter
+
+from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
     IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
-    IFacetLink, ILink, ILinkData, IStructuredString
-    )
-
+    IFacetLink, ILink, ILinkData, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator,
     get_current_browser_request, UserAttributeCache)
@@ -85,7 +86,8 @@ def nearest_adapter(obj, interface):
 
     This might be an adapter for the object given as an argument.
 
-    Return None if there is no object that has such an adapter in the url chain.
+    :return None: if there is no object that has such an adapter in the url
+        chain.
 
     This will often be used with an interface of IFacetMenu, when looking up
     the facet menu for a particular context.
@@ -169,6 +171,11 @@ class MenuLink:
             return text.escapedtext
         else:
             return cgi.escape(text)
+
+    def render(self):
+        """See `ILink`."""
+        return getMultiAdapter(
+            (self, get_current_browser_request()), name="+inline")()
 
 
 class FacetLink(MenuLink):
@@ -328,7 +335,8 @@ class enabled_with_permission:
     """Function decorator that disables the output link unless the current
     user has the given permission on the context.
 
-    This class is instantiated by programmers who want to apply this decorator.
+    This class is instantiated by programmers who want to apply this
+    decorator.
 
     Use it like:
 
@@ -373,7 +381,7 @@ class enabled_with_permission:
 
 
 def escape(message):
-    """Performs translation and sanitizes any HTML present in the message string.
+    """Performs translation and sanitizes any HTML present in the message.
 
     A plain string message will be sanitized ("&", "<" and ">" are
     converted to HTML-safe sequences).  Passing a message that

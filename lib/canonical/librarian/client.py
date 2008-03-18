@@ -72,13 +72,12 @@ class FileUploadClient:
         :param contentType: mime-type, e.g. text/plain
         :param expires: Expiry time of file. See LibrarianGarbageCollection.
             Set to None to only expire when it is no longer referenced.
-        :param debugID: Optional.  If set, causes extra logging for this request
-            on the server, which will be marked with the value given.
-
+        :param debugID: Optional.  If set, causes extra logging for this
+            request on the server, which will be marked with the value
+            given.
         :returns: aliasID as an integer
-
-        :raises UploadFailed: If the server rejects the upload for some reason,
-            or the size is 0.
+        :raises UploadFailed: If the server rejects the upload for some
+            reason, is 0.
         """
         if file is None:
             raise TypeError('Bad File Descriptor: %s' % repr(file))
@@ -94,9 +93,9 @@ class FileUploadClient:
 
         self._connect()
         try:
-            # Get the name of the database the client is using, so that the
-            # server can check that the client is using the same database as the
-            # server.
+            # Get the name of the database the client is using, so that
+            # the server can check that the client is using the same
+            # database as the server.
             cur = cursor()
             databaseName = self._getDatabaseName(cur)
 
@@ -175,9 +174,7 @@ class FileUploadClient:
         try:
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendLine('Content-type: %s' % contentType)
-
-            self._sendHeader('Database-Name', config.dbname)
+            self._sendHeader('Database-Name', config.database.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())
@@ -271,22 +268,17 @@ class FileDownloadClient:
 
         :raises: DownloadFailed if the alias is invalid
         """
+        from canonical.launchpad.database import LibraryFileAlias
+        from sqlobject import SQLObjectNotFound
         aliasID = int(aliasID)
-        q = """
-            SELECT filename, deleted
-            FROM LibraryFileAlias, LibraryFileContent
-            WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND LibraryFileAlias.id = %d
-            """ % aliasID
-        cur = cursor()
-        cur.execute(q)
-        row = cur.fetchone()
-        if row is None:
+        try:
+            # Use SQLObjects to maximize caching benefits
+            lfa = LibraryFileAlias.get(aliasID)
+        except SQLObjectNotFound:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        filename, deleted = row
-        if deleted:
+        if lfa.content.deleted:
             return None
-        return '/%d/%s' % (aliasID, quote(filename.encode('utf-8')))
+        return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
     def getURLForAlias(self, aliasID, is_buildd=False):
         """Returns the url for talking to the librarian about the given

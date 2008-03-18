@@ -1,5 +1,15 @@
+import xmlrpclib
 
 from twisted.web.xmlrpc import Proxy
+
+
+def get_twisted_proxy(url):
+    return Proxy(url)
+
+
+def get_blocking_proxy(url):
+    return xmlrpclib.ServerProxy(url)
+
 
 class TwistedAuthServer:
     """Twisted client for the authserver.
@@ -9,7 +19,7 @@ class TwistedAuthServer:
     """
 
     def __init__(self, url):
-        self.proxy = Proxy(url)
+        self.proxy = get_twisted_proxy(url)
 
     def getUser(self, loginID):
         return self.proxy.callRemote('getUser', loginID)

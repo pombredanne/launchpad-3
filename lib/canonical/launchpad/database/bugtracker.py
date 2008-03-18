@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
@@ -121,7 +122,7 @@ class BugTracker(SQLBase):
         schema=BugTrackerType, notNull=True)
     name = StringCol(notNull=True, unique=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -205,6 +206,14 @@ class BugTracker(SQLBase):
         The aliases are found by querying BugTrackerAlias. Assign an
         iterable of URLs or None to set or remove aliases.
         """)
+
+    @property
+    def imported_bug_messages(self):
+        """See `IBugTracker`."""
+        return BugMessage.select(
+            AND((BugMessage.q.bugwatchID == BugWatch.q.id),
+                (BugWatch.q.bugtrackerID == self.id)),
+            orderBy=BugMessage.q.id)
 
 
 class BugTrackerSet:
@@ -323,6 +332,22 @@ class BugTrackerSet:
         else:
             return result
 
+    def getPillarsForBugtrackers(self, bugtrackers):
+        """See `IBugTrackerSet`."""
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.project import Project
+        ids = [str(b.id) for b in bugtrackers]
+        products = Product.select(
+            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+        projects = Project.select(
+            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+        ret = {}
+        for product in products:
+            ret.setdefault(product.bugtracker, []).append(product)
+        for project in projects:
+            ret.setdefault(project.bugtracker, []).append(project)
+        return ret
+
 
 class BugTrackerAlias(SQLBase):
     """See `IBugTrackerAlias`."""
@@ -342,3 +367,4 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
+

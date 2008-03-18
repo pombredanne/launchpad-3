@@ -284,12 +284,15 @@ The administration procedure allows us to:
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
  * Make the PPA private or public.
+ * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(
+    ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'Here lives a lazy community.')
@@ -303,14 +306,15 @@ The administration procedure allows us to:
     PPA whiteboard:
     Here lives a lazy community.
 
-There is a maximum size allowed for authorized_size that is set by
-Postgres, and is currently (2**30) - 1 and the unit used in code is MiB.
-Submitting the form with an authorized_size that is too large will
-result in an error:
+There is a maximum size allowed for authorized_size is set in
+`IArchive`, it is currently 20 * 1024 and the unit used in code is
+MiB. Submitting the form with an authorized_size that is too large
+will result in an error:
 
+    >>> limit = 20 * 1024
     >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
     >>> admin_browser.getControl(
-    ...     name="field.authorized_size").value = '1073741824'
+    ...     name="field.authorized_size").value = str(limit + 1)
     >>> admin_browser.getControl("Save").click()
     >>> tags = find_tags_by_class(admin_browser.contents,'message')
     >>> for tag in tags:

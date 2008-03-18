@@ -199,7 +199,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'upload_admin', 'ppas']
+             'upload_admin', 'ppas', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -316,6 +316,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionBugsMenu(ApplicationMenu):
@@ -490,7 +494,7 @@ class DistributionPPASearchView(LaunchpadView):
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
-        results = self.context.source_package_caches
+        results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
 
