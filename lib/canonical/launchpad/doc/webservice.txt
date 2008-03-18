@@ -528,36 +528,20 @@ constructor.
 
 We need to define a collection of the recipes associated with a
 cookbook. We say that the collection of recipes is scoped to a
-cookbook. This class manages a collection of a cookbook's or dish's
-recipes. It'll work with any collection of recipes.
+cookbook. Scoped collections adapters are looked for based on the type
+of the scope, and the type of the entries contained in the scoped
+collection. There is a default ScopedCollection adapter that work in all
+cases where the scoped collection is available as an iterable attribute
+of the context.
 
-    >>> from canonical.lazr.rest import ScopedCollection
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.lazr.interfaces import IScopedCollection
-    >>> class RecipeScopedCollection(ScopedCollection):
-    ...     pass
 
-    >>> provideAdapter(RecipeScopedCollection, [ICookbook, IRecipe],
-    ...                IScopedCollection)
-    >>> provideAdapter(RecipeScopedCollection, [IDish, IRecipe],
-    ...                IScopedCollection)
+    >>> getMultiAdapter((C1, C1_D1), IScopedCollection)
+    <canonical.lazr.rest.resource.ScopedCollection...>
 
-We also need to define collections of the comments associated with a
-recipe or cookbook. These will be scoped collections too, but they're
-a little different from an cookbook-scoped collection of
-recipes. RecipeEntry defines _parent_collection_path and CommentEntry
-doesn't. So the list of comments scoped to a recipe (or cookbook)
-needs to take on some of the duties handled by the kind of collection
-that defines _parent_collection_path. Fortunately, there's a predefined
-class that works in cases like this one, where the elements are
-indexed by their order within a parent collection:
-OrderBasedScopedCollection.
-
-    >>> from canonical.lazr.rest.resource import OrderBasedScopedCollection
-    >>> provideAdapter(OrderBasedScopedCollection, [IRecipe, IComment],
-    ...                IScopedCollection)
-
-    >>> provideAdapter(OrderBasedScopedCollection, [ICookbook, IComment],
-    ...                IScopedCollection)
+The default adapter will also work just fine with the comments scoped
+collection.
 
 
 == Resource objects ==
