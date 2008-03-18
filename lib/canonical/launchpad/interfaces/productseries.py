@@ -110,7 +110,7 @@ class RevisionControlSystems(DBEnumeratedType):
     """
 
     CVS = DBItem(1, """
-        Concurrent Version System
+        Concurrent Versions System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread

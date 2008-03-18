@@ -1,15 +1,14 @@
 Source: launchpad-buildd
-Section: misc
+Section: admin
 Priority: extra
-Maintainer: Daniel Silverstone <daniel.silverstone@canonical.com>
-Uploaders: Adam Conrad <adconrad@ubuntu.com>
+Maintainer: Adam Conrad <adconrad@ubuntu.com>
 Standards-Version: 3.5.9
 Build-Depends-Indep: debhelper (>= 4)
 
 Package: launchpad-buildd
 Section: misc
 Architecture: all
-Depends: python-twisted, debootstrap, dpkg-dev, linux32, file, bzip2, sudo, ntpdate
+Depends: python-twisted, debootstrap, dpkg-dev, linux32, file, bzip2, sudo, ntpdate, adduser
 Description: Launchpad buildd slave
  This is the launchpad buildd slave package. It contains everything needed to
  get a launchpad buildd going apart from the database manipulation required to

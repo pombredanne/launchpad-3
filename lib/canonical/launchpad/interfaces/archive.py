@@ -56,6 +56,11 @@ class IArchive(IHasOwner):
         title=_("Private"), required=False,
         description=_("Whether the PPA is private to the owner or not."))
 
+    require_virtualized = Bool(
+        title=_("Require Virtualized Builder"), required=False,
+        description=_("Whether this archive requires its packages to be "
+                      "built on a virtual builder."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
         max=(20 * 1024),
@@ -68,6 +73,10 @@ class IArchive(IHasOwner):
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
         )
+
+    package_description_cache = Attribute(
+        "Concatenation of the source and binary packages published in this "
+        "archive. Its content is used for indexed searches across archives.")
 
     distribution = Attribute(
         "The distribution that uses or is used by this archive.")
@@ -172,6 +181,17 @@ class IArchive(IHasOwner):
         not allowed.  However some archive types allow this.
 
         :return: True or False
+        """
+
+    def updateArchiveCache():
+        """Concentrate cached information about the archive contents.
+
+        Group the relevant package information (source name, binary names,
+        binary summaries) strings in the IArchive.package_description_cache
+        search indexes (fti).
+
+        Also include owner 'name' and 'displayname' to avoid inpecting the
+        Person table indexes while searching.
         """
 
     def getArchiveDependency(dependency):

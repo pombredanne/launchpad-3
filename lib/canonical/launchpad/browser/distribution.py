@@ -494,7 +494,7 @@ class DistributionPPASearchView(LaunchpadView):
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
-        results = self.context.source_package_caches
+        results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
 

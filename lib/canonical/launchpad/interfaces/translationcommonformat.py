@@ -102,16 +102,27 @@ class ITranslationMessageData(Interface):
         title=u'The singular msgid of the message.', required=True,
         readonly=True)
 
+    singular_text = Text(
+        title=(
+            u'The message singular text. Usually matches msgid_singular.'),
+            required=False, readonly=True)
+
     msgid_plural = Text(
         title=u'The plural msgid of the message or None.',
         required=True, readonly=True)
+
+    plural_text = Text(
+        title=(
+            u'The message plural text. Usually matches msgid_plural.'),
+            required=False, readonly=True)
 
     translations = List(
         title=u'The translations of the message.', required=True,
         readonly=True)
 
     comment = Text(
-        title=u'Comments added by a translator.', required=True, readonly=True)
+        title=u'Comments added by a translator.', required=True,
+        readonly=True)
 
     source_comment = Text(
         title=u'Comments added by the developer to help translators.',

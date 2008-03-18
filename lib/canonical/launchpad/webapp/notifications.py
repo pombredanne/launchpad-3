@@ -179,7 +179,7 @@ class NotificationResponse:
         #      the session cookie at call-sites like this one.
         #      A get_session() helper would help here.
         #      Maybe a get_or_create_session() to go with it.
-        cookie_name = config.launchpad.session.cookie
+        cookie_name = config.launchpad_session.cookie
         request = self._request
         response = self
         # Do some getattr sniffing so that the doctests in this module
