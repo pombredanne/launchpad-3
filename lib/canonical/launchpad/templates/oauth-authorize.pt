@@ -26,11 +26,48 @@
       <tal:token-not-reviewed condition="not:token/is_reviewed">
         <div metal:use-macro="context/@@launchpad_form/form">
           <div metal:fill-slot="extra_top">
-            <p>The program identified as
+            <p>The application identified as
               <strong tal:content="token/consumer/key">consumer</strong>
-            wants to access Launchpad on your behalf. What level of access you
-            grant to it?</p>
+            wants to access Launchpad on your behalf. What level of access
+            do you want to grant?</p>
+
+            <p>
+              <input tal:replace="structure view/actions/field.actions.unauthorized/render" />
+              <span class="lesser">
+                The application will not be allowed to access Launchpad on your
+                behalf.
+              </span>
+            </p>
+            <p>
+              <input tal:replace="structure view/actions/field.actions.read_public/render" />
+              <span class="lesser">
+                The application will be able to access Launchpad on your behalf
+                but only for reading non-private data.
+              </span>
+            </p>
+            <p>
+              <input tal:replace="structure view/actions/field.actions.write_public/render" />
+              <span class="lesser">
+                The application will be able to access Launchpad on your behalf
+                for reading and changing non-private data.
+              </span>
+            </p>
+            <p>
+              <input tal:replace="structure view/actions/field.actions.read/render" />
+              <span class="lesser">
+                The application will be able to access Launchpad on your behalf
+                for reading anything, including private data.
+              </span>
+            </p>
+            <p>
+              <input tal:replace="structure view/actions/field.actions.write/render" />
+              <span class="lesser">
+                The application will be able to access Launchpad on your behalf
+                for reading and changing anything, including private data.
+              </span>
+            </p>
           </div>
+
           <div metal:fill-slot="extra_bottom">
             <input type="hidden" name="oauth_token"
                    tal:condition="request/form/oauth_token|nothing"
@@ -39,6 +76,8 @@
                    tal:condition="request/form/oauth_callback|nothing"
                    tal:attributes="value request/form/oauth_callback" />
           </div>
+
+          <div metal:fill-slot="buttons" />
         </div>
       </tal:token-not-reviewed>
 

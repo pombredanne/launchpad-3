@@ -51,9 +51,9 @@ class OAuthRequestTokenView(LaunchpadView):
 class OAuthAuthorizeTokenView(LaunchpadFormView):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
-    label = "Authorize programs to access Launchpad on your behalf"
+    label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
-    field_names = ['permission']
+    field_names = []
     token = None
 
     def initialize(self):
@@ -65,10 +65,33 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
     def tokenExistsAndIsNotReviewed(self, action):
         return self.token is not None and not self.token.is_reviewed
 
-    @action(
-        _("Continue"), name="continue", condition=tokenExistsAndIsNotReviewed)
-    def continue_action(self, action, data):
-        self.token.review(self.user, data['permission'])
+    @action(_("No Access"), name="unauthorized",
+            condition=tokenExistsAndIsNotReviewed)
+    def noaccess_action(self, action, data):
+        self.reviewToken(OAuthPermission.UNAUTHORIZED)
+
+    @action(_("Read Non-Private Data"), name="read_public",
+            condition=tokenExistsAndIsNotReviewed)
+    def read_action(self, action, data):
+        self.reviewToken(OAuthPermission.READ_PUBLIC)
+
+    @action(_("Change Non-Private Data"), name="write_public",
+            condition=tokenExistsAndIsNotReviewed)
+    def write_action(self, action, data):
+        self.reviewToken(OAuthPermission.WRITE_PUBLIC)
+
+    @action(_("Read Anything"), name="read",
+            condition=tokenExistsAndIsNotReviewed)
+    def readanything_action(self, action, data):
+        self.reviewToken(OAuthPermission.READ_PRIVATE)
+
+    @action(_("Change Anything"), name="write",
+            condition=tokenExistsAndIsNotReviewed)
+    def writeanything_action(self, action, data):
+        self.reviewToken(OAuthPermission.WRITE_PRIVATE)
+
+    def reviewToken(self, permission):
+        self.token.review(self.user, permission)
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback

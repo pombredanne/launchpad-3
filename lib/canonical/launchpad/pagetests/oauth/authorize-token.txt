@@ -46,19 +46,27 @@ Note how the query parameters are kept.
     'Authorize application to access Launchpad on your behalf'
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Authorize programs to access Launchpad on your behalf
-    The program identified as foobar123451432 wants to access Launchpad on
-    your behalf. What level of access you grant to it?
+    Authorize application to access Launchpad on your behalf
+    The application identified as foobar123451432 wants to access Launchpad on
+    your behalf. What level of access do you want to grant?
     ...
+
+    >>> browser.getControl('No Access')
+    <SubmitControl...
+    >>> browser.getControl('Read Non-Private Data')
+    <SubmitControl...
+    >>> browser.getControl('Change Non-Private Data')
+    <SubmitControl...
+    >>> browser.getControl('Read Anything')
+    <SubmitControl...
+    >>> browser.getControl('Change Anything')
+    <SubmitControl...
 
 Once the user authorizes the application to access Launchpad on his
 behalf, we issue a redirect to the given oauth_callback (if it was
 specified by the application).
 
-    >>> browser.getControl('Access level').displayValue
-    ['No access']
-    >>> browser.getControl('Access level').displayValue = ['Read public data']
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Read Non-Private Data').click()
 
     # This is the URL given to Launchpad in oauth_callback.
     >>> browser.url
@@ -86,9 +94,7 @@ If no oauth_callback is specified, we redirect the user to
     >>> browser.open(
     ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
 
-    >>> browser.getControl('Access level').displayValue = [
-    ...     'Read public and private data']
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Read Anything').click()
 
     >>> browser.url
     'http://launchpad.dev/+token-authorized?...'
