@@ -3,6 +3,7 @@
 Subscribers to any of the branches involved in the merge proposal get
 notifications.
 
+
 == Subscription ==
 
 When subscribers subscribe to branches, they can specify what level of
@@ -28,6 +29,7 @@ notification they would like to receive.
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
 
+
 == Notification Recipients ==
 
 Recipients are determined using getCreationNotificationRecipients.
@@ -52,6 +54,7 @@ were chosen, and their subscription
 
     >>> [(target_subscription, 'Subscriber')] == recipients.values()
     True
+
 
 == E-mail ==
 

@@ -11,6 +11,7 @@ There are two situations where emails are sent out for branches:
  - when a user modifies the state of the branch object using the UI
  - when the branch scanner scans new revisions in the branches history
 
+
 == Email Format ==
 
 All branch notification emails use a standard email template.
