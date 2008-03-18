@@ -7,6 +7,7 @@ __all__ = ['Build', 'BuildSet']
 
 import apt_pkg
 import logging
+import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -238,6 +239,16 @@ class Build(SQLBase):
     def ogre_components(self):
         """See `IBuild`."""
         return self.component_dependencies[self.current_component.name]
+
+    @property
+    def estimated_buildstart(self):
+        """See `IBuild`."""
+        if self.buildstate == BuildStatus.NEEDSBUILD:
+            # this is just a stub for this method, return the EPOCH
+            # for the time being
+            return datetime.datetime.utcfromtimestamp(0)
+        else:
+            return None
 
     def _parseDependencyToken(self, token):
         """Parse the given token.

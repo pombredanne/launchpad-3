@@ -79,6 +79,10 @@ class IBuild(Interface):
         "The components this build is allowed to use. It returns a string "
         "that can be used directly at the end of sources.list lines.")
 
+    estimated_buildstart = Attribute(
+        "Estimated start (or dispatch) time for a job that needs building "
+        "or 'None' for build jobs in other states")
+
     def retry():
         """Restore the build record to its initial state.
 

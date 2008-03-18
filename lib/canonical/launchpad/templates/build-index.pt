@@ -79,6 +79,13 @@
               tal:content="context/datecreated/fmt:approximatedate" />
           </tr>
 
+          <tr tal:condition="context/estimated_buildstart">
+            <th>Estimated build start:</th>
+            <td
+              tal:attributes="title context/estimated_buildstart/fmt:datetime"
+              tal:content="context/estimated_buildstart/fmt:approximatedate" />
+          </tr>
+
           <tal:not_built condition="not: context/was_built">
             <tal:buildqueue condition="context/buildqueue_record"
                             define="bq context/buildqueue_record">

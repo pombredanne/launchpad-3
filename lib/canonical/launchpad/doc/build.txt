@@ -21,6 +21,7 @@ First up, can we get the builds out of the sample data?
 
     >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
     >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+    >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
 
 Let's check the complex properties of a build object.
 
@@ -44,6 +45,16 @@ Let's check the complex properties of a build object.
     datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
     >>> firefox_build.is_trusted
+    True
+
+The 'firefox_build' is already finished and the `IBuild.estimated_buildstart` property should be empty ('None')
+
+    >>> firefox_build.estimated_buildstart is None
+    True
+
+The 'pending_build' record is a build job in state `BuildStatus.NEEDSBUILD`. We can hence ask for its estimated build start time. The latter should either be now or some time in the future.
+    >>> import datetime
+    >>> pending_build.estimated_buildstart > (datetime.datetime.utcnow() - datetime.timedelta(seconds=2))
     True
 
 The currently published component is provided via the 'current_component'
