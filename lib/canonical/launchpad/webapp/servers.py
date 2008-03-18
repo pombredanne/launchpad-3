@@ -33,7 +33,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IFeed, IScopedCollection)
+    ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
+    IScopedCollection)
 from canonical.lazr.rest import CollectionResource, EntryResource
 
 import canonical.launchpad.layers
@@ -994,9 +995,12 @@ class WebServicePublication(LaunchpadBrowserPublication):
               queryAdapter(ob, IEntry) is not None):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
-        else:
-            # Object will have to take care of itself.
+        elif IHTTPResource.providedBy(ob):
+            # A resource knows how to take care of itself.
             return ob
+        else:
+            # This object should not be published on the web service.
+            raise NotFound(ob, '')
 
         # Wrap the resource in a security proxy.
         return ProxyFactory(resource)

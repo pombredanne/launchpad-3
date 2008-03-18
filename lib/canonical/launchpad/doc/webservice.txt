@@ -570,11 +570,13 @@ How are these Resource objects connected to the web? Through the
 ServiceRootResource. This is a special resource that represents the
 root of the object tree.
 
+    >>> from canonical.lazr.interfaces import IServiceRootResource
     >>> from canonical.lazr.rest import ServiceRootResource
-    >>> from canonical.launchpad.interfaces import IWebServiceApplication
+    >>> class IMyWebServiceApplication(IServiceRootResource):
+    ...     """Marker interface for the web service."""
     >>> class MyServiceRootResource(ServiceRootResource):
-    ...     implements(IWebServiceApplication)
-    >>> register_navigation(RootNavigation, IWebServiceApplication)
+    ...     implements(IMyWebServiceApplication)
+    >>> register_navigation(RootNavigation, IMyWebServiceApplication)
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
