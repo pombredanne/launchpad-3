@@ -201,6 +201,8 @@
     <tal:proposals repeat="mergeproposal context/dependent_branches">
       <tal:dependent-branch
           define="branch mergeproposal/source_branch;
+                  show_status python:True;
+                  show_whiteboard python:True;
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:dependent-branch>
@@ -214,6 +216,8 @@
       <tal:landing-target
           define="branch mergeproposal/target_branch;
                   dependent_branch mergeproposal/dependent_branch;
+                  show_status python:True;
+                  show_whiteboard python:True;
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-target>
@@ -226,6 +230,8 @@
     <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
       <tal:landing-candidate
           define="branch mergeproposal/source_branch;
+                  show_whiteboard python:True;
+                  show_status python:True;
                   show_associations python:True;
                   show_lifecycle python:True;
                   ">

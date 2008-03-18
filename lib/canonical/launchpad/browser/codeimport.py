@@ -147,7 +147,7 @@ class CodeImportNewView(LaunchpadFormView):
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
             product=data['product'],
-            branch_name=data['name'],
+            branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             svn_branch_url=data['svn_branch_url'],
             cvs_root=data['cvs_root'],
