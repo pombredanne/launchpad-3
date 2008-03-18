@@ -24,17 +24,18 @@ class BMPMailer:
     """Send mailings related to BranchMergeProposal events"""
 
     def __init__(self, recipients, merge_proposal, from_address):
-        self.recipients = self.getRealRecipients(recipients)
+        self.recipients = self.getMailRecipients(recipients)
         self.merge_proposal = merge_proposal
         self.from_address = from_address
 
     @staticmethod
-    def getRealRecipients(recipients):
+    def getMailRecipients(recipients):
         """Find all the people that notifications should be sent to.
 
         Direct and indirect memberships will both have effect, but no team
-        will be visited more than once.  Data associated with a team will
-        be associated with its members.
+        will be visited more than once.  Recipients with no preferredemail
+        will be skipped.  If a team has no preferredemail, data associated
+        with that team will be associated with its members.
 
         This is implemented as a depth-first graph traversal.
 
@@ -50,11 +51,11 @@ class BMPMailer:
             if recipient in seen_recipients:
                 continue
             seen_recipients.add(recipient)
-            if recipient.isTeam():
+            if recipient.preferredemail is not None:
+                new_recipients[recipient] = data
+            elif recipient.isTeam():
                 for member in recipient.activemembers:
                     pending_recipients.append((member, data))
-            else:
-                new_recipients[recipient] = data
         return new_recipients
 
     @staticmethod
@@ -113,8 +114,6 @@ class BMPMailer:
     def sendAll(self):
         """Send notifications to all recipients."""
         for recipient in self.recipients:
-            if recipient.preferredemail is None:
-                continue
             to_address = format_address(
                 recipient.displayname, recipient.preferredemail.email)
             headers, subject, body = self.generateEmail(recipient)
