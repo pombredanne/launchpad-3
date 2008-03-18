@@ -187,8 +187,8 @@ class IArchive(IHasOwner):
         """Concentrate cached information about the archive contents.
 
         Group the relevant package information (source name, binary names,
-        binary summaries) strings in the IArchive.package_description_cache
-        search indexes (fti).
+        binary summaries and distroseries with binaries) strings in the
+        IArchive.package_description_cache search indexes (fti).
 
         Also include owner 'name' and 'displayname' to avoid inpecting the
         Person table indexes while searching.

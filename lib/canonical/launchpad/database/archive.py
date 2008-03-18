@@ -25,6 +25,8 @@ from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
@@ -489,16 +491,25 @@ class Archive(SQLBase):
         """See `IArchive`."""
         cache_contents = set()
 
+        # Cache owner name and displayname.
         cache_contents.add(self.owner.name)
         cache_contents.add(self.owner.displayname)
 
-        sources_cached = DistributionSourcePackageCache.selectBy(
-            archive=self)
-
+        # Cache source package name and its binaries information, binary
+        # names and summaries.
+        sources_cached = DistributionSourcePackageCache.select(
+            "archive = %s" % sqlvalues(self), prejoins=["distribution"])
         for cache in sources_cached:
+            cache_contents.add(cache.distribution.name)
             cache_contents.add(cache.name)
             cache_contents.add(cache.binpkgnames)
             cache_contents.add(cache.binpkgsummaries)
+
+        # Cache distroseries names with binaries.
+        binaries_cached = DistroSeriesPackageCache.select(
+            "archive = %s" % sqlvalues(self), prejoins=["distroseries"])
+        for cache in binaries_cached:
+            cache_contents.add(cache.distroseries.name)
 
         self.package_description_cache = " ".join(cache_contents)
 
