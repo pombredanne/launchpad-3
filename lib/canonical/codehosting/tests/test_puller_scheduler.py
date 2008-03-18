@@ -135,6 +135,9 @@ class ProcessMonitorProtocolTestsMixin:
             self.calls = []
             self.exited = False
 
+        def loseConnection(self):
+            self.calls.append('loseConnection')
+
         def signalProcess(self, signal_name):
             self.calls.append(('signalProcess', signal_name))
             if self.exited:
@@ -334,14 +337,16 @@ class TestProcessMonitorProtocolWithTimeout(
 
     def test_processExitingResetsTimeout(self):
         # When the process exits, the timeout is reset.
+        deferred = defer.Deferred()
+        self.protocol.runNotification(lambda : deferred)
         self.clock.advance(self.timeout - 1)
         self.simulateProcessExit()
         self.clock.advance(2)
-        # XXX this doesn't really test anything.
+        deferred.callback(None)
         return self.termination_deferred
 
 
-class TestPullerMasterProtocol(TrialTestCase):
+class TestPullerMasterProtocol(ProcessMonitorProtocolTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
 
     class StubPullerListener:
@@ -360,43 +365,13 @@ class TestPullerMasterProtocol(TrialTestCase):
             self.calls.append(('mirrorFailed', message, oops))
 
 
-    class StubTransport:
-        """Stub transport that implements the minimum for a ProcessProtocol.
-
-        We're manually feeding data to the protocol, so we don't need a real
-        transport.
-        """
-
-        only_sigkill_kills = False
-
-        def __init__(self, protocol, clock):
-            self.protocol = protocol
-            self.clock = clock
-            self.calls = []
-            self.exited = False
-
-        def loseConnection(self):
-            self.calls.append('loseConnection')
-
-        def signalProcess(self, signal_name):
-            self.calls.append(('signalProcess', signal_name))
-            if self.exited:
-                raise error.ProcessExitedAlready
-            if not self.only_sigkill_kills or signal_name == 'KILL':
-                reason = failure.Failure(error.ProcessTerminated())
-                self.clock.callLater(0, self.protocol.processEnded, reason)
-
+    def makeProtocol(self):
+        return scheduler.PullerMasterProtocol(
+            self.termination_deferred, self.listener, self.clock)
 
     def setUp(self):
-        self.arbitrary_branch_id = 1
         self.listener = self.StubPullerListener()
-        self.termination_deferred = defer.Deferred()
-        self.clock = task.Clock()
-        self.protocol = scheduler.PullerMasterProtocol(
-            self.termination_deferred, self.listener, self.clock)
-        self.protocol.transport = self.StubTransport(
-            self.protocol, self.clock)
-        self.protocol.connectionMade()
+        ProcessMonitorProtocolTestsMixin.setUp(self)
 
     def assertProtocolSuccess(self):
         """Assert that the protocol saw no unexpected errors."""
@@ -431,15 +406,6 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
         self.assertProtocolSuccess()
-
-    def test_timeoutWithoutProgress(self):
-        """If we don't receive any messages after the configured timeout
-        period, then we kill the child process.
-        """
-        self.protocol.connectionMade()
-        self.clock.advance(config.supermirror.worker_timeout + 1)
-        return self.assertFailure(
-            self.termination_deferred, scheduler.TimeoutError)
 
     def assertMessageResetsTimeout(self, *message):
         """Assert that sending the message resets the protocol timeout."""
@@ -485,26 +451,10 @@ class TestPullerMasterProtocol(TrialTestCase):
         return self.assertFailure(
             self.termination_deferred, scheduler.TimeoutError)
 
-    def test_processTermination(self):
-        """The protocol fires a Deferred when it is terminated."""
-        # XXX! should be a ProcessMonitorProtocol test!
-        self.protocol.do_mirrorSucceeded(1)
-        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
-        return self.termination_deferred
-
-    def test_processTerminationCancelsTimeout(self):
-        """When the process ends (for any reason) cancel the timeout."""
-        self.protocol.processEnded(
-            failure.Failure(error.ConnectionDone()))
-        self.clock.advance(config.supermirror.worker_timeout * 2)
-        return self.assertFailure(
-            self.termination_deferred, error.ConnectionDone)
-
     def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise
         an error that includes the contents of stderr and the exit condition.
         """
-
         def check_failure(failure):
             self.assertEqual('error message', failure.error)
             return failure
@@ -513,8 +463,7 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         self.protocol.errReceived('error ')
         self.protocol.errReceived('message')
-        self.protocol.processEnded(
-            failure.Failure(error.ProcessTerminated(exitCode=1)))
+        self.simulateProcessExit(clean=False)
 
         return self.assertFailure(
             self.termination_deferred, error.ProcessTerminated)
@@ -525,14 +474,14 @@ class TestPullerMasterProtocol(TrialTestCase):
         """
 
         def check_failure(failure):
+            failure.trap(Exception)
             self.assertEqual('error message', failure.error)
-            return failure
 
         self.termination_deferred.addErrback(check_failure)
 
         self.protocol.errReceived('error ')
         self.protocol.errReceived('message')
-        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+        self.simulateProcessExit()
 
         return self.termination_deferred
 
@@ -540,10 +489,8 @@ class TestPullerMasterProtocol(TrialTestCase):
         """The protocol notifies the listener when it receives an unrecognized
         message.
         """
+        # XXX This could just check somehow that unexpectedError is called.
         self.protocol.outReceived(self.convertToNetstring('foo'))
-
-        # Give the process time to die.
-        self.clock.advance(1)
 
         def check_failure(exception):
             self.assertEqual(
@@ -559,10 +506,8 @@ class TestPullerMasterProtocol(TrialTestCase):
         """The protocol terminates the session if it receives an unparsable
         netstring.
         """
+        # XXX This could just check somehow that unexpectedError is called.
         self.protocol.outReceived('foo')
-
-        # Give the process time to die.
-        self.clock.advance(1)
 
         def check_failure(exception):
             self.assertEqual(
@@ -572,36 +517,6 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         deferred = self.assertFailure(
             self.termination_deferred, NetstringParseError)
-
-        return deferred.addCallback(check_failure)
-
-    def test_interruptThenKill(self):
-        """If SIGINT doesn't kill the process, we SIGKILL after 5 seconds."""
-        fail = makeFailure(RuntimeError, 'error message')
-        self.protocol.transport.only_sigkill_kills = True
-
-        # When the error happens, we SIGINT the process.
-        self.protocol.unexpectedError(fail)
-        self.assertEqual(
-            [('signalProcess', 'INT')],
-            self.protocol.transport.calls)
-
-        # After 5 seconds, we send SIGKILL.
-        self.clock.advance(6)
-        self.assertEqual(
-            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
-            self.protocol.transport.calls)
-
-        # SIGKILL is assumed to kill the process.  We check that the
-        # failure passed to the termination_deferred is the failure we
-        # created above, not the ProcessTerminated that results from
-        # the process dying.
-
-        def check_failure(exception):
-            self.assertEqual('error message', str(exception))
-
-        deferred = self.assertFailure(
-            self.termination_deferred, RuntimeError)
 
         return deferred.addCallback(check_failure)
 

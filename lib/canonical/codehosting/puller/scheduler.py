@@ -274,6 +274,11 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
             self.checkReportingFinished, self.ensureReportingFinished)
 
     def checkReportingFinished(self, result):
+        stderr = self._stderr.getvalue()
+        if stderr:
+            fail = failure.Failure(Exception())
+            fail.error = stderr
+            return fail
         if not self.reported_mirror_finished:
             raise AssertionError('Process exited successfully without '
                                  'reporting success or failure?')
