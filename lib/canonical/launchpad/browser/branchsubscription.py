@@ -145,7 +145,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
     field_names = [
         'person', 'notification_level', 'max_diff_lines', 'review_level']
-    for_input=True
+    for_input = True
 
     # Since we are subscribing other people, the current user
     # is never considered subscribed.
