@@ -25,6 +25,8 @@ from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
@@ -64,6 +66,12 @@ class Archive(SQLBase):
         dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
+
+    sources_cached = IntCol(
+        dbName='sources_cached', notNull=False, default=0)
+
+    binaries_cached = IntCol(
+        dbName='binaries_cached', notNull=False, default=0)
 
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
@@ -500,7 +508,12 @@ class Archive(SQLBase):
             cache_contents.add(cache.binpkgnames)
             cache_contents.add(cache.binpkgsummaries)
 
+        binaries_cached = DistroSeriesPackageCache.selectBy(
+            archive=self)
+
         self.package_description_cache = " ".join(cache_contents)
+        self.sources_cached = sources_cached.count()
+        self.binaries_cached = binaries_cached.count()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
