@@ -35,6 +35,18 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 
+BUG_TRACKER_URL_FORMATS = {
+    BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
+    BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
+    BugTrackerType.MANTIS:      'view.php?id=%s',
+    BugTrackerType.ROUNDUP:     'issue%s',
+    BugTrackerType.RT:          'Ticket/Display.html?id=%s',
+    BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+    BugTrackerType.TRAC:        'ticket/%s',
+    BugTrackerType.SAVANNAH:    'bugs/?%s',
+    }
+
+
 class BugWatch(SQLBase):
     """See canonical.launchpad.interfaces.IBugWatch."""
     implements(IBugWatch)
@@ -65,21 +77,18 @@ class BugWatch(SQLBase):
     @property
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
-        url_formats = {
-            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC: 'ticket/%s',
-            BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP: 'issue%s',
-            BugTrackerType.RT: 'Ticket/Display.html?id=%s',
-            BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
-            BugTrackerType.MANTIS: 'view.php?id=%s',
-            BugTrackerType.SAVANNAH: 'bugs/?%s',
-        }
-        bt = self.bugtracker.bugtrackertype
-        if not url_formats.has_key(bt):
-            raise AssertionError('Unknown bug tracker type %s' % bt)
-        return urlappend(self.bugtracker.baseurl,
-                         url_formats[bt] % self.remotebug)
+        bugtracker = self.bugtracker
+        bugtrackertype = self.bugtracker.bugtrackertype
+
+        if bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return bugtracker.baseurl
+        elif bugtrackertype in BUG_TRACKER_URL_FORMATS:
+            url_format = BUG_TRACKER_URL_FORMATS[bugtrackertype]
+            return urlappend(bugtracker.baseurl,
+                             url_format % self.remotebug)
+        else:
+            raise AssertionError(
+                'Unknown bug tracker type %s' % bugtrackertype)
 
     @property
     def needscheck(self):

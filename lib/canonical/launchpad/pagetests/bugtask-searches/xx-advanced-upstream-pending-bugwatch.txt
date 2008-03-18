@@ -42,6 +42,8 @@ product. He does not provide bug watch information.
     Thank you for your bug report...
 
     >>> browser.getLink('Also affects project').click()
+    >>> browser.getControl(
+    ...     'I just want to register that it is upstream').selected = True
     >>> browser.getControl('Add to Bug Report').click()
     >>> browser.getControl('Add Anyway').click()
     >>> browser.title
@@ -77,7 +79,7 @@ He wants to link bugs to to the upstream bug tracker.
     ...     'need forwarding upstream')
     >>> pending_watches_link.text
     '1 bug need forwarding upstream'
-    
+
     >>> pending_watches_link.click()
 
     >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')

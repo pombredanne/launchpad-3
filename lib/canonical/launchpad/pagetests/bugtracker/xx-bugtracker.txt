@@ -220,7 +220,7 @@ They're added on the normal Change Details page.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets (Base URL)
+  http://trac.example.org/tickets
   http://pseudonym.example.com/ (Alias)
 
 It's not possible to add an alias that already refers to another
@@ -248,7 +248,7 @@ Multiple aliases can be entered by separating URLs with whitespace.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets (Base URL)
+  http://trac.example.org/tickets
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)
@@ -348,7 +348,7 @@ deleting bug watches en masse:
   LookupError: label 'Delete'
 
 
-== Overview pages and private bugs ==
+== Overview pages ==
 
 When looking at a bug tracker page, a list of bug watches is
 displayed:
@@ -364,7 +364,9 @@ displayed:
   #1:  Firefox does not support SVG  304014
   #7:  A test bug                    280883
 
-But if the user is not permitted to view one of the watches only very
+=== Private bugs ===
+
+If the user is not permitted to view one of the watches only very
 basic details are displayed. For example, when a bug watch is
 associated with a private bug:
 
