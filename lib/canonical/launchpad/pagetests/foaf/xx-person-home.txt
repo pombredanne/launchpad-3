@@ -111,6 +111,82 @@ That is, of course, unless the team doesn't have one:
     Email: No contact address
       (Launchpad notifications are sent to all team members)
 
+
+== OpenID login URL hiding ==
+
+Launchpad.net can be used as an OpenID login provider.  Users may
+enter a Launchpad.net URL in order to log in to services that accept
+OpenID.
+
+The persistant OpenID URL is displayed privately in the Contact
+Details portlet.
+
+    # XXX mars 2008-03-18
+    # Only members of the team configured by openid_testers should see
+    # the link.  This team is 'launchpad' in testing, and
+    # 'openid-testers' in production.
+    #
+    # Remove these tests after the beta program is done.
+    # See bug #201963.
+    #
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
+    >>> person_set = getUtility(IPersonSet)
+    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> openid_testers = getUtility(IPersonSet).getByName('launchpad')
+    >>> openid_testers is not None
+    True
+    >>> openid_testers in sabdfl.teams_participated_in
+    False
+    >>> logout()
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email:
+    mark@hbd.com
+    Wiki:
+    https://wiki.ubuntu.com/MarkShuttleworth
+    IRC:
+    mark
+    on network irc.freenode.net
+    Jabber:
+    &#109;&#97;&#114;&#107;&#115;&#104;&#117;&#116;&#116;&#108;&#101;&#119;&#111;&#114;&#116;&#104;&#64;&#106;&#97;&#98;&#98;&#101;&#114;&#46;&#111;&#114;&#103;
+    >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> openid_testers in name16.teams_participated_in
+    True
+    >>> logout()
+
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name16')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email:
+    foo.bar@canonical.com
+    Wiki:
+    https://wiki.ubuntu.com/FooBar
+    OpenPGP keys:
+    12345678
+    OpenID login URL:
+    http://openid.launchpad.dev/+id/name16_oid
+
+Other users who visit the page do not see the URL.
+
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name16')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email:
+    foo.bar@canonical.com
+    Wiki:
+    https://wiki.ubuntu.com/FooBar
+    OpenPGP keys:
+    12345678
+
+
 == Summary Pagelets ==
 
 A person's homepage also lists timezone, Karma and status information:
@@ -191,4 +267,3 @@ The same for teams.
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print find_tag_by_id(anon_browser.contents, 'contributions')
     None
-
