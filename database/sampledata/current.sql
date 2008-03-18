@@ -690,18 +690,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL, NULL, NULL, true, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, true, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, true, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, require_virtualized, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, false, NULL);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -1290,8 +1290,8 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, true, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, false, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "virtualized", url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "virtualized", url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1802,7 +1802,7 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 12);
 
 
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
