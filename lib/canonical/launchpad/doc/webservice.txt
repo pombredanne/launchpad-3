@@ -417,6 +417,27 @@ The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
 IAuthorEntry, which exposes only "name".
 
+IEntry also defines an invariant that enforce that it can be
+adapted to the interface defined in the schema attribute. This
+is usually not a problem, since the schema is usually the interface
+itself.
+
+    >>> IAuthorEntry.validateInvariants(AuthorEntry(A1))
+
+But the invariant will complain if that doesn't isn't true.
+
+    >>> class InvalidAuthorEntry(Entry):
+    ...     adapts(IAuthor)
+    ...     decorates(IAuthorEntry)
+    ...     schema = ICookbookEntry
+
+    >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
+    True
+    >>> IAuthorEntry.validateInvariants(InvalidAuthorEntry(A1))
+    Traceback (most recent call last):
+      ...
+    Invalid: InvalidAuthorEntry doesn't provide its ICookbookEntry schema
+
 Other entries are defined similarly. (XXX flacoste 2008/03/17 Update
 this example to show how adapters can be used to resolve the impedance
 mismatch between the web-service visible interface and the internal data

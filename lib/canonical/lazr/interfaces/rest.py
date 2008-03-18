@@ -17,7 +17,11 @@ __all__ = [
     'IServiceRootResource'
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface
+# These two should really be imported from zope.interface, but
+# the import fascist complains because they are not in __all__ there.
+from zope.interface.interface import invariant
+from zope.interface.exceptions import Invalid
 from zope.schema.interfaces import IObject
 
 
@@ -85,6 +89,14 @@ class IEntry(Interface):
 
     schema = Attribute(
         'The schema describing the date fields on this entry.')
+
+    @invariant
+    def schemaIsProvided(value):
+        """Make sure that the entry also provides its schema."""
+        if not value.schema.providedBy(value):
+            raise Invalid(
+                "%s doesn't provide its %s schema" % (
+                    type(value).__name__, value.schema.__name__))
 
 
 class ICollection(Interface):
