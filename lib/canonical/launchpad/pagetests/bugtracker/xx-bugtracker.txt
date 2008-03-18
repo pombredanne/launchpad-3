@@ -40,7 +40,7 @@ aren't allowed.
   >>> user_browser.getControl('Summary').value = (
   ...     'This is a test MANTIS tracker.')
   >>> url = 'http://mantis.testing.org/'
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Location').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
 
@@ -54,11 +54,11 @@ aren't allowed.
   - and . are also allowed after the
   first character.
 
-If a bug tracker is already registered with the same URL, the user is
-informed about it.
+If a bug tracker is already registered with the same location, the
+user is informed about it.
 
   >>> user_browser.getControl('Name').value = 'testmantis'
-  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
+  >>> user_browser.getControl('Location').value = 'http://bugzilla.mozilla.org/'
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -80,7 +80,7 @@ for now we'll dig directly to the database.
   >>> gnome_bugzilla.aliases = ['http://alias.example.com/']
   >>> logout()
 
-  >>> user_browser.getControl('Base URL').value = 'http://alias.example.com/'
+  >>> user_browser.getControl('Location').value = 'http://alias.example.com/'
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -93,7 +93,7 @@ for now we'll dig directly to the database.
 After successfully registering the bug tracker, the user is redirected
 to the bug tracker page.
 
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Location').value = url
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -130,7 +130,7 @@ bugtracker without them is acceptable.
   >>> user_browser.getControl('Name').value = 'test-bugzilla'
   >>> user_browser.getControl('Title').value = 'Test Bugzilla'
   >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
-  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.example.org/'
+  >>> user_browser.getControl('Location').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
@@ -153,7 +153,7 @@ a nice error message.
   >>> user_browser.getControl('Title').value = 'Test Mantis Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
   >>> url = 'http://trac.example.org/tickets'
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Location').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
 
@@ -181,7 +181,7 @@ We can edit the details of the newly added bugtracker.
 It's not possible to change the base URL to something that another bug
 tracker uses.
 
-  >>> user_browser.getControl('Base URL', index=0).value = (
+  >>> user_browser.getControl('Location', index=0).value = (
   ...     'http://bugzilla.mozilla.org/')
   >>> user_browser.getControl('Change').click()
 
@@ -196,7 +196,7 @@ After successfully editing the bug tracker information, the user is
 redirected to the bug tracker page. Note that the change we made to
 the bugtracker name is reflected in the url.
 
-  >>> user_browser.getControl('Base URL', index=0).value = url
+  >>> user_browser.getControl('Location', index=0).value = url
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
@@ -219,17 +219,18 @@ And now the test tracker should have been updated:
 
 == Aliases ==
 
-We can associate multiple URLs with a bug tracker. An alias can
-represent another valid URL for a bug tracker, or just a commonly seen
-typo. Aliases are used to catch user mistakes; only the Base URL is
-used to access the remote bug tracker.
+We can associate multiple URLs or email addresses with a bug
+tracker. An alias can represent another valid location for a bug
+tracker, or just a commonly seen typo. Aliases are used to catch user
+mistakes; only the primary Location is used to access the remote bug
+tracker.
 
 They're added on the normal Change Details page.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testbugzilla')
   >>> user_browser.getLink('Change details').click()
 
-  >>> user_browser.getControl('Base URL aliases').value = (
+  >>> user_browser.getControl('Location aliases').value = (
   ...     'http://pseudonym.example.com/')
   >>> user_browser.getControl('Change').click()
 
@@ -244,7 +245,7 @@ bugtracker.
 
   >>> user_browser.open(
   ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla/+edit')
-  >>> user_browser.getControl('Base URL aliases').value = (
+  >>> user_browser.getControl('Location aliases').value = (
   ...     'http://bugzilla.mozilla.org/')
   >>> user_browser.getControl('Change').click()
 
@@ -255,7 +256,7 @@ bugtracker.
 
 Multiple aliases can be entered by separating URLs with whitespace.
 
-  >>> user_browser.getControl('Base URL aliases').value = (
+  >>> user_browser.getControl('Location aliases').value = (
   ...     '    http://wolverhampton.example.com/    '
   ...     '  http://toadhall.example.com/      \n'
   ...     ' https://wibble.example.com/   \n\n\n')
@@ -279,7 +280,7 @@ example bug tracker:
   ...     'http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
   >>> user_browser.getControl('Name').value = 'freddy'
   >>> user_browser.getControl('Title').value = "Freddy's Bugs"
-  >>> user_browser.getControl('Base URL').value = 'http://freddy.example.com/'
+  >>> user_browser.getControl('Location').value = 'http://freddy.example.com/'
   >>> user_browser.getControl('Add').click()
 
 Being brand-new and pristine, there will be nothing to prevent its
