@@ -13,9 +13,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
-# Need the externalbugtracker module so we can monkey-patch it.
-from canonical.launchpad.components import externalbugtracker
-# But we also import a few names for convenience.
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
     DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
