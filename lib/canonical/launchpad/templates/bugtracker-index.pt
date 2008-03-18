@@ -36,7 +36,7 @@
         </tr>
       </thead>
 
-      <tbody>
+      <tbody tal:define="obfuscate not:view/user">
         <tal:watches repeat="watch watches">
           <tr tal:define="hide not:watch/bug/required:launchpad.View">
             <tal:hide-watch-details condition="hide">
@@ -59,8 +59,12 @@
                 </a>
               </td>
               <td>
-                <a tal:content="watch/remotebug"
-                   tal:attributes="href watch/url">53656</a>
+                <a tal:condition="obfuscate"
+                   tal:attributes="href watch/url/fmt:obfuscate-email"
+                   tal:content="watch/remotebug">53656</a>
+                <a tal:condition="not:obfuscate"
+                   tal:attributes="href watch/url"
+                   tal:content="watch/remotebug">53656</a>
               </td>
               <td tal:content="watch/remotestatus" />
             </tal:show-watch-details>
@@ -80,15 +84,33 @@
   </p>
 
   <h2>
-    URLs
+    Location
   </h2>
 
-  <ul id="bugtracker-urls">
-    <li><strong tal:content="context/baseurl" /> (Base URL)</li>
-    <li tal:repeat="alias context/aliases">
-      <strong tal:content="alias" /> (Alias)
-    </li>
-  </ul>
+  <tal:user condition="view/user">
+    <ul id="bugtracker-urls">
+      <li tal:define="baseurl context/baseurl">
+        <a class="link-external" tal:attributes="href baseurl">
+          <strong tal:content="baseurl" />
+        </a>
+      </li>
+      <li tal:repeat="alias context/aliases">
+        <strong tal:content="alias" /> (Alias)
+      </li>
+    </ul>
+  </tal:user>
+  <tal:not-user condition="not:view/user">
+    <ul id="bugtracker-urls">
+      <li tal:define="baseurl context/baseurl/fmt:obfuscate-email">
+        <a class="link-external" tal:attributes="href baseurl">
+          <strong tal:content="baseurl" />
+        </a>
+      </li>
+      <li tal:repeat="alias context/aliases">
+        <strong tal:content="alias/fmt:obfuscate-email" /> (Alias)
+      </li>
+    </ul>
+  </tal:not-user>
 
   <h2 tal:condition="context/contactdetails">
     Contact details

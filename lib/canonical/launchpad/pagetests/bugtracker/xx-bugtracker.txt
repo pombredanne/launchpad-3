@@ -107,6 +107,22 @@ to the bug tracker page.
   >>> 'This is a test MANTIS tracker.' in user_browser.contents
   True
 
+For Email Address bug trackers we show the upstream email address as
+the location of the bug tracker, but obfuscate it for anonymous users:
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> user_bugtracker_url_list = find_tag_by_id(
+  ...     user_browser.contents, 'bugtracker-urls')
+  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> anon_bugtracker_url_list = find_tag_by_id(
+  ...     anon_browser.contents, 'bugtracker-urls')
+
+  >>> print extract_text(user_bugtracker_url_list)
+  mailto:bugs@example.com
+
+  >>> print extract_text(anon_bugtracker_url_list)
+  mailto:&lt;email address hidden&gt;
+
 The `Summary` and `Contact Details` fields are optional - creating a
 bugtracker without them is acceptable.
 
@@ -404,6 +420,48 @@ the remote trackers to see what's going on. Giving them an adjusted
 total is misleading. There would be a disconnect between what
 Launchpad reports and what it does, which again could lead them to
 think that Launchpad is broken or lying.
+
+=== Anonymous users ===
+
+Email addresses in remote watch URLs are obfuscated when viewed by
+anonymous users.
+
+First we must create a new bug watch on an Email Address bug tracker:
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product')
+  >>> user_browser.getControl('Project').value = 'gnome-terminal'
+  >>> user_browser.getControl('Continue').click()
+  >>> user_browser.getControl(
+  ...     name='field.link_upstream_how').value = ['EMAIL_UPSTREAM_DONE']
+  >>> user_browser.getControl(
+  ...     name='field.upstream_email_address_done').value = 'bugs@example.com'
+  >>> user_browser.getControl('Add to Bug Report').click()
+
+Then we can see how logged-in users and anonymous users see the page:
+
+  >>> def print_watches(browser):
+  ...     watches = find_tag_by_id(
+  ...         browser.contents, 'latestwatches').tbody.findAll('tr')
+  ...     for watch in watches:
+  ...         bug, remote_bug, status = watch.findAll('td')
+  ...         print extract_text(bug)
+  ...         print '  --> %s: %s' % (extract_text(remote_bug),
+  ...                                 remote_bug.a.get('href'))
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print_watches(user_browser)
+  #12:
+  Copy, Cut and Delete operations should work on selections
+    --> : mailto:bugs@example.com
+
+  >>> anon_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print_watches(anon_browser)
+  #12:
+  Copy, Cut and Delete operations should work on selections
+    --> : mailto:&lt;email address hidden&gt;
 
 
 == Related projects portlet ==

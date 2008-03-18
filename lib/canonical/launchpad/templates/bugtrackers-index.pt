@@ -45,10 +45,20 @@
           <td><a tal:attributes="href bugtracker/name"
                  tal:content="bugtracker/title">$Bugtracker.title
               </a></td>
-          <td><a class="link-external"
-                 tal:attributes="href bugtracker/baseurl"
-                 tal:content="bugtracker/baseurl">$Bugtracker.baseurl</a></td>
-            <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
+          <td tal:define="baseurl bugtracker/baseurl">
+            <tal:user condition="view/user">
+              <a class="link-external"
+                 tal:attributes="href baseurl"
+                 tal:content="baseurl">$Bugtracker.baseurl</a>
+            </tal:user>
+            <tal:not-user condition="not:view/user"
+                          tal:define="baseurl baseurl/fmt:obfuscate-email">
+              <a class="link-external"
+                 tal:attributes="href baseurl"
+                 tal:content="baseurl">$Bugtracker.baseurl</a>
+            </tal:not-user>
+          </td>
+          <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
             <tal:pillars condition="pillar_data">
               <tal:pillar-entry repeat="pillar pillar_data/pillars">
                   <a tal:attributes="href pillar/fmt:url"
