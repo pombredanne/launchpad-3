@@ -313,7 +313,7 @@ class TestMergeProposalNotification(TestCase):
         self.factory = LaunchpadObjectFactory()
 
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
-        """Assert that a callable performs a given notification
+        """Assert that a callable performs a given notification.
 
         :param event_type: The type of event that notification is expected
             for.
@@ -321,7 +321,7 @@ class TestMergeProposalNotification(TestCase):
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
         :return: (result, event), where result was the return value of the
-            callable, and event was the event emitted by the callable.
+            callable, and event is the event emitted by the callable.
         """
         events = []
         def on_notify(event):
