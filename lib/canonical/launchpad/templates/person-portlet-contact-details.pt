@@ -115,6 +115,20 @@
             </tal:block>
           </td>
         </tr>
+        <tal:can-view-openid-login
+	   condition="context/required:launchpad.Edit">
+	  <tr tal:condition="context/is_openid_enabled">
+	    <th>OpenID login:</th>
+            <td title="This URL is not disclosed to others.">
+              <img src="/@@/private" alt="" />
+              <a tal:attributes="href view/openid_identity_url"
+		 tal:content="view/openid_identity_url">
+		http://foo.com
+	      </a>
+              <br />
+            </td>
+	  </tr>
+	</tal:can-view-openid-login>
       </tbody>
     </table>
 
