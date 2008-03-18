@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
+    IOpenIdApplication, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet,
     ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
@@ -194,10 +194,3 @@ class HWDBApplication:
 class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
-
-    # See ServiceRootResource for more on top_level_collections
-    @property
-    def top_level_collections(self):
-        return { 'bugtasks' : getUtility(IBugTaskSet),
-                 'bugs' : getUtility(IBugSet),
-                 'people' : getUtility(IPersonSet) }
