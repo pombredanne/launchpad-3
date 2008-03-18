@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch,
+    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, InvalidBranchMergeProposal,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
@@ -886,7 +886,8 @@ class BranchSet:
             branch.subscribe(
                 implicit_subscription,
                 BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF)
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL)
 
         notify(SQLObjectCreatedEvent(branch))
         return branch
