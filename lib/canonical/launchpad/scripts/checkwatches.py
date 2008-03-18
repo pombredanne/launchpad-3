@@ -13,6 +13,7 @@ import sys
 import pytz
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -308,7 +309,8 @@ class BugWatchUpdater(object):
         if len(bug_watches) == 0:
             return None
         bug_watch_lastchecked_times = sorted(
-            bug_watch.lastchecked for bug_watch in bug_watches)
+            bug_watch.lastchecked
+            for bug_watch in bug_watches)
         return bug_watch_lastchecked_times[0]
 
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
@@ -322,14 +324,6 @@ class BugWatchUpdater(object):
         # list here to ensure that were're doing sane things with it
         # later on.
         bug_watches = list(bug_watches_to_update)
-        old_bug_watches = [
-            bug_watch for bug_watch in bug_watches
-            if bug_watch.lastchecked is not None]
-        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
-        if oldest_lastchecked is not None:
-            # Adjust for possible time skew, and some more, just to be safe.
-            oldest_lastchecked -= (
-                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
 
         # We limit the number of watches we're updating by the
         # ExternalBugTracker's batch_size. In an ideal world we'd just
@@ -338,11 +332,6 @@ class BugWatchUpdater(object):
         # bug id before we do so.
         remote_ids = sorted(
             set(bug_watch.remotebug for bug_watch in bug_watches))
-        remote_old_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in old_bug_watches))
-        remote_new_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch not in old_bug_watches))
         if remotesystem.batch_size is not None:
             remote_ids = remote_ids[:remotesystem.batch_size]
 
@@ -352,6 +341,21 @@ class BugWatchUpdater(object):
 
         self.log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
+
+        old_bug_watches = [
+            bug_watch for bug_watch in bug_watches
+            if bug_watch.lastchecked is not None]
+        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
+        if oldest_lastchecked is not None:
+            # Adjust for possible time skew, and some more, just to be safe.
+            oldest_lastchecked -= (
+                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
+
+        remote_old_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in old_bug_watches))
+        remote_new_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch not in old_bug_watches))
 
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
