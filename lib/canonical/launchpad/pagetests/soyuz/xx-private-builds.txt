@@ -285,11 +285,35 @@ Anonymous users cannot see the private build:
 == Unembargoed builds ==
 
 When private packages are copied to a non-private archive, the build
-becomes unembargoed and is accessible by any user.  This is essential to
-allow navigation from source to binary to work and is mostly used when
-unembargoing security builds.
+becomes unembargoed and is accessible by any user.
 
-Let's make the iceweasel package available in Warty:
+Currently, browsing to the build page is forbidden for unauthorised
+users:
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> try:
+    ...     anon_browser.open(
+    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         random_build_id)
+    ... except Unauthorized:
+    ...     print "Got expected exception"
+    ... else:
+    ...     print "Did not get expected exception"
+    Got expected exception
+    
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> try:
+    ...     browser.open(
+    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         random_build_id)
+    ... except Unauthorized:
+    ...     print "Got expected exception"
+    ... else:
+    ...     print "Did not get expected exception"
+    Got expected exception
+
+Let's make the iceweasel package available in Warty.  First log in as
+an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -302,6 +326,7 @@ Let's make the iceweasel package available in Warty:
 
 Now the anonymous user can see the build:
 
+    >>> anon_browser = setupBrowser()
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     Build machines for Launchpad
@@ -313,7 +338,6 @@ Now the anonymous user can see the build:
 
 Any other logged-in user will also see the build:
 
-    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(browser.contents))
     Build machines for Launchpad
@@ -322,3 +346,17 @@ Any other logged-in user will also see the build:
     frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
                                     1.0 for Celso Providelo Ubuntu Warty PPA
     Generated at ...
+
+Accessing the build page will now also work:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    >>> print anon_browser.title
+    Build details for i386 build of iceweasel...
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    >>> print browser.title
+    Build details for i386 build of iceweasel...
