@@ -1,6 +1,6 @@
 = Creating a code import =
 
-Users are able to specificly request a code import of their
+Users are able to specifically request a code import of their
 project's code.  The main link to this is a large button on
 the code home page "Import your project".
 
@@ -47,7 +47,7 @@ The user is also subscribed to the branch to get notifications.
     No Privileges Person
 
 
-== Requesting s CVS import ==
+== Requesting a CVS import ==
 
 The user is required to enter both the CVS root and module in order
 to identify the CVS branch.  A project and branch name are also required.

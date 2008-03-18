@@ -172,13 +172,13 @@
         </p>
 
         <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
-          <p>This branch is an import of the <strong>Subversion</strong> branch
+          <p>This branch is an import of the Subversion branch
           from <strong tal:content="code_import/svn_branch_url"/>.
           </p>
         </tal:svn-import>
 
         <tal:cvs-import condition="code_import/rcs_type/enumvalue:CVS">
-          <p>This branch is an import of the <strong>CVS</strong> module
+          <p>This branch is an import of the CVS module
           <strong tal:content="code_import/cvs_module"/> from
           <strong tal:content="code_import/cvs_root"/>.
           </p>

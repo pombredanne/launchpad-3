@@ -31,7 +31,7 @@ class CodeImportReviewStatus(DBEnumeratedType):
 
     NEW = DBItem(1, """Pending Review
 
-        This code import request has recently been filed an has not
+        This code import request has recently been filed and has not
         been reviewed yet.
         """)
 
