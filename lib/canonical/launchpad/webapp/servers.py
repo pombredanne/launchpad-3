@@ -915,11 +915,16 @@ class WebServicePublication(LaunchpadBrowserPublication):
         In addition to the default traversal implementation, this publication
         also handle traversal to collection scoped into an entry.
         """
-        try:
-            return super(WebServicePublication, self).traverseName(
-                request, ob, name)
-        except NotFound:
-            return self._traverseToScopedCollection(request, ob, name)
+        # If this is the last traversal step, then look first for a scoped
+        # collection. We only look for scoped collection there because
+        # navigation to entry in scoped collection are handled by normal
+        # Navigation.
+        if len(request.getTraversalStack()) == 0:
+           result = self._traverseToScopedCollection(request, ob, name)
+           if result is not None:
+               return result
+        return super(WebServicePublication, self).traverseName(
+            request, ob, name)
 
     def _traverseToScopedCollection(self, request, ob, name):
         """Try to traverse to a collection named name in ob.
@@ -931,20 +936,20 @@ class WebServicePublication(LaunchpadBrowserPublication):
         This is done because we don't usually traverse to attributes
         representing a collection in our regular Navigation.
 
-        This method raises NotFound if a scoped collection cannot be found.
+        This method returns None if a scoped collection cannot be found.
         """
         try:
             entry = IEntry(ob)
         except TypeError:
-            raise NotFound(ob, name)
+            return None
 
         field = entry.schema.get(name)
         if not ICollectionField.providedBy(field):
-            raise NotFound(ob, name)
+            return None
 
         collection = getattr(entry, name, None)
         if collection is None:
-            raise NotFound(ob, name)
+            return None
 
         # Create a dummy object that implements the field's interface.
         # This is neccessary because we can't pass the interface itself
@@ -954,7 +959,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             scoped_collection = getMultiAdapter(
                 (ob, example_entry), IScopedCollection)
         except ComponentLookupError:
-            raise NotFound(ob, name)
+            return None
 
         # Tell the IScopedCollection object what collection it's managing,
         # and what the collection's relationship is to the entry it's

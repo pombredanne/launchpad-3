@@ -671,7 +671,7 @@ to an object that has an IEntry adapter, will wrap it into an
 EntryResource.
 
 For instance, requesting "/cookbooks/The%20Joy%20of%20Cooking" will wrap
-the "Joy of Cooking" cookbook object into an EntryResource. 
+the "Joy of Cooking" cookbook object into an EntryResource.
 
     >>> request = create_web_service_request(
     ...     quote('/cookbooks/The Joy of Cooking'))
@@ -735,19 +735,33 @@ NotFound exception.
 
 Requesting a non-existent top-level collection:
 
-    >>> request = create_web_service_request('/nosuchcollection')
-    >>> request.traverse(app)
+    >>> create_web_service_request('/nosuchcollection').traverse(app)
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'nosuchcollection'
 
 Requesting a non-existent cookbook:
 
-    >>> request = create_web_service_request('/cookbooks/104')
-    >>> request.traverse(app)
+    >>> create_web_service_request('/cookbooks/104').traverse(app)
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'104'
+
+Requesting an attribute which isn't exposed as a collection:
+
+    >>> create_web_service_request(
+    ...     '/cookbooks/The%20Joy%20of%20Cooking/name').traverse(app)
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: u'name'
+
+Requesting a non-existant comment:
+
+    >>> create_web_service_request(
+    ...  '/cookbooks/The%20Joy%20of%20Cooking/comments/10').traverse(app)
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: u'10'
 
 
 == Manipulating entries ==
