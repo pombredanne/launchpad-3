@@ -76,7 +76,7 @@ token is considered used and can only be exchanged for an access token
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(request_token)
 
-    >>> from datetime import datetime
+    >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> print request_token.person.name
     salgado
@@ -186,6 +186,16 @@ An access token can only be changed by the person associated with it.
     >>> login(access_token.person.preferredemail.email)
     >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
 
+From any given person it's possible to retrieve his non-expired access
+tokens.
+
+    >>> access_token.person.oauth_access_tokens.count()
+    1
+    >>> access_token.date_expires = (
+    ...     datetime.now(pytz.timezone('UTC')) - timedelta(hours=1))
+    >>> syncUpdate(access_token)
+    >>> access_token.person.oauth_access_tokens.count()
+    0
 
 == Nonces and timestamps ==
 
