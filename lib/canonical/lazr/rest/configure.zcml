@@ -11,10 +11,6 @@
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
     </class>
 
-    <class class="canonical.lazr.rest.ScopedCollectionResource">
-        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
-    </class>
-
     <!-- Generic adapter for scoped collection -->
     <adapter
         for="* *"

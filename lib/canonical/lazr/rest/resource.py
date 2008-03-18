@@ -10,10 +10,8 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'JSONItem',
-    'OrderBasedScopedCollection',
     'ReadOnlyResource',
     'ScopedCollection',
-    'ScopedCollectionResource',
     'ServiceRootResource'
     ]
 
@@ -255,11 +253,6 @@ class CollectionResource(ReadOnlyResource):
         return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
 
 
-class ScopedCollectionResource(CollectionResource):
-    """Obsolete. Provides no functionality over CollectionResource, will be
-    removed."""
-
-
 class ServiceRootResource:
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource, ICanonicalUrlData)
@@ -314,6 +307,3 @@ class ScopedCollection:
         """See `ICollection`."""
         return self.collection
 
-
-class OrderBasedScopedCollection(ScopedCollection):
-    """Obsolete will be removed."""
