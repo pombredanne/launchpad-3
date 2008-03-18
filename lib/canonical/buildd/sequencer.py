@@ -106,7 +106,6 @@ class BuildSequencer:
         self.jobs = []
         log.msg("Loading jobs...")
         for job in config.getByCategory('buildsequencer_job'):
-            #import pdb; pdb.set_trace()
             bsj = BuildSequencerJob(self, job)
             self.jobs.append(bsj)
             log.msg("   ...loaded " + bsj.name)
