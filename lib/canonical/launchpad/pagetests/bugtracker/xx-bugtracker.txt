@@ -220,7 +220,7 @@ They're added on the normal Change Details page.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets
+  http://trac.example.org/tickets (Base URL)
   http://pseudonym.example.com/ (Alias)
 
 It's not possible to add an alias that already refers to another
@@ -248,7 +248,7 @@ Multiple aliases can be entered by separating URLs with whitespace.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets
+  http://trac.example.org/tickets (Base URL)
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)

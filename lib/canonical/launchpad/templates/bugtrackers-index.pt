@@ -33,7 +33,7 @@
     <thead>
       <tr>
         <th>Title</th>
-        <th>Location</th>
+        <th>Home Page</th>
         <th>Linked Projects</th>
         <th class="type">Type</th>
         <th class="amount">Watches</th>
