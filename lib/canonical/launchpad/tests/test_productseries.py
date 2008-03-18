@@ -17,6 +17,7 @@ from canonical.launchpad.database.productseries import (
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
@@ -236,14 +237,14 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         product = getUtility(IProductSet).getByName(product_name)
         return product.development_focus
 
-    def addImportDetailsToSeries(self, series):
+    def addImportDetailsToSeries(self, series, module_name='hello'):
         """Add import data to the provided series.
 
-        'importstatus' will be set to SYNCING, abitrarily.
+        'importstatus' will be set to SYNCING, arbitrarily.
         """
         series.rcstype = RevisionControlSystems.CVS
         series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
-        series.cvsmodule = 'hello'
+        series.cvsmodule = module_name
         series.cvsbranch = 'MAIN'
         series.importstatus = ImportStatus.SYNCING
         flush_database_updates()
@@ -296,6 +297,21 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         results = getUtility(IProductSeriesSet).searchImports(
             importstatus=ImportStatus.PROCESSING)
         self.assertEquals(list(results), [])
+
+    def testSorting(self):
+        """Returned series are sorted by product name, then series name."""
+        factory = LaunchpadObjectFactory()
+        product1 = factory.makeProduct(name='product1')
+        product1_a = factory.makeSeries(product=product1, name='a')
+        product2 = factory.makeProduct(name='product2')
+        product2_a = factory.makeSeries(product=product2, name='a')
+        product1_b = factory.makeSeries(product=product1, name='b')
+        self.addImportDetailsToSeries(product1_a, 'a')
+        self.addImportDetailsToSeries(product1_b, 'b')
+        self.addImportDetailsToSeries(product2_a, 'c')
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(
+            list(results), [product1_a, product1_b, product2_a])
 
 
 def test_suite():

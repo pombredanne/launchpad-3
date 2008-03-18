@@ -312,7 +312,7 @@
       />
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+foo-bar"
+      name="+code-import-list"
       class="canonical.launchpad.browser.ProductSeriesSourceListView"
       template="../templates/sources-list.pt"
       permission="zope.Public"

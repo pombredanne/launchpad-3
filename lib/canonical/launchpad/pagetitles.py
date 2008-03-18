@@ -1241,7 +1241,7 @@ sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
-sources_list = 'Bazaar: Upstream revision control imports to Bazaar'
+sources_list = 'Bazaar: Available revision control imports'
 
 sourcesource_index = 'Upstream source import'
 

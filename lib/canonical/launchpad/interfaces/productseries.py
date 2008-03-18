@@ -341,7 +341,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
     import_source_details = Text(
-        description=_("XXX."),
+        description=_(
+        "A one-line summary of the location this import is from."),
         readonly=True)
 
     # where are the tarballs released from this branch placed?

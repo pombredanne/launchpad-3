@@ -11,7 +11,7 @@
 
 <body>
 
-  <h1 metal:fill-slot="heading">Available trunk imports</h1>
+  <h1 metal:fill-slot="heading">Available revision control imports</h1>
 
 <div metal:fill-slot="main" class="visualPadding"
      tal:define="batch view/batchnav/currentBatch">

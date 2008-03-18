@@ -383,17 +383,24 @@ class LaunchpadObjectFactory:
             requesting_user, log_excerpt, log_file=None, status=status,
             date_job_started=started)
 
-    def makeSeries(self, user_branch=None, import_branch=None):
+    def makeSeries(self, user_branch=None, import_branch=None,
+                   name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
         :param user_branch: If supplied, the branch to set as
             ProductSeries.user_branch.
         :param import_branch: If supplied, the branch to set as
             ProductSeries.import_branch.
+        :param product: If supplied, the name of the series.
+        :param product: If supplied, the series is created for this product.
+            Otherwise, a new product is created.
         """
-        product = self.makeProduct()
-        series = product.newSeries(product.owner, self.getUniqueString(),
-            self.getUniqueString(), user_branch)
+        if product is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        series = product.newSeries(
+            product.owner, name, self.getUniqueString(), user_branch)
         series.import_branch = import_branch
         syncUpdate(series)
         return series

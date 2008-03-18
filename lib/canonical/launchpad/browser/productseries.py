@@ -946,7 +946,9 @@ class ProductSeriesSourceSetView:
 
 
 class ProductSeriesSourceListView:
-    """XXX."""
+    """A listing of all the running imports.
+
+    We take 'running' to mean 'has importstatus==SYNCING'."""
 
     def __init__(self, context, request):
         self.context = context
@@ -956,6 +958,7 @@ class ProductSeriesSourceListView:
         results = getUtility(IProductSeriesSet).searchImports(
             text=self.text, importstatus=ImportStatus.SYNCING)
         self.batchnav = BatchNavigator(results, request)
+
 
 class ProductSeriesShortLink(DefaultShortLink):
 

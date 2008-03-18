@@ -529,12 +529,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def import_source_details(self):
+        assert self.rcstype is not None
         if self.rcstype == RevisionControlSystems.CVS:
             return '%s %s'%(self.cvsroot, self.cvsmodule)
         elif self.rcstype == RevisionControlSystems.SVN:
             return self.svnrepository
         else:
-            raise AssertionError("XXX")
+            raise AssertionError(
+                'Unknown rcs type: %s'% self.rcstype.title)
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
