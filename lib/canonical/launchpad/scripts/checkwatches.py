@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 
+from datetime import datetime, timedelta
 from logging import getLogger
 import socket
 import sys
+
+import pytz
 
 from zope.component import getUtility
 
@@ -46,6 +49,10 @@ def get_bugwatcherrortype_for_error(error):
             return bugwatcherrortype
     else:
         return BugWatchErrorType.UNKNOWN
+
+
+class TooMuchTimeSkew(BugWatchUpdateError):
+    """Time difference between ourselves and the remote server is too much."""
 
 
 #
@@ -112,6 +119,8 @@ def report_warning(message, properties=None, info=None):
 
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
+
+    ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
     def __init__(self, txn, log=None):
         if log is None:
@@ -294,7 +303,7 @@ class BugWatchUpdater(object):
 
         return launchpad_status
 
-    def updateBugWatches(self, remotesystem, bug_watches_to_update):
+    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
@@ -326,7 +335,14 @@ class BugWatchUpdater(object):
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
         self.txn.commit()
+        server_time = None
+        if now is None:
+            now = datetime.now(pytz.timezone('UTC'))
         try:
+            server_time = remotesystem.getCurrentDBTime()
+            if (server_time is not None and
+                abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
+                raise TooMuchTimeSkew(abs(server_time - now))
             remotesystem.initializeRemoteBugDB(remote_ids)
         except Exception, error:
             # We record the error against all the bugwatches that should
@@ -345,6 +361,14 @@ class BugWatchUpdater(object):
         self.txn.begin()
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
+        can_import_comments = (
+            ISupportsCommentImport.providedBy(remotesystem) and
+            remotesystem.import_comments)
+        if can_import_comments and server_time is None:
+            can_import_comments = False
+            self.warning(
+                "Comment importing supported, but server time can't be"
+                " trusted. No comments will be imported.")
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
@@ -399,8 +423,7 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if (ISupportsCommentImport.providedBy(remotesystem) and
-                        remotesystem.import_comments):
+                    if can_import_comments:
                         self.importBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
