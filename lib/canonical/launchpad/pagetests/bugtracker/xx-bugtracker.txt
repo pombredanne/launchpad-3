@@ -272,10 +272,22 @@ Multiple aliases can be entered by separating URLs with whitespace.
 
 == Deleting a bug tracker ==
 
-Bug trackers can be deleted by anyone. The Delete button is in the
-Change Details page:
+The Delete button is in the Change Details page. But first we need an
+example bug tracker:
 
-  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
+  >>> user_browser.getControl('Name').value = 'freddy'
+  >>> user_browser.getControl('Title').value = "Freddy's Bugs"
+  >>> user_browser.getControl('Base URL').value = 'http://freddy.example.com/'
+  >>> user_browser.getControl('Add').click()
+
+Being brand-new and pristine, there will be nothing to prevent its
+deletion yet:
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/freddy'
+
   >>> user_browser.getLink('Change details').click()
   >>> user_browser.getControl('Delete').click()
 
@@ -284,9 +296,9 @@ Change Details page:
 
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
-  Email bugtracker has been deleted.
+  Freddy's Bugs has been deleted.
 
-However, there are several restrictions:
+Bug trackers can be deleted by anyone, subject to a few restrictions:
 
 - Firstly, deletion will be denied if bug tracker is set as the
   official bug tracker for a product or product group.
