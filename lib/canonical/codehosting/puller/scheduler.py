@@ -294,7 +294,7 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
                 errorline = str(reason.value)
             d = defer.maybeDeferred(
                 self.listener.mirrorFailed, errorline, None)
-            return d.addBoth(lambda result: reason)
+            return d.addCallback(lambda result: reason)
         else:
             return reason
 
