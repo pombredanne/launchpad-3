@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    CodeReviewNotificationLevel,
     CreateBugParams,
     EmailAddressStatus,
     IBranchSet,
@@ -250,7 +251,8 @@ class LaunchpadObjectFactory:
         person = self.makePerson(displayname=person_displayname,
             email_address_status=EmailAddressStatus.VALIDATED)
         return branch.subscribe(person,
-            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):

@@ -111,7 +111,13 @@ class CodeReviewNotificationLevel(DBEnumeratedType):
         Do not send any email about code review for this branch.
         """)
 
-    FULL = DBItem(1, """
+    STATUS = DBItem(1, """
+        Status changes only
+
+        Send email when votes are cast or status is changed.
+        """)
+
+    FULL = DBItem(2, """
         Email about all changes
 
         Send email about any code review activity for this branch.

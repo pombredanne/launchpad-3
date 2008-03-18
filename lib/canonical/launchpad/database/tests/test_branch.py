@@ -17,9 +17,9 @@ from canonical.launchpad import _
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
-    CannotDeleteBranch, CreateBugParams, IBranchSet, IBugSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
-    InvalidBranchMergeProposal, PersonCreationRationale,
+    CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
+    IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     RevisionControlSystems, SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import BranchSet, BranchSubscription
 from canonical.launchpad.database.branchmergeproposal import (
@@ -88,7 +88,8 @@ class TestBranchDeletion(TestCase):
     def test_subscriptionDisablesDeletion(self):
         """A branch that has a subscription cannot be deleted."""
         self.branch.subscribe(
-            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that has a subscription is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
