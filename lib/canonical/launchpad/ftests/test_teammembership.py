@@ -38,11 +38,11 @@ class TestTeamMembershipSet(unittest.TestCase):
         self.assertEqual(membership.status, TeamMembershipStatus.APPROVED)
 
     def test_active_membership_creation_stores_proponent_and_reviewer(self):
-        """Memberships created in the any active state have reviewer stored.
+        """Memberships created in any active state have the reviewer stored.
 
-        The reviewer_comment, date_reviewed and attributes related to the
-        proponent are also stored, but everything related to acknowledger
-        will be left empty.
+        The date_joined, reviewer_comment, date_reviewed and attributes
+        related to the proponent are also stored, but everything related to
+        acknowledger will be left empty.
         """
         marilize = self.personset.getByName('marilize')
         ubuntu_team = self.personset.getByName('ubuntu-team')
@@ -51,12 +51,12 @@ class TestTeamMembershipSet(unittest.TestCase):
             ubuntu_team.teamowner, comment="I like her")
         self.assertEqual(ubuntu_team.teamowner, membership.proposed_by)
         self.assertEqual(membership.proponent_comment, "I like her")
-        self.failUnless(
-            membership.date_proposed <= datetime.now(pytz.timezone('UTC')))
+        now = datetime.now(pytz.timezone('UTC'))
+        self.failUnless(membership.date_proposed <= now)
+        self.failUnless(membership.datejoined <= now)
         self.assertEqual(ubuntu_team.teamowner, membership.reviewed_by)
         self.assertEqual(membership.reviewer_comment, "I like her")
-        self.failUnless(
-            membership.date_reviewed <= datetime.now(pytz.timezone('UTC')))
+        self.failUnless(membership.date_reviewed <= now)
         self.assertEqual(membership.acknowledged_by, None)
 
     def test_membership_creation_stores_proponent(self):
