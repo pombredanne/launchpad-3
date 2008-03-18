@@ -11,14 +11,14 @@
 
 <body>
 
-  <h1 metal:fill-slot="heading">Available revision control imports</h1>
+  <h1 metal:fill-slot="heading">Available code imports</h1>
 
 <div metal:fill-slot="main" class="visualPadding"
      tal:define="batch view/batchnav/currentBatch">
 
   <form action="" method="GET">
     <fieldset>
-        <legend>Lists projects matching:</legend>
+        <label for="text">List projects matching:</label>
 
         <div class="formControls">
             <input type="text" name="text"

@@ -20,7 +20,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, IProduct, IProductSeriesSet, IProductSet,
+    ImportStatus)
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
     stepto)
@@ -57,7 +58,8 @@ class BazaarApplicationView(LaunchpadView):
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
-        return self.series_set.searchImports().count()
+        return self.series_set.searchImports(
+            importstatus=ImportStatus.SYNCING).count()
 
     @property
     def bzr_version(self):
