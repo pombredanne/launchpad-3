@@ -100,7 +100,7 @@ class ICodeImport(Interface):
             "The version control system to import from. "
             "Can be CVS or Subversion."))
 
-    svn_branch_url = URIField(title=_("Branch"), required=False,
+    svn_branch_url = URIField(title=_("Branch URL"), required=False,
         description=_(
             "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
