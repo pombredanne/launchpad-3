@@ -170,7 +170,7 @@ Details portlet.
     https://wiki.ubuntu.com/FooBar
     OpenPGP keys:
     12345678
-    OpenID login URL:
+    OpenID login:
     http://openid.launchpad.dev/+id/name16_oid
 
 Other users who visit the page do not see the URL.
