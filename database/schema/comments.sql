@@ -220,6 +220,7 @@ COMMENT ON COLUMN BugTracker.title IS 'A title for the bug tracker, used in list
 COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the people responsible for that bug tracker. This allows us to coordinate the syncing of bugs to and from that bug tracker with the responsible people on the other side.';
 COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URLs for relevant pages in the bug tracker based on this baseurl.';
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
+COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
 
 -- BugTrackerAlias
 
