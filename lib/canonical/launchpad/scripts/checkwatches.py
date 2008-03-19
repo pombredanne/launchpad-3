@@ -13,6 +13,7 @@ import sys
 import pytz
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -303,6 +304,15 @@ class BugWatchUpdater(object):
 
         return launchpad_status
 
+    def _getOldestLastChecked(self, bug_watches):
+        """Return the oldest lastchecked attribute of the bug watches."""
+        if len(bug_watches) == 0:
+            return None
+        bug_watch_lastchecked_times = sorted(
+            bug_watch.lastchecked
+            for bug_watch in bug_watches)
+        return bug_watch_lastchecked_times[0]
+
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
@@ -332,6 +342,21 @@ class BugWatchUpdater(object):
         self.log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
+        old_bug_watches = [
+            bug_watch for bug_watch in bug_watches
+            if bug_watch.lastchecked is not None]
+        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
+        if oldest_lastchecked is not None:
+            # Adjust for possible time skew, and some more, just to be safe.
+            oldest_lastchecked -= (
+                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
+
+        remote_old_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in old_bug_watches))
+        remote_new_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch not in old_bug_watches))
+
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
         self.txn.commit()
@@ -343,7 +368,16 @@ class BugWatchUpdater(object):
             if (server_time is not None and
                 abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
                 raise TooMuchTimeSkew(abs(server_time - now))
-            remotesystem.initializeRemoteBugDB(remote_ids)
+
+            if len(remote_old_ids) > 0 and server_time is not None:
+                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                    remote_old_ids, oldest_lastchecked)
+            else:
+                old_ids_to_check = list(remote_old_ids)
+
+            remote_ids_to_check = sorted(
+                set(remote_new_ids + old_ids_to_check))
+            remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should
             # have been updated before re-raising it. We also update the
@@ -361,6 +395,7 @@ class BugWatchUpdater(object):
         self.txn.begin()
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
+        non_modified_bugs = set(remote_ids).difference(remote_ids_to_check)
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.import_comments)
@@ -371,6 +406,12 @@ class BugWatchUpdater(object):
                 " trusted. No comments will be imported.")
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
+            for bug_watch in bug_watches:
+                bug_watch.lastchecked = UTC_NOW
+            if bug_id in non_modified_bugs:
+                # No need to try to update it, if it wasn't modified.
+                continue
+
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 new_remote_status = None
@@ -415,7 +456,6 @@ class BugWatchUpdater(object):
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
-                    bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = error
                     if new_malone_status is not None:
                         bug_watch.updateStatus(new_remote_status,
