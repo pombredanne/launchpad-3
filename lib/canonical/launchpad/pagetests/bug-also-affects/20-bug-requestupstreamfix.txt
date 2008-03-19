@@ -49,6 +49,14 @@ will be shown when trying to add the task, asking us to confirm that
 we want to add the task without a bug watch.
 
     >>> user_browser.getControl('I just want to register').selected = True
+    >>> print_upstream_linking_form(user_browser)
+    ( ) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    (*) I just want to register that it is upstream right now; I
+        don't have any way to link it.
+
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://.../ubuntu/+source/evolution/+bug/6/+choose-affected-product'
