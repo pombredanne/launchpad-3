@@ -38,7 +38,7 @@
         <tr>
           <td colspan="2">
             <div class="formHelp">
-              Enter details below for only the selected Repository type.
+              Enter details for the selected repository type.
             </div>
           </td>
         </tr>
@@ -70,12 +70,6 @@
         <tal:widget define="widget nocall:view/widgets/cvs_module">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
-
-        <tal:show-review-status condition="view/show_review_status">
-          <tal:widget define="widget nocall:view/widgets/review_status">
-            <metal:block use-macro="context/@@launchpad_form/widget_row" />
-          </tal:widget>
-        </tal:show-review-status>
 
       </table>
       <input tal:replace="structure view/rcs_type_emptymarker" />

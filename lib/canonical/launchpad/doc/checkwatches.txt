@@ -173,18 +173,18 @@ requests are actually made.
 
     >>> from canonical.launchpad.components import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> original_log = externalbugtracker.log
+    >>> updater = BugWatchUpdater(transaction)
+    >>> original_log = updater.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> transaction.commit()
     >>> try:
-    ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
     ...     updater.log = FakeLogger()
     ...     updater.updateBugTrackers([example_bug_tracker.name])
     ... finally:
-    ...     externalbugtracker.log = original_log
+    ...     updater.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com

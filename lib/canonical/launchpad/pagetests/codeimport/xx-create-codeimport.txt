@@ -1,6 +1,6 @@
 = Creating a code import =
 
-Users are able to specificly request a code import of their
+Users are able to specifically request a code import of their
 project's code.  The main link to this is a large button on
 the code home page "Import your project".
 
@@ -15,6 +15,14 @@ the code home page "Import your project".
     >>> print browser.title
     Request a code import
 
+There is a cancel link on this page near the buttons to take the
+user back to the main code page.
+
+    >>> browser.getLink('Cancel').click()
+    >>> print browser.url
+    http://code.launchpad.dev/
+    >>> browser.getLink(id="new-code-import").click()
+
 
 == Requesting a Subversion import ==
 
@@ -28,10 +36,10 @@ The user is required to enter a project that the import is for,
 a name for the import branch, and a subversion branch location.
 
     >>> browser.getControl('Project').value = "firefox"
-    >>> browser.getControl('Name').value = "imported"
-    >>> browser.getControl('Branch').value = (
+    >>> browser.getControl('Branch Name').value = "imported"
+    >>> browser.getControl('Branch URL').value = (
     ...     "http://svn.example.com/firefox/trunk")
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Request Import').click()
 
 When the user clicks continue, the import branch is created
 
@@ -47,19 +55,19 @@ The user is also subscribed to the branch to get notifications.
     No Privileges Person
 
 
-== Requesting s CVS import ==
+== Requesting a CVS import ==
 
 The user is required to enter both the CVS root and module in order
 to identify the CVS branch.  A project and branch name are also required.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "firefox"
-    >>> browser.getControl('Name').value = "import2"
+    >>> browser.getControl('Branch Name').value = "import2"
     >>> browser.getControl('CVS').click()
     >>> browser.getControl('Repository').value = (
     ...     ":pserver:anonymous@cvs.example.com:/mozilla/cvs")
     >>> browser.getControl('Module').value = "firefox"
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Request Import').click()
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
     Status: Pending Review
@@ -77,12 +85,12 @@ the validation message points the user to the existing branch.
 The error is shown even if the project is different.
 
     >>> browser.getControl('Project').value = "thunderbird"
-    >>> browser.getControl('Name').value = "imported"
+    >>> browser.getControl('Branch Name').value = "imported"
     >>> browser.getControl('CVS').click()
     >>> browser.getControl('Repository').value = (
     ...     ":pserver:anonymous@cvs.example.com:/mozilla/cvs")
     >>> browser.getControl('Module').value = "firefox"
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Request Import').click()
 
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
@@ -91,9 +99,9 @@ The error is shown even if the project is different.
     the imported branch ~vcs-imports/firefox/import2.
 
     >>> browser.getControl('Subversion').click()
-    >>> browser.getControl('Branch').value = (
+    >>> browser.getControl('Branch URL').value = (
     ...     "http://svn.example.com/firefox/trunk")
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Request Import').click()
 
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
@@ -111,10 +119,10 @@ one.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "firefox"
-    >>> browser.getControl('Name').value = "imported"
-    >>> browser.getControl('Branch').value = (
+    >>> browser.getControl('Branch Name').value = "imported"
+    >>> browser.getControl('Branch URL').value = (
     ...     "http://svn.example.com/firefox/other")
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Request Import').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.

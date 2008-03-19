@@ -109,12 +109,19 @@ imports appear again.
 
 If we create a lot of imports, the listing view will be batched.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('david.allouche@canonical.com')
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
+    >>> # There is an issue in the middle of the makeImports here where
+    >>> # a rollback was occurring.  After chasing the impossible problem
+    >>> # for a few hours, jamesh suggested gc.collect().  Since this works
+    >>> # now, I'm erecting an SEP field.
+    >>> import gc
+    >>> ignored = gc.collect()
     >>> for i in range(10):
     ...     new_import = factory.makeCodeImport()
+
     >>> logout()
 
     >>> browser.open('http://code.launchpad.dev/+code-imports')

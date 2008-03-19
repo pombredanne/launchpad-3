@@ -60,6 +60,7 @@
     <include file="distrocomponentuploader.zcml" />
     <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
+    <include file="distroseriespackagecache.zcml" />
     <include file="distroseriessourcepackagerelease.zcml" />
     <include file="distroserieslanguage.zcml" />
     <include file="distroarchseries.zcml" />

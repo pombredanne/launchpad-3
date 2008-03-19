@@ -38,6 +38,7 @@ class CodeImport(SQLBase):
 
     implements(ICodeImport)
     _table = 'CodeImport'
+    _defaultOrder = ['id']
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
