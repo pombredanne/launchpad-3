@@ -945,19 +945,17 @@ class ProductSeriesSourceSetView:
         return html
 
 
-class ProductSeriesSourceListView:
+class ProductSeriesSourceListView(LaunchpadView):
     """A listing of all the running imports.
 
     We take 'running' to mean 'has importstatus==SYNCING'."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.text = request.form.get('text', None)
-
+    def initialize(self):
+        self.text = self.request.get('text')
         results = getUtility(IProductSeriesSet).searchImports(
             text=self.text, importstatus=ImportStatus.SYNCING)
-        self.batchnav = BatchNavigator(results, request)
+
+        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesShortLink(DefaultShortLink):
