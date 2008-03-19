@@ -24,13 +24,13 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    branch_name_validator, CodeImportReviewStatus, IBranchSet,
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities,
-    RevisionControlSystems)
+    branch_name_validator, CodeImportJobState, CodeImportReviewStatus,
+    IBranchSet, ICodeImport, ICodeImportJobWorkflow, ICodeImportSet,
+    ILaunchpadCelebrities, RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEdotFormView,
-    LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -91,111 +91,27 @@ class CodeImportView(LaunchpadView):
         self.title = "Code Import for %s" % (self.context.product.name,)
 
 
-class CodeImportNewView(LaunchpadFormView):
-    """The view to request a new code import."""
+class CodeImportBaseView(LaunchpadFormView):
+    """A base view for both new and edit code import views."""
 
-    for_input = True
-    label = 'Request a code import'
     schema = ICodeImport
-    field_names = [
-        'product', 'rcs_type', 'svn_branch_url', 'cvs_root', 'cvs_module',
-        ]
 
-    custom_widget('rcs_type', LaunchpadRadioWidget)
     custom_widget('cvs_root', StrippedTextWidget, displayWidth=50)
     custom_widget('cvs_module', StrippedTextWidget, displayWidth=20)
     custom_widget('svn_branch_url', URIWidget, displayWidth=50)
 
-    initial_values = {
-        'rcs_type': RevisionControlSystems.SVN,
-        'branch_name': 'trunk',
-        }
-
-    @property
-    def cancel_url(self):
-        """Cancel should take the user back to the root site."""
-        return '/'
+    @cachedproperty
+    def _super_user(self):
+        """Is the user an admin or member of vcs-imports?"""
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.vcs_imports))
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for rcs locations."""
         # No field in this view needs an optional marker, so we can be
         # simple here.
         return False
-
-    def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        # Add in the field for the branch name.
-        name_field = form.Fields(
-            TextLine(
-                __name__='branch_name',
-                title=_('Branch Name'), required=True, description=_(
-                    "This will be used in the branch URL to identify the "
-                    "imported branch.  Examples: main, trunk."),
-                constraint=branch_name_validator),
-            render_context=self.render_context)
-        self.form_fields = self.form_fields + name_field
-
-    def setUpWidgets(self):
-        LaunchpadFormView.setUpWidgets(self)
-
-        # Extract the radio buttons from the rcs_type widget, so we can
-        # display them separately in the form.
-        soup = BeautifulSoup(self.widgets['rcs_type']())
-        [cvs_button, svn_button, empty_marker] = soup.findAll('input')
-        cvs_button['onclick'] = 'updateWidgets()'
-        svn_button['onclick'] = 'updateWidgets()'
-        # The following attributes are used only in the page template.
-        self.rcs_type_cvs = str(cvs_button)
-        self.rcs_type_svn = str(svn_button)
-        self.rcs_type_emptymarker = str(empty_marker)
-
-    def _create_import(self, data, status):
-        """Create the code import."""
-        return getUtility(ICodeImportSet).new(
-            registrant=self.user,
-            product=data['product'],
-            branch_name=data['branch_name'],
-            rcs_type=data['rcs_type'],
-            svn_branch_url=data['svn_branch_url'],
-            cvs_root=data['cvs_root'],
-            cvs_module=data['cvs_module'],
-            review_status=status)
-
-    @action(_('Request Import'), name='request_import')
-    def request_import_action(self, action, data):
-        """Create the code_import, and subscribe the user to the branch."""
-        code_import = self._create_import(data, None)
-
-        # Subscribe the user.
-        code_import.branch.subscribe(
-            self.user,
-            BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.NODIFF)
-
-        self.next_url = canonical_url(code_import.branch)
-
-        self.request.response.addNotification("""
-            New code import created. The code import operators
-            have been notified and the request will be reviewed shortly.""")
-
-    def _showApprove(self, ignored):
-        """Is the user an admin or member of vcs-imports?"""
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self.user.inTeam(celebs.admin) or
-                self.user.inTeam(celebs.vcs_imports))
-
-    @action(_('Create Approved Import'), name='approve',
-            condition=_showApprove)
-    def approve_action(self, action, data):
-        """Create the code_import, and subscribe the user to the branch."""
-        code_import = self._create_import(
-            data, CodeImportReviewStatus.REVIEWED)
-
-        # Don't subscribe the requester as they are an import operator.
-        self.next_url = canonical_url(code_import.branch)
-
-        self.request.response.addNotification(
-            "New reviewed code import created.")
 
     def setSecondaryFieldError(self, field, error):
         """Set the field error only if there isn't an error already."""
@@ -245,6 +161,102 @@ class CodeImportNewView(LaunchpadFormView):
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
+
+
+class CodeImportNewView(CodeImportBaseView):
+    """The view to request a new code import."""
+
+    for_input = True
+    label = 'Request a code import'
+    field_names = [
+        'product', 'rcs_type', 'svn_branch_url', 'cvs_root', 'cvs_module',
+        ]
+
+    custom_widget('rcs_type', LaunchpadRadioWidget)
+
+    initial_values = {
+        'rcs_type': RevisionControlSystems.SVN,
+        'branch_name': 'trunk',
+        }
+
+    @property
+    def cancel_url(self):
+        """Cancel should take the user back to the root site."""
+        return '/'
+
+    def setUpFields(self):
+        CodeImportBaseView.setUpFields(self)
+        # Add in the field for the branch name.
+        name_field = form.Fields(
+            TextLine(
+                __name__='branch_name',
+                title=_('Branch Name'), required=True, description=_(
+                    "This will be used in the branch URL to identify the "
+                    "imported branch.  Examples: main, trunk."),
+                constraint=branch_name_validator),
+            render_context=self.render_context)
+        self.form_fields = self.form_fields + name_field
+
+    def setUpWidgets(self):
+        CodeImportBaseView.setUpWidgets(self)
+
+        # Extract the radio buttons from the rcs_type widget, so we can
+        # display them separately in the form.
+        soup = BeautifulSoup(self.widgets['rcs_type']())
+        [cvs_button, svn_button, empty_marker] = soup.findAll('input')
+        cvs_button['onclick'] = 'updateWidgets()'
+        svn_button['onclick'] = 'updateWidgets()'
+        # The following attributes are used only in the page template.
+        self.rcs_type_cvs = str(cvs_button)
+        self.rcs_type_svn = str(svn_button)
+        self.rcs_type_emptymarker = str(empty_marker)
+
+    def _create_import(self, data, status):
+        """Create the code import."""
+        return getUtility(ICodeImportSet).new(
+            registrant=self.user,
+            product=data['product'],
+            branch_name=data['branch_name'],
+            rcs_type=data['rcs_type'],
+            svn_branch_url=data['svn_branch_url'],
+            cvs_root=data['cvs_root'],
+            cvs_module=data['cvs_module'],
+            review_status=status)
+
+    @action(_('Request Import'), name='request_import')
+    def request_import_action(self, action, data):
+        """Create the code_import, and subscribe the user to the branch."""
+        code_import = self._create_import(data, None)
+
+        # Subscribe the user.
+        code_import.branch.subscribe(
+            self.user,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.NODIFF)
+
+        self.next_url = canonical_url(code_import.branch)
+
+        self.request.response.addNotification("""
+            New code import created. The code import operators
+            have been notified and the request will be reviewed shortly.""")
+
+    def _showApprove(self, ignored):
+        """Is the user an admin or member of vcs-imports?"""
+        return self._super_user
+
+    @action(_('Create Approved Import'), name='approve',
+            condition=_showApprove)
+    def approve_action(self, action, data):
+        """Create the code_import, and subscribe the user to the branch."""
+        code_import = self._create_import(
+            data, CodeImportReviewStatus.REVIEWED)
+
+        # Don't subscribe the requester as they are an import operator.
+        self.next_url = canonical_url(code_import.branch)
+
+        self.request.response.addNotification(
+            "New reviewed code import created.")
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         rcs_type = data['rcs_type']
@@ -281,7 +293,7 @@ class CodeImportNewView(LaunchpadFormView):
                     branch_name=existing_branch.name))
 
 
-class CodeImportEditView(LaunchpadEditFormView):
+class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
     This view is registered against the branch, but edits the
@@ -291,8 +303,9 @@ class CodeImportEditView(LaunchpadEditFormView):
     internals to do the associated mappings.
     """
 
-    schema = ICodeImport
-
+    # Need this to render the context to peopulate the form fields.
+    # Added here as the base class isn't LaunchpadEditFormView.
+    render_context = True
     field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
 
     def initialize(self):
@@ -301,8 +314,8 @@ class CodeImportEditView(LaunchpadEditFormView):
         if self.code_import is None:
             raise NotFoundError
         # The next location is the branch details page.
-        self.next_url = canonical_url(self.context)
-        LaunchpadFormView.initialize(self)
+        self.cancel_url = self.next_url = canonical_url(self.context)
+        CodeImportBaseView.initialize(self)
 
     @property
     def adapters(self):
@@ -310,7 +323,7 @@ class CodeImportEditView(LaunchpadEditFormView):
         return {ICodeImport: self.code_import}
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
+        CodeImportBaseView.setUpFields(self)
 
         # If the import is a Subversion import, then omit the CVS
         # fields, and vice versa.
@@ -321,13 +334,6 @@ class CodeImportEditView(LaunchpadEditFormView):
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
-    @cachedproperty
-    def _super_user(self):
-        """Is the user an admin or member of vcs-imports?"""
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self.user.inTeam(celebs.admin) or
-                self.user.inTeam(celebs.vcs_imports))
-
     def _showButtonForStatus(self, status):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
@@ -336,30 +342,31 @@ class CodeImportEditView(LaunchpadEditFormView):
         """Show the Approve button if the import is not reviewed."""
         return self._showButtonForStatus(CodeImportReviewStatus.REVIEWED)
 
+    def _showInvalidate(self, ignored):
+        """Show the Approve button if the import is not invalid."""
+        return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
+
+    def _showSuspend(self, ignored):
+        """Show the Suspend button if the import is not suspended."""
+        return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        """Update the details."""
+        self.code_import.updateFromData(data, self.user)
+
     @action(_('Approve'), name='approve', condition=_showApprove)
     def approve_action(self, action, data):
         """Approve the import."""
         self.code_import.approve(data, self.user)
-
-    def _showInvalidate(self, ignored):
-        """Show the Approve button if the import is not invalid."""
-        return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
 
     @action(_('Set Invalid'), name='invalidate', condition=_showInvalidate)
     def invalidate_action(self, action, data):
         """Invalidate the import."""
         self.code_import.invalidate(data, self.user)
 
-    def _showSuspend(self, ignored):
-        """Show the Suspend button if the import is not suspended."""
-        return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
-
     @action(_('Suspend'), name='suspend', condition=_showSuspend)
     def suspend_action(self, action, data):
-        """Approve the import."""
+        """Suspend the import."""
         self.code_import.suspend(data, self.user)
 
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        """Update the details."""
-        self.code_import.updateFromData(data, self.user)

@@ -6,14 +6,8 @@
   i18n_domain="launchpad">
 
   <!-- CodeImportJob -->
-
   <content class="canonical.launchpad.database.CodeImportJob">
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImportJob"
-      />
-    <allow
-      interface="canonical.launchpad.interfaces.ICodeImportJobPublic" />
+    <allow interface="canonical.launchpad.interfaces.ICodeImportJob" />
   </content>
 
   <!-- CodeImportJobSet -->

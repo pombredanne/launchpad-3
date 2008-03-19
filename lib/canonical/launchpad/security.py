@@ -881,16 +881,6 @@ class EditCodeImport(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportJob.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportJob
-
-
 class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportJobSet utility.
 

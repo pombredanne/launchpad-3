@@ -85,8 +85,8 @@ def code_import_status_updated(code_import, user):
             if subscription.notification_level in interested_levels:
                 template_params['rationale'] = (
                     'You are receiving this email as you are subscribed '
-                    'to the branch.'),
-                if subscription.person.isTeam():
+                    'to the branch.')
+                if not subscription.person.isTeam():
                     # Give the users a link to unsubscribe.
                     template_params['unsubscribe'] = (
                         "\nTo unsubscribe from this branch go to "

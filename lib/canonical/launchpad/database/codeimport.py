@@ -23,10 +23,12 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportReviewStatus, IBranchSet,
+    BranchCreationException, BranchType, CodeImportReviewStatus,
+    CodeImportJobState, IBranchSet,
     ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
 from canonical.launchpad.mailout.codeimport import code_import_status_updated
@@ -93,17 +95,35 @@ class CodeImport(SQLBase):
 
     import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
 
+    def _removeJob(self):
+        """If there is a pending job, remove it."""
+        job = self.import_job
+        if job is not None:
+            if job.state == CodeImportJobState.PENDING:
+                CodeImportJobWorkflow().deletePendingJob(self)
+            else:
+                # XXX thumper 2008-03-19
+                # When we have job killing, we might want to kill a running
+                # job.
+                pass
+        else:
+            # No job, so nothing to do.
+            pass
+
     def approve(self, data, user):
         """See `ICodeImport`."""
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
+        CodeImportJobWorkflow().newJob(self)
 
     def suspend(self, data, user):
         """See `ICodeImport`."""
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
+        self._removeJob()
 
     def invalidate(self, data, user):
         """See `ICodeImport`."""
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
+        self._removeJob()
 
     def _setStatusAndEmail(self, data, user, status):
         """Update the review_status and email interested parties."""
@@ -161,6 +181,11 @@ class CodeImportSet:
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(SQLObjectCreatedEvent(code_import))
+
+        # If created in the reviewd state, create a job.
+        if review_status == CodeImportReviewStatus.REVIEWED:
+            CodeImportJobWorkflow().newJob(code_import)
+
         return code_import
 
     def delete(self, code_import):
