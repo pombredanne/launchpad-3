@@ -54,8 +54,7 @@ form.
     ...     packages = find_tags_by_class(contents, 'ppa_package_row')
     ...     for pkg in packages:
     ...         print extract_text(pkg)
-    ...     empty_section = find_tag_by_id(
-    ...         admin_browser.contents, 'empty-result')
+    ...     empty_section = find_tag_by_id(contents, 'empty-result')
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
 
@@ -269,13 +268,6 @@ published source packages.
     >>> print extract_text(find_main_content(admin_browser.contents))
     Delete packages from PPA for No Privileges Person
     This PPA does not contain any source packages published.
-
-The user can go back to the PPA index page using the breadcrumb link.
-
-    >>> admin_browser.getLink('PPA for No Privileges Person').click()
-    >>> admin_browser.title
-    'PPA for No Privileges Person'
-
 
 == Removing source partially deleted ==
 

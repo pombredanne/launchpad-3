@@ -6,11 +6,14 @@
 __metaclass__ = type
 
 __all__ = [
+    'ArchiveDependencyError',
     'ArchivePurpose',
     'IArchive',
-    'IPPAActivateForm',
+    'IArchiveEditDependenciesForm',
     'IArchivePackageDeletionForm',
+    'IArchiveEditDependenciesForm',
     'IArchiveSet',
+    'IPPAActivateForm',
     ]
 
 from zope.interface import Interface, Attribute
@@ -19,6 +22,17 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class ArchiveDependencyError(Exception):
+    """Raised when an `IArchiveDependency` does not fit the context archive.
+
+    A given dependency is considered inappropriate when:
+
+     * It is the archive itself,
+     * It is not a PPA,
+     * It is already recorded.
+    """
 
 
 class IArchive(IHasOwner):
@@ -42,6 +56,11 @@ class IArchive(IHasOwner):
         title=_("Private"), required=False,
         description=_("Whether the PPA is private to the owner or not."))
 
+    require_virtualized = Bool(
+        title=_("Require Virtualized Builder"), required=False,
+        description=_("Whether this archive requires its packages to be "
+                      "built on a virtual builder."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
         max=(20 * 1024),
@@ -55,8 +74,24 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    sources_cached = Int(
+        title=_("Number of sources cached"), required=False,
+        description=_("Number of source packages cached in this PPA."))
+
+    binaries_cached = Int(
+        title=_("Number of binaries cached"), required=False,
+        description=_("Number of binary packages cached in this PPA."))
+
+    package_description_cache = Attribute(
+        "Concatenation of the source and binary packages published in this "
+        "archive. Its content is used for indexed searches across archives.")
+
     distribution = Attribute(
         "The distribution that uses or is used by this archive.")
+
+    dependencies = Attribute(
+        "Archive dependencies recorded for this archive and ordered by owner "
+        "displayname.")
 
     archive_url = Attribute("External archive URL.")
 
@@ -156,6 +191,45 @@ class IArchive(IHasOwner):
         :return: True or False
         """
 
+    def updateArchiveCache():
+        """Concentrate cached information about the archive contents.
+
+        Group the relevant package information (source name, binary names,
+        binary summaries) strings in the IArchive.package_description_cache
+        search indexes (fti).
+
+        Updates 'sources_cached' and 'binaries_cached' counters.
+
+        Also include owner 'name' and 'displayname' to avoid inpecting the
+        Person table indexes while searching.
+        """
+
+    def getArchiveDependency(dependency):
+        """Return the `IArchiveDependency` object for the given dependency.
+
+        :param dependency: is an `IArchive` object.
+        :return: `IArchiveDependency` or None if a corresponding object
+            could not be found.
+        """
+
+    def removeArchiveDependency(dependency):
+        """Remove the `IArchiveDependency` record for the given dependency.
+
+        :param dependency: is an `IArchive` object.
+        """
+
+    def addArchiveDependency(dependency):
+        """Record an archive dependency record for the context archive.
+
+        Raises `ArchiveDependencyError` if given 'dependency' does not fit
+        the context archive.
+
+        :param dependency: is an `IArchive` object.
+        :return: a `IArchiveDependency` object targeted to the context
+            `IArchive` requiring 'dependency' `IArchive`.
+        """
+
+
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
@@ -181,6 +255,14 @@ class IArchivePackageDeletionForm(Interface):
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
         description=_("The reason why the package is being deleted."))
+
+
+class IArchiveEditDependenciesForm(Interface):
+    """Schema used to edit dependencies settings within a archive."""
+
+    dependency_candidate = Choice(
+        title=_('PPA Dependency'), required=False, vocabulary='PPA',
+        description=_("Add a new PPA dependency."))
 
 
 class IArchiveSet(Interface):

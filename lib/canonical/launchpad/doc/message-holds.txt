@@ -1,0 +1,201 @@
+= Message Holds =
+
+When messages are posted to mailing lists, they may sometimes get held
+for team administrator approval.  This happens for example, when the
+sender of the message is not a member of the mailing list and their
+personal standing in Launchpad is unknown.
+
+    >>> from canonical.launchpad.ftests import mailinglists_helper
+    >>> team, mailing_list = mailinglists_helper.new_team('test-one', True)
+
+
+== Initial hold ==
+
+When the message is initially held for approval, a message object is
+first created.
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> message_set = getUtility(IMessageSet)
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: My first test
+    ... Message-ID: <first-post>
+    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
+    ...
+    ... This is my first post!
+    ... """)
+
+Then this message is inserted into the approval queue.
+
+    >>> held_message = mailing_list.holdMessage(message)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IMessageApproval
+    >>> verifyObject(IMessageApproval, held_message)
+    True
+
+The new hold has several important pieces of information, such as the
+message id of the held message...
+
+    >>> print held_message.message_id
+    <first-post>
+
+...the person who posted the message...
+
+    >>> print held_message.posted_by.displayname
+    Foo Bar
+
+...and the date it was posted.
+
+    >>> print held_message.posted_date
+    2000-08-01 01:08:59+00:00
+
+The hold record contains a reference to the mailing list that the
+message was posted to....
+
+    >>> print held_message.mailing_list.team.displayname
+    Test One
+
+...and to the content of the message in the librarian.
+
+    >>> import transaction
+    >>> transaction.commit()
+    >>> held_message.posted_message.open()
+    >>> try:
+    ...     print held_message.posted_message.read()
+    ... finally:
+    ...     held_message.posted_message.close()
+    From: foo.bar@canonical.com
+    To: test-one@lists.launchpad.dev
+    Subject: My first test
+    Message-ID: <first-post>
+    Date: Fri, 01 Aug 2000 01:08:59 -0000
+    <BLANKLINE>
+    This is my first post!
+    <BLANKLINE>
+
+The record also contains the status of this held message.
+
+    >>> held_message.status
+     <DBItem PostedMessageStatus.NEW, (0) New status>
+
+Because this message has not yet been approved, it has no disposition
+information.
+
+    >>> print held_message.disposed_by
+    None
+    >>> print held_message.disposal_date
+    None
+
+
+== Approving the message ==
+
+No Privileges Person is the team owner who reviews the held message, and
+he decides that it is appropriate for the mailing list, so he approves
+it.
+
+    >>> owner = mailing_list.team.teamowner
+    >>> print owner.displayname
+    No Privileges Person
+    >>> held_message.approve(owner)
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(held_message)
+
+This sets the status of the hold to APPROVAL_PENDING because Mailman
+still needs to see this approval.
+
+    >>> held_message.status
+    <DBItem PostedMessageStatus.APPROVAL_PENDING, (20) Approval pending>
+
+The message has been disposed by Foo Bar on today's date.
+
+    >>> print held_message.disposed_by.displayname
+    No Privileges Person
+    >>> held_message.disposal_date is not None
+    True
+
+
+== Rejecting the message ==
+
+Held messages can also be rejected.
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: My second test
+    ... Message-ID: <second-post>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... This is my second post!
+    ... """)
+    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message.reject(owner)
+    >>> syncUpdate(held_message)
+
+    >>> print held_message.message_id
+    <second-post>
+    >>> held_message.status
+    <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
+    >>> print held_message.disposed_by.displayname
+    No Privileges Person
+    >>> held_message.disposal_date is not None
+    True
+
+
+== Message sets ==
+
+It's convenient to be able to request all of the new messages, or all
+messages that are pending approval or rejection.  The
+IMessageApprovalSet interface provides these conveniences.
+
+A few more messages are held for approval.
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: My third test
+    ... Message-ID: <third-post>
+    ... Date: Fri, 01 Aug 2000 01:09:01 -0000
+    ...
+    ... This is my third post!
+    ... """)
+    >>> held_message = mailing_list.holdMessage(message)
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: My fourth test
+    ... Message-ID: <fourth-post>
+    ... Date: Fri, 01 Aug 2000 01:09:02 -0000
+    ...
+    ... This is my fourth post!
+    ... """)
+    >>> held_message = mailing_list.holdMessage(message)
+
+    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> hold_set = getUtility(IMessageApprovalSet)
+    >>> from operator import attrgetter
+    >>> def print_messages(status):
+    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
+    ...                            key=attrgetter('message_id'))
+    ...     for hold in held_messages:
+    ...         messages = message_set.get(hold.message_id)
+    ...         assert len(messages) <= 1, 'Duplicate message-ids'
+    ...         print hold.message_id, messages[0].subject
+
+Here are all the messages pending approval...
+
+    >>> from canonical.launchpad.interfaces import PostedMessageStatus
+    >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
+    <first-post> My first test
+
+...and all the messages pending rejection...
+
+    >>> print_messages(PostedMessageStatus.REJECTION_PENDING)
+    <second-post> My second test
+
+...and all the messages where are waiting for any disposition.
+
+    >>> print_messages(PostedMessageStatus.NEW)
+    <fourth-post> My fourth test
+    <third-post> My third test

@@ -1,0 +1,144 @@
+= Reviewing a person =
+
+A person's +review page is available to Launchpad administrators so that
+they can change certain aspects of the person's account.  For example,
+the administrator can change the person's user name, display name,
+password, and standing.
+
+
+== Changing names ==
+
+A Launchpad administrator can change the person's user name.
+
+    >>> admin_browser.open('http://launchpad.dev/~stub/+review')
+    >>> print admin_browser.title
+    Review Stuart Bishop
+    >>> admin_browser.getControl('Name', index=0).value = 'stuart'
+    >>> admin_browser.getControl('Change').click()
+
+Stuart's account now lives at ~stuart instead of ~stub.
+
+    >>> admin_browser.open('http://launchpad.dev/~stub')
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: ..., name: u'~stub'
+    >>> admin_browser.open('http://launchpad.dev/~stuart')
+    >>> print admin_browser.title
+    Stuart Bishop in Launchpad
+
+Similarly, Stuart's display name can be changed from the review page.
+
+    >>> admin_browser.getLink('Administer').click()
+    >>> print admin_browser.getControl('Display Name').value
+    Stuart Bishop
+    >>> admin_browser.getControl('Display Name').value = 'Bishop, Stuart'
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Review Bishop, Stuart
+
+
+== Passwords ==
+
+The review page allows the Launchpad administrator to change a person's
+password.  The new password has to be typed twice, and both passwords must
+match.
+
+    >>> admin_browser.getControl('Password').value = 'foo'
+    >>> admin_browser.getControl('Retype the password').value = 'bar'
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Review Bishop, Stuart
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    An error occurred.
+    There is a problem with the information you entered.
+    Please fix it and try again.
+    Passwords do not match.
+
+The password fields are empty because for security reasons, we don't return
+what the user typed.
+
+    >>> admin_browser.getControl('Password').value
+    ''
+    >>> admin_browser.getControl('Retype the password').value
+    ''
+
+To change the password, type it twice correctly.
+
+    >>> admin_browser.getControl('Password').value = 'foo'
+    >>> admin_browser.getControl('Retype the password').value = 'foo'
+    >>> admin_browser.getControl('Change').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Updated on ...
+
+Leaving the password fields blank will be accepted, as this means 'keep the
+current value'.
+
+    >>> admin_browser.getControl('Password').value = ''
+    >>> admin_browser.getControl('Retype the password').value = ''
+    >>> admin_browser.getControl('Change').click()
+
+    # No messages means nothing changed.
+    >>> get_feedback_messages(admin_browser.contents)
+    []
+
+
+== Personal standing ==
+
+A person's standing is used to control how they are allowed to post to
+mailing lists to which they are not subscribed.  For example, a person
+in good standing can post to any public mailing list on Launchpad.
+
+A person's standing is usually determined automatically based on their
+posting behavior and the approval of any held non-member posts.
+However, the Launchpad administrator can manually change a person's
+standing.
+
+A person starts out with unknown standing.
+
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Unknown standing
+
+The administrator has four choices of standing for the user.
+
+    >>> admin_browser.getControl('Personal standing').value = ['POOR']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Poor standing
+
+    >>> admin_browser.getControl('Personal standing').value = ['GOOD']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Good standing
+
+    >>> admin_browser.getControl('Personal standing').value = ['EXCELLENT']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Excellent standing
+
+    >>> admin_browser.getControl('Personal standing').value = ['UNKNOWN']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Unknown standing
+
+Optionally, the Launchpad administrator can provide a reason for why the
+standing is what it is.
+
+    >>> admin_browser.getControl('Personal standing').value = ['POOR']
+    >>> admin_browser.getControl('Reason for personal standing').value = (
+    ...     'Because Stuart is spamming me!')
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Poor standing
+    >>> print admin_browser.getControl('Reason for personal standing').value
+    Because Stuart is spamming me!
+
+    >>> admin_browser.getControl('Personal standing').value = ['EXCELLENT']
+    >>> admin_browser.getControl('Reason for personal standing').value = (
+    ...     'Stuart is a good guy after all!')
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.getControl('Personal standing').displayValue[0]
+    Excellent standing
+    >>> print admin_browser.getControl('Reason for personal standing').value
+    Stuart is a good guy after all!

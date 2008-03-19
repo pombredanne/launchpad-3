@@ -8,7 +8,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul tal:condition="context/is_trusted">
+    <ul tal:condition="not: context/archive/purpose/enumvalue:PPA">
       <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
         <a tal:attributes="href binpkg/fmt:url"
            tal:content="string:${binpkg/name} ${binpkg/version}">
@@ -17,7 +17,7 @@
       </li>
     </ul>
 
-    <ul tal:condition="not:context/is_trusted">
+    <ul tal:condition="context/archive/purpose/enumvalue:PPA">
       <li tal:repeat="binpkg context/binarypackages">
          <span tal:content="string:${binpkg/name} ${binpkg/version}">
            foopkg 1.2-3

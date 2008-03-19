@@ -12,8 +12,73 @@ from canonical.launchpad.database import (
     CodeImportSet,
     CodeImportResult,
     )
+from canonical.launchpad.interfaces import (
+    CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
+
+
+class TestCodeImportCreation(unittest.TestCase):
+    """Test the creation of CodeImports."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.factory = LaunchpadObjectFactory()
+
+    def test_new_svn_import(self):
+        """A new subversion code import should have NEW status."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=self.factory.getUniqueURL())
+        self.assertEqual(
+            CodeImportReviewStatus.NEW,
+            code_import.review_status)
+
+    def test_reviewed_svn_import(self):
+        """A specific review status can be set for a new import."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=self.factory.getUniqueURL(),
+            review_status=CodeImportReviewStatus.REVIEWED)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+
+    def test_new_cvs_import(self):
+        """A new CVS code import should have NEW status."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.CVS,
+            cvs_root=self.factory.getUniqueURL(),
+            cvs_module='module')
+        self.assertEqual(
+            CodeImportReviewStatus.NEW,
+            code_import.review_status)
+
+    def test_reviewed_cvs_import(self):
+        """A specific review status can be set for a new import."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.CVS,
+            cvs_root=self.factory.getUniqueURL(),
+            cvs_module='module',
+            review_status=CodeImportReviewStatus.REVIEWED)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+
 
 class TestCodeImportDeletion(unittest.TestCase):
     """Test the deletion of CodeImports."""

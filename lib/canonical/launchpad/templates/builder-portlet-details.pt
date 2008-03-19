@@ -12,7 +12,7 @@
 
      <b>Location</b>: <span tal:replace="context/url"/><br/>
 
-     <b>Trusted</b>: <span tal:replace="context/trusted"/><br/>
+     <b>Virtual</b>: <span tal:replace="context/virtualized"/><br/>
 
      <b>Description</b>
      <div tal:content="structure context/description/fmt:text-to-html"/>

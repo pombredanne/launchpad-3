@@ -43,8 +43,8 @@ line.
 
     >>> print err
     INFO    creating lockfile
-    INFO    No watches to update on http://bugs.debian.org
     INFO    No watches to update on https://bugzilla.mozilla.org/
+    INFO    No watches to update on http://bugs.debian.org
     INFO    Time for this run: ... seconds.
     <BLANKLINE>
 

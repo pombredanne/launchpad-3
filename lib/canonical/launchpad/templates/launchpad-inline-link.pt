@@ -1,0 +1,8 @@
+<tal:link-enabled condition="context/enabled">
+  <span class="action">
+    <img alt=""
+	 tal:condition="context/icon"
+	 tal:attributes="src context/icon" />
+    <tal:link replace="structure context/@@+link" />
+  </span>
+</tal:link-enabled>

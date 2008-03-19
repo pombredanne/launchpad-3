@@ -14,15 +14,12 @@ import os
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-        AUTOCOMMIT_ISOLATION, DEFAULT_ISOLATION, READ_COMMITTED_ISOLATION,
-        SERIALIZABLE_ISOLATION, ZopelessTransactionManager)
+    ISOLATION_LEVEL_DEFAULT, ZopelessTransactionManager)
 
 import psycopgda.adapter
 
 
 __all__ = [
-    'DEFAULT_ISOLATION', 'AUTOCOMMIT_ISOLATION',
-    'READ_COMMITTED_ISOLATION', 'SERIALIZABLE_ISOLATION',
     'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
     ]
 
@@ -35,8 +32,8 @@ __all__ = [
 # if the host is empty it can be overridden by the standard PostgreSQL
 # environment variables, this feature currently required by Async's
 # office environment.
-dbname = os.environ.get('LP_DBNAME', config.dbname)
-dbhost = os.environ.get('LP_DBHOST', config.dbhost or '')
+dbname = os.environ.get('LP_DBNAME', config.database.dbname)
+dbhost = os.environ.get('LP_DBHOST', config.database.dbhost or '')
 dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
 
 
@@ -79,7 +76,7 @@ def isZopeless():
 
 
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
-                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
+                 implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     registerTypes()
     if dbuser is None:

@@ -14,9 +14,9 @@ is thread safe (not that this will be a problem if we stick with
 simple configuration).
 
     >>> from canonical.config import config
-    >>> config.dbhost
-    'localhost'
-    >>> config.launchpad.db_statement_timeout is None
+    >>> print config.database.dbhost
+    localhost
+    >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
     'launchpad'
@@ -46,8 +46,17 @@ launchpad.testrunner.conf, which extends the default conf.
     'testrunner'
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
-    >>> config.extends.name
-    'schema-lazr.conf'
+    >>> config.extends.filename
+    '.../configs/default/launchpad-lazr.conf'
+
+CanonicalConfig provides __contains__ and __getitem__ to check and
+access lazr.config sections and keys.
+
+    >>> 'launchpad' in config
+    True
+
+    >>> config['launchpad']['default_batch_size']
+    5
 
 
 == Transition from ZConfig to LAZR ==
@@ -89,39 +98,39 @@ lazr.config instance is stored in config._config.
     Traceback (most recent call last):
      ...
     AttributeError: ZConfig or lazr.config instances have no attribute
-    'bad_key'.
+    answertracker.bad_key.
 
 2. When the key is found in the lazr.config instance, the
 lazr.config value is returned. It is assumed that the callsite
 was updated to lazr.conf. For example, The lazr.config schema has
 a database category, and the ZConfig does not.
 
-    >>> config._config.database.answertracker.dbuser
-    'answertracker'
+    >>> config._config.launchpad_session.cookie
+    'launchpad_tests'
 
-    >>> config._cache.testrunner.database.answertracker.dbuser
+    >>> config._cache.testrunner.launchpad_session.cookie
     Traceback (most recent call last):
      ...
-    AttributeError: SectionValue instance has no attribute 'database'
+    AttributeError: SectionValue instance has no attribute 'launchpad_session'
 
-    >>> config.database.answertracker.dbuser
-    'answertracker'
+    >>> config.launchpad_session.cookie
+    'launchpad_tests'
 
 3. When the key is found in ZConfig, only, the ZConfig value is
 returned. The key was probably a ZConfig section; lazr.config does not
 support multi-sections. For example, the ZConfig instance has nested
-hostnames: 'launchpad.vhosts.blueprints.hostname'.
+hostnames: 'mailman.build.build'.
 
-    >>> config._config.launchpad['vhosts'].blueprints.hostname
+    >>> config._config.mailman['build'].build
     Traceback (most recent call last):
       ...
-    KeyError: 'vhosts'
+    KeyError: 'build'
 
-    >>> config._cache.testrunner.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
+    >>> config._cache.testrunner.mailman.build.build
+    False
 
-    >>> config.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
+    >>> config.mailman.build.build
+    False
 
 
 === UnconvertedConfigWarning ===
@@ -149,11 +158,11 @@ key.
     >>> import os
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'true'
 
-    >>> config.launchpad.vhosts.blueprints.hostname
+    >>> config.mailman.build
     Traceback (most recent call last):
      ...
     UnconvertedConfigWarning: Callsite requests a nonexistent key:
-    'launchpad.vhosts'.
+    'mailman.build'.
 
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
 
