@@ -142,7 +142,7 @@ high permissions.
 
 Via the 'administration' form the user not only has access to all fields
 available in the 'edit' form but can also modify the 'builderok',
-'failure_notes', 'virtualised' and 'virtual machine' fields. All the
+'failure_notes', 'virtualized' and 'virtual machine' fields. All the
 consequences of those modifications are covered in the buildd-admin
 documentation.
 

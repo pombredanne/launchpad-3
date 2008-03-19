@@ -34,7 +34,7 @@ class MockBuilder:
         self.url = 'http://fake:0000'
         slave.urlbase = self.url
         self.name = name
-        self.virtualised = True
+        self.virtualized = True
 
     def failbuilder(self, reason):
         self.builderok = False

@@ -17,9 +17,10 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 import pytz
 from zope.component import getUtility
 
-from canonical.lp import initZopeless, DEFAULT_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
+from canonical.lp import initZopeless
 
 
 LOCK_PATH = "/var/lock/"
@@ -201,7 +202,7 @@ class LaunchpadScript:
         self.lock.release(skip_delete=skip_delete)
 
     def run(self, use_web_security=False, implicit_begin=True,
-            isolation=DEFAULT_ISOLATION):
+            isolation=ISOLATION_LEVEL_DEFAULT):
         """Actually run the script, executing zcml and initZopeless."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
         self.txn = initZopeless(

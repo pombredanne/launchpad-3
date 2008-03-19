@@ -359,15 +359,16 @@ class BuilderGroup:
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        # The famous 'flush_updates + clear_cache' will make visible the
-        # DB changes done in process-upload, considering that the
-        # transaction was set with READ_COMMITED_ISOLATION isolation level.
+        # The famous 'flush_updates + clear_cache' will make visible
+        # the DB changes done in process-upload, considering that the
+        # transaction was set with ISOLATION_LEVEL_READ_COMMITED
+        # isolation level.
         cur = cursor()
         cur.execute('SHOW transaction_isolation')
         isolation_str = cur.fetchone()[0]
         assert isolation_str == 'read committed', (
             'BuildMaster/BuilderGroup transaction isolation should be '
-            'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
+            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
 
         original_slave = queueItem.builder.slave
 

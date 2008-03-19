@@ -56,8 +56,8 @@ class IArchive(IHasOwner):
         title=_("Private"), required=False,
         description=_("Whether the PPA is private to the owner or not."))
 
-    require_virtualised = Bool(
-        title=_("Require Virtualised Builder"), required=False,
+    require_virtualized = Bool(
+        title=_("Require Virtualized Builder"), required=False,
         description=_("Whether this archive requires its packages to be "
                       "built on a virtual builder."))
 
@@ -73,6 +73,18 @@ class IArchive(IHasOwner):
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
         )
+
+    sources_cached = Int(
+        title=_("Number of sources cached"), required=False,
+        description=_("Number of source packages cached in this PPA."))
+
+    binaries_cached = Int(
+        title=_("Number of binaries cached"), required=False,
+        description=_("Number of binary packages cached in this PPA."))
+
+    package_description_cache = Attribute(
+        "Concatenation of the source and binary packages published in this "
+        "archive. Its content is used for indexed searches across archives.")
 
     distribution = Attribute(
         "The distribution that uses or is used by this archive.")
@@ -177,6 +189,19 @@ class IArchive(IHasOwner):
         not allowed.  However some archive types allow this.
 
         :return: True or False
+        """
+
+    def updateArchiveCache():
+        """Concentrate cached information about the archive contents.
+
+        Group the relevant package information (source name, binary names,
+        binary summaries) strings in the IArchive.package_description_cache
+        search indexes (fti).
+
+        Updates 'sources_cached' and 'binaries_cached' counters.
+
+        Also include owner 'name' and 'displayname' to avoid inpecting the
+        Person table indexes while searching.
         """
 
     def getArchiveDependency(dependency):

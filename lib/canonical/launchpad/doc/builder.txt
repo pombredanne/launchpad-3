@@ -146,7 +146,7 @@ virtual and raises CannotResumeHost if it isn't.
     >>> bob.resumeSlaveHost()
     Traceback (most recent call last):
     ...
-    CannotResumeHost: Builder is not virtualised.
+    CannotResumeHost: Builder is not virtualized.
 
 For testing purposes resumeSlaveHost returns the stdout and stderr
 buffer resulted from the command.

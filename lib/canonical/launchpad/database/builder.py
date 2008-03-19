@@ -85,7 +85,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['processor', 'virtualised', 'name']
+    _defaultOrder = ['processor', 'virtualized', 'name']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -98,7 +98,7 @@ class Builder(SQLBase):
         validator=public_person_validator, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)
-    virtualised = BoolCol(dbName='virtualised', default=False, notNull=True)
+    virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host', default=None)
@@ -170,8 +170,8 @@ class Builder(SQLBase):
     def resumeSlaveHost(self):
         """See IBuilder."""
         logger = self._getSlaveScannerLogger()
-        if not self.virtualised:
-            raise CannotResumeHost('Builder is not virtualised.')
+        if not self.virtualized:
+            raise CannotResumeHost('Builder is not virtualized.')
 
         if not self.vm_host:
             raise CannotResumeHost('Undefined vm_host.')
@@ -291,8 +291,8 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        assert not (not self.virtualised and
-                    build_queue_item.is_virtualised), (
+        assert not (not self.virtualized and
+                    build_queue_item.is_virtualized), (
             "Attempt to build non-virtual item on a virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
@@ -372,7 +372,7 @@ class Builder(SQLBase):
         self._verifyBuildRequest(build_queue_item, logger)
 
         # If we are building a virtual build, resume the virtual machine.
-        if self.virtualised:
+        if self.virtualized:
             self.resumeSlaveHost()
 
         # Build extra arguments.
@@ -534,7 +534,7 @@ class Builder(SQLBase):
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
-        if not self.virtualised:
+        if not self.virtualized:
             clauses.append("""
                 archive.purpose IN %s
             """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
@@ -615,11 +615,11 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, virtualised=True, vm_host=None):
+            builderok=True, failnotes=None, virtualized=True, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner,
-                       virtualised=virtualised, builderok=builderok,
+                       virtualized=virtualized, builderok=builderok,
                        failnotes=failnotes, vm_host=None)
 
     def get(self, builder_id):

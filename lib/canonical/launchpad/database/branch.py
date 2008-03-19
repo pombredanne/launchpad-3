@@ -66,7 +66,7 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
@@ -717,6 +717,11 @@ class BranchSet:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
+
+    def getBranch(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        return Branch.selectOneBy(
+            owner=owner, product=product, name=branch_name)
 
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.

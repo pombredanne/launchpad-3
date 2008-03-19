@@ -59,7 +59,7 @@ class IBuildQueue(Interface):
         "this job.")
     buildduration = Attribute(
         "Duration of the job, calculated on-the-fly based on buildstart.")
-    is_virtualised = Attribute("See IBuild.is_virtualised.")
+    is_virtualized = Attribute("See IBuild.is_virtualized.")
     is_last_version = Bool(
         title=_("Whether or not the job source is the last version published "
                 "in the archive."),
