@@ -33,6 +33,8 @@ from canonical.launchpad.components.externalbugtracker.bugzilla import *
 from canonical.launchpad.components.externalbugtracker.debbugs import *
 from canonical.launchpad.components.externalbugtracker.mantis import *
 from canonical.launchpad.components.externalbugtracker.roundup import *
+from canonical.launchpad.components.externalbugtracker.sourceforge import *
+from canonical.launchpad.components.externalbugtracker.rt import *
 from canonical.launchpad.components.externalbugtracker.trac import *
 from canonical.launchpad.interfaces import BugTrackerType
 
