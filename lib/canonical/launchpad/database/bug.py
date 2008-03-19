@@ -297,7 +297,7 @@ class Bug(SQLBase):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return len(bugtasks) > 0
+        return bugtasks.count() > 0
 
     @property
     def initial_message(self):
@@ -395,7 +395,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.private:
             return []
-        
+
         duplicate_subscriptions = set(
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
@@ -611,11 +611,9 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        attachment = getUtility(IBugAttachmentSet).create(
+        return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
-            title=title, message=message)
-        notify(SQLObjectCreatedEvent(attachment))
-        return attachment
+            title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):
         """See `IBug`."""

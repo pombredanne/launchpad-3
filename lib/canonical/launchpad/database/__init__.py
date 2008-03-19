@@ -64,7 +64,8 @@ from canonical.launchpad.database.distroseriespackagecache import *
 from canonical.launchpad.database.distroseriessourcepackagerelease import *
 from canonical.launchpad.database.distroarchseries import *
 from canonical.launchpad.database.distroarchseriesbinarypackage import *
-from canonical.launchpad.database.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
+    import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.languagepack import *
@@ -126,7 +127,11 @@ from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
+from canonical.launchpad.database.oauth import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
+from canonical.launchpad.database.archivedependency import *
+from canonical.launchpad.database.packagediff import *
+from canonical.launchpad.database.codereviewmessage import *

@@ -35,7 +35,7 @@ branches in the listings.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.fetch('tr'):
     ...     print extract_text(row)
-    Name      Author               Status  Last Commit  Project Role
+    Name      Status    Project   Last Commit
 
 Unfortunately our sample data is somewhat lacking in the last commit
 fields.  There are a couple of branches that have them, but most don't
@@ -43,12 +43,12 @@ and are really just branch metadata without the revisions behind them.
 
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    klingon   Sample Person        Experimental gnome-terminal  Author
-    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-    mirrored                       New          gnome-terminal  Registrant
+    ~name12/firefox/main                New          firefox         ...
+    ~name12/gnome-terminal/2.6          Mature       gnome-terminal  ...
+    ~name12/gnome-terminal/main         Development  gnome-terminal  ...
+    ~name12/gnome-terminal/klingon      Experimental gnome-terminal  ...
+    ~launchpad/gnome-terminal/launchpad New          gnome-terminal  ...
+    ~name12/gnome-terminal/mirrored     New          gnome-terminal  ...
 
     >>> browser.getLink('Next').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
@@ -59,21 +59,22 @@ and are really just branch metadata without the revisions behind them.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    pushed                     New          gnome-terminal Registrant
-    scanned                    New          gnome-terminal Registrant
-    feature-x    Sample Person New          landscape      Author
-    trunk        Sample Person New          landscape      Author
-    junk.dev     Ubuntu Team   Experimental ... weeks ago  Registrant
-    junk.contrib Sample Person New          ... weeks ago  Author
+    ~name12/gnome-terminal/pushed           New      gnome-terminal  ...
+    ~name12/gnome-terminal/scanned          New      gnome-terminal  ...
+    ~name12/landscape/feature-x             New      landscape       ...
+    ~landscape-developers/landscape/trunk   New      landscape       ...
+    ~name12/+junk/junk.dev                  Experimental             ...
+    ~name12/+junk/junk.contrib              New                      ...
 
 If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Show subscribed branches').click()
+    >>> browser.getLink('Subscribed').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True
+
 
 == Lifecycle Filtering ==
 
@@ -86,12 +87,12 @@ Merged or Abandoned branches are not shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    klingon   Sample Person        Experimental gnome-terminal  Author
-    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-    mirrored                       New          gnome-terminal  Registrant
+    ~name12/firefox/main                 New          firefox         ...
+    ~name12/gnome-terminal/2.6           Mature       gnome-terminal  ...
+    ~name12/gnome-terminal/main          Development  gnome-terminal  ...
+    ~name12/gnome-terminal/klingon       Experimental gnome-terminal  ...
+    ~launchpad/gnome-terminal/launchpad  New          gnome-terminal  ...
+    ~name12/gnome-terminal/mirrored      New          gnome-terminal  ...
 
 There is a select control that is used to define which
 subset of the branches are shown.
@@ -122,12 +123,12 @@ Now all types of branches should be shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.4                            Abandoned    gnome-terminal  Registrant
-    slowness  Sample Person        Merged       gnome-terminal  Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    klingon   Sample Person        Experimental gnome-terminal  Author
+    ~name12/firefox/main             New             firefox          ...
+    ~name12/gnome-terminal/2.4       Abandoned       gnome-terminal   ...
+    ~name12/gnome-terminal/slowness  Merged          gnome-terminal   ...
+    ~name12/gnome-terminal/2.6       Mature          gnome-terminal   ...
+    ~name12/gnome-terminal/main      Development     gnome-terminal   ...
+    ~name12/gnome-terminal/klingon   Experimental    gnome-terminal   ...
 
     >>> browser.getLink('Next').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
@@ -138,12 +139,12 @@ Now all types of branches should be shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    launchpad    Launchpad Developers New          gnome-terminal Subscriber
-    mirrored                          New          gnome-terminal Registrant
-    pushed                            New          gnome-terminal Registrant
-    scanned                           New          gnome-terminal Registrant
-    feature-x    Sample Person New          landscape      Author
-    trunk        Sample Person New          landscape      Author
+    ~launchpad/gnome-terminal/launchpad   New     gnome-terminal   ...
+    ~name12/gnome-terminal/mirrored       New     gnome-terminal   ...
+    ~name12/gnome-terminal/pushed         New     gnome-terminal   ...
+    ~name12/gnome-terminal/scanned        New     gnome-terminal   ...
+    ~name12/landscape/feature-x           New     landscape        ...
+    ~landscape-developers/landscape/trunk New     landscape        ...
 
 
 Selecting an individual lifecycle status from the select control
@@ -154,7 +155,7 @@ will cause only branches with that status to be listed.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.4   Abandoned    gnome-terminal  Registrant
+    ~name12/gnome-terminal/2.4    Abandoned     gnome-terminal   ...
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
@@ -166,12 +167,12 @@ status value, it will default to current branches.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    klingon   Sample Person        Experimental gnome-terminal  Author
-    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-    mirrored                       New          gnome-terminal  Registrant
+    ~name12/firefox/main                  New          firefox          ...
+    ~name12/gnome-terminal/2.6            Mature       gnome-terminal   ...
+    ~name12/gnome-terminal/main           Development  gnome-terminal   ...
+    ~name12/gnome-terminal/klingon        Experimental gnome-terminal   ...
+    ~launchpad/gnome-terminal/launchpad   New          gnome-terminal   ...
+    ~name12/gnome-terminal/mirrored       New          gnome-terminal   ...
 
 If the user does have branches, but they are not visible with
 the current filter, the table is shown, and a (hopefully)
@@ -203,10 +204,12 @@ We display badges for associated bugs.
     >>> def branchSummary(browser):
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
     ...     for row in table.tbody.fetch('tr'):
-    ...         first_cell = row.find('td')
+    ...         cells = row.findAll('td')
+    ...         first_cell = cells[0]
     ...         anchors = first_cell.fetch('a')
     ...         print anchors[0].get('href')
-    ...         for img in first_cell.findAll('img'):
+    ...         # Badges in the next cell
+    ...         for img in cells[1].findAll('img'):
     ...             print img['title']
 
     >>> browser.open('http://code.launchpad.dev/firefox/+branches')
@@ -324,24 +327,24 @@ Finally, sorting by a particular criterion has the desired effect.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.6                                 Mature
-    main                                Development
-    klingon     Sample Person           Experimental
-    launchpad   Launchpad Developers    New
-    import                              New
-    mirrored                            New
+    ~name12/gnome-terminal/2.6            Mature       ...
+    ~name12/gnome-terminal/main           Development  ...
+    ~name12/gnome-terminal/klingon        Experimental ...
+    ~launchpad/gnome-terminal/launchpad   New          ...
+    ~vcs-imports/gnome-terminal/import    New          ...
+    ~name12/gnome-terminal/mirrored       New          ...
 
     >>> browser.getControl(name='field.sort_by').value = ['by author name']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    launchpad   Launchpad Developers    New
-    klingon     Sample Person           Experimental
-    2.6                                 Mature
-    main                                Development
-    import                              New
-    mirrored                            New
+    ~launchpad/gnome-terminal/launchpad    New             ...
+    ~name12/gnome-terminal/klingon         Experimental    ...
+    ~name12/gnome-terminal/2.6             Mature          ...
+    ~name12/gnome-terminal/main            Development     ...
+    ~vcs-imports/gnome-terminal/import     New             ...
+    ~name12/gnome-terminal/mirrored        New             ...
 
 
 == Highlighting the development focus branch ==
@@ -370,7 +373,7 @@ now shows as the "Current development focus".
     >>> print row['class']
     highlighted
     >>> print extract_text(row)
-    main  Current development focus     Development
+    ~name12/gnome-terminal/main  Current development focus   Development ...
 
 The branch is not shown as development focus when listed from
 the person context.
@@ -379,12 +382,12 @@ the person context.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    klingon   Sample Person        Experimental gnome-terminal  Author
-    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-    mirrored                       New          gnome-terminal  Registrant
+    ~name12/firefox/main                 New          firefox         ...
+    ~name12/gnome-terminal/2.6           Mature       gnome-terminal  ...
+    ~name12/gnome-terminal/main          Development  gnome-terminal  ...
+    ~name12/gnome-terminal/klingon       Experimental gnome-terminal  ...
+    ~launchpad/gnome-terminal/launchpad  New          gnome-terminal  ...
+    ~name12/gnome-terminal/mirrored      New          gnome-terminal  ...
 
 
 == Hidden dormant branches ==
@@ -402,12 +405,12 @@ they are not shown by default.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.6                            Mature
-    main Current development focus Development
-    klingon   Sample Person        Experimental
-    launchpad Launchpad Developers New
-    import                         New
-    mirrored                       New
+    ~name12/gnome-terminal/2.6                             Mature       ...
+    ~name12/gnome-terminal/main Current development focus  Development  ...
+    ~name12/gnome-terminal/klingon                         Experimental ...
+    ~launchpad/gnome-terminal/launchpad                    New          ...
+    ~vcs-imports/gnome-terminal/import                     New          ...
+    ~name12/gnome-terminal/mirrored                        New          ...
 
     >>> from canonical.launchpad.ftests.branch_helper import (
     ...     make_branch_dormant)
@@ -422,12 +425,12 @@ The default listing now doesn't show these two branches.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.6                             Mature
-    main Current development focus  Development
-    launchpad Launchpad Developers  New
-    import                          New
-    pushed                          New
-    scanned                         New
+    ~name12/gnome-terminal/2.6                            Mature      ...
+    ~name12/gnome-terminal/main Current development focus Development ...
+    ~launchpad/gnome-terminal/launchpad                   New         ...
+    ~vcs-imports/gnome-terminal/import                    New         ...
+    ~name12/gnome-terminal/pushed                         New         ...
+    ~name12/gnome-terminal/scanned                        New         ...
 
 If we specify that the listing should show dormant branches they
 are shown.
@@ -437,9 +440,33 @@ are shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.6                            Mature
-    main Current development focus Development
-    klingon   Sample Person        Experimental
-    launchpad Launchpad Developers New
-    import                         New
-    mirrored                       New
+    ~name12/gnome-terminal/2.6                             Mature       ...
+    ~name12/gnome-terminal/main Current development focus  Development  ...
+    ~name12/gnome-terminal/klingon                         Experimental ...
+    ~launchpad/gnome-terminal/launchpad                    New          ...
+    ~vcs-imports/gnome-terminal/import                     New          ...
+    ~name12/gnome-terminal/mirrored                        New          ...
+
+
+== The last commit ==
+
+The last commit column shows the revision number, time, revision author,
+and part of the revision log for the last commit that Launchpad knows
+about.  The revision number is linked to code browse if the branch is not
+private.
+
+    >>> browser.open('http://code.launchpad.dev/firefox/+branches')
+    >>> for commit in find_tags_by_class(browser.contents, 'lastCommit'):
+    ...     print extract_text(commit)
+    1. ... weeks ago by mark.shuttleworth Import of Mozilla Firefox 0.9.1
+    1. ... weeks ago by mark.shuttleworth Import of Mozilla Firefox 0.9
+    1. ... weeks ago by mark.shuttleworth Import of Mozilla Firefox 0.9.2
+ 
+The entire commit message is shown in a div that gets shown when
+the user moves the mouse over the last commit for a particular branch.
+
+    >>> for commit in find_tags_by_class(browser.contents, 'popupTitle'):
+    ...     print extract_text(commit)
+    Import of Mozilla Firefox 0.9.1
+    Import of Mozilla Firefox 0.9
+    Import of Mozilla Firefox 0.9.2

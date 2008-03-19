@@ -15,7 +15,7 @@ import _pythonpath
 import logging
 
 from canonical.librarian import librariangc
-from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
@@ -54,7 +54,7 @@ class LibrarianGC(LaunchpadCronScript):
         if self.options.loglevel <= logging.DEBUG:
             librariangc.debug = True
 
-        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         conn = self.txn.conn()
 
         # Refuse to run if we have significant clock skew between the
@@ -79,6 +79,6 @@ class LibrarianGC(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = LibrarianGC('librarian-gc',
-                         dbuser=config.librarian.gc.dbuser)
+                         dbuser=config.librarian_gc.dbuser)
     script.lock_and_run()
 

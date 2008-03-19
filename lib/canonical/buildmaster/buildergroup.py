@@ -23,8 +23,8 @@ from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
-    BuildDaemonError, BuildStatus, IBuildQueueSet, BuildJobMismatch, IBuildSet,
-    IBuilderSet, NotFoundError, pocketsuffix
+    ArchivePurpose, BuildDaemonError, BuildStatus, IBuildQueueSet,
+    BuildJobMismatch, IBuildSet, IBuilderSet, NotFoundError, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
@@ -297,12 +297,12 @@ class BuilderGroup:
         upload_dir = os.path.join(incoming, upload_leaf)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
 
-        # build the right UPLOAD_PATH so the distribution and archive
+        # Build the right UPLOAD_PATH so the distribution and archive
         # can be correctly found during the upload:
-        #  * For trusted:        <distribution>/[FILES]
-        #  * For PPA(untrusted): ~<person>/<distribution>/[FILES]
+        #  * For non-PPA: <distribution>/[FILES]
+        #  * For PPA:     ~<person>/<distribution>/[FILES]
         distribution_name = queueItem.build.distribution.name
-        if queueItem.is_trusted:
+        if queueItem.build.archive.purpose != ArchivePurpose.PPA:
             target_path = "%s" % distribution_name
         else:
             archive = queueItem.build.archive
@@ -359,15 +359,16 @@ class BuilderGroup:
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        # The famous 'flush_updates + clear_cache' will make visible the
-        # DB changes done in process-upload, considering that the
-        # transaction was set with READ_COMMITED_ISOLATION isolation level.
+        # The famous 'flush_updates + clear_cache' will make visible
+        # the DB changes done in process-upload, considering that the
+        # transaction was set with ISOLATION_LEVEL_READ_COMMITED
+        # isolation level.
         cur = cursor()
         cur.execute('SHOW transaction_isolation')
         isolation_str = cur.fetchone()[0]
         assert isolation_str == 'read committed', (
             'BuildMaster/BuilderGroup transaction isolation should be '
-            'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
+            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
 
         original_slave = queueItem.builder.slave
 

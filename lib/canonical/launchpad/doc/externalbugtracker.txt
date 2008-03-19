@@ -4,6 +4,334 @@ ExternalBugTracker instances are used to communicate with remote bug
 trackers. This document tests those features that are common to all
 ExternalBugTracker instances.
 
+== Updating bug watches ==
+
+All the ExternalBugTrackers know how to update the status of a bug
+watch. The method that updates the bug watches is
+BugWatchUpdater.updateBugWatches(), which expects an IExternalBugTracker
+and the bug watches to update.
+
+
+=== Initializing ===
+
+Before updating the bug watches, the initializeRemoteBugDB() method on
+the ExternalBugTracker is called. It gets the information for the bug
+watches from the external bug tracker, and it's called outside a DB
+transaction, since it doesn't need DB access.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestExternalBugTracker)
+    >>> class InitializingExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def initializeRemoteBugDB(self, remote_bug_ids):
+    ...         print "initializeRemoteBugDB() called: %r" % (
+    ...             remote_bug_ids, )
+
+    >>> class FakeTransaction:
+    ...     """Transaction class to track transaction boundaries."""
+    ...     def commit(self):
+    ...         print "COMMIT"
+    ...     def abort(self):
+    ...         print "ABORT"
+    ...     def begin(self):
+    ...         print "BEGIN"
+
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
+    >>> bug_watch_updater.updateBugWatches(
+    ...     InitializingExternalBugTracker(), [])
+    COMMIT
+    initializeRemoteBugDB() called: []
+    BEGIN
+
+
+=== Checking the server DB time ===
+
+Before initializeRemoteBugDB is called and we start importing
+information from the remote bug tracker, we check what the bug tracker
+thinks the current time is. Returning None means that we don't know what
+the time is.
+
+    >>> class TimeUnknownExternalBugTracker(InitializingExternalBugTracker):
+    ...
+    ...     def getCurrentDBTime(self):
+    ...         print "getCurrentDBTime() called"
+    ...         return None
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     TimeUnknownExternalBugTracker(), [])
+    COMMIT
+    getCurrentDBTime() called
+    initializeRemoteBugDB() called: []
+    BEGIN
+
+If the difference between what we and the remote system think the time
+is, an error is raised.
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> class PositiveTimeSkewExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def getCurrentDBTime(self):
+    ...         return utc_now + timedelta(minutes=20)
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     PositiveTimeSkewExternalBugTracker(), [], now=utc_now)
+    Traceback (most recent call last):
+    ...
+    TooMuchTimeSkew: ...
+
+    >>> class NegativeTimeSkewExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def getCurrentDBTime(self):
+    ...         return utc_now - timedelta(minutes=20)
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     NegativeTimeSkewExternalBugTracker(), [], now=utc_now)
+    Traceback (most recent call last):
+    ...
+    TooMuchTimeSkew: ...
+
+If it's only a little skewed, it won't raise an error.
+
+    >>> class CorrectTimeExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def getCurrentDBTime(self):
+    ...         return utc_now + timedelta(minutes=1)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CorrectTimeExternalBugTracker(), [], now=utc_now)
+    COMMIT
+    BEGIN
+
+If the timezone is known, the local time time should be returned, rather
+than the UTC time.
+
+    >>> class LocalTimeExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def getCurrentDBTime(self):
+    ...         local_time = utc_now.astimezone(pytz.timezone('US/Eastern'))
+    ...         return local_time + timedelta(minutes=1)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     LocalTimeExternalBugTracker(), [], now=utc_now)
+    COMMIT
+    BEGIN
+
+If the remote server time is unknown, we will refuse to import any
+comments from it. Bug watches will still be updated, but a warning is
+logged saying that comments won't be imported.
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
+    ...     implements(ISupportsCommentImport)
+    ...     import_comments = True
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CommentImportExternalBugTracker(), [], now=utc_now)
+    COMMIT
+    getCurrentDBTime() called
+    initializeRemoteBugDB() called: []
+    BEGIN
+    WARNING:...:Comment importing supported, but server time can't be
+                trusted. No comments will be imported.
+
+
+=== Limiting which bug watches to update ===
+
+In order to reduce the amount of data we have to transfer over the
+network, each IExternalBugTracker has the ability to filter out bugs
+that haven't been modified. The method responsible for this is
+getModifiedRemoteBugs(), which accepts the set of bugs that should be
+checked, as well as the oldest time any of the bugs were last checked.
+The getModifiedRemoteBugs() is only called for bug trackers where we
+know that their time is similar to ours.
+
+    >>> class CheckModifiedExternalBugTracker(InitializingExternalBugTracker):
+    ...     def getCurrentDBTime(self):
+    ...         return datetime.now(pytz.timezone('UTC'))
+    ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
+    ...         print "last_checked: %s" % last_checked
+    ...         print "getModifiedRemoteBugs() called: %r" % (
+    ...             remote_bug_ids, )
+    ...         return [remote_bug_ids[0], remote_bug_ids[-1]]
+    ...     def getRemoteStatus(self, bug_id):
+    ...         print "getRemoteStatus() called: %r" % bug_id
+    ...         return 'UNKNOWN'
+
+Only bugs that haven't been checked before are passed on to
+getModifiedRemoteBugs(). I.e., if we have a set of newly created bug
+watches, the getModifiedRemoteBugs() method won't be called.
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IBugSet, IBugWatchSet, IPersonSet)
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Bug Tracker",
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+    >>> example_bug = getUtility(IBugSet).get(10)
+
+    >>> bug_watches = [
+    ...     getUtility(IBugWatchSet).createBugWatch(
+    ...         example_bug, sample_person, example_bug_tracker, bug_id)
+    ...     for bug_id in ['1', '2', '3', '4']]
+    >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
+    >>> [bug_watch.lastchecked for bug_watch in bug_watches
+    ...  if bug_watch.lastchecked is not None]
+    []
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker('http://example.com/'),
+    ...     bug_watches)
+    COMMIT
+    initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'2'
+    getRemoteStatus() called: u'3'
+    getRemoteStatus() called: u'4'
+
+If the bug watches have the lastchecked attribute set, they will be
+passed to getModifiedRemoteBugs(). Only the bugs that have been modified
+will then be passed on to initializeRemoteBugDB().
+
+    >>> some_time_ago = datetime(
+    ...     2007, 03, 17, 16, 00, tzinfo=pytz.timezone('UTC'))
+    >>> bug_watches = [
+    ...     getUtility(IBugWatchSet).get(bug_watch_id)
+    ...     for bug_watch_id in bug_watch_ids]
+    >>> for bug_watch in bug_watches:
+    ...     bug_watch.lastchecked = some_time_ago
+    >>> flush_database_updates()
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker('http://example.com/'),
+    ...     bug_watches)
+    COMMIT
+    last_checked: 2007-03-17 15:...:...
+    getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
+    initializeRemoteBugDB() called: [u'1', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'4'
+
+The bug watches that are deemed as not being modified are still marked
+as being checked.
+
+    >>> bug_watches = [
+    ...     getUtility(IBugWatchSet).get(bug_watch_id)
+    ...     for bug_watch_id in bug_watch_ids]
+    >>> for bug_watch in bug_watches:
+    ...     if bug_watch.lastchecked > some_time_ago:
+    ...         print "Bug %s was marked checked" % bug_watch.remotebug
+    ...     else:
+    ...         print "Bug %s was NOT marked checked" % bug_watch.remotebug
+    Bug 1 was marked checked
+    Bug 2 was marked checked
+    Bug 3 was marked checked
+    Bug 4 was marked checked
+
+The time being passed to getModifiedRemoteBugs() is the oldest one of the
+bug watches' lastchecked attribute, minus the acceptable time skew, and
+then some more just to be safe.
+
+    >>> bug_watches[0].lastchecked = some_time_ago
+    >>> bug_watches[1].lastchecked = some_time_ago + timedelta(days=1)
+    >>> bug_watches[2].lastchecked = some_time_ago - timedelta(hours=1)
+    >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
+    >>> flush_database_updates()
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker(), bug_watches)
+    COMMIT
+    last_checked: 2007-03-16 15:...:...
+
+If some of the bug watches are new, they won't be passed on to
+getModifiedRemoteBugs(), but they will still be passed to
+initializeRemoteBugDB() since we do need to update them.
+
+    >>> bug_watches[0].lastchecked = some_time_ago
+    >>> bug_watches[1].lastchecked = None
+    >>> bug_watches[2].lastchecked = None
+    >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
+    >>> flush_database_updates()
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker(), bug_watches)
+    COMMIT
+    last_checked: 2007-03-16 15:...:...
+    getModifiedRemoteBugs() called: [u'1', u'4']
+    initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'2'
+    getRemoteStatus() called: u'3'
+    getRemoteStatus() called: u'4'
+
+As mentioned earlier, getModifiedRemoteBugs() is only called if we can
+get the current time of the remote system. If the time is unknown, we
+always update all the bug watches.
+
+    >>> class TimeUnknownExternalBugTracker(CheckModifiedExternalBugTracker):
+    ...     def getCurrentDBTime(self):
+    ...         return None
+    >>> for bug_watch in bug_watches:
+    ...     bug_watch.lastchecked = some_time_ago
+    >>> flush_database_updates()
+    >>> bug_watch_updater.updateBugWatches(
+    ...     TimeUnknownExternalBugTracker(), bug_watches)
+    COMMIT
+    initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'2'
+    getRemoteStatus() called: u'3'
+    getRemoteStatus() called: u'4'
+
+
+=== Converting statuses ===
+
+Once it has retrieved the bugs from the remote server, BugWatchUpdater
+attempts to convert their statuses into Launchpad BugTaskStatuses by
+calling the convertRemoteStatus() method on the ExternalBugTracker via
+its own _convertRemoteStatus() method.
+
+ExternalBugTracker.convertRemoteStatus() will either return a
+BugTaskStatus or will raise an UnknownRemoteStatusError.
+
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     UnknownRemoteStatusError)
+    >>> class StatusConvertingExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def convertRemoteStatus(self, remote_status):
+    ...         if remote_status == 'new':
+    ...             return BugTaskStatus.NEW
+    ...         else:
+    ...             raise UnknownRemoteStatusError()
+
+BugWatchUpdater._convertRemoteStatus() will handle these errors and will
+return BugTaskStatus.UNKNOWN when they occur. It will also log a
+warning.
+
+    >>> status = bug_watch_updater._convertRemoteStatus(
+    ...     StatusConvertingExternalBugTracker(), 'new')
+    >>> print status.title
+    New
+
+    >>> status = bug_watch_updater._convertRemoteStatus(
+    ...     StatusConvertingExternalBugTracker(), 'spam')
+    WARNING...Unknown remote status 'spam'.
+    >>> print status.title
+    Unknown
+
 
 == Configuration Options ==
 
@@ -20,8 +348,7 @@ fulfill the implementation requirements of IExternalBugTracker.
     >>> from canonical.config import config
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestExternalBugTracker)
-    >>> import transaction
-    >>> tracker = TestExternalBugTracker(transaction)
+    >>> tracker = TestExternalBugTracker('http://example.com/')
     >>> (tracker.batch_query_threshold ==
     ...     config.checkwatches.batch_query_threshold)
     True
@@ -34,11 +361,11 @@ recorded against the bug watches themselves so that it can be displayed
 to users. We can test this by using a test version of
 ExternalBugTracker.
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> import transaction
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBrokenExternalBugTracker)
     >>> external_bugtracker = TestBrokenExternalBugTracker(
-    ...     transaction, 'http://example.com')
+    ...     'http://example.com')
     >>> bug_watch_updater = BugWatchUpdater(transaction)
 
 We'll create an example bug watch with which to test this. This will
@@ -47,32 +374,14 @@ have errors recorded against it. We log in as Sample Person to make
 these changes since there's no particular need to use one Person over
 another.
 
-    >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugSet, IPersonSet)
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Bug Tracker",
-    ...     bugtrackertype=BugTrackerType.BUGZILLA,
-    ...     baseurl="http://bugs.example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
     >>> login('test@canonical.com')
 
-    >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1, sample_person)
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
     ...     UnparseableBugData, UnparseableBugTrackerVersion)
-    >>> from socket import timeout
 
 TestBrokenExternalBugTracker allows us to force errors to occur, so we
 can use it to check that bug watches' last_error_types are being set

@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
 import datetime
+import operator
 import pytz
 from StringIO import StringIO
 import re
@@ -17,10 +18,10 @@ from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -29,12 +30,13 @@ from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
     ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
-    UNRESOLVED_BUGTASK_STATUSES)
+    PackageDiffAlreadyRequested, PackagePublishingStatus, PackageUploadStatus,
+    NotFoundError, SourcePackageFileType, SourcePackageFormat,
+    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -62,7 +64,7 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
-    copyright = StringCol(dbName='copyright', notNull=True)
+    copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
@@ -92,6 +94,9 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+    package_diffs = SQLMultipleJoin(
+        'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
+
 
     @property
     def builds(self):
@@ -232,6 +237,19 @@ class SourcePackageRelease(SQLBase):
             import DistroSeriesSourcePackageRelease
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
+
+    @property
+    def published_archives(self):
+        """See `ISourcePacakgeRelease`."""
+        archives = set()
+        publishings = self.publishings.prejoin(['archive'])
+        live_states = (PackagePublishingStatus.PENDING,
+                       PackagePublishingStatus.PUBLISHED)
+        for pub in publishings:
+            if pub.status in live_states:
+                archives.add(pub.archive)
+
+        return sorted(archives, key=operator.attrgetter('id'))
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
@@ -396,7 +414,7 @@ class SourcePackageRelease(SQLBase):
             'PackageUpload',
             'PackageUploadSource',
             ]
-        preJoins= ['changesfile']
+        preJoins = ['changesfile']
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
         PackageUpload.distroseries = %s AND
@@ -469,3 +487,20 @@ class SourcePackageRelease(SQLBase):
                 sourcepackagename=self.sourcepackagename,
                 distroseries=self.upload_distroseries)
 
+    def getDiffTo(self, to_sourcepackagerelease):
+        """See ISourcePackageRelease."""
+        return PackageDiff.selectOneBy(
+            from_source=self, to_source=to_sourcepackagerelease)
+
+    def requestDiffTo(self, requester, to_sourcepackagerelease):
+        """See ISourcePackageRelease."""
+        candidate = self.getDiffTo(to_sourcepackagerelease)
+
+        if candidate is not None:
+            raise PackageDiffAlreadyRequested(
+                "%s was already requested by %s"
+                % (candidate.title, candidate.requester.displayname))
+
+        return PackageDiff(
+            from_source=self, to_source=to_sourcepackagerelease,
+            requester=requester)

@@ -9,7 +9,8 @@ __all__ = ['Archive', 'ArchiveSet']
 
 import os
 
-from sqlobject import StringCol, ForeignKey, BoolCol, IntCol
+from sqlobject import  (
+    BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 from zope.interface import implements
@@ -18,13 +19,21 @@ from zope.interface import implements
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import (
+    cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.database.archivedependency import (
+    ArchiveDependency)
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
+from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
+    IHasOwner, IHasBuildRecords, IBuildSet, ILaunchpadCelebrities,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -50,10 +59,22 @@ class Archive(SQLBase):
 
     private = BoolCol(dbName='private', notNull=True, default=False)
 
+    require_virtualized = BoolCol(
+        dbName='require_virtualized', notNull=True, default=True)
+
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
+
+    sources_cached = IntCol(
+        dbName='sources_cached', notNull=False, default=0)
+
+    binaries_cached = IntCol(
+        dbName='binaries_cached', notNull=False, default=0)
+
+    package_description_cache = StringCol(
+        dbName='package_description_cache', notNull=False, default=None)
 
     @property
     def title(self):
@@ -73,6 +94,19 @@ class Archive(SQLBase):
         published_series_ids = [int(row[0]) for row in cur.fetchall()]
         return [s for s in self.distribution.serieses if s.id in
                 published_series_ids]
+
+    @property
+    def dependencies(self):
+        query = """
+            ArchiveDependency.dependency = Archive.id AND
+            Archive.owner = Person.id AND
+            ArchiveDependency.archive = %s
+        """ % sqlvalues(self)
+        clauseTables = ["Archive", "Person"]
+        orderBy = ['Person.displayname']
+        dependencies = ArchiveDependency.select(
+            query, clauseTables=clauseTables, orderBy=orderBy)
+        return dependencies
 
     @property
     def archive_url(self):
@@ -197,6 +231,53 @@ class Archive(SQLBase):
 
         preJoins = ['sourcepackagerelease']
 
+        sources = SourcePackagePublishingHistory.select(
+            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
+            prejoins=preJoins)
+
+        return sources
+
+    def getSourcesForDeletion(self, name=None):
+        """See `IArchive`."""
+        clauses = ["""
+            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+        """ % sqlvalues(self)]
+
+        has_published_binaries_clause = """
+            EXISTS (SELECT TRUE FROM
+                BinaryPackagePublishingHistory bpph,
+                BinaryPackageRelease bpr, Build
+            WHERE
+                bpph.archive = %s AND
+                bpph.status = %s AND
+                bpph.binarypackagerelease = bpr.id AND
+                bpr.build = Build.id AND
+                Build.sourcepackagerelease = SourcePackageRelease.id)
+        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
+
+        clauses.append("""
+           (%s OR SourcePackagePublishingHistory.status = %s)
+        """ % (has_published_binaries_clause,
+               quote(PackagePublishingStatus.PUBLISHED)))
+
+
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        desc_version_order = SQLConstant(order_const+" DESC")
+        orderBy = ['SourcePackageName.name', desc_version_order,
+                   '-SourcePackagePublishingHistory.id']
+
+        if name is not None:
+            clauses.append("""
+                    SourcePackageName.name LIKE '%%' || %s || '%%'
+                """ % quote_like(name))
+
+        preJoins = ['sourcepackagerelease']
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
             prejoins=preJoins)
@@ -411,6 +492,56 @@ class Archive(SQLBase):
             permission = False
 
         return permission
+
+    def updateArchiveCache(self):
+        """See `IArchive`."""
+        cache_contents = set()
+
+        cache_contents.add(self.owner.name)
+        cache_contents.add(self.owner.displayname)
+
+        sources_cached = DistributionSourcePackageCache.selectBy(
+            archive=self)
+
+        for cache in sources_cached:
+            cache_contents.add(cache.name)
+            cache_contents.add(cache.binpkgnames)
+            cache_contents.add(cache.binpkgsummaries)
+
+        binaries_cached = DistroSeriesPackageCache.selectBy(
+            archive=self)
+
+        self.package_description_cache = " ".join(cache_contents)
+        self.sources_cached = sources_cached.count()
+        self.binaries_cached = binaries_cached.count()
+
+    def getArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        return ArchiveDependency.selectOneBy(
+            archive=self, dependency=dependency)
+
+    def removeArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        dependency = self.getArchiveDependency(dependency)
+        if dependency is None:
+            raise AssertionError("This dependency does not exist.")
+        dependency.destroySelf()
+
+    def addArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        if dependency == self:
+            raise ArchiveDependencyError(
+                "An archive should not depend on itself.")
+
+        if dependency.purpose != ArchivePurpose.PPA:
+            raise ArchiveDependencyError(
+                "Archive dependencies only applies to PPAs.")
+
+        if self.getArchiveDependency(dependency):
+            raise ArchiveDependencyError(
+                "This dependency is already recorded.")
+
+        return ArchiveDependency(archive=self, dependency=dependency)
 
 
 class ArchiveSet:

@@ -6,7 +6,7 @@ records to disk, including configuration and indexes.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IPerson, IPersonSet, IArchiveSet, IArchive,
+    ...     ArchivePurpose, IPersonSet, IArchiveSet, IArchive,
     ...     IDistributionSet)
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -26,6 +26,12 @@ records to disk, including configuration and indexes.
     u'It is not my fault.'
     >>> cprov_archive.private
     False
+    >>> cprov_archive.require_virtualized
+    True
+    >>> cprov_archive.sources_cached
+    3
+    >>> cprov_archive.binaries_cached
+    3
 
 Useful properties:
 
@@ -512,6 +518,49 @@ decreases.
     2
 
 
+== Sources available for deletions ==
+
+'getSourcesForDeletion' is the base for '+delete-packages' page on PPA
+context it allows us to lookup for `ISourcePackagePublishingHistory`
+records which were not deleted yet.
+
+ 1. source publication is in PUBLISHED status OR
+ 2. source contains one or more binary publication in PUBLISHED status.
+
+    >>> cprov_archive.getSourcesForDeletion().count()
+    2
+
+This method can optionally receive a source package name filter (SQL
+LIKE) to restrict its result.
+
+    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    1
+
+If only the source publication is DELETED, leaving its binary behind,
+it continues to be considered 'available for deletion'.
+
+    >>> removal_candidate = cprov_archive.getPublishedSources(
+    ...     name='ice')[0]
+    >>> removal_candidate.getPublishedBinaries().count()
+    1
+
+    >>> unused = removal_candidate.requestDeletion(cprov, 'go away !')
+    >>> flush_database_updates()
+
+    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    1
+
+The source publication is only excluded from 'deletion list' when its
+binary is also DELETED.
+
+    >>> for bin in removal_candidate.getPublishedBinaries():
+    ...     unused = bin.requestDeletion(cprov, 'go away !')
+    >>> flush_database_updates()
+
+    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    0
+
+
 == Build Lookup ==
 
 It also implements a build lookup method, which supports, 'name',
@@ -629,6 +678,114 @@ Usual methods from Publisher Configuration are preserved:
     ['main', 'restricted', 'universe', 'multiverse']
 
 
+== Archive dependencies ==
+
+An Archive can depend on one or more other archives, such
+relationships affects mainly its builds, which will be querying build
+dependencies also in dependent archives, and its client system which
+will have to enable apt to look for package dependencies in the
+dependent archive as well.
+
+Currently only one level of dependency is supported, i.e., PPA X
+depends on PPA Y, if PPA W wants to use packages of PPA X it will have
+to depend also on PPA Y, otherwise it won't be able to install all the
+required dependencies when building.
+
+    >>> def print_dependencies(archive):
+    ...     dependencies = archive.dependencies
+    ...     if not dependencies:
+    ...         print "No dependencies recorded."
+    ...         return
+    ...     for dep in dependencies:
+    ...         print dep.dependency.title
+
+Celso's PPA has no dependencies stored in the sampledata.
+
+    >>> print_dependencies(cprov.archive)
+    No dependencies recorded.
+
+We will make Celso's PPA to depend on Mark's PPA.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> archive_dependency = cprov.archive.addArchiveDependency(
+    ...     sabdfl.archive)
+
+The `IArchiveDependency` object simply maps the desired relationship.
+
+    >>> print archive_dependency.archive.title
+    PPA for Celso Providelo
+
+    >>> print archive_dependency.dependency.title
+    PPA for Mark Shuttleworth
+
+The archive dependency is immediately recorded on Celso's PPA.
+
+    >>> print_dependencies(cprov.archive)
+    PPA for Mark Shuttleworth
+
+'getArchiveDependency' returns the corresponding `IArchiveDependency`
+for a given 'dependency' if it exists, otherwise it returns None.
+
+    >>> print cprov.archive.getArchiveDependency(
+    ...     sabdfl.archive).dependency.title
+    PPA for Mark Shuttleworth
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> print cprov.archive.getArchiveDependency(no_priv.archive)
+    None
+
+As mentioned above, the archive dependency engine doesn't follow
+cross dependencies. When a PPA depends only on Celso's PPA it might
+result in issues while building package if a required package
+dependency is published in Mark's PPA.
+
+    >>> print_dependencies(no_priv.archive)
+    No dependencies recorded.
+
+    >>> archive_dependency = no_priv.archive.addArchiveDependency(
+    ...     cprov.archive)
+
+    >>> print_dependencies(no_priv.archive)
+    PPA for Celso Providelo
+
+`IArchive.addArchiveDependency` raises an error if the given
+'dependency' violates the system overall constraints.
+
+'dependency' is already recorded (duplicated).
+
+    >>> no_priv.archive.addArchiveDependency(cprov.archive)
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: This dependency is already recorded.
+
+'dependency' and target archive are the same.
+
+    >>> no_priv.archive.addArchiveDependency(no_priv.archive)
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: An archive should not depend on itself.
+
+A 'dependency' can only be a PPA. Other archives (PRIMARY, PARTNER or
+EMBARGOED) are explicitly forbidden until we can analyse the impact of
+allowing them.
+
+    >>> ubuntu = no_priv.archive.distribution
+    >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: Archive dependencies only applies to PPAs.
+
+'removeArchiveDependency' allow us to purge a recorded 'dependency'.
+
+    >>> print_dependencies(no_priv.archive)
+    PPA for Celso Providelo
+
+    >>> no_priv.archive.removeArchiveDependency(cprov.archive)
+
+    >>> print_dependencies(no_priv.archive)
+    No dependencies recorded.
+
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
@@ -649,7 +806,7 @@ A new Archive can be created by passing a name and an owner
     True
 
 We can take the opportunity to check if the default 'authorized_size'
-corresponds to what we state in our policy, 1024 Mbytes:
+corresponds to what we state in our policy, 1024 MiB:
 
     >>> name16.archive.authorized_size
     1024

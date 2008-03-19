@@ -25,19 +25,18 @@ def main(argv):
     try:
         total = RevisionAuthor.select().count()
         for number, author in enumerate(RevisionAuthor.select()):
-            print "\rChecking author %d of %s" % (number + 1, total),
             if author.email is None:
                 email_address = email.Utils.parseaddr(author.name)[1]
                 # If there is no @, then it isn't a real email address.
                 if '@' in email_address:
                     author.email = email_address
                     if author.linkToLaunchpadPerson():
-                        print "\r%s linked to %s" % (
-                            author.name, author.person.displayname)
+                        print "%s linked to %s" % (
+                            author.name.encode('ascii', 'replace'),
+                            author.person.name)
         ztm.commit()
     finally:
         ztm.abort()
-    print "\rDone.\x1b[K"
 
 
 if __name__ == '__main__':
