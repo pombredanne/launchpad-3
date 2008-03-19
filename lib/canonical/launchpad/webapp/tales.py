@@ -1028,6 +1028,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
     _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
