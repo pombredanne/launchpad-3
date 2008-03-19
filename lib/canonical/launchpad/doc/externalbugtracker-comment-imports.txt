@@ -249,7 +249,7 @@ Launchpad but will result in no Karma records being created.
 
     >>> external_bugtracker.comment_dict['5'] = (
     ...     "A comment containing a CVE entry: CVE-1991-9911.")
-    >>> external_bugtracker.importBugComments(bug_watch)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456...
 
     >>> for cve in bug.cves:
@@ -270,7 +270,7 @@ includes a CVE reference appear to come from a valid Launchpad user.
 Once again, CVE links are created but no karma is assigned.
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-    >>> external_bugtracker.importBugComments(bug_watch)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 2 comments for remote bug 123456...
 
     >>> for cve in sorted([cve.displayname for cve in bug.cves]):
