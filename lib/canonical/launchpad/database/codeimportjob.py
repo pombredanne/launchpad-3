@@ -22,7 +22,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
-    ICodeImportEventSet, ICodeImportJob, ICodeImportJobPublic,
+    ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
     ICodeImportJobWorkflowPublic, ICodeImportResultSet)
 from canonical.launchpad.validators.person import public_person_validator
@@ -31,7 +31,7 @@ from canonical.launchpad.validators.person import public_person_validator
 class CodeImportJob(SQLBase):
     """See `ICodeImportJob`."""
 
-    implements(ICodeImportJob, ICodeImportJobPublic)
+    implements(ICodeImportJob)
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -232,6 +232,8 @@ class CodeImportJobWorkflow:
         # interface to do this. So we must use removeSecurityProxy here.
         naked_job = removeSecurityProxy(import_job)
         naked_job.destroySelf()
-        self.newJob(code_import)
+        # Only start a new one if not invalid or suspended.
+        if code_import.review_status == CodeImportReviewStatus.REVIEWED:
+            self.newJob(code_import)
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)
