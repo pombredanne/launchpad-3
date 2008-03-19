@@ -8,7 +8,8 @@ the URL of the remote bug.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> user_browser.getControl('URL').value = (
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42')
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
@@ -29,7 +30,8 @@ base URL is HTTP.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> user_browser.getControl('URL').value = (
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
     ...     u'https://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
@@ -43,7 +45,6 @@ The URL was automatically converted to HTTP:
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
 
-
 If the URL can't be recognised (i.e., we don't even know what bug
 tracker type it is), an error message is displayed.
 
@@ -54,7 +55,9 @@ tracker type it is), an error message is displayed.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> user_browser.getControl('URL').value = u'http://bugs.unknown/42'
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
+    ...     u'http://bugs.unknown/42')
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
@@ -67,7 +70,9 @@ tracker type it is), an error message is displayed.
 If the URL can be recognised as a valid bug URL, but no such tracker is
 registered in Launchpad, the user will be prompted to register it first.
 
-    >>> user_browser.getControl('URL').value = u"http://new.trac/ticket/42"
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
+    ...     u"http://new.trac/ticket/42")
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
@@ -81,8 +86,16 @@ do that before creating the new bug watch.
 
     >>> user_browser.getControl('Register Bug Tracker').click()
 
-The bugtracker is now registered, the bug watch is linked, and we're
-redirected to the bug's page.
+The bugtracker is now registered, but there is one more issue to deal
+with:
+
+    >>> print get_feedback_messages(user_browser.contents)[0]
+    alsa-utils doesn't use Launchpad as its bug tracker. Without a bug
+    URL to watch, the alsa-utils status will not update automatically.
+
+    >>> user_browser.getControl('Add Anyway').click()
+
+The bug watch is linked, and we're redirected to the bug's page.
 
     >>> user_browser.url
     'http://bugs.launchpad.dev/alsa-utils/+bug/4'
@@ -108,7 +121,8 @@ to HTTP on their behalf:
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> user_browser.getControl('URL').value = (
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
     ...     u'bugzilla.gnome.org/bugs/show_bug.cgi?id=168')
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url

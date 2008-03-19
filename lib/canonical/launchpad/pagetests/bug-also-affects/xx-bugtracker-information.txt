@@ -14,14 +14,13 @@ task.
     to track its bugs...
 
     >>> from canonical.launchpad.ftests.bug import print_upstream_linking_form
-
     >>> print_upstream_linking_form(user_browser)
-    Link upstream how:
-      (x) LINK_UPSTREAM
-      ( ) EMAIL_UPSTREAM_DONE
-      ( ) UNLINKED_UPSTREAM
-    Bug URL: ''
-    Upstream Email: ''
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
 If a product doesn't use Launchpad, and doesn't have a bug tracker
 specified, it will simply say that it doesn't use Launchpad to track
@@ -35,12 +34,12 @@ its bugs and prompt for a URL or an email address.
     <...Mozilla Thunderbird doesn't use Launchpad to track its bugs...
 
     >>> print_upstream_linking_form(user_browser)
-    Link upstream how:
-      (x) LINK_UPSTREAM
-      ( ) EMAIL_UPSTREAM_DONE
-      ( ) UNLINKED_UPSTREAM
-    Bug URL: ''
-    Upstream Email: ''
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
 For products using Launchpad, the linking upstream widgets won't even
 appear.
