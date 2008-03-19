@@ -123,7 +123,7 @@ class ShipItFlavour(DBEnumeratedType):
         """)
 
     SERVER = DBItem(4, """
-        Server
+        Ubuntu Server Edition
 
         The Ubuntu Server Edition.
         """)
