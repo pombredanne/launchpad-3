@@ -357,6 +357,19 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         self.assertEquals(
             list(results), [series])
 
+    def testSearchByProjectWithNonMatchingProduct(self):
+        # If a project matches the text, it's an easy mistake to make to
+        # consider all the products with no project as matching too.
+        series_1 = self.makeSeries(product_name='product1')
+        series_2 = self.makeSeries(
+            project_name='thisone', product_name='product2')
+        self.addImportDetailsToSeries(series_1, 'a')
+        self.addImportDetailsToSeries(series_2, 'b')
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='thisone')
+        self.assertEquals(
+            list(results), [series_2])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

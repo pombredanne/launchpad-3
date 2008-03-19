@@ -617,9 +617,9 @@ class ProductSeriesSet:
 
         # First filter on text, if supplied.
         if text is not None:
-            conditions.append(
-                "(Product.fti @@ ftq(%s) OR Project.fti @@ ftq(%s))"
-                % (quote(text), quote(text)))
+            conditions.append("""
+                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
+                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
 
         # Exclude deactivated products.
         conditions.append('Product.active IS TRUE')
