@@ -76,7 +76,7 @@ class Archive(SQLBase):
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
 
-    buildd_secret = StringCol(dbName='buildd_secret')
+    buildd_secret = StringCol(dbName='buildd_secret', default=None)
 
     @property
     def title(self):
