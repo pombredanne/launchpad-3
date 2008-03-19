@@ -49,13 +49,13 @@
         <tr tal:repeat="series batch">
           <td>
             <a tal:attributes="href series/product/fmt:url"
-               tal:content="series/product/name"
+               tal:content="series/product/displayname"
               >$Product.name</a>
           </td>
           <td><a tal:attributes="href series/fmt:url"
-                 tal:content="series/name"
+                 tal:content="series/displayname"
               >Series.name</a></td>
-          <td tal:content="series/import_source_details">
+          <td tal:content="series/import_source_summary">
             :pserver:user@host:/cvsroot module
           </td>
           <td>

@@ -528,7 +528,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.import_branch.requestMirror()
 
     @property
-    def import_source_details(self):
+    def import_source_summary(self):
         assert self.rcstype is not None
         if self.rcstype == RevisionControlSystems.CVS:
             return '%s %s' % (self.cvsroot, self.cvsmodule)

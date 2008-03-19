@@ -340,9 +340,9 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
-    import_source_details = Text(
+    import_source_summary = Text(
         description=_(
-        "A one-line summary of the location this import is from."),
+            "A one-line summary of the location this import is from."),
         readonly=True)
 
     # where are the tarballs released from this branch placed?
