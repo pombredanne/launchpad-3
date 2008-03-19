@@ -223,7 +223,7 @@ def emailPeople(person):
 
 
 def contactEmailAddresses(person):
-    """Return a Set of email addresses to contact this Person.
+    """Return a set of email addresses to contact this Person.
 
     In general, it is better to use emailPeople instead.
     """

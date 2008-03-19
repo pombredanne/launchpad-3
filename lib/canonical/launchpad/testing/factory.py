@@ -151,8 +151,9 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, team_member, email=None, password=None):
-        team = self.makePerson(displayname='Qux', email=email,
+    def makeTeam(self, team_member, email=None, password=None,
+                 displayname=None):
+        team = self.makePerson(displayname=displayname, email=email,
                                password=password)
         team.teamowner = team_member
         team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN

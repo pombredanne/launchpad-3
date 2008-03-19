@@ -73,7 +73,7 @@ Baz Qux has proposed merging foo into bar.
         bmp, subscriber = self.makeProposalWithSubscriber()
         team_member = self.factory.makePerson(
             displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.factory.makeTeam(team_member)
+        team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp.source_branch.subscribe(team,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)

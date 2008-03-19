@@ -239,6 +239,7 @@ class TruncateTextTest(unittest.TestCase):
 
 
 class TestEmailPeople(unittest.TestCase):
+    """Tests for emailPeople"""
 
     layer = LaunchpadFunctionalLayer
 
@@ -256,8 +257,8 @@ class TestEmailPeople(unittest.TestCase):
         recipients = helpers.emailPeople(super_team)
         self.assertEqual(set([team_member]), recipients)
 
-    def test_getMailRecipientsTeam(self):
-        """Ensure getMailRecipients uses teams with preferredemail."""
+    def test_emailPeopleTeam(self):
+        """Ensure emailPeople uses teams with preferredemail."""
         team_member = self.factory.makePerson(
             displayname='Foo Bar', email='foo@bar.com', password='password')
         team = self.factory.makeTeam(
