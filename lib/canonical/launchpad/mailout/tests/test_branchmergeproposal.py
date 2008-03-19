@@ -9,7 +9,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus, TeamSubscriptionPolicy)
+    EmailAddressStatus)
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -39,14 +39,6 @@ class TestMergeProposalMailing(TestCase):
         bmp.source_branch.title = 'foo'
         bmp.target_branch.title = 'bar'
         return bmp, subscriber
-
-    def makeTeam(self, team_member, email=None, password=None):
-        team = self.factory.makePerson(displayname='Qux', email=email,
-                                       password=password)
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team, team)
-        return team
 
     def test_generateCreationEmail(self):
         """Ensure that the contents of the mail are as expected"""
@@ -81,14 +73,15 @@ Baz Qux has proposed merging foo into bar.
         bmp, subscriber = self.makeProposalWithSubscriber()
         team_member = self.factory.makePerson(
             displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.makeTeam(team_member)
+        team = self.factory.makeTeam(team_member)
         bmp.source_branch.subscribe(team,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         self.assertEqual('Your team Qux is subscribed to branch foo.',
             mailer.getReason(team_member))
-        mailer.recipients[subscriber] = mailer.recipients[team_member]
+        mailer._recipients._emailToPerson[
+            subscriber.preferredemail.email] = team
         try:
             mailer.getReason(subscriber)
         except AssertionError, e:
@@ -96,27 +89,6 @@ Baz Qux has proposed merging foo into bar.
                 'Baz Quxx does not participate in team Qux.', str(e))
         else:
             self.fail('Did not detect bogus team recipient.')
-
-    def test_getMailRecipientsIndirect(self):
-        """Ensure getMailRecipients uses indirect memberships."""
-        team_member = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.makeTeam(team_member)
-        super_team = self.makeTeam(team)
-        recipients = BMPMailer.getMailRecipients(
-            {super_team: 42})
-        self.assertEqual([(team_member, 42)], recipients.items())
-
-    def test_getMailRecipientsTeam(self):
-        """Ensure getMailRecipients uses teams with preferredemail."""
-        team_member = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.makeTeam(
-            team_member, email='team@bar.com', password='password')
-        super_team = self.makeTeam(team)
-        recipients = BMPMailer.getMailRecipients(
-            {super_team: 42})
-        self.assertEqual([(team, 42)], recipients.items())
 
 
 def test_suite():

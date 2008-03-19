@@ -208,10 +208,10 @@ def emailPeople(person):
     implement ITeam, the set will be empty.
     """
     if person.preferredemail is not None:
-        return set([people])
+        return set([person])
 
     people = set()
-    if ITeam.providedBy(person):
+    if person.isTeam():
         for member in person.activemembers:
             people.update(emailPeople(member))
     return people

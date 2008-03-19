@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces import (
     PersonCreationRationale,
     RevisionControlSystems,
     SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
 from canonical.launchpad.ftests import syncUpdate
@@ -149,6 +150,14 @@ class LaunchpadObjectFactory:
             # Leave the email as NEW.
             pass
         return person
+
+    def makeTeam(self, team_member, email=None, password=None):
+        team = self.makePerson(displayname='Qux', email=email,
+                               password=password)
+        team.teamowner = team_member
+        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+        team_member.join(team, team)
+        return team
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""

@@ -43,6 +43,9 @@ class NotificationRecipientSet:
         return sorted(
             self._personToRationale.keys(),  key=attrgetter('displayname'))
 
+    def getRecipientPersons(self):
+        return self._receiving_people
+
     def __iter__(self):
         """See `INotificationRecipientSet`."""
         return iter(self.getRecipients())
@@ -92,7 +95,7 @@ class NotificationRecipientSet:
             self._personToRationale[person] = reason, header
             for receiving_person in emailPeople(person):
                 self._receiving_people.add(receiving_person)
-                email = str(receiving_person.perferred_email)
+                email = str(receiving_person.preferredemail.email)
                 old_person = self._emailToPerson.get(email)
                 # Only associate this email to the person, if there was
                 # no association or if the previous one was to a team and
