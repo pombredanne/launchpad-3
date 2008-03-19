@@ -15,6 +15,7 @@ __all__ = ['BuilderSetNavigation',
            'BuilderView']
 
 import datetime
+import operator
 import pytz
 
 import zope.security.interfaces
@@ -25,7 +26,6 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBuilderSet, IBuilder, IBuildSet, IPerson, NotFoundError)
 from canonical.launchpad.webapp import (
@@ -155,35 +155,6 @@ class BuilderSetView(CommonBuilderView):
     __used_for__ = IBuilderSet
 
     @cachedproperty
-    def non_virtual_build_queue_depth_by_arch(self):
-        """Wrap `IBuilder.getBuildQueueDepthByArch` for the non-vitualised farm.
-
-        Return the listified results.
-        """
-        return shortlist(
-            self.context.getBuildQueueDepthByArch(virtualised=False))
-
-    @cachedproperty
-    def has_non_virtual_queued_builds(self):
-        """Whether there are pending job in the non-virtual queue."""
-        return bool(self.non_virtual_build_queue_depth_by_arch)
-
-    @cachedproperty
-    def virtual_build_queue_depth_by_arch(self):
-        """Wrap `IBuilder.getBuildQueueDepthByArch` for the vitualised farm.
-
-        Return the listified results.
-        """
-        return shortlist(
-            self.context.getBuildQueueDepthByArch(virtualised=True))
-
-    @cachedproperty
-    def has_virtual_queued_builds(self):
-        """Whether there are pending job in the virtual queue."""
-        return bool(self.virtual_build_queue_depth_by_arch)
-
-
-    @property
     def builders(self):
         """Return all active builders, with private builds cloaked.
 
@@ -192,6 +163,75 @@ class BuilderSetView(CommonBuilderView):
         """
         builders = self.context.getBuilders()
         return [self.overrideHiddenBuilder(builder) for builder in builders]
+
+    @property
+    def ppa_builders(self):
+        """Return a BuilderCategory object for PPA builders."""
+        builder_category = BuilderCategory(
+            'PPA builders', virtualized=True)
+        builders = [
+            builder for builder in self.builders if builder.virtualized]
+        builder_category.groupBuilders(builders)
+        return builder_category
+
+    @property
+    def other_builders(self):
+        """Return a BuilderCategory object for PPA builders."""
+        builder_category = BuilderCategory(
+            'Other builders', virtualized=False)
+        builders = [
+            builder for builder in self.builders
+            if builder.virtualized is False]
+        builder_category.groupBuilders(builders)
+        return builder_category
+
+
+class BuilderGroup:
+    """A group of builders for the processor.
+
+    Also stores the corresponding 'queue_size', the number of pending jobs
+    in this context.
+    """
+    def __init__(self, processor_name, queue_size, builders):
+        self.processor_name = processor_name
+        self.queue_size = queue_size
+        self.builders = builders
+
+
+class BuilderCategory:
+    """ A category of builders.
+
+    A collection of BuilderGroups as 'PPA builders' and 'Other builders'.
+    """
+    def __init__(self, title, virtualized):
+        self.title = title
+        self.virtualized = virtualized
+        self._builder_groups = []
+
+    @property
+    def groups(self):
+        """Return a list of BuilderGroups ordered by 'processor_name'."""
+        return sorted(self._builder_groups,
+                      key=operator.attrgetter('processor_name'))
+
+    def groupBuilders(self, builders):
+        """Group the given builders as a collection of Buildergroups.
+
+        A BuilderGroup will be initialized for each processor.
+        """
+        grouped_builders = {}
+        for builder in builders:
+            group = grouped_builders.setdefault(builder.processor, [])
+            group.append(builder)
+
+        builderset = getUtility(IBuilderSet)
+        for processor, builders in grouped_builders.iteritems():
+            queue_size = builderset.getBuildQueueSizeForProcessor(
+                processor, virtualized=self.virtualized)
+            builder_group = BuilderGroup(
+                processor.name, queue_size,
+                sorted(builders, key=operator.attrgetter('title')))
+            self._builder_groups.append(builder_group)
 
 
 class HiddenBuilder:

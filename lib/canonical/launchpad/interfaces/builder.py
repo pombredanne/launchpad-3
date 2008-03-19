@@ -292,15 +292,14 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueDepthByArch(virtualised=False):
-        """Return a list of tuples containing (arch, # of pending builds).
+    def getBuildQueueSizeForProcessor(processor, virtualized=False):
+        """Return the number of pending builds for a given processor.
 
-        'virtualised' controls whether the call site is interested in the
-        non-virtualised (default) build queue (PRIMARY and PARTNER archive)
-        or the virtualised build queue (PPAs).
+        :param processor: IProcessor;
+        :param virtualized: boolean, controls which queue to check,
+            'virtualized' means PPA.
 
-        Return a list of architectures and the number of Builds that are
-        in the NEEDSBUILD state for each of them.
+        :return the size of the queue, integer.
         """
 
     def pollBuilders(logger, txn):
