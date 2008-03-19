@@ -20,6 +20,7 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice, TextLine
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -27,7 +28,8 @@ from canonical.launchpad.interfaces import (
     ICodeImportSet, ILaunchpadCelebrities, ILaunchpadRoot,
     RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadEdotFormView,
+    LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadDropdownWidget
@@ -260,7 +262,7 @@ class CodeImportNewView(LaunchpadFormView):
                     branch_name=existing_branch.name))
 
 
-class CodeImportEditView(LaunchpadFormView):
+class CodeImportEditView(LaunchpadEditFormView):
     """View for editing code imports.
 
     This view is registered against the branch, but edits the
@@ -311,7 +313,7 @@ class CodeImportEditView(LaunchpadFormView):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
 
-    def _showApprove(self):
+    def _showApprove(self, ignored):
         """Show the Approve button if the import is not reviewed."""
         return self._showButtonForStatus(CodeImportReviewStatus.REVIEWED)
 
@@ -320,7 +322,7 @@ class CodeImportEditView(LaunchpadFormView):
         """Approve the import."""
         self.code_import.approve(data, self.user)
 
-    def _showInvalidate(self):
+    def _showInvalidate(self, ignored):
         """Show the Approve button if the import is not invalid."""
         return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
 
@@ -329,7 +331,7 @@ class CodeImportEditView(LaunchpadFormView):
         """Invalidate the import."""
         self.code_import.invalidate(data, self.user)
 
-    def _showSuspend(self):
+    def _showSuspend(self, ignored):
         """Show the Suspend button if the import is not suspended."""
         return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
 
