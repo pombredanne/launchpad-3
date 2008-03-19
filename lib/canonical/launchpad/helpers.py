@@ -24,7 +24,7 @@ from zope.component import getUtility
 import canonical
 from canonical.launchpad.interfaces import (
     BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
-    IRequestPreferredLanguages, IRequestLocalLanguages, ITeam,
+    IRequestPreferredLanguages, IRequestLocalLanguages,
     SourcePackageFileType)
 
 
@@ -204,8 +204,8 @@ def emailPeople(person):
     the set will contain the preferred email address of each member of
     <person>, including indirect members.
 
-    Finally, if <person> doesn't have a preferred email and does not
-    implement ITeam, the set will be empty.
+    Finally, if <person> doesn't have a preferred email and is not a team,
+    the set will be empty.
     """
     if person.preferredemail is not None:
         return set([person])

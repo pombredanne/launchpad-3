@@ -96,10 +96,6 @@ def test_shortest():
     ['foo', 'bar']
     """
 
-def test_simple_popen2():
-    r"""
-    """
-
 
 class DummyLanguage:
     def __init__(self, code, pluralforms):
@@ -231,8 +227,8 @@ class TruncateTextTest(unittest.TestCase):
         self.assertEqual('foo', helpers.truncate_text('foooo', 3))
 
     def test_words_arent_split(self):
-        """When the truncation would leave only half of the last word, then the
-        whole word is removed.
+        """When the truncation would leave only half of the last word, then
+        the whole word is removed.
         """
         self.assertEqual('foo', helpers.truncate_text('foo bar', 5))
 

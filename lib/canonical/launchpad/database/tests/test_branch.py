@@ -18,9 +18,9 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
     CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
-    IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
-    RevisionControlSystems, SpecificationDefinitionStatus)
+    IBranchSet, IBugSet, IPersonSet, IProductSet, ISpecificationSet,
+    InvalidBranchMergeProposal, PersonCreationRationale,
+    SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import BranchSet, BranchSubscription
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
