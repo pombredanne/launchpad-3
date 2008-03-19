@@ -50,6 +50,7 @@ Note how the query parameters are kept.
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
+    See all applications authorized to access Launchpad on your behalf.
 
     >>> browser.getControl('No Access')
     <SubmitControl...
@@ -115,6 +116,7 @@ If we can't find the token, we will explain that to the user.
     The information provided by the remote application was incorrect or
     incomplete. Because of that we were unable to identify the application
     which would access Launchpad on your behalf.
+    See all applications authorized to access Launchpad on your behalf.
 
     >>> params = dict(
     ...     oauth_token='zzzzzz', oauth_callback='http://example.com/oauth')
@@ -125,6 +127,7 @@ If we can't find the token, we will explain that to the user.
     The information provided by the remote application was incorrect or
     incomplete. Because of that we were unable to identify the application
     which would access Launchpad on your behalf.
+    See all applications authorized to access Launchpad on your behalf.
 
 The same happens if the token is already reviewed.  Although that's
 probably an indication that the user has already reviewed that token in
@@ -140,4 +143,5 @@ another window/tab so there's no need to worry.
     Request already reviewed
     This request for accessing Launchpad on your behalf has been
     reviewed ... ago.
+    See all applications authorized to access Launchpad on your behalf.
 

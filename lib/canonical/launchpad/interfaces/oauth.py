@@ -39,28 +39,28 @@ class OAuthPermission(DBEnumeratedType):
         """)
 
     READ_PUBLIC = DBItem(20, """
-        Read public data
+        Read non-private data
 
         The consumer can act on the user's behalf but only for reading public
         data.
         """)
 
     WRITE_PUBLIC = DBItem(30, """
-        Read and write public data
+        Read and change non-private data
 
         The consumer can act on the user's behalf but only for reading and
         writing public data.
         """)
 
     READ_PRIVATE = DBItem(40, """
-        Read public and private data
+        Read anything
 
         The consumer can act on the user's behalf but only for reading
         public and private data.
         """)
 
     WRITE_PRIVATE = DBItem(50, """
-        Read and write public and private data
+        Read and change anything
 
         The consumer can act on the user's behalf for reading and writing
         public and private data.

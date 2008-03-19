@@ -920,6 +920,8 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
+person_oauth_tokens = "Applications you authorized to access Launchpad"
+
 person_packages = ContextDisplayName('Packages maintained by %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")

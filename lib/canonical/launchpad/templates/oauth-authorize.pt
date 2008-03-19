@@ -90,6 +90,11 @@
         </p>
       </tal:token-reviewed>
     </tal:has-token>
+
+    <p>
+      See all <a tal:attributes="href string:${view/user/fmt:url}/+oauth-tokens"
+        >applications authorized</a> to access Launchpad on your behalf.
+    </p>
   </div>
 
 </body>
