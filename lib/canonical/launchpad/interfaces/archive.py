@@ -74,6 +74,11 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    buildd_secret = TextLine(
+        title=_("Buildd Secret"), required=False,
+        description=_("The password used by the builder to access the archive.")
+        )
+
     package_description_cache = Attribute(
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
