@@ -28,7 +28,7 @@ are tested in detail later.
 
     >>> download_link = anon_browser.getLink('test.txt')
     >>> download_link.url
-    'http://localhost:58000/82/test.txt'
+    'http://localhost:58000/.../test.txt'
 
     >>> raw_link = anon_browser.getLink('text')
     >>> raw_link.url
@@ -158,7 +158,7 @@ Individual submissions can be rendered in an RFC-822-formatted file.
     Distribution-Series: 5.04
     Architecture: i386
     System: Fujitsu_CY26
-    Submission URL: http://localhost:58000/82/test.txt
+    Submission URL: http://localhost:58000/.../test.txt
 
 Private submissions can't be viewed anonymously:
 
@@ -181,7 +181,7 @@ But they can with the right permissions.
     Distribution-Series: 5.04
     Architecture: i386
     System: Black Box 42
-    Submission URL: http://localhost:58000/84/teamtest.txt
+    Submission URL: http://localhost:58000/.../teamtest.txt
 
 
 == Submissions listed by fingerprint ==
