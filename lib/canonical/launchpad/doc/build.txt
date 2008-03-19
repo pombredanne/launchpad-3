@@ -875,4 +875,5 @@ when accessing the builds:
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
