@@ -109,7 +109,7 @@ class RandomiseOrderDescriptor:
     to the ORDER BY clause of queries that do not use DISTINCT or SET.
 
         >>> from canonical.config import config
-        >>> config.randomise_select_results
+        >>> config.database.randomise_select_results
         True
 
     The SelectResults class decides whether to randomise the order by
@@ -130,14 +130,14 @@ class RandomiseOrderDescriptor:
     When the config setting is False, that value is passed to
     randomiseOrder when the descriptor is accessed.
 
-        >>> config.randomise_select_results = False
+        >>> config.database.randomise_select_results = False
         >>> randomiseOrder = SQLBase._randomiseOrder
         >>> randomiseOrder
         False
     """
     def __get__(self, obj, type=None):
         from canonical.config import config
-        return config.randomise_select_results
+        return config.database.randomise_select_results
 
 
 class SQLBase(SQLOS):
@@ -695,11 +695,14 @@ def begin():
     """Begins a transaction."""
     ZopelessTransactionManager._installed.begin()
 
+
 def rollback():
     ZopelessTransactionManager._installed.abort()
 
+
 def commit():
     ZopelessTransactionManager._installed.commit()
+
 
 def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connecction to the database.
@@ -717,11 +720,11 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
 def connect_string(user, dbname=None):
     """Return a PostgreSQL connection string."""
-    con_str = 'dbname=%s' % (dbname or config.dbname)
+    con_str = 'dbname=%s' % (dbname or config.database.dbname)
     if user:
         con_str += ' user=%s' % user
-    if config.dbhost:
-        con_str += ' host=%s' % config.dbhost
+    if config.database.dbhost:
+        con_str += ' host=%s' % config.database.dbhost
     return con_str
 
 

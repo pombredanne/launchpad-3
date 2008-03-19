@@ -17,7 +17,6 @@ You can specify the db_location explicitly:
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     DebBugs)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
@@ -65,6 +64,15 @@ Bug 563 resides in the archive. It is also fetchable:
     'done normal'
 
 
+== Getting the time ==
+
+We don't have acccess to the Debian servers exact time, but we trust it
+being correct.
+
+    >>> external_debbugs.getCurrentDBTime()
+    datetime.datetime(...)
+
+
 == Checking debbugs bug watches ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
@@ -80,10 +88,13 @@ tested later.
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.import_comments = False
+    >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches on http://...
 
-    >>> for bug_watch in bug_watches:
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> for bug_watch_id in bug_watch_ids:
+    ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     280883: done grave woody security
     304014: open important
@@ -224,18 +235,13 @@ All other tags we map to 'New'.
     ...     'open normal unreproducible lfs woody').title
     New
 
-If we pass in a malformed status string, we map it to 'Unknown' and
-log an error.
+If we pass in a malformed status string an UnknownRemoteStatusError will
+be raised.
 
-    >>> print external_debbugs.convertRemoteStatus('open').title
-    WARNING:...:Malformed debbugs status: 'open'.
-    Unknown
-
-UNKNOWN_REMOTE_STATUS maps to Unknown.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> print external_debbugs.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    Unknown
+    >>> print external_debbugs.convertRemoteStatus('open')
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Importing bugs ==
@@ -311,7 +317,8 @@ ISupportsCommentImport interface.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, ISupportsCommentImport)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> external_debbugs = get_external_bugtracker(
