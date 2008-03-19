@@ -1,3 +1,8 @@
+= Adding bugtask with bug watch =
+
+
+== HTTP & HTTPS URLs ==
+
 When adding a bug watch together with a new bugtask, you have to enter
 the URL of the remote bug.
 
@@ -135,3 +140,44 @@ to HTTP on their behalf:
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
     http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
     http://new.trac/ticket/42
+
+
+== Email Addresses ==
+
+Similar things happen when the upstream link is an email address:
+
+    >>> user_browser.open(
+    ...    'http://bugs.launchpad.dev/evolution/+bug/6/'
+    ...    '+choose-affected-product')
+    >>> user_browser.getControl('Project').value = 'gnome-terminal'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> user_browser.getControl('I have already emailed').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.upstream_email_address_done').value = (
+    ...         'dark-master-o-bugs@mylittlepony.com')
+
+    >>> from canonical.launchpad.ftests.bug import print_upstream_linking_form
+    >>> print_upstream_linking_form(user_browser)
+    ( ) I have the URL for the upstream bug:
+        [          ]
+    (*) I have already emailed an upstream bug contact:
+        [dark-master-o-bugs@mylittlepony.com]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
+
+The bug tracker is automatically created without asking for
+confirmation.
+
+    >>> user_browser.getControl('Add to Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/gnome-terminal/+bug/6'
+
+    >>> bug_watches = find_portlet(
+    ...     user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     bug_watch_link = li.findAll('a')[1]
+    ...     print ' '.join(extract_text(bug_watch_link).splitlines())
+    ...     print '  --> %s' % bug_watch_link.get('href')
+    auto-dark-master-o-bugs #
+      --> mailto:dark-master-o-bugs@mylittlepony.com
