@@ -39,6 +39,7 @@ __all__ = [
     ]
 
 from operator import attrgetter
+import urllib
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -719,7 +720,9 @@ class ProductDownloadFileMixin:
         if release is None:
             release = self.context
         url = urlappend(canonical_url(release), '+download')
-        url = urlappend(url, file_.filename)
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
         return str(URI(url).replace(scheme='http'))
 
     def md5URL(self, file_, release=None):

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# We use global in this module.
+# pylint: disable-msg=W0602
 
 __metaclass__ = type
 
@@ -21,9 +23,9 @@ import psycopg
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
-from canonical.config import config, dbconfig
+from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
+from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
@@ -39,6 +41,7 @@ __all__ = [
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
@@ -272,14 +275,14 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
         """Ignore dsn"""
         super(SessionDatabaseAdapter, self).__init__(
             'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % dict(
-                dbuser=config.launchpad.session.dbuser,
-                dbhost=config.launchpad.session.dbhost or '',
-                dbname=config.launchpad.session.dbname))
+                dbuser=config.launchpad_session.dbuser,
+                dbhost=config.launchpad_session.dbhost or '',
+                dbname=config.launchpad_session.dbname))
 
     def _connection_factory(self):
         flags = _get_dirty_commit_flags()
         connection = super(SessionDatabaseAdapter, self)._connection_factory()
-        connection.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         connection.cursor().execute("SET client_encoding TO UTF8")
         _reset_dirty_commit_flags(*flags)
         return connection
@@ -386,17 +389,18 @@ def _check_expired(timeout):
 
 def hard_timeout_expired():
     """Returns True if the hard request timeout been reached."""
-    return _check_expired(dbconfig.db_statement_timeout)
+    return _check_expired(config.database.db_statement_timeout)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(dbconfig.soft_request_timeout)
+    return _check_expired(config.database.soft_request_timeout)
 
 
 def reset_hard_timeout(execute_func):
     """Reset the statement_timeout to remaining wallclock time."""
-    if dbconfig.db_statement_timeout is None:
+    timeout = config.database.db_statement_timeout
+    if timeout is None:
         return # No timeout - nothing to do
 
     global _local
@@ -406,15 +410,14 @@ def reset_hard_timeout(execute_func):
         return # Not in a request - nothing to do
 
     now = time()
-    remaining_ms = (
-            dbconfig.db_statement_timeout - int((now - start_time) * 1000))
+    remaining_ms = (timeout - int((now - start_time) * 1000))
 
     if remaining_ms <= 0:
         return # Already timed out - nothing to do
 
     # Only reset the statement timeout once in this many milliseconds
     # to avoid too many database round trips.
-    precision = config.launchpad.db_statement_timeout_precision
+    precision = config.database.db_statement_timeout_precision
 
     current_statement_timeout = getattr(
             _local, 'current_statement_timeout', None)
@@ -532,11 +535,10 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         """Override method provided by PsycopgAdapter to pull
         connection settings from the config file
         """
-        dbuser = getattr(self._local, 'dbuser', None)
         self.setDSN('dbi://%s@%s/%s' % (
-            dbuser or dbconfig.dbuser,
-            dbconfig.dbhost or '',
-            dbconfig.dbname
+            self.getUser(),
+            config.database.dbhost or '',
+            config.database.dbname
             ))
 
         flags = _get_dirty_commit_flags()
@@ -559,6 +561,10 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         self.disconnect()
         self._local.dbuser = dbuser
         self.connect()
+
+    def getUser(self):
+        """Return the dbuser used by this connection."""
+        return getattr(self._local, 'dbuser', None) or config.launchpad.dbuser
 
 
 class SQLOSAccessFromMainThread(Exception):

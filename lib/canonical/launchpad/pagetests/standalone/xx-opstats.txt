@@ -113,11 +113,16 @@ particular need to differentiate these cases though:
     xml-rpc faults: 1
     xml-rpc requests: 1
 
+
 == Number of soft timeouts ==
 
+    >>> from textwrap import dedent
     >>> from canonical.config import config
-    >>> old_soft_request_timeout = config.launchpad.soft_request_timeout
-    >>> config.launchpad.soft_request_timeout = 1
+    >>> test_data = dedent("""
+    ...     [database]
+    ...     soft_request_timeout: 1
+    ...     """)
+    >>> config.push('base_test_data', test_data)
     >>> output = http(r"""
     ... GET /+soft-timeout HTTP/1.1
     ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -136,9 +141,12 @@ We can't reliably track this using the 503 response code as other
 Launchpad code may well return this status and an XML-RPC request may
 also return a timeout Fault:
 
-    >>> old_db_statement_timeout = config.launchpad.db_statement_timeout
-    >>> config.launchpad.db_statement_timeout = 1
-    >>> config.launchpad.soft_request_timeout = 2
+    >>> test_data = dedent("""
+    ...     [database]
+    ...     db_statement_timeout: 1
+    ...     soft_request_timeout: 2
+    ...     """)
+    >>> config.push('test_data', test_data)
     >>> output = http(r"""
     ... GET /+soft-timeout HTTP/1.1
     ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -154,8 +162,8 @@ also return a timeout Fault:
 
 Reset our config until Bug 78545 is fixed:
 
-    >>> config.launchpad.db_statement_timeout = old_db_statement_timeout
-    >>> config.launchpad.soft_request_timeout = old_soft_request_timeout
+    >>> base_test_data = config.pop('base_test_data')
+
 
 == HTTP access for Cricket ==
 

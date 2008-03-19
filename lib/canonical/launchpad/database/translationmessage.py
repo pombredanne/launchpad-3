@@ -16,7 +16,7 @@ from zope.interface import implements
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
@@ -153,18 +153,18 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
-    msgstr0 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr0', notNull=True)
-    msgstr1 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr1', notNull=True)
-    msgstr2 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr2', notNull=True)
-    msgstr3 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr3', notNull=True)
-    msgstr4 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr4', notNull=True)
-    msgstr5 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr5', notNull=True)
+    msgstr0 = ForeignKey(foreignKey='POTranslation', dbName='msgstr0',
+                         notNull=False, default=DEFAULT)
+    msgstr1 = ForeignKey(foreignKey='POTranslation', dbName='msgstr1',
+                         notNull=False, default=DEFAULT)
+    msgstr2 = ForeignKey(foreignKey='POTranslation', dbName='msgstr2',
+                         notNull=False, default=DEFAULT)
+    msgstr3 = ForeignKey(foreignKey='POTranslation', dbName='msgstr3',
+                         notNull=False, default=DEFAULT)
+    msgstr4 = ForeignKey(foreignKey='POTranslation', dbName='msgstr4',
+                         notNull=False, default=DEFAULT)
+    msgstr5 = ForeignKey(foreignKey='POTranslation', dbName='msgstr5',
+                         notNull=False, default=DEFAULT)
 
     comment = StringCol(
         dbName='comment', notNull=False, default=None)

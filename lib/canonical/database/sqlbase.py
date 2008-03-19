@@ -21,35 +21,35 @@ from canonical.database.interfaces import ISQLBase
 
 __all__ = [
     'alreadyInstalledMsg',
-    'AUTOCOMMIT_ISOLATION',
     'begin',
     'clear_current_connection_cache',
     'commit',
     'ConflictingTransactionManagerError',
     'connect',
     'cursor',
-    'DEFAULT_ISOLATION',
     'expire_from_cache',
     'flush_database_caches',
     'flush_database_updates',
+    'ISOLATION_LEVEL_AUTOCOMMIT',
+    'ISOLATION_LEVEL_DEFAULT',
+    'ISOLATION_LEVEL_READ_COMMITTED',
+    'ISOLATION_LEVEL_SERIALIZABLE',
     'quote',
     'quote_like',
     'quoteIdentifier',
     'RandomiseOrderDescriptor',
-    'READ_COMMITTED_ISOLATION',
     'rollback',
-    'SERIALIZABLE_ISOLATION',
     'SQLBase',
     'sqlvalues',
     'ZopelessTransactionManager',]
 
 # As per badly documented psycopg 1 constants
-AUTOCOMMIT_ISOLATION = 0
-READ_COMMITTED_ISOLATION = 1
-SERIALIZABLE_ISOLATION = 3
+ISOLATION_LEVEL_AUTOCOMMIT = 0
+ISOLATION_LEVEL_READ_COMMITTED = 1
+ISOLATION_LEVEL_SERIALIZABLE = 3
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
-DEFAULT_ISOLATION = READ_COMMITTED_ISOLATION
+ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED
 
 # First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
@@ -108,7 +108,7 @@ class RandomiseOrderDescriptor:
     to the ORDER BY clause of queries that do not use DISTINCT or SET.
 
         >>> from canonical.config import config
-        >>> config.randomise_select_results
+        >>> config.database.randomise_select_results
         True
 
     The SelectResults class decides whether to randomise the order by
@@ -129,14 +129,14 @@ class RandomiseOrderDescriptor:
     When the config setting is False, that value is passed to
     randomiseOrder when the descriptor is accessed.
 
-        >>> config.randomise_select_results = False
+        >>> config.database.randomise_select_results = False
         >>> randomiseOrder = SQLBase._randomiseOrder
         >>> randomiseOrder
         False
     """
     def __get__(self, obj, type=None):
         from canonical.config import config
-        return config.randomise_select_results
+        return config.database.randomise_select_results
 
 
 class SQLBase(SQLOS):
@@ -181,7 +181,7 @@ class _ZopelessConnectionDescriptor(object):
     """
     def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
                  debug=False, implicitActivate=True, reconnect=False,
-                 isolation=DEFAULT_ISOLATION):
+                 isolation=ISOLATION_LEVEL_DEFAULT):
         self.connectionURI = connectionURI
         self.sqlosAdapter = sqlosAdapter
         self.transactions = {}
@@ -282,7 +282,7 @@ class _ZopelessConnectionDescriptor(object):
     @classmethod
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitActivate=True, reconnect=False,
-                isolation=DEFAULT_ISOLATION):
+                isolation=ISOLATION_LEVEL_DEFAULT):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
             # ZopelessTransactionManager.__new__ should now prevent this from
@@ -339,7 +339,7 @@ class ZopelessTransactionManager(object):
     reset_after_transaction = True
 
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
-                implicitBegin=True, isolation=DEFAULT_ISOLATION):
+                implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
         if cls._installed is not None:
             if (cls._installed.connectionURI != connectionURI or
                 cls._installed.sqlClass != sqlClass or
@@ -357,7 +357,7 @@ class ZopelessTransactionManager(object):
         return cls._installed
 
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
-                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
+                 implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
         # For some reason, Python insists on calling __init__ on anything
         # returned from __new__, even if it's not a newly constructed object
         # (i.e. type.__call__ calls __init__, rather than object.__new__ like
@@ -387,11 +387,12 @@ class ZopelessTransactionManager(object):
     def set_isolation_level(self, level):
         """Set the transaction isolation level.
 
-        Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
-        or SERIALIZABLE_ISOLATION. As changing the isolation level must be
-        done before any other queries are issued in the current transaction,
-        this method automatically issues a rollback to ensure this is the
-        case.
+        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
+        ISOLATION_LEVEL_READ_COMMITTED or
+        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
+        must be done before any other queries are issued in the
+        current transaction, this method automatically issues a
+        rollback to ensure this is the case.
         """
         con = self.conn()
         # Changing the isolation level must be done before any other queries
@@ -699,7 +700,7 @@ def rollback():
 def commit():
     ZopelessTransactionManager._installed.commit()
 
-def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
+def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connecction to the database.
 
     Use None for the user to connect as the default PostgreSQL user.
@@ -708,11 +709,11 @@ def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
     Default database name is the one specified in the main configuration file.
     """
     from canonical.config import config
-    con_str = 'dbname=%s' % (dbname or config.dbname)
+    con_str = 'dbname=%s' % (dbname or config.database.dbname)
     if user:
         con_str += ' user=%s' % user
-    if config.dbhost:
-        con_str += ' host=%s' % config.dbhost
+    if config.database.dbhost:
+        con_str += ' host=%s' % config.database.dbhost
     con = psycopg.connect(con_str)
     con.set_isolation_level(isolation)
     return con
@@ -732,7 +733,8 @@ class FakeZopelessTransactionManager:
     # There really should be a formal interface that both this and
     # ZopelessTransactionManager implement.
 
-    def __init__(self, implicitBegin=False, isolation=DEFAULT_ISOLATION):
+    def __init__(self, implicitBegin=False,
+                 isolation=ISOLATION_LEVEL_DEFAULT):
         assert ZopelessTransactionManager._installed is None
         ZopelessTransactionManager._installed = self
         self.desc = FakeZopelessConnectionDescriptor.install(None)

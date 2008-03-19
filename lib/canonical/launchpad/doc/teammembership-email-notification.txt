@@ -16,12 +16,10 @@ for the member.
     ...     and transaction.commit after, to ensure the changes are flushed to
     ...     the database.
     ...     """
-    ...     membership.setStatus(
-    ...         status, reviewer=reviewer, reviewercomment=comment)
+    ...     membership.setStatus(status, reviewer, comment=comment)
     ...     flush_database_updates()
     ...     transaction.commit()
 
-    >>> import email
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_distinct_emails)
@@ -242,7 +240,6 @@ an invitation to the team's admins, telling them that the membership will
 only be activated if they accept the invitation.
 
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
     >>> mirror_admins.getTeamAdminsEmailAddresses()
     ['mark@hbd.com']
     >>> ubuntu_team.addMember(mirror_admins, reviewer=cprov)

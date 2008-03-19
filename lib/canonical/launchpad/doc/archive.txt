@@ -26,6 +26,12 @@ records to disk, including configuration and indexes.
     u'It is not my fault.'
     >>> cprov_archive.private
     False
+    >>> cprov_archive.require_virtualized
+    True
+    >>> cprov_archive.sources_cached
+    3
+    >>> cprov_archive.binaries_cached
+    3
 
 Useful properties:
 

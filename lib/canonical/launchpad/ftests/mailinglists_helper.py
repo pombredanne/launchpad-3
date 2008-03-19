@@ -163,6 +163,7 @@ def new_team(team_name, with_list=False):
     else:
         return team, new_list_for_team(team)
 
+
 def new_list_for_team(team):
     """A helper that creates a new, active mailing list for a team.
 
