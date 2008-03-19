@@ -98,9 +98,9 @@ class SMTPServer:
         # Import this here since sys.path won't be set up properly when this
         # module is imported.
         from canonical.config import config
-        host, port = config.mailman.smtp.split(':')
+        from canonical.launchpad.mailman.config import configure_smtp
         s = socket.socket()
-        s.connect(host, port)
+        s.connect(configure_smtp(config.mailman.smtp))
         s.setblocking(0)
         s.send(command + '\r\n')
         s.close()

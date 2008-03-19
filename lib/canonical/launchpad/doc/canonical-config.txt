@@ -119,18 +119,18 @@ a database category, and the ZConfig does not.
 3. When the key is found in ZConfig, only, the ZConfig value is
 returned. The key was probably a ZConfig section; lazr.config does not
 support multi-sections. For example, the ZConfig instance has nested
-hostnames: 'mailman.build.build'.
+launchpad_session as sesson in launchpad: 'launchpad.session.dbuser'.
 
-    >>> config._config.mailman['build'].build
+    >>> config._config.launchpad['session'].dbuser
     Traceback (most recent call last):
       ...
-    KeyError: 'build'
+    KeyError: 'session'
 
-    >>> config._cache.testrunner.mailman.build.build
-    False
+    >>> config._cache.testrunner.launchpad.session.dbuser
+    'session'
 
-    >>> config.mailman.build_build
-    False
+    >>> config.launchpad.session.dbuser
+    'session'
 
 
 === UnconvertedConfigWarning ===
@@ -158,11 +158,11 @@ key.
     >>> import os
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'true'
 
-    >>> config.mailman.build
+    >>> config.launchpad.session.dbuser
     Traceback (most recent call last):
      ...
     UnconvertedConfigWarning: Callsite requests a nonexistent key:
-    'mailman.build'.
+    'launchpad.session'.
 
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
 

@@ -36,7 +36,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
-from canonical.launchpad.mailman.config import prefix
+from canonical.launchpad.mailman.config import configure_prefix
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
@@ -182,7 +182,7 @@ class MailingListSyncScript(LaunchpadCronScript):
     def deleteMailmanList(self, list_name):
         """Delete all Mailman data structures for `list_name`."""
         mailman_bindir = os.path.normpath(os.path.join(
-            prefix(config.mailman.build_prefix), 'bin'))
+            configure_prefix(config.mailman.build_prefix), 'bin'))
         process = subprocess.Popen(('./rmlist', '-a', list_name),
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
@@ -208,7 +208,7 @@ class MailingListSyncScript(LaunchpadCronScript):
 
         # We need to get to the Mailman API.  Set up the paths so that Mailman
         # can be imported.  This can't be done at module global scope.
-        mailman_path = prefix(config.mailman.build_prefix)
+        mailman_path = configure_prefix(config.mailman.build_prefix)
         sys.path.append(mailman_path)
 
         retcode = self.syncMailmanDirectories(source_url)
