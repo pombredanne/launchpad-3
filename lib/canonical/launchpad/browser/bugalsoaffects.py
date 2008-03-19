@@ -19,18 +19,22 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, IAddBugTaskForm,
-    IAddBugTaskWithProductCreationForm, IAddBugTaskWithUpstreamLinkForm, IBug,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistributionSourcePackage,
-    ILaunchBag, ILaunchpadCelebrities, IProductSet, LinkUpstreamHowOptions,
-    NoBugTrackerFound, UnrecognizedBugTrackerURL, valid_upstreamtask,
+    IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
+    IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
+    ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
+    UnrecognizedBugTrackerURL, valid_remote_bug_url, valid_upstreamtask,
     validate_new_distrotask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.menu import structured
+
+from canonical.lazr import EnumeratedType, Item
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
@@ -508,6 +512,78 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                     bugtask.sourcepackagename)
                 break
         return super(DistroBugTaskCreationStep, self).render()
+
+
+class LinkUpstreamHowOptions(EnumeratedType):
+    LINK_UPSTREAM = Item(
+        """I have the URL for the upstream bug:
+
+        Enter the URL in the upstream bug tracker. If it's in a
+        supported upstream bug tracker, Launchpad can download the
+        status and display it in the bug report.
+        """)
+
+# XXX: GavinPanella 2008-02-13 bug=201793: This will be uncommented in
+# a later branch.
+#
+#     EMAIL_UPSTREAM = Item(
+#         """I would like to email an upstream bug contact.
+#
+#         Launchpad will prepare an example email containing all the
+#         pertinent details. You can send it from Launchpad or from your
+#         own mail software. If you send it from Launchpad, it'll save
+#         the message id and - in the future - will use it to try and
+#         follow the resulting conversation, provided it happens on a
+#         public mailing list.
+#         """)
+
+    EMAIL_UPSTREAM_DONE = Item(
+        """I have already emailed an upstream bug contact:
+
+        Launchpad will record that.
+        """)
+
+# XXX: GavinPanella 2008-02-13 bug=201793: This additional description
+# for EMAIL_UPSTREAM_DONE should be appended when EMAIL_UPSTREAM is
+# made available.
+#
+#   "Next time, try using Launchpad to send the message upstream
+#    too. That way it may be able to follow the conversation that
+#    results from your bug report. This is especially true for public
+#    mailing lists."
+
+    UNLINKED_UPSTREAM = Item(
+        """I just want to register that it is upstream right now; \
+           I don't have any way to link it.
+
+        Launchpad will record that.
+        """)
+
+
+class IAddBugTaskWithUpstreamLinkForm(IAddBugTaskForm):
+    """Form for adding an upstream bugtask with linking options.
+
+    The choices in link_upstream_how correspond to zero or one of the
+    text fields. For example, if link_upstream_how is LINK_UPSTREAM
+    then bug_url is the relevant field, and the other text fields,
+    like upstream_email_address_done, can be ignored.
+
+    That also explains why none of the text fields are required. That
+    check is left to the view, in part so that better error messages
+    can be provided.
+    """
+    link_upstream_how = Choice(
+        title=_('How'), required=False,
+        vocabulary=LinkUpstreamHowOptions,
+        default=LinkUpstreamHowOptions.LINK_UPSTREAM,
+        description=_("How to link to an upstream bug."))
+    bug_url = StrippedTextLine(
+        title=_('Bug URL'), required=False, constraint=valid_remote_bug_url,
+        description=_("The URL of this bug in the remote bug tracker."))
+    upstream_email_address_done = StrippedTextLine(
+        title=_('Email Address'), required=False, constraint=email_validator,
+        description=_("The upstream email address that this bug has been "
+                      "forwarded to."))
 
 
 class ProductBugTaskCreationStep(BugTaskCreationStep):
