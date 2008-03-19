@@ -3,10 +3,7 @@
 The PO parser handles GNU gettext format human readable files.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, ITranslationMessageData, ITranslationHeaderData)
-    >>> from canonical.launchpad.translationformat import (
-    ...     TranslationMessageData)
+    >>> from canonical.launchpad.interfaces import ITranslationHeaderData
     >>> from canonical.launchpad.translationformat.gettext_po_parser import (
     ...     POHeader, POParser)
 
@@ -480,7 +477,7 @@ syntax error:
     >>> plural_form_mapper('n==1? 0', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
 
-Symbol like '~' is disallowed:
+Symbols like '~' are disallowed:
 
     >>> plural_form_mapper('~n', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
