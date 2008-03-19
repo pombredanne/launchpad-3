@@ -46,7 +46,10 @@ def code_import_status_updated(code_import, user):
     recipients = branch.getNotificationRecipients()
     # Add in the vcs-imports user.
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    recipients.add(vcs_imports, None, 'Member of VCS Imports')
+    recipients.add(
+        vcs_imports, None,
+        'You are getting this email because you are a member of the '
+        'vcs-imports team.')
 
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name}
 

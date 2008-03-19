@@ -193,22 +193,81 @@ done using the code import methods: approve; suspend; and invalidate.
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> code_import = factory.makeCodeImport()
-    >>> print code_import.review_status
-    Pending Approval
+    >>> print code_import.review_status.title
+    Pending Review
 
 When an import operator updates the status of the code import, emails
 are sent out to the branch subscribers, and to the members of VCS
-Imports.  The registrant of the code import is implicitly subscribed
-to the new import branch.
+Imports.
 
-    >>> for subscriber in code_import.branch.subscribers:
-    ...     print subscriber.displayname
+The logged in user is normally subscribed to the new import as it is
+created if done through the web UI, so we'll add nopriv here.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionDiffSize,
+    ...     BranchSubscriptionNotificationLevel)
+    >>> subscription = code_import.branch.subscribe(
+    ...     nopriv,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.NODIFF)
 
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
-    >>> stub.test_emails = []
+    >>> ignore_old_emails = pop_notifications()
     >>> code_import.approve({}, nopriv)
-    >>> print_emails()
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, foo.bar@canonical.com,
+        robertc@robertcollins.net
+    Subject: Code import product.../name... status: Reviewed
+    <BLANKLINE>
+    The import has been approved and an import will start shortly.
+    --
+    http://code.launchpad.dev/~vcs-imports/product.../name...
+    You are getting this email because you are a member of the vcs-imports team.
+    ----------------------------------------
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Reviewed
+    <BLANKLINE>
+    The import has been approved and an import will start shortly.
+    --
+    http://code.launchpad.dev/~vcs-imports/product.../name...
+    You are receiving this email as you are subscribed to the branch.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~vcs-import=
+    s/product.../name.../+edit-subscription.
+    ----------------------------------------
+
+Similarly, an email is sent out when the import is suspended or
+invalidated.
+
+    >>> code_import.suspend({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, foo.bar@canonical.com,
+        robertc@robertcollins.net
+    Subject: Code import product.../name... status: Suspended
+    <BLANKLINE>
+    The import has been suspended.
+    ...
+    ----------------------------------------
+    ...
+    To: no-priv@canonical.com
+    ...
+
+    >>> code_import.invalidate({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, foo.bar@canonical.com,
+        robertc@robertcollins.net
+    Subject: Code import product-name6/name11 status: Invalid
+    <BLANKLINE>
+    The import has been marked as invalid.
+    ...
+    ----------------------------------------
+    ...
+    To: no-priv@canonical.com
+    ...
 
 
 == Update intervals ==
