@@ -619,7 +619,6 @@ working on Humpy, as long as they're still translating the same messages.
 Get the needed objects to prepare this test.
 
     >>> import datetime
-    >>> import pytz
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
@@ -948,8 +947,6 @@ to do the translation migration to this new distro series.
 Now, we execute the script that will migrate/copy all current templates
 and translations from testing_series' parent distro series (hoary).
 
-    >>> import subprocess
-    >>> import sys
     >>> import transaction
     >>> from canonical.launchpad.ftests.script import run_script
 

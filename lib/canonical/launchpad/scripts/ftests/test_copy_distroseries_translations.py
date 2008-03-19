@@ -27,6 +27,15 @@ class MockTransactionManager:
         pass
 
 
+class MockSeries:
+    name = "MockSeries"
+    hide_all_translations = False
+    defer_translation_imports = False
+
+    def copyMissingTranslationsFromParent(txn, logger):
+        raise Exception("Deliberate failure for test purposes.")
+
+
 class TestCopying(TestCase):
     layer = LaunchpadZopelessLayer
     txn = MockTransactionManager()
@@ -67,6 +76,48 @@ class TestCopying(TestCase):
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
+
+    def _copyAndFail(self, series):
+        """Run copy on a mock DistroSeries which always fails."""
+        failed = False
+        try:
+            update_translations(series, self.txn, logging)
+        except Exception:
+            failed = True
+
+        self.assertTrue(failed, "Exception while copying was swallowed.")
+
+
+    def test_errorHandling(self):
+        """Test that errors while copying restore flags properly."""
+        series = MockSeries()
+
+        series.hide_all_translations = False
+        series.defer_translation_imports = False
+        self._copyAndFail(series)
+        self.assertFalse(series.hide_all_translations)
+        self.assertFalse(series.defer_translation_imports)
+
+
+        series.hide_all_translations = False
+        series.defer_translation_imports = True
+        self._copyAndFail(series)
+        self.assertFalse(series.hide_all_translations)
+        self.assertTrue(series.defer_translation_imports)
+
+
+        series.hide_all_translations = True
+        series.defer_translation_imports = False
+        self._copyAndFail(series)
+        self.assertTrue(series.hide_all_translations)
+        self.assertFalse(series.defer_translation_imports)
+
+
+        series.hide_all_translations = True
+        series.defer_translation_imports = True
+        self._copyAndFail(series)
+        self.assertTrue(series.hide_all_translations)
+        self.assertTrue(series.defer_translation_imports)
 
 
 def test_suite():

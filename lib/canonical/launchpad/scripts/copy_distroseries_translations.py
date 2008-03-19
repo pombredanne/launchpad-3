@@ -17,7 +17,7 @@ class SeriesTranslationFlagsModified(Warning):
     The flags `DistroSeries.hide_all_translations` and
     `DistroSeries.defer_translation_imports` flags were set before
     `update_translations` started updating the `DistroSeries`' translations,
-    but someone elase modified their state before it completed.
+    but someone else modified their state before it completed.
     """
 
 
@@ -79,6 +79,7 @@ def update_translations(series, txn, logger):
     """
     statekeeper = SeriesStateKeeper()
     statekeeper.prepare(series)
+    name = series.name
     txn.commit()
     txn.begin()
 
@@ -105,7 +106,7 @@ def update_translations(series, txn, logger):
             logger.warning(
                 "Failed to restore hide_all_translations and "
                 "defer_translation_imports flags on %s after translations "
-                "copy failed.  Please check them manually." % series.name)
+                "copy failed.  Please check them manually." % name)
             # If the original copying etc. in the main try block failed, that
             # is the error most worth propagating.  Propagate a failure in
             # restoring the translations flags only if everything else went
