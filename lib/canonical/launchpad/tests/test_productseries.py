@@ -230,13 +230,18 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         for series in ProductSeries.select():
             series.deleteImport()
         flush_database_updates()
+        self.factory = LaunchpadObjectFactory()
 
-    def getSeriesForProduct(self, product_name):
-        """Return a arbitrary ProducSeries associated to named product."""
-        # We return the development focus of the product, just because that's
-        # the easiest thing to do.
-        product = getUtility(IProductSet).getByName(product_name)
-        return product.development_focus
+    def makeSeries(self, project_name=None, product_name=None,
+                   series_name=None):
+        """Make a new ProductSeries for a new Product, mabye in a new Project.
+        """
+        if project_name is not None:
+            project = self.factory.makeProject(name=project_name)
+        else:
+            project = None
+        product = self.factory.makeProduct(name=product_name, project=project)
+        return self.factory.makeSeries(product=product, name=series_name)
 
     def addImportDetailsToSeries(self, series, module_name='hello'):
         """Add import data to the provided series.
@@ -251,32 +256,29 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         flush_database_updates()
 
     def testEmpty(self):
-        """We start out with no series with import data, so searchImports()
-        returns no results.
-        """
+        # We start out with no series with import data, so searchImports()
+        # returns no results.
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 
     def testOneSeries(self):
-        """When there is one series with import data, it is returned."""
-        series = self.getSeriesForProduct('firefox')
+        # When there is one series with import data, it is returned.
+        series = self.makeSeries()
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
 
-    def testOneSeriesNoProject(self):
-        """Series for products with no project should be returned too."""
-        series = self.getSeriesForProduct('jokosher')
-        self.failIf(series.product.project)
+    def testOneSeriesWithProject(self):
+        # Series for products with a project should be returned too.
+        series = self.makeSeries(project_name="whatever")
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
 
     def testExcludeDeactivatedProducts(self):
-        """Deactivating a product means that series associated to it are no
-        longer returned.
-        """
-        series = self.getSeriesForProduct('firefox')
+        # Deactivating a product means that series associated to it are no
+        # longer returned.
+        series = self.factory.makeSeries()
         self.addImportDetailsToSeries(series)
         self.failUnless(series.product.active)
         results = getUtility(IProductSeriesSet).searchImports()
@@ -286,11 +288,23 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 
+    def testExcludeDeactivatedProjects(self):
+        # Deactivating a project means that series associated to products in
+        # it are no longer returned.
+        series = self.makeSeries(project_name="whatever")
+        self.addImportDetailsToSeries(series)
+        self.failUnless(series.product.project.active)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+        series.product.project.active = False
+        flush_database_updates()
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [])
+
     def testSearchByStatus(self):
-        """If passed a status, searchImports only returns series with that
-        status.
-        """
-        series = self.getSeriesForProduct('firefox')
+        # If passed a status, searchImports only returns series with that
+        # status.
+        series = self.makeSeries()
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports(
             importstatus=ImportStatus.SYNCING)
@@ -300,19 +314,48 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         self.assertEquals(list(results), [])
 
     def testSorting(self):
-        """Returned series are sorted by product name, then series name."""
-        factory = LaunchpadObjectFactory()
-        product1 = factory.makeProduct(name='product1')
-        product1_a = factory.makeSeries(product=product1, name='a')
-        product2 = factory.makeProduct(name='product2')
-        product2_a = factory.makeSeries(product=product2, name='a')
-        product1_b = factory.makeSeries(product=product1, name='b')
+        # Returned series are sorted by product name, then series name.
+        product1_a = self.makeSeries(product_name='product1', series_name='a')
+        product2_a = self.makeSeries(product_name='product2', series_name='a')
+        product1_b = self.factory.makeSeries(
+            product=product1_a.product, name='b')
         self.addImportDetailsToSeries(product1_a, 'a')
         self.addImportDetailsToSeries(product1_b, 'b')
         self.addImportDetailsToSeries(product2_a, 'c')
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(
             list(results), [product1_a, product1_b, product2_a])
+
+    def testSearchByProduct(self):
+        # Searching can filter by product name and other texts.
+        series = self.makeSeries(product_name='product')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='product')
+        self.assertEquals(
+            list(results), [series])
+
+    def testSearchByProductWithProject(self):
+        # Searching can filter by product name and other texts, and returns
+        # matching products even if the product is in a project which does not
+        # match.
+        series = self.makeSeries(
+            project_name='whatever', product_name='product')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='product')
+        self.assertEquals(
+            list(results), [series])
+
+    def testSearchByProject(self):
+        # Searching can filter by project name and other texts.
+        series = self.makeSeries(
+            project_name='project', product_name='product')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='project')
+        self.assertEquals(
+            list(results), [series])
 
 
 def test_suite():

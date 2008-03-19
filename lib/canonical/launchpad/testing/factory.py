@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities,
     IPersonSet,
     IProductSet,
+    IProjectSet,
     IRevisionSet,
     ISpecificationSet,
     License,
@@ -150,7 +151,7 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeProduct(self, name=None):
+    def makeProduct(self, name=None, project=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
@@ -161,7 +162,21 @@ class LaunchpadObjectFactory:
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GPL])
+            licenses=[License.GPL], project=project)
+
+    def makeProject(self, name=None):
+        """Create and return a new, arbitrary Project."""
+        owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('project-name')
+        return getUtility(IProjectSet).new(
+            name,
+            self.getUniqueString('displayname'),
+            self.getUniqueString('title'),
+            None,
+            self.getUniqueString('summary'),
+            self.getUniqueString('description'),
+            owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,

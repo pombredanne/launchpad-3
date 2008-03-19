@@ -611,22 +611,23 @@ class ProductSeriesSet:
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
         """
-        conditions = []
+        conditions = ["ProductSeries.product = Product.id"]
         if text == u'':
             text = None
 
-        # First filter on product: match text, if necessary, and only consider
-        # active projects.
+        # First filter on text, if supplied.
         if text is not None:
-            conditions.append('Product.fti @@ ftq(%s)' % quote(text))
-        conditions.append('Product.active IS TRUE')
-        conditions.append("ProductSeries.product = Product.id")
+            conditions.append(
+                "(Product.fti @@ ftq(%s) OR Project.fti @@ ftq(%s))"
+                % (quote(text), quote(text)))
 
-        # Then filter on project in the same way, if any.
-        product_match = "Product.project = Project.id AND Project.active"
-        if text is not None:
-            product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
-        conditions.append("((%s) OR project IS NULL)" % product_match)
+        # Exclude deactivated products.
+        conditions.append('Product.active IS TRUE')
+
+        # Exclude deactivated projects, too.
+        conditions.append(
+            "((Product.project = Project.id AND Project.active) OR"
+            " Product.project IS NULL)")
 
         # Now just add the filter on import status.
         if importstatus is None:
@@ -635,6 +636,7 @@ class ProductSeriesSet:
             conditions.append('ProductSeries.importstatus = %s'
                               % sqlvalues(importstatus))
 
+        # And build the query.
         query = " AND ".join(conditions)
         return """productseries.id IN
             (SELECT productseries.id FROM productseries, product, project
