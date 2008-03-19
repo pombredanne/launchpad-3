@@ -15,6 +15,14 @@ the code home page "Import your project".
     >>> print browser.title
     Request a code import
 
+There is a cancel link on this page near the buttons to take the
+user back to the main code page.
+
+    >>> browser.getLink('Cancel').click()
+    >>> print browser.url
+    http://code.launchpad.dev/
+    >>> browser.getLink(id="new-code-import").click()
+
 
 == Requesting a Subversion import ==
 

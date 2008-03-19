@@ -22,17 +22,17 @@ from zope.schema import Choice, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    branch_name_validator, CodeImportReviewStatus, IBranch, IBranchSet,
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, ILaunchpadRoot,
+    branch_name_validator, CodeImportReviewStatus, IBranchSet,
+    ICodeImport, ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadDropdownWidget
-from canonical.widgets.itemswidgets import (
-    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription)
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
     """A <select> widget with a more appropriate 'no value' message.
@@ -103,7 +103,10 @@ class CodeImportNewView(LaunchpadFormView):
     custom_widget('cvs_module', StrippedTextWidget, displayWidth=20)
     custom_widget('svn_branch_url', URIWidget, displayWidth=50)
 
-    initial_values = {'rcs_type': RevisionControlSystems.SVN}
+    initial_values = {
+        'rcs_type': RevisionControlSystems.SVN,
+        'branch_name': 'trunk',
+        }
 
     @property
     def cancel_url(self):
@@ -112,7 +115,8 @@ class CodeImportNewView(LaunchpadFormView):
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for rcs locations."""
-        # No field in this view needs an optional marker, so simplify here.
+        # No field in this view needs an optional marker, so we can be
+        # simple here.
         return False
 
     def setUpFields(self):
@@ -154,8 +158,8 @@ class CodeImportNewView(LaunchpadFormView):
             cvs_module=data['cvs_module'],
             review_status=status)
 
-    @action(_('Request Import'), name='continue')
-    def continue_action(self, action, data):
+    @action(_('Request Import'), name='request_import')
+    def request_import_action(self, action, data):
         """Create the code_import, and subscribe the user to the branch."""
         code_import = self._create_import(data, None)
 
@@ -168,7 +172,7 @@ class CodeImportNewView(LaunchpadFormView):
         self.next_url = canonical_url(code_import.branch)
 
         self.request.response.addNotification("""
-            New code import request created. The code import operators
+            New code import created. The code import operators
             have been notified and the request will be reviewed shortly.""")
 
     def _showApprove(self, ignored):
