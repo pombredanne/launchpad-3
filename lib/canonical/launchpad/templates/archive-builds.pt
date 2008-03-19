@@ -12,6 +12,12 @@
 <body>
   <div metal:fill-slot="main">
 
+    <div style="float: right;">
+      <img tal:condition="context/private"
+           title="This archive is private."
+           alt="(Private)" id="privatebadge" src="/@@/private-large" />
+    </div>
+
     <h1>Builds for <tal:title replace="context/title" /></h1>
 
     <div tal:replace="structure context/@@+builds-list"/>

@@ -102,6 +102,10 @@ class ArchiveContextMenu(ContextMenu):
 class ArchiveViewBase:
     """Common features for Archive view classes."""
 
+    def isPrivate(self):
+        """Return whether the archive is private or not."""
+        return self.context.private
+
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
@@ -395,7 +399,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         self.request.response.addNotification(structured(notification))
 
 
-class ArchiveEditDependenciesView(LaunchpadFormView):
+class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
 
     schema = IArchiveEditDependenciesForm
@@ -590,7 +594,7 @@ class ArchiveActivateView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
 
-class ArchiveBuildsView(BuildRecordsView):
+class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
 
     __used_for__ = IHasBuildRecords
@@ -604,7 +608,7 @@ class ArchiveBuildsView(BuildRecordsView):
         return BuildStatus.NEEDSBUILD
 
 
-class BaseArchiveEditView(LaunchpadEditFormView):
+class BaseArchiveEditView(ArchiveViewBase, LaunchpadEditFormView):
 
     schema = IArchive
     field_names = []

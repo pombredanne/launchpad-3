@@ -80,7 +80,10 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PPA:
-            return 'PPA for %s' % self.owner.displayname
+            title = 'PPA for %s' % self.owner.displayname
+            if self.private:
+                title = "Private %s" % title
+            return title
         return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
