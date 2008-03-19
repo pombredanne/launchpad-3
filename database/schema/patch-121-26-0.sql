@@ -9,15 +9,7 @@ WHERE notification_level = 0;
 
 UPDATE BranchSubscription
 SET review_level = 1
-WHERE notification_level IS NULL;
-
-UPDATE BranchSubscription
-SET review_level = 1
-WHERE notification_level = 1;
-
-UPDATE BranchSubscription
-SET review_level = 2
-WHERE notification_level in (2, 3);
+WHERE review_level IS NULL;
 
 ALTER TABLE BranchSubscription
   ALTER COLUMN review_level SET NOT NULL;
