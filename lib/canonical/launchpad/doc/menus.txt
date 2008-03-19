@@ -410,7 +410,7 @@ Next, we return the link as HTML.
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
     <span class="action">
-        <img alt="" src="icon" />
+        <img alt="" src="/@@/icon" />
         <a class="menu-link-None" title="summary">text--&gt;</a>
     </span>
 
