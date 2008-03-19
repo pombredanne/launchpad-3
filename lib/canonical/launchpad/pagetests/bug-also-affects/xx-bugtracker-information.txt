@@ -32,7 +32,7 @@ task.
     Link upstream how:
       (x) LINK_UPSTREAM
       ( ) EMAIL_UPSTREAM_DONE
-      ( ) IS_UPSTREAM
+      ( ) UNLINKED_UPSTREAM
     Bug URL: ''
     Upstream Email: ''
 
@@ -51,7 +51,7 @@ its bugs and prompt for a URL or an email address.
     Link upstream how:
       (x) LINK_UPSTREAM
       ( ) EMAIL_UPSTREAM_DONE
-      ( ) IS_UPSTREAM
+      ( ) UNLINKED_UPSTREAM
     Bug URL: ''
     Upstream Email: ''
 

@@ -48,7 +48,7 @@ BUG_TRACKER_URL_FORMATS = {
 
 
 class BugWatch(SQLBase):
-    """See canonical.launchpad.interfaces.IBugWatch."""
+    """See `IBugWatch`."""
     implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -71,12 +71,12 @@ class BugWatch(SQLBase):
 
     @property
     def title(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         return "%s #%s" % (self.bugtracker.title, self.remotebug)
 
     @property
     def url(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         bugtracker = self.bugtracker
         bugtrackertype = self.bugtracker.bugtrackertype
 
@@ -92,7 +92,7 @@ class BugWatch(SQLBase):
 
     @property
     def needscheck(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         return True
 
     def updateImportance(self, remote_importance, malone_importance):
@@ -148,7 +148,7 @@ class BugWatch(SQLBase):
                 notify(event)
 
     def destroySelf(self):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
 
@@ -237,7 +237,7 @@ class BugWatchSet(BugSetBase):
         }
 
     def get(self, watch_id):
-        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        """See `IBugWatch`Set."""
         try:
             return BugWatch.get(watch_id)
         except SQLObjectNotFound:
@@ -287,7 +287,7 @@ class BugWatchSet(BugSetBase):
         return newwatches
 
     def fromMessage(self, message, bug):
-        """See IBugWatchSet."""
+        """See `IBugWatchSet`."""
         watches = set()
         for messagechunk in message:
             if messagechunk.blob is not None:
@@ -303,7 +303,7 @@ class BugWatchSet(BugSetBase):
         return sorted(watches, key=lambda a: a.remotebug)
 
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
-        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        """See `IBugWatchSet`."""
         return BugWatch(
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
@@ -469,7 +469,7 @@ class BugWatchSet(BugSetBase):
         return '%s:%s' % (scheme, path), ''
 
     def extractBugTrackerAndBug(self, url):
-        """See IBugWatchSet."""
+        """See `IBugWatchSet`."""
         for trackertype, parse_func in (
             self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)

@@ -1042,15 +1042,16 @@ class IAddBugTaskWithProductCreationForm(Interface):
 
 class LinkUpstreamHowOptions(EnumeratedType):
     LINK_UPSTREAM = Item(
-        """I have a URL for the upstream bug:
+        """I have the URL for the upstream bug:
 
         Enter the URL in the upstream bug tracker. If it's in a
         supported upstream bug tracker, Launchpad can download the
         status and display it in the bug report.
         """)
 
-# XXX GavinPanella, 2008-02-13: This will be uncommented in a later
-# branch.
+# XXX: GavinPanella 2008-02-13 bug=201793: This will be uncommented in
+# a later branch.
+#
 #     EMAIL_UPSTREAM = Item(
 #         """I would like to email an upstream bug contact.
 #
@@ -1063,23 +1064,40 @@ class LinkUpstreamHowOptions(EnumeratedType):
 #         """)
 
     EMAIL_UPSTREAM_DONE = Item(
-        """I have already emailed an upstream bug contact.
+        """I have already emailed an upstream bug contact:
 
-        Thanks, Launchpad will record that. Next time, try using
-        Launchpad to send the message upstream too. That way it may be
-        able to follow the conversation that results from your bug
-        report. This is especially true for public mailing lists.
+        Launchpad will record that.
         """)
 
-    IS_UPSTREAM = Item(
+# XXX: GavinPanella 2008-02-13 bug=201793: This additional description
+# for EMAIL_UPSTREAM_DONE should be appended when EMAIL_UPSTREAM is
+# made available.
+#
+#   "Next time, try using Launchpad to send the message upstream
+#    too. That way it may be able to follow the conversation that
+#    results from your bug report. This is especially true for public
+#    mailing lists."
+
+    UNLINKED_UPSTREAM = Item(
         """I just want to register that it is upstream right now; \
            I don't have any way to link it.
 
-        Thanks!
+        Launchpad will record that.
         """)
 
 
 class IAddBugTaskWithUpstreamLinkForm(IAddBugTaskForm):
+    """Form for adding an upstream bugtask with linking options.
+
+    The choices in link_upstream_how correspond to zero or one of the
+    text fields. For example, if link_upstream_how is LINK_UPSTREAM
+    then bug_url is the relevant field, and the other text fields,
+    like upstream_email_address_done, can be ignored.
+
+    That also explains why none of the text fields are required. That
+    check is left to the view, in part so that better error messages
+    can be provided.
+    """
     link_upstream_how = Choice(
         title=_('How'), required=False,
         vocabulary=LinkUpstreamHowOptions,

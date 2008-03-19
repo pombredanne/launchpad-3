@@ -532,12 +532,21 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             super(ProductBugTaskCreationStep, self).field_names)
 
     def validate_widgets(self, data, names=None):
+        # The form is essentially just a radio group, with zero or one
+        # related text widgets per choice. The text widget should be
+        # validated when its corresponding radio button has been
+        # selected, otherwise we should do no validation because we
+        # don't want to issue errors for widgets that we and the user
+        # are not interested in.
+
+        # Collect all the widget names.
         if names is None:
             names = set()
         else:
             names = set(names)
         names.update(widget.context.__name__ for widget in self.widgets)
 
+        # A mapping from radio buttons to their related text widgets.
         link_upstream_options = {
             LinkUpstreamHowOptions.LINK_UPSTREAM:
                 'bug_url',
@@ -545,20 +554,23 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
                 'upstream_email_address_done'
             }
 
+        # Examine the radio group if it has valid input.
         link_upstream_how = self.widgets['link_upstream_how']
         if link_upstream_how.hasValidInput():
             link_upstream_how = link_upstream_how.getInputValue()
 
-            def discard_or_check(name, option):
+            # Don't request validation for text widgets that are not
+            # related to the current radio selection.
+            for option, name in link_upstream_options.iteritems():
                 if link_upstream_how != option:
                     names.discard(name)
                 elif self.widgets[name].hasValidInput():
+                    # Check that input has been provided because the
+                    # fields in the schema are set to required=False
+                    # to make the radio+text-widget mechanism work.
                     if not self.widgets[name].getInputValue():
                         self.setFieldError(
                             name, 'Required input is missing.')
-
-            for option, name in link_upstream_options.iteritems():
-                discard_or_check(name, option)
 
         else:
             # Don't validate these widgets when we don't yet know how
@@ -578,8 +590,10 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     def link_upstream_how_items(self):
         """Manually create and pick apart a radio widget.
 
-        With this, we can render the individual radio buttons, but
-        with some custom layout.
+        On its own, `LaunchpadRadioWidget` does not render quite how
+        we need it, because we're interspersing related text
+        widgets. We need to dig down a bit and place the individually
+        rendered radio buttons into our custom layout.
         """
         widget = self.widgets['link_upstream_how']
         try:
@@ -587,18 +601,18 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         except MissingInputError:
             current_value = LinkUpstreamHowOptions.LINK_UPSTREAM
         items = widget.renderItems(current_value)
-        # XXX GavinPanella, 2008-02-13: EMAIL_UPSTREAM will be
-        # uncommented in a later branch.
+        # XXX: GavinPanella 2008-02-13 bug=201793: EMAIL_UPSTREAM will
+        # be uncommented in a later branch.
         return {
             LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[1],
             #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[2],
             LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[2],
-            LinkUpstreamHowOptions.IS_UPSTREAM.name        : items[3]}
+            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name        : items[3]}
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')
 
-        if link_upstream_how == LinkUpstreamHowOptions.IS_UPSTREAM:
+        if link_upstream_how == LinkUpstreamHowOptions.UNLINKED_UPSTREAM:
             # Erase bug_url because we don't want to create a bug
             # watch against a specific URL.
             if 'bug_url' in data:
