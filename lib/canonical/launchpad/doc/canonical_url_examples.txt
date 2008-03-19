@@ -129,8 +129,6 @@ An ISourcePackage.
 
 An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.distributionsourcepackage import (
-    ...     IDistributionSourcePackage)
     >>> from canonical.launchpad.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
@@ -179,10 +177,7 @@ An IProductRelease.
 
 == Bugs and bugtasks ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroSeriesBugTask, IBugWatchSet)
-    >>> from canonical.launchpad.database import BugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugTaskSet
 
 The IBugSet.
 

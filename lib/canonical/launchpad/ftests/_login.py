@@ -1,9 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
+# We like global statements!
+# pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.management import queryInteraction, endInteraction
+from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 

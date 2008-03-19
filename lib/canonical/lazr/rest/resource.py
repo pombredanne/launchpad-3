@@ -24,7 +24,6 @@ from zope.app.datetimeutils import (
 from zope.component import adapts
 from zope.interface import implements
 from zope.proxy import isProxy
-from zope.publisher.interfaces import NotFound
 from zope.schema import getFields, ValidationError
 from zope.schema.interfaces import IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
@@ -300,8 +299,8 @@ class EntryResource(ReadWriteResource):
                     (year, month, day, hours, minutes, secondsAndMicroseconds,
                      timezone) = value
                     seconds = int(secondsAndMicroseconds)
-                    microseconds = int(round((secondsAndMicroseconds - seconds)
-                                             * 1000000))
+                    microseconds = int(
+                        round((secondsAndMicroseconds - seconds) * 1000000))
                     if timezone not in ['Z', '+0000', '-0000']:
                         self.request.response.setStatus(400)
                         return ("You set the attribute '%s' to a time "

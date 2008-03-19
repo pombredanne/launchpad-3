@@ -921,9 +921,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # navigation to entry in scoped collection are handled by normal
         # Navigation.
         if len(request.getTraversalStack()) == 0:
-           result = self._traverseToScopedCollection(request, ob, name)
-           if result is not None:
-               return result
+            result = self._traverseToScopedCollection(request, ob, name)
+            if result is not None:
+                return result
         return super(WebServicePublication, self).traverseName(
             request, ob, name)
 

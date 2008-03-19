@@ -5,11 +5,9 @@ __metaclass__ = type
 
 __all__ = ['MessageAddView']
 
-from zope.event import notify
 from zope.interface import providedBy, implements
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
