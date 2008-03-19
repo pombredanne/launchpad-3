@@ -222,3 +222,18 @@ def sync_bugtasks(bugtasks):
         sync(bugtask.bug)
 
 
+def print_upstream_linking_form(browser):
+    """ Print the upstream linking form found via +choose-affected-product."""
+    link_upstream_how_radio = browser.getControl(
+        name='field.link_upstream_how')
+    print 'Link upstream how:'
+    for option in link_upstream_how_radio.options:
+        if option in link_upstream_how_radio.value:
+            print '  (x) %s' % option
+        else:
+            print '  ( ) %s' % option
+    print 'Bug URL: %r' % (
+        browser.getControl(name='field.bug_url').value)
+    print 'Upstream Email: %r' % (
+        browser.getControl(
+            name='field.upstream_email_address_done').value)
