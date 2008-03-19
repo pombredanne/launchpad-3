@@ -127,7 +127,7 @@ Let's also make some bugs that almost qualify for expiration.
     ...     distribution=ubuntu,
     ...     sourcepackagename=ubuntu_evolution.sourcepackagename,
     ...     status=BugTaskStatus.INVALID)
-    >>> flush_database_updates()
+    >>> sync_bugtasks([another_assigned_bugtask, invalid_bugtask])
     >>> another_assigned_bugtask.bug.permits_expiration
     True
     >>> another_assigned_bugtask.bug.can_expire
