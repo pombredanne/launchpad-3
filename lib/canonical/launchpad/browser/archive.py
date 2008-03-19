@@ -644,12 +644,12 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
-        if data.get('buildd_secret') is None and data.get('private'):
+        if data.get('buildd_secret') is None and data['private']:
             self.setFieldError(
                 'buildd_secret',
                 'Required for private archives.')
 
-        if data.get('buildd_secret') is not None and not data.get('private'):
+        if data.get('buildd_secret') is not None and not data['private']:
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')

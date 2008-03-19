@@ -76,7 +76,8 @@ class IArchive(IHasOwner):
 
     buildd_secret = TextLine(
         title=_("Buildd Secret"), required=False,
-        description=_("The password used by the builder to access the archive.")
+        description=_("The password used by the builder to access the "
+                      "archive.")
         )
 
     sources_cached = Int(
