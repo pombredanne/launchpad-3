@@ -196,34 +196,39 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     return output
 
 
+def emailPeople(person):
+    """Return a set of people to who receive email for this Person.
+
+    If <person> has a preferred email, the set will contain only that
+    person.  If <person> doesn't have a preferred email but is a team,
+    the set will contain the preferred email address of each member of
+    <person>, including indirect members.
+
+    Finally, if <person> doesn't have a preferred email and does not
+    implement ITeam, the set will be empty.
+    """
+    if person.preferredemail is not None:
+        return set([people])
+
+    people = set()
+    if ITeam.providedBy(person):
+        for member in person.activemembers:
+            people.update(emailPeople(member))
+    return people
+
+
 def contactEmailAddresses(person):
     """Return a Set of email addresses to contact this Person.
 
-    If <person> has a preferred email, the Set will contain only that
-    preferred email.
-
-    If <person> doesn't have a preferred email but implements ITeam, the
-    Set will contain the preferred email address of each member of <person>.
-
-    Finally, if <person> doesn't have a preferred email neither implement
-    ITeam, the Set will be empty.
+    In general, it is better to use emailPeople instead.
     """
-    emails = set()
-    if person.preferredemail is not None:
-        # XXX: Guilherme Salgado 2006-04-20:
-        # This str() call can be removed as soon as Andrew lands his
-        # unicode-simple-sendmail branch, because that will make
-        # simple_sendmail handle unicode email addresses.
-        emails.add(str(person.preferredemail.email))
-        return emails
+    # XXX: Guilherme Salgado 2006-04-20:
+    # This str() call can be removed as soon as Andrew lands his
+    # unicode-simple-sendmail branch, because that will make
+    # simple_sendmail handle unicode email addresses.
+    return set(str(mail_person.preferredemail.email)
+        for mail_person in emailPeople(person))
 
-    if ITeam.providedBy(person):
-        for member in person.activemembers:
-            contactAddresses = contactEmailAddresses(member)
-            if contactAddresses:
-                emails = emails.union(contactAddresses)
-
-    return emails
 
 replacements = {0: {'.': ' |dot| ',
                     '@': ' |at| '},
