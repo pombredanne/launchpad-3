@@ -19,7 +19,9 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import TranslationMessage
 
-from canonical.launchpad.interfaces import TranslationFileFormat
+from canonical.launchpad.interfaces import (
+    TranslationConstants, TranslationFileFormat)
+
 
 def getOrCreatePOMsgID(msgid):
     try:
@@ -28,30 +30,41 @@ def getOrCreatePOMsgID(msgid):
         pomsgid = POMsgID(msgid=msgid)
     return pomsgid
 
-def find_existing_translation(potmsgset, pofile, translations):
-    unprotected_potmsgset = removeSecurityProxy(potmsgset)
+def get_potranslations(translations):
     potranslations = {}
-    for index in range(len(translations)):
-        if translations[index] != '':
+    for index, translation in enumerate(translations):
+        if translation != '':
             potranslations[index] = (
-                POTranslation.getOrCreateTranslation(
-                    translations[index]))
+                POTranslation.getOrCreateTranslation(translation))
         else:
             potranslations[index] = None
-    if len(potranslations) < 6:
-        for index in range(len(potranslations), 6):
-            potranslations[index] = None
+    for index in range(len(potranslations),
+                       TranslationConstants.MAX_PLURAL_FORMS):
+        potranslations[index] = None
+    return potranslations
+
+
+def find_existing_translation(potmsgset, pofile, potranslations):
+    unprotected_potmsgset = removeSecurityProxy(potmsgset)
     existing_message = (
         unprotected_potmsgset._findTranslationMessage(
-            pofile, potranslations, 6))
-    return (existing_message, potranslations)
+            pofile, potranslations, TranslationConstants.MAX_PLURAL_FORMS))
+    return existing_message
 
-def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
-    # Fix translations for this potmsgset as well.
-    # `from_potmsgset` is an old, unmigrated POTMsgSet we are migrating
-    # translations from.
+
+def migrate_translations_for_potmsgset(potmsgset, from_potmsgset,
+                                       logger, ztm):
+    """Migrate translations from `from_potmsgset` to `potmsgset`.
+
+    `from_potmsgset` is an old, unmigrated POTMsgSet we are migrating
+    translations from.  Translations are migrated to native context
+    and plural forms support along the way.
+
+    `from_potmsgset` and `potmsgset` might be the same, which happens when
+    we are migrating templates as well.
+    """
     messages = TranslationMessage.select(
-        "potmsgset=%s" % sqlvalues(from_potmsgset))
+        "potmsgset = %s" % sqlvalues(from_potmsgset))
     logger.debug("Migrating %d translations for '%s'..." % (
         messages.count(), potmsgset.singular_text))
     for message in messages:
@@ -61,24 +74,25 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
         single_string = False
         if len(msgstrs) > 0 and msgstrs[0] is not None:
             single_string = True
-            for i in range(1,len(msgstrs)):
-                if msgstrs[i] is not None:
+            for msgstr in msgstrs[1:]:
+                if msgstr is not None:
                     single_string = False
 
         if single_string:
             translations = msgstrs[0].split('\n')
 
             # If there's only a single plural form, no need to change
-            # anything.
+            # anything.  If POTMsgSets are different, we still need
+            # to move the translation from one to the other.
             if len(translations) == 1 and potmsgset == from_potmsgset:
                 continue
 
             # If there is an existing TranslationMessage with
             # these translations, re-use that and remove this one,
             # otherwise modify this one in-place.
-
-            existing_message, potranslations = find_existing_translation(
-                potmsgset, message.pofile, translations)
+            potranslations = get_potranslations(translations)
+            existing_message = find_existing_translation(
+                potmsgset, message.pofile, potranslations)
             if existing_message:
                 if existing_message.id != message.id:
                     # Only transfer is_current and is_imported
@@ -112,8 +126,10 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
                     message.is_imported = stored_is_imported
                     message.sync()
 
+
 def migrate_kde_potemplate_translations(potemplate, logger, ztm):
-    assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
+    assert potemplate.source_file_format == TranslationFileFormat.KDEPO, (
+        "Trying to move translations for non-KDEPO template.")
     cur = cursor()
     cur.execute("""
       SELECT old_msg.id, new_msg.id
@@ -127,9 +143,9 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
           old_msg.sequence=0 AND
           -- old POTMsgSet has a singular form of the form '_n:...',
           -- and no plural form
-          old_msg.msgid_singular=old_msgid.id
-          AND old_msg.msgid_plural IS NULL AND
-          old_msgid.msgid LIKE '_n: %%' AND
+          old_msg.msgid_singular=old_msgid.id AND
+          old_msg.msgid_plural IS NULL AND
+          old_msgid.msgid LIKE E'\\_n: %%' AND
           -- and new POTMsgSet has singular and plural which when joined
           -- give the old plural form
           new_msg.msgid_singular=singular.id AND
@@ -158,9 +174,9 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
           old_msg.sequence=0 AND
           -- old POTMsgSet has a singular form of the form '_:...',
           -- and no plural form
-          old_msg.msgid_singular=old_msgid.id
-          AND old_msg.msgid_plural IS NULL AND
-          old_msgid.msgid LIKE '_: %%' AND
+          old_msg.msgid_singular=old_msgid.id AND
+          old_msg.msgid_plural IS NULL AND
+          old_msgid.msgid LIKE E'\\_: %%' AND
           -- and new POTMsgSet has singular and context which when joined
           -- give the old contextual message
           new_msg.msgid_singular=new_msgid.id AND
@@ -184,6 +200,7 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
 
     ztm.commit()
 
+
 def existing_potmsgset(potemplate, msgid_singular, context):
     clauses = ['potemplate=%s' % sqlvalues(potemplate),
                'msgid_singular=%s' % sqlvalues(msgid_singular)]
@@ -194,8 +211,9 @@ def existing_potmsgset(potemplate, msgid_singular, context):
 
     return POTMsgSet.selectOne(" AND ".join(clauses))
 
+
 def migrate_potemplate(potemplate, logger, ztm):
-    """Fix plural translations for PO files with mismatching headers."""
+    """Migrate PO templates to KDEPO format if needed."""
 
     plural_prefix = u'_n: '
     context_prefix = u'_: '
@@ -205,7 +223,8 @@ def migrate_potemplate(potemplate, logger, ztm):
     potmsgsets = POTMsgSet.select("""
       POTMsgSet.potemplate = %s AND
       POTMsgSet.msgid_singular=POMsgID.id AND
-      (POMsgID.msgid LIKE '_n: %%' OR POMsgID.msgid LIKE '_: %%')
+      POTMsgSet.msgid_plural IS NULL AND
+      (POMsgID.msgid LIKE E'\\_n: %%' OR POMsgID.msgid LIKE E'\\_: %%')
       """ % sqlvalues(potemplate),
       clauseTables=['POMsgID'])
 
@@ -256,26 +275,26 @@ def migrate_potemplate(potemplate, logger, ztm):
             pass
 
         if fix_plurals:
-            # Fix translations for this potmsgset as well.
+            # Fix translations for this potmsgset.
             migrate_translations_for_potmsgset(potmsgset, potmsgset,
                                                logger, ztm)
-
 
     potemplate.source_file_format = TranslationFileFormat.KDEPO
     # Commit a PO template one by one.
     ztm.commit()
 
+
 def migrate_translations_for_kdepo_templates(ztm, logger):
     """Migrate translations for already re-imported KDE PO templates."""
-    potemplates = POTemplate.select("""source_file_format=%s AND
+    potemplates = POTemplate.select("""
+    source_file_format=%s AND
     POTemplate.id IN
         (SELECT DISTINCT potemplate
           FROM POTMsgSet
-          JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
           WHERE POTMsgSet.potemplate = POTemplate.id AND
-                POTMsgSet.msgid_plural IS NOT NULL)
-      """ % sqlvalues(TranslationFileFormat.KDEPO),
-      distinct=True)
+                (POTMsgSet.msgid_plural IS NOT NULL OR
+                 POTMsgSet.context IS NOT NULL))
+      """ % sqlvalues(TranslationFileFormat.KDEPO))
 
     count = potemplates.count()
     index = 0
@@ -285,19 +304,21 @@ def migrate_translations_for_kdepo_templates(ztm, logger):
             potemplate.displayname, index, count))
         migrate_kde_potemplate_translations(potemplate, logger, ztm)
 
+
 def migrate_unmigrated_templates_to_kdepo(ztm, logger):
     """Go through all non-KDE PO templates and migrate to KDEPO as needed."""
 
-    potemplates = POTemplate.select("""source_file_format=%s AND
+    potemplates = POTemplate.select("""
+    source_file_format=%s AND
     POTemplate.id IN
         (SELECT DISTINCT potemplate
           FROM POTMsgSet
           JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
           WHERE POTMsgSet.potemplate = POTemplate.id AND
                 POTMsgSet.msgid_plural IS NULL AND
-                (POMsgID.msgid LIKE '_n: %%' OR POMsgID.msgid LIKE '_: %%'))
-      """ % sqlvalues(TranslationFileFormat.PO),
-      distinct=True)
+                (POMsgID.msgid LIKE E'\\_n: %%' OR
+                 POMsgID.msgid LIKE E'\\_: %%'))
+      """ % sqlvalues(TranslationFileFormat.PO))
 
     count = potemplates.count()
     index = 0
@@ -306,6 +327,7 @@ def migrate_unmigrated_templates_to_kdepo(ztm, logger):
         logger.info("Migrating POTemplate %s [%d/%d]" % (
             potemplate.displayname, index, count))
         migrate_potemplate(potemplate, logger, ztm)
+
 
 def migrate_potemplates(ztm, logger):
     migrate_translations_for_kdepo_templates(ztm, logger)

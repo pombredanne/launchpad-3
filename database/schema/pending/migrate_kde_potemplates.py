@@ -12,7 +12,6 @@ import logging
 import _pythonpath
 
 from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.config import config
 from canonical.launchpad.scripts.migrate_kde_potemplates import (
     migrate_potemplates)
 
@@ -28,6 +27,5 @@ class MigrateKDEPOTemplatesScript(LaunchpadScript):
 
 if __name__ == '__main__':
     script = MigrateKDEPOTemplatesScript(
-        'canonical.launchpad.scripts.migrate_kde_potemplates',
-        dbuser='testadmin')
+        'canonical.launchpad.scripts.migrate_kde_potemplates')
     script.run()
