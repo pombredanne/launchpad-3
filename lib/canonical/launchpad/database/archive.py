@@ -67,6 +67,12 @@ class Archive(SQLBase):
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
+    sources_cached = IntCol(
+        dbName='sources_cached', notNull=False, default=0)
+
+    binaries_cached = IntCol(
+        dbName='binaries_cached', notNull=False, default=0)
+
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
 
@@ -511,7 +517,11 @@ class Archive(SQLBase):
         for cache in binaries_cached:
             cache_contents.add(cache.distroseries.name)
 
+        # Collapse all relevant terms in 'package_description_cache' and
+        # update the package counters.
         self.package_description_cache = " ".join(cache_contents)
+        self.sources_cached = sources_cached.count()
+        self.binaries_cached = binaries_cached.count()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""

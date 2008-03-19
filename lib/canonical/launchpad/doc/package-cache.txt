@@ -299,6 +299,14 @@ owner name.
   >>> print ubuntu.searchPPAs(text='cprov').count()
   0
 
+Sampledata contains stub counters.
+
+  >>> print cprov.archive.sources_cached
+  3
+
+  >>> print cprov.archive.binaries_cached
+  3
+
 We have to issue 'updateArchiveCache' to include the owner 'name' and
 'displayname' field in the archive caches.
 
@@ -306,10 +314,17 @@ We have to issue 'updateArchiveCache' to include the owner 'name' and
   >>> transaction.commit()
   >>> flush_database_updates()
 
-Now Celso's PPA can be found via searches.
+Now Celso's PPA can be found via searches and the package counters got
+reset, reflecting that nothing is cached in the database yet.
 
   >>> print ubuntu.searchPPAs(text='cprov')[0].title
   PPA for Celso Providelo
+
+  >>> print cprov.archive.sources_cached
+  0
+
+  >>> print cprov.archive.binaries_cached
+  0
 
 The sampledata contains no package caches, so attempts to find
 'pmount' (a source) or 'firefox' (a binary name term) fail.

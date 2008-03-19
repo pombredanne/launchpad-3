@@ -74,6 +74,14 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    sources_cached = Int(
+        title=_("Number of sources cached"), required=False,
+        description=_("Number of source packages cached in this PPA."))
+
+    binaries_cached = Int(
+        title=_("Number of binaries cached"), required=False,
+        description=_("Number of binary packages cached in this PPA."))
+
     package_description_cache = Attribute(
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
@@ -189,6 +197,8 @@ class IArchive(IHasOwner):
         Group the relevant package information (source name, binary names,
         binary summaries and distroseries with binaries) strings in the
         IArchive.package_description_cache search indexes (fti).
+
+        Updates 'sources_cached' and 'binaries_cached' counters.
 
         Also include owner 'name' and 'displayname' to avoid inpecting the
         Person table indexes while searching.
