@@ -327,7 +327,6 @@ indicates the anonymous user.
 If one of the bugs is set to private, anonymous users can no longer see
 it as being marked for expiration.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> private_bug = ubuntu_bugtask.bug
     >>> private_bug.title
