@@ -48,6 +48,8 @@ class TacTestSetup:
         # stdout/stderr are written to.
         proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
+        # XXX: JonathanLange 2008-03-19: This can raise EINTR. We should
+        # really catch it and try again if that happens.
         stdout = proc.stdout.read()
         if stdout:
             raise TacException('Error running %s: unclean stdout/err: %s'

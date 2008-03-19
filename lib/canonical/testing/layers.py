@@ -30,6 +30,7 @@ __all__ = [
 
 import logging
 import os
+import signal
 import socket
 import sys
 import time
@@ -714,8 +715,23 @@ class TwistedLayer(BaseLayer):
         pass
 
     @classmethod
+    def _save_signals(cls):
+        """Save the current signal handlers."""
+        TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
+        TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
+        TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+
+    @classmethod
+    def _restore_signals(cls):
+        """Restore the signal handlers."""
+        signal.signal(signal.SIGINT, TwistedLayer._original_sigint)
+        signal.signal(signal.SIGTERM, TwistedLayer._original_sigterm)
+        signal.signal(signal.SIGCHLD, TwistedLayer._original_sigchld)
+
+    @classmethod
     @profiled
     def testSetUp(cls):
+        TwistedLayer._save_signals()
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
         if interfaces.IReactorThreads.providedBy(reactor):
@@ -739,6 +755,7 @@ class TwistedLayer(BaseLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
+        TwistedLayer._restore_signals()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
