@@ -207,13 +207,18 @@ def emailPeople(person):
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
     """
-    if person.preferredemail is not None:
-        return set([person])
-
+    pending_people = [person]
     people = set()
-    if person.isTeam():
-        for member in person.activemembers:
-            people.update(emailPeople(member))
+    seen = set()
+    while len(pending_people) > 0:
+        person = pending_people.pop()
+        if person in seen:
+            continue
+        seen.add(person)
+        if person.preferredemail is not None:
+            people.add(person)
+        elif person.isTeam():
+            pending_people.extend(person.activemembers)
     return people
 
 
