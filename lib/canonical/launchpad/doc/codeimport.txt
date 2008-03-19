@@ -183,6 +183,34 @@ This CodeImport is associated to the evolution/main ProductSeries
     >>> from_existing_import.series.name
     u'trunk'
 
+
+== Updating code import review status ==
+
+Members of the VCS Imports team (import operators), or Launchpad
+administrators can update the review status of code imports.  This is
+done using the code import methods: approve; suspend; and invalidate.
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> code_import = factory.makeCodeImport()
+    >>> print code_import.review_status
+    Pending Approval
+
+When an import operator updates the status of the code import, emails
+are sent out to the branch subscribers, and to the members of VCS
+Imports.  The registrant of the code import is implicitly subscribed
+to the new import branch.
+
+    >>> for subscriber in code_import.branch.subscribers:
+    ...     print subscriber.displayname
+
+    >>> from canonical.launchpad.tests.mail_helpers import (
+    ...     pop_notifications, print_emails)
+    >>> stub.test_emails = []
+    >>> code_import.approve({}, nopriv)
+    >>> print_emails()
+
+
 == Update intervals ==
 
 After an import is initially completed, it must be updated regularly. Each
