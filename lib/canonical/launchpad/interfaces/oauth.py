@@ -1,5 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0211,E0213
 
 """OAuth interfaces."""
 
@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IOAuthAccessToken',
     'IOAuthConsumer',
-    'IOAuthConsumerSet', 
+    'IOAuthConsumerSet',
     'IOAuthNonce',
     'IOAuthRequestToken',
     'OAuthPermission']
@@ -62,7 +62,7 @@ class OAuthPermission(DBEnumeratedType):
 
 class IOAuthConsumer(Interface):
     """An application which acts on behalf of a Launchpad user."""
-    
+
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     disabled = Bool(
@@ -77,6 +77,23 @@ class IOAuthConsumer(Interface):
         title=_('Secret'), required=False, readonly=False,
         description=_('The secret which, if not empty, should be used by the '
                       'consumer to sign its requests.'))
+
+    def newRequestToken():
+        """Return a new `IOAuthRequestToken` with a random key and secret.
+
+        Also sets the token's date_expires to `REQUEST_TOKEN_VALIDITY` hours
+        from the creation date (now).
+
+        The other attributes of the token are supposed to be set whenever the
+        user logs into Launchpad and grants (or not) access to this consumer.
+        """
+
+    def getRequestToken(key):
+        """Return the `IOAuthRequestToken` with the given key.
+
+        If the token with the given key does not exist or is associated with
+        another consumer, return None.
+        """
 
 
 class IOAuthConsumerSet(Interface):
@@ -96,8 +113,6 @@ class IOAuthConsumerSet(Interface):
             consumer.
         :param secret: A secret which should be used by the consumer to sign
             its requests.
-        :raises AssertionError: When `key` is already in use by another
-            consumer.
         """
 
     def getByKey(key):
@@ -107,11 +122,11 @@ class IOAuthConsumerSet(Interface):
 
         :param key: The unique key associated with a consumer.
         """
-    
+
 
 class IOAuthToken(Interface):
     """Base class for `IOAuthRequestToken` and `IOAuthAccessToken`.
-    
+
     This class contains the commonalities of the two token classes we actually
     care about and shall not be used on its own.
     """
@@ -163,6 +178,30 @@ class IOAuthRequestToken(IOAuthToken):
         description=_('The date in which the user authorized (or not) the '
                       'consumer to access his protected resources on '
                       'Launchpad.'))
+    is_reviewed = Bool(
+        title=_('Has this token been reviewed?'),
+        required=False, readonly=True,
+        description=_('A reviewed request token can only be exchanged for an '
+                      'access token (in case the user granted access).'))
+
+    def review(user, permission):
+        """Grant `permission` as `user` to this token's consumer.
+
+        Set this token's person, permission and date_reviewed.  This will also
+        cause this token to be marked as used, meaning it can only be
+        exchanged for an access token with the same permission, consumer and
+        person.
+        """
+
+    def createAccessToken():
+        """Create an `IOAuthAccessToken` identical to this request token.
+
+        After the access token is created, this one is deleted as it can't be
+        used anymore.
+
+        You must not attempt to create an access token if the request token
+        hasn't been reviewed or if its permission is UNAUTHORIZED.
+        """
 
 
 class IOAuthNonce(Interface):

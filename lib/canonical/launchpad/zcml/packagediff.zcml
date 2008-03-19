@@ -1,0 +1,25 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- PackageDiff -->
+  <content class="canonical.launchpad.database.PackageDiff">
+    <allow interface="canonical.launchpad.interfaces.IPackageDiff"/>
+  </content>
+
+
+  <!-- PackageDiffSet -->
+  <content class="canonical.launchpad.database.PackageDiffSet">
+    <allow interface="canonical.launchpad.interfaces.IPackageDiffSet"/>
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.PackageDiffSet"
+    provides="canonical.launchpad.interfaces.IPackageDiffSet">
+    <allow interface="canonical.launchpad.interfaces.IPackageDiffSet" />
+  </securedutility>
+
+</configure>

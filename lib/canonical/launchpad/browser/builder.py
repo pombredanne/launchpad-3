@@ -131,6 +131,21 @@ class CommonBuilderView:
         UTC = pytz.timezone('UTC')
         return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
 
+    def overrideHiddenBuilder(self, builder):
+        """Override the builder to HiddenBuilder as necessary.
+
+        HiddenBuilder is used if the user does not have permission to
+        see the build on the builder.
+        """
+        current_job = builder.currentjob
+        if (current_job and
+            not check_permission('launchpad.View', current_job.build)):
+            # Cloak the builder.
+            return HiddenBuilder(builder)
+        else:
+            # The build is public, don't cloak it.
+            return builder
+
 
 class BuilderSetView(CommonBuilderView):
     """Default BuilderSet view class
@@ -168,6 +183,16 @@ class BuilderSetView(CommonBuilderView):
         return bool(self.virtual_build_queue_depth_by_arch)
 
 
+    @property
+    def builders(self):
+        """Return all active builders, with private builds cloaked.
+
+        Any builders building a private build will be cloaked and returned
+        as a HiddenBuilder.
+        """
+        builders = self.context.getBuilders()
+        return [self.overrideHiddenBuilder(builder) for builder in builders]
+
 
 class HiddenBuilder:
     """Overrides a IBuilder building a private job.
@@ -193,6 +218,12 @@ class HiddenBuilder:
 
         return "NOT OK: (%s)" % mode
 
+    # This method is required because the builder history page will have this
+    # cloaked context if the builder is currently processing a private build.
+    def getBuildRecords(self, build_state=None, name=None, user=None):
+        """See `IHasBuildRecords`."""
+        return self.context.getBuildRecords(build_state, name, user)
+
 
 class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
@@ -202,11 +233,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     __used_for__ = IBuilder
 
     def __init__(self, context, request):
-        current_job = context.currentjob
-        if current_job and not check_permission(
-            'launchpad.View', current_job.build):
-            # Cloak the builder.
-            context = HiddenBuilder(context)
+        context = self.overrideHiddenBuilder(context)
         super(BuilderView, self).__init__(context, request)
 
     def cancelBuildJob(self):

@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
-__metaclass__ = type
+# This modules uses relative imports.
+# pylint: disable-msg=W0403
 
 """
 Gina launcher script. Handles commandline options and makes the proper
@@ -13,6 +13,10 @@ The callstack is essentially:
                 -> import_binarypackages -> do_one_binarypackage
 """
 
+
+__metaclass__ = type
+
+
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
 
@@ -23,7 +27,6 @@ import sys
 import time
 import psycopg
 from optparse import OptionParser
-from datetime import timedelta
 
 from zope.component import getUtility
 
@@ -129,8 +132,8 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = config.dbname
-    LPDB_HOST = config.dbhost
+    LPDB = config.database.dbname
+    LPDB_HOST = config.database.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
@@ -179,7 +182,8 @@ def run_gina(options, ztm, target_section):
                                                      pocket_distroseries,
                                                      components, archs)
     except MangledArchiveError:
-        log.exception("Failed to analyze archive for %s" % pocket_distroseries)
+        log.exception(
+            "Failed to analyze archive for %s" % pocket_distroseries)
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
