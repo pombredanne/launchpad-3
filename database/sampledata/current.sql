@@ -1133,13 +1133,6 @@ ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
-ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugnotificationrecipient ENABLE TRIGGER ALL;
-
-
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
@@ -3888,7 +3881,7 @@ ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
-
+INSERT INTO OAuthConsumer (id, disabled, date_created, secret, key) VALUES (1, 'f', CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '', 'foobar123451432');
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
 
