@@ -656,6 +656,7 @@ class BranchDeletionView(LaunchpadFormView):
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the branch page."""
+        self.next_url = canonical_url(self.context)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
