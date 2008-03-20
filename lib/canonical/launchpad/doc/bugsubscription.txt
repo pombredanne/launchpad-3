@@ -66,7 +66,6 @@ subscriptions work.
 The list of direct bug subscribers is accessed via
 IBug.getDirectSubscribers().
 
-    >>> import operator
     >>> def print_displayname(subscribers):
     ...     for subscriber in subscribers:
     ...         print subscriber.displayname
@@ -96,6 +95,15 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
     [<Person at ...>]
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
+
+It is also possible to get the list of indirect subscribers for an
+individual bug task.
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     get_bugtask_indirect_subscribers)
+    >>> get_bugtask_indirect_subscribers(
+    ...     linux_source_bug.bugtasks[0])
+    [<Person at ...>]
 
 The list of all bug subscribers can also be accessed via
 IBugTask.bug_subscribers. Our event handling machinery compares a
@@ -439,8 +447,6 @@ Define a function that get subscriber email addresses back conveniently:
 Let's have a look at an example for a distribution bug:
 
     >>> ubuntu.setBugContact(sample_person, sample_person)
-
-    >>> from canonical.launchpad.interfaces import IBugSet
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",

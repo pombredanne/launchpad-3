@@ -97,4 +97,3 @@ if __name__ == "__main__":
         'process-death-row', dbuser=config.archivepublisher.dbuser)
     script.lock_and_run()
 
-

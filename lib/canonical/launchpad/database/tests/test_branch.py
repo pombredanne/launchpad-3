@@ -95,15 +95,8 @@ class TestBranchDeletion(TestCase):
 
     def test_codeImportDisablesDeletion(self):
         """A branch that has an attached code import can't be deleted."""
-        # Branches for code imports must be owned by vcs imports.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = BranchSet().new(
-            BranchType.IMPORTED, 'firefox-import', vcs_imports, vcs_imports,
-            self.product, None, 'A firefox import branch')
-        code_import = CodeImportSet().new(
-            self.user, branch, RevisionControlSystems.SVN,
-            'svn://example.com/some/url')
-        syncUpdate(code_import)
+        code_import = LaunchpadObjectFactory().makeCodeImport()
+        branch = code_import.branch
         self.assertEqual(branch.canBeDeleted(), False,
                          "A branch that has a import is not deletable.")
         self.assertRaises(CannotDeleteBranch, branch.destroySelf)

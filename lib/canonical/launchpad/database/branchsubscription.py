@@ -32,4 +32,4 @@ class BranchSubscription(SQLBase):
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
     max_diff_lines = EnumCol(enum=BranchSubscriptionDiffSize,
-                             notNull=True)
+                             notNull=False, default=DEFAULT)

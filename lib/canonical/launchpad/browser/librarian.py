@@ -25,10 +25,10 @@ class LibraryFileAliasView(LaunchpadView):
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
         # Redirect based on the scheme of the request, as set by Apache in the
-        # 'X-SCHEME' environment variable.  Note that only some requests for
-        # librarian files are allowed to come in via http as most are forced
-        # to https via Apache redirection.
-        request_scheme = self.request.get('X-SCHEME')
+        # 'X-SCHEME' environment variable, which is mapped to 'HTTP_X_SCHEME.
+        # Note that only some requests for librarian files are allowed to come
+        # in via http as most are forced to https via Apache redirection.
+        request_scheme = self.request.get('HTTP_X_SCHEME')
         if request_scheme == 'http':
             redirect_to = self.context.http_url
         else:
