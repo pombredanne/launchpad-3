@@ -23,7 +23,7 @@ class SQLObjectEventBase:
         if user is not None:
             self.user = user
         else:
-            # Prevents a circular import between launchpadform and
+            # Prevent a circular import between launchpadform and
             # this module.
             from canonical.launchpad.webapp.interfaces import ILaunchBag
             self.user = getUtility(ILaunchBag).user

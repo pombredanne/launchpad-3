@@ -40,7 +40,7 @@ class MessageAddView(SQLObjectAddView):
 
 
 class BugMessageCanonicalUrlData:
-    """Bug message have a canonical_url within the primary bugtask."""
+    """Bug messages have a canonical_url within the primary bugtask."""
     implements(ICanonicalUrlData)
     rootsite = 'bugs'
 
@@ -50,7 +50,7 @@ class BugMessageCanonicalUrlData:
 
 
 def message_to_canonical_url_data(message):
-    """This factory creates ICanonicalUrlData for BugMessage."""
+    """This factory creates `ICanonicalUrlData` for BugMessage."""
     if message.bugs.count() == 0:
         # Will result in a ComponentLookupError
         return None

@@ -37,7 +37,7 @@ def login(email, participation=None):
 
 
     if email != ANONYMOUS:
-        # Create an anonymous interaction first because this calls 
+        # Create an anonymous interaction first because this calls
         # IPersonSet.getByEmail() and since this is security wrapped, it needs
         # an interaction available.
         setupInteraction(authutil.unauthenticatedPrincipal())

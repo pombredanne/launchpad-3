@@ -917,9 +917,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
         also handle traversal to collection scoped into an entry.
         """
         # If this is the last traversal step, then look first for a scoped
-        # collection. We only look for scoped collection there because
-        # navigation to entry in scoped collection are handled by normal
-        # Navigation.
+        # collection. This is done because although Navigation handles
+        # traversal to entries in a scoped collection, they don't usually
+        # handle traversing to the scoped collection itself.
         if len(request.getTraversalStack()) == 0:
             result = self._traverseToScopedCollection(request, ob, name)
             if result is not None:
@@ -953,7 +953,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             return None
 
         # Create a dummy object that implements the field's interface.
-        # This is neccessary because we can't pass the interface itself
+        # This is necessary because we can't pass the interface itself
         # into getMultiAdapter.
         example_entry = CollectionEntryDummy(field)
         try:
@@ -975,13 +975,13 @@ class WebServicePublication(LaunchpadBrowserPublication):
         The WebService doesn't use the getDefaultTraversal() extension
         mechanism, because it only applies to GET, HEAD, and POST methods.
 
-        See `getResource()` for the alternate mechanism.
+        See getResource() for the alternate mechanism.
         """
         # Don't traverse to anything else.
         return ob, None
 
     def getResource(self, request, ob):
-        """Return the resource to use to publish object.
+        """Return the resource that can publish the object ob.
 
         This is done at the end of traversal.  If the published object
         supports the ICollection, or IEntry interface we wrap it into the
@@ -1010,14 +1010,14 @@ class WebServiceRequestTraversal:
     """Mixin providing web-service resource wrapping in traversal.
 
     This is implemented as a mixin, because we want the WebServiceTestRequest
-    to use the same mechanism. And since the Launchpad request class 
+    to use the same mechanism. And since the Launchpad request class
     hierarchy is a mess, it's simple to use a mixin.
     """
 
     def traverse(self, ob):
         """See `zope.publisher.interfaces.IPublisherRequest`.
 
-        WebService requests calls the WebServicePublication.getResource()
+        WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
         result = super(WebServiceRequestTraversal, self).traverse(ob)

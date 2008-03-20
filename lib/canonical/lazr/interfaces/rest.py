@@ -69,7 +69,7 @@ class IEntryResource(IHTTPResource, IJSONPublishable):
 
         :param representation: A JSON representation of the field and values
             that should be modified.
-        :return: Nothing or an error message describing validation errors. The
+        :return: None or an error message describing validation errors. The
             HTTP status code should be set appropriately.
         """
 
@@ -88,14 +88,14 @@ class IEntry(Interface):
     """An entry, exposed as a resource by an IEntryResource."""
 
     schema = Attribute(
-        'The schema describing the date fields on this entry.')
+        'The schema describing the data fields on this entry.')
 
     @invariant
     def schemaIsProvided(value):
         """Make sure that the entry also provides its schema."""
         if not value.schema.providedBy(value):
             raise Invalid(
-                "%s doesn't provide its %s schema" % (
+                "%s doesn't provide its %s schema." % (
                     type(value).__name__, value.schema.__name__))
 
 

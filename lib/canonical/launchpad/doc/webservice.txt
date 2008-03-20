@@ -199,8 +199,9 @@ Finally, a simple DishSet with predefined dishes.
     >>> protect_schema(DishSet, IDishSet)
 
 The web service uses the standard Navigation components to map URLs to
-components to publish (see navigation.txt) and the standard ICanonicalUrlData
-to map content object back to URL (see canonical_url.txt).
+components to publish (see navigation.txt) and the standard
+ICanonicalUrlData to map content object back to URL (see
+canonical_url.txt).
 
 The navigation for these components:
 
@@ -436,12 +437,13 @@ But the invariant will complain if that doesn't isn't true.
     >>> IAuthorEntry.validateInvariants(InvalidAuthorEntry(A1))
     Traceback (most recent call last):
       ...
-    Invalid: InvalidAuthorEntry doesn't provide its ICookbookEntry schema
+    Invalid: InvalidAuthorEntry doesn't provide its ICookbookEntry schema.
 
-Other entries are defined similarly. (XXX flacoste 2008/03/17 Update
-this example to show how adapters can be used to resolve the impedance
-mismatch between the web-service visible interface and the internal data
-model.)
+Other entries are defined similarly.
+
+# XXX flacoste 2008/03/17 Update this example to show how adapters can
+# be used to resolve the impedance mismatch between the web-service
+# visible interface and the internal data model.)
 
     >>> class CookbookEntry(Entry):
     ...     """A cookbook, as exposed through the web service."""
@@ -612,7 +614,6 @@ content objects published on the web service. It works for the web
 service root also.
 
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> ICanonicalUrlData.providedBy(app)
     True
     >>> canonical_url(app)
@@ -757,7 +758,7 @@ Requesting an attribute which isn't exposed as a collection:
     ...
     NotFound: ... name: u'name'
 
-Requesting a non-existant comment:
+Requesting a non-existent comment:
 
     >>> create_web_service_request(
     ...  '/cookbooks/The%20Joy%20of%20Cooking/comments/10').traverse(app)

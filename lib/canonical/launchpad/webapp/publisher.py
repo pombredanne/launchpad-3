@@ -179,9 +179,9 @@ class LaunchpadView(UserAttributeCache):
     - initialize() <-- subclass this for specific initialization
     - template     <-- the template set from zcml, otherwise not present
     - user         <-- currently logged-in user
-    - render()     <-- used to render the page.  override this if you have many
-                       templates not set via zcml, or you want to do rendering
-                       from Python.
+    - render()     <-- used to render the page.  override this if you have
+                       many templates not set via zcml, or you want to do
+                       rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
@@ -354,7 +354,7 @@ def canonical_url(
     # URLs to point back at the web service, so we basically ignore rootsite.
     # I don't feel like designing a proper solution today, we'll need
     # to revisit this anyway once we tackle API versioning.
-    # Plus we already have a bunch of layer-specific hacks below... 
+    # Plus we already have a bunch of layer-specific hacks below...
     if WebServiceLayer.providedBy(request) or rootsite is None:
         # This means we should use the request, or fall back to the main site.
 

@@ -13,10 +13,10 @@
     </securedutility>
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
-    <view 
+    <view
         for="canonical.launchpad.interfaces.IWebServiceApplication"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.launchpad.browser.LaunchpadRootNavigation" 
+        factory="canonical.launchpad.browser.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
