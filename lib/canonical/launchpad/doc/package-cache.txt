@@ -299,6 +299,14 @@ owner name.
   >>> print ubuntu.searchPPAs(text='cprov').count()
   0
 
+Sampledata contains stub counters.
+
+  >>> print cprov.archive.sources_cached
+  3
+
+  >>> print cprov.archive.binaries_cached
+  3
+
 We have to issue 'updateArchiveCache' to include the owner 'name' and
 'displayname' field in the archive caches.
 
@@ -306,10 +314,17 @@ We have to issue 'updateArchiveCache' to include the owner 'name' and
   >>> transaction.commit()
   >>> flush_database_updates()
 
-Now Celso's PPA can be found via searches.
+Now Celso's PPA can be found via searches and the package counters got
+reset, reflecting that nothing is cached in the database yet.
 
   >>> print ubuntu.searchPPAs(text='cprov')[0].title
   PPA for Celso Providelo
+
+  >>> print cprov.archive.sources_cached
+  0
+
+  >>> print cprov.archive.binaries_cached
+  0
 
 The sampledata contains no package caches, so attempts to find
 'pmount' (a source) or 'firefox' (a binary name term) fail.
@@ -318,6 +333,8 @@ The sampledata contains no package caches, so attempts to find
   0
   >>> ubuntu.searchPPAs(text='firefox').count()
   0
+  >>> ubuntu.searchPPAs(text='warty').count()
+  0
 
 If we populate the package caches and update the archive caches, the
 same queries work, pointing to Celso's PPA.
@@ -325,6 +342,11 @@ same queries work, pointing to Celso's PPA.
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
   DEBUG: Considering source 'pmount'
+  ...
+
+  >>> warty.updateCompletePackageCache(
+  ...    archive=cprov.archive, ztm=transaction, log=TestLog())
+  DEBUG: Considering binary 'mozilla-firefox'
   ...
 
   >>> cprov.archive.updateArchiveCache()
@@ -336,6 +358,8 @@ same queries work, pointing to Celso's PPA.
   >>> print ubuntu.searchPPAs(text='pmount')[0].title
   PPA for Celso Providelo
   >>> print ubuntu.searchPPAs(text='firefox')[0].title
+  PPA for Celso Providelo
+  >>> print ubuntu.searchPPAs(text='warty')[0].title
   PPA for Celso Providelo
 
 
@@ -378,3 +402,39 @@ New values were stored:
 
   >>> warty_i386.package_count
   8
+
+
+== DistroSeriesBinaryPackage cache lookups ==
+
+The DistroSeriesBinaryPackage object uses a DistroSeriesPackageCache
+record to present summary and description for the context binary
+package.
+
+  >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+  >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
+
+  >>> primary_cache = DistroSeriesPackageCache(
+  ...     archive=ubuntu.main_archive, distroseries=warty,
+  ...     binarypackagename=foobar_name, summary='main foobar',
+  ...     description='main foobar description')
+
+  >>> foobar_binary = warty.getBinaryPackage('foobar')
+
+  >>> foobar_binary.cache == primary_cache
+  True
+
+  >>> print foobar_binary.summary
+  main foobar
+
+  >>> print foobar_binary.description
+  main foobar description
+
+This lookup mechanism will continue to work even after we have added a
+cache entry for a PPA package with the same name.
+
+  >>> ppa_cache = DistroSeriesPackageCache(
+  ...     archive=cprov.archive, distroseries=warty,
+  ...     binarypackagename=foobar_name, summary='ppa foobar')
+
+  >>> foobar_binary.cache != ppa_cache
+  True

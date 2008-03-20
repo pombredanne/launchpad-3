@@ -8,6 +8,7 @@ __all__ = [
     'DebBugsDatabaseNotFound'
     ]
 
+from datetime import datetime
 import email
 import os.path
 
@@ -15,6 +16,8 @@ from email.Utils import parseaddr
 
 from zope.component import getUtility
 from zope.interface import implements
+
+import pytz
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
@@ -67,6 +70,13 @@ class DebBugs(ExternalBugTracker):
         if os.path.exists(os.path.join(self.db_location, 'archive')):
             self.debbugs_db_archive = debbugs.Database(
                 self.db_location, self.debbugs_pl, subdir="archive")
+
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        # We don't know the exact time for the Debbugs server, but we
+        # trust it being correct.
+        return datetime.now(pytz.timezone('UTC'))
+
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
