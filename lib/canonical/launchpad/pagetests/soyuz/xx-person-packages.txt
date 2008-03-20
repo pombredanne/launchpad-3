@@ -76,6 +76,7 @@ And another helper function to set the private flag on a PPA:
     ...         name))
     ...     admin_browser.getLink("Administer archive").click()
     ...     admin_browser.getControl(name="field.private").value = private
+    ...     admin_browser.getControl(name="field.buildd_secret").value = "x"
     ...     admin_browser.getControl("Save").click()
 
 We will also amend some packages so that they belong to "cprov" and will
