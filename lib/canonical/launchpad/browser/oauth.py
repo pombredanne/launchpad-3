@@ -15,7 +15,8 @@ from canonical.launchpad.interfaces import (
     OAuthPermission, OAUTH_CHALLENGE)
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView)
-from canonical.launchpad.webapp.authentication import check_oauth_signature
+from canonical.launchpad.webapp.authentication import (
+    check_oauth_signature, get_oauth_authorization)
 
 
 class OAuthRequestTokenView(LaunchpadView):
@@ -28,7 +29,7 @@ class OAuthRequestTokenView(LaunchpadView):
         with a 401 status.  If the key is not empty but there's no consumer
         with it, we register a new consumer.
         """
-        form = self.request.form
+        form = get_oauth_authorization(self.request)
         consumer_key = form.get('oauth_consumer_key')
         if not consumer_key:
             self.request.unauthorized(OAUTH_CHALLENGE)

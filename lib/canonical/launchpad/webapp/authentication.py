@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_oauth_authorization',
     'check_oauth_signature',
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
@@ -13,6 +14,7 @@ __all__ = [
 import binascii
 import random
 import sha
+from oauth import OAuthRequest
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -261,6 +263,20 @@ class LaunchpadPrincipal:
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
 
+def get_oauth_authorization(request):
+    """Retrieve OAuth authorization information from a request.
+
+    The authorization information may be in the Authorization header,
+    or it might be in the query string or entity-body.
+
+    :return: a dictionary of authorization information.
+    """
+    header = request._auth
+    if header.startswith("OAuth "):
+        return OAuthRequest._split_header(header)
+    else:
+        return request.form
+
 
 def check_oauth_signature(request, consumer, token):
     """Check that the given OAuth request is correctly signed.
@@ -268,8 +284,9 @@ def check_oauth_signature(request, consumer, token):
     If the signature is incorrect or its method is not supported, set the
     appropriate status in the request's response and return False.
     """
-    form = request.form
-    if form.get('oauth_signature_method') != 'PLAINTEXT':
+    authorization = get_oauth_authorization(request)
+
+    if authorization.get('oauth_signature_method') != 'PLAINTEXT':
         # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported
         # now. Others will be implemented later.
         request.response.setStatus(400)
@@ -280,7 +297,7 @@ def check_oauth_signature(request, consumer, token):
     else:
         token_secret = ''
     expected_signature = "&".join([consumer.secret, token_secret])
-    if expected_signature != form.get('oauth_signature'):
+    if expected_signature != authorization.get('oauth_signature'):
         request.unauthorized(OAUTH_CHALLENGE)
         return False
 
