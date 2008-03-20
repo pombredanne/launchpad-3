@@ -278,3 +278,4 @@ Once again, CVE links are created but no karma is assigned.
     CVE-1991-9911
     CVE-1999-0593
 
+    >>> karma_helper.unregister_listener()
