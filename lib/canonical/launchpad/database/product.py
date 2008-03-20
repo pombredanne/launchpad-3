@@ -122,10 +122,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     official_answers = BoolCol(
         dbName='official_answers', notNull=True, default=False)
+    official_blueprints = BoolCol(
+        dbName='official_blueprints', notNull=True, default=False)
+    official_codehosting = BoolCol(
+        dbName='official_codehosting', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+
+    @property
+    def official_anything(self):
+        return True in (self.official_malone, self.official_rosetta,
+                        self.official_blueprints, self.official_answers,
+                        self.official_codehosting)
+
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)

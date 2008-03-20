@@ -9,6 +9,7 @@ distribution officially uses Launchpad.
     >>> print extract_text(label_cell.findNext())
     Answers
     Bug tracking
+    Blueprints
     Translations
 
 Unprivileged Launchpad users cannot access the page for changing these
@@ -27,7 +28,6 @@ details.
 The distribution's registrant can access the page, but even he/she can't
 change the usage.
 
-    >>> from zope.testbrowser.testing import Browser
     >>> registrant = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> registrant.open('http://launchpad.dev/ubuntu/+edit')
@@ -67,6 +67,8 @@ A Launchpad administrator, however, can see the controls.
     >>> print admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value
     True
+    >>> print admin_browser.getControl(name='field.official_blueprints').value
+    True
     >>> print admin_browser.getControl(name='field.official_answers').value
     True
 
@@ -77,13 +79,23 @@ distribution Overview page.
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
+    >>> admin_browser.getControl(name='field.official_blueprints').value = (
+    ... False)
     >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
+
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> admin_browser.getControl(name='field.official_blueprints').value = (
+    ... False)
+    >>> admin_browser.getControl('Change').click()
     >>> content = find_main_content(admin_browser.contents)
     >>> label_cell = content.find('th', text='Uses Launchpad for:')
+
+Print an emdash when distribution uses nothing
+
     >>> print extract_text(label_cell.findNext())
     &mdash;
 
