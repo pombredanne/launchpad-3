@@ -247,7 +247,31 @@ class Build(SQLBase):
             # estimated build start times are only available for
             # pending jobs
             return None
-        return datetime.datetime.utcfromtimestamp(0)
+
+        result = datetime.datetime.utcfromtimestamp(0)
+
+        cur = cursor()
+        q = """
+            SELECT
+                MIN(build.estimated_build_duration -
+                (now() - buildqueue.buildstart)) AS remainder
+            FROM
+                build, builder, buildqueue, archive
+            WHERE
+                buildqueue.build = build.id AND
+                buildqueue.builder = builder.id AND
+                build.archive = archive.id AND
+                archive.require_virtualized = %s AND
+                build.buildstate = %s AND
+                builder.processor = %s;
+            """
+        cur.execute(q % (self.archive.require_virtualized(),
+                         self.buildstate(),
+                         self.processor()))
+        build_delay = cur.fetchone()
+        if build_delay: build_delay = build_delay[0]
+
+        return result
 
     def _parseDependencyToken(self, token):
         """Parse the given token.
