@@ -745,9 +745,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
-        title = '%s on %s' % (self._context.buildstate.title,
-                              self._context.distroarchseries.architecturetag)
-        alt = "[%s]" % title
+        alt = '[%s]' % self._context.buildstate.name
+        title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
 
         return self.icon_template % (alt, title, source)
