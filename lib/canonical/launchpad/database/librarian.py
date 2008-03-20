@@ -13,7 +13,8 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
-from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed
+from canonical.librarian.interfaces import (
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -146,9 +147,13 @@ class LibraryFileAliasSet(object):
     implements(ILibraryFileAliasSet)
 
     def create(
-        self, name, size, file, contentType, expires=None, debugID=None):
-        """See ILibraryFileAliasSet.create"""
-        client = getUtility(ILibrarianClient)
+        self, name, size, file, contentType, expires=None, debugID=None,
+        restricted=False):
+        """See `ILibraryFileAliasSet`"""
+        if restricted:
+            client = getUtility(IRestrictedLibrarianClient)
+        else:
+            client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
         return LibraryFileAlias.get(fid)
 

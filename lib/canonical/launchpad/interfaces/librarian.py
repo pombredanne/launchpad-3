@@ -115,7 +115,8 @@ class ILibraryFileContent(Interface):
             )
 
 class ILibraryFileAliasSet(Interface):
-    def create(name, size, file, contentType, expires=None, debugID=None):
+    def create(name, size, file, contentType, expires=None, debugID=None,
+               restricted=False):
         """Create a file in the Librarian, returning the new ILibraryFileAlias.
 
         An expiry time of None means the file will never expire until it
@@ -123,6 +124,9 @@ class ILibraryFileAliasSet(Interface):
         file that will stay in the Librarian for ever. Setting it to another
         timestamp means that the file will expire and possibly be removed
         from the Librarian at this time. See LibrarianGarbageCollection.
+
+        If restricted is True, the file will be created through the
+        IRestricteLibrarianClient utility.
         """
 
     def __getitem__(key):
