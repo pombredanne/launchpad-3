@@ -39,7 +39,8 @@ All of the other PPA "action" pages are presented similarly.
 
 The "Change Details" page:
 
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/+edit")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.getLink("Change details").click()
     >>> print find_tag_by_id(cprov_browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
@@ -47,7 +48,8 @@ The "Change Details" page:
 
 The "View build records" page:
 
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/+builds")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.getLink("View build records").click()
     >>> print find_tag_by_id(cprov_browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
@@ -55,8 +57,8 @@ The "View build records" page:
 
 The "Delete packages" page:
 
-    >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+delete-packages")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.getLink("Delete packages").click()
     >>> print find_tag_by_id(cprov_browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
@@ -64,8 +66,8 @@ The "Delete packages" page:
 
 The "Edit dependencies" page:
 
-    >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+edit-dependencies")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.getLink("Edit dependencies").click()
     >>> print find_tag_by_id(cprov_browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
@@ -73,8 +75,8 @@ The "Edit dependencies" page:
 
 And for the administrator, the "Administer archive" page:
 
-    >>> admin_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+edit-dependencies")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.getLink("Administer archive").click()
     >>> print find_tag_by_id(admin_browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(admin_browser.contents, 'privatebadge')

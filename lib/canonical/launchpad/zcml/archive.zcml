@@ -45,6 +45,14 @@
     attribute_to_parent="owner"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/archive-privacy-icon.pt"
+    name="+privacy-icon"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
     permission="launchpad.View"

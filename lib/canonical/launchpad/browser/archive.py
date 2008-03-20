@@ -104,6 +104,8 @@ class ArchiveViewBase:
 
     def isPrivate(self):
         """Return whether the archive is private or not."""
+        # This is used by the main container template to decide whether
+        # to render the privacy graphics or not.
         return self.context.private
 
     @property
