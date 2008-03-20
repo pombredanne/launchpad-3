@@ -11,19 +11,12 @@
 >
   <body>
 
-    <metal:heading fill-slot="pageheading">
-      <h1>Build machines for Launchpad</h1>
-    </metal:heading>
-
 <metal:block fill-slot="head_epilogue">
     <meta http-equiv="refresh" content="300" />
 </metal:block>
 
-<metal:portlets fill-slot="portlets">
-
-</metal:portlets>
-
-  <div metal:fill-slot="main">
+    <div metal:fill-slot="main">
+      <h1>Launchpad build machines</h1>
 
     <div id="ppa-builders" tal:define="category view/ppa_builders">
       <div metal:use-macro="template/macros/builder-category" />
@@ -44,14 +37,15 @@
     :category: A BuilderCategory object
   </tal:comment>
 
-   <h2><tal:category_title replace="category/title" /></h2>
+   <h2 tal:content="category/title" />
 
    <table class="listing">
      <tal:group repeat="builder_group category/groups">
-       <tr>
-         <th>
-             <span tal:replace="builder_group/processor_name">386</span>
-         </th>
+       <tr class="category">
+         <th
+           style="text-align: left"
+           tal:content="builder_group/processor_name"
+         />
          <th>
              <span tal:replace="builder_group/queue_size">2</span> waiting
          </th>
