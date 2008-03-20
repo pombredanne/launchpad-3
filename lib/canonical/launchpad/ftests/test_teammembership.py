@@ -38,11 +38,11 @@ class TestTeamMembershipSet(unittest.TestCase):
         self.assertEqual(membership.status, TeamMembershipStatus.APPROVED)
 
     def test_active_membership_creation_stores_proponent_and_reviewer(self):
-        """Memberships created in the any active state have reviewer stored.
+        """Memberships created in any active state have the reviewer stored.
 
-        The reviewer_comment, date_reviewed and attributes related to the
-        proponent are also stored, but everything related to acknowledger
-        will be left empty.
+        The date_joined, reviewer_comment, date_reviewed and attributes
+        related to the proponent are also stored, but everything related to
+        acknowledger will be left empty.
         """
         marilize = self.personset.getByName('marilize')
         ubuntu_team = self.personset.getByName('ubuntu-team')
@@ -51,12 +51,12 @@ class TestTeamMembershipSet(unittest.TestCase):
             ubuntu_team.teamowner, comment="I like her")
         self.assertEqual(ubuntu_team.teamowner, membership.proposed_by)
         self.assertEqual(membership.proponent_comment, "I like her")
-        self.failUnless(
-            membership.date_proposed <= datetime.now(pytz.timezone('UTC')))
+        now = datetime.now(pytz.timezone('UTC'))
+        self.failUnless(membership.date_proposed <= now)
+        self.failUnless(membership.datejoined <= now)
         self.assertEqual(ubuntu_team.teamowner, membership.reviewed_by)
         self.assertEqual(membership.reviewer_comment, "I like her")
-        self.failUnless(
-            membership.date_reviewed <= datetime.now(pytz.timezone('UTC')))
+        self.failUnless(membership.date_reviewed <= now)
         self.assertEqual(membership.acknowledged_by, None)
 
     def test_membership_creation_stores_proponent(self):
@@ -132,6 +132,56 @@ class TestTeamMembershipSet(unittest.TestCase):
 
 class TestTeamMembership(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
+
+    def test_indirect_members_are_kicked_when_kicking_team(self):
+        """Indirect members are kicked when the team in which they are a
+        direct member is kicked.
+
+        Create a team hierarchy with 5 teams and one person (no-priv) as
+        member of the last team in the chain. 
+            team1
+               team2
+                  team3
+                     team4
+                        team5
+                           no-priv
+        
+        Then kick the latest team (team5) from team4 and check that neither
+        no-priv nor team5 are indirect members of any other teams.
+        """
+        login('mark@hbd.com')
+        person_set = getUtility(IPersonSet)
+        sabdfl = person_set.getByName('sabdfl')
+        no_priv = person_set.getByName('no-priv')
+        team1 = person_set.newTeam(sabdfl, 'team1', 'team1')
+        team2 = person_set.newTeam(sabdfl, 'team2', 'team2')
+        team3 = person_set.newTeam(sabdfl, 'team3', 'team3')
+        team4 = person_set.newTeam(sabdfl, 'team4', 'team4')
+        team5 = person_set.newTeam(sabdfl, 'team5', 'team5')
+        team5.addMember(no_priv, sabdfl)
+        self.failUnless(no_priv in team5.activemembers)
+        team1.addMember(team2, sabdfl, force_team_add=True)
+        team2.addMember(team3, sabdfl, force_team_add=True)
+        team3.addMember(team4, sabdfl, force_team_add=True)
+        team4.addMember(team5, sabdfl, force_team_add=True)
+        self.failUnless(team3 in team2.activemembers)
+        self.failUnless(team4 in team3.activemembers)
+        self.failUnless(team5 in team4.activemembers)
+        self.failUnless(no_priv in team4.allmembers)
+        self.failUnless(no_priv in team3.allmembers)
+        self.failUnless(no_priv in team2.allmembers)
+        self.failUnless(no_priv in team1.allmembers)
+        team4.setMembershipData(
+            team5, TeamMembershipStatus.DEACTIVATED, sabdfl)
+        flush_database_updates()
+        self.failIf(team5 in team4.allmembers)
+        self.failIf(team5 in team3.allmembers)
+        self.failIf(team5 in team2.allmembers)
+        self.failIf(team5 in team1.allmembers)
+        self.failIf(no_priv in team4.allmembers)
+        self.failIf(no_priv in team3.allmembers)
+        self.failIf(no_priv in team2.allmembers)
+        self.failIf(no_priv in team1.allmembers)
 
     def test_membership_status_changes_are_immediately_flushed_to_db(self):
         """Any changes to a membership status must be imediately flushed.
