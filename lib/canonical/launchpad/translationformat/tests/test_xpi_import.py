@@ -20,10 +20,10 @@ from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer
 
-def get_en_US_xpi_file_to_import():
+def get_en_US_xpi_file_to_import(subdir):
     """Return an en-US.xpi file object ready to be imported.
 
-    The file is generated from translationformat/tests/firefox-data/es-US.
+    The file is generated from translationformat/tests/firefox-data/<subdir>.
     """
     # en-US.xpi file is a ZIP file which contains embedded JAR file (which is
     # also a ZIP file) and a couple of other files.  Embedded JAR file is
@@ -32,7 +32,7 @@ def get_en_US_xpi_file_to_import():
     # Get the root path where the data to generate .xpi file is stored.
     test_root = os.path.join(
         os.path.dirname(canonical.launchpad.__file__),
-        'translationformat/tests/firefox-data/en-US')
+        'translationformat/tests/firefox-data', subdir)
 
     # First create a en-US.jar file to be included in XPI file.
     jarfile = tempfile.TemporaryFile()
@@ -86,10 +86,13 @@ class XpiTestCase(unittest.TestCase):
             owner=self.importer)
         self.spanish_firefox = self.firefox_template.newPOFile('es')
 
-    def setUpTranslationImportQueueForTemplate(self):
-        """Return an ITranslationImportQueueEntry for testing purposes."""
+    def setUpTranslationImportQueueForTemplate(self, subdir):
+        """Return an ITranslationImportQueueEntry for testing purposes.
+
+        :param subdir: subdirectory in firefox-data to get XPI data from.
+        """
         # Get the file to import.
-        en_US_xpi =  get_en_US_xpi_file_to_import()
+        en_US_xpi = get_en_US_xpi_file_to_import(subdir)
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
@@ -108,11 +111,14 @@ class XpiTestCase(unittest.TestCase):
 
         return getUtility(ITranslationImportQueue)[entry_id]
 
-    def setUpTranslationImportQueueForTranslation(self):
-        """Return an ITranslationImportQueueEntry for testing purposes."""
+    def setUpTranslationImportQueueForTranslation(self, subdir):
+        """Return an ITranslationImportQueueEntry for testing purposes.
+
+        :param subdir: subdirectory in firefox-data to get XPI data from.
+        """
         # Get the file to import. Given the way XPI file format works, we can
         # just use the same template file like a translation one.
-        es_xpi =  get_en_US_xpi_file_to_import()
+        es_xpi = get_en_US_xpi_file_to_import(subdir)
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
@@ -158,7 +164,7 @@ class XpiTestCase(unittest.TestCase):
     def test_TemplateImport(self):
         """Test XPI template file import."""
         # Prepare the import queue to handle a new .xpi import.
-        entry = self.setUpTranslationImportQueueForTemplate()
+        entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
@@ -247,7 +253,7 @@ class XpiTestCase(unittest.TestCase):
     def test_TwiceTemplateImport(self):
         """Test a template import done twice."""
         # Prepare the import queue to handle a new .xpi import.
-        entry = self.setUpTranslationImportQueueForTemplate()
+        entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
@@ -274,8 +280,9 @@ class XpiTestCase(unittest.TestCase):
     def test_TranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
-        template_entry = self.setUpTranslationImportQueueForTemplate()
-        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        template_entry = self.setUpTranslationImportQueueForTemplate('en-US')
+        translation_entry = self.setUpTranslationImportQueueForTranslation(
+            'en-US')
 
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(
@@ -358,7 +365,8 @@ class XpiTestCase(unittest.TestCase):
 
     def test_GetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""
-        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        translation_entry = self.setUpTranslationImportQueueForTranslation(
+            'en-US')
         importer = MozillaXpiImporter()
         translation_file = importer.parse(translation_entry)
 
@@ -367,6 +375,46 @@ class XpiTestCase(unittest.TestCase):
         name, email = translation_file.header.getLastTranslator()
         self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
         self.assertEqual(email, u'carlos@canonical.com')
+
+    def test_ClashingMessageIds(self):
+        """Test correct handling of clashing message ids in XPI file."""
+        queue_entry = self.setUpTranslationImportQueueForTranslation(
+            'clashing_ids')
+        importer = MozillaXpiImporter()
+        template = importer.parse(queue_entry)
+
+        messages = sorted([
+            (message.msgid_singular, message.context, message.singular_text)
+            for message in template.messages])
+        self.assertEquals(
+            [
+             (u'foozilla.clashing.key',
+              u'mac/extra.dtd(foozilla.clashing.key)',
+              u'This message is Mac-specific, and comes from DTD.'),
+             (u'foozilla.clashing.key',
+              u'mac/extra.properties:1(foozilla.clashing.key)',
+              u'This message is Mac-specific, and comes from properties.'),
+             (u'foozilla.clashing.key',
+              u'main.dtd(foozilla.clashing.key)',
+              u'This message is in the main DTD.'),
+             (u'foozilla.clashing.key',
+              u'main.properties:1(foozilla.clashing.key)',
+              u'This message is in the main properties file.'),
+             (u'foozilla.clashing.key',
+              u'unix/extra.dtd(foozilla.clashing.key)',
+              u'This message is Unix-specific, and comes from DTD.'),
+             (u'foozilla.clashing.key',
+              u'unix/extra.properties:1(foozilla.clashing.key)',
+              u'This message is Unix-specific, and comes from properties.'),
+             (u'foozilla.clashing.key',
+              u'win/extra.dtd(foozilla.clashing.key)',
+              u'This message is Windows-specific, and comes from DTD.'),
+             (u'foozilla.clashing.key',
+              u'win/extra.properties:1(foozilla.clashing.key)',
+              u'This message is Windows-specific, '
+                  'and comes from properties.'),
+            ],
+            messages)
 
 
 def test_suite():

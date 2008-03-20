@@ -64,7 +64,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
     def setUpTranslationImportQueueForTemplate(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
         # Get the file to import.
-        en_US_xpi =  get_en_US_xpi_file_to_import()
+        en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)

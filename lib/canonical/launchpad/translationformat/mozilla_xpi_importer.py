@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -83,7 +83,6 @@ class MozillaZipFile:
         self.filename = filename
         self.header = None
         self.messages = []
-        self._msgids = []
         self.last_translator = None
 
         zip = ZipFile(StringIO(content), 'r')
@@ -135,11 +134,6 @@ class MozillaZipFile:
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
         for message in newdata:
-            if message.msgid_singular in self._msgids:
-                logging.info(
-                    "Duplicate message ID '%s'." % message.msgid_singular)
-                continue
-
             self._updateMessageFileReferences(message)
 
             # Special case accesskeys and commandkeys:
@@ -150,7 +144,6 @@ class MozillaZipFile:
                     message.translations[TranslationConstants.SINGULAR_FORM])
                 message.resetAllTranslations()
 
-            self._msgids.append(message.msgid_singular)
             self.messages.append(message)
 
 
@@ -200,6 +193,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         # don't have a way to show the line number with the source reference.
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
         message.addTranslation(TranslationConstants.SINGULAR_FORM, value)
+        message.singular_text = value
         message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
@@ -398,9 +392,10 @@ class PropertyFile:
                 message.msgid_singular = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
+                value = translation.strip()
                 message.addTranslation(
-                    TranslationConstants.SINGULAR_FORM,
-                    translation.strip())
+                    TranslationConstants.SINGULAR_FORM, value)
+                message.singular_text = value
                 message.source_comment = last_comment
                 self.messages.append(message)
 
@@ -409,6 +404,95 @@ class PropertyFile:
                 last_comment_line_num = 0
                 is_message = False
                 translation = u''
+
+
+def find_end_of_common_prefix(strings):
+    """Find index of first character (if any) where strings differ.
+
+    :param strings: a list of strings.
+    :return: index directly after that of last character that is identical
+        across all `strings`.
+    """
+    min_length = min([len(string) for string in strings])
+    if len(strings) <= 1:
+        return min_length
+
+    head = strings[0]
+    tail = strings[1:]
+    for index in xrange(min_length):
+        base_char = head[index]
+        for string in tail:
+            if string[index] != base_char:
+                return index
+
+    return min_length
+
+
+def disambiguate(messages):
+    """Resolve possible duplicate message ids in `messages`.
+
+    Where messages are identical and occur in the exact same file(s), one
+    copy is removed.  Context information is added to resolve clashes between
+    identical message identifiers in different files inside the XPI.
+
+    :param messages: a list of `TranslationMessageData` objects representing
+        the full set of messages in an XPI.
+    :return: a disambiguated list of `TranslationMessageData` objects.
+    """
+    result = []
+    # Messages we've already seen.  Maps msgid_singular to a dict that in turn
+    # maps file_references to a previously processed TranslationMessageData.
+    seen = {}
+
+    # Sets of message ids that occur in multiple files, that need
+    # disambiguation by context.
+    clashes = set()
+
+    for message in messages:
+        if message.msgid_singular in seen:
+            similar_messages = seen[message.msgid_singular]
+            if message.file_references in similar_messages:
+                # This is a completely senseless duplication, within the same
+                # file.  Ignore it.
+                logging.info(
+                    "Duplicate message ID '%s' in %s."
+                    % (message.msgid_singular, message.file_references))
+            else:
+                # There is already a message with the same identifier in a
+                # different file.  Accept it as a separate message.
+                similar_messages[message.file_references] = message
+                clashes.add(message.msgid_singular)
+                result.append(message)
+        else:
+            # New message.  Store it.
+            seen[message.msgid_singular] = {message.file_references: message}
+            result.append(message)
+
+    # Go over messages with clashing identifiers, and provide context.
+    for msgid in clashes:
+        cousins = seen[msgid]
+        filenames = set()
+        for message in cousins.itervalues():
+            filenames.update(message.file_references_list)
+        # Context is based on the originating file's path.  We can't use the
+        # whole path, because it may contain language codes.
+        # Instead, eliminate common prefixes from the file_references strings
+        # for any set of clashing messages, and use the rest of those strings
+        # as context strings.
+        # XXX: JeroenVermeulen 2008-03-20 spec=xpi-manifest-parsing: Context
+        # should really be based on chrome path, and be set for every string.
+        # To figure out proper chrome paths we need to be able to parse
+        # manifest files first.
+        context_start = find_end_of_common_prefix(list(filenames))
+        for message in cousins.itervalues():
+            context_components = []
+            for filename in message.file_references_list:
+                context_components.append(filename[context_start:])
+            context = ','.join(context_components)
+            if len(context) > 0:
+                message.context = context
+
+    return result
 
 
 class MozillaXpiImporter:
@@ -457,10 +541,11 @@ class MozillaXpiImporter:
         parser = MozillaZipFile(self.basepath, self.content.read())
 
         self._translation_file.header = parser.header
-        self._translation_file.messages = parser.messages
+        self._translation_file.messages = disambiguate(parser.messages)
 
         return self._translation_file
 
     def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
         return MozillaHeader(header_string)
+
