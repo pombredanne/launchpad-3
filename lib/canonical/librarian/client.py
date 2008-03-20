@@ -3,6 +3,13 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'FileDownloadClient',
+    'FileUploadClient',
+    'LibrarianClient',
+    'RestrictedLibrarianClient',
+    ]
+
 import md5
 import sha
 import socket
@@ -14,11 +21,13 @@ import urllib
 import urllib2
 from urlparse import urljoin
 
+from zope.interface import implements
+
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.librarian.interfaces import UploadFailed, DownloadFailed
-
-__all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
+from canonical.librarian.interfaces import (
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
+    UploadFailed)
 
 
 class FileUploadClient:
@@ -318,8 +327,11 @@ class FileDownloadClient:
 
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):
-    """Object combining the upload/download interfaces to the Librarian
-       simplifying access. This object is instantiated as a Utility
-       using getUtility(ILibrarianClient)
-    """
+    """See `ILibrarianClient`."""
+    implements(ILibrarianClient)
+
+
+class RestrictedLibrarianClient(LibrarianClient):
+    """See `IRestrictedLibrarianClient`."""
+    implements(IRestrictedLibrarianClient)
 

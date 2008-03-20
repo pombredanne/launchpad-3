@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -67,5 +67,9 @@ class IFileDownloadClient(Interface):
 
 
 class ILibrarianClient(IFileUploadClient, IFileDownloadClient):
-    pass
+    """Interface for the librarian client."""
+
+
+class IRestrictedLibrarianClient(ILibrarianClient):
+    """A version of the client that connects to a restricted librarian."""
 
