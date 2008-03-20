@@ -111,9 +111,9 @@
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
-            <th>Builds</th>
             <th>Series</th>
             <th>Section</th>
+            <th>Built</th>
           </tr>
         </thead>
         <tbody>

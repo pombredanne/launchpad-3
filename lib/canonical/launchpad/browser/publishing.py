@@ -10,10 +10,12 @@ __all__ = [
     'BinaryPublishingRecordView',
     ]
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.interfaces import PackagePublishingStatus
+from canonical.launchpad.interfaces import (
+    BuildStatus, PackagePublishingStatus)
 
 
 class BasePublishingRecordView(LaunchpadView):
@@ -137,6 +139,59 @@ class SourcePublishingRecordView(BasePublishingRecordView):
                 results.append(entry)
                 packagenames.add(packagename)
         return results
+
+    @cachedproperty
+    def cached_builds(self):
+        """Return a list of Builds for the context published source."""
+        return list(self.context.getBuilds())
+
+    @property
+    def build_status(self):
+        """Return the contents of the 'Built' column.
+
+        If any build for this source is still PENDING or BUILDING, return the
+        'build-building' icon, followed by the architectures building.
+
+        If all builds have quiesced and any of them has failed (
+        FAILEDTOBUILD, MANUALDEPWAIT, CHROOTWAIT or FAILEDTOUPLOAD) return
+        the 'no' icon, followed by the architectures where the source failed.
+
+        Finally, if all builds have quiesced and none of them failed, return
+        the 'yes' icon.
+        """
+        def content_template(alt, image, text=''):
+            return '<img alt="%s" src="%s" /> %s' % (alt, image, text)
+
+        def collect_builds(states):
+            wanted = []
+            for state in states:
+                candidates = [build.distroarchseries.architecturetag
+                              for build in self.cached_builds
+                              if build.buildstate == state]
+                wanted.extend(candidates)
+            return wanted
+
+        failed_states = (
+            BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT, BuildStatus.FAILEDTOUPLOAD)
+
+        pending_states = (
+            BuildStatus.NEEDSBUILD, BuildStatus.BUILDING)
+
+        failures = collect_builds(failed_states)
+        pending = collect_builds(pending_states)
+
+        # XXX cprov 20080320: We might want to give precedence for 'failures',
+        # even when the source is still having 'pending' jobs.
+        if pending:
+            text = " ".join(pending)
+            return content_template(
+                'Still building', '/@@/build-building', text=text)
+        elif failures:
+            text = " ".join(failures)
+            return content_template('Build failures', '/@@/no', text=text)
+        else:
+            return content_template('Built successfully', '/@@/yes')
 
 
 class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
