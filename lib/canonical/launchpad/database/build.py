@@ -301,7 +301,7 @@ class Build(SQLBase):
             SELECT COUNT(id) FROM builder WHERE builder.processor = %s
             """
         cur = cursor()
-        cur.execute(q % self.processor)
+        cur.execute(q % self.processor.id)
         pool_size = cur.fetchone()[0]
 
         if pool_size is None or not pool_size:
@@ -332,12 +332,12 @@ class Build(SQLBase):
                 build.archive = archive.id AND
                 archive.require_virtualized = %s AND
                 build.buildstate = %s AND
-                builder.processor = %s;
+                builder.processor = %s
             ORDER BY
                 remainder;
             """
         cur.execute(q1 % (self.archive.require_virtualized,
-                         self.buildstate.id,
+                         self.buildstate.value,
                          self.processor.id))
         # get the remaining build times for the jobs currently
         # building on the respective machine pool (current build
