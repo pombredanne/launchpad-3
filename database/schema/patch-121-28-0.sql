@@ -17,4 +17,4 @@ AND home_page IS NOT NULL;
 -- Drop the column later as the horrible BranchWithSortKeys
 -- view uses it.  I'm hoping to kill this view shortly.
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 28, 0);
