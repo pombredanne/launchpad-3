@@ -213,9 +213,8 @@ class FileUploadClient:
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
 
-            base = config.librarian.download_url
             path = '/%d/%s' % (int(aliasID), quote(name))
-            return urljoin(base, path)
+            return urljoin(self.download_url, path)
         finally:
             self._close()
 

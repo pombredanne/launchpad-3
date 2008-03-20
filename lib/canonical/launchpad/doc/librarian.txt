@@ -325,6 +325,11 @@ file:
     >>> print url
     http://localhost:58023/.../another-private.txt
 
+The file can then immediately be retrieved:
+
+    >>> print urlopen(url).read()
+    This is private data.
+
 Another way to create a restricted file is by using the restricted
 parameter to ILibraryFileAliasSet:
 

@@ -63,5 +63,6 @@ class Library:
         If a matching alias already exists, it will return that ID instead.
         """
         return LibraryFileAlias(contentID=fileid, filename=filename,
-                                mimetype=mimetype, expires=expires).id
+                                mimetype=mimetype, expires=expires,
+                                restricted=self.restricted).id
 
