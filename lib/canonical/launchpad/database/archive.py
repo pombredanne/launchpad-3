@@ -76,6 +76,8 @@ class Archive(SQLBase):
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
 
+    buildd_secret = StringCol(dbName='buildd_secret', default=None)
+
     @property
     def title(self):
         """See `IArchive`."""
@@ -120,9 +122,12 @@ class Archive(SQLBase):
         }
 
         if self.purpose == ArchivePurpose.PPA:
+            if self.private:
+                url = config.personalpackagearchive.private_base_url
+            else:
+                url = config.personalpackagearchive.base_url
             return urlappend(
-                config.personalpackagearchive.base_url,
-                self.owner.name + '/' + self.distribution.name)
+                url, self.owner.name + '/' + self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
@@ -135,11 +140,15 @@ class Archive(SQLBase):
     def getPubConfig(self):
         """See `IArchive`."""
         pubconf = PubConfig(self.distribution)
+        ppa_config = config.personalpackagearchive
 
         if self.purpose == ArchivePurpose.PRIMARY:
             pass
         elif self.purpose == ArchivePurpose.PPA:
-            pubconf.distroroot = config.personalpackagearchive.root
+            if self.private:
+                pubconf.distroroot = ppa_config.private_root
+            else:
+                pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
                 pubconf.distroroot, self.owner.name, self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')

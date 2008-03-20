@@ -163,6 +163,10 @@ class BuildQueue(SQLBase):
         else:
             msg += "T+0 "
 
+        # Private builds get uber score.
+        if self.build.archive.private:
+            score += 1000
+
         # Store current score value.
         self.lastscore = score
 

@@ -613,7 +613,7 @@ class BaseArchiveEditView(ArchiveViewBase, LaunchpadEditFormView):
     schema = IArchive
     field_names = []
 
-    @action(_("Save"), name="save")
+    @action(_("Save"), name="save", validator="validate_save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
@@ -622,6 +622,9 @@ class BaseArchiveEditView(ArchiveViewBase, LaunchpadEditFormView):
     def action_cancel(self, action, data):
         self.next_url = canonical_url(self.context)
 
+    def validate_save(self, action, data):
+        """Default save validation does nothing."""
+        pass
 
 class ArchiveEditView(BaseArchiveEditView):
 
@@ -633,9 +636,27 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'authorized_size', 'whiteboard']
+                   'buildd_secret', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)
+
+    def validate_save(self, action, data):
+        """Validate the save action on ArchiveAdminView.
+
+        buildd_secret can only be set, and must be set, when
+        this is a private archive.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        if data.get('buildd_secret') is None and data['private']:
+            self.setFieldError(
+                'buildd_secret',
+                'Required for private archives.')
+
+        if data.get('buildd_secret') is not None and not data['private']:
+            self.setFieldError(
+                'buildd_secret',
+                'Do not specify for non-private archives')
 
 
 def archive_to_structualheading(archive):
