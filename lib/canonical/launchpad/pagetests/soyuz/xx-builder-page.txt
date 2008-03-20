@@ -1,4 +1,37 @@
-= Builder Actions =
+= Builder page =
+
+Builder page presents information builder itself and its about the
+current job (mozilla-firefox).
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/")
+    >>> anon_browser.getLink("bob").click()
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Bob The Builder
+    Current status
+    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+    Started on 2005-06-15
+    Dummy sampledata entry, not processing
+    Last updated ...
+
+A portlet with the builder details is also rendered.
+
+    >>> print extract_text(
+    ...     find_portlet(anon_browser.contents, 'Bob The Builder details'))
+    Bob The Builder details
+    Name: Bob The Builder
+    Architecture: Intel 386
+    Location: http://localhost:8221/
+    Virtual: False
+    Description
+      The default build-slave
+    Status
+      NOT OK : None (AUTO)
+    Owner
+      Launchpad Buildd Admins
+
+
+== Builder Actions ==
 
 All builder actions require authorization, some launchpad.Edit, some
 launchpad.Admin, both are only granted to members of
@@ -7,24 +40,12 @@ launchpad.Admin, both are only granted to members of
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
 
-Starting on 'Build Farm' page the administrator can browse all the
-active builders
-
-    >>> def print_build_rows(contents):
-    ...     builder_rows = find_tags_by_class(contents, 'builder-row')
-    ...     for row in builder_rows:
-    ...         print str(extract_text(row))
-
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> print_build_rows(cprov_browser.contents)
-    Builder        Architecture Owner                   Status
-    bob Automatic  386          Launchpad Buildd Admins Not available
-    frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
+    >>> cprov_browser.getLink('bob').click()
 
-Already in the builder page the available actions are presented in the
+In the builder page the available actions are presented in the
 'Actions' portlet.
 
-    >>> cprov_browser.getLink('bob').click()
     >>> print str(extract_text(find_portlet(cprov_browser.contents, "Actions")))
     Actions
     Show build history
@@ -32,6 +53,8 @@ Already in the builder page the available actions are presented in the
     Change mode
     Cancel current job
     Administer builder
+
+See 'xx-builds-pages.txt' for documentation about 'Show build history'.'
 
 Via the 'edit' form the user can modify the location and the visible
 details of the builder
@@ -213,9 +236,11 @@ Farm list.
 
     >>> cprov_browser.getLink("Build Farm").click()
 
-    >>> print_build_rows(cprov_browser.contents)
-    Builder        Architecture Owner                   Status
-    frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
+    >>> print extract_text(find_main_content(cprov_browser.contents))
+    Build machines for Launchpad
+    Builder          Architecture Owner                    Status
+    frog Automatic   386 Virtual  Launchpad Buildd Admins  Not available
+    Generated at ...
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
