@@ -79,6 +79,20 @@ BuildQueue entries.
     >>> bq0.lastscore
     1015
 
+If the archive is private, its score is boosted by 1000:
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bq0.build.archive.private = True
+    >>> bq0.score()
+    >>> bq0.lastscore
+    2015
+
+    >>> bq0.build.archive.private = False
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+
  * 1000 points for main components
  * 5 point for priority LOW
  * nothing for queue_time
