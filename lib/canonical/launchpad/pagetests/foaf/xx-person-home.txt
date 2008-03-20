@@ -169,6 +169,7 @@ Details portlet.
     OpenPGP keys:
     12345678
     OpenID login:
+    (What's this?)
     http://openid.launchpad.dev/+id/name16_oid
 
 Other users who visit the page do not see the URL.

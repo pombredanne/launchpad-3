@@ -118,17 +118,17 @@
         <tal:can-view-openid-login
 	   condition="context/required:launchpad.Edit">
 	  <tr tal:condition="context/is_openid_enabled">
-	    <th>OpenID login:</th>
-            <td>
-	      <span title="This URL is not disclosed to others.">
+	    <th>OpenID login:<br/>
+	      <span style="font-weight:normal">
+		(<a href="https://help.launchpad.net/openid"
+		    >What's&nbsp;this?</a>)</span>
+	    </th>
+            <td title="This URL is not disclosed to others.">
               <img src="/@@/private" alt="" />
               <a tal:attributes="href view/openid_identity_url"
 		 tal:content="view/openid_identity_url">
 		http://foo.com
 	      </a>
-	      </span>
-	      (<a href="https://help.launchpad.net/openid"
-		  >What's&nbsp;this?</a>)
             </td>
 	  </tr>
 	</tal:can-view-openid-login>
