@@ -45,9 +45,10 @@ class Library:
 
     def getAliases(self, fileid):
         results = LibraryFileAlias.select(AND(
-                LibraryFileAlias.q.content==LibraryFileContent.q.id,
+                LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
                 LibraryFileContent.q.id==fileid,
-                LibraryFileContent.q.deleted==False
+                LibraryFileContent.q.deleted==False,
+                LibraryFileAlias.q.restricted==self.restricted,
                 ))
         return [(a.id, a.filename, a.mimetype) for a in results]
 
