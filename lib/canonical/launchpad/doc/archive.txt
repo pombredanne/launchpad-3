@@ -33,6 +33,16 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.binaries_cached
     3
 
+The buildd_secret is used by the slave scanner when generating a
+sources.list entry for the builder to access a private archive.  It is
+essentially the password to the archive for the builder.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = "secret"
+    >>> login(ANONYMOUS)
+    >>> print cprov_archive.buildd_secret
+    secret
+
 Useful properties:
 
     >>> cprov_archive.title

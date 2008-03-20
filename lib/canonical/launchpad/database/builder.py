@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
     pocketsuffix)
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -260,9 +261,16 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                if archive.private:
+                    uri = URI(archive.archive_url)
+                    uri = uri.replace(
+                        userinfo="buildd:%s" % archive.buildd_secret)
+                    url = str(uri)
+                else:
+                    url = archive.archive_url
                 source_line = (
                     'deb %s %s %s'
-                    % (archive.archive_url, dist_name, ogre_components))
+                    % (url, dist_name, ogre_components))
                 ubuntu_source_lines.append(source_line)
         else:
             ubuntu_pockets = self.pocket_dependencies[
