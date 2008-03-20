@@ -281,7 +281,7 @@ Trying to access that file directly on the normal librarian will fail
     >>> sneaky_url = file_url.replace(
     ...     config.librarian.restricted_download_url,
     ...     config.librarian.download_url)
-    >>> urlopen(sneaky_url)
+    >>> urlopen(sneaky_url).read()
     Traceback (most recent call last):
       ...
     HTTPError:

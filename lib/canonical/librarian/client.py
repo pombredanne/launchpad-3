@@ -44,12 +44,9 @@ class FileUploadClient:
 
         The host and port default to what is specified in the configuration
         """
-        host = config.librarian.upload_host
-        port = config.librarian.upload_port
-
         try:
             self.state.s = socket.socket(AF_INET, SOCK_STREAM)
-            self.state.s.connect((host, port))
+            self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
         except socket.error, x:
             raise UploadFailed(str(x))
@@ -304,7 +301,7 @@ class FileDownloadClient:
         path = self._getPathForAlias(aliasID)
         if path is None:
             return None
-        base = config.librarian.download_url
+        base = self.download_url
         if is_buildd:
             base = config.librarian.buildd_download_url
         return urljoin(base, path)
@@ -336,8 +333,34 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
 
     restricted = False
 
+    @property
+    def upload_host(self):
+        return config.librarian.upload_host
+
+    @property
+    def upload_port(self):
+        return config.librarian.upload_port
+
+    @property
+    def download_url(self):
+        return config.librarian.download_url
+
+
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
     implements(IRestrictedLibrarianClient)
 
     restricted = True
+
+    @property
+    def upload_host(self):
+        return config.librarian.restricted_upload_host
+
+    @property
+    def upload_port(self):
+        return config.librarian.restricted_upload_port
+
+    @property
+    def download_url(self):
+        return config.librarian.restricted_download_url
+
