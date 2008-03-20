@@ -268,13 +268,13 @@ class TestArchiveOverrider(unittest.TestCase):
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
         changer.initialize()
-        changer.processSourceChange('mozilla-firefox')
+        changer.processSourceChange('foobar')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "ERROR 'mozilla-firefox' source isn't published in hoary")
+            "ERROR 'foobar' source isn't published in hoary")
 
     def test_processSourceChange_no_change(self):
         """Source override when the source is already in the desired state.
