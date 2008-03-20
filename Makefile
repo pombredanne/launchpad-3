@@ -244,7 +244,7 @@ static:
 	$(PYTHON) scripts/make-static.py
 
 TAGS:
-	ctags -e -R lib
+	ctags -e -R lib/canonical && ctags --exclude=lib/canonical -a -e -R lib/
 
 tags:
 	ctags -R lib
