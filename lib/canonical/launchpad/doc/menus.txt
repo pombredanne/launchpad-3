@@ -248,6 +248,7 @@ are as we expect.
     enabled: True
     escapedtext: Foo
     icon: None
+    icon_url: None
     linked: True
     name: foo
     render: <bound method FacetLink.render ...>
@@ -262,6 +263,7 @@ are as we expect.
     enabled: True
     escapedtext: Bar
     icon: None
+    icon_url: None
     linked: True
     name: bar
     render: <bound method FacetLink.render ...>
@@ -710,6 +712,7 @@ are as we expect.
     enabled: True
     escapedtext: First menu
     icon: None
+    icon_url: None
     linked: True
     name: first
     render: <bound method MenuLink.render ...>
@@ -773,6 +776,7 @@ are as we expect.
     enabled: True
     escapedtext: First context menu item
     icon: None
+    icon_url: None
     linked: True
     name: first
     render: <bound method MenuLink.render ...>

@@ -181,14 +181,6 @@ class LinkView(LaunchpadView):
     mode.
     """
 
-    @property
-    def icon_url(self):
-        """The full URL of this link's associated icon, if it has one."""
-        if not self.context.icon:
-            return ''
-        else:
-            return '/@@/%s' % self.context.icon
-
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
         if self.context.enabled or config.devmode:
