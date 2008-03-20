@@ -45,12 +45,12 @@
 
           <tr>
             <th>Archive:</th>
-            <td tal:condition="not: context/is_trusted">
+            <td tal:condition="context/archive/purpose/enumvalue:PPA">
               <a tal:attributes="href context/archive/fmt:url">
                <span tal:replace="context/archive/owner/displayname"/> PPA
               </a>
             </td>
-            <td tal:condition="context/is_trusted">
+            <td tal:condition="not: context/archive/purpose/enumvalue:PPA">
                <span tal:replace="context/distribution/name"/> archive
             </td>
           </tr>
@@ -79,12 +79,14 @@
               tal:content="context/datecreated/fmt:approximatedate" />
           </tr>
 
-          <tr tal:condition="context/estimated_buildstart">
-            <th>Estimated build start:</th>
-            <td
-              tal:attributes="title context/estimated_buildstart/fmt:datetime"
-              tal:content="context/estimated_buildstart/fmt:approximatedate" />
-          </tr>
+          <tal:buildstart define="estimated_buildstart context/estimated_buildstart">
+              <tr tal:condition="estimated_buildstart">
+                <th>Estimated build start:</th>
+                <td
+                  tal:attributes="title estimated_buildstart/fmt:datetime"
+                  tal:content="estimated_buildstart/fmt:approximatedate" />
+              </tr>
+          </tal:buildstart>
 
           <tal:not_built condition="not: context/was_built">
             <tal:buildqueue condition="context/buildqueue_record"

@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
+from canonical.database.sqlbase import (cursor, quote, sqlvalues)
 
 class Build(SQLBase):
     implements(IBuild)
@@ -116,9 +116,9 @@ class Build(SQLBase):
         return self.distroarchseries.distroseries.distribution
 
     @property
-    def is_trusted(self):
+    def is_virtualized(self):
         """See `IBuild`"""
-        return self.archive.purpose != ArchivePurpose.PPA
+        return self.archive.require_virtualized
 
     @property
     def title(self):
@@ -167,9 +167,8 @@ class Build(SQLBase):
     def can_be_retried(self):
         """See `IBuild`."""
         # First check that the slave scanner would pick up the build record
-        # if we reset it.  Untrusted and Partner builds are always ok.
-        if (self.is_trusted and
-            self.archive.purpose != ArchivePurpose.PARTNER and
+        # if we reset it.  PPA and Partner builds are always ok.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
             not self.distroseries.canUploadToPocket(self.pocket)):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
@@ -248,13 +247,83 @@ class Build(SQLBase):
             # pending jobs
             return None
 
-        result = datetime.datetime.utcfromtimestamp(0)
+        result = 0
 
         cur = cursor()
-        q = """
+        # for a given build job in position N in the build queue the
+        # query below sums up the estimated build durations for the
+        # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
+        #
+        # Please note: 'jbuild' is the job for which we calculate
+        # the estimated dispatch time (job N)
+        q2 = """
             SELECT
-                MIN(build.estimated_build_duration -
-                (now() - buildqueue.buildstart)) AS remainder
+                EXTRACT(EPOCH FROM SUM(qbuild.estimated_build_duration))
+            FROM
+                build qbuild, buildqueue qbuildqueue, archive qarchive,
+                build jbuild, buildqueue jbuildqueue, archive jarchive
+            WHERE
+                qbuild.buildstate = 0 AND
+                qbuildqueue.build = qbuild.id AND
+                qbuild.archive = qarchive.id AND
+                jbuild.buildstate = 0 AND
+                jbuildqueue.build = jbuild.id AND
+                jbuild.archive = jarchive.id AND
+                qbuild.processor = jbuild.processor AND
+                qarchive.require_virtualized = jarchive.require_virtualized AND
+                ((qbuildqueue.lastscore > jbuildqueue.lastscore) OR
+                 ((qbuildqueue.lastscore = jbuildqueue.lastscore) AND
+                  (qbuild.id < jbuild.id))) AND
+                jbuild.id = %s;
+             """
+        cur.execute(q2 % self.id)
+        # get the sum of the estimated build time for jobs that are
+        # ahead of us in the queue
+        sum_of_delays = cur.fetchone()[0]
+
+        # get build dispatch time for job at the head of the queue
+        headjob_delay = self._getHeadjobDelay()
+
+        if sum_of_delays is None:
+            # this job is the head job
+            result = headjob_delay
+        else:
+            # there are jobs ahead of us, divide the delay total by
+            # the number of machines available in the build pool
+            pool_size = float(self._getBuildpoolSize())
+            result = headjob_delay + int(sum_of_delays/pool_size)
+
+        return datetime.datetime.utcfromtimestamp(result)
+
+    def _getBuildpoolSize(self):
+        """Get the number of machines in our build pool."""
+        q = """
+            SELECT COUNT(id) FROM builder WHERE builder.processor = %s
+            """
+        cur = cursor()
+        cur.execute(q % self.processor)
+        pool_size = cur.fetchone()[0]
+
+        if pool_size is None or not pool_size:
+            pool_size = 0
+        else:
+            pool_size = int(pool_size)
+
+        return pool_size
+
+    def _getHeadjobDelay(self):
+        """Get the estimated dispatch time for job at the head of the
+           queue."""
+        cur = cursor()
+        # the query below yields the remaining build times (in seconds
+        # since EPOCH) for the jobs that are currently building on the
+        # machine pool of interest
+        q1 = """
+            SELECT
+                CAST (EXTRACT(EPOCH FROM 
+                        (build.estimated_build_duration -
+                        (now() - buildqueue.buildstart))) AS INTEGER)
+                    AS remainder
             FROM
                 build, builder, buildqueue, archive
             WHERE
@@ -264,14 +333,29 @@ class Build(SQLBase):
                 archive.require_virtualized = %s AND
                 build.buildstate = %s AND
                 builder.processor = %s;
+            ORDER BY
+                remainder;
             """
-        cur.execute(q % (self.archive.require_virtualized(),
-                         self.buildstate(),
-                         self.processor()))
-        build_delay = cur.fetchone()
-        if build_delay: build_delay = build_delay[0]
+        cur.execute(q1 % (self.archive.require_virtualized,
+                         self.buildstate.id,
+                         self.processor.id))
+        # get the remaining build times for the jobs currently
+        # building on the respective machine pool (current build
+        # set)
+        remainders = cur.fetchall()
+        # head job delay in seconds
+        build_delays = set([int(row[0]) for row in remainders])
+        headjob_delay = len(build_delays) and max(build_delays) or 0
+        for delay in reversed(sorted(build_delays)):
+            if delay < 0:
+                # this job is currently building and taking longer
+                # than estimated i.e. we don't have a clue when it
+                # will be finished; make a wild guess (1 hour?)
+                build_delay = 3600
+            if build_delay < headjob_delay:
+                headjob_delay = build_delay
 
-        return result
+        return headjob_delay
 
     def _parseDependencyToken(self, token):
         """Parse the given token.
@@ -444,7 +528,7 @@ class Build(SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
-        if self.is_trusted:
+        if self.archive.purpose != ArchivePurpose.PPA:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))

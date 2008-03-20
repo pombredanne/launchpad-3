@@ -64,6 +64,15 @@ Bug 563 resides in the archive. It is also fetchable:
     'done normal'
 
 
+== Getting the time ==
+
+We don't have acccess to the Debian servers exact time, but we trust it
+being correct.
+
+    >>> external_debbugs.getCurrentDBTime()
+    datetime.datetime(...)
+
+
 == Checking debbugs bug watches ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
