@@ -12,8 +12,13 @@ import _pythonpath
 
 import sys, os.path, popen2
 from optparse import OptionParser
+import tempfile
+from textwrap import dedent
+import time
+
 import psycopg
 
+import upgrade
 from canonical import lp
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -168,72 +173,100 @@ def execute(con, sql, results=False, args=None):
     else:
         return None
 
+_slonik_sql = None # Initialized during option parsing. Open file handle.
+_slonik_sql_path = None # Initialized during option parsing. Path to file.
+
+def sexecute(con, sql):
+    """If we are generating a slonik script, write out the SQL to our
+    SQL script. Otherwise execute on the DB.
+    """
+    if options.slonik:
+        print >> _slonik_sql, dedent(sql + ';')
+
+    else:
+        execute(con, sql)
+
 
 def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     """Setup full text indexing for a table"""
 
-    index = quote_identifier("%s_fti" % table)
-    table = quote_identifier(table)
+    index = "%s_fti" % table
+    qindex = quote_identifier(index)
+    qtable = quote_identifier(table)
     # Quote the columns
-    columns = [
+    qcolumns = [
         (quote_identifier(column), weight) for column, weight in columns
         ]
 
     # Drop the trigger if it exists
-    try:
-        execute(con, "DROP TRIGGER tsvectorupdate ON %s" % table)
-        con.commit()
-    except psycopg.ProgrammingError:
-        con.rollback()
+    trigger_exists = bool(execute(con, """
+        SELECT COUNT(*) FROM pg_trigger, pg_class, pg_namespace
+        WHERE pg_trigger.tgname = 'tsvectorupdate'
+            AND pg_trigger.tgrelid = pg_class.oid
+            AND pg_class.relname = %(table)s
+            AND pg_class.relnamespace = pg_namespace.oid
+            AND pg_namespace.nspname = 'public'
+        """, results=True, args=vars())[0][0])
+    if trigger_exists:
+        log.debug('tsvectorupdate trigger exists in %s. Dropping.' % qtable)
+        sexecute(con, "DROP TRIGGER tsvectorupdate ON %s" % qtable)
 
     # Drop the fti index if it exists
-    try:
-        execute(con, "DROP INDEX %s" % index)
-        con.commit()
-    except psycopg.ProgrammingError:
-        con.rollback()
+    index_exists = bool(execute(con, """
+        SELECT COUNT(*) FROM pg_index, pg_class, pg_namespace
+        WHERE pg_index.indexrelid = pg_class.oid
+            AND pg_class.relnamespace = pg_namespace.oid
+            AND pg_class.relname = %(index)s
+            AND pg_namespace.nspname = 'public'
+        """, results=True, args=vars())[0][0])
+    if index_exists:
+        log.debug('%s exists. Dropping.' % qindex)
+        sexecute(con, "DROP INDEX %s" % qindex)
 
     # Create the 'fti' column if it doesn't already exist
-    try:
-        execute(con, "SELECT fti FROM %s LIMIT 1" % table)
-    except psycopg.ProgrammingError:
-        con.rollback()
-        execute(con, "ALTER TABLE %s ADD COLUMN fti tsvector" % table)
+    column_exists = bool(execute(con, """
+        SELECT COUNT(*) FROM pg_attribute, pg_class, pg_namespace
+        WHERE pg_attribute.attname='fti'
+            AND pg_attribute.attisdropped IS FALSE
+            AND pg_attribute.attrelid = pg_class.oid
+            AND pg_class.relname = %(table)s
+            AND pg_class.relnamespace = pg_namespace.oid
+            AND pg_namespace.nspname = 'public'
+        """, results=True, args=vars())[0][0])
+    if not column_exists:
+        log.debug('fti column does not exist in %s. Creating.' % qtable)
+        sexecute(con, "ALTER TABLE %s ADD COLUMN fti tsvector" % qtable)
 
     # Create the trigger
     columns_and_weights = []
-    for column, weight in columns:
+    for column, weight in qcolumns:
         columns_and_weights.extend( (column, weight) )
 
     sql = """
         CREATE TRIGGER tsvectorupdate BEFORE UPDATE OR INSERT ON %s
         FOR EACH ROW EXECUTE PROCEDURE ftiupdate(%s)
         """ % (table, ','.join(columns_and_weights))
-    execute(con, sql)
+    sexecute(con, sql)
 
     # Rebuild the fti column, as the information it contains may be out
     # of date with recent configuration updates.
-    execute(con, r"""UPDATE %s SET fti=NULL""" % table)
+    sexecute(con, r"""UPDATE %s SET fti=NULL""" % qtable)
 
     # Create the fti index
-    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
-        index, table
+    sexecute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
+        qindex, qtable
         ))
-
-    con.commit()
 
 
 def nullify(con):
     """Set all fti index columns to NULL"""
-    cur = con.cursor()
     for table, ignored in ALL_FTI:
         table = quote_identifier(table)
         log.info("Removing full text index data from %s", table)
-        cur.execute("ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
-        cur.execute("UPDATE %s SET fti=NULL" % table)
-        cur.execute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
-    cur.execute("DELETE FROM FtiCache")
-    con.commit()
+        sexecute("ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
+        sexecute("UPDATE %s SET fti=NULL" % table)
+        sexecute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
+    sexecute("DELETE FROM FtiCache")
 
 
 def liverebuild(con):
@@ -270,22 +303,27 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # tsearch2 is out-of-the-box in 8.3+
     v83 = get_pgversion(con).startswith('8.3')
 
-    try:
-        execute(con, 'SET search_path = ts2, public;')
-    except psycopg.ProgrammingError:
-        con.rollback()
+    schema_exists = bool(execute(
+        con, "SELECT COUNT(*) FROM pg_namespace WHERE nspname='ts2'",
+        results=True)[0][0])
+    if not schema_exists:
         execute(con, 'CREATE SCHEMA ts2')
-        execute(con, 'SET search_path = ts2, public;')
         con.commit()
+    execute(con, 'SET search_path = ts2, public;')
 
     tsearch2_sql_path = get_tsearch2_sql_path(con)
 
-    try:
-        execute(con, 'SELECT * from pg_ts_cfg')
-        log.debug('tsearch2 already installed. Updating dictionaries.')
-        con.commit()
-    except psycopg.ProgrammingError:
-        con.rollback()
+    ts2_installed = bool(execute(con, """
+        SELECT COUNT(*) FROM pg_type,pg_namespace
+        WHERE pg_type.typnamespace=pg_namespace.oid
+            AND pg_namespace.nspname  = 'ts2'
+        """, results=True)[0][0])
+    if not ts2_installed:
+        assert not options.slonik, """
+            tsearch2 needs to be setup with fti.py --setup-only before
+            you can run with --slonik
+            """
+
         log.debug('Installing tsearch2')
         if config.database.dbhost:
             cmd = 'psql -d %s -h %s -f -' % (
@@ -435,19 +473,19 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = plpy.execute(p, [query], 1)[0]["x"]
         return query or None
         """  % configuration
-    execute(con, r"""
+    sexecute(con, r"""
         CREATE OR REPLACE FUNCTION ts2._ftq(text) RETURNS text AS %s
         LANGUAGE plpythonu IMMUTABLE
         RETURNS NULL ON NULL INPUT
         """ % quote(text_func))
     #print psycopg.QuotedString(text_func)
-    execute(con, r"""
+    sexecute(con, r"""
         CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS %s
         LANGUAGE plpythonu IMMUTABLE
         RETURNS NULL ON NULL INPUT
         """ % quote(tsquery_func))
 
-    execute(con,
+    sexecute(con,
             r"COMMENT ON FUNCTION ftq(text) IS '"
             r"Convert a string to a tsearch2 query using the preferred "
             r"configuration. eg. "
@@ -455,7 +493,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             r"The query is lowercased, and multiple words searched using "
             r"AND.'"
             )
-    execute(con,
+    sexecute(con,
             r"COMMENT ON FUNCTION ftq(text) IS '"
             r"Convert a string to an unparsed tsearch2 query'"
             )
@@ -463,7 +501,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # Create our trigger function. The default one that ships with tsearch2
     # doesn't support weighting so we need our own. We remove safety belts
     # since we know we will be calling it correctly.
-    execute(con, r"""
+    sexecute(con, r"""
         CREATE OR REPLACE FUNCTION ts2.ftiupdate() RETURNS trigger AS '
             new = TD["new"]
             args = TD["args"][:]
@@ -503,12 +541,10 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ' LANGUAGE plpythonu
         """)
 
-    execute(con,
+    sexecute(con,
         r"COMMENT ON FUNCTION ftiupdate() IS 'Trigger function that keeps "
         r"the fti tsvector column up to date.'"
         )
-
-    con.commit()
 
     # Confirm database locale is valid, and set the 'default' tsearch2
     # configuration to use it.
@@ -534,12 +570,12 @@ def setup(con, configuration=DEFAULT_CONFIG):
                 "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname='default'",
                 results=True)
         if r[0][0] == 0:
-            execute(con, """
+            sexecute(con, """
                 CREATE TEXT SEARCH CONFIGURATION ts2.default (
                     COPY = pg_catalog.english)""")
     else:
         # Remove block when running 8.3 everywhere.
-        execute(con, r"""
+        sexecute(con, r"""
                 UPDATE ts2.pg_ts_cfg SET locale=(
                     SELECT setting FROM pg_settings
                     WHERE context='internal' AND name='lc_ctype'
@@ -553,8 +589,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
     #
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
-
-    con.commit()
 
 
 def needs_refresh(con, table, columns):
@@ -571,11 +605,9 @@ def needs_refresh(con, table, columns):
         )
     if len(existing) == 0:
         log.debug("No fticache for %(table)s" % vars())
-        execute(con, """
-            INSERT INTO FtiCache (tablename, columns) VALUES (
-                %(table)s, %(current_columns)s
-                )
-            """, args=vars())
+        sexecute(con, """
+            INSERT INTO FtiCache (tablename, columns) VALUES (%s, %s)
+            """ % (quote(table), quote(current_columns)))
         return True
 
     if not options.force:
@@ -586,10 +618,10 @@ def needs_refresh(con, table, columns):
         log.debug("Cache out of date - %s != %s" % (
             current_columns, previous_columns
             ))
-    execute(con, """
-        UPDATE FtiCache SET columns = %(current_columns)s
-        WHERE tablename = %(table)s
-        """, args=vars())
+    sexecute(con, """
+        UPDATE FtiCache SET columns = %s
+        WHERE tablename = %s
+        """ % (quote(current_columns), quote(table)))
 
     return True
 
@@ -631,6 +663,12 @@ def main():
                     log.info(
                         "No need to rebuild full text index on %s", table)
 
+    if options.slonik:
+        upgrade.slonik_preamble(options.slonik)
+        upgrade.slonik_execute_script(options.slonik, _slonik_sql_path)
+    else:
+        con.commit()
+
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -654,6 +692,9 @@ if __name__ == '__main__':
             action="store_true", default=False,
             help="Rebuild all the indexes against a live database.",
             )
+    parser.add_option(
+            "-k", "--slonik", dest="slonik", default=None,
+            metavar="FILE", help="Output a slonik script to FILE")
     db_options(parser)
     logger_options(parser)
 
@@ -661,6 +702,21 @@ if __name__ == '__main__':
 
     if options.setup + options.force + options.null + options.liverebuild > 1:
         parser.error("Incompatible options")
+
+    if options.liverebuild and options.slonik:
+        parser.error("--liverebuild does not work with --slonik")
+
+    if options.slonik:
+        # Open the file for out slonik script. Use '-' for stdout.
+        fd, _slonik_sql_path = tempfile.mkstemp('.sql', 'fti_sk_')
+        _slonik_sql = os.fdopen(fd, 'w')
+        print >> _slonik_sql, "-- Generated by %s %s" % (
+                sys.argv[0], time.ctime())
+        if options.slonik == '-':
+            options.slonik = sys.stdout
+        else:
+            print >> _slonik_sql, "-- Included from %s" % options.slonik
+            options.slonik = open(options.slonik, 'w')
 
     log = logger(options)
 
