@@ -172,9 +172,6 @@ class StubLibrary:
     def lookupBySHA1(self, digest):
         return []
 
-    def hasContent(self, fileid):
-        return False
-
     def add(self, digest, size):
         return 99
 

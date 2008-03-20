@@ -45,7 +45,7 @@ librarianService = service.IServiceCollection(application)
 tachandler.ReadyService().setServiceParent(librarianService)
 
 path = config.librarian_server.root
-storage = storage.LibrarianStorage(path, db.Library())
+storage = storage.LibrarianStorage(path, db.Library(restricted))
 
 f = FileUploadFactory(storage)
 strports.service(str(uploadPort), f).setServiceParent(librarianService)
