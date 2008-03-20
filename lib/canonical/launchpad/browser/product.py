@@ -567,7 +567,87 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
+class ProductDownloadFileMixin:
+    """Provides methods for managing download files."""
+
+    def deleteFiles(self, releases):
+        """Delete the selected files from the set of releases.
+
+        :param releases: A set of releases in the view.
+        :return: The number of files deleted.
+        """
+        del_count = 0
+        for release in releases:
+            for release_file in release.files:
+                if release_file.libraryfile.id in self.delete_ids:
+                    release.deleteFileAlias(release_file.libraryfile)
+                    self.delete_ids.remove(release_file.libraryfile.id)
+                    del_count += 1
+        return del_count
+
+    def getReleases(self):
+        """Find the releases with download files for view."""
+        raise NotImplementedError
+
+    def fileURL(self, file_, release=None):
+        """Create a download URL for the `LibraryFileAlias`."""
+        if release is None:
+            release = self.context
+        url = urlappend(canonical_url(release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        baseurl = self.fileURL(file_, release)
+        return urlappend(baseurl, '+md5')
+
+    def processDeleteFiles(self):
+        """If the 'delete_files' button was pressed, process the deletions."""
+        del_count = None
+        self.delete_ids = [int(value) for key, value in self.form.items()
+                           if key.startswith('checkbox')]
+        if 'delete_files' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['delete_files'])
+                releases = self.getReleases()
+                del_count = self.deleteFiles(releases)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification(
+                    "No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification(
+                    "1 file has been deleted.")
+            else:
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
+
+    def seriesHasDownloadFiles(self, series):
+        """Determine whether a series has any download files."""
+        for release in series.releases:
+            if release.files.count() > 0:
+                return True
+
+    @cachedproperty
+    def latest_release_with_download_files(self):
+        """Return the latest release with download files."""
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if release.files.count() > 0:
+                    return release
+        return None
+
+
+class ProductView(HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     __used_for__ = IProduct
 
@@ -693,70 +773,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFileMixin:
-    """Provides methods for managing download files."""
-
-    def deleteFiles(self, releases):
-        """Delete the selected files from the set of releases.
-
-        :param releases: A set of releases in the view.
-        :return: The number of files deleted.
-        """
-        del_count = 0
-        for release in releases:
-            for release_file in release.files:
-                if release_file.libraryfile.id in self.delete_ids:
-                    release.deleteFileAlias(release_file.libraryfile)
-                    self.delete_ids.remove(release_file.libraryfile.id)
-                    del_count += 1
-        return del_count
-
-    def getReleases(self):
-        """Find the releases with download files for view."""
-        raise NotImplementedError
-
-    def fileURL(self, file_, release=None):
-        """Create a download URL for the `LibraryFileAlias`."""
-        if release is None:
-            release = self.context
-        url = urlappend(canonical_url(release), '+download')
-        # Quote the filename to eliminate non-ascii characters which
-        # are invalid in the url.
-        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
-
-    def md5URL(self, file_, release=None):
-        """Create a URL for the MD5 digest."""
-        baseurl = self.fileURL(file_, release)
-        return urlappend(baseurl, '+md5')
-
-    def processDeleteFiles(self):
-        """If the 'delete_files' button was pressed, process the deletions."""
-        del_count = None
-        self.delete_ids = [int(value) for key, value in self.form.items()
-                           if key.startswith('checkbox')]
-        if 'delete_files' in self.form:
-            if self.request.method == 'POST':
-                del(self.form['delete_files'])
-                releases = self.getReleases()
-                del_count = self.deleteFiles(releases)
-            else:
-                # If there is a form submission and it is not a POST then
-                # raise an error.  This is to protect against XSS exploits.
-                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
-        if del_count is not None:
-            if del_count <= 0:
-                self.request.response.addNotification(
-                    "No files were deleted.")
-            elif del_count == 1:
-                self.request.response.addNotification(
-                    "1 file has been deleted.")
-            else:
-                self.request.response.addNotification(
-                    "%d files have been deleted." %
-                    del_count)
-
-
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
@@ -779,9 +795,8 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            for release in series.releases:
-                if release.files.count() > 0:
-                    return True
+            if self.seriesHasDownloadFiles(series):
+                return True
         return False
 
     @cachedproperty
@@ -811,6 +826,7 @@ class ProductDownloadFilesView(LaunchpadView,
         """Determine whether a release is milestone for the series."""
         return (series in self.milestones and
                 release in self.milestones[series])
+
 
 class ProductBrandingView(BrandingChangeView):
 

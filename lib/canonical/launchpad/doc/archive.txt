@@ -643,6 +643,21 @@ configuration file:
     >>> pubconfig.distroroot == config.personalpackagearchive.root
     True
 
+There is a separate location for private PPAs that is used if the
+archive is marked as private:
+
+    >>> (config.personalpackagearchive.private_root !=
+    ...  config.personalpackagearchive.root)
+    True
+
+    >>> naked_cprov_archive.private = True
+    >>> private_pubconfig = naked_cprov_archive.getPubConfig()
+    >>> (private_pubconfig.distroroot ==
+    ...  config.personalpackagearchive.private_root)
+    True
+
+    >>> naked_cprov_archive.private = False
+
 Then, the archive topology will follow:
 
 <PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
@@ -862,6 +877,16 @@ use to retrieve files from it.
     >>> getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
     u'http://launchpad.dev/ubuntutest'
+
+If the archive is private, the url may be different as private PPAs
+are published to a secure location.
+
+    >>> naked_cprov_archive.archive_url
+    u'http://ppa.launchpad.dev/cprov/ubuntutest'
+
+    >>> naked_cprov_archive.private = True
+    >>> naked_cprov_archive.archive_url
+    u'http://private.ppa.launchpad.dev/cprov/ubuntutest'
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner

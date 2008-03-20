@@ -620,6 +620,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -2463,7 +2466,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (15, 'am', 'Amharic', NULL, 2, 'n > 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (16, 'ang', 'English, Old (ca.450-1100)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (17, 'apa', 'Apache languages', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (18, 'ar', 'Arabic', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true, 1, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (18, 'ar', 'Arabic', NULL, 6, 'n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5', true, 1, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (19, 'arc', 'Aramaic', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (20, 'an', 'Aragonese', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (21, 'hy', 'Armenian', NULL, NULL, NULL, true, 0, NULL);
@@ -3139,6 +3142,14 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (79, 79, '378cZyfOfUKx6BySEK0HYKz4Tpd.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (80, 80, 'unnamed', 'application/pgp-signature; name="signature.asc"', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (81, 81, 'jm81HhLQDRDAsqbl74W7GT3cpel.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (82, 82, 'alsa-1.0.9a.exe', 'application/x-msdos-program', NULL, '2008-03-17 15:36:19.035615', '2008-03-17 15:36:19.035615');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (83, 83, 'alsa-1.0.9a.dmg', 'application/x-apple-diskimage', NULL, '2008-03-17 15:36:38.022812', '2008-03-17 15:36:38.022812');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (84, 84, 'README.txt', 'text/plain', NULL, '2008-03-17 15:36:48.877842', '2008-03-17 15:36:48.877842');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (85, 85, 'alsa-1.0.8.exe', 'application/x-msdos-program', NULL, '2008-03-17 15:37:10.252357', '2008-03-17 15:37:10.252357');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (86, 86, 'alsa-1.0.8.dmg', 'application/x-apple-diskimage', NULL, '2008-03-17 15:37:22.489973', '2008-03-17 15:37:22.489973');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (87, 87, 'alsa-1.0.8.tgz', 'application/x-tar', NULL, '2008-03-17 15:37:36.701686', '2008-03-17 15:37:36.701686');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (88, 88, 'README.txt', 'text/plain', NULL, '2008-03-17 15:37:48.465157', '2008-03-17 15:37:48.465157');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (89, 89, 'alsa-1.0.9a.tgz', 'application/x-tar', NULL, '2008-03-17 15:38:16.866444', '2008-03-17 15:38:16.866444');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3222,6 +3233,14 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (79, '2007-12-18 16:31:34.790641', NULL, 3327, 'a57356e4cbf97bbb47df202449a95d909d50614a', false, '8c5ffb558a0d0f520887f3d4cbd619c5');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (80, '2007-12-18 16:31:34.790641', NULL, 189, '9800f54c65017e1bafe2d09a13af6176ba0ab244', false, 'a94677aabcd34b0901f1f75a35f7dff3');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (81, '2007-12-18 16:31:34.790641', NULL, 2926, 'b53bb11bc40c42b0f9ecd981561fe9d6f265b275', false, '496cf1cbb97c17a67998478402520ab5');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (82, '2008-03-17 15:36:19.035615', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (83, '2008-03-17 15:36:38.022812', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (84, '2008-03-17 15:36:48.877842', NULL, 3, '55ca6286e3e4f4fba5d0448333fa99fc5a404a73', false, '764efa883dda1e11db47671c4a3bbd9e');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (85, '2008-03-17 15:37:10.252357', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (86, '2008-03-17 15:37:22.489973', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (87, '2008-03-17 15:37:36.701686', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (88, '2008-03-17 15:37:48.465157', NULL, 3, '55ca6286e3e4f4fba5d0448333fa99fc5a404a73', false, '764efa883dda1e11db47671c4a3bbd9e');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (89, '2008-03-17 15:38:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -7175,6 +7194,14 @@ ALTER TABLE productreleasefile DISABLE TRIGGER ALL;
 
 INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (5, 3, 1, 2, NULL, 16, '2005-06-06 08:59:51.926792', NULL, NULL);
 INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (7, 1, 1, 1, NULL, 12, '2005-06-06 08:59:51.925908', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (8, 85, 5, 6, 'windows installer', 1, '2008-03-17 15:37:10.252357', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (8, 86, 1, 7, 'os x installer', 1, '2008-03-17 15:37:22.489973', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (8, 87, 1, 8, 'src', 1, '2008-03-17 15:37:36.701686', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (8, 88, 1, 9, 'Readme file', 1, '2008-03-17 15:37:48.465157', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (9, 82, 1, 3, 'windows installer', 1, '2008-03-17 15:36:19.035615', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (9, 83, 5, 4, 'os x installer', 1, '2008-03-17 15:36:38.022812', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (9, 84, 1, 5, 'Readme file', 1, '2008-03-17 15:36:48.877842', NULL, NULL);
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti, signature) VALUES (9, 89, 1, 10, 'src tar', 1, '2008-03-17 15:38:16.866444', NULL, NULL);
 
 
 ALTER TABLE productreleasefile ENABLE TRIGGER ALL;
