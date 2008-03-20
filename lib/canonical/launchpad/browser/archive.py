@@ -51,9 +51,6 @@ class ArchiveNavigation(Navigation):
 
     usedfor = IArchive
 
-    def breadcrumb(self):
-        return self.context.title
-
     @stepthrough('+build')
     def traverse_build(self, name):
         try:
@@ -70,7 +67,11 @@ class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    links = ['admin', 'edit', 'builds', 'delete', 'edit_dependencies']
+    links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'edit_dependencies']
+
+    def ppa(self):
+        text = 'View PPA'
+        return Link(canonical_url(self.context), text, icon='info')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -634,4 +635,8 @@ class ArchiveAdminView(BaseArchiveEditView):
 
 def archive_to_structualheading(archive):
     """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
-    return IStructuralHeaderPresentation(archive.owner)
+    if archive.owner is not None:
+        return IStructuralHeaderPresentation(archive.owner)
+    else:
+        return IStructuralHeaderPresentation(archive.distribution)
+

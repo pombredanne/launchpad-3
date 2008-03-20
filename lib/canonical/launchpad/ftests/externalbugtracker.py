@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.scripts import checkwatches, debbugs
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -127,11 +127,11 @@ def set_bugwatch_error_type(bug_watch, error_type):
 class OOPSHook:
     def install(self):
         self.reset()
-        self.original_report_oops = externalbugtracker.report_oops
-        externalbugtracker.report_oops = self.reportOOPS
+        self.original_report_oops = checkwatches.report_oops
+        checkwatches.report_oops = self.reportOOPS
 
     def uninstall(self):
-        externalbugtracker.report_oops = self.original_report_oops
+        checkwatches.report_oops = self.original_report_oops
         del self.original_report_oops
 
     def reportOOPS(self, message=None, properties=None, info=None):

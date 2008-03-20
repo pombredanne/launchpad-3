@@ -59,7 +59,6 @@ __all__ = [
     'IPasswordResets',
     'IPrivateApplication',
     'IReadZODBAnnotation',
-    'IRegistryApplication',
     'IRosettaApplication',
     'IShipItApplication',
     'IStructuralHeaderPresentation',
@@ -176,10 +175,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-
-class IRegistryApplication(ILaunchpadApplication):
-    """Registry application root."""
 
 
 class IShipItApplication(ILaunchpadApplication):
