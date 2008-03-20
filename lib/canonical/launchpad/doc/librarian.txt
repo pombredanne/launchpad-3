@@ -247,6 +247,9 @@ attribute set.
     >>> file_alias.restricted
     True
 
+    >>> print file_alias.http_url
+    http://localhost:58023/.../private.txt
+
     >>> transaction.commit()
     >>> file_alias.open()
     >>> print file_alias.read()

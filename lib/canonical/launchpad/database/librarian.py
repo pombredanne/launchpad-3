@@ -64,9 +64,17 @@ class LibraryFileAlias(SQLBase):
                                  intermediateTable='SourcePackageReleaseFile')
 
     @property
+    def client(self):
+        """Return the librarian client to use to retrieve that file."""
+        if self.restricted:
+            return getUtility(IRestrictedLibrarianClient)
+        else:
+            return getUtility(ILibrarianClient)
+
+    @property
     def http_url(self):
         """See ILibraryFileAlias.http_url"""
-        return getUtility(ILibrarianClient).getURLForAlias(self.id)
+        return self.client.getURLForAlias(self.id)
 
     @property
     def https_url(self):
@@ -86,8 +94,7 @@ class LibraryFileAlias(SQLBase):
     _datafile = None
 
     def open(self):
-        client = getUtility(ILibrarianClient)
-        self._datafile = client.getFileByAlias(self.id)
+        self._datafile = self.client.getFileByAlias(self.id)
         if self._datafile is None:
             raise DownloadFailed(
                     "Unable to retrieve LibraryFileAlias %d" % self.id
