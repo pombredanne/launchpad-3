@@ -47,14 +47,18 @@ Let's check the complex properties of a build object.
     >>> firefox_build.is_trusted
     True
 
-The 'firefox_build' is already finished and the `IBuild.estimated_buildstart` property should be empty ('None')
+The 'firefox_build' is already finished and the `estimated_buildstart`
+property should be empty ('None')
 
     >>> firefox_build.estimated_buildstart is None
     True
 
-The 'pending_build' record is a build job in state `BuildStatus.NEEDSBUILD`. We can hence ask for its estimated build start time. The latter should either be now or some time in the future.
+The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
+hence ask for its estimated build start time. The latter should either
+be now or some time in the future.
     >>> import datetime
-    >>> pending_build.estimated_buildstart > (datetime.datetime.utcnow() - datetime.timedelta(seconds=2))
+    >>> pending_build.estimated_buildstart > (datetime.datetime.utcnow()
+    ...     - datetime.timedelta(minutes=1))
     True
 
 The currently published component is provided via the 'current_component'

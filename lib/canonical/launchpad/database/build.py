@@ -243,12 +243,11 @@ class Build(SQLBase):
     @property
     def estimated_buildstart(self):
         """See `IBuild`."""
-        if self.buildstate == BuildStatus.NEEDSBUILD:
-            # this is just a stub for this method, return the EPOCH
-            # for the time being
-            return datetime.datetime.utcfromtimestamp(0)
-        else:
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            # estimated build start times are only available for
+            # pending jobs
             return None
+        return datetime.datetime.utcfromtimestamp(0)
 
     def _parseDependencyToken(self, token):
         """Parse the given token.
