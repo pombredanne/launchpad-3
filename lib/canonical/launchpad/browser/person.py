@@ -3748,6 +3748,8 @@ class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
     def initialize(self):
+        # Store the (sorted) list of access tokens that are going to be
+        # used in the template.
         self.tokens = sorted(
             self.context.oauth_access_tokens,
             key=lambda token: token.consumer.key)

@@ -264,11 +264,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def oauth_access_tokens(self):
         """See `IPerson`."""
-        now = datetime.now(pytz.timezone('UTC'))
         return OAuthAccessToken.select("""
             person = %s
             AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, now))
+            """ % sqlvalues(self, UTC_NOW))
 
     @cachedproperty
     def _location(self):
