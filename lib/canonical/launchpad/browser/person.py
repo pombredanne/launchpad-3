@@ -97,11 +97,11 @@ import urllib
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice, List, TextLine
+from zope.schema import Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -114,8 +114,8 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams,
-    BugTaskStatus, CannotSubscribe, CannotUnsubscribe,
+    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    CannotSubscribe, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
@@ -409,14 +409,27 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         pass
 
 
+class ITeamMembershipInvitationAcknowledgementForm(Interface):
+    """Schema for the form in which team admins acknowledge invitations.
+
+    We could use ITeamMembership for that, but the acknowledger_comment is
+    marked readonly there and that means LaunchpadFormView won't include the
+    value of that in the data given to our action handler.
+    """
+
+    acknowledger_comment = Text(
+        title=_("Comment"), required=False, readonly=False)
+
+
 class TeamInvitationView(LaunchpadFormView):
+    """Where team admins can accept/decline membership invitations."""
 
     implements(IBrowserPublisher)
 
-    schema = ITeamMembership
+    schema = ITeamMembershipInvitationAcknowledgementForm
     label = 'Team membership invitation'
-    field_names = ['reviewercomment']
-    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
+    field_names = ['acknowledger_comment']
+    custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
 
@@ -444,7 +457,7 @@ class TeamInvitationView(LaunchpadFormView):
             return
         member = self.context.person
         member.acceptInvitationToBeMemberOf(
-            self.context.team, data['reviewercomment'])
+            self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("This team is now a member of ${team}", mapping=dict(
                   team=self.context.team.browsername)))
@@ -457,7 +470,7 @@ class TeamInvitationView(LaunchpadFormView):
             return
         member = self.context.person
         member.declineInvitationToBeMemberOf(
-            self.context.team, data['reviewercomment'])
+            self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("Declined the invitation to join ${team}", mapping=dict(
                   team=self.context.team.browsername)))
@@ -1866,14 +1879,14 @@ class PersonView(LaunchpadView, FeedsMixin):
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.APPROVED,
-            orderBy='-TeamMembership.datejoined')
+            orderBy='-TeamMembership.date_joined')
         return members[:5]
 
     @cachedproperty
     def recently_proposed_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.PROPOSED,
-            orderBy='-TeamMembership.datejoined')
+            orderBy='-TeamMembership.date_proposed')
         return members[:5]
 
     @cachedproperty

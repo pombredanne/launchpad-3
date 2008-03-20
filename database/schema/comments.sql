@@ -85,6 +85,7 @@ COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated wi
 COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
 COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
+COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the person wants to receive from review activity';
 
 -- BranchVisibilityPolicy
 
@@ -175,6 +176,13 @@ COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textu
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 
+-- BugNotificationRecipient
+COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
+COMMENT ON COLUMN BugNotificationRecipient.bug_notification IS 'The notification this recipient should get.';
+COMMENT ON COLUMN BugNotificationRecipient.person IS 'The person who should receive this notification.';
+COMMENT ON COLUMN BugNotificationRecipient.reason_header IS 'The reason this person is receiving this notification (the value for the X-Launchpad-Message-Rationale header).';
+COMMENT ON COLUMN BugNotificationRecipient.reason_body IS 'A line of text describing the reason this person is receiving this notification (to be included in the email message).';
+
 
 -- BugPackageInfestation
 
@@ -212,6 +220,7 @@ COMMENT ON COLUMN BugTracker.title IS 'A title for the bug tracker, used in list
 COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the people responsible for that bug tracker. This allows us to coordinate the syncing of bugs to and from that bug tracker with the responsible people on the other side.';
 COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URLs for relevant pages in the bug tracker based on this baseurl.';
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
+COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
 
 -- BugTrackerAlias
 
@@ -301,6 +310,17 @@ COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review d
 COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal that is being discussed.';
 COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
 COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
+COMMENT ON COLUMN CodeReviewMessage.vote_tag IS 'A short description of the vote';
+
+-- CodeReviewVote
+
+COMMENT ON TABLE CodeReviewVote IS 'Reference to a person''s last vote in a code review discussion.';
+COMMENT ON COLUMN CodeReviewVote.branch_merge_proposal IS 'The BranchMergeProposal for the code review.';
+COMMENT ON COLUMN CodeReviewVote.reviewer IS 'The person performing the review.';
+COMMENT ON COLUMN CodeReviewVote.review_type IS 'The aspect of the code being reviewed.';
+COMMENT ON COLUMN CodeReviewVote.registrant IS 'The person who registered this vote';
+COMMENT ON COLUMN CodeReviewVote.vote_message IS 'The message associated with the vote';
+COMMENT ON COLUMN CodeReviewVote.date_created IS 'The date this vote reference was created';
 
 -- CVE
 
@@ -643,6 +663,33 @@ COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments s
 COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated this specification for the agenda of the sprint.';
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
+
+-- TeamMembership
+COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
+COMMENT ON COLUMN TeamMembership.person IS 'The person.';
+COMMENT ON COLUMN TeamMembership.team IS 'The team.';
+COMMENT ON COLUMN TeamMembership.status IS 'The state of the membership.';
+COMMENT ON COLUMN TeamMembership.date_created IS 'The date this membership was created.';
+COMMENT ON COLUMN TeamMembership.date_joined IS 'The date this membership was made active for the first time.';
+COMMENT ON COLUMN TeamMembership.date_expires IS 'The date this membership will expire, if any.';
+COMMENT ON COLUMN TeamMembership.last_changed_by IS 'The person who reviewed the last change to this membership.';
+COMMENT ON COLUMN TeamMembership.last_change_comment IS 'The comment left by the reviewer for the change.';
+COMMENT ON COLUMN TeamMembership.date_last_changed IS 'The date this membership was last changed.';
+COMMENT ON COLUMN TeamMembership.proposed_by IS 'The user who proposed the person as member of the team.';
+COMMENT ON COLUMN TeamMembership.proponent_comment IS 'The comment left by the proponent.';
+COMMENT ON COLUMN TeamMembership.date_proposed IS 'The date of the proposal.';
+COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on his behalf) who accepts an invitation to join a team';
+COMMENT ON COLUMN TeamMembership.date_acknowledged IS 'The date of acknowledgement.';
+COMMENT ON COLUMN TeamMembership.acknowledger_comment IS 'The comment left by the person who acknowledged the membership.';
+COMMENT ON COLUMN TeamMembership.reviewed_by IS 'The team admin who reviewed (approved/declined) the membership.';
+COMMENT ON COLUMN TeamMembership.reviewer_comment IS 'The comment left by the approver.';
+COMMENT ON COLUMN TeamMembership.date_reviewed IS 'The date the membership was
+approved/declined.';
+
+-- TeamParticipation
+COMMENT ON TABLE TeamParticipation IS 'The participation of a person on a team, which can be a direct or indirect membership.';
+COMMENT ON COLUMN TeamParticipation.person IS 'The member.';
+COMMENT ON COLUMN TeamParticipation.team IS 'The team.';
 
 -- TranslationMessage
 COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
@@ -1305,7 +1352,7 @@ COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provi
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
 COMMENT ON COLUMN Builder.builderok IS 'Should a builder fail for any reason, from out-of-disk-space to not responding to the buildd master, the builderok flag is set to false and the failnotes column is filled with a reason.';
 COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textual description of how/why a builder has failed. If the builderok column is true then the value in this column is irrelevant and should be treated as NULL or empty.';
-COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to build only trusted or untrusted packages. Packages coming via ubuntu workflow are trusted and do not need facist behaviour to be built. Other packages like ppa/grumpy incoming packages can contain malicious code, so are unstrusted. Building these packages will require isolated environment (xen-based builder) and extra network access restrictions.';
+COMMENT ON COLUMN Builder.virtualized IS 'Whether or not the builder is a virtual Xen builder. Packages coming via ubuntu workflow are trusted to build on non-Xen and do not need facist behaviour to be built. Other packages like ppa/grumpy incoming packages can contain malicious code, so are unstrusted and build in a Xen virtual machine.';
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
@@ -1629,6 +1676,7 @@ COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. Thi
 COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
+COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 
 
 -- ArchiveDependency

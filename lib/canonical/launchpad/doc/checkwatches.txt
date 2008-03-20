@@ -96,6 +96,7 @@ The timeout will also produce an OOPS report.
     OOPS-...
     baseurl=u'http://bugs.example.com'
     bugtracker=u'example-bugs'
+    error-explanation=u'Connection timed out when updating...
 
     >>> oops_hook.uninstall()
 
@@ -154,10 +155,13 @@ We need to add some bug watches again since
 BugWatchUpdate.updateBugTracker() automatically rolls back the
 transaction if something goes wrong.
 
+    >>> from canonical.launchpad.ftests import sync
     >>> login('test@canonical.com')
     >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
     ...         example_bug_tracker, bug_id, sample_person)
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     sync(bug_watch)
 
 Since we know how many bugwatches example_bug has we will be able to see
 when checkwatches only updates a subset of them.
@@ -172,20 +176,20 @@ requests are actually made.
 
     >>> from canonical.launchpad.components import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> original_log = externalbugtracker.log
+    >>> updater = BugWatchUpdater(transaction)
+    >>> original_log = updater.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> transaction.commit()
     >>> try:
-    ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
-    ...     externalbugtracker.log = FakeLogger()
+    ...     updater.log = FakeLogger()
     ...     updater.updateBugTrackers([example_bug_tracker.name])
     ... finally:
-    ...     externalbugtracker.log = original_log
+    ...     updater.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com
-    ERROR:root:Connection timed out when updating http://bugs.example.com
+    ERROR Connection timed out when updating http://bugs.example.com
 
