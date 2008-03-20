@@ -145,12 +145,12 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
           -- and no plural form
           old_msg.msgid_singular=old_msgid.id AND
           old_msg.msgid_plural IS NULL AND
-          old_msgid.msgid LIKE E'\\_n: %%' AND
+          old_msgid.msgid LIKE E'\\\\_n: %%' AND
           -- and new POTMsgSet has singular and plural which when joined
           -- give the old plural form
           new_msg.msgid_singular=singular.id AND
           new_msg.msgid_plural=plural.id AND
-          '_n: ' || singular.msgid || E'\n' || plural.msgid = old_msgid.msgid
+          '_n: ' || singular.msgid || E'\\n' || plural.msgid = old_msgid.msgid
           """ % sqlvalues(potemplate))
     plural_potmsgsets = cur.fetchall()
 
@@ -176,11 +176,11 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
           -- and no plural form
           old_msg.msgid_singular=old_msgid.id AND
           old_msg.msgid_plural IS NULL AND
-          old_msgid.msgid LIKE E'\\_: %%' AND
+          old_msgid.msgid LIKE E'\\\\_: %%' AND
           -- and new POTMsgSet has singular and context which when joined
           -- give the old contextual message
           new_msg.msgid_singular=new_msgid.id AND
-          '_: ' || new_msg.context || E'\n' || new_msgid.msgid = old_msgid.msgid
+          '_: ' || new_msg.context || E'\\n' || new_msgid.msgid = old_msgid.msgid
           """ % sqlvalues(potemplate))
 
     plural_potmsgsets = cur.fetchall()
@@ -224,7 +224,7 @@ def migrate_potemplate(potemplate, logger, ztm):
       POTMsgSet.potemplate = %s AND
       POTMsgSet.msgid_singular=POMsgID.id AND
       POTMsgSet.msgid_plural IS NULL AND
-      (POMsgID.msgid LIKE E'\\_n: %%' OR POMsgID.msgid LIKE E'\\_: %%')
+      (POMsgID.msgid LIKE E'\\\\_n: %%' OR POMsgID.msgid LIKE E'\\\\_: %%')
       """ % sqlvalues(potemplate),
       clauseTables=['POMsgID'])
 
@@ -316,8 +316,8 @@ def migrate_unmigrated_templates_to_kdepo(ztm, logger):
           JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
           WHERE POTMsgSet.potemplate = POTemplate.id AND
                 POTMsgSet.msgid_plural IS NULL AND
-                (POMsgID.msgid LIKE E'\\_n: %%' OR
-                 POMsgID.msgid LIKE E'\\_: %%'))
+                (POMsgID.msgid LIKE E'\\\\_n: %%' OR
+                 POMsgID.msgid LIKE E'\\\\_: %%'))
       """ % sqlvalues(TranslationFileFormat.PO))
 
     count = potemplates.count()
