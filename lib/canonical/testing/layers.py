@@ -1,6 +1,7 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # We like global!
 # pylint: disable-msg=W0603
+
 """Layers used by Canonical tests.
 
 Layers are the mechanism used by the Zope3 test runner to efficiently
