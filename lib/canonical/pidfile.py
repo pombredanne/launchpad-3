@@ -13,11 +13,11 @@ from canonical.config import config
 def pidfile_path(service_name):
     """Return the full pidfile path for the given service
 
-    >>> pidfile_path('nuts') == '/tmp/%s-nuts.pid' % config.name
+    >>> pidfile_path('nuts') == '/tmp/%s-nuts.pid' % config.instance_name
     True
     """
     return os.path.join(config.pid_dir, '%s-%s.pid' % (
-        config.name, service_name
+        config.instance_name, service_name
         ))
 
 

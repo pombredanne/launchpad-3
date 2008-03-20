@@ -16,7 +16,7 @@
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
-import sys, os, psycopg, time, logging, warnings, re
+import sys, os, time, logging, warnings, re
 
 
 if os.getsid(0) == os.getsid(os.getppid()):
@@ -59,9 +59,9 @@ warninghandler.install_warning_handler()
 from configs import generate_overrides
 generate_overrides()
 
-# Tell canonical.config to use the test config section in launchpad.conf
+# Tell canonical.config to use the testrunner config instance.
 from canonical.config import config
-config.setDefaultSection('testrunner')
+config.setInstance('testrunner')
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
@@ -127,8 +127,9 @@ defaults = [
 
 if __name__ == '__main__':
 
-    # Extract arguments so we can see them too. We need to strip --resume-layer
-    # and --default stuff if found as get_options can't handle it.
+    # Extract arguments so we can see them too. We need to strip
+    # --resume-layer and --default stuff if found as get_options can't
+    # handle it.
     if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
         args = list(sys.argv)
         args.pop(1) # --resume-layer

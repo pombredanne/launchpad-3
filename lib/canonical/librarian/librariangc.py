@@ -129,7 +129,7 @@ def merge_duplicates(con):
         dupe1_id = dupes[0]
         dupe1_path = get_file_path(dupe1_id)
         if not os.path.exists(dupe1_path):
-            if config.name == 'staging':
+            if config.instance_name == 'staging':
                 log.debug(
                         "LibraryFileContent %d data is missing (%s)",
                         dupe1_id, dupe1_path

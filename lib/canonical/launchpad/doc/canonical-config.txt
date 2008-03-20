@@ -31,19 +31,26 @@ simple configuration).
     >>> config.librarian.download_port
     58000
 
-Configs are loaded from the configs/<environ>/ directory.
-canonical.config loads the conf file that matches the environ. The
-default conf file is launchpad.default.conf. The testrunner will
-override the 'DEFAULT_SECTION' to 'testrunner' to select
-launchpad.testrunner.conf, which extends the default conf.
+Configs are kept from the 'configs' directory.
 
     >>> import os.path, canonical
     >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
     ...     canonical.__file__)
     True
 
-    >>> config._default_config_section
+CanonicalConfig loads the conf file from the directory that matches
+its instance_name. The instance name is often the same as the LPCONFIG
+environment variable. It will choose the conf file that matches its
+process_name if it exists, otherwise it loads launchpad-lazr.conf. The
+general rule is configs/<instance_name>/<process_name>.conf. The
+testrunner sets the instance_name to 'testrunner' to select
+testrunner/launchpad-lazr.conf, which extends the default/ conf.
+
+    >>> config.instance_name
     'testrunner'
+    >>> config.process_name
+    'test'
+
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.filename
@@ -186,3 +193,65 @@ And the test can remove the data when it is done to restore the config.
     (<canonical.lazr.config.ConfigData ...>,)
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
+
+
+== Selecting the conf file with instance and process names ==
+
+The name of the conf file, and the directory from which is resides,
+is controlled by the config's process_name and instance_name. These
+may be set by their corresponding methods, *before* accessing the
+config, to set where the config values are loaded from. After the
+config is loaded, changing the instance and process names will have
+no affect.
+
+Setting just the instance_name will change the directory from which the
+conf file is loaded.
+
+    # We must reset the lazr.config instance to test this.
+    >>> config._config = None
+
+    >>> config.setInstance('default')
+    >>> config.instance_name
+    'default'
+
+    >>> config.filename
+    '.../configs/default/launchpad-lazr.conf'
+    >>> config.extends.filename
+    '.../canonical/config/schema-lazr.conf'
+
+Changing the instance_name and process_name changes the directory and
+conf file name that is loaded.
+
+    >>> config._config = None
+
+    >>> config.setInstance('testrunner')
+    >>> config.instance_name
+    'testrunner'
+
+    >>> config.setProcess('test-process')
+    >>> config.process_name
+    'test-process'
+
+    >>> config.filename
+    '.../configs/testrunner/test-process-lazr.conf'
+    >>> config.extends.filename
+    '.../configs/testrunner/launchpad-lazr.conf'
+
+
+The default 'launchpad-lazr.conf' is loaded if no conf files match
+the process's name.
+
+    >>> config._config = None
+
+    >>> config.setInstance('testrunner')
+    >>> config.instance_name
+    'testrunner'
+
+    >>> config.setProcess('test_no_conf')
+    >>> config.process_name
+    'test_no_conf'
+
+    >>> config.filename
+    '.../configs/testrunner/launchpad-lazr.conf'
+    >>> config.extends.filename
+    '.../configs/default/launchpad-lazr.conf'
