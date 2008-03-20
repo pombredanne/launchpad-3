@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.database.sqlbase import (cursor, quote, sqlvalues)
+from canonical.database.sqlbase import cursor
 
 class Build(SQLBase):
     implements(IBuild)
