@@ -131,8 +131,8 @@ class EntryResource(ReadWriteResource):
 
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
-        super(EntryResource, self).__init__(IEntry(context), request)
-        self.original_context = context
+        super(EntryResource, self).__init__(context, request)
+        self.entry = IEntry(context)
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -141,9 +141,9 @@ class EntryResource(ReadWriteResource):
         the resource interface.
         """
         data = {}
-        data['self_link'] = canonical_url(self.original_context)
-        for name, field in getFields(self.context.schema).items():
-            value = getattr(self.context, name)
+        data['self_link'] = canonical_url(self.context)
+        for name, field in getFields(self.entry.schema).items():
+            value = getattr(self.entry, name)
             if ICollectionField.providedBy(field):
                 # The field is a collection; include a link to the
                 # collection resource.
@@ -207,7 +207,7 @@ class EntryResource(ReadWriteResource):
 
         # Make sure the representation includes values for all
         # writable attributes.
-        schema = self.context.schema
+        schema = self.entry.schema
         for name, field in getFields(schema).items():
             if (name.startswith('_') or ICollectionField.providedBy(field)
                 or field.readonly):
@@ -221,7 +221,7 @@ class EntryResource(ReadWriteResource):
             else:
                 repr_name = name
             if (changeset.get(repr_name) is None
-                and getattr(self.context, name) is not None):
+                and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
                 # entity-body of the PUT request didn't make any assertion
                 # about the attribute. The resource's behavior under HTTP
@@ -249,7 +249,7 @@ class EntryResource(ReadWriteResource):
             if repr_name == 'self_link':
                 # The self link isn't part of the schema, so it's
                 # handled separately.
-                if value == canonical_url(self.original_context):
+                if value == canonical_url(self.context):
                     continue
                 else:
                     self.request.response.setStatus(400)
@@ -267,7 +267,7 @@ class EntryResource(ReadWriteResource):
                 name = repr_name[:-5]
             else:
                 name = repr_name
-            element = self.context.schema.get(name)
+            element = self.entry.schema.get(name)
 
             if (name.startswith('_') or element is None
                 or ((ICollection.providedBy(element)
@@ -319,11 +319,11 @@ class EntryResource(ReadWriteResource):
             # considered to be the URL to that entry or collection.
             if ICollectionField.providedBy(element):
                 current_value = "%s/%s" % (
-                    canonical_url(self.original_context), name)
+                    canonical_url(self.context), name)
             elif IObject.providedBy(element):
-                current_value = canonical_url(getattr(self.context, name))
+                current_value = canonical_url(getattr(self.entry, name))
             else:
-                current_value = getattr(self.context, name)
+                current_value = getattr(self.entry, name)
 
             # Read-only attributes and collection links can't be
             # modified. It's okay to specify a value for an attribute
@@ -347,7 +347,7 @@ class EntryResource(ReadWriteResource):
             if change_this_field is True and value != current_value:
                 try:
                     # Do any field-specific validation.
-                    field = element.bind(self.context)
+                    field = element.bind(self.entry)
                     field.validate(value)
                 except ValidationError, e:
                     self.request.response.setStatus(400)
@@ -355,14 +355,14 @@ class EntryResource(ReadWriteResource):
                 validated_changeset[name] = value
 
         # Store the entry's current URL so we can see if it changes.
-        original_url = canonical_url(self.original_context)
+        original_url = canonical_url(self.context)
         # Make the changes.
         for name, value in validated_changeset.items():
-            setattr(self.context, name, value)
+            setattr(self.entry, name, value)
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
-        new_url = canonical_url(self.original_context)
+        new_url = canonical_url(self.context)
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
