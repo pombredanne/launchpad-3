@@ -13,28 +13,14 @@ task.
     <a href="http://bugzilla.gnome.org/bugs">GnomeGBug GTracker</a>
     to track its bugs...
 
-    >>> def print_linking_form(browser):
-    ...     link_upstream_how_radio = user_browser.getControl(
-    ...         name='field.link_upstream_how')
-    ...     print 'Link upstream how:'
-    ...     for option in link_upstream_how_radio.options:
-    ...         if option in link_upstream_how_radio.value:
-    ...             print '  (x) %s' % option
-    ...         else:
-    ...             print '  ( ) %s' % option
-    ...     print 'Bug URL: %r' % (
-    ...         user_browser.getControl(name='field.bug_url').value)
-    ...     print 'Upstream Email: %r' % (
-    ...         user_browser.getControl(
-    ...             name='field.upstream_email_address_done').value)
-
-    >>> print_linking_form(user_browser)
-    Link upstream how:
-      (x) LINK_UPSTREAM
-      ( ) EMAIL_UPSTREAM_DONE
-      ( ) IS_UPSTREAM
-    Bug URL: ''
-    Upstream Email: ''
+    >>> from canonical.launchpad.ftests.bug import print_upstream_linking_form
+    >>> print_upstream_linking_form(user_browser)
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
 If a product doesn't use Launchpad, and doesn't have a bug tracker
 specified, it will simply say that it doesn't use Launchpad to track
@@ -47,13 +33,13 @@ its bugs and prompt for a URL or an email address.
     >>> print user_browser.contents
     <...Mozilla Thunderbird doesn't use Launchpad to track its bugs...
 
-    >>> print_linking_form(user_browser)
-    Link upstream how:
-      (x) LINK_UPSTREAM
-      ( ) EMAIL_UPSTREAM_DONE
-      ( ) IS_UPSTREAM
-    Bug URL: ''
-    Upstream Email: ''
+    >>> print_upstream_linking_form(user_browser)
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
 For products using Launchpad, the linking upstream widgets won't even
 appear.
@@ -63,7 +49,7 @@ appear.
     >>> user_browser.getControl('Project').value = 'evolution'
     >>> user_browser.getControl('Continue').click()
 
-    >>> print_linking_form(user_browser)
+    >>> print_upstream_linking_form(user_browser)
     Traceback (most recent call last):
     ...
     LookupError: name 'field.link_upstream_how'

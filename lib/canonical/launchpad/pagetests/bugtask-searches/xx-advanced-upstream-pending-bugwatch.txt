@@ -76,9 +76,9 @@ He wants to link bugs to to the upstream bug tracker.
     'Bugs in ALSA utilities'
 
     >>> pending_watches_link = user_browser.getLink(
-    ...     'need forwarding upstream')
+    ...     'needs forwarding upstream')
     >>> pending_watches_link.text
-    '1 bug need forwarding upstream'
+    '1 bug needs forwarding upstream'
 
     >>> pending_watches_link.click()
 

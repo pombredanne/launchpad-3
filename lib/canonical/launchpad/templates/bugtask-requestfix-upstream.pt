@@ -87,8 +87,8 @@
             </td>
           </tr>
           <tal:comment replace="nothing">
-            XXX GavinPanella, 2008-02-13: This will be uncommented
-            in a later branch.
+            XXX: GavinPanella 2008-02-13 bug=201793: This will be
+            uncommented in a later branch.
             <tr>
               <td colspan="2"
                   tal:content="structure link_items/EMAIL_UPSTREAM" />
@@ -113,7 +113,7 @@
           </tr>
           <tr>
             <td colspan="2"
-                tal:content="structure link_items/IS_UPSTREAM" />
+                tal:content="structure link_items/UNLINKED_UPSTREAM" />
           </tr>
         </table>
 
