@@ -146,7 +146,7 @@ class ICodeImport(Interface):
     def approve(data, user):
         """Approve the import.
 
-        Additional import attributes could also be recorded.
+        Additional attributes can also be updated.
         A code import job will be created for the import.
 
         :param data: dictionary whose keys are attribute names and values are
@@ -158,7 +158,7 @@ class ICodeImport(Interface):
     def suspend(data, user):
         """Suspend the import.
 
-        Additional import attributes could also be recorded.
+        Additional attributes can also be updated.
         If there was a pending job, it will be removed.
 
         :param data: dictionary whose keys are attribute names and values are
@@ -170,7 +170,7 @@ class ICodeImport(Interface):
     def invalidate(data, user):
         """Invalidate the import.
 
-        Additional import attributes could also be recorded.
+        Additional attributes can also be updated.
         If there was a pending job, it will be removed.
 
         :param data: dictionary whose keys are attribute names and values are
