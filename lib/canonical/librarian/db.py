@@ -7,10 +7,8 @@ __all__ = [
     'Library',
     ]
 
-from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
 
 

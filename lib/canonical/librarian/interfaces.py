@@ -1,5 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-
+# PyLint doesn't grok Zope interfaces.
+# pylint: disable-msg=E0213
 __metaclass__ = type
 
 from zope.interface import Interface
