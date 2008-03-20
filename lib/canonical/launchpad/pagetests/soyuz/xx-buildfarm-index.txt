@@ -11,43 +11,29 @@ ordered by architecture and a short summary about what they are
 processing.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture Owner                   Status
-    bob Automatic  386          Launchpad Buildd Admins Not available
-    frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   NOT OK : None (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
-This page also presents 2 portlets, exposing the number of builds waiting
+As we can see, this page also presents the number of builds waiting
 in queue for each supported architecture on each separated build-farm
-we have, 'virtualised' (PPA) and 'non-virtualised' (PRIMARY and PARTNER).
+we have, 'ppa' and 'other' (PRIMARY and PARTNER).
 
-    >>> def print_depth(contents, queue_name):
-    ...     portlet = find_portlet(contents, queue_name)
-    ...     if portlet is None:
-    ...         print 'Not presented'
-    ...         return
-    ...     for td in portlet.fetch('td'):
-    ...         print extract_text(td)
+    >>> def print_depth(contents):
+    ...     depths = find_tags_by_class(contents, 'category')
+    ...     for depth in depths:
+    ...         print extract_text(depth)
 
-The portlet simply lists the the architectures and their pending
-builds counter as:
+    >>> print_depth(anon_browser.contents)
+    386     0 waiting
+    386     1 waiting
 
-  <ARCH 1>   <# of pending Builds>
-  <ARCH 1>   <# of pending Builds>
-  ...
-
-Architectures with no pending builds are omitted.
-
-    >>> print_depth(anon_browser.contents, 'Non-virtual build queue depth')
-    i386     1
-
-The portlet for the virtual build-farm is omitted, since the relevant
-build queue is empty.
-
-    >>> print_depth(anon_browser.contents, 'Virtual build queue depth')
-    Not presented
-
-In order to test the 'virtual' build queue depth portlet we will retry
+In order to test the 'ppa' build queue depth portlet we will retry
 a failed build in Celso's PPA.
 
     >>> from zope.component import getUtility
@@ -66,17 +52,13 @@ a failed build in Celso's PPA.
     >>> flush_database_updates()
     >>> logout()
 
-Now we can see the populated portlet for the virtual build-farm,
-exposing one pending build record.
+Now we can see the populated section for the ppa build-farm,
+exposing one pending build record. The 'other' is still present.
 
     >>> anon_browser.reload()
-    >>> print_depth(anon_browser.contents, 'Virtual build queue depth')
-    i386     1
-
-The non-virtual portlet is still present.
-
-    >>> print_depth(anon_browser.contents, 'Non-virtual build queue depth')
-    i386     1
+    >>> print_depth(anon_browser.contents)
+    386     1 waiting
+    386     1 waiting
 
 From this page, users with the appropriate permission can register new
 builders.

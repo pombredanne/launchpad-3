@@ -266,41 +266,51 @@ An admin user can see builds even if they are private:
 
     >>> admin_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
-                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
 Launchpad Buildd admins can also see private builds.
 
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
-                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
 cprov can see his own private build:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
-                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
 Anonymous users cannot see the private build:
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Not available
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   NOT OK: (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
+

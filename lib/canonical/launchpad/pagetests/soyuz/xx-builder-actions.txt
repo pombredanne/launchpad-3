@@ -17,14 +17,13 @@ active builders
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
     >>> print_build_rows(cprov_browser.contents)
-    Builder        Architecture Owner                   Status
-    bob Automatic  386          Launchpad Buildd Admins Not available
-    frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
+    The frog builder    NOT OK : None (AUTO)
+    Bob The Builder     NOT OK : None (AUTO)
 
 Already in the builder page the available actions are presented in the
 'Actions' portlet.
 
-    >>> cprov_browser.getLink('bob').click()
+    >>> cprov_browser.getLink('Bob The Builder').click()
     >>> print str(extract_text(find_portlet(cprov_browser.contents, "Actions")))
     Actions
     Show build history
@@ -194,7 +193,7 @@ when they judge it convenient, for instance, when the builder present
 transient failure or is used for another purpose.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('bob').click()
+    >>> cprov_browser.getLink('Bob The Builder').click()
     >>> print cprov_browser.title
     Build machine Bob The Builder
 
@@ -214,8 +213,7 @@ Farm list.
     >>> cprov_browser.getLink("Build Farm").click()
 
     >>> print_build_rows(cprov_browser.contents)
-    Builder        Architecture Owner                   Status
-    frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
+    The frog builder    NOT OK : None (AUTO)
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):

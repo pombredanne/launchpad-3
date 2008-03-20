@@ -169,9 +169,7 @@ class BuilderSetView(CommonBuilderView):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'Building PPA packages', virtualized=True)
-        builders = [
-            builder for builder in self.builders if builder.virtualized]
-        builder_category.groupBuilders(builders)
+        builder_category.groupBuilders(self.builders)
         return builder_category
 
     @property
@@ -179,10 +177,7 @@ class BuilderSetView(CommonBuilderView):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'Building other packages', virtualized=False)
-        builders = [
-            builder for builder in self.builders
-            if builder.virtualized is False]
-        builder_category.groupBuilders(builders)
+        builder_category.groupBuilders(self.builders)
         return builder_category
 
 
@@ -214,11 +209,14 @@ class BuilderCategory:
         return sorted(self._builder_groups,
                       key=operator.attrgetter('processor_name'))
 
-    def groupBuilders(self, builders):
+    def groupBuilders(self, all_builders):
         """Group the given builders as a collection of Buildergroups.
 
         A BuilderGroup will be initialized for each processor.
         """
+        builders = [builder for builder in all_builders
+                    if builder.virtualized is self.virtualized]
+
         grouped_builders = {}
         for builder in builders:
             group = grouped_builders.setdefault(builder.processor, [])
