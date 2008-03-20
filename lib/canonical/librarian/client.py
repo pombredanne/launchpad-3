@@ -158,7 +158,8 @@ class FileUploadClient:
                             sha1=shaDigester.hexdigest(),
                             md5=md5Digester.hexdigest())
             LibraryFileAlias(id=aliasID, contentID=contentID, filename=name,
-                            mimetype=contentType, expires=expires)
+                            mimetype=contentType, expires=expires,
+                            restricted=self.restricted)
 
             assert isinstance(aliasID, (int, long)), \
                     "aliasID %r not an integer" % (aliasID,)
@@ -330,8 +331,10 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     """See `ILibrarianClient`."""
     implements(ILibrarianClient)
 
+    restricted = False
 
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
     implements(IRestrictedLibrarianClient)
 
+    restricted = True

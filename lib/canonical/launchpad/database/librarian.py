@@ -50,6 +50,7 @@ class LibraryFileAlias(SQLBase):
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)
+    restricted = BoolCol(notNull=True, default=False)
     last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
