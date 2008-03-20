@@ -249,8 +249,18 @@ class Builder(SQLBase):
             # Although partner and PPA builds are always in the release
             # pocket, they depend on the same pockets as though they
             # were in the updates pocket.
-            ubuntu_pockets = self.pocket_dependencies[
-                PackagePublishingPocket.UPDATES]
+            #
+            # XXX Julian 2008-03-20
+            # Private PPAs, however, behave as though they are in the
+            # security pocket.  This is a hack to get the security
+            # PPA working as required until cprov lands his changes for
+            # configurable PPA pocket dependencies.
+            if target_archive.private:
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.SECURITY]
+            else:
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.UPDATES]
 
             # Partner and PPA may also depend on any component.
             ubuntu_components = 'main restricted universe multiverse'
