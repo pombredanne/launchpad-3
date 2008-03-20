@@ -120,7 +120,7 @@ class CodeImportBaseView(LaunchpadFormView):
         else:
             self.setFieldError(field, error)
 
-    def _validateCVS(self, cvs_root, cvs_module):
+    def _validateCVS(self, cvs_root, cvs_module, existing_import=None):
         """If the user has specified cvs, then we need to make
         sure that there isn't already an import with those values."""
         if cvs_root is None:
@@ -133,15 +133,15 @@ class CodeImportBaseView(LaunchpadFormView):
         if cvs_root and cvs_module:
             code_import = getUtility(ICodeImportSet).getByCVSDetails(
                 cvs_root, cvs_module)
-
-            if code_import is not None:
+            if (code_import is not None and
+                code_import != existing_import):
                 self.addError(structured("""
                     Those CVS details are already specified for
                     the imported branch <a href="%s">%s</a>.""",
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
-    def _validateSVN(self, svn_branch_url):
+    def _validateSVN(self, svn_branch_url, existing_import=None):
         """If the user has specified a subversion url, we need
         to make sure that there isn't already an import with
         that url."""
@@ -151,7 +151,8 @@ class CodeImportBaseView(LaunchpadFormView):
         else:
             code_import = getUtility(ICodeImportSet).getBySVNDetails(
                 svn_branch_url)
-            if code_import is not None:
+            if (code_import is not None and
+                code_import != existing_import):
                 self.setFieldError(
                     'svn_branch_url',
                     structured("""
@@ -379,6 +380,9 @@ class CodeImportEditView(CodeImportBaseView):
         # A simple else clause is sufficient here as the initialize would
         # have barfed if there was a different type (other than CVS or SVN).
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
-            self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
+            self._validateCVS(
+                data.get('cvs_root'), data.get('cvs_module'),
+                self.code_import)
         else:
-            self._validateSVN(data.get('svn_branch_url'))
+            self._validateSVN(
+                data.get('svn_branch_url'), self.code_import)
