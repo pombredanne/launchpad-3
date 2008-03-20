@@ -7,8 +7,13 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
-from lxml import etree
-
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -180,7 +185,6 @@ class TestHWDBSubmissionParser(TestCase):
         for encoding in ('utf-8', 'iso8859-15'):
             xml = xml_template % (encoding, euro_symbol.encode(encoding))
             tree = etree.parse(StringIO(xml))
-            parser.docinfo = tree.docinfo
             node = tree.getroot()
             result = parser._parseProperty(node)
             self.assertEqual(result, ('foo', (euro_symbol, 'str')),
