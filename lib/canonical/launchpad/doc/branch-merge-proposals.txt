@@ -323,6 +323,8 @@ from the queue.  Doing so moves the state of the proposal back to
 Approved.
 
     >>> proposal.dequeue()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(proposal)
     >>> print proposal.queue_status.title
     Code approved
     >>> print proposal.queue_position

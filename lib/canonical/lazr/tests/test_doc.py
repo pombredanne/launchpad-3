@@ -13,6 +13,7 @@ def test_suite():
     return LayeredDocFileSuite(
         '../doc/debug.txt',
         '../doc/decorates.txt',
+        '../doc/checker-utilities.txt',
         '../doc/config.txt',
         '../doc/interface.txt',
         stdout_logging=False)
