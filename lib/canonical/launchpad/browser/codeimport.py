@@ -161,7 +161,6 @@ class CodeImportBaseView(LaunchpadFormView):
                     code_import.branch.unique_name))
 
 
-
 class CodeImportNewView(CodeImportBaseView):
     """The view to request a new code import."""
 
@@ -312,7 +311,7 @@ class CodeImportEditView(CodeImportBaseView):
         self.code_import = self.context.code_import
         if self.code_import is None:
             raise NotFoundError
-        # The next location is the branch details page.
+        # The next and cancel location is the branch details page.
         self.cancel_url = self.next_url = canonical_url(self.context)
         CodeImportBaseView.initialize(self)
 
@@ -358,14 +357,19 @@ class CodeImportEditView(CodeImportBaseView):
     def approve_action(self, action, data):
         """Approve the import."""
         self.code_import.approve(data, self.user)
+        self.request.response.addNotification(
+            'The code import has been approved.')
 
     @action(_('Set Invalid'), name='invalidate', condition=_showInvalidate)
     def invalidate_action(self, action, data):
         """Invalidate the import."""
         self.code_import.invalidate(data, self.user)
+        self.request.response.addNotification(
+            'The code import has been set as invalid.')
 
     @action(_('Suspend'), name='suspend', condition=_showSuspend)
     def suspend_action(self, action, data):
         """Suspend the import."""
         self.code_import.suspend(data, self.user)
-
+        self.request.response.addNotification(
+            'The code import has been suspended.')

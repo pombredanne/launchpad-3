@@ -396,6 +396,8 @@ class BranchView(LaunchpadView, FeedsMixin):
     @property
     def user_can_edit_import(self):
         """A memeber of VCS Improts, or admin can edit import details."""
+        if self.user is None:
+            return False
         celebs = getUtility(ILaunchpadCelebrities)
         return (self.user.inTeam(celebs.admin) or
                 self.user.inTeam(celebs.vcs_imports))
