@@ -259,17 +259,17 @@ you'll get a DownloadFailed error.
     >>> client.getFileByAlias(private_file_id)
     Traceback (most recent call last):
       ...
-    DownloadFailed: ...
+    DownloadFailed: Alias ... cannot be downloaded from this client.
 
     >>> client.getURLForAlias(private_file_id)
     Traceback (most recent call last):
       ...
-    DownloadFailed: ...
+    DownloadFailed: Alias ... cannot be downloaded from this client.
 
 But using the restricted librarian will work:
 
     >>> restricted_client.getFileByAlias(private_file_id)
-    <>
+    <canonical.librarian.client._File...>
 
     >>> file_url = restricted_client.getURLForAlias(private_file_id)
     >>> print file_url
@@ -300,7 +300,7 @@ also fails:
     ...     'text/plain')
     >>> file_alias = getUtility(ILibraryFileAliasSet)[public_file_id]
     >>> file_alias.restricted
-    True
+    False
     >>> transaction.commit()
 
     >>> restricted_client.getURLForAlias(public_file_id)
