@@ -373,3 +373,12 @@ class CodeImportEditView(CodeImportBaseView):
         self.code_import.suspend(data, self.user)
         self.request.response.addNotification(
             'The code import has been suspended.')
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        # A simple else clause is sufficient here as the initialize would
+        # have barfed if there was a different type (other than CVS or SVN).
+        if self.code_import.rcs_type == RevisionControlSystems.CVS:
+            self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
+        else:
+            self._validateSVN(data.get('svn_branch_url'))
