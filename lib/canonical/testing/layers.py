@@ -136,7 +136,7 @@ class BaseLayer:
         BaseLayer.isSetUp = True
 
         # Kill any Librarian left running from a previous test run.
-        LibrarianTestSetup().killTac()
+        LibrarianTestSetup().tearDown()
 
         # Kill any database left lying around from a previous test run.
         try:
