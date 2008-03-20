@@ -11,7 +11,6 @@ import zipfile
 from zope.component import getUtility
 
 import canonical.launchpad
-from canonical.launchpad.helpers import test_diff
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImportQueue,
