@@ -9,6 +9,7 @@
 
     <class class="canonical.lazr.rest.EntryResource">
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
+        <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
     </class>
 
     <!-- Generic adapter for scoped collection -->

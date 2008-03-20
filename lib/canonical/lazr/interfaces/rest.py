@@ -53,7 +53,7 @@ class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
 
 
-class IEntryResource(IHTTPResource, IJSONPublishable):
+class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
 
     def do_GET():
