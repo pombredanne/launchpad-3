@@ -10,7 +10,6 @@ import os
 import os.path
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor
 from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
@@ -164,9 +163,9 @@ def merge_duplicates(con):
         prime_id = dupes[0]
         other_ids = ', '.join(str(dupe) for dupe in dupes[1:])
         log.debug(
-                "Making LibraryFileAliases referencing %s reference %s instead",
-                other_ids, prime_id
-                )
+            "Making LibraryFileAliases referencing %s reference %s instead",
+            other_ids, prime_id
+            )
         for other_id in dupes[1:]:
             cur.execute("""
                 UPDATE LibraryFileAlias SET content=%(prime_id)s
@@ -219,7 +218,8 @@ def delete_unreferenced_aliases(con):
     # Determine what columns link to LibraryFileAlias
     # references = [(table, column), ...]
     references = [
-        tuple(ref[:2]) for ref in listReferences(cur, 'libraryfilealias', 'id')
+        tuple(ref[:2])
+        for ref in listReferences(cur, 'libraryfilealias', 'id')
         ]
     assert len(references) > 10, 'Database introspection returned nonsense'
     log.info("Found %d columns referencing LibraryFileAlias", len(references))
@@ -249,8 +249,8 @@ def delete_unreferenced_aliases(con):
     content_ids = list(content_ids)
     for i in range(0, len(content_ids), BATCH_SIZE):
         in_content_ids = ','.join(
-                (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
-                )
+            (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
+            )
         # First a sanity check to ensure we aren't removing anything we
         # shouldn't be.
         cur.execute("""
@@ -357,7 +357,8 @@ def delete_unwanted_files(con):
 
         one_day = 24 * 60 * 60
         if time() - os.path.getctime(path) < one_day:
-            log.debug("File %d not removed - created too recently" % content_id)
+            log.debug(
+                "File %d not removed - created too recently" % content_id)
             continue # File created too recently - do nothing
 
         # File uploaded a while ago but not in the database - remove it
@@ -372,7 +373,7 @@ def delete_unwanted_files(con):
 
 
 def get_file_path(content_id):
-    """Return the physical file path to the corresponding LibraryFileContent id
+    """Return the physical file path to the matching LibraryFileContent id.
     """
     assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
             content_id,

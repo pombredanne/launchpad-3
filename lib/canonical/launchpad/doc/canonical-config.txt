@@ -38,13 +38,14 @@ Configs are kept from the 'configs' directory.
     ...     canonical.__file__)
     True
 
-CanonicalConfig loads the conf file from the directory that matches
-its instance_name. The instance name is often the same as the LPCONFIG
-environment variable. It will choose the conf file that matches its
-process_name if it exists, otherwise it loads launchpad-lazr.conf. The
-general rule is configs/<instance_name>/<process_name>.conf. The
-testrunner sets the instance_name to 'testrunner' to select
-testrunner/launchpad-lazr.conf, which extends the default/ conf.
+CanonicalConfig loads the conf file from the directory that matches its
+instance_name. The instance name is often the same as the LPCONFIG
+environment variable (scripts can override this using setInstance()). It
+will choose the conf file that matches its process_name if it exists,
+otherwise it loads launchpad-lazr.conf. The general rule is
+configs/<instance_name>/<process_name>.conf. The testrunner sets the
+instance_name to 'testrunner' to select testrunner/launchpad-lazr.conf,
+which extends default/launchpad-lazr.conf.
 
     >>> config.instance_name
     'testrunner'
@@ -219,6 +220,9 @@ conf file is loaded.
     >>> config.extends.filename
     '.../canonical/config/schema-lazr.conf'
 
+    >>> config.answertracker.days_before_expiration
+    15
+
 Changing the instance_name and process_name changes the directory and
 conf file name that is loaded.
 
@@ -237,6 +241,8 @@ conf file name that is loaded.
     >>> config.extends.filename
     '.../configs/testrunner/launchpad-lazr.conf'
 
+    >>> config.answertracker.days_before_expiration
+    30
 
 The default 'launchpad-lazr.conf' is loaded if no conf files match
 the process's name.
@@ -255,3 +261,7 @@ the process's name.
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.filename
     '.../configs/default/launchpad-lazr.conf'
+
+    >>> config.answertracker.days_before_expiration
+    15
+
