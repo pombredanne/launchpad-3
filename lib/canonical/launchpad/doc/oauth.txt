@@ -190,12 +190,13 @@ From any given person it's possible to retrieve his non-expired access
 tokens.
 
     >>> access_token.person.oauth_access_tokens.count()
-    1
+    3
     >>> access_token.date_expires = (
     ...     datetime.now(pytz.timezone('UTC')) - timedelta(hours=1))
     >>> syncUpdate(access_token)
     >>> access_token.person.oauth_access_tokens.count()
-    0
+    2
+
 
 == Nonces and timestamps ==
 

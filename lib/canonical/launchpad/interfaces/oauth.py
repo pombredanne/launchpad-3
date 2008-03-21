@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'OAUTH_REALM',
     'OAUTH_CHALLENGE',
     'IOAuthAccessToken',
     'IOAuthConsumer',
@@ -26,7 +27,8 @@ from canonical.launchpad.interfaces.person import IPerson
 
 
 # The challenge included in responses with a 401 status.
-OAUTH_CHALLENGE = 'OAuth realm="https://api.launchpad.net"'
+OAUTH_REALM = 'https://api.launchpad.net'
+OAUTH_CHALLENGE = 'OAuth realm="%s"' % OAUTH_REALM
 
 
 class OAuthPermission(DBEnumeratedType):

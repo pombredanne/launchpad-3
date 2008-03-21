@@ -47,7 +47,8 @@ from canonical.launchpad.webapp.interfaces import (
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
     INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
     IPlacelessLoginSource)
-from canonical.launchpad.webapp.authentication import check_oauth_signature
+from canonical.launchpad.webapp.authentication import (
+    check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -918,7 +919,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
         txn.commit()
 
     def getPrincipal(self, request):
-        form = request.form
+        # Fetch OAuth authorization information from the request.
+        form = get_oauth_authorization(request)
+
         consumer_key = form.get('oauth_consumer_key')
         consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
         if consumer is None:
@@ -936,7 +939,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise Unauthorized('Unauthorized token (%s).' % token.key)
-        elif token.date_expires <= now:
+        elif token.date_expires is not None and token.date_expires <= now:
             raise Unauthorized('Expired token (%s).' % token.key)
         elif not check_oauth_signature(request, consumer, token):
             raise Unauthorized('Invalid signature.')
