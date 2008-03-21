@@ -1636,13 +1636,14 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
+                    AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(min_days_old),
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
