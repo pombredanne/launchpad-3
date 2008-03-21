@@ -45,12 +45,15 @@ Note how the query parameters are kept.
     >>> browser.title
     'Authorize application to access Launchpad on your behalf'
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> print extract_text(main_content)
     Authorize application to access Launchpad on your behalf
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
     See all applications authorized to access Launchpad on your behalf.
+
+This page contains one submit button for each item of OAuthPermission.
 
     >>> browser.getControl('No Access')
     <SubmitControl...
@@ -62,6 +65,11 @@ Note how the query parameters are kept.
     <SubmitControl...
     >>> browser.getControl('Change Anything')
     <SubmitControl...
+
+    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
+    >>> from canonical.launchpad.interfaces import OAuthPermission
+    >>> len(actions) == len(OAuthPermission.items)
+    True
 
 Once the user authorizes the application to access Launchpad on his
 behalf, we issue a redirect to the given oauth_callback (if it was

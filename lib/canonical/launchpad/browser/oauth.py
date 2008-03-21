@@ -61,12 +61,13 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         self.action_descriptions = {}
         self.actions = Actions()
+        def success(form, action, data):
+            form.reviewToken(action.permission)
         for permission in OAuthPermission.items:
-            def success(form, action, data):
-                self.reviewToken(permission)
             action = Action(
                 permission.title, name=permission.name, success=success,
                 condition=self.tokenExistsAndIsNotReviewed.im_func)
+            action.permission = permission
             action.form = self
             self.action_descriptions[action] = permission.description
             self.actions.append(action)

@@ -12,7 +12,7 @@ user's +oauth-tokens page.
     foobar123451432
         Authorized...to read non-private data
     launchpad-library
-        Authorized...to read and change anything
+        Authorized...to change anything
 
 For each token we have a separate <form> with the token and consumer
 keys stored in hidden <input>s as well as the button to revoke the
