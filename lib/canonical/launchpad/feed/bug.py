@@ -255,7 +255,8 @@ class SearchBugsFeed(BugsFeedBase):
         # be initialized to setup the widgets.
         delegate_view.initialize()
         batch_navigator = delegate_view.search(searchtext=None,
-                                               context=search_context, extra_params=None)
+                                               context=search_context,
+                                               extra_params=None)
         items = batch_navigator.batch.list
         return get_unique_bug_tasks(items)[:self.quantity]
 
