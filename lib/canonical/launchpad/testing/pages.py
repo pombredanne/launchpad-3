@@ -91,8 +91,8 @@ class WebServiceCaller:
             full_headers.update(request.to_header(OAUTH_REALM))
         if headers is not None:
             full_headers.update(headers)
-        header_strings = ["%s: %s" % (h, v)
-                          for h, v in full_headers.items()]
+        header_strings = ["%s: %s" % (header, value)
+                          for header, value in full_headers.items()]
         request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
                                                    "\n".join(header_strings))
         if data:

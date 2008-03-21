@@ -14,6 +14,7 @@ __all__ = [
 import binascii
 import random
 import sha
+
 from oauth import OAuthRequest
 
 from zope.interface import implements
