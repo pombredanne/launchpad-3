@@ -254,7 +254,7 @@ Farm list. Celso cannot see the link to it.
     ...
     LinkNotFoundError
 
-But Celso can access the deactivated builder via its URL
+But Celso can access the deactivated builder via its URL.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds/bob')
     >>> print cprov_browser.title

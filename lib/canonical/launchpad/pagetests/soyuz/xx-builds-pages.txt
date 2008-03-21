@@ -451,7 +451,7 @@ A (distro) source package release page shows any builds for that source and
 the status of the build.  If the build has been uploaded, then an upload
 status is shown in parentheses after the build status.
 
-Such feature is visible whe anonymous user access the
+Such feature is visible when anonymous user access the
 `DistributionSourcePackageRelease` page in the 'Builds' portlet.
 
     >>> anon_browser.open(
