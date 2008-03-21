@@ -7,10 +7,16 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet',
-    'SSHKey', 'SSHKeySet',
-    'WikiName', 'WikiNameSet',
-    'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
+    'IrcID',
+    'IrcIDSet',
+    'JabberID',
+    'JabberIDSet',
+    'Person',
+    'PersonSet',
+    'SSHKey',
+    'SSHKeySet',
+    'WikiName',
+    'WikiNameSet']
 
 from datetime import datetime, timedelta
 import pytz
@@ -41,6 +47,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.oauth import OAuthAccessToken
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -253,6 +260,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # doing and we don't want any email notifications to be sent.
         TeamMembershipSet().new(
             team_owner, self, TeamMembershipStatus.ADMIN, team_owner)
+
+    @property
+    def oauth_access_tokens(self):
+        """See `IPerson`."""
+        return OAuthAccessToken.select("""
+            person = %s
+            AND (date_expires IS NULL OR date_expires > %s)
+            """ % sqlvalues(self, UTC_NOW))
 
     @cachedproperty
     def _location(self):

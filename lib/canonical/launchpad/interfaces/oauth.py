@@ -6,11 +6,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'OAUTH_REALM',
+    'OAUTH_CHALLENGE',
     'IOAuthAccessToken',
     'IOAuthConsumer',
     'IOAuthConsumerSet',
     'IOAuthNonce',
     'IOAuthRequestToken',
+    'IOAuthRequestTokenSet',
+    'NonceAlreadyUsed',
     'OAuthPermission']
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
@@ -22,41 +26,47 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 
 
+# The challenge included in responses with a 401 status.
+OAUTH_REALM = 'https://api.launchpad.net'
+OAUTH_CHALLENGE = 'OAuth realm="%s"' % OAUTH_REALM
+
+
 class OAuthPermission(DBEnumeratedType):
     """The permission granted by the user to the OAuth consumer."""
 
     UNAUTHORIZED = DBItem(10, """
-        Not authorized
+        No Access
 
-        The user didn't authorize the consumer to act on his behalf.
+        The application will not be allowed to access Launchpad on your
+        behalf.
         """)
 
     READ_PUBLIC = DBItem(20, """
-        Read public data
+        Read Non-Private Data
 
-        The consumer can act on the user's behalf but only for reading public
-        data.
+        The application will be able to access Launchpad on your behalf
+        but only for reading non-private data.
         """)
 
     WRITE_PUBLIC = DBItem(30, """
-        Read and write public data
+        Change Non-Private Data
 
-        The consumer can act on the user's behalf but only for reading and
-        writing public data.
+        The application will be able to access Launchpad on your behalf
+        for reading and changing non-private data.
         """)
 
     READ_PRIVATE = DBItem(40, """
-        Read public and private data
+        Read Anything
 
-        The consumer can act on the user's behalf but only for reading
-        public and private data.
+        The application will be able to access Launchpad on your behalf
+        for reading anything, including private data.
         """)
 
     WRITE_PRIVATE = DBItem(50, """
-        Read and write public and private data
+        Change Anything
 
-        The consumer can act on the user's behalf for reading and writing
-        public and private data.
+        The application will be able to access Launchpad on your behalf
+        for reading and changing anything, including private data.
         """)
 
 
@@ -86,6 +96,13 @@ class IOAuthConsumer(Interface):
 
         The other attributes of the token are supposed to be set whenever the
         user logs into Launchpad and grants (or not) access to this consumer.
+        """
+
+    def getAccessToken(key):
+        """Return the `IOAuthAccessToken` with the given key.
+
+        If the token with the given key does not exist or is associated with
+        another consumer, return None.
         """
 
     def getRequestToken(key):
@@ -139,9 +156,10 @@ class IOAuthToken(Interface):
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
     permission = Choice(
-        title=_('Permission'), required=False, readonly=False,
+        title=_('Access level'), required=True, readonly=False,
         vocabulary=OAuthPermission,
-        description=_('The permission granted by the user to this consumer.'))
+        description=_('The level of access given to the application acting '
+                      'on your behalf.'))
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     date_expires = Datetime(
@@ -164,6 +182,18 @@ class IOAuthAccessToken(IOAuthToken):
     It's created automatically once a user logs in and grants access to a
     consumer.  The consumer then exchanges an `IOAuthRequestToken` for it.
     """
+
+    def ensureNonce(nonce, timestamp):
+        """Ensure the nonce hasn't been used with a different timestamp.
+
+        :raises NonceAlreadyUsed: If the nonce has been used before with a
+            timestamp not in the accepted range (+/- `NONCE_TIME_WINDOW`
+            seconds from the timestamp stored in the database).
+
+        If the nonce has never been used together with this token before,
+        we store it in the database with the given timestamp and associated
+        with this token.
+        """
 
 
 class IOAuthRequestToken(IOAuthToken):
@@ -204,8 +234,18 @@ class IOAuthRequestToken(IOAuthToken):
         """
 
 
+class IOAuthRequestTokenSet(Interface):
+    """The set of `IOAuthRequestToken`s."""
+
+    def getByKey(key):
+        """Return the IOAuthRequestToken with the given key.
+
+        If it doesn't exist, return None.
+        """
+
+
 class IOAuthNonce(Interface):
-    """The unique (nonce,timestamp) for requests from a given consumer.
+    """The unique (nonce,timestamp) for requests using a given access token.
 
     The nonce value (which is unique for all requests with that timestamp)
     is generated by the consumer and included, together with the timestamp,
@@ -214,5 +254,9 @@ class IOAuthNonce(Interface):
 
     request_timestamp = Datetime(
         title=_('Date issued'), required=True, readonly=True)
-    consumer = Object(schema=IOAuthConsumer, title=_('The consumer.'))
+    access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
+
+
+class NonceAlreadyUsed(Exception):
+    """Nonce has been used together with same token but another timestamp."""

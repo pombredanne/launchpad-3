@@ -10,16 +10,10 @@ Launchpad people as examples.
 It's possible to get a JSON 'representation' of an entry by sending a
 GET request to the entry's URL.
 
-  >>> def get_person(person):
-  ...     return webservice("""
-  ... GET /people/%s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % person)
-
 Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
-  >>> salgado = get_person('salgado').jsonBody()
+  >>> salgado = webservice.get('/people/salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -35,14 +29,9 @@ entry's state, in which case the client should use PUT.
   >>> import simplejson
   >>> def modify_person(person, representation, method):
   ...     "A helper function to send a PUT or PATCH request to a person."
-  ...     return webservice("""
-  ... %s /people/%s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... Content-type: application/json
-  ... Authorization: Basic foo.bar@canonical.com:test
-  ...
-  ... %s
-  ... """ % (method, person, simplejson.dumps(representation)))
+  ...     return webservice('/people/' + person, method,
+  ...                       simplejson.dumps(representation),
+  ...                       {'Content-type': 'application/json'})
 
 Here we use the web service to change the user 'salgado' so that their
 display name is in uppercase.
@@ -53,7 +42,7 @@ display name is in uppercase.
   Content-Length: 0
   ...
 
-  >>> salgado = get_person('salgado').jsonBody()
+  >>> salgado = webservice.get('/people/salgado').jsonBody()
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
@@ -98,7 +87,7 @@ less work than constructing a new document and sending it with PATCH.
   HTTP/1.1 200 Ok
   ...
 
-  >>> salgado = get_person('salgado').jsonBody()
+  >>> salgado = webservice.get('/people/salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -123,14 +112,7 @@ might not be acceptable as the payload of a PUT request.
 
 A document that's not a valid JSON document is also unacceptable.
 
-  >>> print webservice("""
-  ... PATCH /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... Content-type: application/json
-  ... Authorization: Basic foo.bar@canonical.com:test
-  ...
-  ... {
-  ... """)
+  >>> print webservice.patch("/people/salgado", "application/json", "{")
   HTTP/1.1 400 Bad Request
   ...
   Entity-body was not a well-formed JSON document.
