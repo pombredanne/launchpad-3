@@ -509,3 +509,34 @@ projects portlet on the bug tracker page:
     Launchpad:
       The Mozilla Project
       Jokosher Audio Editor
+
+
+== Info portlet ==
+
+Some information about the bug tracker is displayed in a portlet on
+the bug tracker page.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print extract_text(find_portlet(
+  ...     user_browser.contents, 'Email bugtracker'))
+  Email bugtracker
+  Location:
+  mailto:bugs@example.com
+  Tracker Type:
+  Email Address
+  Number of watches:
+  1
+  Contact Details:
+  Creator:
+  Foo Bar
+
+If the user is not logged in, email addresses in the Location field
+above are obfuscated:
+
+  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print extract_text(find_portlet(
+  ...     anon_browser.contents, 'Email bugtracker'))
+  Email bugtracker
+  Location:
+  mailto:&lt;email address hidden&gt;
+  ...
