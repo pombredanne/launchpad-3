@@ -8,11 +8,20 @@
     <div class="portletBody">
         <div class="portletContent">
 
-        <b>Base URL:</b><br />
+        <b>Location:</b><br />
         <img alt="" src="/@@/link" />
-        <a
-           tal:attributes="href context/baseurl"
-           tal:content="context/baseurl">http://test.mozilla.org</a><br />
+        <tal:user
+            condition="view/user"
+            define="baseurl context/baseurl">
+          <a tal:attributes="href baseurl" tal:content="baseurl" />
+        </tal:user>
+        <tal:not-user
+            condition="not:view/user"
+            define="baseurl context/baseurl/fmt:obfuscate-email">
+          <a tal:attributes="href baseurl" tal:content="baseurl" />
+        </tal:not-user>
+
+        <br />
 
         <b>Tracker Type:</b>
         <span tal:replace="context/bugtrackertype/title">BugZilla</span>
