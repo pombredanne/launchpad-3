@@ -75,7 +75,9 @@ class DistroArchSeriesBinaryPackageRelease:
     @property
     def current_publishing_record(self):
         """See IDistroArchSeriesBinaryPackageRelease."""
-        status = PackagePublishingStatus.PUBLISHED
+        status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED]
         record = self._latest_publishing_record(status=status)
         return record
 
@@ -83,14 +85,17 @@ class DistroArchSeriesBinaryPackageRelease:
 # content classes in order to be better maintained. In this specific case
 # the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
-        query = ("binarypackagerelease = %s AND distroarchseries = %s "
-                 "AND archive IN %s"
-                 % sqlvalues(
-                    self.binarypackagerelease,
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids))
+        query = """
+            binarypackagerelease = %s AND
+            distroarchseries = %s AND
+            archive IN %s
+        """ % sqlvalues(self.binarypackagerelease, self.distroarchseries,
+                        self.distribution.all_distro_archive_ids)
+
         if status is not None:
-            query += " AND status = %s" % sqlvalues(status)
+            if not isinstance(status, list):
+                status = [status]
+            query += " AND status IN %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
             query, orderBy=['-datecreated', '-id'])

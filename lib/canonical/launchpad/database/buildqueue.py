@@ -89,9 +89,9 @@ class BuildQueue(SQLBase):
         return None
 
     @property
-    def is_trusted(self):
+    def is_virtualized(self):
         """See `IBuildQueue`."""
-        return self.build.is_trusted
+        return self.build.is_virtualized
 
     @property
     def is_last_version(self):
@@ -162,6 +162,10 @@ class BuildQueue(SQLBase):
                 break
         else:
             msg += "T+0 "
+
+        # Private builds get uber score.
+        if self.build.archive.private:
+            score += 1000
 
         # Store current score value.
         self.lastscore = score

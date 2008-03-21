@@ -1,20 +1,26 @@
-<strong style="display:none;" tal:condition="not: context/enabled"
-        tal:attributes="class string:menu-link-${context/name}-disabled;">
-  <tal:link-text replace="structure context/escapedtext">
-    Disabled text
-  </tal:link-text>
-  (disabled)
-</strong>
-<tal:link-enabled condition="context/enabled">
-  <a tal:condition="context/linked"
-     tal:attributes="href context/url;
-                     title context/summary;
-                     class string:menu-link-${context/name};"
-     tal:content="structure context/escapedtext"
-    >link text</a>
-  <strong tal:condition="not: context/linked"
-          tal:attributes="class string:menu-link-${context/name};"
-          tal:content="structure context/escapedtext">
-    Unlinked text
+<tal:ns
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <strong style="display:none;" tal:condition="not: context/enabled"
+          tal:attributes="class string:menu-link-${context/name}-disabled;">
+    <tal:link-text replace="structure context/escapedtext">
+      Disabled text
+    </tal:link-text>
+    (disabled)
   </strong>
-</tal:link-enabled>
+  <tal:link-enabled condition="context/enabled">
+    <a tal:condition="context/linked"
+       tal:attributes="href context/url;
+                       title context/summary;
+                       class string:menu-link-${context/name};"
+       tal:content="structure context/escapedtext"
+       >link text</a>
+    <strong tal:condition="not: context/linked"
+            tal:attributes="class string:menu-link-${context/name};"
+            tal:content="structure context/escapedtext">
+      Unlinked text
+    </strong>
+  </tal:link-enabled>
+</tal:ns>
