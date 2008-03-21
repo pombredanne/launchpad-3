@@ -218,15 +218,18 @@ class DistroSeriesSourcePackageRelease:
     def current_published(self):
         """See `IDistroArchSeriesSourcePackage`."""
         # Retrieve current publishing info
+        published_status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED]
         current = SourcePackagePublishingHistory.selectFirst("""
         distroseries = %s AND
         archive IN %s AND
         sourcepackagerelease = %s AND
-        status = %s
+        status IN %s
         """ % sqlvalues(self.distroseries,
                         self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease,
-                        PackagePublishingStatus.PUBLISHED),
-            orderBy='-datecreated')
+                        published_status),
+            orderBy=['-datecreated', '-id'])
 
         return current
