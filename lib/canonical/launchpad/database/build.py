@@ -7,7 +7,7 @@ __all__ = ['Build', 'BuildSet']
 
 import apt_pkg
 import logging
-import datetime
+from datetime import (datetime, timedelta)
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -293,7 +293,8 @@ class Build(SQLBase):
             pool_size = float(self._getBuildpoolSize())
             result = headjob_delay + int(sum_of_delays/pool_size)
 
-        return datetime.datetime.utcfromtimestamp(result)
+        result = datetime.utcnow() + timedelta(seconds=result)
+        return result
 
     def _getBuildpoolSize(self):
         """Get the number of machines in our build pool."""
@@ -343,9 +344,11 @@ class Build(SQLBase):
         # building on the respective machine pool (current build
         # set)
         remainders = cur.fetchall()
-        # head job delay in seconds
         build_delays = set([int(row[0]) for row in remainders])
+
+        # head job delay in seconds
         headjob_delay = len(build_delays) and max(build_delays) or 0
+
         for delay in reversed(sorted(build_delays)):
             if delay < 0:
                 # this job is currently building and taking longer
