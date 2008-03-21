@@ -6,9 +6,10 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
+import cElementTree
 import logging
 import os
-import cElementTree
+import re
 from email.Utils import parseaddr
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -411,7 +412,7 @@ def find_end_of_common_prefix(strings):
 
     :param strings: a list of strings.
     :return: index directly after that of last character that is identical
-        across all `strings`.
+        across all strings.
     """
     min_length = min([len(string) for string in strings])
     if len(strings) <= 1:
@@ -425,7 +426,23 @@ def find_end_of_common_prefix(strings):
             if string[index] != base_char:
                 return index
 
+    # Scan backwards for a slash, and break there.  Things are a bit prettier
+    # if we avoid breaking in the middle of a directory name.
+    while min_length > 0 and head[min_length-1] != '/':
+        min_length -= 1
+
     return min_length
+
+
+def normalize_file_references(filename):
+    """Strip trailing crud off a file reference string.
+
+    A file reference string consists of comma-separated file paths, each
+    followed by an optional line number and a repetition of the msgid:
+    "foo/bar:123(splat)" or "foo/bar(splat)".  This function whittles
+    either example down to "foo/bar".
+    """
+    return re.sub('(:[0-9]+)?\([^)]+\)', '', filename)
 
 
 def disambiguate(messages):
@@ -449,9 +466,10 @@ def disambiguate(messages):
     clashes = set()
 
     for message in messages:
+        references = normalize_file_references(message.file_references)
         if message.msgid_singular in seen:
             similar_messages = seen[message.msgid_singular]
-            if message.file_references in similar_messages:
+            if references in similar_messages:
                 # This is a completely senseless duplication, within the same
                 # file.  Ignore it.
                 logging.info(
@@ -460,12 +478,12 @@ def disambiguate(messages):
             else:
                 # There is already a message with the same identifier in a
                 # different file.  Accept it as a separate message.
-                similar_messages[message.file_references] = message
+                similar_messages[references] = message
                 clashes.add(message.msgid_singular)
                 result.append(message)
         else:
             # New message.  Store it.
-            seen[message.msgid_singular] = {message.file_references: message}
+            seen[message.msgid_singular] = {references: message}
             result.append(message)
 
     # Go over messages with clashing identifiers, and provide context.
@@ -486,8 +504,12 @@ def disambiguate(messages):
         context_start = find_end_of_common_prefix(list(filenames))
         for message in cousins.itervalues():
             context_components = []
+
             for filename in message.file_references_list:
-                context_components.append(filename[context_start:])
+                component = normalize_file_references(
+                    filename[context_start:])
+                context_components.append(component)
+
             context = ','.join(context_components)
             if len(context) > 0:
                 message.context = context
