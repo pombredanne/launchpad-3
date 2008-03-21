@@ -22,7 +22,7 @@
       width:25%;
       display:block;
       margin:1em;
-      float:right;
+      float:left;
       padding:1em;
       border: .1em solid #DBA73A;
       text-align:center;
@@ -66,8 +66,9 @@
     <div id="chooseLinks">
       <tal:no-prerelease condition="not: view/prerelease_mode">
         <div>
-          <a href="login-server" tal:condition="view/flavour/enumvalue:UBUNTU">
-            I want to <span>request CDs of Ubuntu Server Edition</span>
+          <a tal:attributes="href view/download_or_buy_link">
+            I want to <span>download</span>
+            <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
         </div>
         <div>
@@ -76,17 +77,16 @@
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
         </div>
-        <div>
-          <a tal:attributes="href view/download_or_buy_link">
-            I want to <span>download</span>
-            <span tal:replace="flavour_name">Ubuntu</span>
+        <div tal:condition="view/flavour/enumvalue:UBUNTU">
+          <a href="login-server">
+            I want to <span>request CDs of Ubuntu Server Edition</span>
             <span tal:replace="series_name" /></a>
         </div>
       </tal:no-prerelease>
       <tal:prerelease condition="view/prerelease_mode">
         <div>
-          <a href="login-server" tal:condition="view/flavour/enumvalue:UBUNTU">
-            I want to <span>pre-order CDs of Ubuntu Server Edition</span>
+          <a tal:attributes="href view/beta_download_link">
+            I want to <span>download and test</span> the beta version of
             <span tal:replace="series_name" /></a>
         </div>
         <div>
@@ -95,9 +95,9 @@
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
         </div>
-        <div>
-          <a tal:attributes="href view/beta_download_link">
-            I want to <span>download and test</span> the beta version of
+        <div tal:condition="view/flavour/enumvalue:UBUNTU">
+          <a href="login-server">
+            I want to <span>pre-order CDs of Ubuntu Server Edition</span>
             <span tal:replace="series_name" /></a>
         </div>
       </tal:prerelease>
