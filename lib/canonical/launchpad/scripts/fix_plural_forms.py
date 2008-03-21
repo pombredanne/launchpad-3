@@ -59,7 +59,8 @@ def fix_pofile_plurals(pofile, logger, ztm):
                 assert new_form < TranslationConstants.MAX_PLURAL_FORMS, (
                     "Translation with plural form %d in plurals mapping." %
                     new_form)
-                setattr(message, 'msgstr%d' % form, new_form)
+                translation = getattr(message, 'msgstr%d' % new_form)
+                setattr(message, 'msgstr%d' % form, translation)
 
         # We also need to update the header so we don't try to re-do the
         # migration in the future.

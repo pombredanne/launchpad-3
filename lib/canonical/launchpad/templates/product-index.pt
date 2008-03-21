@@ -103,6 +103,10 @@
           class="section"
           tal:content="structure context/@@+portlet-latestannouncements"
         />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-productfiles"
+        />
         <div class="portlet">
           <h2>Timeline</h2>
 

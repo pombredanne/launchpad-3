@@ -49,6 +49,8 @@ class VPOExportSet:
         'translation1',
         'translation2',
         'translation3',
+        'translation4',
+        'translation5',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -207,7 +209,9 @@ class VPOExport:
          self.translation0,
          self.translation1,
          self.translation2,
-         self.translation3) = args
+         self.translation3,
+         self.translation4,
+         self.translation5) = args
 
         self.potemplate = POTemplate.get(potemplate)
         self.potmsgset = POTMsgSet.get(potmsgset)
