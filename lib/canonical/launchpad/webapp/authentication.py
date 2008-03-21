@@ -272,7 +272,7 @@ def get_oauth_authorization(request):
     :return: a dictionary of authorization information.
     """
     header = request._auth
-    if header.startswith("OAuth "):
+    if header is not None and header.startswith("OAuth "):
         return OAuthRequest._split_header(header)
     else:
         return request.form
