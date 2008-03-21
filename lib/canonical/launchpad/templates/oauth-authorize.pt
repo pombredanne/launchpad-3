@@ -31,41 +31,17 @@
             wants to access Launchpad on your behalf. What level of access
             do you want to grant?</p>
 
-            <p>
-              <input tal:replace="structure view/actions/field.actions.unauthorized/render" />
-              <span class="lesser">
-                The application will not be allowed to access Launchpad on your
-                behalf.
-              </span>
-            </p>
-            <p>
-              <input tal:replace="structure view/actions/field.actions.read_public/render" />
-              <span class="lesser">
-                The application will be able to access Launchpad on your behalf
-                but only for reading non-private data.
-              </span>
-            </p>
-            <p>
-              <input tal:replace="structure view/actions/field.actions.write_public/render" />
-              <span class="lesser">
-                The application will be able to access Launchpad on your behalf
-                for reading and changing non-private data.
-              </span>
-            </p>
-            <p>
-              <input tal:replace="structure view/actions/field.actions.read/render" />
-              <span class="lesser">
-                The application will be able to access Launchpad on your behalf
-                for reading anything, including private data.
-              </span>
-            </p>
-            <p>
-              <input tal:replace="structure view/actions/field.actions.write/render" />
-              <span class="lesser">
-                The application will be able to access Launchpad on your behalf
-                for reading and changing anything, including private data.
-              </span>
-            </p>
+            <table>
+              <tr tal:repeat="action view/actions">
+                <td style="text-align: right">
+                  <tal:action replace="structure action/render" />
+                </td>
+                <td>
+                  <span class="lesser"
+                    tal:content="python:view.action_descriptions[action]" />
+                </td>
+              </tr>
+            </table>
           </div>
 
           <div metal:fill-slot="extra_bottom">

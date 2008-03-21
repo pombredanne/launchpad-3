@@ -8,13 +8,12 @@ __all__ = [
     'OAuthTokenAuthorizedView']
 
 from zope.component import getUtility
+from zope.formlib.form import Action, Actions
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
     OAuthPermission, OAUTH_CHALLENGE)
-from canonical.launchpad.webapp import (
-    action, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
 from canonical.launchpad.webapp.authentication import check_oauth_signature
 
 
@@ -60,35 +59,21 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
         key = self.request.form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
+        self.action_descriptions = {}
+        self.actions = Actions()
+        for permission in OAuthPermission.items:
+            def success(form, action, data):
+                self.reviewToken(permission)
+            action = Action(
+                permission.title, name=permission.name, success=success,
+                condition=self.tokenExistsAndIsNotReviewed.im_func)
+            action.form = self
+            self.action_descriptions[action] = permission.description
+            self.actions.append(action)
         super(OAuthAuthorizeTokenView, self).initialize()
 
     def tokenExistsAndIsNotReviewed(self, action):
         return self.token is not None and not self.token.is_reviewed
-
-    @action(_("No Access"), name="unauthorized",
-            condition=tokenExistsAndIsNotReviewed)
-    def noaccess_action(self, action, data):
-        self.reviewToken(OAuthPermission.UNAUTHORIZED)
-
-    @action(_("Read Non-Private Data"), name="read_public",
-            condition=tokenExistsAndIsNotReviewed)
-    def read_action(self, action, data):
-        self.reviewToken(OAuthPermission.READ_PUBLIC)
-
-    @action(_("Change Non-Private Data"), name="write_public",
-            condition=tokenExistsAndIsNotReviewed)
-    def write_action(self, action, data):
-        self.reviewToken(OAuthPermission.WRITE_PUBLIC)
-
-    @action(_("Read Anything"), name="read",
-            condition=tokenExistsAndIsNotReviewed)
-    def readanything_action(self, action, data):
-        self.reviewToken(OAuthPermission.READ_PRIVATE)
-
-    @action(_("Change Anything"), name="write",
-            condition=tokenExistsAndIsNotReviewed)
-    def writeanything_action(self, action, data):
-        self.reviewToken(OAuthPermission.WRITE_PRIVATE)
 
     def reviewToken(self, permission):
         self.token.review(self.user, permission)
