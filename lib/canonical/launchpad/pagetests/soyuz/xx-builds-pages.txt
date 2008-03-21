@@ -3,7 +3,7 @@
 These pages are based in the BuildRecordView class and
 template/builds-list.pt. Basically they have a buildstate selector
 action via HTTP GET and present a batched list of build records
-according the selected buildstate, by default All
+according the selected buildstate, by default All.
 
     >>> def check_builds_options(contents):
     ...     """Check if the label and/or the field for the optional
@@ -30,65 +30,67 @@ according the selected buildstate, by default All
     ...     else:
     ...         return "mismatch"
 
-Ensure all IBuildRecordView (+builds) pages are provided by the same class,
-i.e., they provide the expected arguments/features in different contexts:
+The anonymous user can see filter the reports for all objects that
+provide the IBuildRecordView.
 
 For Distribution, it's possible to filter build results by state and name:
 
-    >>> browser.open("http://launchpad.dev/ubuntu")
-    >>> browser.getLink("Builds").click()
-    >>> print check_builds_options(browser.contents)
+    >>> anon_browser.open("http://launchpad.dev/ubuntu")
+    >>> anon_browser.getLink("Builds").click()
+    >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For Distrorelease, same as Distribution:
 
-    >>> browser.open("http://launchpad.dev/ubuntu/hoary")
-    >>> browser.getLink("Show builds").click()
-    >>> print check_builds_options(browser.contents)
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
+    >>> anon_browser.getLink("Show builds").click()
+    >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For DistroArchSeries, same as Distribution:
 
-    >>> browser.open("http://launchpad.dev/ubuntu/hoary/i386")
-    >>> browser.getLink("Show builds").click()
-    >>> print check_builds_options(browser.contents)
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
+    >>> anon_browser.getLink("Show builds").click()
+    >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For Builder, same as Distribution:
 
-    >>> browser.open("http://launchpad.dev/+builds/bob")
-    >>> browser.getLink("Show build history").click()
-    >>> print check_builds_options(browser.contents)
+    >>> anon_browser.open("http://launchpad.dev/+builds/bob")
+    >>> anon_browser.getLink("Show build history").click()
+    >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For Archive (PPA), same as Distribution:
 
-    >>> browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> browser.getLink("View build records").click()
-    >>> print check_builds_options(browser.contents)
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.getLink("View build records").click()
+    >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For SourcePackage, it's only possible to filter by state.
 
-    >>> browser.open(
+    >>> anon_browser.open(
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
-    >>> browser.getLink("Show builds").click()
-    >>> print check_builds_options(browser.contents)
+    >>> anon_browser.getLink("Show builds").click()
+    >>> print check_builds_options(anon_browser.contents)
     State present, Name not present
 
 The source package default state is "all states":
 
-    >>> soup = find_main_content(browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> [results] = soup.findAll(attrs={'selected': 'selected'})
     >>> print extract_text(results)
     All states
 
-Check the contents of the distro builds list page.
+The anonymous user checks the contents of the distro builds list page.
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+builds")
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+builds")
 
-Check the presence of some build titles, specially the 'not
-initialised' one (fix bug #52704)
+== Build titles ==
+
+The anonymous user can review the build titles, including 'not
+initialised' one (fix bug #52704).
 
  * SUPERSEDED and NEEDSBUILD builds contain title
 
@@ -98,8 +100,8 @@ initialised' one (fix bug #52704)
  * FAILEDTOBUILD builds are similar to MANUALDEPWAIT, but they don't
    contain dependencies-line.
 
-    >>> browser.getControl(name="build_state").value = ['all']
-    >>> browser.getControl("Update").click()
+    >>> anon_browser.getControl(name="build_state").value = ['all']
+    >>> anon_browser.getControl("Update").click()
 
     >>> def print_build_rows(contents):
     ...     rule = 30 * '-'
@@ -110,8 +112,7 @@ initialised' one (fix bug #52704)
     ...         print extract_text(row)
     ...     print rule
 
-
-    >>> print_build_rows(browser.contents)
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Successfully built
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
@@ -138,9 +139,8 @@ initialised' one (fix bug #52704)
     taking 1 second &mdash; see the log
     ------------------------------
 
-
-    >>> browser.getLink("Next").click()
-    >>> print_build_rows(browser.contents)
+    >>> anon_browser.getLink("Next").click()
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Build for superseded Source
     i386 build of at 0.00 in ubuntu warty RELEASE
@@ -163,11 +163,13 @@ initialised' one (fix bug #52704)
     Pending (10)
     ------------------------------
 
-Check the results of some searches on build state.
+== Searches on the build state ==
 
-    >>> browser.getControl(name="build_state").value = ['built']
-    >>> browser.getControl("Update").click()
-    >>> print_build_rows(browser.contents)
+Then anonymous user checks the results of some searches on build state.
+
+    >>> anon_browser.getControl(name="build_state").value = ['built']
+    >>> anon_browser.getControl("Update").click()
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Successfully built
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
@@ -195,9 +197,9 @@ Check the results of some searches on build state.
     taking a minute &mdash; see the log
     ------------------------------
 
-    >>> browser.getControl(name="build_state").value = ['depwait']
-    >>> browser.getControl("Update").click()
-    >>> print_build_rows(browser.contents)
+    >>> anon_browser.getControl(name="build_state").value = ['depwait']
+    >>> anon_browser.getControl("Update").click()
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Dependency wait
     i386 build of libstdc++ b8p in ubuntu hoary RELEASE
@@ -207,9 +209,9 @@ Check the results of some searches on build state.
     taking six minutes &mdash; see the log
     ------------------------------
 
-    >>> browser.getControl(name="build_state").value = ['failed']
-    >>> browser.getControl("Update").click()
-    >>> print_build_rows(browser.contents)
+    >>> anon_browser.getControl(name="build_state").value = ['failed']
+    >>> anon_browser.getControl("Update").click()
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Failed to build
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -227,21 +229,24 @@ Check the results of some searches on build state.
     taking three minutes &mdash; see the log
     ------------------------------
 
-Checking UnexpectedFormData on unknown build_state values (bug #41104)
+== Form errors ==
+
+The form will not permit the anonymous user to enter a bad value (bug
+#41104).
 
 Pagetest infrastructure won't allow us to pass a not presented field
 to the form:
 
-    >>> browser.open("http://launchpad.dev/+builds/bob/+history")
-    >>> browser.getControl(name="build_state").value = ['foo']
+    >>> anon_browser.open("http://launchpad.dev/+builds/bob/+history")
+    >>> anon_browser.getControl(name="build_state").value = ['foo']
     Traceback (most recent call last):
     ...
     ItemNotFoundError: insufficient items with name 'foo'
 
-However even if we build an URL with a incorrect value, code is prepared
-to raise the correct exception:
+However even if anonymous user builds an URL with a incorrect value,
+code is prepared to raise the correct exception:
 
-    >>> browser.open(
+    >>> anon_browser.open(
     ...     "http://launchpad.dev/+builds/bob/+history?build_state=foo")
     Traceback (most recent call last):
     ...
@@ -253,14 +258,15 @@ to raise the correct exception:
 Check "Build History" contents, see the information about several
 job processed by this builder. The main difference for the other
 +builds pages is that is doesn't render the builder information for
-each record, since they were obviously built byt the context builder.
+each record, since they were obviously built by the context builder.
 
-    >>> browser.open("http://launchpad.dev/+builds/bob")
-    >>> browser.getLink("Show build history").click()
+    >>> anon_browser.open("http://launchpad.dev/+builds/bob")
+    >>> anon_browser.getLink("Show build history").click()
 
-In the first batch we can see succesfully-built and failed-to-build builds.
+In the first batch anonymous user can see successfully-built and
+failed-to-build builds.
 
-    >>> print_build_rows(browser.contents)
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Successfully built
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
@@ -288,11 +294,12 @@ In the first batch we can see succesfully-built and failed-to-build builds.
     taking a minute &mdash; see the log
     ------------------------------
 
-In the second batch, aditionally to the failed-to-build builds we can
-also see superseded build records, for which we don't have much to say.
+In the second batch, additionally to the failed-to-build builds
+anonymous user can also see superseded build records, for which we
+don't have much to say.
 
-    >>> browser.getLink("Next").click()
-    >>> print_build_rows(browser.contents)
+    >>> anon_browser.getLink("Next").click()
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Failed to upload
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
@@ -314,11 +321,11 @@ also see superseded build records, for which we don't have much to say.
     i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
     ------------------------------
 
-Finally we go to the next batch to see how a build with unsatisfied
-dependencies is presented.
+Finally anonymous user goes to the next batch to see how a build with
+unsatisfied dependencies is presented.
 
-    >>> browser.getLink("Next").click()
-    >>> print_build_rows(browser.contents)
+    >>> anon_browser.getLink("Next").click()
+    >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Dependency wait
     i386 build of libstdc++ b8p in ubuntu hoary RELEASE
@@ -329,80 +336,83 @@ dependencies is presented.
     ------------------------------
     ...
 
+
 == Builds page messages ==
 
-When you first view the builds page for a distribution that has no
-builds, for instance 'debian' in our sampledata, the page says 'No
-packages are currently building'. We assume that this is your first
-view if there are no GET arguments.
+When the the anonymous user first views the builds page a distribution
+that has no builds, for instance 'debian' in our sampledata, the page
+says 'No packages are currently building'. We assume that this is your
+first view if there are no GET arguments.
 
-    >>> browser.open("http://launchpad.dev/debian/+builds")
+    >>> anon_browser.open("http://launchpad.dev/debian/+builds")
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'no-default-result'))
+    ...     find_tag_by_id(anon_browser.contents, 'no-default-result'))
     No 'Currently building' build records.
 
-    >>> find_tag_by_id(browser.contents, 'empty-result') is None
+    >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
     True
 
-When the user updates the page, the message changes to say that 'No
-matching builds' be found. This message clearly differentiate first
-page loads from searches, helping the user to figure out exactly what
+When he updates the page, the message changes to say that 'No matching
+builds' be found. This message clearly differentiate first page loads
+from searches, helping the anonymous user to figure out exactly what
 was done before.
 
-    >>> browser.getControl(name="build_state").value = ['all']
-    >>> browser.getControl("Update").click()
+    >>> anon_browser.getControl(name="build_state").value = ['all']
+    >>> anon_browser.getControl("Update").click()
 
-    >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'no-default-result') is None
     True
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'empty-result'))
+    ...     find_tag_by_id(anon_browser.contents, 'empty-result'))
     No matching builds.
 
-If there *are* builds present, we don't display any special
-message. (We added this to catch bug #160331.)"
+If there *are* builds present, the anonymous user does not see any
+special messages. (We added this to catch bug #160331.)
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+builds")
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+builds")
 
-    >>> find_tag_by_id(browser.contents, 'empty-result') is None
+    >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
     True
 
-    >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+    >>> find_tag_by_id(anon_browser.contents, 'no-default-result') is None
     True
 
 The same mechanism still works for a SourcePackage-Builds page with
 no builds, see bug 62545.
 
-After opening a empty SourcePackage Builds page we will repeat the
-same set of tests done for Distribution Builds page.
+After opening a empty SourcePackage Builds page anonymous user will
+repeat the same set of accesses done for Distribution Builds page.
 
-    >>> browser.open(
+    >>> anon_browser.open(
     ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
 
-First load only 'No packages currently building' message is presented.
+When anonymous user first load only 'No packages currently building'
+message is presented.
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'no-default-result'))
+    ...     find_tag_by_id(anon_browser.contents, 'no-default-result'))
     No build records.
 
-    >>> find_tag_by_id(browser.contents, 'empty-result') is None
+    >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
     True
 
-When the user updates the page, the message for empty results changes
-to 'No matching builds'.
+When he updates the page, the message for empty results changes to 'No
+matching builds'.
 
-    >>> browser.getControl(name="build_state").value = ['all']
-    >>> browser.getControl("Update").click()
+    >>> anon_browser.getControl(name="build_state").value = ['all']
+    >>> anon_browser.getControl("Update").click()
 
-    >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+    >>> find_tag_by_id(anon_browser.contents, 'no-default-result') is None
     True
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'empty-result'))
+    ...     find_tag_by_id(anon_browser.contents, 'empty-result'))
     No matching builds.
 
-The described mechanism should work similarly for:
+The described mechanism works similarly for:
 
  * Builder History;
  * DistroSeries Builds and
@@ -411,23 +421,26 @@ The described mechanism should work similarly for:
 
 == Partner builds ==
 
-Builds of partner packages show up on the builds page as any other package
-from the primary archive.
+Anonymous user can see builds of partner packages on the same builds
+page as any other packages from the primary archive.
 
-    >>> browser.open(
+    >>> anon_browser.open(
     ...    "http://launchpad.dev/ubuntu//+builds?build_text="
     ...    "commercialpackage&build_state=built")
 
-    >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
+    >>> print extract_text(
+    ...    find_tags_by_class(anon_browser.contents, 'listing')[0])
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
     ...
 
 And also on the distro series builds page:
 
-    >>> browser.open("http://launchpad.dev/ubuntu/breezy-autotest/"
-    ...              "+builds?build_text=commercialpackage&build_state=built")
+    >>> anon_browser.open(
+    ...    "http://launchpad.dev/ubuntu/breezy-autotest/+builds"
+    ...    "?build_text=commercialpackage&build_state=built")
 
-    >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
+    >>> print extract_text(
+    ... find_tags_by_class(anon_browser.contents, 'listing')[0])
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
     ...
 
@@ -438,8 +451,14 @@ A (distro) source package release page shows any builds for that source and
 the status of the build.  If the build has been uploaded, then an upload
 status is shown in parentheses after the build status.
 
-    >>> browser.open("http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
-    >>> print extract_text(find_tag_by_id(browser.contents,"portlet-builds"))
+Such feature is visible whe anonymous user access the
+`DistributionSourcePackageRelease` page in the 'Builds' portlet.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents,"portlet-builds"))
     Builds
     warty           hppa     Successfully built
     hoary           i386     Currently building
