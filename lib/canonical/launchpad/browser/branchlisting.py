@@ -63,9 +63,9 @@ class BranchListingItem(BranchBadges):
         self.is_development_focus = is_dev_focus
 
     @property
-    def elapsed_time(self):
-        """How long since the branch's last commit."""
-        return self.revision_date and (self._now - self.revision_date)
+    def since_updated(self):
+        """How long since the branch was last updated."""
+        return self._now - self.branch.date_last_modified
 
     @property
     def since_created(self):
