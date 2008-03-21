@@ -903,7 +903,7 @@ Similarly, PPA builds pass the 'archives' arguments:
     Archive Purpose: PPA
 
 If the build is for a private PPA, the slave scanner will pass a
-source.list entry that contains a password to access the archive.
+sources.list entry that contains a password to access the archive.
 
 Make cprov's archive private and set the buildd_secret (which is the
 password for the archive):
@@ -919,7 +919,11 @@ password for the archive):
     >>> login(ANONYMOUS)
 
 Dispatch the build again.  Cprov's sources.list entry now has the
-buildd:secret@ part in the URL.
+buildd:secret@ part in the URL.  Also note that because it's a private
+PPA, it's missing the dependency on the updates pocket.  This is mainly
+to accommodate the security build private PPA which must not depend
+on the updates pocket.  This will be replaced in the future by a
+proper solution that allows configurable pocket dependencies.
 
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called
@@ -929,7 +933,6 @@ buildd:secret@ part in the URL.
      deb http://buildd:secret@private.ppa.launchpad.dev/cprov/ubuntu hoary main
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PPA
 
