@@ -179,5 +179,5 @@ confirmation.
     ...     bug_watch_link = li.findAll('a')[1]
     ...     print ' '.join(extract_text(bug_watch_link).splitlines())
     ...     print '  --> %s' % bug_watch_link.get('href')
-    auto-dark-master-o-bugs #
+    auto-dark-master-o-bugs
       --> mailto:dark-master-o-bugs@mylittlepony.com
