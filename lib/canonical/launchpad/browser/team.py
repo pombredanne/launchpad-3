@@ -10,6 +10,7 @@ __all__ = [
     'TeamContactAddressView',
     'TeamMailingListConfigurationView',
     'TeamEditView',
+    'TeamEditVisibilityView',
     'TeamMemberAddView',
     ]
 
@@ -31,14 +32,15 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData,
-    is_participant_in_beta_program)
+    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UnexpectedFormData, is_participant_in_beta_program)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -72,7 +74,7 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
     field_names = [
         'teamowner', 'name', 'displayname', 'teamdescription',
         'subscriptionpolicy', 'defaultmembershipperiod',
-        'renewal_policy', 'defaultrenewalperiod']
+        'renewal_policy', 'defaultrenewalperiod', 'visibility']
     custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
@@ -84,11 +86,24 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
+    def validate(self, data):
+        if ('visibility' in data
+            and data['visibility'] != PersonVisibility.PUBLIC):
+            if data['subscriptionpolicy'] != TeamSubscriptionPolicy.RESTRICTED:
+                self.setFieldError(
+                    'subscriptionpolicy',
+                    'Private teams must have a Restricted subscription policy.')
+            warning = self.context.insecure_connection_warning
+            if warning is not None:
+                self.setFieldError('visibility', warning)
+
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
         When a team has a mailing list, renames are prohibited.
         """
+        if not check_permission('launchpad.Admin', self.context):
+            self.form_fields['visibility'].for_display = True
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
         if mailing_list is not None:
             # This makes the field's widget display (i.e. read) only.
@@ -100,6 +115,18 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
             # context's underlying description, so change that instead.
             self.widgets['name'].context.description = _(
                 'This team has a mailing list and may not be renamed.')
+
+
+class TeamEditVisibilityView(LaunchpadEditFormView):
+
+    schema = ITeam
+    field_names = ['visibility']
+    custom_widget('visibility', LaunchpadRadioWidget, orientation='vertical')
+
+    @action('Save', name='save')
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 def generateTokenAndValidationEmail(email, team):

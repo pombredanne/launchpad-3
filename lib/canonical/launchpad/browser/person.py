@@ -970,8 +970,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'common_packages', 'related_projects',
-             'activate_ppa', 'show_ppa']
+             'reassign', 'editvisibility', 'common_packages', 
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -991,6 +991,13 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change owner'
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def editvisibility(self):
+        target = '+editvisibility'
+        text = 'Change visibility'
+        summary = 'Change the visibility of the team'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.View')

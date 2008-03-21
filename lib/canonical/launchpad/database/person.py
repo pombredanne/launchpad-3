@@ -1551,6 +1551,44 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             count += 1
         self.name = new_name
 
+    @property
+    def insecure_connection_warning(self):
+        """Warning used when changing the team's visibility.
+
+        A private-membership team cannot be connected to other
+        objects, since it may be possible to infer the membership.
+        """
+        insecure_connections = [
+            ('BountySubscription', 'person', 'a bounty subscriber'),
+            ('BranchSubscription', 'person', 'a branch subscriber'),
+            ('BugSubscription', 'person', 'a bug subscriber'),
+            ('QuestionSubscription', 'person', 'a question subscriber'),
+            ('POSubscription', 'person', 'a PO subscriber'),
+            ('SpecificationSubscription', 'person', 'a blueprint subscriber'),
+            ('PackageBugContact', 'bugcontact', 'a package bug contact'),
+            ('Product', 'bugcontact', 'a project bug contact'),
+            ('Product', 'security_contact', 'a project bug contact'),
+            ('Distribution', 'bugcontact', 'a distribution bug contact'),
+            ('Distribution', 'security_contact', 'a distribution bug contact'),
+            ('AnswerContact', 'person', 'an answer contact')]
+        cur = cursor()
+        warnings = []
+        for table, person_id_column, warning in insecure_connections:
+            cur.execute("SELECT 1 FROM %s WHERE %s=%d LIMIT 1"
+                        % (table, person_id_column, self.id))
+            if cur.rowcount > 0:
+                warnings.append(warning)
+        if len(warnings) == 0:
+            return None
+        else:
+            if len(warnings) == 0:
+                message = warnings[0]
+            else:
+                message = '%s or %s' % (
+                    ', '.join(warnings[:-1]),
+                    warnings[-1])
+            return 'Private teams must not used as %s.' % message
+
     def getActiveMemberships(self):
         """See `IPerson`."""
         return self._getMembershipsByStatuses(

@@ -15,6 +15,7 @@ __all__ = [
     'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
+    'IPersonAdminWriteRestricted',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonEditRestricted',
@@ -731,13 +732,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
-    visibility = Choice(
-        title=_("Teams may be Public, Private Membership, or Private."),
-        required=True, vocabulary=PersonVisibility,
-        default=PersonVisibility.PUBLIC)
-
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
+
+    insecure_connection_warning = Attribute(
+        "Warning that a private team may leak membership info.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1179,6 +1178,7 @@ class IPersonViewRestricted(Interface):
     proposedmembers = Attribute("List of members with PROPOSED status")
     proposed_member_count = Attribute("Number of PROPOSED members")
 
+
     def getDirectAdministrators():
         """Return this team's administrators.
 
@@ -1257,9 +1257,45 @@ class IPersonEditRestricted(Interface):
         team.
         """
 
+    def deactivateAllMembers(comment, reviewer):
+        """Deactivate all the members of this team."""
+
+    def acceptInvitationToBeMemberOf(team, comment):
+        """Accept an invitation to become a member of the given team.
+
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to APPROVED.
+        """
+
+    def declineInvitationToBeMemberOf(self, team, comment):
+        """Decline an invitation to become a member of the given team.
+
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to INVITATION_DECLINED.
+        """
+
+    def renewTeamMembership(self, team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+
+class IPersonAdminWriteRestricted(Interface):
+    """IPerson attributes that require launchpad.Admin permission to set."""
+
+    visibility = Choice(
+        title=_("Visibility"),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
+
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IHasStanding):
+              IPersonAdminWriteRestricted, IHasStanding):
     """A Person."""
 
 
