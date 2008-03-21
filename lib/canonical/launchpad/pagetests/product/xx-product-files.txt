@@ -452,24 +452,29 @@ downloadble files are shown.  For instance if Firefox has a trunk with
 no releases and a 3.0 series with releases 3.0b1 and 3.0, each of
 which has downloadable files, only the 3.0 release files will be shown.
 
-If there are no releases that have downloadable files then the portlet
+If there are no releases that have download files then the portlet
 is not displayed.
 
-Alsa-utils latest release with download files is version 1.0.9a.
+The latest release for "ALSA-utils" with download files is version 1.0.9a.
 
     >>> anon_browser.open('http://launchpad.dev/alsa-utils')
-    >>> main = find_main_content(anon_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    ALSA utilities...
+    >>> downloads = find_tag_by_id(anon_browser.contents,
+    ...                            'portlet-projectfiles')
+    >>> print extract_text(downloads).encode('ascii', 'backslashreplace')
     Latest downloads
-    Files for release 1.0.9a
+    Release 1.0.9a:
       alsa-1.0.9a.tgz (md5...)...
       README.txt (md5...)...
       alsa-1.0.9a.dmg (md5...)...
       alsa-1.0.9a.exe (md5...)...
+    &raquo; See all downloads&#8230;
 
+'See all downloads...' is a link to the +download page.
 
-If we now delete the files shown, all for that release,
+    >>> print downloads.fetch('a')[-1]['href']
+    +download
+
+If we now delete all of the files for release 1.0.9a
 then the files for the next release will be shown.
 
     >>> alsa_owner = setupBrowser(
@@ -488,15 +493,16 @@ then the files for the next release will be shown.
     [u'4 files have been deleted.']
 
     >>> anon_browser.open('http://launchpad.dev/alsa-utils')
-    >>> main = find_main_content(anon_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    ALSA utilities...
+    >>> downloads = find_tag_by_id(anon_browser.contents,
+    ...                            'portlet-projectfiles')
+    >>> print extract_text(downloads).encode('ascii', 'backslashreplace')
     Latest downloads
-    Files for release 1.0.8
+    Release 1.0.8:
       README.txt (md5...)...
       alsa-1.0.8.tgz (md5...)...
       alsa-1.0.8.dmg (md5...)...
       alsa-1.0.8.exe (md5...)...
+    &raquo; See all downloads&#8230;...
 
 A product with no download files will not even have the portlet displayed.
 

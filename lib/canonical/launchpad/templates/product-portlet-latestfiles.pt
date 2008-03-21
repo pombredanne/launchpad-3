@@ -9,7 +9,7 @@
   tal:condition="release">
   <h2>Latest downloads</h2>
   <div class="portletBody">
-    <h3 tal:content="string:Files for release ${release/version}">release</h3>
+    <h3 tal:content="string:Release ${release/version}:">Release 3.3:</h3>
     <table>
       <tbody>
         <tr tal:repeat="file release/files">
@@ -28,7 +28,7 @@
       </tbody>
     </table>
     <br />
-    <a href="+download">&raquo; See all download files...</a><br />
+    <a href="+download">&raquo; See all downloads&#8230;</a><br />
   </div>
 </div>
 </tal:root>
