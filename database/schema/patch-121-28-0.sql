@@ -10,13 +10,19 @@ ALTER TABLE ArchiveDependency
 
 
 -- Update the unique constraint to also consider the new columns.
--- Since they will be NULL for the during the next cycle, it's basically
--- the same than it was before, but it will be ready to cope with the
--- columns values if we decided to cherrypick the code.
+-- Since they will be NULL for the during the next cycle, we also need
+-- a temporary partial index to enforce integrity until the NOT NULL
+-- constraints can be added.
 
 ALTER TABLE ArchiveDependency DROP CONSTRAINT archivedependency_unique;
 ALTER TABLE ArchiveDependency
     ADD CONSTRAINT archivedependency_unique UNIQUE (
         archive, dependency, pocket, component);
+CREATE UNIQUE INDEX archivedependency__unique__temp
+    ON ArchiveDependency(archive, dependency)
+    WHERE (pocket IS NULL OR component IS NULL);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+CREATE INDEX archivedependency__component__idx
+    ON ArchiveDependency(component);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 28, 0);
