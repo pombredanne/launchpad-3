@@ -69,6 +69,9 @@
         <input tal:repeat="action view/actions"
                tal:replace="structure action/render"
           />
+        <tal:has-cancel-link condition="view/cancel_url">
+          or <a tal:attributes="href view/cancel_url">Cancel</a>
+        </tal:has-cancel-link>
       </div>
 
       <div class="row" 

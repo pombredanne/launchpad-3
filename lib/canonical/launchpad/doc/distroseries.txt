@@ -484,6 +484,7 @@ transaction manager (in this case a fake one) to make these work.
     ...         pass
     >>> transaction_stub = FakeTransactionManager()
 
+
 === Preconditions for migrating translations between distro series ===
 
 Before we are able to migrate translations, there are a set of preconditions
@@ -618,7 +619,6 @@ working on Humpy, as long as they're still translating the same messages.
 Get the needed objects to prepare this test.
 
     >>> import datetime
-    >>> import pytz
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
@@ -944,22 +944,20 @@ to do the translation migration to this new distro series.
     >>> testing_series.getTranslationTemplates()
     []
 
-The script starts its own transactions, so we need to commit here to be sure
-the new series will be available in the script.
-
-    >>> import subprocess
-    >>> import sys
-    >>> import transaction
-    >>> from canonical.launchpad.ftests.script import run_script
-
 Now, we execute the script that will migrate/copy all current templates
 and translations from testing_series' parent distro series (hoary).
 
-The script fails as long as the defer_translation_imports flag is not
-set.
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.script import run_script
+
+The script starts its own transactions, so we need to commit here to be sure
+the new series will be available in the script.
 
     >>> testing_series_id = testing_series.id
     >>> transaction.commit()
+
+The script fails as long as the defer_translation_imports flag is not
+set.
 
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
