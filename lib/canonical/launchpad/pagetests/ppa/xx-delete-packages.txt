@@ -123,10 +123,16 @@ Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
 performed. The results should not include the just-deleted source.
 
+Note that we will also include a unquoted portion of text in the
+deletion comment, simulating a XSS attack. The current code will
+automaticaly quote the text entered by the user resulting in an
+entirely readable content.
+
     >>> admin_browser.getControl("Update").click()
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
-    >>> admin_browser.getControl("Deletion comment").value = "DO IT"
+    >>> admin_browser.getControl(
+    ...     "Deletion comment").value = "DO <where is my XSS ?> IT"
     >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
@@ -134,7 +140,7 @@ performed. The results should not include the just-deleted source.
     ...     print msg
     Source and binaries deleted by Foo Bar request:
     cdrkit 1.0 in breezy-autotest
-    Deletion comment: DO IT
+    Deletion comment: DO &lt;where is my XSS ?&gt; IT
     Read the page help to understand how removals work.
 
     >>> print_ppa_packages(admin_browser.contents)
