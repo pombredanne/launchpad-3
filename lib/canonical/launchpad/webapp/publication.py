@@ -128,8 +128,9 @@ class LaunchpadBrowserPublication(
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
-        if cache.has_key(key):
-            del cache[key]
+        connection = cache.pop(key, None)
+        if connection is not None:
+            connection._makeObsolete()
         # SQLOS Connection objects also only register themselves for
         # the transaction in which they are instantiated - this is
         # no longer a problem as we are nuking the connection cache,
