@@ -35,35 +35,36 @@ class OAuthPermission(DBEnumeratedType):
     UNAUTHORIZED = DBItem(10, """
         No access
 
-        The user didn't authorize the consumer to act on his behalf.
+        The application will not be allowed to access Launchpad on your
+        behalf.
         """)
 
     READ_PUBLIC = DBItem(20, """
         Read non-private data
 
-        The consumer can act on the user's behalf but only for reading public
-        data.
+        The application will be able to access Launchpad on your behalf
+        but only for reading non-private data.
         """)
 
     WRITE_PUBLIC = DBItem(30, """
         Read and change non-private data
 
-        The consumer can act on the user's behalf but only for reading and
-        writing public data.
+        The application will be able to access Launchpad on your behalf
+        for reading and changing non-private data.
         """)
 
     READ_PRIVATE = DBItem(40, """
         Read anything
 
-        The consumer can act on the user's behalf but only for reading
-        public and private data.
+        The application will be able to access Launchpad on your behalf
+        for reading anything, including private data.
         """)
 
     WRITE_PRIVATE = DBItem(50, """
         Read and change anything
 
-        The consumer can act on the user's behalf for reading and writing
-        public and private data.
+        The application will be able to access Launchpad on your behalf
+        for reading and changing anything, including private data.
         """)
 
 
