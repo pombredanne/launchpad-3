@@ -362,11 +362,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         return (self.context.branch_type != BranchType.REMOTE and
                 self.context.revision_count > 0)
 
-    def is_hosted_branch(self):
-        """Whether this is a user-provided hosted branch."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.context.url is None and self.context.owner != vcs_imports
-
     @cachedproperty
     def landing_targets(self):
         """Return a decorated filtered list of landing targets."""
