@@ -104,8 +104,10 @@ some reason.
 We can see that the statuses of the mailing lists have been updated in the
 database.
 
+    >>> list_one = list_set.get('team-one')
     >>> list_one.status.name
     'ACTIVE'
+    >>> list_two = list_set.get('team-two')
     >>> list_two.status.name
     'FAILED'
 
@@ -150,6 +152,7 @@ scenes.
     team-one --> deactivate
     >>> mailinglist_api.reportStatus({'team-three': 'success'})
     True
+    >>> list_three = list_set.get('team-three')
     >>> list_three.deactivate()
     >>> commit()
 
@@ -206,7 +209,9 @@ create a couple more teams and mailing lists.
 Now, when a mailing list's welcome message is changed, Mailman will see this
 modification action the next time it polls.
 
+    >>> list_four = list_set.get('team-four')
     >>> list_four.welcome_message = u'Welcome to Team Four'
+    >>> list_five = list_set.get('team-five')
     >>> list_five.welcome_message = u'Welcome to Team Five'
     >>> commit()
     >>> print_actions(mailinglist_api.getPendingActions())

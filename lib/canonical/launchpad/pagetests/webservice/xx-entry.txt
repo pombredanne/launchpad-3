@@ -12,7 +12,7 @@ GET request to the entry's URL.
 
   >>> def get_person(person):
   ...     return webservice("""
-  ... GET /people/%s HTTP/1.1
+  ... GET /~%s HTTP/1.1
   ... Host: api.launchpad.dev
   ... """ % person)
 
@@ -36,7 +36,7 @@ entry's state, in which case the client should use PUT.
   >>> def modify_person(person, representation, method):
   ...     "A helper function to send a PUT or PATCH request to a person."
   ...     return webservice("""
-  ... %s /people/%s HTTP/1.1
+  ... %s /~%s HTTP/1.1
   ... Host: api.launchpad.dev
   ... Content-type: application/json
   ... Authorization: Basic foo.bar@canonical.com:test
@@ -63,19 +63,19 @@ use the web service to change the person's name to 'salgado2'.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/people/salgado2
+  Location: http://api.launchpad.dev/~salgado2
   <BLANKLINE>
 
 At this point we can no longer manipulate the 'salgado' Person by
-sending HTTP requests to http://api.launchpad.dev/people/salgado,
+sending HTTP requests to http://api.launchpad.dev/~salgado,
 because that Person now 'lives' at
-http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
+http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
 'salgado', we need to send a PATCH request to the new address.
 
   >>> print modify_person('salgado2', {'name' : 'salgado'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/people/salgado
+  Location: http://api.launchpad.dev/~salgado
   <BLANKLINE>
 
 # XXX leonardr 2008-03-10 blueprint=modify-data-links:
@@ -124,7 +124,7 @@ might not be acceptable as the payload of a PUT request.
 A document that's not a valid JSON document is also unacceptable.
 
   >>> print webservice("""
-  ... PATCH /people/salgado HTTP/1.1
+  ... PATCH /~salgado HTTP/1.1
   ... Host: api.launchpad.dev
   ... Content-type: application/json
   ... Authorization: Basic foo.bar@canonical.com:test
@@ -172,7 +172,7 @@ You can't change the link to a person's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/people/salgado/team_memberships'
+  >>> link = 'http://api.launchpad.dev/~salgado/team_memberships'
   >>> print modify_person('salgado',
   ...                    {'team_memberships_collection_link' : link },
   ...                    'PATCH')

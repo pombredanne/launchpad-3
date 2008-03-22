@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import sys
 from time import time
 import os
-import os.path
 
 from canonical.config import config
 from canonical.librarian.storage import _relFileLocation as relative_file_path
@@ -249,8 +248,7 @@ def delete_unreferenced_aliases(con):
     content_ids = list(content_ids)
     for i in range(0, len(content_ids), BATCH_SIZE):
         in_content_ids = ','.join(
-            (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
-            )
+            (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE]))
         # First a sanity check to ensure we aren't removing anything we
         # shouldn't be.
         cur.execute("""
@@ -378,7 +376,7 @@ def get_file_path(content_id):
     assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
             content_id,
             )
-    storage_root = config.librarian.server.root
+    storage_root = config.librarian_server.root
     # Do a basic sanity check.
     if not os.path.isdir(os.path.join(storage_root, 'incoming')):
         raise RuntimeError(
