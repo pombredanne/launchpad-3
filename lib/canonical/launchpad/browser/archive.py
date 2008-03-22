@@ -395,10 +395,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         for source in selected_sources:
             messages.append('<br/>%s' % source.displayname)
         messages.append('</p>')
-        messages.append("<p>Deletion comment: %s</p>" % comment)
+        # Replace the 'comment' content added by the user via structured(),
+        # so it will be quoted appropriately.
+        messages.append("<p>Deletion comment: %(comment)s</p>")
 
         notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(
+            structured(notification, comment=comment))
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
