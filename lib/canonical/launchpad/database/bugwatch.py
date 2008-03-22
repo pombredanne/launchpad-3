@@ -203,7 +203,15 @@ class BugWatch(SQLBase):
         assert not self.hasComment(comment_id), ("Comment with ID %s has "
             "already been imported for %s." % (comment_id, self.title))
 
-        bug_message = self.bug.linkMessage(message, bugwatch=self)
+        # When linking the message we force the owner being used to the
+        # Bug Watch Updater celebrity. This allows us to avoid trying to
+        # assign karma to the authors of imported comments, since karma
+        # should only be assigned for actions that occur within
+        # Launchpad. See bug 185413 for more details.
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
+        bug_message = self.bug.linkMessage(
+            message, bugwatch=self, user=bug_watch_updater)
 
 
 class BugWatchSet(BugSetBase):

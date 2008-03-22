@@ -52,12 +52,14 @@ ExternalBugTracker class which implements these three methods.
     ...         '2': "Example comment the second",
     ...         '3': "Example comment the third"}
     ...
+    ...     poster_tuple = ("Joe Bloggs", "joe.bloggs@example.com")
+    ...
     ...     def getCommentIds(self, bug_watch):
     ...         return sorted(self.comment_dict.keys())
     ...
     ...     def getPosterForComment(self, bug_watch, comment_id):
     ...         """Return a tuple of (displayname, email)."""
-    ...         return "Joe Bloggs", "joe.bloggs@example.com"
+    ...         return self.poster_tuple
     ...
     ...     def getMessageForComment(self, bug_watch, comment_id, poster):
     ...         """Return a Message object for a comment."""
@@ -226,10 +228,54 @@ examining the BugMessages which link the messages to the bug.
     >>> bug_message_two.bugwatch == bug_watch
     True
 
-No notifications will be generated for the imported comments:
 
-    >>> from canonical.launchpad.interfaces import IBugNotificationSet
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    0
+== Importing comments with CVE references ==
+
+If a comment contains a CVE reference, that CVE reference will be
+imported and linked to the bug.  However, the user who authored the
+comment containing the CVE reference doesn't get any karma from this
+since they aren't a valid Launchpad user, having been created during the
+import process.
+
+We'll add a listener to check for Karma events.
+
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> karma_helper = KarmaAssignedEventListener()
+    >>> karma_helper.register_listener()
+
+Importing a comment with a CVE reference will produce a CVE link in
+Launchpad but will result in no Karma records being created.
+
+    >>> external_bugtracker.comment_dict['5'] = (
+    ...     "A comment containing a CVE entry: CVE-1991-9911.")
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456...
+
+    >>> for cve in bug.cves:
+    ...     print cve.displayname
+    CVE-1991-9911
+
+Karma is only awarded for actions that occur within Launchpad. If an
+imported comment was authored by a valid Launchpad user, that user will
+receive no karma. We'll demonstrate this by making an comment which
+includes a CVE reference appear to come from a valid Launchpad user.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> external_bugtracker.poster_tuple = (
+    ...     foo_bar.displayname, foo_bar.preferredemail.email)
+    >>> external_bugtracker.comment_dict['6'] = (
+    ...     "Another comment, another CVE: CVE-1999-0593.")
+
+Once again, CVE links are created but no karma is assigned.
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 2 comments for remote bug 123456...
+
+    >>> for cve in sorted([cve.displayname for cve in bug.cves]):
+    ...     print cve
+    CVE-1991-9911
+    CVE-1999-0593
+
+    >>> karma_helper.unregister_listener()
