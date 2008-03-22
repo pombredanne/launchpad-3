@@ -10,18 +10,13 @@ The ExternalBugTracker descendant class which implements methods for
 updating bug watches on SourceForge bug trackers is
 externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     SourceForge)
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IExternalBugTracker,
-    ...     SourceForge(txn, new_bugtracker(BugTrackerType.SOURCEFORGE)))
+    ...     SourceForge('http://example.com'))
     True
 
 
@@ -30,8 +25,7 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
 The SourceForge bug status/resolution combinations map to Launchpad bug
 statuses. SourceForge.convertRemoteStatus() handles the conversion.
 
-    >>> sourceforge = SourceForge(
-    ...     txn, new_bugtracker(BugTrackerType.SOURCEFORGE))
+    >>> sourceforge = SourceForge('http://example.com')
     >>> sourceforge.convertRemoteStatus('Open').title
     'New'
     >>> sourceforge.convertRemoteStatus('Closed').title
@@ -70,19 +64,12 @@ statuses. SourceForge.convertRemoteStatus() handles the conversion.
     "Won't Fix"
 
 If the status isn't something that our SourceForge ExternalBugTracker can
-understand, Unknown will be returned and a warning logged.
+understand an UnknownRemoteStatusError will be raised.
 
     >>> sourceforge.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown status 'eggs'
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't succeed. For
-example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> sourceforge.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Initialization ==
@@ -97,8 +84,7 @@ rely on a working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestSourceForge, print_bugwatches)
-    >>> sourceforge = TestSourceForge(
-    ...     txn, new_bugtracker(BugTrackerType.SOURCEFORGE))
+    >>> sourceforge = TestSourceForge('http://example.com/')
     >>> sourceforge.initializeRemoteBugDB([1722250])
     >>> sorted(sourceforge.bugs.keys())
     [1722250]
@@ -124,6 +110,8 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.SOURCEFORGE)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
@@ -138,8 +126,10 @@ Our SourceForge ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = BugWatchUpdater(txn)
-    >>> sourceforge = TestSourceForge(txn, example_bug_tracker)
+    >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
@@ -187,6 +177,9 @@ updated:
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
+    >>> from canonical.launchpad.ftests import sync
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     sync(bug_watch)
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)

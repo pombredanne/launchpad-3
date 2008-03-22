@@ -9,7 +9,6 @@ __all__ = [
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
-    'RegistryApplication',
     'RosettaApplication',
     'ShipItApplication',
     ]
@@ -25,9 +24,8 @@ from canonical.launchpad.interfaces import (
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
-    IRosettaApplication, IShipItApplication, ITranslationGroupSet,
-    ITranslationsOverview, IWebServiceApplication)
+    IOpenIdApplication, IProductSet, IRosettaApplication, IShipItApplication,
+    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -42,10 +40,6 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
-
-
-class RegistryApplication:
-    implements(IRegistryApplication)
 
 
 class ShipItApplication:
@@ -194,10 +188,3 @@ class HWDBApplication:
 class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
-
-    # See ServiceRootResource for more on top_level_collections
-    @property
-    def top_level_collections(self):
-        return { 'bugtasks' : getUtility(IBugTaskSet),
-                 'bugs' : getUtility(IBugSet),
-                 'people' : getUtility(IPersonSet) }

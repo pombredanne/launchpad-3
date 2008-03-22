@@ -16,7 +16,7 @@ from zope.app.testing.functional import FunctionalTestSetup
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
 
-from canonical.config import dbconfig
+from canonical.config import config
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import (
     cursor, SQLBase, ZopelessTransactionManager)
@@ -62,7 +62,8 @@ def _disconnect_sqlos():
 
 def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     _disconnect_sqlos()
-    dbconfig.setConfigSection(database_config_section)
+    if dbuser is None:
+        dbuser = config[database_config_section].dbuser
     name = getUtility(IConnectionName).name
     da = getUtility(IZopeDatabaseAdapter, name)
     da.switchUser(dbuser)

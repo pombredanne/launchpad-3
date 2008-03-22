@@ -31,7 +31,7 @@ Let's do it under the wraps:
     ...     personID=sampleperson.id, teamID=team.id)
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS) # login() because we need a zope interaction.
-    >>> tm.setStatus(TeamMembershipStatus.EXPIRED, reviewer=team.teamowner)
+    >>> tm.setStatus(TeamMembershipStatus.EXPIRED, team.teamowner)
     >>> logout()
 
 Persist the change:

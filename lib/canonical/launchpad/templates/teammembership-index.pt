@@ -38,8 +38,8 @@
   <metal:macro define-macro="comment">
     <tr>
       <th>Comment:</th>
-      <td><textarea cols="40" name="comment" 
-                    tal:content="request/comment|context/reviewercomment|nothing">
+      <td><textarea cols="40" name="comment"
+                    tal:content="request/comment|context/last_change_comment|nothing">
                 </textarea>
           <div class="formHelp">This comment will be sent together with the
             notification of this change to all team administrators and this
@@ -73,13 +73,13 @@
 
 <div metal:fill-slot="main">
 
-      <div tal:condition="view/isActive"> 
+      <div tal:condition="view/isActive">
 
         <h1>Active member <tal:who replace="context/person/browsername" /></h1>
 
         <p>
           <metal:person use-macro="template/macros/person" />
-          is an <em>Active Member</em> of 
+          is an <em>Active Member</em> of
           <span tal:replace="context/team/browsername" />.
         </p>
 
@@ -143,7 +143,7 @@
         </form>
       </div>
 
-      <div tal:condition="view/isInactive"> 
+      <div tal:condition="view/isInactive">
 
         <h1>Inactive member <tal:who replace="context/person/browsername" /></h1>
         <p tal:condition="view/isExpired">
@@ -228,7 +228,7 @@
         </form>
       </div>
 
-      <div tal:condition="view/isProposed"> 
+      <div tal:condition="view/isProposed">
 
         <h1>Proposed member <tal:who replace="context/person/browsername" /></h1>
         <p>
@@ -245,8 +245,8 @@
               <th>Applied:</th>
               <td>
                 <span
-                  tal:attributes="title context/datejoined/fmt:datetime"
-                  tal:content="context/datejoined/fmt:approximatedate">
+                  tal:attributes="title context/date_created/fmt:datetime"
+                  tal:content="context/date_created/fmt:approximatedate">
                   2005-09-13
                 </span>
               </td>
@@ -276,7 +276,7 @@
 
       </div>
 
-      <div tal:condition="view/isDeclined"> 
+      <div tal:condition="view/isDeclined">
 
         <h1>Declined member <tal:who replace="context/person/browsername"
         /></h1>

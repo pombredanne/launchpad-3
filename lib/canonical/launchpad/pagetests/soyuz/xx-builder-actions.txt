@@ -113,7 +113,7 @@ high permissions.
     Name: Bob The Builder
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Trusted: True
+    Virtual: False
     Description
     The default build-slave
     Status
@@ -132,7 +132,7 @@ high permissions.
     Name: Bob The Builder
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Trusted: True
+    Virtual: False
     Description
     The default build-slave
     Status
@@ -141,10 +141,10 @@ high permissions.
     Launchpad Buildd Admins
 
 Via the 'administration' form the user not only has access to all fields
-available in 'edit' form but also can modify 'builderok',
-'failure_notes', 'trusted' and 'virtual machine' fields. All the
-consequences of those modification are covered in
-buildd-admin documentation.
+available in the 'edit' form but can also modify the 'builderok',
+'failure_notes', 'virtualized' and 'virtual machine' fields. All the
+consequences of those modifications are covered in the buildd-admin
+documentation.
 
 The simplest and most effective thing a administrator can do in this
 case is to bring the builder back to work.
@@ -161,7 +161,7 @@ case is to bring the builder back to work.
     Name: Bob The Builder
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Trusted: True
+    Virtual: False
     Description
     The default build-slave
     Status

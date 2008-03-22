@@ -24,5 +24,52 @@ resource yields a 405 error.
   ... Host: api.launchpad.dev
   ... """)
   HTTP/1.1 405 Method Not Allowed
-  Allow: GET HEAD POST PUT DELETE OPTIONS
+  Allow: GET HEAD POST PATCH PUT DELETE OPTIONS
   ...
+
+  >>> print http(r"""
+  ... DELETE /people HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+
+  >>> print http(r"""
+  ... DELETE /~salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET PUT PATCH
+  ...
+
+
+== Inappropriate media types ==
+
+An attempt to PATCH a document with unsupported media type to a
+resource yields a 415 error.
+
+  >>> print http(r"""
+  ... PATCH /~salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... Content-type: text/plain
+  ...
+  ... Foo
+  ... """)
+  HTTP/1.1 415 Unsupported Media Type
+  ...
+
+
+== Resources not exposed on the web service ==
+
+Soyuz build set (exposed on the web at +builds) are not available on the
+web service:
+
+    >>> from textwrap import dedent
+    >>> print http(dedent("""\
+    ...     GET /+builds HTTP/1.1
+    ...     Host: api.launchpad.dev
+    ...     """))
+    HTTP/1.1 404 Not Found
+    ...
+
