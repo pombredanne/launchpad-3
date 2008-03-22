@@ -35,7 +35,8 @@ from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.layers import (
-    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
+    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
+    WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
@@ -178,9 +179,9 @@ class LaunchpadView(UserAttributeCache):
     - initialize() <-- subclass this for specific initialization
     - template     <-- the template set from zcml, otherwise not present
     - user         <-- currently logged-in user
-    - render()     <-- used to render the page.  override this if you have many
-                       templates not set via zcml, or you want to do rendering
-                       from Python.
+    - render()     <-- used to render the page.  override this if you have
+                       many templates not set via zcml, or you want to do
+                       rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
@@ -348,7 +349,13 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if rootsite is None:
+    # XXX flacoste 2008/03/18 The check for the WebServiceLayer is kind
+    # of hackish, the idea is that when browsing the web service, we want
+    # URLs to point back at the web service, so we basically ignore rootsite.
+    # I don't feel like designing a proper solution today, we'll need
+    # to revisit this anyway once we tackle API versioning.
+    # Plus we already have a bunch of layer-specific hacks below...
+    if WebServiceLayer.providedBy(request) or rootsite is None:
         # This means we should use the request, or fall back to the main site.
 
         # If there is no request, fall back to the root_url from the
