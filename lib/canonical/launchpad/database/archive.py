@@ -25,6 +25,8 @@ from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
@@ -64,6 +66,12 @@ class Archive(SQLBase):
         dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
+
+    sources_cached = IntCol(
+        dbName='sources_cached', notNull=False, default=0)
+
+    binaries_cached = IntCol(
+        dbName='binaries_cached', notNull=False, default=0)
 
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
@@ -109,9 +117,12 @@ class Archive(SQLBase):
         }
 
         if self.purpose == ArchivePurpose.PPA:
+            if self.private:
+                url = config.personalpackagearchive.private_base_url
+            else:
+                url = config.personalpackagearchive.base_url
             return urlappend(
-                config.personalpackagearchive.base_url,
-                self.owner.name + '/' + self.distribution.name)
+                url, self.owner.name + '/' + self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
@@ -124,11 +135,15 @@ class Archive(SQLBase):
     def getPubConfig(self):
         """See `IArchive`."""
         pubconf = PubConfig(self.distribution)
+        ppa_config = config.personalpackagearchive
 
         if self.purpose == ArchivePurpose.PRIMARY:
             pass
         elif self.purpose == ArchivePurpose.PPA:
-            pubconf.distroroot = config.personalpackagearchive.root
+            if self.private:
+                pubconf.distroroot = ppa_config.private_root
+            else:
+                pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
                 pubconf.distroroot, self.owner.name, self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
@@ -489,18 +504,31 @@ class Archive(SQLBase):
         """See `IArchive`."""
         cache_contents = set()
 
+        # Cache owner name and displayname.
         cache_contents.add(self.owner.name)
         cache_contents.add(self.owner.displayname)
 
-        sources_cached = DistributionSourcePackageCache.selectBy(
-            archive=self)
-
+        # Cache source package name and its binaries information, binary
+        # names and summaries.
+        sources_cached = DistributionSourcePackageCache.select(
+            "archive = %s" % sqlvalues(self), prejoins=["distribution"])
         for cache in sources_cached:
+            cache_contents.add(cache.distribution.name)
             cache_contents.add(cache.name)
             cache_contents.add(cache.binpkgnames)
             cache_contents.add(cache.binpkgsummaries)
 
+        # Cache distroseries names with binaries.
+        binaries_cached = DistroSeriesPackageCache.select(
+            "archive = %s" % sqlvalues(self), prejoins=["distroseries"])
+        for cache in binaries_cached:
+            cache_contents.add(cache.distroseries.name)
+
+        # Collapse all relevant terms in 'package_description_cache' and
+        # update the package counters.
         self.package_description_cache = " ".join(cache_contents)
+        self.sources_cached = sources_cached.count()
+        self.binaries_cached = binaries_cached.count()
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""

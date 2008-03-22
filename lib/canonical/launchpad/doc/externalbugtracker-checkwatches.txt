@@ -51,6 +51,6 @@ get_external_bugtracker supports five external bug tracker types:
     Debbugs --> <canonical...debbugs.DebBugs ...>
     Mantis --> <canonical...mantis.Mantis object at ...>
     Roundup --> <canonical...roundup.Roundup ...>
-    Request Tracker (RT) --> <canonical...base.RequestTracker ...>
-    SourceForge --> <canonical...base.SourceForge ...>
+    Request Tracker (RT) --> <canonical...rt.RequestTracker ...>
+    SourceForge --> <canonical...sourceforge.SourceForge ...>
     Trac --> <canonical...trac.Trac ...>
