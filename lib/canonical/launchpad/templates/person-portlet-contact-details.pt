@@ -125,10 +125,7 @@
 	    </th>
             <td title="This URL is not disclosed to others.">
               <img src="/@@/private" alt="" />
-              <a tal:attributes="href view/openid_identity_url"
-		 tal:content="view/openid_identity_url">
-		http://foo.com
-	      </a>
+              <tal:openid-login content="view/openid_identity_url" />
             </td>
 	  </tr>
 	</tal:can-view-openid-login>

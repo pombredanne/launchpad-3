@@ -112,7 +112,7 @@ That is, of course, unless the team doesn't have one:
       (Launchpad notifications are sent to all team members)
 
 
-== OpenID login URL hiding ==
+== OpenID login URL ==
 
 Launchpad.net can be used as an OpenID login provider.  Users may
 enter a Launchpad.net URL in order to log in to services that accept
@@ -141,17 +141,10 @@ Details portlet.
     >>> logout()
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~jdub')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email:
-    jeff.waugh@ubuntulinux.com
-    Wiki:
-    https://wiki.ubuntu.com/JeffWaugh
-    IRC:
-    jeff
-    on network irc.freenode.net
-    Jabber:
-    &#106;&#101;&#102;&#102;&#64;&#106;&#97;&#98;&#98;&#101;&#114;&#46;&#111;&#114;&#103;
+    >>> portlet = extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-details'))
+    >>> print ('OpenID login:' not in portlet) or portlet
+    True
     >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> openid_testers in name16.teams_participated_in
@@ -162,12 +155,7 @@ Details portlet.
     >>> browser.open('http://launchpad.dev/~name16')
     >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
-    Email:
-    foo.bar@canonical.com
-    Wiki:
-    https://wiki.ubuntu.com/FooBar
-    OpenPGP keys:
-    12345678
+    ...
     OpenID login:
     (What's this?)
     http://openid.launchpad.dev/+id/name16_oid
@@ -176,14 +164,10 @@ Other users who visit the page do not see the URL.
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name16')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email:
-    foo.bar@canonical.com
-    Wiki:
-    https://wiki.ubuntu.com/FooBar
-    OpenPGP keys:
-    12345678
+    >>> portlet = extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-details'))
+    >>> print ('OpenID login:' not in portlet) or portlet
+    True
 
 
 == Summary Pagelets ==
