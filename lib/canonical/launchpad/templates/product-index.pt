@@ -20,7 +20,7 @@
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive <a href="+review">(change this)</a>
   </p>
-  
+
   <p id="project-admin-whiteboard" class="whiteboard"
    tal:condition="context/required:launchpad.Admin">
     <span tal:content="context/reviewer_whiteboard" />

@@ -452,39 +452,63 @@ downloadble files are shown.  For instance if Firefox has a trunk with
 no releases and a 3.0 series with releases 3.0b1 and 3.0, each of
 which has downloadable files, only the 3.0 release files will be shown.
 
-If there are no releases that have downloadable files then the portlet
+If there are no releases that have download files then the portlet
 is not displayed.
 
-    >>> anon_browser.open('http://launchpad.dev/firefox')
-    >>> main = find_main_content(anon_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    Mozilla Firefox...
-    Latest project files
-      firefox-0.9.2.orig.tar.gz (md5...)...
+The latest release for "ALSA-utils" with download files is version 1.0.9a.
 
-If we now delete the file shown, the only one for that release,
+    >>> anon_browser.open('http://launchpad.dev/alsa-utils')
+    >>> downloads = find_tag_by_id(anon_browser.contents,
+    ...                            'portlet-projectfiles')
+    >>> print extract_text(downloads).encode('ascii', 'backslashreplace')
+    Latest downloads
+    Release 1.0.9a:
+      alsa-1.0.9a.tgz (md5...)...
+      README.txt (md5...)...
+      alsa-1.0.9a.dmg (md5...)...
+      alsa-1.0.9a.exe (md5...)...
+    &raquo; See all downloads&#8230;
+
+'See all downloads...' is a link to the +download page.
+
+    >>> print downloads.fetch('a')[-1]['href']
+    +download
+
+If we now delete all of the files for release 1.0.9a
 then the files for the next release will be shown.
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/trunk/0.9.2')
-    >>> checkbox = firefox_owner.getControl(name="checkbox_0")
+    >>> alsa_owner = setupBrowser(
+    ...     auth='Basic mark@hbd.com:test')
+    >>> alsa_owner.open('http://launchpad.dev/alsa-utils/trunk/1.0.9a')
+    >>> checkbox = alsa_owner.getControl(name="checkbox_0")
     >>> checkbox.value = checkbox.options
-    >>> firefox_owner.getControl('Delete Files').click()
-    >>> get_feedback_messages(firefox_owner.contents)
-    [u'1 file has been deleted.']
+    >>> checkbox = alsa_owner.getControl(name="checkbox_1")
+    >>> checkbox.value = checkbox.options
+    >>> checkbox = alsa_owner.getControl(name="checkbox_2")
+    >>> checkbox.value = checkbox.options
+    >>> checkbox = alsa_owner.getControl(name="checkbox_3")
+    >>> checkbox.value = checkbox.options
+    >>> alsa_owner.getControl('Delete Files').click()
+    >>> get_feedback_messages(alsa_owner.contents)
+    [u'4 files have been deleted.']
 
-    >>> anon_browser.open('http://launchpad.dev/firefox')
-    >>> main = find_main_content(anon_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    Mozilla Firefox...
-    Latest project files
-       foo3.txt...
-       foo.txt...
+    >>> anon_browser.open('http://launchpad.dev/alsa-utils')
+    >>> downloads = find_tag_by_id(anon_browser.contents,
+    ...                            'portlet-projectfiles')
+    >>> print extract_text(downloads).encode('ascii', 'backslashreplace')
+    Latest downloads
+    Release 1.0.8:
+      README.txt (md5...)...
+      alsa-1.0.8.tgz (md5...)...
+      alsa-1.0.8.dmg (md5...)...
+      alsa-1.0.8.exe (md5...)...
+    &raquo; See all downloads&#8230;...
 
 A product with no download files will not even have the portlet displayed.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
     >>> main = find_main_content(anon_browser.contents)
-    >>> 'Latest project files' in extract_text(main).encode('ascii', 'backslashreplace')
+    >>> 'Latest downloads' in extract_text(main).encode('ascii', 'backslashreplace')
     False
 
 == Scheme redirection ==
