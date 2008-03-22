@@ -27,11 +27,10 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -396,7 +395,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.private:
             return []
-        
+
         duplicate_subscriptions = set(
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
@@ -609,11 +608,9 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        attachment = getUtility(IBugAttachmentSet).create(
+        return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
-            title=title, message=message)
-        notify(SQLObjectCreatedEvent(attachment))
-        return attachment
+            title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):
         """See `IBug`."""

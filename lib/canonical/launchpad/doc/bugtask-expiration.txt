@@ -117,6 +117,22 @@ Let's also make some bugs that almost qualify for expiration.
     >>> assigned_bugtask.bug.can_expire
     False
 
+    # A bug with two Ubuntu tasks, one assigned Incomplete, and one
+    # Invalid task, is not expirable.
+    >>> another_assigned_bugtask = create_old_bug('assigned', 61, ubuntu)
+    >>> another_assigned_bugtask.transitionToAssignee(sample_person)
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> invalid_bugtask = bugtaskset.createTask(
+    ...     bug=another_assigned_bugtask.bug, owner=sample_person,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_evolution.sourcepackagename,
+    ...     status=BugTaskStatus.INVALID)
+    >>> sync_bugtasks([another_assigned_bugtask, invalid_bugtask])
+    >>> another_assigned_bugtask.bug.permits_expiration
+    True
+    >>> another_assigned_bugtask.bug.can_expire
+    False
+
     # A bugtask that is not expirable because its status is CONFIRMED.
     >>> confirmed_bugtask = create_old_bug(
     ...     'confirmed', 61, ubuntu, status=BugTaskStatus.CONFIRMED)
@@ -311,7 +327,6 @@ indicates the anonymous user.
 If one of the bugs is set to private, anonymous users can no longer see
 it as being marked for expiration.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> private_bug = ubuntu_bugtask.bug
     >>> private_bug.title
@@ -381,11 +396,11 @@ days or more.
 
 == Running the script ==
 
-There are no Invalid Bugtasks in sampledata.
+There is one Invalid Bugtasks in sampledata, from the tests above.
 
     >>> from canonical.launchpad.database import BugTask
     >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
-    0
+    1
 
     >>> # We want to check the hoary bugtask messages later.
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
@@ -445,16 +460,16 @@ was expired. The remaining bugtasks are unchanged.
     recent       True     31  Incomplete  False     False  False  False
     no_expire    False    61  Incomplete  False     False  False  False
 
-Only the three test bugtasks were expired in the entire database.
+Only the three test bugtasks were expired in the entire database. The
+evolution task was already Invalid.
 
     >>> invalid_bugtasks = BugTask.selectBy(status=BugTaskStatus.INVALID)
-    >>> invalid_bugtasks.count()
-    3
     >>> summarize_bugtasks(invalid_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True      0  Invalid     False     False  False  False
     hoary        True      0  Invalid     False     False  False  False
     jokosher     True      0  Invalid     False     False  False  False
+    evolution    True     61  Invalid     False     False  False  False
 
 The bugtasks statusexplanation was updated to explain the change in
 status.

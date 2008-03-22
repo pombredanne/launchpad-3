@@ -57,11 +57,12 @@ Launchpad statuses:
     'Fix Released'
 
 Passing a status which the RequestTracker instance can't understand will
-result in a status of 'Unknown' being returned:
+result in an UnknownRemoteStatusError being raised.
 
     >>> rt.convertRemoteStatus('spam').title
-    WARNING:...:Unknown status 'spam'.
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Initialisation ==

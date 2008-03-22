@@ -108,7 +108,7 @@ class TacFile(Service):
 class MailmanService(Service):
     @property
     def should_launch(self):
-        return config.mailman is not None and config.mailman.launch
+        return config.mailman.launch
 
     def launch(self):
         # Don't run the server if it wasn't asked for.  Also, don't attempt to
@@ -136,14 +136,15 @@ class CodebrowseService(Service):
 
 
 def prepare_for_librarian():
-    if not os.path.isdir(config.librarian.server.root):
-        os.makedirs(config.librarian.server.root, 0700)
+    if not os.path.isdir(config.librarian_server.root):
+        os.makedirs(config.librarian_server.root, 0700)
 
 
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
-                         config.librarian.server, prepare_for_librarian),
-    'buildsequencer': TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
+                         config.librarian_server, prepare_for_librarian),
+    'buildsequencer': TacFile('buildsequencer',
+                              'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
     'authserver': TacFile('authserver', 'daemons/authserver.tac',
                           config.authserver),
@@ -166,7 +167,7 @@ def make_css_slimmer():
 
 
 def get_services_to_run(requested_services):
-    """Return a list of services (i.e. TacFiles) given a list of service names.
+    """Return a list of services (TacFiles) given a list of service names.
 
     If no names are given, then the list of services to run comes from the
     launchpad configuration.

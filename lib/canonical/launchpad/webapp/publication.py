@@ -70,6 +70,9 @@ class LaunchpadBrowserPublication(
     This subclass undoes the ZODB-specific things in ZopePublication, a
     superclass of z.a.publication.BrowserPublication.
     """
+    # This class does not __init__ its parent or specify exception types
+    # so that it can replace its parent class.
+    # pylint: disable-msg=W0231,W0702
 
     root_object_interface = ILaunchpadRoot
 
@@ -125,8 +128,9 @@ class LaunchpadBrowserPublication(
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
-        if cache.has_key(key):
-            del cache[key]
+        connection = cache.pop(key, None)
+        if connection is not None:
+            connection._makeObsolete()
         # SQLOS Connection objects also only register themselves for
         # the transaction in which they are instantiated - this is
         # no longer a problem as we are nuking the connection cache,
@@ -235,7 +239,7 @@ class LaunchpadBrowserPublication(
 
         If a non-restricted URL can not be determined, None is returned.
         """
-        base_host = config.launchpad.vhosts.mainsite.hostname
+        base_host = config.vhost.mainsite.hostname
         production_host = config.launchpad.non_restricted_hostname
         # If we don't have a production hostname, or it is the same as
         # this instance, then we can't provide a nonRestricted URL.

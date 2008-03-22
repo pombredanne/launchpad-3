@@ -12,10 +12,7 @@ The class that implements EBT is called Bugzilla. It works differently
 depending on which version of Bugzilla it is talking to. If it's a
 version we can't parse, UnparseableBugTrackerVersion is raised:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
@@ -28,8 +25,6 @@ Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestBugzilla
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
@@ -75,19 +70,14 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
 
-If the status can't be converted, Unknown is returned, and a warning
-is logged.
+If the status can't be converted an UnknownRemoteStatusError will be
+returned.
 
     >>> external_bugzilla.convertRemoteStatus('FOO').title
-    WARNING:...:Unknown Bugzilla status 'FOO' at
-    http://bugzilla.gnome.org/bugs.
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> external_bugzilla.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
 
 Updating Bug Watches
 --------------------
@@ -131,6 +121,9 @@ Let's add a handful of watches:
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
     ...         'RESOLVED', 'FIXED')
     ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
+    >>> from canonical.launchpad.ftests import sync
+    >>> for bug_watch in gnome_bugzilla.watches:
+    ...     sync(bug_watch)
 
 Set the batch threshold higher than the number of bug watches.
 
@@ -172,10 +165,14 @@ Let's add a few more watches:
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
     ...         'ASSIGNED', '')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+    >>> for bug_watch in gnome_bugzilla.watches:
+    ...     sync(bug_watch)
 
-Set the batch threshold very low:
+
+Set the batch threshold very low and remove the batch size limit:
 
     >>> external_bugzilla.batch_query_threshold = 0
+    >>> external_bugzilla.batch_size = None
 
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
@@ -248,6 +245,8 @@ synced:
     ...     external_bugzilla, [thunderbird_task.bugwatch])
     INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
 
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
@@ -267,6 +266,8 @@ status mapping.
     ...     external_bugzilla, [thunderbird_task.bugwatch])
     INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
 
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.bugwatch.remotestatus
@@ -279,16 +280,20 @@ same remote bug, both will of course be updated.
     >>> bug_watch1 = bug_watch_set.createBugWatch(
     ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
+    >>> bug_watch1_id = bug_watch1.id
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_watch2 = bug_watch_set.createBugWatch(
     ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
+    >>> bug_watch2_id = bug_watch2.id
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [bug_watch1, bug_watch2])
     INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
 
+    >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> print bug_watch1.remotestatus
     RESOLVED FIXED
+    >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> print bug_watch2.remotestatus
     RESOLVED FIXED
 
@@ -307,7 +312,9 @@ bug tracker, an error is logged.
 The error is also recorded in each bug watch's last_error_type field so that
 it can be displayed to the user.
 
+    >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> bug_watch1.last_error_type.title
     'Unparsable Bug'
+    >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> bug_watch2.last_error_type.title
     'Unparsable Bug'

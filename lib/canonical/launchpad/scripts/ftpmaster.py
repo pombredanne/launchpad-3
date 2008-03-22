@@ -1178,10 +1178,6 @@ class PackageCopier(SoyuzScript):
             raise SoyuzScriptError(
                 "Cannot operate with destination PARTNER and PPA "
                 "simultaneously.")
-        if ((self.options.archive_owner_name and not self.options.to_ppa)
-            and self.options.include_binaries):
-            raise SoyuzScriptError(
-                "Cannot copy binaries from PPA to PRIMARY archive.")
 
     def mainTask(self):
         """Execute package copy procedure.

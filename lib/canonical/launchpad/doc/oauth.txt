@@ -1,4 +1,4 @@
-= OAuth =
+= OAuth (http://oauth.net/core/1.0/) =
 
 This is a mechanism for allowing a third party application to access
 Launchpad on a user's behalf.  These applications are identified by a
@@ -7,10 +7,10 @@ unique key and are stored as OAuthConsumers.
 These applications (also called consumers) are managed by the
 OAuthConsumerSet utility.
 
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumer, IOAuthConsumerSet)
+    ...     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet,
+    ...     IOAuthRequestToken, IPersonSet, OAuthPermission)
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> verifyObject(IOAuthConsumerSet, consumer_set)
     True
@@ -25,11 +25,122 @@ OAuthConsumerSet utility.
     >>> print consumer_set.getByKey('gfdsa')
     None
 
-As mentioned above, the keys are unique, so we can't create a second Consumer
-with the same key.
+As mentioned above, the keys are unique, so we can't create a second
+Consumer with the same key.
 
     >>> consumer_set.new(key='asdfg')
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
+
+== Request tokens ==
+
+When a consumer wants to access protected resources on Launchpad, it
+must first ask for an OAuthRequestToken, which is then used when the
+consumer sends the user to the Launchpad authorization page.
+
+
+=== Creating request tokens ===
+
+The request tokens are created using IOAuthConsumer.newRequestToken().
+
+    >>> request_token = consumer.newRequestToken()
+    >>> verifyObject(IOAuthRequestToken, request_token)
+    True
+
+The token's key and secret have a length of 20 and 80 respectively.
+
+    >>> len(request_token.key)
+    20
+    >>> len(request_token.secret)
+    80
+
+Initially, a token does not have a person or permission associated with
+it as the consumer doesn't know what the user's identity is on
+Launchpad.
+
+    >>> print request_token.person
+    None
+    >>> print request_token.permission
+    None
+    >>> print request_token.date_reviewed
+    None
+
+Once the user reviews (approve/decline) the consumer's request, the
+token is considered used and can only be exchanged for an access token
+(when the access is granted by the user).
+
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> request_token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(request_token)
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> print request_token.person.name
+    salgado
+    >>> request_token.permission
+    <DBItem OAuthPermission.WRITE_PUBLIC...
+    >>> request_token.date_reviewed <= datetime.now(pytz.timezone('UTC'))
+    True
+    >>> request_token.is_reviewed
+    True
+
+
+=== Retrieving request tokens ===
+
+Any consumer can retrieve its request tokens as long as it knows their
+keys.
+
+    >>> consumer.getRequestToken(request_token.key) == request_token
+    True
+
+If there is no token with the given key, or the existing token is
+associated with another consumer, getRequestToken() will return None.
+
+    >>> print consumer.getRequestToken('zzzzzzzz')
+    None
+    >>> consumer2 = consumer_set.new(key='foobar')
+    >>> print consumer2.getRequestToken(request_token.key)
+    None
+
+
+=== Exchanging request tokens for access tokens ===
+
+Once a request token has been reviewed it may be exchanged for an access
+token. That may happen only if the user actually granted some sort of
+permission to the consumer when reviewing the request.
+
+    >>> request_token.is_reviewed
+    True
+    >>> access_token = request_token.createAccessToken()
+    >>> verifyObject(IOAuthAccessToken, access_token)
+    True
+
+After the access token is generated, the access token is deleted.
+
+    >>> print consumer.getRequestToken(request_token.key)
+    None
+
+If the request token hasn't been reviewed yet, it can't be used to
+create an access token.
+
+    >>> request_token = consumer.newRequestToken()
+    >>> request_token.is_reviewed
+    False
+    >>> access_token = request_token.createAccessToken()
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+
+The same holds true for request tokens that have UNAUTHORIZED as their
+permission.
+
+    >>> request_token.review(salgado, OAuthPermission.UNAUTHORIZED)
+    >>> request_token.is_reviewed
+    True
+    >>> access_token = request_token.createAccessToken()
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...

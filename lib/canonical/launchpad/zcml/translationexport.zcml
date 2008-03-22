@@ -54,4 +54,16 @@
         factory="canonical.launchpad.translationformat.kde_po_exporter.KdePOExporter"
         />
 
+    <content
+        class="canonical.launchpad.translationformat.xpi_po_exporter.XPIPOExporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
+    </content>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="canonical.launchpad.translationformat.xpi_po_exporter.XPIPOExporter"
+        />
+
 </configure>

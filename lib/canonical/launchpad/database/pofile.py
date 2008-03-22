@@ -1270,11 +1270,13 @@ class POFileToTranslationFileDataAdapter:
             msgset = TranslationMessageData()
             msgset.is_obsolete = (row.sequence == 0)
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
 
-            forms = [
-                (0, row.translation0), (1, row.translation1),
-                (2, row.translation2), (3, row.translation3)]
+            forms = list(enumerate([
+                getattr(row, "translation%d" % form)
+                for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]))
             max_forms = pofile.plural_forms
             for (pluralform, translation) in forms[:max_forms]:
                 if translation is not None:

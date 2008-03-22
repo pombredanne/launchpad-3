@@ -26,7 +26,9 @@ def get_cookie_domain(request_domain):
     all virtual hosts of the Launchpad instance.  If no matching
     domain is known, None is returned.
     """
-    for domain in config.launchpad.cookie_domains:
+    cookie_domains = [v.strip()
+                      for v in config.launchpad.cookie_domains.split(',')]
+    for domain in cookie_domains:
         assert not domain.startswith('.'), \
                "domain should not start with '.'"
         dotted_domain = '.' + domain
@@ -40,7 +42,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
     def __init__(self):
         CookieClientIdManager.__init__(self)
-        self.namespace = config.launchpad.session.cookie
+        self.namespace = config.launchpad_session.cookie
         # Set the cookie life time to something big.
         # It should be larger than our session expiry time.
         self.cookieLifetime = 1 * YEARS
