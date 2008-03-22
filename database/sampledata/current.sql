@@ -623,6 +623,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -915,10 +918,10 @@ ALTER TABLE branchrevision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236', 1, NULL);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (4, 64, 29, '2007-05-28 02:41:07.938677', 1, NULL);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (5, 64, 30, '2007-05-28 02:41:07.938677', 1, NULL);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (4, 64, 29, '2007-05-28 02:41:07.938677', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (5, 64, 30, '2007-05-28 02:41:07.938677', 1, NULL, 0);
 
 
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
@@ -1234,13 +1237,13 @@ ALTER TABLE bugtask ENABLE TRIGGER ALL;
 
 ALTER TABLE bugtracker DISABLE TRIGGER ALL;
 
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only', '2006-10-16 18:31:43.195685');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugs', 16, 'Jeff Waugh, in his pants.', '2006-10-16 18:31:43.197325');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL, '2006-10-16 18:31:43.197881');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL, '2006-10-16 18:31:43.198413');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only', '2006-10-16 18:31:43.195685', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugs', 16, 'Jeff Waugh, in his pants.', '2006-10-16 18:31:43.197325', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL, '2006-10-16 18:31:43.197881', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL, '2006-10-16 18:31:43.198413', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL);
 
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
@@ -1306,8 +1309,8 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "virtualized", url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "virtualized", url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1373,6 +1376,13 @@ ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
 
 
 ALTER TABLE codereviewmessage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewvote DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewvote ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -3901,7 +3911,7 @@ ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
 
-
+INSERT INTO OAuthConsumer (id, disabled, date_created, secret, key) VALUES (1, 'f', CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '', 'foobar123451432');
 
 ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
 
