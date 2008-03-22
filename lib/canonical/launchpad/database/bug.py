@@ -500,7 +500,7 @@ class Bug(SQLBase):
             (also_notified_subscribers - direct_subscribers),
             key=operator.attrgetter('displayname'))
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, duplicateof=None, old_bug=None):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -520,21 +520,33 @@ class Bug(SQLBase):
                     self.duplicateof.getBugNotificationRecipients(
                         duplicateof=self.duplicateof))
                 recipients.update(dupe_recipients)
+        # XXX Tom Berger 2008-03-18:
+        # We want to look up the recipients for `old_bug` too,
+        # but for this to work, this code has to move out of the
+        # class and into a free function, since `old_bug` is a
+        # `Snapshot`, and doesn't have any of the methods of the
+        # original `Bug`.
         return recipients
 
-    def addChangeNotification(self, text, person, when=None):
+    def addChangeNotification(self, text, person, recipients=None, when=None):
         """See `IBug`."""
+        if recipients is None:
+            recipients = self.getBugNotificationRecipients()
         if when is None:
             when = UTC_NOW
         message = MessageSet().fromText(
             self.followup_subject(), text, owner=person, datecreated=when)
-        BugNotification(
-            bug=self, is_comment=False, message=message, date_emailed=None)
+        getUtility(IBugNotificationSet).addNotification(
+             bug=self, is_comment=False,
+             message=message, recipients=recipients)
 
-    def addCommentNotification(self, message):
+    def addCommentNotification(self, message, recipients=None):
         """See `IBug`."""
-        BugNotification(
-            bug=self, is_comment=True, message=message, date_emailed=None)
+        if recipients is None:
+            recipients = self.getBugNotificationRecipients()
+        getUtility(IBugNotificationSet).addNotification(
+             bug=self, is_comment=True,
+             message=message, recipients=recipients)
 
     def expireNotifications(self):
         """See `IBug`."""
