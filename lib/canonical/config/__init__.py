@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 '''
 Configuration information pulled from launchpad.conf.
 
@@ -86,7 +86,6 @@ class CanonicalConfig:
         it will load launchpad-lazr.conf.
         """
         self._process_name = process_name
-
 
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""

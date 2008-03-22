@@ -1,3 +1,5 @@
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+
 """
 The One True Way to send mail from the Launchpad application.
 

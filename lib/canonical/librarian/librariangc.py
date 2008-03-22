@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Librarian garbage collection routines"""
 
 __metaclass__ = type
