@@ -103,8 +103,7 @@ def print_info(info):
         print team_name
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
-            if (config.mailman is not None and
-                config.mailman.archive_address and
+            if (config.mailman.archive_address and
                 address == config.mailman.archive_address):
                 # Don't print this information
                 pass

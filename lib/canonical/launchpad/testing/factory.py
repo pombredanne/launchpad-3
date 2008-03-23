@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
-    ILaunchpadCelebrities,
     IPersonSet,
     IProductSet,
     IRevisionSet,
@@ -226,6 +225,7 @@ class LaunchpadObjectFactory:
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
             proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
+            proposal.commit_message = self.getUniqueString('commit message')
             proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
@@ -331,19 +331,20 @@ class LaunchpadObjectFactory:
         if svn_branch_url is cvs_root is cvs_module is None:
             svn_branch_url = self.getUniqueURL()
 
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = self.makeBranch(BranchType.IMPORTED, owner=vcs_imports)
+        product = self.makeProduct()
+        branch_name = self.getUniqueString('name')
         registrant = self.makePerson()
-
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
             return code_import_set.new(
-                registrant, branch, rcs_type=RevisionControlSystems.SVN,
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.SVN,
                 svn_branch_url=svn_branch_url)
         else:
             return code_import_set.new(
-                registrant, branch, rcs_type=RevisionControlSystems.CVS,
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
 
     def makeCodeImportEvent(self):

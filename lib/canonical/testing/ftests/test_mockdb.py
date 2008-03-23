@@ -90,7 +90,7 @@ class MockDbTestCase(unittest.TestCase):
         """Open a connection to the (possibly fake) database."""
         if connection_string is None:
             connection_string = "dbname=%s user=launchpad host=%s" % (
-                    config.dbname, config.dbhost
+                    config.database.dbname, config.database.dbhost
                     )
         if self.mode == 'direct':
             con = psycopg.connect(connection_string)
@@ -146,7 +146,7 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             for dbuser in ['launchpad', 'testadmin']:
                 connection_string = "dbname=%s user=%s host=%s" % (
-                        config.dbname, dbuser, config.dbhost
+                        config.database.dbname, dbuser, config.database.dbhost
                         )
                 con = self.connect(connection_string)
                 cur = con.cursor()
@@ -163,7 +163,7 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             connection_string = (
                     "dbname=not_a_sausage host=%s user=yourmom"
-                    % (config.dbhost))
+                    % (config.database.dbhost))
             self.assertRaises(
                     psycopg.OperationalError, self.connect, connection_string
                     )

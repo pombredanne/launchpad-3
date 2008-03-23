@@ -33,4 +33,9 @@
       <allow interface="canonical.launchpad.interfaces.IMessageSet" />
   </securedutility>
 
+  <!-- Some message have a canonical_url -->
+  <adapter for="canonical.launchpad.interfaces.IMessage"
+    provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+    factory="canonical.launchpad.browser.message.message_to_canonical_url_data"
+    />
 </configure>

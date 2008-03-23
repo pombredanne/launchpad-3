@@ -6,16 +6,13 @@ __metaclass__ = type
 __all__ = [
     'ITeamMembershipEntry',
     'TeamMembershipEntry',
-    'PersonTeamMembershipCollection'
     ]
-
-import operator
 
 from zope.component import adapts
 from zope.schema import Object, Text
 
 from canonical.lazr import decorates
-from canonical.lazr.rest import Entry, ScopedCollection
+from canonical.lazr.rest import Entry
 from canonical.lazr.interfaces import IEntry
 
 from canonical.launchpad.interfaces import IPerson, ITeamMembership
@@ -28,12 +25,12 @@ class ITeamMembershipEntry(IEntry):
     # let us reuse or copy fields from IPerson.
     team = Object(schema=IPerson)
     member = Object(schema=IPerson)
-    reviewer = Object(schema=IPerson)
+    last_changed_by = Object(schema=IPerson)
 
     date_joined = Text(title=u"Date Joined", required=True, readonly=True)
     date_expires = Text(title=u"Date Expires", required=False, readonly=False)
-    reviewer_comment = Text(title=u"Reviewer Comment", required=False,
-                           readonly=False)
+    last_change_comment = Text(
+        title=u"Comment on the last change", required=False, readonly=False)
     status = Text(title=u"Status of the membership", required=True)
 
 
@@ -42,15 +39,6 @@ class TeamMembershipEntry(Entry):
     adapts(ITeamMembership)
     decorates(ITeamMembershipEntry)
     schema = ITeamMembershipEntry
-
-    # The path to a team membership starts at the top-level collection
-    # of people (thus 'people'). Below that collection is a particular
-    # person: the person who's the 'member' side of the member-team
-    # relationship (thus attrgetter('member')). That person has a
-    # collection of team memberships (thus 'team_memberships'), which
-    # is the parent collection of any particular membership.
-    _parent_collection_path = ['people', operator.attrgetter('member'),
-                              'team_memberships']
 
     @property
     def member(self):
@@ -68,26 +56,7 @@ class TeamMembershipEntry(Entry):
         return self.context.dateexpires
 
     @property
-    def reviewer_comment(self):
+    def last_change_comment(self):
         """See `ITeamMembershipEntry`."""
-        return self.context.reviewercomment
+        return self.context.last_change_comment
 
-
-class PersonTeamMembershipCollection(ScopedCollection):
-    """A collection of team memberships for a person.
-
-    There will be one membership for each team of which the person is
-    a member.
-    """
-
-    def getEntryPath(self, entry):
-        """See `ICollection`."""
-        return entry.team.name
-
-    def lookupEntry(self, name):
-        """Find a membership by team name."""
-        for membership in self.collection:
-            if membership.team.name == name:
-                return membership
-        else:
-            return None

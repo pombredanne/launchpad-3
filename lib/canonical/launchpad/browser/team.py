@@ -18,6 +18,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -26,6 +27,7 @@ from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
@@ -35,7 +37,7 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
+    ITeamCreation, LoginTokenType, MailingListStatus,
     TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
@@ -612,6 +614,16 @@ class TeamBrandingView(BrandingChangeView):
 
     schema = ITeam
     field_names = ['icon', 'logo', 'mugshot']
+
+
+class ITeamMember(Interface):
+    """The interface used in the form to add a new member to a team."""
+
+    newmember = PublicPersonChoice(
+        title=_('New member'), required=True,
+        vocabulary='ValidTeamMember',
+        description=_("The user or team which is going to be "
+                        "added as the new member of this team."))
 
 
 class TeamMemberAddView(LaunchpadFormView):

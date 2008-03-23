@@ -98,8 +98,9 @@ class SMTPServer:
         # Import this here since sys.path won't be set up properly when this
         # module is imported.
         from canonical.config import config
+        from canonical.launchpad.mailman.config import configure_smtp
         s = socket.socket()
-        s.connect(config.mailman.smtp)
+        s.connect(configure_smtp(config.mailman.smtp))
         s.setblocking(0)
         s.send(command + '\r\n')
         s.close()
@@ -384,7 +385,7 @@ def prepare_for_sync():
     # then copy our current Mailman stuff to it, lock, stock, and barrel.
     tempdir = tempfile.mkdtemp()
     source_dir = os.path.join(tempdir, 'production')
-    shutil.copytree(config.mailman.build.var_dir, source_dir, symlinks=True)
+    shutil.copytree(config.mailman.build_var_dir, source_dir, symlinks=True)
     # Now, we have to mess up the production database by tweaking the email
     # addresses of all the mailing lists.
     login('foo.bar@canonical.com')

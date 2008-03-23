@@ -1,5 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,W0102
 
 __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
@@ -21,7 +21,8 @@ from zope.component import getUtility
 import pytz
 
 from sqlobject.sqlbuilder import AND, SQLConstant
-from sqlobject import ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol
+from sqlobject import (
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
@@ -179,7 +180,8 @@ class ShippingRequest(SQLBase):
     def setRequestedQuantities(self, quantities):
         """See IShippingRequest"""
         assert not (self.isShipped() or self.isCancelled())
-        self._setQuantities(quantities, set_approved=False, set_requested=True)
+        self._setQuantities(
+            quantities, set_approved=False, set_requested=True)
 
     def setApprovedQuantities(self, quantities):
         """See IShippingRequest"""
@@ -431,9 +433,9 @@ class ShippingRequestSet:
         subject = "Report of auto-%s requests" % action
         simple_sendmail(from_addr, to_addr, subject, body)
 
-    def new(self, recipient, recipientdisplayname, country, city, addressline1,
-            phone, addressline2=None, province=None, postcode=None,
-            organization=None, reason=None, shockandawe=None):
+    def new(self, recipient, recipientdisplayname, country, city,
+            addressline1, phone, addressline2=None, province=None,
+            postcode=None, organization=None, reason=None, shockandawe=None):
         """See IShippingRequestSet"""
         # Only the shipit-admins team can have more than one open request
         # at a time.
@@ -585,8 +587,8 @@ class ShippingRequestSet:
             request = self.get(request_id)
             if not request.isApproved():
                 # This request's status may have been changed after we started
-                # running the script. Now it's not approved anymore and we can't
-                # export it.
+                # running the script. Now it's not approved anymore and we
+                # can't export it.
                 continue
             assert not (request.isCancelled() or request.isShipped())
             request.status = ShippingRequestStatus.SHIPPED
@@ -610,7 +612,7 @@ class ShippingRequestSet:
 
     def _getRequestedCDCount(
         self, current_series_only, country=None, approved=False):
-        """Return the number of Requested CDs for each flavour and architecture.
+        """The number of Requested CDs for each flavour and architecture.
 
         If country is not None, then consider only CDs requested by people on
         that country.
@@ -634,7 +636,8 @@ class ShippingRequestSet:
                     shippingrequest.shipment IS NOT NULL AND
                     shippingrequest.id = requestedcds.request AND
                     requestedcds.flavour = %s AND
-                    requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
+                    requestedcds.architecture = %s
+                    """ % sqlvalues(flavour, arch)
                 query_str += series_filter
                 if country is not None:
                     query_str += (" AND shippingrequest.country = %s"
@@ -650,12 +653,16 @@ class ShippingRequestSet:
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
         header = [
-            'Country', 'Total Shipped Ubuntu', 'Total Shipped Kubuntu',
-            'Total Shipped Edubuntu', 'Total Shipped', 'Shipped Ubuntu x86 CDs',
-            'Shipped Ubuntu AMD64 CDs', 'Shipped Ubuntu PPC CDs',
+            'Country',
+            'Total Shipped Ubuntu',
+            'Total Shipped Kubuntu',
+            'Total Shipped Edubuntu',
+            'Total Shipped Server',
+            'Total Shipped',
+            'Shipped Ubuntu x86 CDs', 'Shipped Ubuntu AMD64 CDs',
             'Shipped Kubuntu x86 CDs', 'Shipped Kubuntu AMD64 CDs',
-            'Shipped Kubuntu PPC CDs', 'Shipped Edubuntu x86 CDs',
-            'Shipped Edubuntu AMD64 CDs', 'Shipped Edubuntu PPC CDs',
+            'Shipped Edubuntu x86 CDs', 'Shipped Edubuntu AMD64 CDs',
+            'Shipped Server x86 CDs', 'Shipped Server AMD64 CDs',
             'Normal-prio shipments', 'High-prio shipments',
             'Average request size', 'Approved CDs (percentage)',
             'Percentage of total shipped CDs', 'Continent']
@@ -666,9 +673,9 @@ class ShippingRequestSet:
         ubuntu = ShipItFlavour.UBUNTU
         kubuntu = ShipItFlavour.KUBUNTU
         edubuntu = ShipItFlavour.EDUBUNTU
+        server = ShipItFlavour.SERVER
         x86 = ShipItArchitecture.X86
         amd64 = ShipItArchitecture.AMD64
-        ppc = ShipItArchitecture.PPC
         for country in Country.select():
             base_query = (
                 "shippingrequest.country = %s AND "
@@ -715,17 +722,22 @@ class ShippingRequestSet:
             total_ubuntu = sum(shipped_cds_per_arch[ubuntu].values())
             total_kubuntu = sum(shipped_cds_per_arch[kubuntu].values())
             total_edubuntu = sum(shipped_cds_per_arch[edubuntu].values())
-            row = [country_name, total_ubuntu, total_kubuntu, total_edubuntu,
-                   total_ubuntu + total_kubuntu + total_edubuntu,
+            total_server = sum(shipped_cds_per_arch[server].values())
+            row = [country_name,
+                   total_ubuntu,
+                   total_kubuntu,
+                   total_edubuntu,
+                   total_server,
+                   (total_ubuntu + total_kubuntu + total_edubuntu +
+                    total_server),
                    shipped_cds_per_arch[ubuntu][x86],
                    shipped_cds_per_arch[ubuntu][amd64],
-                   shipped_cds_per_arch[ubuntu][ppc],
                    shipped_cds_per_arch[kubuntu][x86],
                    shipped_cds_per_arch[kubuntu][amd64],
-                   shipped_cds_per_arch[kubuntu][ppc],
                    shipped_cds_per_arch[edubuntu][x86],
                    shipped_cds_per_arch[edubuntu][amd64],
-                   shipped_cds_per_arch[edubuntu][ppc],
+                   shipped_cds_per_arch[server][x86],
+                   shipped_cds_per_arch[server][amd64],
                    normal_prio_count, high_prio_count,
                    average_request_size,
                    "%.2f%%" % (percentage_of_approved * 100),
@@ -739,7 +751,8 @@ class ShippingRequestSet:
             self, start_date, end_date, only_current_distroseries=False):
         """See IShippingRequestSet"""
         # This is to ensure we include only full weeks of requests.
-        start_monday = start_date - timedelta(days=start_date.isoweekday() - 1)
+        start_monday = start_date - timedelta(
+            days=start_date.isoweekday() - 1)
         end_sunday = end_date - timedelta(days=end_date.isoweekday())
 
         flavour = ShipItFlavour
@@ -747,19 +760,19 @@ class ShippingRequestSet:
         quantities_order = [
             [flavour.UBUNTU, arch.X86, 'Ubuntu Requested PC CDs'],
             [flavour.UBUNTU, arch.AMD64, 'Ubuntu Requested 64-bit PC CDs'],
-            [flavour.UBUNTU, arch.PPC, 'Ubuntu Requested Mac CDs'],
             [flavour.KUBUNTU, arch.X86, 'Kubuntu Requested PC CDs'],
             [flavour.KUBUNTU, arch.AMD64, 'Kubuntu Requested 64-bit PC CDs'],
-            [flavour.KUBUNTU, arch.PPC, 'Kubuntu Requested Mac CDs'],
             [flavour.EDUBUNTU, arch.X86, 'Edubuntu Requested PC CDs'],
-            [flavour.EDUBUNTU, arch.AMD64, 'Edubuntu Requested 64-bit PC CDs'],
-            [flavour.EDUBUNTU, arch.PPC, 'Edubuntu Requested Mac CDs']]
+            [flavour.EDUBUNTU, arch.AMD64,
+                'Edubuntu Requested 64-bit PC CDs'],
+            [flavour.SERVER, arch.X86, 'Server Requested PC CDs'],
+            [flavour.SERVER, arch.AMD64, 'Server Requested 64-bit PC CDs']]
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
         header = ['Year', 'Week number', 'Week start', 'Requests',
                   'Ubuntu Total', 'Kubuntu Total', 'Edubuntu Total',
-                  'Grand Total']
+                  'Server Total', 'Grand Total']
         for dummy, dummy, label in quantities_order:
             header.append(label)
         csv_writer.writerow(header)
@@ -1355,17 +1368,14 @@ class Shipment(SQLBase):
     logintoken = StringCol(unique=True, notNull=True)
     dateshipped = UtcDateTimeCol(default=None)
     shippingservice = EnumCol(enum=ShippingService, notNull=True)
-    shippingrun = ForeignKey(dbName='shippingrun', foreignKey='ShippingRun',
-                             notNull=True)
-    request = ForeignKey(dbName='request', foreignKey='ShippingRequest',
-                         notNull=True, unique=True)
+    shippingrun = ForeignKey(
+        dbName='shippingrun', foreignKey='ShippingRun', notNull=True)
     trackingcode = StringCol(default=None)
 
     @property
     def request(self):
         """See IShipment"""
         return ShippingRequest.selectOneBy(shipment=self)
-
 
 
 class ShipmentSet:
@@ -1499,7 +1509,8 @@ class ShippingRun(SQLBase):
 
                 row.append(value)
 
-            all_requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
+            all_requested_cds = (
+                request.getRequestedCDsGroupedByFlavourAndArch())
             # The order that the flavours and arches appear in the following
             # two for loops must match the order the headers appear in
             # extra_fields.

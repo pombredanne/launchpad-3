@@ -110,5 +110,6 @@ transitioned to their permanent states.
     >>> held_message_anne = message_set.getMessageByMessageID('<first-post>')
     >>> held_message_anne.status
     <DBItem PostedMessageStatus.APPROVED, (40) Approved>
+    >>> held_message_bart = message_set.getMessageByMessageID('<second-post>')
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTED, (50) Rejected>

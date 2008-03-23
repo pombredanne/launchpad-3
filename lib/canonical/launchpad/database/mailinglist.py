@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, IMessageApproval,
     IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -123,7 +124,9 @@ class MailingList(SQLBase):
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
+        return '%s@%s' % (
+            self.team.name,
+            configure_hostname(config.mailman.build_host_name))
 
     @property
     def archive_url(self):
@@ -301,9 +304,6 @@ class MailingList(SQLBase):
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if not person.hasParticipationEntryFor(self.team):
-            raise CannotSubscribe('%s is not a member of team %s' %
-                                  (person.displayname, self.team.displayname))
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))

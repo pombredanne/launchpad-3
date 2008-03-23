@@ -32,6 +32,7 @@ import logging
 import os
 import socket
 import sys
+from textwrap import dedent
 import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -351,10 +352,6 @@ class LibrarianLayer(BaseLayer):
             LibrarianLayer.reveal()
         LibrarianLayer._check_and_reset()
 
-    # The hide and reveal methods mess with the config. Store the
-    # original values so things can be recovered.
-    _orig_librarian_port = config.librarian.upload_port
-
     # Flag maintaining state of hide()/reveal() calls
     _hidden = False
 
@@ -381,7 +378,11 @@ class LibrarianLayer(BaseLayer):
             LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
 
         host, port = LibrarianLayer._fake_upload_socket.getsockname()
-        config.librarian.upload_port = port
+        librarian_data = dedent("""
+            [librarian]
+            upload_port: %s
+            """ % port)
+        config.push('hide_librarian', librarian_data)
 
     @classmethod
     @profiled
@@ -391,7 +392,7 @@ class LibrarianLayer(BaseLayer):
         This just involves restoring the config to the original value.
         """
         LibrarianLayer._hidden = False
-        config.librarian.upload_port = LibrarianLayer._orig_librarian_port
+        config.pop('hide_librarian')
 
 
 # We store a reference to the DB-API connect method here when we

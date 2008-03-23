@@ -16,13 +16,7 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-    >>> alsa_mantis = Mantis(
-    ...     txn, new_bugtracker(BugTrackerType.MANTIS))
+    >>> alsa_mantis = Mantis('http://example.com')
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -39,20 +33,12 @@ in the form "status: resolution" as follows:
     >>> alsa_mantis.convertRemoteStatus('closed: fixed').title
     'Fix Released'
 
-If the status can't be converted, Unknown is returned, and a warning
-is logged.
+If the status can't be converted an UnknownRemoteStatusError is raised.
 
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
-    WARNING:...:Unknown status/resolution foo/bar.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
-warning. This handles the case where we've tried to probe for a bug
-but didn't succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> alsa_mantis.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Updating Bug Watches ==
@@ -66,6 +52,9 @@ Tracker:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
@@ -75,7 +64,7 @@ We use a specially hacked Mantis instance that doesn't do network
 calls to verify here. We set its batch_query_threshold to 0 so as to
 force it to use the CSV import code:
 
-    >>> example_ext_bug_tracker = TestMantis(txn, example_bug_tracker)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
     >>> example_ext_bug_tracker.batch_query_threshold = 0
 
 Collect the Example.com watches:
