@@ -119,7 +119,9 @@ class MailingList(SQLBase):
     status = EnumCol(enum=MailingListStatus,
                      default=MailingListStatus.REGISTERED)
 
-    welcome_message_text = StringCol(default=None)
+    # Use a trailing underscore because SQLObject/importfascist doesn't like
+    # the typical leading underscore.
+    welcome_message_ = StringCol(default=None, dbName='welcome_message')
 
     @property
     def address(self):
@@ -264,15 +266,15 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
-    def _get_welcome_message(self):
-        return self.welcome_message_text
-
     def isUsable(self):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,
                                MailingListStatus.MOD_FAILED]
+
+    def _get_welcome_message(self):
+        return self.welcome_message_
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
@@ -290,7 +292,7 @@ class MailingList(SQLBase):
         else:
             raise AssertionError(
                 'Only registered or usable mailing lists may be modified')
-        self.welcome_message_text = text
+        self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
