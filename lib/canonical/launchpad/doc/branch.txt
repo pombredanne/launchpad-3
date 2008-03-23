@@ -115,10 +115,9 @@ date_created values from the database.
     >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
-    >>> home_page = "http://example.com/~ddaa/"
     >>> gterm_dev = branchset.new(
     ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
-    ...     title, summary=summary, home_page=home_page, date_created=now.next())
+    ...     title, summary=summary, date_created=now.next())
 
     >>> gterm_dev.name
     u'dev'
@@ -146,8 +145,8 @@ whereas the owner is.
     vcs-imports
     >>> gterm_dev.owner = ddaa
 
-Branch may or may not be associated to a product, and may have no home_page,
-no title, and no summary, and even no URL.
+Branch may or may not be associated to a product, and may have no title,
+and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
@@ -158,8 +157,6 @@ Branches with no URL are primarily hosted on the supermirror.
     >>> junkcode.name
     u'junkcode'
     >>> print repr(junkcode.product)
-    None
-    >>> print repr(junkcode.home_page)
     None
     >>> print repr(junkcode.title)
     None

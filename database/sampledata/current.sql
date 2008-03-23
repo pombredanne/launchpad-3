@@ -623,6 +623,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -844,10 +847,16 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', NULL, '2006-10-16 18:31:43.054581', 1, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.84976', 1);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.055661', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.850415', 1);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (14, NULL, NULL, 24, 5, NULL, 'main', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.056714', 0, NULL, false, 3, NULL, NULL, 1, '2007-12-06 19:58:26.85103', 24);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', 'http://example.com/gnome-terminal', 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.851575', 12);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', 'http://example.com/gnome-terminal/', 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.852227', 12);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.
+
+Home page: http://example.com/gnome-terminal', 12, 6, NULL, 'main', 'http://example.com/gnome-terminal', 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.851575', 12);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.
+
+Home page: http://example.com/gnome-terminal/', 12, 6, NULL, '2.6', 'http://example.com/gnome-terminal/', 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.852227', 12);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.060078', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.852889', 12);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', 'http://trekkies.example.com/k12n', 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.85354', 12);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.
+
+Home page: http://trekkies.example.com/k12n', 12, 6, 12, 'klingon', 'http://trekkies.example.com/k12n', 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.85354', 12);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.062427', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.854214', 12);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, 'http://localhost:8000/a', NULL, 10, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.06351', 6, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.854821', 12);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, next_mirror_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified, registrant) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, 'http://localhost:8000/b', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.064578', 6, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.855432', 12);
@@ -909,10 +918,10 @@ ALTER TABLE branchrevision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236', 1, NULL);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (4, 64, 29, '2007-05-28 02:41:07.938677', 1, NULL);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines) VALUES (5, 64, 30, '2007-05-28 02:41:07.938677', 1, NULL);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (4, 64, 29, '2007-05-28 02:41:07.938677', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (5, 64, 30, '2007-05-28 02:41:07.938677', 1, NULL, 0);
 
 
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
@@ -1133,6 +1142,13 @@ ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotificationrecipient ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
@@ -1221,13 +1237,13 @@ ALTER TABLE bugtask ENABLE TRIGGER ALL;
 
 ALTER TABLE bugtracker DISABLE TRIGGER ALL;
 
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only', '2006-10-16 18:31:43.195685');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugs', 16, 'Jeff Waugh, in his pants.', '2006-10-16 18:31:43.197325');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL, '2006-10-16 18:31:43.197881');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL, '2006-10-16 18:31:43.198413');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892');
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only', '2006-10-16 18:31:43.195685', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugs', 16, 'Jeff Waugh, in his pants.', '2006-10-16 18:31:43.197325', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL, '2006-10-16 18:31:43.197881', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL, '2006-10-16 18:31:43.198413', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892', NULL);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created, version) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL);
 
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
@@ -1293,8 +1309,8 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "virtualized", url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "virtualized", url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1360,6 +1376,13 @@ ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
 
 
 ALTER TABLE codereviewmessage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewvote DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewvote ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -3881,14 +3904,14 @@ ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
-INSERT INTO OAuthConsumer (id, disabled, date_created, secret, key) VALUES (1, 'f', CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '', 'foobar123451432');
+
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
 
 
 ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
 
-
+INSERT INTO OAuthConsumer (id, disabled, date_created, secret, key) VALUES (1, 'f', CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '', 'foobar123451432');
 
 ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
 

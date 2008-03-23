@@ -38,6 +38,7 @@ COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a 
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
 COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
 COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
+COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
 
 -- BranchMergeProposal
 
