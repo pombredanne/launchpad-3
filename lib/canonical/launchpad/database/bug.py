@@ -26,13 +26,15 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
-    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
-    IProductSeries, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
+    IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
+    IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
+    NominationError, NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.mailnotification import (
+    get_bugtask_indirect_subscribers)
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
