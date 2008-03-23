@@ -40,21 +40,26 @@ class MessageApproval(SQLBase):
 
     implements(IMessageApproval)
 
-    message_id = StringCol()
+    message_id = StringCol(notNull=True)
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator,
+        notNull=True)
 
     posted_message = ForeignKey(
-        dbName='posted_message', foreignKey='LibraryFileAlias')
+        dbName='posted_message', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     posted_date = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     status = EnumCol(enum=PostedMessageStatus,
-                     default=PostedMessageStatus.NEW)
+                     default=PostedMessageStatus.NEW,
+                     notNull=True)
 
     disposed_by = ForeignKey(
         dbName='disposed_by', foreignKey='Person',
@@ -100,11 +105,12 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator,
+        notNull=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator, notNull=True)
 
     date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
@@ -117,7 +123,8 @@ class MailingList(SQLBase):
     date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED)
+                     default=MailingListStatus.REGISTERED,
+                     notNull=True)
 
     # Use a trailing underscore because SQLObject/importfascist doesn't like
     # the typical leading underscore.
@@ -492,9 +499,12 @@ class MailingListSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator,
+        notNull=True)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     date_joined = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
