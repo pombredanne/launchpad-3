@@ -469,29 +469,9 @@ class Bug(SQLBase):
         also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
-            # Assignees are indirect subscribers.
-            if bugtask.assignee:
-                also_notified_subscribers.add(bugtask.assignee)
-                if recipients is not None:
-                    recipients.addAssignee(bugtask.assignee)
-
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                also_notified_subscribers.update(
-                    bugtask.target.getBugNotificationsRecipients(recipients))
-
-            if bugtask.milestone is not None:
-                also_notified_subscribers.update(
-                    bugtask.milestone.getBugNotificationsRecipients(
-                    recipients))
-
-            # If the target's bug contact isn't set,
-            # we add the owner as a subscriber.
-            pillar = bugtask.pillar
-            if pillar.bugcontact is None:
-                also_notified_subscribers.add(pillar.owner)
-                if recipients is not None:
-                    recipients.addRegistrant(
-                        pillar.owner, pillar)
+            bugtask_subscribers = get_bugtask_indirect_subscribers(
+                bugtask, recipients=recipients)
+            also_notified_subscribers.update(bugtask_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
