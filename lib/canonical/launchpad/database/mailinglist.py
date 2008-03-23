@@ -260,9 +260,6 @@ class MailingList(SQLBase):
 
     def reactivate(self):
         """See `IMailingList`."""
-        # XXX: The Mailman side of this is not yet implemented, although it
-        # will be implemented soon. -- Guilherme Salgado, 2007-10-08
-        # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
         assert self.status == MailingListStatus.INACTIVE, (
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED

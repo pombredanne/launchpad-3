@@ -127,8 +127,7 @@ from canonical.launchpad.interfaces import (
     LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
     QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    is_participant_in_beta_program)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -1074,9 +1073,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Configure mailing list'
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
-        return Link(target, text, summary,
-                    enabled=is_participant_in_beta_program(self.context),
-                    icon='edit')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1971,12 +1968,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         A user can subscribe to the list if the team has an active
         mailing list, and if they do not already have a subscription.
         """
-        # XXX mars 2008-02-26:
-        # Remove this check after the mailing list beta test is complete.
-        # See bug #190974.
-        if not self.isBetaUser:
-            return False
-
         if self.team_has_mailing_list:
             # If we are already subscribed, then we can not subscribe again.
             return not self.user_is_subscribed_to_list
@@ -3094,9 +3085,6 @@ class PersonEditEmailsView(LaunchpadFormView):
         If a team doesn't have a mailing list, or the mailing list
         isn't usable, it's not included.
         """
-        # Only beta testers are allowed to subscribe to mailing lists.
-        if not self.isBetaUser:
-            return form.FormFields()
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
