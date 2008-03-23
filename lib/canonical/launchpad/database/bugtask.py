@@ -836,6 +836,12 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.milestone:
             header_value += ' milestone=%s;' % self.milestone.name
 
+        # The same goes for bug tags: we only include them if they
+        # exist.
+        if self.bug.tags:
+            tag_string = ",".join(self.bug.tags)
+            header_value += ' tags=%s;' % tag_string
+
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
             'assignee=%(assignee)s;') %

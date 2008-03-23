@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Librarian garbage collection routines"""
 
 __metaclass__ = type
@@ -127,7 +127,7 @@ def merge_duplicates(con):
         dupe1_id = dupes[0]
         dupe1_path = get_file_path(dupe1_id)
         if not os.path.exists(dupe1_path):
-            if config.name == 'staging':
+            if config.instance_name == 'staging':
                 log.debug(
                         "LibraryFileContent %d data is missing (%s)",
                         dupe1_id, dupe1_path
@@ -248,9 +248,7 @@ def delete_unreferenced_aliases(con):
     content_ids = list(content_ids)
     for i in range(0, len(content_ids), BATCH_SIZE):
         in_content_ids = ','.join(
-                (str(content_id)
-                 for content_id in content_ids[i:i+BATCH_SIZE])
-                )
+            (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE]))
         # First a sanity check to ensure we aren't removing anything we
         # shouldn't be.
         cur.execute("""
