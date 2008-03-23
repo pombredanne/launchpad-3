@@ -33,7 +33,8 @@ __all__ = [
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'valid_remote_bug_url']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -1020,6 +1021,7 @@ class IAddBugTaskForm(Interface):
         title=_('Visited steps'), required=False,
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
+
 
 class IAddBugTaskWithProductCreationForm(Interface):
 

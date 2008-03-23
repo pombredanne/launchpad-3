@@ -507,8 +507,9 @@ Log in as admin to avoid security on IBuild for the moment.
 Let's make cprov's archive private (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> removeSecurityProxy(cprov).archive.private = True
+    >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
+    >>> cprov.archive.private = True
+    >>> cprov.archive.buildd_secret = "secret"
     >>> flush_database_updates()
 
 Now define a helper function to print out build details:

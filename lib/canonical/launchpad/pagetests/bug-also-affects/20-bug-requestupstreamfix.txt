@@ -32,15 +32,30 @@ product, though.
     >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
 
-Since Thunderbird doesn't use Launchpad, there's a widget for entering 
-a bug URL.
+Since Thunderbird doesn't use Launchpad, a form is shown asking for
+bug URLs and suchlike:
 
-    >>> user_browser.getControl('URL').value
-    ''
+    >>> from canonical.launchpad.ftests.bug import print_upstream_linking_form
+    >>> print_upstream_linking_form(user_browser)
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
-If we leave it empty, a notification will be shown when trying to add
-the task, asking us to confirm that we want to add the task without a
-bug watch.
+If we choose to just link upstream, without a URL, then a notification
+will be shown when trying to add the task, asking us to confirm that
+we want to add the task without a bug watch.
+
+    >>> user_browser.getControl('I just want to register').selected = True
+    >>> print_upstream_linking_form(user_browser)
+    ( ) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    (*) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
@@ -142,8 +157,9 @@ space in the bug URL it will be stripped.
     ...     '+bug/3/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
- 
-    >>> user_browser.getControl('URL').value = (
+
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
     ...     '   https://bugzilla.mozilla.org/show_bug.cgi?id=1234   ')
     >>> user_browser.getControl('Add to Bug Report').click()
 

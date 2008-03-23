@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
     pocketsuffix)
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -248,8 +249,18 @@ class Builder(SQLBase):
             # Although partner and PPA builds are always in the release
             # pocket, they depend on the same pockets as though they
             # were in the updates pocket.
-            ubuntu_pockets = self.pocket_dependencies[
-                PackagePublishingPocket.UPDATES]
+            #
+            # XXX Julian 2008-03-20
+            # Private PPAs, however, behave as though they are in the
+            # security pocket.  This is a hack to get the security
+            # PPA working as required until cprov lands his changes for
+            # configurable PPA pocket dependencies.
+            if target_archive.private:
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.SECURITY]
+            else:
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.UPDATES]
 
             # Partner and PPA may also depend on any component.
             ubuntu_components = 'main restricted universe multiverse'
@@ -260,9 +271,16 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                if archive.private:
+                    uri = URI(archive.archive_url)
+                    uri = uri.replace(
+                        userinfo="buildd:%s" % archive.buildd_secret)
+                    url = str(uri)
+                else:
+                    url = archive.archive_url
                 source_line = (
                     'deb %s %s %s'
-                    % (archive.archive_url, dist_name, ogre_components))
+                    % (url, dist_name, ogre_components))
                 ubuntu_source_lines.append(source_line)
         else:
             ubuntu_pockets = self.pocket_dependencies[
