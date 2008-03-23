@@ -182,13 +182,15 @@ all.)
 
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IPersonSet)
-
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
     >>> person_set = getUtility(IPersonSet)
     >>> jdub = person_set.getByName('jdub')
     >>> sabdfl = person_set.getByName('sabdfl')
     >>> beta.addMember(jdub, reviewer=sabdfl)
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 
