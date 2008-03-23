@@ -1937,6 +1937,11 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return True
         return False
 
+    @cachedproperty
+    def openid_identity_url(self):
+        """The identity URL for the person."""
+        return canonical_url(OpenIDPersistentIdentity(self.context))
+
     @property
     def subscription_policy_description(self):
         """Return the description of this team's subscription policy."""
@@ -2172,11 +2177,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
         return self.context.is_openid_enabled
-
-    @cachedproperty
-    def openid_identity_url(self):
-        """The identity URL for the person."""
-        return canonical_url(OpenIDPersistentIdentity(self.context))
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
