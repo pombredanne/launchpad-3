@@ -224,8 +224,8 @@ class TeamContactAddressView(MailingListTeamBaseView):
             email = data['contact_address']
             if not email:
                 self.setFieldError(
-                    'contact_address',
-                    'Enter the contact address you want to use for this team.')
+                   'contact_address',
+                   'Enter the contact address you want to use for this team.')
                 return
             email = getUtility(IEmailAddressSet).getByEmail(
                 data['contact_address'])
@@ -363,7 +363,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             validator=cancel_list_creation_validator)
     def cancel_list_creation(self, action, data):
         """Cancels a pending mailing list registration."""
-        getUtility(IMailingListSet).get(self.context.name).cancelRegistration()
+        mailing_list_set = getUtility(IMailingListSet)
+        mailing_list_set.get(self.context.name).cancelRegistration()
         self.request.response.addInfoNotification(
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
@@ -410,7 +411,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
     def reactivate_list_validator(self, action, data):
-        """Adds an error if someone tries to reactivate a non-deactivated list.
+        """Adds an error if a non-deactivated list is reactivated.
 
         This can only happen through bypassing the UI.
         """

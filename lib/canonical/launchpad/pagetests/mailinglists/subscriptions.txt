@@ -180,8 +180,12 @@ First, we need to make sure that Jdub is a member of the Beta Testers
 team.  (Otherwise, the mailing list subscription checkbox won't show at
 all.)
 
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
+
     >>> login('foo.bar@canonical.com')
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> person_set = getUtility(IPersonSet)
     >>> jdub = person_set.getByName('jdub')
     >>> sabdfl = person_set.getByName('sabdfl')
     >>> beta.addMember(jdub, reviewer=sabdfl)
