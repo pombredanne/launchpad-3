@@ -1,3 +1,5 @@
+= Bug tracker information =
+
 If a product doesn't use Launchpad to track its bugs, there's
 information about the product's bug tracker when adding an upstream
 task.
@@ -11,12 +13,18 @@ task.
     <a href="http://bugzilla.gnome.org/bugs">GnomeGBug GTracker</a>
     to track its bugs...
 
-    >>> user_browser.getControl('URL').value
-    ''
+    >>> from canonical.launchpad.ftests.bug import print_upstream_linking_form
+    >>> print_upstream_linking_form(user_browser)
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
 If a product doesn't use Launchpad, and doesn't have a bug tracker
-specified, it will simply say that it doesn't use Launchpad to track its
-bugs and prompt for a URL.
+specified, it will simply say that it doesn't use Launchpad to track
+its bugs and prompt for a URL or an email address.
 
     >>> user_browser.open(
     ...    'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
@@ -25,17 +33,23 @@ bugs and prompt for a URL.
     >>> print user_browser.contents
     <...Mozilla Thunderbird doesn't use Launchpad to track its bugs...
 
-    >>> user_browser.getControl('URL').value
-    ''
+    >>> print_upstream_linking_form(user_browser)
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
-For products using Launchpad, there won't even be a URL widget.
+For products using Launchpad, the linking upstream widgets won't even
+appear.
 
     >>> user_browser.open(
     ...    'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'evolution'
     >>> user_browser.getControl('Continue').click()
 
-    >>> user_browser.getControl('URL')
+    >>> print_upstream_linking_form(user_browser)
     Traceback (most recent call last):
     ...
-    LookupError: label 'URL'
+    LookupError: name 'field.link_upstream_how'
