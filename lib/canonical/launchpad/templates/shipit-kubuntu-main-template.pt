@@ -17,6 +17,7 @@
       <style type="text/css">
         <!-- 
         h1, h2, h3 {
+            clear: both;
             width: 100%;
             padding-bottom: .0em;
             padding-top: 0.4em;

@@ -9,6 +9,8 @@ __metaclass__ = type
 
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mailout.notificationrecipientset import (
+    NotificationRecipientSet)
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
 
@@ -24,39 +26,11 @@ class BMPMailer:
     """Send mailings related to BranchMergeProposal events"""
 
     def __init__(self, recipients, merge_proposal, from_address):
-        self.recipients = self.getMailRecipients(recipients)
+        self._recipients = NotificationRecipientSet()
+        for recipient, (subscription, rationale) in recipients.iteritems():
+            self._recipients.add(recipient, subscription, rationale)
         self.merge_proposal = merge_proposal
         self.from_address = from_address
-
-    @staticmethod
-    def getMailRecipients(recipients):
-        """Find all the people that notifications should be sent to.
-
-        Direct and indirect memberships will both have effect, but no team
-        will be visited more than once.  Recipients with no preferredemail
-        will be skipped.  If a team has no preferredemail, data associated
-        with that team will be associated with its members.
-
-        This is implemented as a depth-first graph traversal.
-
-        :param recipients: A dict of {person: data}, where data may be
-            anything, and person may be a team.
-        :return: A similar dict, where every Person is not a team.
-        """
-        pending_recipients = list(recipients.iteritems())
-        new_recipients = {}
-        seen_recipients = set()
-        while len(pending_recipients) > 0:
-            recipient, data = pending_recipients.pop()
-            if recipient in seen_recipients:
-                continue
-            seen_recipients.add(recipient)
-            if recipient.preferredemail is not None:
-                new_recipients[recipient] = data
-            elif recipient.isTeam():
-                for member in recipient.activemembers:
-                    pending_recipients.append((member, data))
-        return new_recipients
 
     @staticmethod
     def forCreation(merge_proposal, from_user):
@@ -77,7 +51,8 @@ class BMPMailer:
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""
         entity = 'You are'
-        subscription = self.recipients[recipient][0]
+        subscription = self._recipients.getReason(
+            recipient.preferredemail.email)[0]
         subscriber = subscription.person
         if recipient != subscriber:
             assert recipient.hasParticipationEntryFor(subscriber), (
@@ -92,7 +67,8 @@ class BMPMailer:
 
         :return: (headers, subject, body) of the email.
         """
-        subscription, rationale = self.recipients[recipient]
+        subscription, rationale = self._recipients.getReason(
+            recipient.preferredemail.email)
         headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
                    'X-Launchpad-Message-Rationale': rationale}
         subject = 'Merge of %s into %s proposed' % (
@@ -113,7 +89,7 @@ class BMPMailer:
 
     def sendAll(self):
         """Send notifications to all recipients."""
-        for recipient in self.recipients:
+        for recipient in self._recipients.getRecipientPersons():
             to_address = format_address(
                 recipient.displayname, recipient.preferredemail.email)
             headers, subject, body = self.generateEmail(recipient)

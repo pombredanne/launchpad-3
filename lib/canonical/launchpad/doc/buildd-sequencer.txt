@@ -20,14 +20,15 @@ The following is some mock classwork to help us test the system...
   ...         print "MockSequencer.mailOutFailure(%d,%s)" % (code, job.name)
 
   >>> class MockConfigSegment:
-  ...     def __init__(self, name, command, mindelay, alwayslog):
-  ...         self.name = name
-  ...         self.command = command
-  ...         self.mindelay = mindelay
-  ...         self.alwayslog = alwayslog
-  ...
-  ...     def getSectionName(self):
-  ...         return self.name
+  ...    def __init__(self, name, command, mindelay, alwayslog):
+  ...        self.name = name
+  ...        self.command = command
+  ...        self.mindelay = mindelay
+  ...        self.alwayslog = alwayslog
+  ...   
+  ...    @property
+  ...    def category_and_section_names(self):
+  ...        return ('buildsequencer_job', self.name)
 
   >>> class MockExitValue:
   ...     def __init__(self, value):

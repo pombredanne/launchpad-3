@@ -74,6 +74,12 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    buildd_secret = TextLine(
+        title=_("Buildd Secret"), required=False,
+        description=_("The password used by the builder to access the "
+                      "archive.")
+        )
+
     sources_cached = Int(
         title=_("Number of sources cached"), required=False,
         description=_("Number of source packages cached in this PPA."))
@@ -195,8 +201,8 @@ class IArchive(IHasOwner):
         """Concentrate cached information about the archive contents.
 
         Group the relevant package information (source name, binary names,
-        binary summaries) strings in the IArchive.package_description_cache
-        search indexes (fti).
+        binary summaries and distroseries with binaries) strings in the
+        IArchive.package_description_cache search indexes (fti).
 
         Updates 'sources_cached' and 'binaries_cached' counters.
 

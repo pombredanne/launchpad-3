@@ -137,6 +137,7 @@ where builder 'Frog' is building a job from Celso's private PPA.
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.private = True
+    >>> cprov.archive.buildd_secret = "secret"
 
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
@@ -144,7 +145,27 @@ where builder 'Frog' is building a job from Celso's private PPA.
     >>> random_build = 2
     >>> cprov_builds = getUtility(
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
-    >>> private_job = BuildQueue(build=cprov_builds[random_build], builder=frog)
+    >>> private_job = BuildQueue(
+    ...     build=cprov_builds[random_build], builder=frog)
+
+Finally, we will remove any publications of the source behind our
+build of interest that are not in cprov's archive, so that we know
+we're dealing with a single private source publication.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> random_spr = cprov_builds[random_build].sourcepackagerelease
+    >>> non_cprov_publications = [
+    ...     pub for pub in random_spr.publishings 
+    ...     if pub.archive != cprov.archive]
+    >>> for pub in non_cprov_publications:
+    ...     discard = pub.supersede()
+
+flush_database_caches seems to be required because random_spr.publishings
+is an SQLObject MultipleJoin.
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
 
 At the content class level, all the information about the current job
 is widely available:

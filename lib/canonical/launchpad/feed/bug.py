@@ -86,6 +86,11 @@ class BugsFeedBase(FeedBase):
         """See `IFeed`."""
         return "%s/@@/bug" % self.site_url
 
+    def _sortByDateCreated(self, bugtasks):
+        return sorted(bugtasks,
+                      key=lambda bugtask: bugtask.bug.datecreated,
+                      reverse=True)
+
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         raise NotImplementedError
@@ -95,9 +100,10 @@ class BugsFeedBase(FeedBase):
 
         The list of bugs is screened to ensure no private bugs are returned.
         """
-        return [bugtask
-                for bugtask in self._getRawItems()
-                if not bugtask.bug.private]
+        items = [bugtask
+                 for bugtask in self._getRawItems()
+                 if not bugtask.bug.private]
+        return self._sortByDateCreated(items)
 
     def getItems(self):
         """See `IFeed`."""
@@ -114,9 +120,9 @@ class BugsFeedBase(FeedBase):
         content_view = BugFeedContentView(bug, self.request, self)
         entry = FeedEntry(title=title,
                           link_alternate=url,
-                          date_created=bugtask.datecreated,
+                          date_created=bug.datecreated,
                           date_updated=bug.date_last_updated,
-                          date_published=bugtask.datecreated,
+                          date_published=bug.datecreated,
                           authors=[FeedPerson(bug.owner, self.rootsite)],
                           content=FeedTypedData(content_view.render(),
                                                 content_type="html"))
@@ -203,7 +209,8 @@ class BugTargetBugsFeed(BugsFeedBase):
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         delegate_view = BugTargetView(self.context, self.request)
-        return delegate_view.latestBugTasks(quantity=self.quantity)
+        bugtasks = delegate_view.latestBugTasks(quantity=self.quantity)
+        return get_unique_bug_tasks(bugtasks)
 
 
 class PersonBugsFeed(BugsFeedBase):
@@ -223,8 +230,8 @@ class PersonBugsFeed(BugsFeedBase):
         # Since the delegate_view derives from LaunchpadFormView the view must
         # be initialized to setup the widgets.
         delegate_view.initialize()
-        results = delegate_view.search()
-        items = results.getBugListingItems()
+        batch_navigator = delegate_view.search()
+        items = batch_navigator.batch.list
         return get_unique_bug_tasks(items)[:self.quantity]
 
 
@@ -247,9 +254,10 @@ class SearchBugsFeed(BugsFeedBase):
         # Since the delegate_view derives from LaunchpadFormView the view must
         # be initialized to setup the widgets.
         delegate_view.initialize()
-        results = delegate_view.search(searchtext=None,
-                      context=search_context, extra_params=None)
-        items = results.getBugListingItems()
+        batch_navigator = delegate_view.search(searchtext=None,
+                                               context=search_context,
+                                               extra_params=None)
+        items = batch_navigator.batch.list
         return get_unique_bug_tasks(items)[:self.quantity]
 
     @property

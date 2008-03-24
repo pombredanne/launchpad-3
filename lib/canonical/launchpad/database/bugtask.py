@@ -835,6 +835,12 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.milestone:
             header_value += ' milestone=%s;' % self.milestone.name
 
+        # The same goes for bug tags: we only include them if they
+        # exist.
+        if self.bug.tags:
+            tag_string = ",".join(self.bug.tags)
+            header_value += ' tags=%s;' % tag_string
+
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
             'assignee=%(assignee)s;') %
@@ -1630,13 +1636,14 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
+                    AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(min_days_old),
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 

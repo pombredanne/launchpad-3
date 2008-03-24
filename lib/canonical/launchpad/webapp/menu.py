@@ -172,6 +172,14 @@ class MenuLink:
         else:
             return cgi.escape(text)
 
+    @property
+    def icon_url(self):
+        """The full URL of this link's associated icon, if it has one."""
+        if not self.icon:
+            return
+        else:
+            return '/@@/%s' % self.icon
+
     def render(self):
         """See `ILink`."""
         return getMultiAdapter(
