@@ -272,15 +272,9 @@ we need to reconfigure the environment and reload the canonical.config
 module to test CanonicalConfig's behaviour.
 
     >>> import os
-    >>> from canonical.config import (
-    ...     CONFIG_ENVIRONMENT_VARIABLE, SECTION_ENVIRONMENT_VARIABLE)
-
-    >>> CONFIG_ENVIRONMENT_VARIABLE
-    'LPCONFIG'
-    >>> os.environ[CONFIG_ENVIRONMENT_VARIABLE] = 'staging'
-    >>> SECTION_ENVIRONMENT_VARIABLE
-    'LPCONFIG_SECTION'
-    >>> os.environ[SECTION_ENVIRONMENT_VARIABLE] = 'default'
+    >>> from canonical.config import LPCONFIG, DEFAULT_SECTION
+    >>> os.environ[LPCONFIG] = 'staging'
+    >>> os.environ[DEFAULT_SECTION] = 'default'
 
     # reload the CanonicalConfig class object.
     >>> config_module = reload(canonical.config)
@@ -295,22 +289,29 @@ module to test CanonicalConfig's behaviour.
 
 And the staging ZConfig (that is deprecated) is also selected.
 
-    >>> config._zconfig_config_dir
-    'staging'
-    >>> config._zconfig_section_name
-    'default'
     >>> config.dbname
     'launchpad_staging'
+    >>> config._cache.default
+    <SectionValue for canonical 'default'>
+    >>> config._cache.testrunner
+    Traceback (most recent call last):
+     ...
+    AttributeError: 'zope.thread.local' object has no attribute 'testrunner'
 
 We need to reset the config for the testrunner.
 
-    >>> os.environ[CONFIG_ENVIRONMENT_VARIABLE] = 'testrunner'
-    >>> os.environ[SECTION_ENVIRONMENT_VARIABLE] = 'testrunner'
+    >>> os.environ[LPCONFIG] = 'testrunner'
+    >>> os.environ[DEFAULT_SECTION] = 'testrunner'
     >>> config_module = reload(canonical.config)
     >>> from canonical.config import config
 
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
-    >>> config._zconfig_section_name
-    'testrunner'
-
+    >>> config.dbname
+    'launchpad_ftest'
+    >>> config._cache.testrunner
+    <SectionValue for canonical 'testrunner'>
+    >>> config._cache.default
+    Traceback (most recent call last):
+     ...
+    AttributeError: 'zope.thread.local' object has no attribute 'default'

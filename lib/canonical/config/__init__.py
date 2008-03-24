@@ -25,8 +25,8 @@ from canonical.lazr.interfaces.config import ConfigErrors
 # of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
 # config's launchpad.conf to use. LPCONFIG_SECTION is really only used by
 # the test suite to select the testrunner specific section.
-CONFIG_ENVIRONMENT_VARIABLE = 'LPCONFIG'
-SECTION_ENVIRONMENT_VARIABLE = 'LPCONFIG_SECTION'
+LPCONFIG = 'LPCONFIG'
+LPCONFIG_SECTION = 'LPCONFIG_SECTION'
 
 DEFAULT_SECTION = 'default'
 DEFAULT_CONFIG = 'default'
@@ -42,18 +42,9 @@ class CanonicalConfig:
     """
     _config = None
     _cache = zope.thread.local()
-    _instance_name = os.environ.get(
-            CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
-    # The testrunner will set CONFIG_ENVIRONMENT_VARIABLE to itself,
-    # but that config is actually a section in in the default ZConfig.
-    # Unlike _instance_name, _zconfig_config_dir cannot be changed.
-    if _instance_name == 'testrunner':
-        _zconfig_config_dir = DEFAULT_CONFIG
-    else:
-        _zconfig_config_dir = _instance_name
-    _zconfig_section_name = os.environ.get(
-            SECTION_ENVIRONMENT_VARIABLE, DEFAULT_SECTION)
+    _instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
     _process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+
 
     @property
     def instance_name(self):
@@ -75,9 +66,7 @@ class CanonicalConfig:
         variable so subprocesses keep the same default.
         """
         self._instance_name = instance_name
-        os.environ[CONFIG_ENVIRONMENT_VARIABLE] = instance_name
-        if instance_name == 'testrunner':
-            self._zconfig_section_name = instance_name
+        os.environ[LPCONFIG] = instance_name
 
     @property
     def process_name(self):
@@ -98,10 +87,15 @@ class CanonicalConfig:
         """
         self._process_name = process_name
 
-    def getConfig(self, section=None):
+    def getConfig(self):
         """Return the ZConfig configuration"""
-        if section is None:
-            section = self._zconfig_section_name
+        if self._instance_name == 'testrunner':
+            # The testrunner is a section in default/launchpad.conf.
+            config_dir = DEFAULT_CONFIG
+            section = self._instance_name
+        else:
+            config_dir = self._instance_name
+            section = DEFAULT_SECTION
 
         try:
             return getattr(self._cache, section)
@@ -111,7 +105,7 @@ class CanonicalConfig:
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs', self._zconfig_config_dir, 'launchpad.conf')
+                'configs', config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root, handlers = ZConfig.loadConfig(schema, configfile)
         for branch in root.canonical:
