@@ -224,7 +224,7 @@
       </div>
     </div>
 
-    <div class="visualClear body">
+    <div class="body">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <tal:notifications define="notifications request/notifications"
                          condition="notifications">

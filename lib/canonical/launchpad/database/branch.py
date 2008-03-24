@@ -88,8 +88,6 @@ class Branch(SQLBase):
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
-    home_page = StringCol()
-
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
@@ -853,10 +851,8 @@ class BranchSet:
     def new(self, branch_type, name, creator, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
-        if not home_page:
-            home_page = None
         if date_created is None:
             date_created = UTC_NOW
 
@@ -875,7 +871,7 @@ class BranchSet:
             registrant=creator,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard, private=private,
+            whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created)
 

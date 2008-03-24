@@ -202,15 +202,15 @@ class ProberFactory(protocol.ClientFactory):
             return self._deferred
 
         self.connect()
-        self.timeoutCall = reactor.callLater(
-            self.timeout, self.failWithTimeoutError)
-        self._deferred.addBoth(self._cancelTimeout)
         logger.debug('Probing %s' % self.url)
         return self._deferred
 
     def connect(self):
         host_requests[self.request_host] += 1
         reactor.connectTCP(self.connect_host, self.connect_port, self)
+        self.timeoutCall = reactor.callLater(
+            self.timeout, self.failWithTimeoutError)
+        self._deferred.addBoth(self._cancelTimeout)
 
     connector = None
 
