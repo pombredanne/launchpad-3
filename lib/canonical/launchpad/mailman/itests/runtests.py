@@ -85,6 +85,17 @@ def integrationTestCleanUp(testobj):
     DELETE FROM TeamParticipation
     WHERE person IN (SELECT id FROM DeathRow);
 
+    DELETE FROM MessageChunk
+    WHERE message IN (SELECT id from Message WHERE owner IN
+                      (SELECT id FROM DeathRow));
+
+    DELETE FROM Message
+    WHERE owner IN (SELECT id FROM DeathRow);
+
+    DELETE FROM MessageApproval
+    WHERE mailing_list IN (SELECT id from MailingList WHERE team IN
+                           (SELECT id FROM DeathRow));
+
     DELETE FROM MailingList
     WHERE team IN (SELECT id FROM DeathRow);
 
