@@ -43,6 +43,15 @@ class CanonicalConfig:
     _config = None
     _cache = zope.thread.local()
     _instance_name = os.environ.get(
+            CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
+    # The testrunner will set CONFIG_ENVIRONMENT_VARIABLE to itself,
+    # but that config is actually a section in in the default ZConfig.
+    # Unlike _instance_name, _zconfig_config_dir cannot be changed.
+    if _instance_name == 'testrunner':
+        _zconfig_config_dir = DEFAULT_CONFIG
+    else:
+        _zconfig_config_dir = _instance_name
+    _zconfig_section_name = os.environ.get(
             SECTION_ENVIRONMENT_VARIABLE, DEFAULT_SECTION)
     _process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
 
@@ -50,7 +59,7 @@ class CanonicalConfig:
     def instance_name(self):
         """Return the config's instance name.
 
-        This normally corresponds to the LPCONFIG_SECTION environment
+        This normally corresponds to the LPCONFIG environment
         variable. It is also the name of the directory the conf file is
         loaded from.
         """
@@ -62,11 +71,13 @@ class CanonicalConfig:
         This method is used to set the instance_name, which is the
         directory where the conf file is stored. The test runner
         uses this to switch on the test configuration. This
-        method also sets the LPCONFIG_SECTION environment
+        method also sets the LPCONFIG environment
         variable so subprocesses keep the same default.
         """
         self._instance_name = instance_name
-        os.environ[SECTION_ENVIRONMENT_VARIABLE] = instance_name
+        os.environ[CONFIG_ENVIRONMENT_VARIABLE] = instance_name
+        if instance_name == 'testrunner':
+            self._zconfig_section_name = instance_name
 
     @property
     def process_name(self):
@@ -90,7 +101,7 @@ class CanonicalConfig:
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
         if section is None:
-            section = self._instance_name
+            section = self._zconfig_section_name
 
         try:
             return getattr(self._cache, section)
@@ -100,10 +111,7 @@ class CanonicalConfig:
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs', os.environ.get(
-                    CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG),
-                'launchpad.conf'
-                )
+                'configs', self._zconfig_config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root, handlers = ZConfig.loadConfig(schema, configfile)
         for branch in root.canonical:

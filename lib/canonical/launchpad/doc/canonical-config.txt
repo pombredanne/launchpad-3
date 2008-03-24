@@ -265,3 +265,52 @@ the process's name.
     >>> config.answertracker.days_before_expiration
     15
 
+The initial instance_name is set via the LPCONFIG environment variable.
+Because Config is designed to failover to the default development
+environment, and the testrunner overrides the environment and config,
+we need to reconfigure the environment and reload the canonical.config
+module to test CanonicalConfig's behaviour.
+
+    >>> import os
+    >>> from canonical.config import (
+    ...     CONFIG_ENVIRONMENT_VARIABLE, SECTION_ENVIRONMENT_VARIABLE)
+
+    >>> CONFIG_ENVIRONMENT_VARIABLE
+    'LPCONFIG'
+    >>> os.environ[CONFIG_ENVIRONMENT_VARIABLE] = 'staging'
+    >>> SECTION_ENVIRONMENT_VARIABLE
+    'LPCONFIG_SECTION'
+    >>> os.environ[SECTION_ENVIRONMENT_VARIABLE] = 'default'
+
+    # reload the CanonicalConfig class object.
+    >>> config_module = reload(canonical.config)
+    >>> from canonical.config import config
+
+    >>> config.filename
+    '.../configs/staging/launchpad-lazr.conf'
+    >>> config.extends.filename
+    '.../configs/staging-lazr.conf'
+    >>> config.database.dbname
+    'launchpad_staging'
+
+And the staging ZConfig (that is deprecated) is also selected.
+
+    >>> config._zconfig_config_dir
+    'staging'
+    >>> config._zconfig_section_name
+    'default'
+    >>> config.dbname
+    'launchpad_staging'
+
+We need to reset the config for the testrunner.
+
+    >>> os.environ[CONFIG_ENVIRONMENT_VARIABLE] = 'testrunner'
+    >>> os.environ[SECTION_ENVIRONMENT_VARIABLE] = 'testrunner'
+    >>> config_module = reload(canonical.config)
+    >>> from canonical.config import config
+
+    >>> config.filename
+    '.../configs/testrunner/launchpad-lazr.conf'
+    >>> config._zconfig_section_name
+    'testrunner'
+
