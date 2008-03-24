@@ -13,7 +13,7 @@ GET request to the entry's URL.
 Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
-  >>> salgado = webservice.get('/people/salgado').jsonBody()
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -29,7 +29,7 @@ entry's state, in which case the client should use PUT.
   >>> import simplejson
   >>> def modify_person(person, representation, method):
   ...     "A helper function to send a PUT or PATCH request to a person."
-  ...     return webservice('/people/' + person, method,
+  ...     return webservice('/~' + person, method,
   ...                       simplejson.dumps(representation),
   ...                       {'Content-type': 'application/json'})
 
@@ -42,7 +42,7 @@ display name is in uppercase.
   Content-Length: 0
   ...
 
-  >>> salgado = webservice.get('/people/salgado').jsonBody()
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
@@ -52,19 +52,19 @@ use the web service to change the person's name to 'salgado2'.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/people/salgado2
+  Location: http://api.launchpad.dev/~salgado2
   <BLANKLINE>
 
 At this point we can no longer manipulate the 'salgado' Person by
-sending HTTP requests to http://api.launchpad.dev/people/salgado,
+sending HTTP requests to http://api.launchpad.dev/~salgado,
 because that Person now 'lives' at
-http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
+http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
 'salgado', we need to send a PATCH request to the new address.
 
   >>> print modify_person('salgado2', {'name' : 'salgado'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/people/salgado
+  Location: http://api.launchpad.dev/~salgado
   <BLANKLINE>
 
 # XXX leonardr 2008-03-10 blueprint=modify-data-links:
@@ -87,7 +87,7 @@ less work than constructing a new document and sending it with PATCH.
   HTTP/1.1 200 Ok
   ...
 
-  >>> salgado = webservice.get('/people/salgado').jsonBody()
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -112,7 +112,7 @@ might not be acceptable as the payload of a PUT request.
 
 A document that's not a valid JSON document is also unacceptable.
 
-  >>> print webservice.patch("/people/salgado", "application/json", "{")
+  >>> print webservice.patch("/~salgado", "application/json", "{")
   HTTP/1.1 400 Bad Request
   ...
   Entity-body was not a well-formed JSON document.
@@ -154,7 +154,7 @@ You can't change the link to a person's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/people/salgado/team_memberships'
+  >>> link = 'http://api.launchpad.dev/~salgado/team_memberships'
   >>> print modify_person('salgado',
   ...                    {'team_memberships_collection_link' : link },
   ...                    'PATCH')

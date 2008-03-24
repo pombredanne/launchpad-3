@@ -9,29 +9,29 @@ which responds to GET.
   >>> people_collection[0]['name']
   u'skacel'
   >>> people_collection[0]['self_link']
-  u'http://api.launchpad.dev/people/skacel'
+  u'http://api.launchpad.dev/~skacel'
   >>> people_collection[-1]['name']
   u'rosetta-admins'
 
 The elements of a collection can be looked up by unique identifier:
 
-  >>> admins_team = webservice.get("/people/admins").jsonBody()
+  >>> admins_team = webservice.get("/~admins").jsonBody()
   >>> sorted(admins_team.items())
   [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
    (u'displayname', u'Launchpad Administrators'),
    (u'member_memberships_collection_link',
-    u'http://api.launchpad.dev/people/admins/member_memberships'),
+    u'http://api.launchpad.dev/~admins/member_memberships'),
    (u'members_collection_link',
-      u'http://api.launchpad.dev/people/admins/members'),
+      u'http://api.launchpad.dev/~admins/members'),
    (u'name', u'admins'),
-   (u'self_link', u'http://api.launchpad.dev/people/admins'),
+   (u'self_link', u'http://api.launchpad.dev/~admins'),
    (u'team_memberships_collection_link',
-    u'http://api.launchpad.dev/people/admins/team_memberships'),
-   (u'teamowner_link', u'http://api.launchpad.dev/people/sabdfl')]
+    u'http://api.launchpad.dev/~admins/team_memberships'),
+   (u'teamowner_link', u'http://api.launchpad.dev/~sabdfl')]
 
 A collection may be scoped to an element:
 
-  >>> team_members = webservice.get("/people/admins/members").jsonBody()
+  >>> team_members = webservice.get("/~admins/members").jsonBody()
   >>> team_members = sorted(team_members)
   >>> len(team_members)
   11
@@ -42,6 +42,6 @@ A collection may be scoped to an element:
 
 But not every element may have that collection scoped to it:
 
-  >>> print webservice.get("/people/spiv/members").getStatus()
+  >>> print webservice.get("/~spiv/members").getStatus()
   404
 

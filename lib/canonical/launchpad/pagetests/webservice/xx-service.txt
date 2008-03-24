@@ -28,7 +28,7 @@ resource yields a 405 error.
   Allow: GET
   ...
 
-  >>> print webservice.delete("/people/salgado")
+  >>> print webservice.delete("/~salgado")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET PUT PATCH
   ...
@@ -39,6 +39,17 @@ resource yields a 405 error.
 An attempt to PATCH a document with unsupported media type to a
 resource yields a 415 error.
 
-  >>> print webservice.patch("/people/salgado", 'text/plain', "Foo")
+  >>> print webservice.patch("/~salgado", 'text/plain', "Foo")
   HTTP/1.1 415 Unsupported Media Type
   ...
+
+
+== Resources not exposed on the web service ==
+
+Soyuz build set (exposed on the web at +builds) are not available on the
+web service:
+
+    >>> print webservice.get("/+builds")
+    HTTP/1.1 404 Not Found
+    ...
+

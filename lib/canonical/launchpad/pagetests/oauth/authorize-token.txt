@@ -84,6 +84,9 @@ specified by the application).
 After the authorization is granted the token gets its permission and
 person set.
 
+    # Need to get the token again as it's been changed in another
+    # transaction.
+    >>> token = consumer.getRequestToken(token.key)
     >>> token.person.name
     u'no-priv'
     >>> token.permission
@@ -141,6 +144,9 @@ The same happens if the token is already reviewed.  Although that's
 probably an indication that the user has already reviewed that token in
 another window/tab so there's no need to worry.
 
+    # Need to get the token again as it's been changed in another
+    # transaction.
+    >>> token = consumer.getRequestToken(token.key)
     >>> token.is_reviewed
     True
     >>> params = dict(

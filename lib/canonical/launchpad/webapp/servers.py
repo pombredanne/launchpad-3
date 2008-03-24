@@ -18,22 +18,28 @@ from zope.app.publication.requestpublicationregistry import (
     factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.component import getUtility
-from zope.interface import implements
+from zope.component import getMultiAdapter, getUtility, queryAdapter
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import directlyProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import isinstance as zope_isinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.checker import ProxyFactory
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.lazr.interfaces import IFeed
+from canonical.lazr.interfaces import (
+    ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
+    IScopedCollection)
+from canonical.lazr.rest import CollectionResource, EntryResource
+
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
@@ -893,26 +899,117 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- web service
 
+
+class CollectionEntryDummy:
+    """An empty object providing the interface of the items in the collection.
+
+    This is to work around the fact that getMultiAdapter() and other
+    zope.component lookup methods don't accept a bare interface and only
+    works with objects.
+    """
+    def __init__(self, collection_field):
+        directlyProvides(self, collection_field.value_type.schema)
+
+
 class WebServicePublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad web service requests."""
 
     root_object_interface = IWebServiceApplication
 
-    def getDefaultTraversal(self, request, ob):
-        """Publish the WebServiceApplication as the top-level object.
+    def traverseName(self, request, ob, name):
+        """See `zope.publisher.interfaces.IPublication`.
 
-        This is called when the client requests '/' and traversal
-        bottoms out at the IWebServiceApplication itself. It's needed
-        because WebServiceRequest inherits (through LaunchpadRequest)
-        the BrowserRequest semantics. In these semantics,
-        getDefaultTraversal (defined by IBrowserPublication) is called
-        unless the object provides IBrowserPublisher.
-
-        Rather than making our resources provide an unrelated
-        interface (IBrowserPublisher), we implement this as the
-        equivalent of a no-op.
+        In addition to the default traversal implementation, this publication
+        also handle traversal to collection scoped into an entry.
         """
-        return (ob, None)
+        # If this is the last traversal step, then look first for a scoped
+        # collection. This is done because although Navigation handles
+        # traversal to entries in a scoped collection, they don't usually
+        # handle traversing to the scoped collection itself.
+        if len(request.getTraversalStack()) == 0:
+            result = self._traverseToScopedCollection(request, ob, name)
+            if result is not None:
+                return result
+        return super(WebServicePublication, self).traverseName(
+            request, ob, name)
+
+    def _traverseToScopedCollection(self, request, ob, name):
+        """Try to traverse to a collection named name in ob.
+
+        If ob supports IEntry, we check if name refers to a collection
+        field and if it does, we return the IScopedCollection available
+        for this field.
+
+        This is done because we don't usually traverse to attributes
+        representing a collection in our regular Navigation.
+
+        This method returns None if a scoped collection cannot be found.
+        """
+        try:
+            entry = IEntry(ob)
+        except TypeError:
+            return None
+
+        field = entry.schema.get(name)
+        if not ICollectionField.providedBy(field):
+            return None
+
+        collection = getattr(entry, name, None)
+        if collection is None:
+            return None
+
+        # Create a dummy object that implements the field's interface.
+        # This is necessary because we can't pass the interface itself
+        # into getMultiAdapter.
+        example_entry = CollectionEntryDummy(field)
+        try:
+            scoped_collection = getMultiAdapter(
+                (ob, example_entry), IScopedCollection)
+        except ComponentLookupError:
+            return None
+
+        # Tell the IScopedCollection object what collection it's managing,
+        # and what the collection's relationship is to the entry it's
+        # scoped to.
+        scoped_collection.collection = collection
+        scoped_collection.relationship = field
+        return scoped_collection
+
+    def getDefaultTraversal(self, request, ob):
+        """See `zope.publisher.interfaces.browser.IBrowserPublication`.
+
+        The WebService doesn't use the getDefaultTraversal() extension
+        mechanism, because it only applies to GET, HEAD, and POST methods.
+
+        See getResource() for the alternate mechanism.
+        """
+        # Don't traverse to anything else.
+        return ob, None
+
+    def getResource(self, request, ob):
+        """Return the resource that can publish the object ob.
+
+        This is done at the end of traversal.  If the published object
+        supports the ICollection, or IEntry interface we wrap it into the
+        appropriate resource.
+        """
+        if (ICollection.providedBy(ob) or
+            queryAdapter(ob, ICollection) is not None):
+            # Object supports ICollection protocol.
+            resource = CollectionResource(ob, request)
+        elif (IEntry.providedBy(ob) or
+              queryAdapter(ob, IEntry) is not None):
+            # Object supports IEntry protocol.
+            resource = EntryResource(ob, request)
+        elif IHTTPResource.providedBy(ob):
+            # A resource knows how to take care of itself.
+            return ob
+        else:
+            # This object should not be published on the web service.
+            raise NotFound(ob, '')
+
+        # Wrap the resource in a security proxy.
+        return ProxyFactory(resource)
 
     def finishReadOnlyRequest(self, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
@@ -949,8 +1046,48 @@ class WebServicePublication(LaunchpadBrowserPublication):
         return getUtility(IPlacelessLoginSource).getPrincipal(token.person.id)
 
 
-class WebServiceClientRequest(LaunchpadBrowserRequest):
+class WebServiceRequestTraversal:
+    """Mixin providing web-service resource wrapping in traversal.
+
+    This is implemented as a mixin, because we want the WebServiceTestRequest
+    to use the same mechanism. And since the Launchpad request class
+    hierarchy is a mess, it's simple to use a mixin.
+    """
+
+    def traverse(self, ob):
+        """See `zope.publisher.interfaces.IPublisherRequest`.
+
+        WebService requests call the WebServicePublication.getResource()
+        on the result of the default traversal.
+        """
+        result = super(WebServiceRequestTraversal, self).traverse(ob)
+        return self.publication.getResource(self, result)
+
+
+class WebServiceClientRequest(WebServiceRequestTraversal,
+                              LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
+    implements(canonical.launchpad.layers.WebServiceLayer)
+
+
+class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
+    """Test request for the webservice.
+
+    It provides the WebServiceLayer and supports the getResource()
+    web publication hook.
+    """
+    implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream=None, environ=None, **kw):
+        test_environ = {
+            'SERVERL_URL': 'http://api.launchpad.dev',
+            'HTTP_HOST': 'api.launchpad.dev',
+            }
+        if environ is not None:
+            test_environ.update(environ)
+        super(WebServiceTestRequest, self).__init__(
+            body_instream=body_instream, environ=test_environ, **kw)
+
 
 # ---- openid
 

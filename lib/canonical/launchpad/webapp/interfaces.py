@@ -178,6 +178,9 @@ class ILink(ILinkData):
 
     escapedtext = Attribute("Text string, escaped as necessary.")
 
+    icon_url = Attribute(
+        "The full URL for this link's associated icon, if it has one.")
+
     def render():
         """Return a HTML representation of the link."""
 
