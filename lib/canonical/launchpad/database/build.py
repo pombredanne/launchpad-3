@@ -268,13 +268,11 @@ class Build(SQLBase):
                 ((qbuildqueue.lastscore > %s) OR
                  ((qbuildqueue.lastscore = %s) AND
                   (qbuild.id < %s)))
-             """
-        cur.execute(sum_query % 
-            sqlvalues(self.processor,
-                      self.is_virtualized,
+             """ % sqlvalues(self.processor, self.is_virtualized,
                       self.buildqueue_record.lastscore,
-                      self.buildqueue_record.lastscore,
-                      self))
+                      self.buildqueue_record.lastscore, self)
+
+        cur.execute(sum_query)
         # Get the sum of the estimated build time for jobs that are
         # ahead of us in the queue.
         sum_of_delays = cur.fetchone()[0]
@@ -319,10 +317,10 @@ class Build(SQLBase):
                 builder.processor = %s
             ORDER BY
                 remainder;
-            """
-        cur.execute(delay_query % sqlvalues(self.is_virtualized,
-                                            self.buildstate,
-                                            self.processor))
+            """ % sqlvalues(self.is_virtualized, self.buildstate,
+                    self.processor)
+
+        cur.execute(delay_query)
         # Get the remaining build times for the jobs currently
         # building on the respective machine pool (current build
         # set)
