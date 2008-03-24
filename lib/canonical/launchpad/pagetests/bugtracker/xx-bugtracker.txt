@@ -348,7 +348,7 @@ deleting bug watches en masse:
   LookupError: label 'Delete'
 
 
-== Overview pages and private bugs ==
+== Overview pages ==
 
 When looking at a bug tracker page, a list of bug watches is
 displayed:
@@ -364,7 +364,9 @@ displayed:
   #1:  Firefox does not support SVG  304014
   #7:  A test bug                    280883
 
-But if the user is not permitted to view one of the watches only very
+=== Private bugs ===
+
+If the user is not permitted to view one of the watches only very
 basic details are displayed. For example, when a bug watch is
 associated with a private bug:
 

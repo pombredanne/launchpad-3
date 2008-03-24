@@ -43,8 +43,8 @@ Let's check the complex properties of a build object.
     >>> firefox_build.calculated_buildstart
     datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
-    >>> firefox_build.is_trusted
-    True
+    >>> firefox_build.is_virtualized
+    False
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -507,8 +507,9 @@ Log in as admin to avoid security on IBuild for the moment.
 Let's make cprov's archive private (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> removeSecurityProxy(cprov).archive.private = True
+    >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
+    >>> cprov.archive.private = True
+    >>> cprov.archive.buildd_secret = "secret"
     >>> flush_database_updates()
 
 Now define a helper function to print out build details:
@@ -875,4 +876,5 @@ when accessing the builds:
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
