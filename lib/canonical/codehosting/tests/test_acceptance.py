@@ -8,6 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 import os
 import sys
+from textwrap import dedent
 import thread
 import unittest
 
@@ -601,19 +602,17 @@ class OOPSReportingSmartserverTests(SSHTestCase):
 
     def setUp(self):
         SSHTestCase.setUp(self)
-        self._oops_prefix = config.launchpad.errorreports.oops_prefix
-        self._errordir = config.launchpad.errorreports.errordir
-        self._copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
-        errorreports = config.codehosting
-        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
-        config.launchpad.errorreports.errordir = errorreports.errordir
-        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
+        test_data = dedent("""
+            [error_reports]
+            oops_prefix: SMPSSH
+            errordir:/var/tmp/codehosting.test
+            copy_to_zlog: false
+            """)
+        config.push('test_data', test_data)
 
     def tearDown(self):
         SSHTestCase.tearDown(self)
-        config.launchpad.errorreports.oops_prefix = self._oops_prefix
-        config.launchpad.errorreports.errordir = self._errordir
-        config.launchpad.errorreports.copy_to_zlog = self._copy_to_zlog
+        test_config_data = config.pop('test_data')
 
     def test_oops_reported_on_unhandled_exception(self):
         # We have to examine the oops reports in the main thread because

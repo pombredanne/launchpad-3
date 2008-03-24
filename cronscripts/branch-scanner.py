@@ -21,14 +21,6 @@ class UpdateBranches(LaunchpadCronScript):
         bzr_logger = logging.getLogger("bzr")
         bzr_logger.setLevel(logging.INFO)
 
-        # Customize the oops reporting config
-        oops_prefix = config.branchscanner.errorreports.oops_prefix
-        config.launchpad.errorreports.oops_prefix = oops_prefix
-        errordir = config.branchscanner.errorreports.errordir
-        config.launchpad.errorreports.errordir = errordir
-        copy_to_zlog = config.branchscanner.errorreports.copy_to_zlog
-        config.launchpad.errorreports.copy_to_zlog = copy_to_zlog
-
         BranchScanner(self.txn, self.logger).scanAllBranches()
 
 

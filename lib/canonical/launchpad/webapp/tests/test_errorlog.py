@@ -151,28 +151,24 @@ class TestErrorReportingUtility(unittest.TestCase):
     def setUp(self):
         # ErrorReportingUtility reads the global config to get the
         # current error directory.
-        self.saved_errordir = config.launchpad.errorreports.errordir
-        config.launchpad.errorreports.errordir = tempfile.mkdtemp()
-        shutil.rmtree(config.launchpad.errorreports.errordir,
-                      ignore_errors=True)
-        self.current_copy_to_zlog = (
-            config.launchpad.errorreports.copy_to_zlog)
-        config.launchpad.errorreports.copy_to_zlog = True
+        test_data = dedent("""
+            [error_reports]
+            copy_to_zlog: true
+            errordir: %s
+            """ % tempfile.mkdtemp())
+        config.push('test_data', test_data)
+        shutil.rmtree(config.error_reports.errordir, ignore_errors=True)
 
     def tearDown(self):
-        shutil.rmtree(config.launchpad.errorreports.errordir,
-                      ignore_errors=True)
-
-        config.launchpad.errorreports.copy_to_zlog = (
-            self.current_copy_to_zlog)
-        config.launchpad.errorreports.errordir = self.saved_errordir
+        shutil.rmtree(config.error_reports.errordir, ignore_errors=True)
+        test_config_data = config.pop('test_data')
         reset_logging()
 
     def test_newOopsId(self):
         """Test ErrorReportingUtility.newOopsId()"""
         utility = ErrorReportingUtility()
 
-        errordir = config.launchpad.errorreports.errordir
+        errordir = config.error_reports.errordir
 
         # first oops of the day
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
@@ -211,7 +207,7 @@ class TestErrorReportingUtility(unittest.TestCase):
     def test_changeErrorDir(self):
         """Test changing the error dir using the global config."""
         utility = ErrorReportingUtility()
-        errordir = config.launchpad.errorreports.errordir
+        errordir = config.error_reports.errordir
 
         # First an oops in the original error directory.
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
@@ -222,9 +218,12 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # ErrorReportingUtility reads the global config to get the
         # current error directory.
-        old_errordir = config.launchpad.errorreports.errordir
         new_errordir = tempfile.mkdtemp()
-        config.launchpad.errorreports.errordir = new_errordir
+        errordir_data = dedent("""
+            [error_reports]
+            errordir: %s
+            """ % new_errordir)
+        config.push('errordir_data', errordir_data)
 
         # Now an oops on the same day, in the new directory.
         now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
@@ -238,13 +237,13 @@ class TestErrorReportingUtility(unittest.TestCase):
             utility.lasterrordir, os.path.join(new_errordir, '2006-04-01'))
 
         shutil.rmtree(new_errordir, ignore_errors=True)
-        config.launchpad.errorreports.errordir = old_errordir
+        config_data = config.pop('errordir_data')
 
     def test_findLastOopsId(self):
         """Test ErrorReportingUtility._findLastOopsId()"""
         utility = ErrorReportingUtility()
 
-        self.assertEqual(config.launchpad.errorreports.oops_prefix, 'T')
+        self.assertEqual(config.error_reports.oops_prefix, 'T')
 
         errordir = utility.errordir()
         # write some files

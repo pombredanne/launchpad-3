@@ -205,6 +205,17 @@ class ErrorReportingUtility:
 
     def __init__(self):
         self.lastid_lock = threading.Lock()
+        self.prefix = config.error_reports
+
+    def setOopsPrefix(self, append_to_prefix):
+        """Append a string to the oops prefix.
+
+        :param append_to_prefix: a string to append to a opps_prefix.
+            Scripts that run multiple processes can append a string to
+            the oops_prefix to create a unqiue identifier for each
+            process.
+        """
+        self.prefix = config.error_reports + append_to_prefix
 
     def _findLastOopsIdFilename(self, directory):
         """Find details of the last OOPS reported in the given directory.
@@ -215,7 +226,7 @@ class ErrorReportingUtility:
         :return: a tuple (oops_id, oops_filename), which will be (0,
             None) if no OOPS is found.
         """
-        prefix = config.launchpad.errorreports.oops_prefix
+        prefix = self.prefix
         lastid = 0
         lastfilename = None
         for filename in os.listdir(directory):
@@ -286,7 +297,7 @@ class ErrorReportingUtility:
         else:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
-        errordir = os.path.join(config.launchpad.errorreports.errordir, date)
+        errordir = os.path.join(config.error_reports.errordir, date)
         if errordir != self.lasterrordir:
             self.lastid_lock.acquire()
             try:
@@ -304,7 +315,7 @@ class ErrorReportingUtility:
 
     def getOopsFilename(self, oops_id, time):
         """Get the filename for a given OOPS id and time."""
-        oops_prefix = config.launchpad.errorreports.oops_prefix
+        oops_prefix = self.prefix
         error_dir = self.errordir(time)
         second_in_day = time.hour * 3600 + time.minute * 60 + time.second
         return os.path.join(
@@ -335,7 +346,7 @@ class ErrorReportingUtility:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
-        oops_prefix = config.launchpad.errorreports.oops_prefix
+        oops_prefix = self.prefix
         day_number = (now - epoch).days + 1
         oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
         filename = self.getOopsFilename(newid, now)
@@ -426,7 +437,7 @@ class ErrorReportingUtility:
             if request:
                 request.oopsid = oopsid
 
-            if config.launchpad.errorreports.copy_to_zlog:
+            if config.error_reports.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None

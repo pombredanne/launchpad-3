@@ -29,7 +29,7 @@ class OOPSPruner(LaunchpadCronScript):
     def main(self):
         # Default to using the OOPS directory in config file.
         if not self.args:
-            self.args = [config.launchpad.errorreports.errordir]
+            self.args = [config.error_reports.errordir]
 
         oops_directories = []
         for oops_dir in self.args:

@@ -95,7 +95,7 @@ def old_oops_files(root_path, days):
     '''Generate a list of all OOPS files found under root_path that
        are older than 'days' days old.
 
-       root_path defaults to the config.launchpad.errorreports.errordir
+       root_path defaults to the config.error_reports.errordir
     '''
     now = date.today()
     for (dirpath, dirnames, filenames) in os.walk(root_path):

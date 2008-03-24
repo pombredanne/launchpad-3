@@ -431,7 +431,7 @@ class JobScheduler:
         by `PullerMaster` objects.
         """
         return set(
-            [config.launchpad.errorreports.oops_prefix + str(i)
+            [config.error_reports.oops_prefix + str(i)
              for i in range(config.supermirror.maximum_workers)])
 
     def _run(self, puller_masters):
