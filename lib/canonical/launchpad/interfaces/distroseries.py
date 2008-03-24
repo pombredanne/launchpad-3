@@ -584,6 +584,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         The supplied transaction manager will be used for intermediate
         commits to break up large copying jobs into palatable smaller
         chunks.
+
+        This method starts and commits transactions, so don't rely on `self`
+        or any other database object remaining valid across this call!
         """
 
 class IDistroSeriesSet(Interface):

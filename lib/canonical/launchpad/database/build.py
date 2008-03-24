@@ -260,23 +260,23 @@ class Build(SQLBase):
             SELECT
                 EXTRACT(EPOCH FROM SUM(qbuild.estimated_build_duration))
             FROM
-                build qbuild, buildqueue qbuildqueue, archive qarchive,
-                build jbuild, buildqueue jbuildqueue, archive jarchive
+                build qbuild, buildqueue qbuildqueue, archive qarchive
             WHERE
                 qbuild.buildstate = 0 AND
                 qbuildqueue.build = qbuild.id AND
                 qbuild.archive = qarchive.id AND
-                jbuild.buildstate = 0 AND
-                jbuildqueue.build = jbuild.id AND
-                jbuild.archive = jarchive.id AND
-                qbuild.processor = jbuild.processor AND
-                qarchive.require_virtualized = jarchive.require_virtualized AND
-                ((qbuildqueue.lastscore > jbuildqueue.lastscore) OR
-                 ((qbuildqueue.lastscore = jbuildqueue.lastscore) AND
-                  (qbuild.id < jbuild.id))) AND
-                jbuild.id = %s;
+                qbuild.processor = %s AND
+                qarchive.require_virtualized = %s AND
+                ((qbuildqueue.lastscore > %s) OR
+                 ((qbuildqueue.lastscore = %s) AND
+                  (qbuild.id < %s)))
              """
-        cur.execute(q2 % self.id)
+        cur.execute(q2 % 
+            sqlvalues(self.processor,
+                      self.is_virtualized,
+                      self.buildqueue_record.lastscore,
+                      self.buildqueue_record.lastscore,
+                      self))
         # get the sum of the estimated build time for jobs that are
         # ahead of us in the queue
         sum_of_delays = cur.fetchone()[0]
@@ -302,7 +302,7 @@ class Build(SQLBase):
             SELECT COUNT(id) FROM builder WHERE builder.processor = %s
             """
         cur = cursor()
-        cur.execute(q % self.processor.id)
+        cur.execute(q % sqlvalues(self.processor))
         pool_size = cur.fetchone()[0]
 
         if pool_size is None or not pool_size:
@@ -337,9 +337,9 @@ class Build(SQLBase):
             ORDER BY
                 remainder;
             """
-        cur.execute(q1 % (self.archive.require_virtualized,
-                         self.buildstate.value,
-                         self.processor.id))
+        cur.execute(q1 % sqlvalues(self.is_virtualized,
+                                   self.buildstate,
+                                   self.processor))
         # get the remaining build times for the jobs currently
         # building on the respective machine pool (current build
         # set)

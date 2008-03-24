@@ -5,6 +5,9 @@ __metaclass__ = type
 
 import re
 
+from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
+
 
 def valid_email(emailaddr):
     """Validate an email address.
@@ -56,3 +59,19 @@ def valid_email(emailaddr):
             return False
     return True
 
+
+def email_validator(emailaddr):
+    """Raise a LaunchpadValidationError if the email is invalid.
+
+    Otherwise, return True.
+
+    >>> email_validator('bugs@example.com')
+    True
+    >>> email_validator('not-valid')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Invalid email 'not-valid'.
+    """
+    if not valid_email(emailaddr):
+        raise LaunchpadValidationError(_("Invalid email '%s'."), emailaddr)
+    return True

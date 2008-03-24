@@ -329,29 +329,3 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     Traceback (most recent call last):
     ...
     Unauthorized: (<CodeImport at ...>, 'updateFromData', 'launchpad.Edit')
-
-
-== Security ==
-
-As we've seen above, David has access to all methods defined by
-ICodeImport and ICodeImportSet.  During the transitional period,
-anonymous and regular users do _not_ have this access.
-
-    >>> login(ANONYMOUS)
-    >>> code_import_set.new
-    Traceback (most recent call last):
-      ...
-    Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
-    >>> svn_import.id
-    Traceback (most recent call last):
-      ...
-    Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')
-    >>> login('no-priv@canonical.com')
-    >>> code_import_set.new
-    Traceback (most recent call last):
-      ...
-    Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
-    >>> svn_import.id
-    Traceback (most recent call last):
-      ...
-    Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')

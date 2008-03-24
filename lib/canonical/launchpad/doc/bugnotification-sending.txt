@@ -1036,7 +1036,6 @@ makes it write out the emails it sends.
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
-    >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> subscription = bug_three.subscribe(sample_person, sample_person)
 
@@ -1057,7 +1056,7 @@ X-Launchpad-Bug headers were added:
     ...     for message in messages:
     ...         sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
-     u'distribution=debian; distroseries=woody;...',
+     u'distribution=debian; distroseries=woody;... tags=layout-test;...',
      u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
 
 The milestone field in X-Launchpad-Bug won't be filled where no milestone is

@@ -1,12 +1,14 @@
 #!/usr/bin/python2.4
 
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# This module uses relative imports.
+# pylint: disable-msg=W0403
 
 __metaclass__ = type
 
 import _pythonpath
 
-import os, sys, logging
+import os, logging
 from signal import SIGTERM
 from optparse import OptionParser
 from canonical.config import config
@@ -24,7 +26,7 @@ if __name__ == '__main__':
         parser.error('No service name provided')
     for service in args:
         # Mailman is special, but only stop it if it was launched.
-        if service == 'mailman' and config.mailman and config.mailman.launch:
+        if service == 'mailman' and config.mailman.launch:
             stop_mailman()
             continue
         pidfile = pidfile_path(service)

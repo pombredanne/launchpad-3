@@ -76,11 +76,16 @@ class Archive(SQLBase):
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
 
+    buildd_secret = StringCol(dbName='buildd_secret', default=None)
+
     @property
     def title(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PPA:
-            return 'PPA for %s' % self.owner.displayname
+            title = 'PPA for %s' % self.owner.displayname
+            if self.private:
+                title = "Private %s" % title
+            return title
         return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
