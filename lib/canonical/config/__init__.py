@@ -90,7 +90,10 @@ class CanonicalConfig:
     def getConfig(self):
         """Return the ZConfig configuration"""
         if self._instance_name == 'testrunner':
-            # The testrunner is a section in default/launchpad.conf.
+            # The instance name is usually the name of the config directory,
+            # and always the same in lazr.config's case. In ZConfig however,
+            # the testrunner is not a directory. it is a section in the
+            # default instance's launchpad.conf file.
             config_dir = DEFAULT_CONFIG
             section = self._instance_name
         else:
