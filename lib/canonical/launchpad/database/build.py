@@ -7,7 +7,7 @@ __all__ = ['Build', 'BuildSet']
 
 import apt_pkg
 import logging
-from datetime import (datetime, timedelta)
+from datetime import datetime, timedelta
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -256,7 +256,7 @@ class Build(SQLBase):
         #
         # Please note: 'jbuild' is the job for which we calculate
         # the estimated dispatch time (job N)
-        q2 = """
+        sum_query = """
             SELECT
                 EXTRACT(EPOCH FROM SUM(qbuild.estimated_build_duration))
             FROM
@@ -271,7 +271,7 @@ class Build(SQLBase):
                  ((qbuildqueue.lastscore = %s) AND
                   (qbuild.id < %s)))
              """
-        cur.execute(q2 % 
+        cur.execute(sum_query % 
             sqlvalues(self.processor,
                       self.is_virtualized,
                       self.buildqueue_record.lastscore,
@@ -298,11 +298,11 @@ class Build(SQLBase):
 
     def _getBuildpoolSize(self):
         """Get the number of machines in our build pool."""
-        q = """
+        size_query = """
             SELECT COUNT(id) FROM builder WHERE builder.processor = %s
             """
         cur = cursor()
-        cur.execute(q % sqlvalues(self.processor))
+        cur.execute(size_query % sqlvalues(self.processor))
         pool_size = cur.fetchone()[0]
 
         if pool_size is None or not pool_size:
@@ -313,13 +313,13 @@ class Build(SQLBase):
         return pool_size
 
     def _getHeadjobDelay(self):
-        """Get the estimated dispatch time for job at the head of the
-           queue."""
+        """Get estimated dispatch time for job at the head of the queue.
+        """
         cur = cursor()
         # the query below yields the remaining build times (in seconds
         # since EPOCH) for the jobs that are currently building on the
         # machine pool of interest
-        q1 = """
+        delay_query = """
             SELECT
                 CAST (EXTRACT(EPOCH FROM 
                         (build.estimated_build_duration -
@@ -337,9 +337,9 @@ class Build(SQLBase):
             ORDER BY
                 remainder;
             """
-        cur.execute(q1 % sqlvalues(self.is_virtualized,
-                                   self.buildstate,
-                                   self.processor))
+        cur.execute(delay_query % sqlvalues(self.is_virtualized,
+                                            self.buildstate,
+                                            self.processor))
         # get the remaining build times for the jobs currently
         # building on the respective machine pool (current build
         # set)
@@ -354,7 +354,7 @@ class Build(SQLBase):
                 # this job is currently building and taking longer
                 # than estimated i.e. we don't have a clue when it
                 # will be finished; make a wild guess (1 hour?)
-                build_delay = 3600
+                build_delay = 120
             if build_delay < headjob_delay:
                 headjob_delay = build_delay
 
