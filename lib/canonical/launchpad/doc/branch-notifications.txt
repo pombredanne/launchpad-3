@@ -30,7 +30,6 @@ also sends the email to the list of recipients.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     IBranchSet)
-    >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.mailout.branch import (
     ...     email_branch_modified_notifications)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications

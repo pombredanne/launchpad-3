@@ -18,7 +18,6 @@ __all__ = [
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     'PostedMessageStatus',
-    'is_participant_in_beta_program'
     ]
 
 
@@ -755,22 +754,3 @@ class CannotChangeSubscription(Exception):
     a member of the team linked to this mailing list, when `person` is a team,
     or when `person` does not own the given email address.
     """
-
-
-def is_participant_in_beta_program(team):
-    """The given team is a participant in the mailing list beta program.
-
-    Participation in the mailing list beta program is determined by membership
-    by the team in the config.mailman.beta_testers_team.
-    """
-    # This is all temporary stuff, so do the imports here so that this entire
-    # check is easier to remove when the mailing list feature goes public.
-    from zope.component import getUtility
-    from canonical.config import config
-    from canonical.launchpad.interfaces import IPersonSet
-    beta_testers_team = getUtility(IPersonSet).getByName(
-        config.mailman.beta_testers_team)
-    # If there are no beta testers then obviously this team cannot
-    # participate in the beta program.
-    return (beta_testers_team is not None and
-            team.hasParticipationEntryFor(beta_testers_team))

@@ -11,7 +11,7 @@ from zope.interface import implements
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IDistroSeriesBinaryPackage, PackagePublishingStatus)
+    IDistroSeriesBinaryPackage)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
@@ -54,8 +54,12 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         return DistroSeriesPackageCache.selectOne("""
             distroseries = %s AND
+            archive IN %s AND
             binarypackagename = %s
-            """ % sqlvalues(self.distroseries.id, self.binarypackagename.id))
+            """ % sqlvalues(
+                self.distroseries,
+                self.distroseries.distribution.all_distro_archive_ids,
+                self.binarypackagename))
 
     @property
     def summary(self):

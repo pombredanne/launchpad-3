@@ -26,6 +26,8 @@ sys.path.insert(0, itest_helper.TOP)
 sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.config import config
+from canonical.launchpad.mailman.config import configure_smtp
+
 from Mailman.Post import inject
 from Mailman.Utils import list_names
 
@@ -56,7 +58,8 @@ class ResettingChannel(smtpd.SMTPChannel):
 class Server(smtpd.SMTPServer):
     """An SMTP server subclass that stores to an mbox file."""
     def __init__(self):
-        smtpd.SMTPServer.__init__(self, config.mailman.smtp, None)
+        addr = configure_smtp(config.mailman.smtp)
+        smtpd.SMTPServer.__init__(self, addr , None)
         self._mbox_file = sys.argv[1]
         self._mbox = open(self._mbox_file, 'w')
 

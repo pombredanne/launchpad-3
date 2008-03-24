@@ -67,7 +67,7 @@
         </tr>
       </tal:show-download-url>
 
-      <tal:hosted-branch condition="view/is_hosted_branch">
+      <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
         <tal:comment condition="nothing">
           <!-- This is a hosted branch, display upload directions -->
         </tal:comment>
@@ -157,6 +157,36 @@
     paragraph of text really, giving the branch highlights.
   </div>
 
+  <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+    <h2>Import details</h2>
+    <div id="import-details" tal:define="branch context">
+      <tal:no-codeimport condition="not: branch/code_import">
+        <p>This branch is updated by the Launchpad import system.</p>
+      </tal:no-codeimport>
+
+      <tal:has-codeimport condition="branch/code_import"
+                          define="code_import branch/code_import">
+
+        <p><strong>Status:</strong>
+        <tal:status replace="code_import/review_status/title"/>
+        </p>
+
+        <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
+          <p>This branch is an import of the Subversion branch
+          from <strong tal:content="code_import/svn_branch_url"/>.
+          </p>
+        </tal:svn-import>
+
+        <tal:cvs-import condition="code_import/rcs_type/enumvalue:CVS">
+          <p>This branch is an import of the CVS module
+          <strong tal:content="code_import/cvs_module"/> from
+          <strong tal:content="code_import/cvs_root"/>.
+          </p>
+        </tal:cvs-import>
+      </tal:has-codeimport>
+    </div>
+  </tal:imported-branch>
+
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
     <div id="branch-whiteboard-value"
@@ -171,6 +201,8 @@
     <tal:proposals repeat="mergeproposal context/dependent_branches">
       <tal:dependent-branch
           define="branch mergeproposal/source_branch;
+                  show_status python:True;
+                  show_whiteboard python:True;
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:dependent-branch>
@@ -184,6 +216,8 @@
       <tal:landing-target
           define="branch mergeproposal/target_branch;
                   dependent_branch mergeproposal/dependent_branch;
+                  show_status python:True;
+                  show_whiteboard python:True;
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-target>
@@ -196,6 +230,8 @@
     <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
       <tal:landing-candidate
           define="branch mergeproposal/source_branch;
+                  show_whiteboard python:True;
+                  show_status python:True;
                   show_associations python:True;
                   show_lifecycle python:True;
                   ">

@@ -134,7 +134,16 @@ to a content object.  There are currently links defined for:
   * people / teams
   * branches
   * bugs
+  * bug subscriptions
   * bug tasks
+  * branch merge proposals
+  * bug-branch links
+  * code imports
+  * product series
+  * blueprints
+  * blueprint-branch links
+  * projects
+  * questions
 
 
 === Person entries ===
@@ -300,6 +309,14 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> product = factory.makeProduct()
     >>> test_tales('product/fmt:link', product=product)
     u'<a href=...><img alt="" ... src="/@@/product" />&nbsp;...</a>'
+
+
+=== Questions ===
+
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> question = getUtility(IQuestionSet).get(1)
+    >>> test_tales("question/fmt:link", question=question)
+    u'<a...<img ... src="/@@/question" />&nbsp;1:...</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==
@@ -622,6 +639,9 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'
+    ...     
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
 
     >>> participation = MockBrowserRequest()
 
@@ -757,3 +777,58 @@ wrapped dbschema items too:
     Traceback (most recent call last):
     ...
     TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
+
+
+== Formatting timedelta objects ==
+
+Representing timedetla objects can be done using either exact or
+approximate durations.
+
+    >>> from datetime import timedelta
+    >>> delta = timedelta(days=2)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '2 days, 0 hours, 0 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'two days'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '2 days'
+
+    >>> delta = timedelta(days=12, hours=6, minutes=30)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '12 days, 6 hours, 30 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    '12 days'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '12 days'
+
+    >>> delta = timedelta(days=0, minutes=62)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 hour, 2 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'an hour'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '1 hour'
+
+    >>> delta = timedelta(days=0, minutes=82)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 hour, 22 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    '1 hour 20 minutes'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '1 hour 20 minutes'
+
+    >>> delta = timedelta(days=0, seconds=62)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 minute, 2.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'a minute'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '1 minute'
+
+    >>> delta = timedelta(days=0, seconds=90)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 minute, 30.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'two minutes'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '2 minutes'

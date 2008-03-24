@@ -13,18 +13,16 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
-# Need the externalbugtracker module so we can monkey-patch it.
-from canonical.launchpad.components import externalbugtracker
-# But we also import a few names for convenience.
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
     DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, UNKNOWN_REMOTE_STATUS)
+    BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.scripts import checkwatches, debbugs
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -127,11 +125,11 @@ def set_bugwatch_error_type(bug_watch, error_type):
 class OOPSHook:
     def install(self):
         self.reset()
-        self.original_report_oops = externalbugtracker.report_oops
-        externalbugtracker.report_oops = self.reportOOPS
+        self.original_report_oops = checkwatches.report_oops
+        checkwatches.report_oops = self.reportOOPS
 
     def uninstall(self):
-        externalbugtracker.report_oops = self.original_report_oops
+        checkwatches.report_oops = self.original_report_oops
         del self.original_report_oops
 
     def reportOOPS(self, message=None, properties=None, info=None):
@@ -160,12 +158,27 @@ class TestExternalBugTracker(ExternalBugTracker):
     implementation, though it doesn't actually do anything.
     """
 
+    def __init__(self, baseurl='http://example.com/'):
+        super(TestExternalBugTracker, self).__init__(baseurl)
+
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
 
         This method exists to satisfy the implementation requirements of
         `IExternalBugTracker`.
         """
+        return BugTaskStatus.UNKNOWN
+
+    def getRemoteImportance(self, bug_id):
+        """Stub implementation."""
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteImportance(self, remote_importance):
+        """Stub implementation."""
+        return BugTaskImportance.UNKNOWN
+
+    def getRemoteStatus(self, bug_id):
+        """Stub implementation."""
         return UNKNOWN_REMOTE_STATUS
 
 
@@ -377,6 +390,9 @@ class TestTrac(Trac):
     for the sake of making test data sane.
     """
 
+    # We remove the batch_size limit for the purposes of the tests so
+    # that we can test batching and not batching correctly.
+    batch_size = None
     batch_query_threshold = 10
     supports_single_exports = True
     trace_calls = False
@@ -401,6 +417,9 @@ class TestRoundup(Roundup):
     needed.
     """
 
+    # We remove the batch_size limit for the purposes of the tests so
+    # that we can test batching and not batching correctly.
+    batch_size = None
     trace_calls = False
 
     def urlopen(self, url):
