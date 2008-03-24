@@ -14,20 +14,15 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.binarypackagerelease import (
-    BinaryPackageRelease
-    )
+    BinaryPackageRelease)
 from canonical.launchpad.database.distroarchseriesbinarypackagerelease import (
-    DistroArchSeriesBinaryPackageRelease
-    )
+    DistroArchSeriesBinaryPackageRelease)
 from canonical.launchpad.database.distroseriespackagecache import (
-    DistroSeriesPackageCache
-    )
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory
-    )
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus
-    )
+    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus)
 
 
 class DistroArchSeriesBinaryPackage:
@@ -74,16 +69,26 @@ class DistroArchSeriesBinaryPackage:
             self.binarypackagename.name, self.distroarchseries.title)
 
     @property
+    def cache(self):
+        """See IDistroArchSeriesBinaryPackage."""
+        query = """
+            distroseries = %s AND
+            archive IN %s AND
+            binarypackagename = %s
+        """ % sqlvalues(self.distroseries,
+                        self.distribution.all_distro_archive_ids,
+                        self.binarypackagename)
+
+        return DistroSeriesPackageCache.selectOne(query)
+
+    @property
     def summary(self):
         """See IDistroArchSeriesBinaryPackage."""
         curr = self.currentrelease
         if curr is not None:
             return curr.summary
-        general = DistroSeriesPackageCache.selectOneBy(
-            distroseries=self.distroseries,
-            binarypackagename=self.binarypackagename)
-        if general is not None:
-            return general.summary
+        if self.cache is not None:
+            return self.cache.summary
         return None
 
     @property
@@ -92,11 +97,8 @@ class DistroArchSeriesBinaryPackage:
         curr = self.currentrelease
         if curr is not None:
             return curr.description
-        general = DistroSeriesPackageCache.selectOneBy(
-            distroseries=self.distroseries,
-            binarypackagename=self.binarypackagename)
-        if general is not None:
-            return general.description
+        if self.cache is not None:
+            return self.cache.description
         return None
 
 
