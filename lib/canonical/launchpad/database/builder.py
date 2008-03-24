@@ -690,3 +690,7 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
+
+    def getBuildersByProcessor(self, processor):
+        """Return all builders for the given processor."""
+        return Builder.selectBy(processor=processor)

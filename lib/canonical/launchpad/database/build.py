@@ -32,8 +32,9 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, NotFoundError,
-    ILaunchpadCelebrities, PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, IBuild, IBuildSet, IBuilderSet,
+    NotFoundError, ILaunchpadCelebrities, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -243,19 +244,16 @@ class Build(SQLBase):
     def estimated_buildstart(self):
         """See `IBuild`."""
         if self.buildstate != BuildStatus.NEEDSBUILD:
-            # estimated build start times are only available for
-            # pending jobs
+            # Estimated build start times are only available for
+            # pending jobs.
             return None
 
         result = 0
 
         cur = cursor()
-        # for a given build job in position N in the build queue the
+        # For a given build job in position N in the build queue the
         # query below sums up the estimated build durations for the
         # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
-        #
-        # Please note: 'jbuild' is the job for which we calculate
-        # the estimated dispatch time (job N)
         sum_query = """
             SELECT
                 EXTRACT(EPOCH FROM SUM(qbuild.estimated_build_duration))
@@ -277,48 +275,33 @@ class Build(SQLBase):
                       self.buildqueue_record.lastscore,
                       self.buildqueue_record.lastscore,
                       self))
-        # get the sum of the estimated build time for jobs that are
-        # ahead of us in the queue
+        # Get the sum of the estimated build time for jobs that are
+        # ahead of us in the queue.
         sum_of_delays = cur.fetchone()[0]
 
-        # get build dispatch time for job at the head of the queue
+        # Get build dispatch time for job at the head of the queue.
         headjob_delay = self._getHeadjobDelay()
 
         if sum_of_delays is None:
-            # this job is the head job
+            # This job is the head job.
             result = headjob_delay
         else:
-            # there are jobs ahead of us, divide the delay total by
-            # the number of machines available in the build pool
-            pool_size = float(self._getBuildpoolSize())
+            # There are jobs ahead of us. Divide the delay total by
+            # the number of machines available in the build pool.
+            pool_size = float(getUtility(
+                IBuilderSet).getBuildersByProcessor(self.processor).count())
             result = headjob_delay + int(sum_of_delays/pool_size)
 
         result = datetime.utcnow() + timedelta(seconds=result)
         return result
 
-    def _getBuildpoolSize(self):
-        """Get the number of machines in our build pool."""
-        size_query = """
-            SELECT COUNT(id) FROM builder WHERE builder.processor = %s
-            """
-        cur = cursor()
-        cur.execute(size_query % sqlvalues(self.processor))
-        pool_size = cur.fetchone()[0]
-
-        if pool_size is None or not pool_size:
-            pool_size = 0
-        else:
-            pool_size = int(pool_size)
-
-        return pool_size
-
     def _getHeadjobDelay(self):
         """Get estimated dispatch time for job at the head of the queue.
         """
         cur = cursor()
-        # the query below yields the remaining build times (in seconds
+        # The query below yields the remaining build times (in seconds
         # since EPOCH) for the jobs that are currently building on the
-        # machine pool of interest
+        # machine pool of interest.
         delay_query = """
             SELECT
                 CAST (EXTRACT(EPOCH FROM 
@@ -340,20 +323,20 @@ class Build(SQLBase):
         cur.execute(delay_query % sqlvalues(self.is_virtualized,
                                             self.buildstate,
                                             self.processor))
-        # get the remaining build times for the jobs currently
+        # Get the remaining build times for the jobs currently
         # building on the respective machine pool (current build
         # set)
         remainders = cur.fetchall()
         build_delays = set([int(row[0]) for row in remainders])
 
-        # head job delay in seconds
+        # This is the head job delay in seconds.
         headjob_delay = len(build_delays) and max(build_delays) or 0
 
         for delay in reversed(sorted(build_delays)):
             if delay < 0:
-                # this job is currently building and taking longer
+                # This job is currently building and taking longer
                 # than estimated i.e. we don't have a clue when it
-                # will be finished; make a wild guess (1 hour?)
+                # will be finished. Make a wild guess (2 minutes?).
                 build_delay = 120
             if build_delay < headjob_delay:
                 headjob_delay = build_delay
@@ -851,4 +834,3 @@ class BuildSet:
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
-
