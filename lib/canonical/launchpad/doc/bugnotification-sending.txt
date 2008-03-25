@@ -1123,6 +1123,7 @@ gets over-long.
     >>> LaunchpadZopelessLayer.switchDbUser(
     ...     config.malone.bugnotification_dbuser)
 
+    >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
     [u'another-tag layout-test yet-another']
@@ -1139,6 +1140,7 @@ won't be included.
     >>> LaunchpadZopelessLayer.switchDbUser(
     ...     config.malone.bugnotification_dbuser)
 
+    >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
@@ -1149,7 +1151,6 @@ When a notification is sent out about a bug, the
 X-Launchpad-Bug-Private header shows if the bug is marked as
 private. It can have the value "yes" or "no".
 
-    >>> bug_three = getUtility(IBugSet).get(3)
     >>> bug_three.private
     False
 
