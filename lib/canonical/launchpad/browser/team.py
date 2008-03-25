@@ -40,7 +40,8 @@ from canonical.launchpad.interfaces import (
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
     PersonVisibility, TeamContactMethod, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UnexpectedFormData, is_participant_in_beta_program)
+    TeamSubscriptionPolicy, UnexpectedFormData,
+    is_participant_in_beta_program)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -92,7 +93,8 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
             if data['subscriptionpolicy'] != TeamSubscriptionPolicy.RESTRICTED:
                 self.setFieldError(
                     'subscriptionpolicy',
-                    'Private teams must have a Restricted subscription policy.')
+                    'Private teams must have a Restricted subscription'
+                    ' policy.')
             warning = self.context.insecure_connection_warning
             if warning is not None:
                 self.setFieldError('visibility', warning)
@@ -263,7 +265,8 @@ class TeamContactAddressView(MailingListTeamBaseView):
             if not email:
                 self.setFieldError(
                     'contact_address',
-                    'Enter the contact address you want to use for this team.')
+                    'Enter the contact address you want to use for this'
+                    ' team.')
                 return
             email = getUtility(IEmailAddressSet).getByEmail(
                 data['contact_address'])
@@ -415,7 +418,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             validator=cancel_list_creation_validator)
     def cancel_list_creation(self, action, data):
         """Cancels a pending mailing list registration."""
-        getUtility(IMailingListSet).get(self.context.name).cancelRegistration()
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        mailing_list.cancelRegistration()
         self.request.response.addInfoNotification(
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)

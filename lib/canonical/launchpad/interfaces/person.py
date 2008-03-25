@@ -334,13 +334,6 @@ class PersonVisibility(DBEnumeratedType):
         membership list for this team.
         """)
 
-    PRIVATE = DBItem(30, """
-        Private
-
-        Only launchpad admins and team members can see that
-        this team even exists in launchpad.
-        """)
-
 
 class PersonNameField(BlacklistableContentNameField):
     """A Person's name, which is unique."""
