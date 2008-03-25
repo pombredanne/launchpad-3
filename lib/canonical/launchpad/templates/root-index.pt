@@ -62,13 +62,13 @@
               </a>
             </center>
           </p>
-          <span tal:condition="not: view/isBetaUser">
+          <tal:not-beta-team-member condition="not: view/isBetaUser">
           <h2>Join the Launchpad beta team</h2>
           <p id="beta-test">
             Get first access to new features and take part in the Launchpad development process.
             Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
           </p>
-          </span>
+          </tal:not-beta-team-member>
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
