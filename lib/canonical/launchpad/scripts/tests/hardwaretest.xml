@@ -235,7 +235,7 @@
                from RPM-based Linux versions? (And "exotic" variants
                like Gentoo?)
       -->
-      <package name="metacity">
+      <package name="metacity" id="200">
         <property name="installed_size" type="int">
                 868352
         </property>

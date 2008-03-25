@@ -527,7 +527,7 @@ class TestHWDBSubmissionParser(TestCase):
         """
         node = etree.fromstring("""
             <packages>
-                <package name="metacity">
+                <package name="metacity" id="1">
                     <property name="installed_size" type="int">
                         868352
                     </property>
@@ -556,25 +556,27 @@ class TestHWDBSubmissionParser(TestCase):
         result = parser._parsePackages(node)
         self.assertEqual(result,
                          {'metacity':
-                          {'installed_size': (868352, 'int'),
-                           'priority': ('optional', 'str'),
-                           'section': ('x11', 'str'),
-                           'size': (429128, 'int'),
-                           'source': ('metacity', 'str'),
-                           'summary':
-                               ('A lightweight GTK2 based Window Manager',
-                                'str'),
-                           'version': ('1:2.18.2-0ubuntu1.1', 'str')}},
+                          {'id': 1,
+                           'properties':
+                            {'installed_size': (868352, 'int'),
+                             'priority': ('optional', 'str'),
+                             'section': ('x11', 'str'),
+                             'size': (429128, 'int'),
+                             'source': ('metacity', 'str'),
+                             'summary':
+                                 ('A lightweight GTK2 based Window Manager',
+                                  'str'),
+                             'version': ('1:2.18.2-0ubuntu1.1', 'str')}}},
                          'Invalid parsing result for <packages>')
 
     def testDuplicatePackage(self):
         """Two <package> nodes with the same name are rejected."""
         node = etree.fromstring("""
             <packages>
-                <package name="foo">
+                <package name="foo" id="1">
                     <property name="size" type="int">10000</property>
                 </package>
-                <package name="foo">
+                <package name="foo" id="1">
                     <property name="size" type="int">10000</property>
                 </package>
             </packages>
@@ -871,10 +873,13 @@ class TestHWDBSubmissionParser(TestCase):
                    {'id': 2}]
         processors = [{'id': 3},
                       {'id': 4}]
+        packages = {'bzr': {'id': 5},
+                    'python-dev': {'id': 6}}
         submission = {
             'hardware': {
                 'hal': {'devices': devices},
-                'processors': processors}}
+                'processors': processors},
+            'software': {'packages': packages}}
 
         parser = SubmissionParser()
         duplicates = parser.findDuplicateIDs(submission)
@@ -883,7 +888,8 @@ class TestHWDBSubmissionParser(TestCase):
             'Duplicate IDs detected, where no duplicates exist.')
 
         for duplicate_entry in ({'id': 1},
-                                {'id': 3}):
+                                {'id': 3},
+                                {'id': 5}):
             devices.append(duplicate_entry)
             duplicates = parser.findDuplicateIDs(submission)
             self.assertEqual(
@@ -900,29 +906,47 @@ class TestHWDBSubmissionParser(TestCase):
                 % duplicate_entry['id'])
             processors.pop()
 
+            packages['python-xml'] = duplicate_entry
+            duplicates = parser.findDuplicateIDs(submission)
+            self.assertEqual(
+                duplicates, set((duplicate_entry['id'],)),
+                'Duplicate ID %i in packages not detected.'
+                % duplicate_entry['id'])
+            del packages['python-xml']
+
     def testIDMap(self):
         """Test of SubmissionParser._getIDMap."""
         devices = [{'id': 1},
                    {'id': 2}]
         processors = [{'id': 3},
                       {'id': 4}]
+        packages = {'bzr': {'id': 5},
+                    'python-dev': {'id': 6}}
         submission = {
             'hardware': {
                 'hal': {'devices': devices},
-                        'processors': processors}}
+                'processors': processors},
+            'software': {'packages': packages}}
+
         parser = SubmissionParser()
         result = parser._getIDMap(submission)
         self.assertEqual(result,
                          {1: devices[0],
                           2: devices[1],
                           3: processors[0],
-                          4: processors[1]},
+                          4: processors[1],
+                          5: packages['bzr'],
+                          6: packages['python-dev']},
                          'Invalid result of SubmissionParser._getIDMap')
 
     def testInvalidIDReferences(self):
         """Test of SubmissionParser.checkIDReferences."""
         devices = [{'id': 1},
                    {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        packages = {'bzr': {'id': 5},
+                    'python-dev': {'id': 6}}
         processors = [{'id': 3},
                       {'id': 4}]
         questions = [{'targets': [{'id': 1}]},
@@ -932,6 +956,7 @@ class TestHWDBSubmissionParser(TestCase):
             'hardware': {
                 'hal': {'devices': devices},
                         'processors': processors},
+            'software': {'packages': packages},
             'questions': questions}
         parser = SubmissionParser()
         invalid_ids = parser.findInvalidIDReferences(submission)
