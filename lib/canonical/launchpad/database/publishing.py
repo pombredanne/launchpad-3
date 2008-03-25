@@ -483,25 +483,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackageFile.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.build=Build.id AND
-            Build.sourcepackagerelease=%s AND
-            DistroArchSeries.distroseries=%s AND
-
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries=
-                DistroArchSeries.id AND
-            BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s AND
-            BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(
-                    self.sourcepackagerelease,
-                    self.distroseries,
-                    self.archive,
-                    self.pocket,
-                    PackagePublishingStatus.PUBLISHED)
+            Build.sourcepackagerelease=%s AND
+            BinaryPackagePublishingHistory.archive=%s
+            """ % sqlvalues(self.sourcepackagerelease, self.archive)
+
         binariesClauseTables = [
             'BinaryPackageFile', 'BinaryPackagePublishingHistory',
-            'BinaryPackageRelease', 'Build', 'DistroArchSeries']
+            'BinaryPackageRelease', 'Build']
 
         preJoins = ['content']
 

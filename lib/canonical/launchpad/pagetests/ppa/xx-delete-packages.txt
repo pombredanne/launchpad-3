@@ -390,8 +390,11 @@ source and binaries are marked as DELETED and the corresponding
     foo 1.0 in hoary
     Deletion comment: Go foo, go ...
 
-Note that after deletion the binary filename is not present in the
-details 'Files' section and the 'Built Packages' section is omitted.
+After the deletion, any user accessing No-privileges' PPA page can see
+a row representing 'foo' and it is marked as 'superseded'. In its
+corresponding expandable area, he can see that the 'Built Packages'
+section is omitted, however the source and binary files can be
+downloaded from librarian.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
     >>> user_browser.getControl(
@@ -408,4 +411,5 @@ details 'Files' section and the 'Built Packages' section is omitted.
     Deleted ... ago by No Privileges Person (Go foo, go ...)
     Changelog
     Files
+      foo-bin_i386.deb (18 bytes)
       foo.dsc (28 bytes)
