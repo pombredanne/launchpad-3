@@ -212,15 +212,14 @@ class TestPerson(unittest.TestCase):
                 ' blueprint subscriber.')
 
     def test_visibility_validator_team_member(self):
-        self.guadamen.addMember(self.otherteam, self.otherteam)
+        self.guadamen.addMember(self.otherteam, self.guadamen)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
                 'This team cannot be made private since it is used as a'
-                ' member of another team and a membership reviewer.')
-
+                ' member of another team.')
 
 
 def test_suite():
