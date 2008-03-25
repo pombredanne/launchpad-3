@@ -243,9 +243,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     specifications = Attribute("The specifications targeted to this "
         "series.")
 
-    binary_package_caches = Attribute("All of the cached binary package "
-        "records for this distroseries.")
-
     language_packs = Attribute(
         "All language packs associated with this distribution series.")
 
@@ -489,7 +486,14 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'main_archive'.
         """
 
-    def removeOldCacheItems(log):
+    def getBinaryPackageCaches(archive=None):
+        """All of the cached binary package records for this distroseries.
+
+        If 'archive' is not given it will return all caches stored for the
+        distroseries main archives (PRIMARY and PARTNER).
+        """
+
+    def removeOldCacheItems(archive, log):
         """Delete any records that are no longer applicable.
 
         Consider all binarypackages marked as REMOVED.
@@ -497,7 +501,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         DEBUG level messages.
         """
 
-    def updateCompletePackageCache(log, ztm):
+    def updateCompletePackageCache(archive, log, ztm):
         """Update the binary package cache
 
         Consider all binary package names published in this distro series.
@@ -505,7 +509,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         DEBUG level messages.
         """
 
-    def updatePackageCache(name, log):
+    def updatePackageCache(binarypackagename, archive, log):
         """Update the package cache for a given IBinaryPackageName
 
         'log' is required, it should be a logger object able to print
@@ -580,6 +584,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         The supplied transaction manager will be used for intermediate
         commits to break up large copying jobs into palatable smaller
         chunks.
+
+        This method starts and commits transactions, so don't rely on `self`
+        or any other database object remaining valid across this call!
         """
 
 class IDistroSeriesSet(Interface):

@@ -50,6 +50,7 @@ The form should have been filled with sample data values.
     >>> print browser.getControl('Summary').value
     Experimental feature branch for developping and testing Klingon
     support in GNOME Terminal.
+    Home page: http://trekkies.example.com/k12n
 
 Then, post the changes to the summary. Also add a trailing
 slash to the URL.

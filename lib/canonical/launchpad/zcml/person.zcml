@@ -527,6 +527,14 @@
     />
 
   <browser:page
+    name="+oauth-tokens"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonOAuthTokensView"
+    permission="launchpad.Edit"
+    template="../templates/person-oauth-tokens.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView"

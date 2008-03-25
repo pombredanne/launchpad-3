@@ -35,7 +35,12 @@ branches in the listings.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.fetch('tr'):
     ...     print extract_text(row)
-    Name      Status    Project   Last Commit
+    Name
+    Status
+    Project
+    Last Modified
+    Last Commit
+    Revision Author
 
 Unfortunately our sample data is somewhat lacking in the last commit
 fields.  There are a couple of branches that have them, but most don't
@@ -450,18 +455,19 @@ are shown.
 
 == The last commit ==
 
-The last commit column shows the revision number, time, revision author,
-and part of the revision log for the last commit that Launchpad knows
-about.  The revision number is linked to code browse if the branch is not
-private.
+The last commit column shows the revision number, and part of the
+revision log for the last commit that Launchpad knows about.  The
+revision number is linked to code browse if the branch is not private.
+The revision author is shown in the column after the last commit to
+allow the user to sort on the revision author column.
 
     >>> browser.open('http://code.launchpad.dev/firefox/+branches')
     >>> for commit in find_tags_by_class(browser.contents, 'lastCommit'):
     ...     print extract_text(commit)
-    1. ... weeks ago by mark.shuttleworth Import of Mozilla Firefox 0.9.1
-    1. ... weeks ago by mark.shuttleworth Import of Mozilla Firefox 0.9
-    1. ... weeks ago by mark.shuttleworth Import of Mozilla Firefox 0.9.2
- 
+    1.  Import of Mozilla Firefox 0.9.1
+    1.  Import of Mozilla Firefox 0.9
+    1.  Import of Mozilla Firefox 0.9.2
+
 The entire commit message is shown in a div that gets shown when
 the user moves the mouse over the last commit for a particular branch.
 

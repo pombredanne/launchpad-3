@@ -204,6 +204,33 @@
       permission="zope.Public"
       />
 
+  <!-- OAuth-related pages. -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+request-token"
+      class="canonical.launchpad.browser.OAuthRequestTokenView"
+      permission="zope.Public" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+oauth-authorize"
+      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      template="../templates/oauth-authorize.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+token-authorized"
+      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
+      template="../templates/token-authorized.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+access-token"
+      class="canonical.launchpad.browser.OAuthAccessTokenView"
+      permission="zope.Public" />
+
 
   <!-- Declare robots.txt file for the root -->
   <browser:page
@@ -238,6 +265,14 @@
       name="+link"
       class="canonical.launchpad.browser.launchpad.LinkView"
       template="../templates/launchpad-link.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-link.pt"
       permission="zope.Public"
       />
 

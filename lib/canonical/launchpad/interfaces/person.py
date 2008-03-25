@@ -59,8 +59,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.teammembership import (
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -531,6 +530,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute(
         'Bounties to which this person subscribes.')
+
+    oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
     sshkeys = Attribute(_('List of SSH keys'))
 

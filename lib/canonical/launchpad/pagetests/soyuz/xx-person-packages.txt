@@ -76,6 +76,7 @@ And another helper function to set the private flag on a PPA:
     ...         name))
     ...     admin_browser.getLink("Administer archive").click()
     ...     admin_browser.getControl(name="field.private").value = private
+    ...     admin_browser.getControl(name="field.buildd_secret").value = "x"
     ...     admin_browser.getControl("Save").click()
 
 We will also amend some packages so that they belong to "cprov" and will
@@ -146,14 +147,14 @@ both packages:
     >>> print_ppa_rows(nopriv_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
+    iceweasel   Private PPA for No Privileges Person - Ubuntu Warty 1.0
         2006-04-11 None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(admin_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
+    iceweasel   Private PPA for No Privileges Person - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 Let's make sabdfl's archive private and check the page again.
@@ -162,12 +163,12 @@ Let's make sabdfl's archive private and check the page again.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(user_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(anon_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 Notice that this iceweasel package in sabdfl's PPA is still appearing
@@ -183,7 +184,7 @@ It still shows up:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(user_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 Now we'll unpublish it in the primary archive.
@@ -214,12 +215,12 @@ applicable:
 
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(nopriv_browser)
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
+    iceweasel   Private PPA for No Privileges Person - Ubuntu Warty 1.0
         2006-04-11 None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(admin_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
+    iceweasel   Private PPA for No Privileges Person - Ubuntu Warty 1.0
         2006-04-11 None - -
