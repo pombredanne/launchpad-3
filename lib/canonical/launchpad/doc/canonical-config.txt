@@ -271,6 +271,7 @@ environment, and the testrunner overrides the environment and config,
 we need to reconfigure the environment and reload the canonical.config
 module to test CanonicalConfig's behaviour.
 
+    >>> true_config = config
     >>> import os
     >>> from canonical.config import LPCONFIG, DEFAULT_SECTION
     >>> os.environ[LPCONFIG] = 'staging'
@@ -300,18 +301,12 @@ And the staging ZConfig (that is deprecated) is also selected.
 
 We need to reset the config for the testrunner.
 
-    >>> os.environ[LPCONFIG] = 'testrunner'
-    >>> os.environ[DEFAULT_SECTION] = 'testrunner'
-    >>> config_module = reload(canonical.config)
-    >>> from canonical.config import config
-
+    >>> config = true_config
+    >>> canonical.config.config = config
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.dbname
     'launchpad_ftest'
     >>> config._cache.testrunner
     <SectionValue for canonical 'testrunner'>
-    >>> config._cache.default
-    Traceback (most recent call last):
-     ...
-    AttributeError: 'zope.thread.local' object has no attribute 'default'
+
