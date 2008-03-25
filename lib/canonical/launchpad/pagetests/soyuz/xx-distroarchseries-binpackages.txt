@@ -47,7 +47,7 @@ $LP/ubuntu/$DISTRORELEASE/$ARCHTAG/$BINARYNAME/$VERSION
 
 It's also reachable in a more natural way, starting from distribution page:
 
-    >>> browser.open('http://localhost/ubuntu')
+    >>> browser.open('http://launchpad.dev/ubuntu')
 
 Then we get to the DistroSeries page:
 
@@ -64,7 +64,7 @@ Now we are able to use the search box in this page:
 
 Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
 
-    >>> browser.getLink("mozilla-firefox").click()
+    >>> browser.getLink(url="mozilla-firefox/0.9").click()
     >>> browser.title
     'mozilla-firefox 0.9 (i386 binary) in ubuntu warty'
 
