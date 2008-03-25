@@ -1127,6 +1127,21 @@ gets over-long.
     ...     message.get_all('X-Launchpad-Bug-Tags')
     [u'another-tag layout-test yet-another']
 
+If we remove the tags from the bug, the X-Launchpad-Bug-Tags header
+won't be included.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_three.tags = []
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(
+    ...     config.malone.bugnotification_dbuser)
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     message.get_all('X-Launchpad-Bug-Tags')
+
 
 == The X-Launchpad-Bug-Private header ==
 
@@ -1134,6 +1149,7 @@ When a notification is sent out about a bug, the
 X-Launchpad-Bug-Private header shows if the bug is marked as
 private. It can have the value "yes" or "no".
 
+    >>> bug_three = getUtility(IBugSet).get(3)
     >>> bug_three.private
     False
 
@@ -1147,8 +1163,6 @@ Predictably, private bugs are sent with a slightly different header:
     True
     >>> bug_three.private
     True
-
-    >>> commit()
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
@@ -1175,8 +1189,6 @@ simple "yes":
     >>> bug_three.security_related = True
     >>> bug_three.security_related
     True
-
-    >>> commit()
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
