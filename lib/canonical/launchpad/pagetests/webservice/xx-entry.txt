@@ -205,10 +205,10 @@ In addition to changing an object's data fields, you can change its
 relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
-  >>> admins = get_person('admins').jsonBody()
+  >>> admins = webservice.get('/~admins').jsonBody()
   >>> admins['teamowner_link']
-  u'http://api.launchpad.dev/people/sabdfl'
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/people/salgado'
+  u'http://api.launchpad.dev/~sabdfl'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/~salgado'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -264,7 +264,7 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/people/admins'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 500 Internal Server Error
   ...ERROR:  new row for relation "person" violates check constraint

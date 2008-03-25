@@ -572,9 +572,12 @@ How are these Resource objects connected to the web? Through the
 ServiceRootResource. This is a special resource that represents the
 root of the object tree.
 
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...    ILaunchpadApplication)
     >>> from canonical.lazr.interfaces import IServiceRootResource
     >>> from canonical.lazr.rest import ServiceRootResource
-    >>> class IMyWebServiceApplication(IServiceRootResource):
+    >>> class IMyWebServiceApplication(ILaunchpadApplication,
+    ...                                IServiceRootResource):
     ...     """Marker interface for the web service."""
     >>> class MyServiceRootResource(ServiceRootResource):
     ...     implements(IMyWebServiceApplication)
@@ -591,7 +594,7 @@ will act as though you had performed a GET on the URL
     ...     path_info, method='GET', body_instream=None, environ=None):
     ...     test_environ = {
     ...         'SERVER_URL': 'http://api.launchpad.dev',
-    ...         'HTTP_HOST': 'api.lauchpad.dev',
+    ...         'HTTP_HOST': 'api.launchpad.dev',
     ...         'PATH_INFO': path_info,
     ...     }
     ...     if environ:
@@ -606,6 +609,9 @@ will act as though you had performed a GET on the URL
 
     >>> request = create_web_service_request('/')
     >>> app = MyServiceRootResource()
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> getUtility(IOpenLaunchBag).add(app)
+
     >>> app(request)
     'This is a web service.'
 
@@ -820,9 +826,9 @@ before. Note that we send the entire dictionary back to the server.
 
 The cookbook's URL has changed back to what it was before.
 
-    >>> request.response.getStatus()
+    >>> put_request.response.getStatus()
     301
-    >>> request.response.getHeader('Location')
+    >>> put_request.response.getHeader('Location')
     'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
 
 So has the cookbook's name.
@@ -839,11 +845,13 @@ their URLs, we make the change by modifying the cookbook's
 'author_link' field to point to another author.
 
     >>> joy['author_link'] = u'http://api.launchpad.dev/authors/Julia%20Child'
-    >>> request, resource = make_request('PUT', ['cookbooks',
-    ...                                          'The Joy of Cooking'], joy)
+    >>> resource = create_web_service_request(
+    ...     '/cookbooks/The%20Joy%20of%20Cooking',
+    ...     body_instream=StringIO(simplejson.dumps(joy)), environ=headers,
+    ...     method='PUT').traverse(app)
     >>> resource()
     ''
 
-    >>> joy = simplejson.loads(get_resource())
+    >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
     u'http://api.launchpad.dev/authors/Julia%20Child'

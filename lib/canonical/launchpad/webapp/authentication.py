@@ -15,7 +15,7 @@ import binascii
 import random
 import sha
 
-from oauth import OAuthRequest
+from contrib.oauth import OAuthRequest
 
 from zope.interface import implements
 from zope.component import getUtility

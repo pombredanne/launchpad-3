@@ -40,6 +40,7 @@ from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
@@ -133,12 +134,14 @@ class HTTPResource:
             query != '' or fragment != ''):
             raise NotFound(self, url, self.request)
 
-        path = map(urllib.unquote, path.split('/')[1:])
-        path.reverse()
+        path_parts = map(urllib.unquote, path.split('/')[1:])
+        path_parts.reverse()
 
-        request = BaseRequest(StringIO(), {})
-        setFirstLayer(request, IBrowserApplicationRequest)
-        request.setTraversalStack(path)
+        # Import here is neccessary to avoid circular import.
+        from canonical.launchpad.webapp.servers import WebServiceClientRequest
+        request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
+        setFirstLayer(request, WebServiceLayer)
+        request.setTraversalStack(path_parts)
 
         publication = self.request.publication
         request.setPublication(publication)
@@ -343,7 +346,7 @@ class EntryResource(ReadWriteResource):
                 # 'value' is the URL to an object. Dereference the URL
                 # to find the actual object.
                 try:
-                    value = self.dereference_url(value).getContext()
+                    value = self.dereference_url(value)
                 except NotFound:
                     self.request.response.setStatus(400)
                     return ("Your value for the attribute '%s' wasn't "
