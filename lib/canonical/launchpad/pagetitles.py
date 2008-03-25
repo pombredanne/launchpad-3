@@ -427,6 +427,8 @@ def codeimport(context, view):
 
 codeimport_list = 'Code Imports'
 
+codeimport_new = ViewLabel()
+
 codeofconduct_admin = 'Administer Codes of Conduct'
 
 codeofconduct_index = ContextTitle('%s')
