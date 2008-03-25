@@ -266,7 +266,7 @@ class AcceptanceTests(SSHTestCase):
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
             url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            summary=None, home_page=None, whiteboard=None, private=private,
+            summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
     @defer_to_thread

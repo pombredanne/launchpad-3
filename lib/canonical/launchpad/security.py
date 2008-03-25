@@ -870,16 +870,6 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportSet
 
 
-class SeeCodeImport(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImport.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImport
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
@@ -1143,11 +1133,25 @@ class ViewBuildRecord(EditBuildRecord):
             # Anyone can see non-private archives.
             return True
 
+        # If the permission check on the sourcepackagerelease for this
+        # build passes then it means the build can be released from
+        # privacy since the source package is published publicly.
+        # This happens when copy-package is used to re-publish a private
+        # package in the primary archive.
+        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        if auth_spr.checkAuthenticated(user):
+            return True
+
         return EditBuildRecord.checkAuthenticated(self, user)
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
-        return not self.obj.archive.private
+        if not self.obj.archive.private:
+            return True
+
+        # See comment above.
+        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        return auth_spr.checkUnauthenticated()
 
 
 class AdminQuestion(AdminByAdminsTeam):
@@ -1245,10 +1249,23 @@ class AccessBranch(AuthorizationBase):
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
                 return True
-        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
     def checkUnauthenticated(self):
         return not self.obj.private
+
+
+class EditBranch(AuthorizationBase):
+    """The owner, bazaar experts or admins can edit branches."""
+    permission = 'launchpad.Edit'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
@@ -1276,8 +1293,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         Any team member can edit a branch subscription for their team.
         Launchpad Admins can also edit any branch subscription.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.person) or user.inTeam(admins)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
@@ -1322,12 +1341,13 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the reviewer for the target_branch
           * an administrator
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
                 user.inTeam(self.obj.target_branch.owner) or
                 user.inTeam(self.obj.target_branch.reviewer) or
-                user.inTeam(admins))
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class ViewEntitlement(AuthorizationBase):

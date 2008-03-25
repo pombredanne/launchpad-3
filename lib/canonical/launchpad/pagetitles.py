@@ -189,9 +189,13 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
+branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
+
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_enqueue = 'Queue branch for merging'
 
 branchmergeproposal_index = 'Proposal to merge branch'
 
@@ -387,6 +391,8 @@ builder_index = ContextTitle('Build machine %s')
 
 builder_mode = ContextTitle('Change mode for %s')
 
+builder_new = 'Register a new build machine'
+
 builders_index = 'Launchpad build farm'
 
 calendar_index = ContextTitle('%s')
@@ -420,6 +426,8 @@ def codeimport(context, view):
     return view.title
 
 codeimport_list = 'Code Imports'
+
+codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 

@@ -11,6 +11,7 @@ Ubuntu is using Launchpad for translations
     Uses Launchpad for:
     Answers
     Bug tracking
+    Blueprints
     Translations
     ...
 

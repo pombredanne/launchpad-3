@@ -122,14 +122,26 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     official_answers = BoolCol(
         dbName='official_answers', notNull=True, default=False)
+    official_blueprints = BoolCol(
+        dbName='official_blueprints', notNull=True, default=False)
+    official_codehosting = BoolCol(
+        dbName='official_codehosting', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+
+    @property
+    def official_anything(self):
+        return True in (self.official_malone, self.official_rosetta,
+                        self.official_blueprints, self.official_answers,
+                        self.official_codehosting)
+
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
@@ -683,6 +695,7 @@ class ProductSet:
             Product.id in (
                 select distinct(product) from Branch
                 where lifecycle_status in %s)
+            and Product.active
             ''' % sqlvalues(DEFAULT_BRANCH_STATUS_IN_LISTING),
             orderBy='name')
         if num_products is not None:
@@ -692,6 +705,7 @@ class ProductSet:
     def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
         return Product.select('''
+            Product.active and
             Product.development_focus = ProductSeries.id and
             ProductSeries.user_branch = Branch.id and
             Branch.branch_type in %s

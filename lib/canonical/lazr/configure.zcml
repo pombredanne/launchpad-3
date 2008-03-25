@@ -20,4 +20,6 @@
         <allow attributes="name title value description sortkey enum __sqlrepr__" />
     </class>
 
+    <include package="canonical.lazr.rest" />
+
 </configure>

@@ -1,11 +1,10 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Helper functions for testing XML-RPC services."""
 
 __metaclass__ = type
 __all__ = [
     'apply_for_list',
-    'beta_program_enable',
     'fault_catcher',
     'get_alternative_email',
     'mailman',
@@ -104,8 +103,7 @@ def print_info(info):
         print team_name
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
-            if (config.mailman is not None and
-                config.mailman.archive_address and
+            if (config.mailman.archive_address and
                 address == config.mailman.archive_address):
                 # Don't print this information
                 pass
@@ -163,6 +161,7 @@ def new_team(team_name, with_list=False):
     else:
         return team, new_list_for_team(team)
 
+
 def new_list_for_team(team):
     """A helper that creates a new, active mailing list for a team.
 
@@ -194,9 +193,6 @@ def apply_for_list(browser, team_name):
     browser.getControl(
         name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
-    # XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
-    # complete.
-    beta_program_enable(team_name)
     # Apply for the team's mailing list'
     browser.open('http://launchpad.dev/~%s' % team_name)
     browser.getLink('Configure mailing list').click()
@@ -257,23 +253,6 @@ def review_list(list_name, status=None):
     list_set = getUtility(IMailingListSet)
     mailing_list = list_set.get(list_name)
     mailing_list.review(lpadmin, status)
-
-
-def beta_program_enable(team_name):
-    """Join a team to the mailing list beta program team.
-
-    This allows the team to apply for mailing lists.
-
-    XXX BarryWarsaw 06-Dec-2007 This function can go away when mailing lists
-    go public.  Also, DO NOT use this in a non-pagetest!
-    """
-    login('foo.bar@canonical.com')
-    person_set = getUtility(IPersonSet)
-    testers_team = person_set.getByName(config.mailman.beta_testers_team)
-    target_team = person_set.getByName(team_name)
-    reviewer = testers_team.teamowner
-    testers_team.addMember(target_team, reviewer, force_team_add=True)
-    logout()
 
 
 class MailmanStub:

@@ -21,10 +21,9 @@ from canonical.config import config
 
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
-    stepto)
+    ApplicationMenu, enabled_with_permission, LaunchpadView,
+    Link, Navigation, stepto)
 import canonical.launchpad.layers
 
 from canonical.lazr import decorates
@@ -48,15 +47,19 @@ class BazaarApplicationView(LaunchpadView):
     def series_set(self):
         return getUtility(IProductSeriesSet)
 
+    @property
     def branch_count(self):
         return getUtility(IBranchSet).count()
 
+    @property
     def product_count(self):
         return getUtility(IProductSet).getProductsWithBranches().count()
 
+    @property
     def branches_with_bugs_count(self):
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
+    @property
     def import_count(self):
         return self.series_set.searchImports().count()
 
@@ -171,17 +174,13 @@ class BazaarProductView:
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
         product_set = getUtility(IProductSet)
-        products = shortlist(
-            product_set.getProductsWithBranches(num_products),
-            2000,
-            hardlimit=3000)
+        products = list(product_set.getProductsWithBranches(num_products))
 
         # Any product that has a defined user branch for the development
         # product series is shown in another colour.  Given the above
         # query, all the products will be in the cache anyway.
         user_branch_products = set(
-            [product.id for product in
-             product_set.getProductsWithUserDevelopmentBranches()])
+            product_set.getProductsWithUserDevelopmentBranches())
 
         branch_set = getUtility(IBranchSet)
         branch_summaries = branch_set.getActiveUserBranchSummaryForProducts(
@@ -191,6 +190,7 @@ class BazaarProductView:
             summary['branch_count'] for summary in branch_summaries.values()])
         # Lowest half are small.
         small_count = counts[len(counts)/2]
+
         # Top 20% are big.
         large_count = counts[-(len(counts)/5)]
 
@@ -218,7 +218,7 @@ class BazaarProductView:
             else:
                 branch_size = 'medium'
 
-            important = product.id in user_branch_products
+            important = product in user_branch_products
 
             items.append(ProductInfo(
                 product, num_branches, branch_size, elapsed, important))

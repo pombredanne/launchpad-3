@@ -117,12 +117,4 @@
     </div>
   </tal:hosted-branch>
 
-  <tal:hosted-branch tal:condition="branch/branch_type/enumvalue:IMPORTED">
-    <tal:comment condition="nothing">
-      <!-- Once we have the handy link to the code import object, we
-           should provide details here. -->
-    </tal:comment>
-    <p>This branch is updated by the Launchpad import system.</p>
-  </tal:hosted-branch>
-
 </div>

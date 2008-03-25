@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugTaskCollection',
     'BugTaskEntry',
     'IBugTaskEntry'
 ]
@@ -14,7 +13,7 @@ from zope.component import adapts
 from zope.schema import Bool, Choice, Datetime, Object, Text
 
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest import Collection, Entry
+from canonical.lazr.rest import Entry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
@@ -90,8 +89,6 @@ class BugTaskEntry(Entry):
     decorates(IBugTaskEntry)
     schema = IBugTaskEntry
 
-    parent_collection_name = 'bugtasks'
-
     @property
     def status_explanation(self):
         """Perform a simple name mapping."""
@@ -111,21 +108,4 @@ class BugTaskEntry(Entry):
     def date_created(self):
         """Perform a simple name mapping."""
         return self.context.datecreated
-
-
-class BugTaskCollection(Collection):
-    """A collection of bugtasks."""
-
-    def getEntryPath(self, entry):
-        """See `ICollection`."""
-        return str(entry.context.id)
-
-    def lookupEntry(self, id):
-        """Find a BugTask by ID."""
-        return self.context.get(id)
-
-    def find(self):
-        """It makes little sense to expose a list of all the bugtasks."""
-        return None
-
 

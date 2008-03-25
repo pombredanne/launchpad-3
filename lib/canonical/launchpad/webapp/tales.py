@@ -635,6 +635,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         return " ".join(badges)
 
 
+class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IQuestion to a formatted string. Used for image:icon."""
+
+    def icon(self):
+        return '<img alt="" height="14" width="14" src="/@@/question" />'
+
+
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for ISpecification objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon
@@ -1021,6 +1028,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
     _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1043,10 +1051,22 @@ class ProductSeriesFormatterAPI(CustomizableFormatter):
                 'product': self._context.product.displayname}
 
 
+class QuestionFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for question objects."""
+
+    _link_summary_template = _('%(id)s: %(title)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'id': str(self._context.id), 'title': self._context.title}
+
+
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
     _link_summary_template = _('%(title)s')
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1204,8 +1224,23 @@ class DateTimeFormatterAPI:
 class DurationFormatterAPI:
     """Adapter from timedelta objects to a formatted string."""
 
+    implements(ITraversable)
+
     def __init__(self, duration):
         self._duration = duration
+
+    def traverse(self, name, furtherPath):
+        if name == 'exactduration':
+            return self.exactduration()
+        elif name == 'approximateduration':
+            use_words = True
+            if len(furtherPath) == 1:
+                if 'use-digits' == furtherPath[0]:
+                    furtherPath.pop()
+                    use_words = False
+            return self.approximateduration(use_words)
+        else:
+            raise TraversalError(name)
 
     def exactduration(self):
         """Format timedeltas as "v days, w hours, x minutes, y.z seconds"."""
@@ -1233,13 +1268,19 @@ class DurationFormatterAPI:
 
         return ', '.join(parts)
 
-    def approximateduration(self):
+    def approximateduration(self, use_words=True):
         """Return a nicely-formatted approximate duration.
 
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
         forth.
 
         See https://launchpad.canonical.com/PresentingLengthsOfTime.
+
+        :param use_words: Specificly determines whether or not to use
+            words for numbers less than or equal to ten.  Expanding
+            numbers to words makes sense when the number is used in
+            prose or a singualar item on a page, but when used in
+            a table, the words do not work as well.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
@@ -1259,7 +1300,7 @@ class DurationFormatterAPI:
         # list of (boundary, display value) tuples.  We want to show
         # the display value corresponding to the lowest boundary that
         # 'seconds' is less than, if one exists.
-        representation_in_seconds = (
+        representation_in_seconds = [
             (1.5, '1 second'),
             (2.5, '2 seconds'),
             (3.5, '3 seconds'),
@@ -1273,7 +1314,9 @@ class DurationFormatterAPI:
             (45, '40 seconds'),
             (55, '50 seconds'),
             (90, 'a minute'),
-        )
+        ]
+        if not use_words:
+            representation_in_seconds[-1] = (90, '1 minute')
 
         # Break representation_in_seconds into two pieces, to simplify
         # finding the correct display value, through the use of the
@@ -1296,10 +1339,13 @@ class DurationFormatterAPI:
         # verbal representation of "1", because we tend to special
         # case the number 1 for various approximations, and we usually
         # use a word like "an", instead of "one", e.g. "an hour")
-        number_name = {
-            2: 'two', 3: 'three', 4: 'four', 5: 'five',
-            6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
-            10: 'ten'}
+        if use_words:
+            number_name = {
+                2: 'two', 3: 'three', 4: 'four', 5: 'five',
+                6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+                10: 'ten'}
+        else:
+            number_name = dict((number, number) for number in range(2, 11))
 
         # Convert seconds into minutes, and round it.
         minutes, remaining_seconds = divmod(seconds, 60)
@@ -1307,12 +1353,14 @@ class DurationFormatterAPI:
         minutes = int(round(minutes))
 
         if minutes <= 59:
-            number_as_text = number_name.get(minutes, str(minutes))
-            return number_as_text + " minutes"
+            return "%s minutes" % number_name.get(minutes, str(minutes))
 
         # Is the duration less than an hour and 5 minutes?
         if seconds < (60 + 5) * 60:
-            return "an hour"
+            if use_words:
+                return "an hour"
+            else:
+                return "1 hour"
 
         # Next phase: try and calculate an approximate duration
         # greater than one hour, but fewer than ten hours, to a 10
@@ -1336,7 +1384,7 @@ class DurationFormatterAPI:
 
         # Is the duration less than ten and a half hours?
         if seconds < (10.5 * 3600):
-            return 'ten hours'
+            return '%s hours' % number_name[10]
 
         # Try to calculate the approximate number of hours, to a
         # maximum of 47.
@@ -1346,7 +1394,7 @@ class DurationFormatterAPI:
 
         # Is the duration fewer than two and a half days?
         if seconds < (2.5 * 24 * 3600):
-            return 'two days'
+            return '%s days' % number_name[2]
 
         # Try to approximate to day granularity, up to a maximum of 13
         # days.
@@ -1356,7 +1404,7 @@ class DurationFormatterAPI:
 
         # Is the duration fewer than two and a half weeks?
         if seconds < (2.5 * 7 * 24 * 3600):
-            return 'two weeks'
+            return '%s weeks' % number_name[2]
 
         # If we've made it this far, we'll calculate the duration to a
         # granularity of weeks, once and for all.

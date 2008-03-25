@@ -83,18 +83,17 @@ class AllVirtualHostsConfiguration:
         if self._has_vhost_data:
             return
         from canonical.config import config
-        launchpad_conf_vhosts = config.launchpad.vhosts
-        self._use_https = launchpad_conf_vhosts.use_https
+        self._use_https = config.vhosts.use_https
         self._configs = {}
         self._hostnames = set()
-        for conf_item_name in launchpad_conf_vhosts.getSectionAttributes():
-            vhost = getattr(launchpad_conf_vhosts, conf_item_name)
-            if getattr(vhost, 'hostname', None) is None:
+        for section in config.getByCategory('vhost'):
+            if section.hostname is None:
                 continue
-            self._configs[conf_item_name] = config = VirtualHostConfig(
-                vhost.hostname,
-                vhost.althostnames,
-                vhost.rooturl,
+            category, vhost = section.category_and_section_names
+            self._configs[vhost] = config = VirtualHostConfig(
+                section.hostname,
+                section.althostnames,
+                section.rooturl,
                 self._use_https)
             self._hostnames.add(config.hostname)
             self._hostnames.update(config.althostnames)
