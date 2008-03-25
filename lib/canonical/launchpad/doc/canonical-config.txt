@@ -274,7 +274,7 @@ module to test CanonicalConfig's behaviour.
     >>> true_config = config
     >>> import os
     >>> from canonical.config import LPCONFIG, DEFAULT_SECTION
-    >>> os.environ[LPCONFIG] = 'staging'
+    >>> os.environ[LPCONFIG] = 'mailman-itests'
     >>> os.environ[DEFAULT_SECTION] = 'default'
 
     # reload the CanonicalConfig class object.
@@ -282,16 +282,16 @@ module to test CanonicalConfig's behaviour.
     >>> from canonical.config import config
 
     >>> config.filename
-    '.../configs/staging/launchpad-lazr.conf'
+    '.../configs/mailman-itests/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/staging-lazr.conf'
+    '.../configs/default/launchpad-lazr.conf'
     >>> config.database.dbname
-    'launchpad_staging'
+    'launchpad_dev'
 
 And the staging ZConfig (that is deprecated) is also selected.
 
     >>> config.dbname
-    'launchpad_staging'
+    'launchpad_dev'
     >>> config._cache.default
     <SectionValue for canonical 'default'>
     >>> config._cache.testrunner
