@@ -364,5 +364,6 @@ Finally, change the visibility to Private Membership which will fail.
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
     There is 1 error.
-    Private teams must not be used as a bug subscriber or an answer contact.
+    This team cannot be made private since it is used as a bug subscriber
+    and an answer contact.
 

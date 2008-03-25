@@ -25,7 +25,9 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
     SQLObjectNotFound, SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from sqlobject.include.validators import Validator, InvalidField
 
+from canonical.lazr.enum import DBItem
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -96,6 +98,33 @@ from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.person import public_person_validator
+
+class VisibilityValidator(Validator):
+    """Prevent teams with insecure connections from being made private."""
+
+    def _verify(self, value, state):
+        if isinstance(value, DBItem) and value in PersonVisibility:
+            # value does not need to be converted.
+            pass
+        elif value not in PersonVisibility.items.mapping:
+            # Can't convert value to PersonVisibility object.
+            raise InvalidField('Not in PersonVisibility', value, state)
+        else:
+            # Convert value.
+            value = PersonVisibility.items.mapping[value]
+        if value != PersonVisibility.PUBLIC:
+            person = state.soObject
+            warning = person.insecure_connection_warning
+            if warning is not None:
+                raise InvalidField(warning, value, state)
+
+    def fromPython(self, value, state=None):
+        self._verify(value, state)
+        return value
+
+    def toPython(self, value, state=None):
+        self._verify(value, state)
+        return value
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -225,7 +254,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
     visibility = EnumCol(
         enum=PersonVisibility,
-        default=PersonVisibility.PUBLIC)
+        default=PersonVisibility.PUBLIC,
+        validator=VisibilityValidator())
 
     personal_standing = EnumCol(
         enum=PersonalStanding, default=PersonalStanding.UNKNOWN)
@@ -1562,125 +1592,135 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             ('Announcement', 'registrant', 'an announcement registrant'),
             ('AnswerContact', 'person', 'an answer contact'),
             ('Archive', 'owner', 'a PPA owner'),
-            ('Bounty', 'reviewer', 'a bounty reviewer'),
+            ('BinaryPackagePublishingHistory', 'removed_by',
+             'a binary package remover'),
             ('Bounty', 'owner', 'a bounty owner'),
+            ('Bounty', 'reviewer', 'a bounty reviewer'),
             ('BountySubscription', 'person', 'a bounty subscriber'),
+            ('Branch', 'author', 'a branch author'),
+            ('Branch', 'owner', 'a branch owner'),
+            ('Branch', 'registrant', 'a branch registrant'),
+            ('Branch', 'reviewer', 'a branch reviewer'),
+            ('BranchMergeProposal', 'merge_reporter',
+             'a branch merge reporter'),
             ('BranchMergeProposal', 'registrant', 'a branch merge registrant'),
             ('BranchMergeProposal', 'reviewer', 'a branch merge reviewer'),
-            ('BranchMergeProposal', 'merge_reporter', 'a branch merge reporter'),
-            ('Branch', 'registrant', 'a branch registrant'),
-            ('Branch', 'owner', 'a branch owner'),
-            ('Branch', 'author', 'a branch author'),
-            ('Branch', 'reviewer', 'a branch reviewer'),
-            #('BranchVisibilityPolicy', 'team', 'a team with a branch visibility policy'),
             ('BranchSubscription', 'person', 'a branch subscriber'),
-            #('BugActivity', 'person', 'a bug subscriber'),
-            ('BugBranch', 'registrant', 'a bug branch registrant'),
-            ('BugNomination', 'owner', 'a bug nomination owner'),
-            ('BugNomination', 'decider', 'a bug nomination decider'),
             ('Bug', 'owner', 'a bug owner'),
-            #('Bug', 'who_made_private', 'a bug privatizer'),
+            ('BugBranch', 'registrant', 'a bug branch registrant'),
+            ('BugNomination', 'decider', 'a bug nomination decider'),
+            ('BugNomination', 'owner', 'a bug nomination owner'),
+            ('BugPackageInfestation', 'creator',
+             'a bug package infestation owner'),
+            ('BugPackageInfestation', 'lastmodifiedby',
+             'a bug package infestation updater'),
+            ('BugPackageInfestation', 'verifiedby',
+             'a bug package infestation verifier'),
+            ('BugProductInfestation', 'creator',
+             'a bug product infestation owner'),
+            ('BugProductInfestation', 'lastmodifiedby',
+             'a bug product infestation updater'),
+            ('BugProductInfestation', 'verifiedby',
+             'a bug product infestation verifier'),
             ('BugSubscription', 'person', 'a bug subscriber'),
-            #('BugSubscription', 'subscribed by', 'a bug subscriber'),
             ('BugTask', 'assignee', 'a bug assignee'),
             ('BugTask', 'owner', 'a bugtask owner'),
             ('BugTracker', 'owner', 'a bugtracker owner'),
             ('BugWatch', 'owner', 'a bugwatch owner'),
-    #('Builder', 'owner', 'a bugwatch owner'),
+            ('CodeImport', 'assignee', 'a code importer'),
+            ('CodeImport', 'owner', 'a code importer'),
+            ('CodeImport', 'registrant', 'a code importer'),
             ('CodeImportEvent', 'person', 'a code importer'),
             ('CodeImportJob', 'requesting_user', 'a code importer'),
-            ('CodeImport', 'registrant', 'a code importer'),
-            ('CodeImport', 'owner', 'a code importer'),
-            ('CodeImport', 'assignee', 'a code importer'),
             ('CodeImportResult', 'requesting_user', 'a code importer'),
-            ('DistributionMirror', 'owner', 'a distribution mirror owner'),
-            ('DistributionMirror', 'reviewer', 'a distribution mirror reviewer'),
             ('Distribution', 'bugcontact', 'a distribution bug contact'),
             ('Distribution', 'driver', 'a distribution driver'),
+            ('Distribution', 'language_pack_admin',
+             'a distribution language pack admin'),
             ('Distribution', 'members', "a distribution member's team"),
-            ('Distribution', 'owner', 'a distribution owner'),
             ('Distribution', 'mirror_admin', 'a distribution mirror admin'),
+            ('Distribution', 'owner', 'a distribution owner'),
             ('Distribution', 'upload_admin', 'a distribution upload admin'),
-            ('Distribution', 'language_pack_admin', 'a distribution language pack admin'),
+            ('DistributionMirror', 'owner', 'a distribution mirror owner'),
+            ('DistributionMirror', 'reviewer',
+             'a distribution mirror reviewer'),
             ('DistroArchSeries', 'owner', 'a distroarchseries owner'),
             ('DistroComponentUploader', 'uploader', 'a distribution uploader'),
-            ('DistroSeries', 'owner', 'a distribution series owner'),
             ('DistroSeries', 'driver', 'a distribution series driver'),
-            ('FAQ', 'owner', 'a FAQ owner'),
+            ('DistroSeries', 'owner', 'a distribution series owner'),
             ('FAQ', 'last_updated_by', 'a FAQ updater'),
+            ('FAQ', 'owner', 'a FAQ owner'),
             ('HWSubmission', 'owner', 'a hardware DB owner'),
-            ('BugProductInfestation', 'creator', 'a bug product infestation owner'),
-            ('BugProductInfestation', 'verifiedby', 'a bug product infestation verifier'),
-            ('BugProductInfestation', 'lastmodifiedby', 'a bug product infestation updater'),
-            ('BugPackageInfestation', 'creator', 'a bug package infestation owner'),
-            ('BugPackageInfestation', 'verifiedby', 'a bug package infestation verifier'),
-            ('BugPackageInfestation', 'lastmodifiedby', 'a bug package infestation updater'),
-            ('MailingList', 'team', 'a mailinglist team'),
             ('MailingList', 'registrant', 'a mailinglist registrant'),
             ('MailingList', 'reviewer', 'a mailinglist reviewer'),
+            ('MailingList', 'team', 'a mailinglist team'),
             ('MailingListSubscription', 'person', 'a mailinglist subscriber'),
             ('MentoringOffer', 'owner', 'a mentor owner'),
             ('MentoringOffer', 'team', 'a mentor'),
             ('Message', 'owner', 'a commenter'),
-            ('PackageBugContact', 'bugcontact', 'a package bug contact'),
-            ('Packaging', 'owner', 'a package owner'),
-            #('PersonLocation', 'person', 'a person location'),
-            #('PersonLocation', 'last_modified_by', 'a person location'),
-            ('Person', 'registrant', 'a person registrant'),
             ('POExportRequest', 'person', 'a PO export requester'),
             ('POFile', 'lasttranslator', 'a translator'),
             ('POFile', 'owner', 'a translator'),
             ('POFileTranslator', 'person', 'a translator'),
-            ('Poll', 'team', 'a polled team'),
-            ('Vote', 'person', 'a voter'),
-            ('VoteCast', 'person', 'a voter'),
             ('POSubscription', 'person', 'a PO subscriber'),
             ('POTemplate', 'owner', 'a PO template owner'),
-            ('Product', 'owner', 'a project owner'),
+            ('PackageBugContact', 'bugcontact', 'a package bug contact'),
+            ('Packaging', 'owner', 'a package owner'),
+            ('Person', 'registrant', 'a person registrant'),
+            ('Poll', 'team', 'a polled team'),
             ('Product', 'bugcontact', 'a project bug contact'),
-            ('Product', 'security_contact', 'a project bug contact'),
             ('Product', 'driver', 'a project driver'),
+            ('Product', 'owner', 'a project owner'),
+            ('Product', 'security_contact', 'a project bug contact'),
             ('ProductRelease', 'owner', 'a project release owner'),
             ('ProductReleaseFile', 'uploader', 'a project release uploader'),
-            ('ProductSeries', 'owner', 'a project series owner'),
             ('ProductSeries', 'driver', 'a project series driver'),
-            ('Project', 'owner', 'a project owner'),
+            ('ProductSeries', 'owner', 'a project series owner'),
             ('Project', 'driver', 'a project driver'),
-            ('SourcePackagePublishingHistory', 'removed_by', 'a source package remover'),
-            ('BinaryPackagePublishingHistory', 'removed_by', 'a binary package remover'),
-            ('SecureSourcePackagePublishingHistory', 'removed_by', 'a source package remover'),
-            ('SecureBinaryPackagePublishingHistory', 'removed_by', 'a binary package remover'),
-            ('Question', 'owner', 'a question owner'),
+            ('Project', 'owner', 'a project owner'),
             ('Question', 'answerer', 'a question answerer'),
             ('Question', 'assignee', 'a question assignee'),
-            ('QuestionReopening', 'reopener', 'a question reopener'),
+            ('Question', 'owner', 'a question owner'),
             ('QuestionReopening', 'answerer', 'a question answerer'),
+            ('QuestionReopening', 'reopener', 'a question reopener'),
             ('QuestionSubscription', 'person', 'a question subscriber'),
             ('RevisionAuthor', 'person', 'a revision author'),
-            ('SourcePackageRelease', 'creator', 'a source package release creator'),
-            ('SourcePackageRelease', 'maintainer', 'a source package release maintainer'),
-            ('SpecificationBranch', 'registrant', 'a blueprint branch registrant'),
-            ('SpecificationFeedback', 'reviewer', 'a blueprint reviewer'),
-            ('SpecificationFeedback', 'requester', 'a blueprint requester'),
-            ('Specification', 'assignee', 'a blueprint assignee'),
-            ('Specification', 'drafter', 'a blueprint drafter'),
+            ('SecureBinaryPackagePublishingHistory', 'removed_by',
+             'a binary package remover'),
+            ('SecureSourcePackagePublishingHistory', 'removed_by',
+             'a source package remover'),
+            ('SourcePackagePublishingHistory', 'removed_by',
+             'a source package remover'),
+            ('SourcePackageRelease', 'creator',
+             'a source package release creator'),
+            ('SourcePackageRelease', 'maintainer',
+             'a source package release maintainer'),
             ('Specification', 'approver', 'a blueprint approver'),
-            ('Specification', 'owner', 'a blueprint owner'),
-            ('Specification', 'goal_proposer', 'a blueprint goal_proposer'),
-            ('Specification', 'goal_decider', 'a blueprint goal_decider'),
+            ('Specification', 'assignee', 'a blueprint assignee'),
             ('Specification', 'completer', 'a blueprint completer'),
+            ('Specification', 'drafter', 'a blueprint drafter'),
+            ('Specification', 'goal_decider', 'a blueprint goal_decider'),
+            ('Specification', 'goal_proposer', 'a blueprint goal_proposer'),
+            ('Specification', 'owner', 'a blueprint owner'),
             ('Specification', 'starter', 'a blueprint starter'),
+            ('SpecificationBranch', 'registrant',
+             'a blueprint branch registrant'),
+            ('SpecificationFeedback', 'requester', 'a blueprint requester'),
+            ('SpecificationFeedback', 'reviewer', 'a blueprint reviewer'),
             ('SpecificationSubscription', 'person', 'a blueprint subscriber'),
-            ('SprintAttendance', 'attendee', 'a sprint attendee'),
-            ('Sprint', 'owner', 'a sprint owner'),
             ('Sprint', 'driver', 'a sprint driver'),
-            ('SprintSpecification', 'registrant', 'a sprint blueprint registrant'),
+            ('Sprint', 'owner', 'a sprint owner'),
+            ('SprintAttendance', 'attendee', 'a sprint attendee'),
             ('SprintSpecification', 'decider', 'a sprint blueprint decider'),
+            ('SprintSpecification', 'registrant',
+             'a sprint blueprint registrant'),
             ('TeamMembership', 'person', 'a member of another team'),
             ('TeamMembership', 'reviewer', 'a membership reviewer'),
             ('TranslationGroup', 'owner', 'a translation group owner'),
             ('TranslationMessage', 'submitter', 'a translation submitter'),
             ('Translator', 'translator', 'a translator'),
+            ('Vote', 'person', 'a voter'),
+            ('VoteCast', 'person', 'a voter'),
             ]
         cur = cursor()
         warnings = set()
@@ -1724,10 +1764,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             if len(warnings) == 1:
                 message = warnings[0]
             else:
-                message = '%s or %s' % (
+                message = '%s and %s' % (
                     ', '.join(warnings[:-1]),
                     warnings[-1])
-            return 'Private teams must not be used as %s.' % message
+            return ('This team cannot be made private since it is used as %s.'
+                    % message)
 
     def getActiveMemberships(self):
         """See `IPerson`."""
