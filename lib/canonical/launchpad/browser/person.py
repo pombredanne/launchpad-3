@@ -970,8 +970,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'common_packages',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'reassign', 'common_packages', 'related_projects',
+             'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

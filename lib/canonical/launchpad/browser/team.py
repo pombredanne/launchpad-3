@@ -10,7 +10,6 @@ __all__ = [
     'TeamContactAddressView',
     'TeamMailingListConfigurationView',
     'TeamEditView',
-    'TeamEditVisibilityView',
     'TeamMemberAddView',
     ]
 
@@ -117,18 +116,6 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
             # context's underlying description, so change that instead.
             self.widgets['name'].context.description = _(
                 'This team has a mailing list and may not be renamed.')
-
-
-class TeamEditVisibilityView(LaunchpadEditFormView):
-
-    schema = ITeam
-    field_names = ['visibility']
-    custom_widget('visibility', LaunchpadRadioWidget, orientation='vertical')
-
-    @action('Save', name='save')
-    def action_save(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
 
 
 def generateTokenAndValidationEmail(email, team):

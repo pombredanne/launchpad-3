@@ -344,7 +344,7 @@ membership is public.
     >>> from canonical.launchpad.interfaces import PersonVisibility
     >>> launchpad_team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> vcs_imports = person_set.getByName('vcs-imports')
-    >>> vcs_imports.visibility = PersonVisibility.PRIVATE
+    >>> vcs_imports.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
 
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
