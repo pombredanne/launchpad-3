@@ -556,6 +556,9 @@ class TranslationImporter:
                 }
 
                 errors.append(error)
+                if logger is not None:
+                    logger.info(
+                        "Conflicting updates on message %d." % potmsgset.id)
                 continue
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but

@@ -12,6 +12,8 @@
 <body>
   <div metal:fill-slot="main">
 
+    <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
+
     <h1>Builds for <tal:title replace="context/title" /></h1>
 
     <div tal:replace="structure context/@@+builds-list"/>

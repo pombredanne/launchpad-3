@@ -235,10 +235,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         default=PersonVisibility.PUBLIC)
 
     personal_standing = EnumCol(
-        enum=PersonalStanding, default=PersonalStanding.UNKNOWN)
+        enum=PersonalStanding, default=PersonalStanding.UNKNOWN,
+        notNull=True)
 
-    personal_standing_reason = StringCol(
-        default=None, dbName='personal_standing_reason_text')
+    personal_standing_reason = StringCol(default=None)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
