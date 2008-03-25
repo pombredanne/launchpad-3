@@ -598,18 +598,10 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Admin"
+    permission="launchpad.Special"
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"
-    />
-
-  <browser:page
-    name="+editvisibility"
-    for="canonical.launchpad.interfaces.ITeam"
-    class="canonical.launchpad.browser.TeamEditVisibilityView"
-    permission="launchpad.Admin"
-    template="../templates/person-editvisibility.pt"
     />
 
   <browser:page

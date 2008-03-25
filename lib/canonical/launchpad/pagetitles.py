@@ -892,8 +892,6 @@ person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
 person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 
-person_editvisibility = ContextDisplayName(smartquote("%s's Visibility"))
-
 person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 # person_foaf is an rdf file
