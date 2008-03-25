@@ -14,7 +14,7 @@ import unittest
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
-from oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
