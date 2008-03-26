@@ -208,6 +208,11 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
+    # If the bug has tags we add an X-Launchpad-Bug-Tags header.
+    if bug.tags:
+        tag_string = ' '.join(bug.tags)
+        msg.add_header('X-Launchpad-Bug-Tags', tag_string)
+
     # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
     # headers. These are simple yes/no values denoting privacy and
     # security for the bug.
