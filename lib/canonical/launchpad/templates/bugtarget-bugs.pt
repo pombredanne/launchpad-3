@@ -108,7 +108,10 @@
                 <strong tal:content="pending_bugwatches/count"></strong>
                 <tal:label
                   tal:replace="pending_bugwatches/label">bugs</tal:label>
-                need forwarding upstream
+                <tal:need-or-needs
+                    define="count pending_bugwatches/count"
+                    content="python:(count == 1) and 'needs' or 'need'" />
+                forwarding upstream
               </a>
             </li>
             <li tal:define="expirable_bugs view/expirable_bugs_info"
