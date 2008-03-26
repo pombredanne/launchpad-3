@@ -4,11 +4,10 @@
 
 __metaclass__ = type
 
-__all__ = ['TwistedTestCase']
+__all__ = []
 
-import signal
 import thread
-from unittest import TestCase, TestLoader, TestResult
+from unittest import TestLoader
 
 from canonical.testing import TwistedLayer
 from canonical.twistedsupport import MethodDeferrer
@@ -18,70 +17,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.interface import Interface
 
 
-class TwistedTestCase(TrialTestCase):
-    """Base test case to use for Twisted tests."""
-
-    layer = TwistedLayer
-
-
-class TestCaseThatChangesSignals(TwistedTestCase):
-
-    def clobber(self):
-        # clobber SIGINT, SIGTERM and SIGCHLD, because other Twisted test cases
-        # may have already run, so this sets a unique test handler that cannot
-        # exist elsewhere.
-        def dummy_handler(signal, frame):
-            pass
-        signal.signal(signal.SIGINT, dummy_handler)
-        signal.signal(signal.SIGTERM, dummy_handler)
-        signal.signal(signal.SIGCHLD, dummy_handler)
-
-    # our "test" methods don't have test_ prefixes so that test runners don't
-    # accidentally discover them.
-    def a_test_that_passes(self):
-        self.clobber()
-
-    def a_test_that_fails(self):
-        self.clobber()
-        self.fail()
-
-    def a_test_that_errors(self):
-        self.clobber()
-        1/0
-
-
-class SignalRestorationTestCase(TestCase):
-
-    def test_signals(self):
-        # Grab the current SIGINT, SIGTERM, SIGCHLD handlers.
-        sigint = signal.getsignal(signal.SIGINT)
-        sigterm = signal.getsignal(signal.SIGTERM)
-        sigchld = signal.getsignal(signal.SIGCHLD)
-
-        # Construct the test cases.
-        passing_test_case = TestCaseThatChangesSignals('a_test_that_passes')
-        fails_test_case = TestCaseThatChangesSignals('a_test_that_fails')
-        error_test_case = TestCaseThatChangesSignals('a_test_that_errors')
-
-        result = TestResult()
-        # Constructing the test case shouldn't change the signal handlers
-        self.assertSignalsUnchanged(sigint, sigterm, sigchld)
-
-        for testcase in [passing_test_case, fails_test_case, error_test_case]:
-            # Run the test case
-            testcase(result)
-
-            # The signals should be restored, even though the test case clobbered
-            # them.
-            self.assertSignalsUnchanged(sigint, sigterm, sigchld)
-
-    def assertSignalsUnchanged(self, sigint, sigterm, sigchld):
-        self.assertEqual(sigint, signal.getsignal(signal.SIGINT))
-        self.assertEqual(sigterm, signal.getsignal(signal.SIGTERM))
-        self.assertEqual(sigchld, signal.getsignal(signal.SIGCHLD))
-
-
-class TestMethodDeferrer(TwistedTestCase):
+class TestMethodDeferrer(TrialTestCase):
 
     layer = TwistedLayer
 

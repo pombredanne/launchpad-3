@@ -12,6 +12,7 @@ import unittest
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 
 from sqlobject import SQLObjectNotFound
@@ -22,7 +23,6 @@ from canonical.launchpad.interfaces import PackagePublishingPocket
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroSeries
-from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts import distributionmirror_prober
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
@@ -34,7 +34,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -62,7 +62,9 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class TestProberProtocolAndFactory(TwistedTestCase):
+class TestProberProtocolAndFactory(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.orig_proxy = os.getenv('http_proxy')
