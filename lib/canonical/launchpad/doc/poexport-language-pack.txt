@@ -378,14 +378,18 @@ that last part based on .po files and the original en-US.xpi file. To
 achieve that, we export all translations for XPI files in a special
 directory: xpi/translation_domain/
 
+=== Sample data initialisation ===
+
 We need to import an XPI template and a translation to see those files
 exported as part of language packs.
-
 
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from canonical.launchpad.translationformat.tests.test_xpi_import \
     ...     import get_en_US_xpi_file_to_import
+
+We are going to import translations for mozilla-firefox package in
+grumpy distro series.
 
     >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
     >>> spn = SourcePackageName.byName('mozilla-firefox')
@@ -395,6 +399,8 @@ exported as part of language packs.
     ...     owner=mark, languagepack=True, path='en-US.xpi',
     ...     header=pot_header)
 
+Attach the en-US.xpi (the template) file.
+
     >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> published = True
@@ -403,29 +409,39 @@ exported as part of language packs.
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template)
 
+Attach the es.xpi file (the translation) file.
+
     >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
     >>> firefox_es_translation = firefox_template.newPOFile('es')
-    >>> # Attach it to the import queue.
     >>> translation_entry = translation_import_queue.addOrUpdateEntry(
     ...     'es.xpi', es_xpi.read(), published,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template,
     ...     pofile=firefox_es_translation)
 
-    # We must approve the entries to be able to import it.
+Before we are ready to import the attached files, we need to approve
+them first.
+
     >>> template_entry.status = RosettaImportStatus.APPROVED
     >>> translation_entry.status = RosettaImportStatus.APPROVED
 
-    # The file data is stored in the Librarian, so we have to commit the
-    # transaction to make sure it's stored properly.
+Given that the files are attached to Librarian, we need to commit the
+transaction to make sure it's stored properly and available.
+
     >>> transaction.commit()
 
-    >>> # Prepare the import queue to handle a new .xpi import.
+We do now the import from the queue:
+
     >>> (subject, body) = firefox_template.importFromQueue(template_entry)
     >>> (subject, body) = firefox_es_translation.importFromQueue(
     ...     translation_entry)
     >>> flush_database_caches()
     >>> transaction.commit()
+
+
+=== Language pack export with XPI files ===
+
+We are now ready to get an exported language pack with XPI files.
 
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
@@ -435,6 +451,9 @@ exported as part of language packs.
     ...     output_file=None,
     ...     logger=logger)
     >>> transaction.commit()
+
+We get other entries in language pack + en-US.xpi file and
+the translations in .po file format.
 
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)

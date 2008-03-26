@@ -19,6 +19,13 @@ from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer
 
+
+source_comment_for_shortcuts = (
+    u"Select the shortcut key that you want to use. Please,\n"
+    u"don't change this translation if you are not really\n"
+    u"sure about what you are doing.\n")
+
+
 def get_en_US_xpi_file_to_import(subdir):
     """Return an en-US.xpi file object ready to be imported.
 
@@ -225,10 +232,7 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment,
-                    u"Select the shortcut key that you want to use. Please,\n"
-                    u"don't change this translation if you are not really\n"
-                    u"sure about what you are doing.\n")
+                    message.sourcecomment, source_comment_for_shortcuts)
             elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
@@ -241,10 +245,7 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment,
-                    u"Select the shortcut key that you want to use. Please,\n"
-                    u"don't change this translation if you are not really\n"
-                    u"sure about what you are doing.\n")
+                    message.sourcecomment, source_comment_for_shortcuts)
 
         # Check that we got all messages.
         self.assertEquals(
@@ -345,10 +346,7 @@ class XpiTestCase(unittest.TestCase):
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment,
-            u"Select the shortcut key that you want to use. Please,\n"
-            u"don't change this translation if you are not really\n"
-            u"sure about what you are doing.\n")
+            potmsgset.sourcecomment, source_comment_for_shortcuts)
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
@@ -364,10 +362,7 @@ class XpiTestCase(unittest.TestCase):
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment,
-            u"Select the shortcut key that you want to use. Please,\n"
-            u"don't change this translation if you are not really\n"
-            u"sure about what you are doing.\n")
+            potmsgset.sourcecomment, source_comment_for_shortcuts)
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
