@@ -25,7 +25,8 @@ because of this should probably never be used.
 
     >>> alias.expires == NEVER_EXPIRES
     True
-    >>> alias = lfas.create('text.txt', len(data), StringIO(data), 'text/plain')
+    >>> alias = lfas.create(
+    ...     'text.txt', len(data), StringIO(data), 'text/plain')
 
 The default expiry of None means the file will expire a few days after
 it is no longer referenced in the database.
@@ -225,7 +226,7 @@ client can't see the database records yet).
 
 Some files should not be generally available publicly. If you know the
 URL, any file can be retrieved directly from the librarian. For this
-reason, there is a restricted librarian for access is restricted
+reason, there is a restricted librarian to which access is restricted
 (at the system-level). This means that only Launchpad has direct access
 to the host. You use the IRestrictedLibrarianClient to access this
 librarian.
@@ -256,7 +257,7 @@ attribute set.
     This is private data.
     >>> file_alias.close()
 
-If you try to retrieve this file through the standard ILibrarianClient.
+If you try to retrieve this file through the standard ILibrarianClient,
 you'll get a DownloadFailed error.
 
     >>> client.getFileByAlias(private_file_id)
@@ -316,7 +317,7 @@ also fails:
       ...
     DownloadFailed: ...
 
-The remoteAddFile() on the restricted client, also create a restricted
+The remoteAddFile() on the restricted client, also creates a restricted
 file:
 
     >>> url = restricted_client.remoteAddFile(

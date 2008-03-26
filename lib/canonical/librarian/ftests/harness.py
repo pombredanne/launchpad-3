@@ -130,7 +130,6 @@ class LibrarianTestSetup:
 class TacLibrarianTestSetup(TacTestSetup):
     """Start the regular librarian instance."""
 
-
     def setUpRoot(self):
         """Taken care by LibrarianTestSetup."""
 
@@ -177,7 +176,6 @@ class TacRestrictedLibrarianTestSetup(TacLibrarianTestSetup):
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):
-
     """Write contents in disk for a librarian sampledata."""
     filepath = os.path.join(
         config.librarian_server.root, _relFileLocation(fileid))

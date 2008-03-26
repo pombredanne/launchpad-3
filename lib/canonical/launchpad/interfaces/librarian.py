@@ -53,9 +53,9 @@ class ILibraryFileAlias(Interface):
 
     restricted = Bool(
         title=_('Is this file alias restricted.'),
-        required=True, readonly=True, 
-        description=_('''If the file is restricted, it can only be retrieved
-        through the restricted librarian.'''))
+        required=True, readonly=True,
+        description=_('If the file is restricted, it can only be '
+                      'retrieved through the restricted librarian.'))
 
     # XXX Guilherme Salgado, 2007-01-18 bug=80487:
     # We can't use TextLine here because they return
