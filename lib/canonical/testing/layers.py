@@ -253,6 +253,7 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
+            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)

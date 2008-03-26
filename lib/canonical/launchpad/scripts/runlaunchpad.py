@@ -47,6 +47,8 @@ class TacFile(Service):
             attributes.
         :param pre_launch: A callable that is called before the launch process.
         """
+        # No point calling super's __init__.
+        # pylint: disable-msg=W0231
         self.name = name
         self.tac_filename = tac_filename
         self.config = configuration
