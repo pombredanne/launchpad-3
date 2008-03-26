@@ -108,8 +108,8 @@ class CodeImportBaseView(LaunchpadFormView):
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for rcs locations."""
-        # No field in this view needs an optional marker, so we can be
-        # simple here.
+        # No field in either the new or edit view needs an optional marker,
+        # so we can be simple here.
         return False
 
     def setSecondaryFieldError(self, field, error):
@@ -302,7 +302,7 @@ class CodeImportEditView(CodeImportBaseView):
     internals to do the associated mappings.
     """
 
-    # Need this to render the context to peopulate the form fields.
+    # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
     field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
@@ -318,7 +318,7 @@ class CodeImportEditView(CodeImportBaseView):
 
     @property
     def adapters(self):
-        """See `LaunchpadFormView`"""
+        """See `LaunchpadFormView`."""
         return {ICodeImport: self.code_import}
 
     def setUpFields(self):
@@ -361,7 +361,7 @@ class CodeImportEditView(CodeImportBaseView):
         self.request.response.addNotification(
             'The code import has been approved.')
 
-    @action(_('Set Invalid'), name='invalidate', condition=_showInvalidate)
+    @action(_('Mark Invalid'), name='invalidate', condition=_showInvalidate)
     def invalidate_action(self, action, data):
         """Invalidate the import."""
         self.code_import.invalidate(data, self.user)
@@ -383,6 +383,8 @@ class CodeImportEditView(CodeImportBaseView):
             self._validateCVS(
                 data.get('cvs_root'), data.get('cvs_module'),
                 self.code_import)
-        else:
+        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
             self._validateSVN(
                 data.get('svn_branch_url'), self.code_import)
+        else:
+            raise AssertionError('Unknown rcs_type for code import.')

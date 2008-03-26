@@ -145,6 +145,9 @@ class CodeImport(SQLBase):
             setattr(self, name, value)
         event_set.newModify(self, user, token)
 
+    def __repr__(self):
+        return "<CodeImport for %s>" % self.branch.unique_name
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
