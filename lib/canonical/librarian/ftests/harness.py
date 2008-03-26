@@ -116,15 +116,23 @@ class LibrarianTestSetup:
         """Clear all files from the Librarian"""
         cleanupLibrarianFiles()
 
+    @property
+    def root(self):
+        """The root directory for the librarian file repository."""
+        return config.librarian_server.root
+
     def setUpRoot(self):
         """Create the librarian root archive."""
-        os.makedirs(config.librarian_server.root, 0700)
+        # This should not happen in normal usage, but might if someone
+        # interrupts the test suite.
+        if os.path.exists(self.root):
+            self.tearDownRoot()
+        os.makedirs(self.root, 0700)
 
     def tearDownRoot(self):
         """Remove the librarian root archive."""
-        root = config.librarian_server.root
-        if os.path.isdir(root):
-            shutil.rmtree(root)
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
 
 
 class TacLibrarianTestSetup(TacTestSetup):
