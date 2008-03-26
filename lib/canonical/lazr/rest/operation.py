@@ -5,7 +5,6 @@
 from zope.formlib.form import Fields, setUpWidgets
 from zope.interface import implements
 
-from zope.app.form.interfaces import IInputWidget
 from canonical.lazr.interfaces import (
     IResourceGETOperation, IResourcePOSTOperation)
 
