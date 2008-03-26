@@ -39,15 +39,6 @@ class BugFeedContentView(LaunchpadView):
         return ViewPageTemplateFile('templates/bug.pt')(self)
 
 
-class BugFeedEntry(FeedEntry):
-    """See `IFeedEntry`."""
-    def construct_id(self):
-        url_path = urlparse(self.link_alternate)[2]
-        return 'tag:launchpad.net,%s:%s' % (
-            self.date_created.date().isoformat(),
-            url_path)
-
-
 class BugsFeedBase(FeedBase):
     """Abstract class for bug feeds."""
 
@@ -81,7 +72,7 @@ class BugsFeedBase(FeedBase):
 
     def _sortByDateCreated(self, bugs):
         return sorted(bugs,
-                      key=lambda bug: bug.datecreated,
+                      key=lambda bug: (bug.datecreated, bug.id),
                       reverse=True)
 
     def _getRawItems(self):
@@ -95,8 +86,9 @@ class BugsFeedBase(FeedBase):
         """
         # XXX: BradCrittenden 2008-03-26 bug=206811: The screening of private
         # bugs should be done in the database query.
-        bugs = [bug for bug in self._getRawItems()
-                 if not bug.private]
+        bugs = self._getRawItems()
+        for bug in bugs:
+            assert not bug.private, "Private bugs should not be retrieved for feeds."
         return self._sortByDateCreated(bugs)
 
     def getItems(self):
@@ -125,7 +117,7 @@ class BugsFeedBase(FeedBase):
         """See `IFeed`."""
         return ViewPageTemplateFile('templates/bug-html.pt')(self)
 
-    def getBugsFromBugtasks(self, tasks):
+    def getBugsFromBugTasks(self, tasks):
         """Given a list of BugTasks return the list of associated bugs.
 
         Since a Bug can have multiple BugTasks, we only select bugs that have not
@@ -138,6 +130,7 @@ class BugsFeedBase(FeedBase):
             bug_ids.append(task.bugID)
             if len(bug_ids) >= self.quantity:
                 break
+        # XXX: BradCrittenden 2008-03-26 bug=TBD:
         # For database efficiency we want to do something like the following:
         # bugs = self.context.select("id in %s" % sqlvalues(bug_ids))
         # Should this be a new method on BugSet?
@@ -175,7 +168,7 @@ class BugFeed(BugsFeedBase):
         return id_
 
     def _getRawItems(self):
-        """Get the raw set of items for the feed."""
+        """The list of bugs for this feed only has the single bug."""
         return [self.context]
 
 
@@ -230,7 +223,7 @@ class BugTargetBugsFeed(BugsFeedBase):
         # batched result and work through the batches until a suffient number
         # of bugs are found.
         bugtasks = delegate_view.latestBugTasks(quantity=self.quantity * 2)
-        return self.getBugsFromBugtasks(bugtasks)
+        return self.getBugsFromBugTasks(bugtasks)
 
 
 class PersonBugsFeed(BugsFeedBase):
@@ -253,7 +246,7 @@ class PersonBugsFeed(BugsFeedBase):
         batch_navigator = delegate_view.search(
             extra_params=dict(orderby='-datecreated'))
         items = batch_navigator.batch.list[:self.quantity * 2]
-        return self.getBugsFromBugtasks(items)
+        return self.getBugsFromBugTasks(items)
 
 
 class SearchBugsFeed(BugsFeedBase):
@@ -281,7 +274,7 @@ class SearchBugsFeed(BugsFeedBase):
         # XXX: BradCrittenden 2008-03-25 bug=206811:
         # See description above.
         items = batch_navigator.batch.list[:self.quantity * 2]
-        return self.getBugsFromBugtasks(items)
+        return self.getBugsFromBugTasks(items)
 
     @property
     def title(self):
