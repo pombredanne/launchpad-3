@@ -126,7 +126,7 @@ class FeedBase(LaunchpadView):
             self.items = self.getItemsWorker()
         return self.items
 
-    def getItemsWorker(self):
+    def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.

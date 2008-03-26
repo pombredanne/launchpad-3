@@ -76,7 +76,7 @@ class BranchFeedBase(FeedBase):
                 for branch in self._getRawItems()
                 if not branch.private]
 
-    def getItemsWorker(self):
+    def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.
@@ -199,7 +199,7 @@ class BranchFeed(BranchFeedBase):
         branch = self.context
         return branch.latest_revisions(quantity=self.quantity)
 
-    def getItemsWorker(self):
+    def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.

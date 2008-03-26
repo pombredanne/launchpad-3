@@ -91,7 +91,7 @@ class BugsFeedBase(FeedBase):
             assert not bug.private, "Private bugs should not be retrieved for feeds."
         return self._sortByDateCreated(bugs)
 
-    def getItemsWorker(self):
+    def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.

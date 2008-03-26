@@ -121,7 +121,7 @@ class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):
     # launchpad/zcml/feeds.zcml.
     usedfor = IFeedsApplication
 
-    def getItemsWorker(self):
+    def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.
@@ -173,7 +173,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
     # This view is used for any class implementing `IHasAnnouncments`.
     usedfor = IHasAnnouncements
 
-    def getItemsWorker(self):
+    def _getItemsWorker(self):
         """Create the list of items.
 
         Called by getItems which may cache the results.
