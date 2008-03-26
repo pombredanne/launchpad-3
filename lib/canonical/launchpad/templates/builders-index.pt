@@ -47,7 +47,8 @@
            tal:content="builder_group/processor_name"
          />
          <th>
-             <span tal:replace="builder_group/queue_size">2</span> waiting
+             <tal:queue-size replace="builder_group/queue_size"
+               >2</tal:queue-size> waiting
          </th>
        </tr>
        <tr>

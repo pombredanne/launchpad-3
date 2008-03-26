@@ -258,11 +258,11 @@ again.
 BuilderSetView offer a way to treat the currently registered builders
 in categories. They are:
 
- * 'Building other packages': a group of builders capable of build
+ * 'Building other packages': a group of builders capable of building
    'trusted' sources, ubuntu official packages. The 'non-vitualized'
    build-farm.
 
- * 'Building PPP packages': a group of builders capable of build
+ * 'Building PPP packages': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
     >>> from canonical.launchpad.interfaces import IBuilderSet
@@ -321,8 +321,8 @@ contains the following attributes:
  * virtualized: wheter the category represents the virtualized or
    non-virtualized build-farm;
 
- * groups: a property that return all `BuilderGroup` available in this
-   category ordered by processor name.
+ * groups: a property that return all `BuilderGroup` instanced
+   available in this category ordered by processor name.
 
     >>> builder_category = builderset_view.other_builders
 
@@ -398,7 +398,7 @@ The 'PPA' builder category is also available in BuilderSetView as a
     hppa 0
     The Cheese Builder
 
-We will change the sampledata to create a pending build in for the 386
+We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
     >>> from canonical.launchpad.interfaces import BuildStatus
@@ -412,8 +412,7 @@ processor queue in the PPA category.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-Now there the pending build is included in the right category and
-group.
+Now the pending build is included in the right category and group.
 
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)

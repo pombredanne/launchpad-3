@@ -194,7 +194,7 @@ class BuilderGroup:
 
 
 class BuilderCategory:
-    """ A category of builders.
+    """A category of builders.
 
     A collection of BuilderGroups as 'PPA builders' and 'Other builders'.
     """
@@ -219,8 +219,10 @@ class BuilderCategory:
 
         grouped_builders = {}
         for builder in builders:
-            group = grouped_builders.setdefault(builder.processor, [])
-            group.append(builder)
+            if builder.processor in grouped_builders:
+                grouped_builders[builder.processor].append(builder)
+            else:
+                grouped_builders[builder.processor] = [builder]
 
         builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
