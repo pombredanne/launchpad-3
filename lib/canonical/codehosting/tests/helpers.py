@@ -196,16 +196,8 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
     def installServer(self, server):
         self.server = server
 
-    def setUpSignalHandling(self):
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
     def setUp(self):
         super(ServerTestCase, self).setUp()
-
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self.setUpSignalHandling()
 
         if self.server is None:
             self.installServer(self.getDefaultServer())
@@ -214,7 +206,6 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
 
     def tearDown(self):
         deferred1 = self.server.tearDown()
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
         deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
         return defer.gatherResults([deferred1, deferred2])
 
