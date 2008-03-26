@@ -121,8 +121,11 @@ class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):
     # launchpad/zcml/feeds.zcml.
     usedfor = IFeedsApplication
 
-    def getItems(self):
-        """See `IFeed`."""
+    def getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         # Return a list of items that will be the entries in the feed.  Each
         # item shall be an instance of `IFeedEntry`.
 
@@ -170,8 +173,11 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
     # This view is used for any class implementing `IHasAnnouncments`.
     usedfor = IHasAnnouncements
 
-    def getItems(self):
-        """See `IFeed`."""
+    def getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         # The quantity is defined in FeedBase or config file.
         items = self.context.announcements(limit=self.quantity)
         # Convert the items into their feed entry representation.

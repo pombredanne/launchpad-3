@@ -76,8 +76,11 @@ class BranchFeedBase(FeedBase):
                 for branch in self._getRawItems()
                 if not branch.private]
 
-    def getItems(self):
-        """See `IFeed`."""
+    def getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         items = self.getPublicRawItems()
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
@@ -196,8 +199,11 @@ class BranchFeed(BranchFeedBase):
         branch = self.context
         return branch.latest_revisions(quantity=self.quantity)
 
-    def getItems(self):
-        """See `IFeed`."""
+    def getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         items = self._getRawItems()
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]

@@ -122,6 +122,15 @@ class FeedBase(LaunchpadView):
 
     def getItems(self):
         """See `IFeed`."""
+        if self.items is None:
+            self.items = self.getItemsWorker()
+        return self.items
+
+    def getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         raise NotImplementedError
 
     @property

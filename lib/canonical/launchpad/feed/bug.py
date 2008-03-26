@@ -91,8 +91,11 @@ class BugsFeedBase(FeedBase):
             assert not bug.private, "Private bugs should not be retrieved for feeds."
         return self._sortByDateCreated(bugs)
 
-    def getItems(self):
-        """See `IFeed`."""
+    def getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         bugs = self.getPublicRawItems()
         # Convert the bugs into their feed entry representation.
         bugs = [self.itemToFeedEntry(bug) for bug in bugs]
