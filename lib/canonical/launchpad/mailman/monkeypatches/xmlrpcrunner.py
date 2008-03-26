@@ -453,6 +453,7 @@ class XMLRPCRunner(Runner):
                    COMMASPACE.join(dispositions))
         else:
             return
+        changes_detected = False
         # For each message that has been acted upon in Launchpad, handle the
         # message in here in Mailman.  We need to resort the dispositions so
         # that we can handle all of them for a particular mailing list at the
@@ -486,6 +487,7 @@ class XMLRPCRunner(Runner):
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.APPROVE)
                         syslog('vette', 'Approved: %s', message_id)
+                        changes_detected = True
                 for message_id in declines:
                     request_id = mlist.held_message_ids.pop(message_id, None)
                     if request_id is None:
@@ -494,9 +496,13 @@ class XMLRPCRunner(Runner):
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.DISCARD)
                         syslog('vette', 'Discarded: %s', message_id)
+                        changes_detected = True
                 mlist.Save()
             finally:
                 mlist.Unlock()
+        # If changes were detected, bump the serial number.
+        if changes_detected:
+            syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
 
 def extractall(tgz_file):

@@ -124,7 +124,26 @@ The message is held for team owner approval, both in Launchpad and in Mailman.
 The team administrator can accept or decline this posting.  By declining the
 message, Launchpad forgets about it, but Mailman sends a rejection.
 
-    
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMessageApprovalSet, IPersonSet)
+    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
+    >>> message_approval_set = getUtility(IMessageApprovalSet)
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<third-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.NEW, (0) New status>
+
+    >>> message_approval.reject(team_one.teamowner)
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<third-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.REJECTION, (0) New status>
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    0
 
 
 == Verified and registered member postings ==
@@ -140,7 +159,7 @@ to the mailing list.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> serial_watcher.resync()
     >>> commit()
     >>> serial_watcher.wait()
 
