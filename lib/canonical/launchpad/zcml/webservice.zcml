@@ -39,9 +39,25 @@
         />
 
     <adapter
+       for="canonical.launchpad.interfaces.IPerson
+            zope.publisher.interfaces.http.IHTTPApplicationRequest"
+       provides="canonical.lazr.interfaces.IResourceGETOperation"
+       factory="canonical.launchpad.rest.GetMembersByStatusOperation"
+       name="members_by_status"
+       />
+
+    <adapter
         for="canonical.launchpad.interfaces.IPersonSet"
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.PersonCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IResourceGETOperation"
+        factory="canonical.launchpad.rest.GetPeopleOperation"
+        name="people"
         />
 
     <adapter

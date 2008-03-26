@@ -45,3 +45,28 @@ But not every element may have that collection scoped to it:
   >>> print webservice.get("/~spiv/members").getStatus()
   404
 
+
+== Custom operations ==
+
+A collection may expose custom named operations in response to GET
+requests. A named operation may do anything consistent with the nature
+of a GET request, but it's usually used to serve search
+results. Here's a custom operation on the collection of people, called
+'people'.
+
+  >>> def search_people(text):
+  ...     return sorted(webservice.get(
+  ...         "/people?_get=people&text=" + text).jsonBody())
+
+
+  >>> [p['name'] for p in search_people("admins")]
+  [u'admins', u'ubuntu-mirror-admins', u'rosetta-admins',
+   u'launchpad-buildd-admins', u'shipit-admins']
+
+  >>> [p['name'] for p in search_people("nosuchperson")]
+  []
+
+  >>> print webservice.get("/people?_get=people&text=")
+  HTTP/1.1 400 Bad Request
+  ...
+  text: Required input is missing.

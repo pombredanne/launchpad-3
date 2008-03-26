@@ -24,7 +24,7 @@ import urlparse
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
-from zope.component import adapts
+from zope.component import adapts, getMultiAdapter
 from zope.interface import implements
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
@@ -45,8 +45,8 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
-    IServiceRootResource)
+    IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
+    IScopedCollection, IServiceRootResource)
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
@@ -148,6 +148,40 @@ class HTTPResource:
         return request.traverse(publication.getApplication(self.request))
 
 
+class CustomOperationResourceMixin:
+
+    """A mixin for resources that implement a collection-entry pattern."""
+
+    def handleCustomGET(self, operation_name):
+        """Execute a custom search-type operation triggered through GET.
+
+        This is used by both EntryResource and CollectionResource.
+        """
+        get_args = dict([(str(arg), value)
+                         for (arg, value) in self.request.form.items()
+                         if arg != u'_get'])
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourceGETOperation,
+                                        name=operation_name)
+        except ValueError:
+            raise NotFound(self, self.request['QUERY_STRING'])
+
+        result = operation(**get_args)
+        if isinstance(result, str) or isinstance(result, unicode):
+            # The operation took care of everything and just needs
+            # this string served to the client.
+            return result
+
+        # The operation returned a collection or entry. It will be
+        # serialized to JSON.
+        if hasattr(result, '__iter__'):
+            result = [EntryResource(entry, self.request) for entry in result]
+        else:
+            result = EntryResource(entry, self.request)
+        return result
+
+
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
@@ -178,7 +212,7 @@ class ReadWriteResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET PUT PATCH")
 
 
-class EntryResource(ReadWriteResource):
+class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
@@ -245,8 +279,22 @@ class EntryResource(ReadWriteResource):
 
     def do_GET(self):
         """Render the entry as JSON."""
+        # Handle a custom operation, probably a search.
+        operation_name = self.request.form.get('_get')
+        if operation_name is not None:
+            result = self.handleCustomGET(operation_name)
+            if isinstance(result, str) or isinstance(result, unicode):
+                # The custom operation took care of everything and
+                # just needs this string served to the client.
+                return result
+        else:
+            # No custom operation was specified. Implement a standard GET,
+            # which serves a JSON representation of the entry.
+            result = self
+
+        # Serialize the result to JSON.
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+        return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
     def do_PUT(self, media_type, representation):
         """Modify the entry's state to match the given representation.
@@ -440,19 +488,35 @@ class EntryResource(ReadWriteResource):
         return ''
 
 
-class CollectionResource(ReadOnlyResource):
+class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
+    def __init__(self, context, request):
+        """Associate this resource with a specific object and request."""
+        super(CollectionResource, self).__init__(context, request)
+        self.collection = ICollection(context)
+
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entries = ICollection(self.context).find()
-        if entries is None:
-            entries = []
-        entry_resources = [EntryResource(entry, self.request)
-                           for entry in entries]
+        # Handle a custom operation, probably a search.
+        operation_name = self.request.form.get('_get')
+        if operation_name is not None:
+            result = self.handleCustomGET(operation_name)
+            if isinstance(result, str) or isinstance(result, unicode):
+                # The custom operation took care of everything and
+                # just needs this string served to the client.
+                return result
+        else:
+            # No custom operation was specified. Implement a standard GET,
+            # which retrieves the items in the collection.
+            entries = self.collection.find()
+            if entries is None:
+                raise NotFound(self, self.collection_name)
+            result = [EntryResource(entry, self.request) for entry in entries]
+
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
+        return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
 
 class ServiceRootResource:

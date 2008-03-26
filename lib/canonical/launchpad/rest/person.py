@@ -4,20 +4,25 @@
 
 __metaclass__ = type
 __all__ = [
+    'GetMembersByStatusOperation',
+    'GetPeopleOperation',
     'IPersonEntry',
     'PersonCollection',
     'PersonEntry',
     ]
 
 from zope.component import adapts
-from zope.schema import Object
+from zope.schema import Choice, Object, TextLine
+from zope.schema.interfaces import IVocabulary
 
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
+from canonical.lazr.rest import ResourceGETOperation
 
-from canonical.launchpad.interfaces import IPerson, ITeamMembership
+from canonical.launchpad.interfaces import (
+    IPerson, ITeamMembership, TeamMembershipStatus)
 
 from canonical.lazr import decorates
 
@@ -59,6 +64,50 @@ class PersonEntry(Entry):
         if not self.context.isTeam():
             return None
         return self.context.getActiveMemberships()
+
+
+class GetMembersByStatusOperation(ResourceGETOperation):
+    """An operation that retrieves team members with the given status.
+
+    Note for future: to implement this without creating a custom
+    operation, expose a 'status' filter on a collection of team
+    memberships or team members.
+    """
+
+    params = [ Choice(__name__='status', vocabulary=TeamMembershipStatus) ]
+
+    def call(self, status):
+        """Execute the operation.
+
+        :param status: A DBItem from TeamMembershipStatus.
+
+        :return: A list of people whose membership in this team is of
+        the given status.
+        """
+        return self.context.getMembersByStatus(status.value)
+
+
+class GetPeopleOperation(ResourceGETOperation):
+    """An operation that retrieves people that match the given filter.
+
+    XXX leonardr 2008-03-17: This operation does not support
+    IPersonSet.find()'s method's 'orderBy' argument because that
+    method directly exposes the Launchpad database schema. If we
+    want to expose it, we must write code that maps some subset of
+    the web service schema to the database schema.
+
+    Note for future: to implement this without creating a custom
+    operation, expose a 'status' filter on the collection of people.
+    """
+
+    params = [ TextLine(__name__='text') ]
+
+    def call(self, text):
+        """Execute the operation.
+
+        :param text: A search filter.
+        """
+        return self.context.find(text)
 
 
 class PersonCollection(Collection):
