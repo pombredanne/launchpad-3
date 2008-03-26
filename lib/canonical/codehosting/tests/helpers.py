@@ -30,18 +30,19 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.tests.test_twisted import TwistedTestCase
+from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 
 
-class AvatarTestCase(TwistedTestCase):
+class AvatarTestCase(TrialTestCase):
     """Base class for tests that need a LaunchpadAvatar with some basic sample
     data.
     """
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.tmpdir = self.mktemp()

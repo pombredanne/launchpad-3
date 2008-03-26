@@ -297,7 +297,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
         self.failIf(should_skip_host(self.host))
 
 
-class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -307,6 +307,8 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
     means that we need a test HTTP server as well as the twisted magic to
     actually connect to the server.
     """
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.orig_host_requests = dict(distributionmirror_prober.host_requests)
