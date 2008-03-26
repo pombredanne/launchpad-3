@@ -472,7 +472,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         prejoins = ['distroarchseries',
                     'sourcepackagerelease']
 
+        # Import Build locally to avoid circular imports.
         from canonical.launchpad.database.build import Build
+
         return Build.select(
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
