@@ -11,8 +11,6 @@ __all__ = [
 
 import os
 import shutil
-import signal
-import threading
 import unittest
 
 import transaction
@@ -35,8 +33,7 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
-from twisted.internet import defer, threads
-from twisted.python.util import mergeFunctionMetadata
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 

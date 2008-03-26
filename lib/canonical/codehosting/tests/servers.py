@@ -21,10 +21,8 @@ from zope.component import getUtility
 from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
-from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
-from twisted.internet import defer, process
-from twisted.python import components
+from twisted.internet import defer
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -35,7 +33,6 @@ from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
-from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.transport import LaunchpadServer
