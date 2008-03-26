@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """XMLRPC runner for querying Launchpad."""
 
@@ -12,11 +12,13 @@ import errno
 import shutil
 import socket
 import tarfile
+import itertools
 import traceback
 import xmlrpclib
 
 from cStringIO import StringIO
 
+# pylint: disable-msg=F0401
 from Mailman import Utils
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
@@ -45,7 +47,14 @@ def log_exception():
 
 
 class XMLRPCRunner(Runner):
-    """A Mailman 'queue runner' for talking to the Launchpad XMLRPC service."""
+    """A Mailman 'queue runner' for talking to the Launchpad XMLRPC service.
+    """
+
+    # We increment this every time we see an actual change in the data coming
+    # from Launchpad.  We write this to the xmlrpc log file for better
+    # synchronization with the integration tests.  It's not used for any other
+    # purpose.
+    serial_number = itertools.count()
 
     def __init__(self, slice=None, numslices=None):
         """Create a faux runner which checks into Launchpad occasionally.
@@ -66,6 +75,8 @@ class XMLRPCRunner(Runner):
         self._kids = {}
         self._stop = False
         self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+        # Ensure that the serial log file exists.
+        syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -124,10 +135,13 @@ class XMLRPCRunner(Runner):
                    COMMASPACE.join(actions.keys()))
         # Report the statuses to Launchpad.
         self._proxy.reportStatus(statuses)
+        # Changes were made, so bump the serial number.
+        syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
     def _get_subscriptions(self):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
+        # pylint: disable-msg=W0331
         active_lists = [list_name for list_name in Utils.list_names()
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
@@ -141,12 +155,17 @@ class XMLRPCRunner(Runner):
         if info:
             syslog('xmlrpc', 'Received subscription info for these lists: %s',
                    COMMASPACE.join(info.keys()))
+        # Maintain a flag to determine whether there were any changes to
+        # Mailman data structures in this XMLRPC request.  If so, we'll need
+        # to bump the serial number to ensure that the integration tests can
+        # stay properly synchronized.
+        changes_detected = False
         for list_name in info:
             mlist = MailList(list_name)
             try:
-                # Create a mapping of subscriber address to subscriber real
-                # name.  Note that currently the flags and status are unused.
-                member_map = dict((address, realname)
+                # Create a mapping of email address to the member's real name,
+                # flags, and status.  Note that flags is currently unused.
+                member_map = dict((address, (realname, flags, status))
                                   for address, realname, flags, status
                                   in info[list_name])
                 # Start by calculating two sets: one is the set of new members
@@ -158,21 +177,40 @@ class XMLRPCRunner(Runner):
                 adds = future_members - current_members
                 deletes = current_members - future_members
                 updates = current_members & future_members
+                # If there are any additions or deletions to the subscription
+                # information, then obviously a change was detected.  Updates
+                # need to be handled differently; they are the more common
+                # case.
+                if adds or deletes:
+                    changes_detected = True
                 # Handle additions first.
                 for address in adds:
-                    mlist.addNewMember(address, realname=member_map[address])
+                    realname, flags, status = member_map[address]
+                    mlist.addNewMember(address, realname=realname)
+                    mlist.setDeliveryStatus(address, status)
                 # Handle deletions next.
                 for address in deletes:
                     mlist.removeMember(address)
                 # The members who are sticking around may have updates to
-                # their real names, so it's just as easy to set that for
-                # everyone as it is to check to see if there's a change.
+                # their real names or statuses.  Check to see if there are
+                # changes because we need to do that anyway to make sure the
+                # serial number gets bumped only when necessary.
                 for address in updates:
-                    mlist.setMemberName(address, member_map[address])
+                    # flags are ignored for now.
+                    realname, flags, status = member_map[address]
+                    if realname <> mlist.getMemberName(address):
+                        mlist.setMemberName(address, realname)
+                        changes_detected = True
+                    if status <> mlist.getDeliveryStatus(address):
+                        mlist.setDeliveryStatus(address, status)
+                        changes_detected = True
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()
             finally:
                 mlist.Unlock()
+        # If changes were detected, bump the serial number.
+        if changes_detected:
+            syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
     def _create_or_reactivate(self, actions, statuses):
         """Process mailing list creation and reactivation actions.
@@ -277,9 +315,20 @@ class XMLRPCRunner(Runner):
                 mlist.Create(team_name,
                              mm_cfg.SITE_LIST_OWNER,
                              ' no password ')
+                # Additional hard coded list defaults.
+                # - Personalize regular delivery so that we can VERP these.
+                # - Turn off RFC 2369 headers; we'll do them differently
+                # - enable $-string substitutions in headers/footers
+                mlist.personalize = 1
+                mlist.include_rfc2369_headers = False
+                mlist.use_dollar_strings = True
                 mlist.Save()
+                # Now create the archive directory for MHonArc.
+                path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', team_name)
+                os.makedirs(path)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
+            # pylint: disable-msg=W0702
             except:
                 syslog('xmlrpc',
                        'List creation error for team: %s', team_name)
@@ -313,8 +362,8 @@ class XMLRPCRunner(Runner):
                        COMMASPACE.join(modifications.keys()))
                 continue
             try:
+                mlist = MailList(team_name)
                 try:
-                    mlist = MailList(team_name)
                     for key, value in list_settings.items():
                         setattr(mlist, key, value)
                     mlist.Save()
@@ -322,6 +371,7 @@ class XMLRPCRunner(Runner):
                     mlist.Unlock()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
+            # pylint: disable-msg=W0702
             except:
                 syslog('xmlrpc',
                        'List modification error for team: %s', team_name)
@@ -375,8 +425,10 @@ class XMLRPCRunner(Runner):
                     os.chdir(old_cwd)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
+            # pylint: disable-msg=W0702
             except:
-                syslog('xmlrpc', 'List deletion error for team: %s', team_name)
+                syslog('xmlrpc',
+                       'List deletion error for team: %s', team_name)
                 log_exception()
                 statuses[team_name] = 'failure'
             else:

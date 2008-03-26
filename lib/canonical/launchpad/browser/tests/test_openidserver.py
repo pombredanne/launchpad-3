@@ -13,12 +13,11 @@ from openid.message import Message
 from zope.component import getUtility
 from zope.testing import doctest
 
-from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.browser.openidserver import OpenIdMixin
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
 from canonical.launchpad.interfaces import IPersonSet, IOpenIDRPConfigSet
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -63,7 +62,6 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('fullname', u'David Allouche'),
             ('nickname', u'ddaa'),
             ('email', u'david.allouche@canonical.com'),
-            ('timezone', u'UTC'),
             ('x_address1', u'Velvet Zephyr Woods'),
             ('x_address2', u'5423'),
             ('x_city', u'whatever'),
@@ -87,8 +85,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         self.assertEqual(view.sreg_fields, [
             ('fullname', u'No Privileges Person'),
             ('nickname', u'no-priv'),
-            ('email', u'no-priv@canonical.com'),
-            ('timezone', u'UTC')])
+            ('email', u'no-priv@canonical.com')])
 
 
 def test_suite():
@@ -96,10 +93,9 @@ def test_suite():
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     suite.addTest(doctest.DocTestSuite(
         'canonical.launchpad.browser.openidserver'))
-    suite.addTest(FunctionalDocFileSuite(
+    suite.addTest(LayeredDocFileSuite(
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',
-        optionflags=default_optionflags, package=__name__,
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     return suite

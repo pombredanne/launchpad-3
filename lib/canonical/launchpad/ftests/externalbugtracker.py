@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Helper classes for testing ExternalSystem."""
 
@@ -17,10 +18,11 @@ from canonical.launchpad.components.externalbugtracker import (
     DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, UNKNOWN_REMOTE_STATUS)
+    BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.scripts import checkwatches, debbugs
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -120,6 +122,35 @@ def set_bugwatch_error_type(bug_watch, error_type):
     logout()
 
 
+class OOPSHook:
+    def install(self):
+        self.reset()
+        self.original_report_oops = checkwatches.report_oops
+        checkwatches.report_oops = self.reportOOPS
+
+    def uninstall(self):
+        checkwatches.report_oops = self.original_report_oops
+        del self.original_report_oops
+
+    def reportOOPS(self, message=None, properties=None, info=None):
+        self.oops_info = self.original_report_oops(
+            message=message, properties=properties, info=info)
+        return self.oops_info
+
+    def reset(self):
+        if hasattr(self, 'oops_info'):
+            del self.oops_info
+
+    @property
+    def formatted_oops_info(self):
+        properties_string = '\n'.join(
+            '%s=%r' % (name, value) for name, value
+            in sorted(self.oops_info._data))
+        return '%s\n%s' % (self.oops_info.oopsid, properties_string)
+
+oops_hook = OOPSHook()
+
+
 class TestExternalBugTracker(ExternalBugTracker):
     """A test version of `ExternalBugTracker`.
 
@@ -127,24 +158,8 @@ class TestExternalBugTracker(ExternalBugTracker):
     implementation, though it doesn't actually do anything.
     """
 
-    def __init__(self, txn, bugtracker=None):
-        """Initialise a new `TestExternalBugTracker`.
-
-        This method exists because the tests that use this class don't
-        need to know about `BugTracker` objects or the new_bugtracker
-        function.
-        """
-        if bugtracker is not None:
-            # If bugtracker is present, we call the superclass
-            # initializer which uses members of the bugtracker object
-            # to set some local parameters. The superclass initializer
-            # will also set the reference to `txn`.
-            super(TestExternalBugTracker, self).__init__(txn, bugtracker)
-        else:
-            # If the bugtracker is None, we don't want to call the
-            # superclass initializer, since it will choke, but we still
-            # want to set the transaction.
-            self.txn = txn
+    def __init__(self, baseurl='http://example.com/'):
+        super(TestExternalBugTracker, self).__init__(baseurl)
 
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
@@ -152,17 +167,26 @@ class TestExternalBugTracker(ExternalBugTracker):
         This method exists to satisfy the implementation requirements of
         `IExternalBugTracker`.
         """
+        return BugTaskStatus.UNKNOWN
+
+    def getRemoteImportance(self, bug_id):
+        """Stub implementation."""
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteImportance(self, remote_importance):
+        """Stub implementation."""
+        return BugTaskImportance.UNKNOWN
+
+    def getRemoteStatus(self, bug_id):
+        """Stub implementation."""
         return UNKNOWN_REMOTE_STATUS
 
 
 class TestBrokenExternalBugTracker(TestExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
 
-    def __init__(self, txn, baseurl):
-        super(TestBrokenExternalBugTracker, self).__init__(txn)
-        self.baseurl = baseurl
-        self.initialize_remote_bugdb_error = None
-        self.get_remote_status_error = None
+    initialize_remote_bugdb_error = None
+    get_remote_status_error = None
 
     def initializeRemoteBugDB(self, bug_ids):
         """Raise the error specified in initialize_remote_bugdb_error.
@@ -208,8 +232,8 @@ class TestBugzilla(Bugzilla):
     buglist_page = 'buglist.cgi'
     bug_id_form_element = 'bug_id'
 
-    def __init__(self, txn, baseurl, version=None):
-        Bugzilla.__init__(self, txn, baseurl, version=version)
+    def __init__(self, baseurl, version=None):
+        Bugzilla.__init__(self, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 
     def _getBugsToTest(self):
@@ -366,6 +390,9 @@ class TestTrac(Trac):
     for the sake of making test data sane.
     """
 
+    # We remove the batch_size limit for the purposes of the tests so
+    # that we can test batching and not batching correctly.
+    batch_size = None
     batch_query_threshold = 10
     supports_single_exports = True
     trace_calls = False
@@ -390,6 +417,9 @@ class TestRoundup(Roundup):
     needed.
     """
 
+    # We remove the batch_size limit for the purposes of the tests so
+    # that we can test batching and not batching correctly.
+    batch_size = None
     trace_calls = False
 
     def urlopen(self, url):
@@ -457,12 +487,12 @@ class TestSourceForge(SourceForge):
         return open(file_path, 'r')
 
 
-class TestDebianBug:
+class TestDebianBug(debbugs.Bug):
     """A debbugs bug that doesn't require the debbugs db."""
 
     def __init__(self, reporter_email='foo@example.com', package='evolution',
                  summary='Test Summary', description='Test description.',
-                 status='open', severity=None, tags =None):
+                 status='open', severity=None, tags=None, id=None):
         if tags is None:
             tags = []
         self.originator = reporter_email
@@ -472,6 +502,14 @@ class TestDebianBug:
         self.status = status
         self.severity = severity
         self.tags = tags
+        self.id = id
+        self._emails = []
+
+    def __getattr__(self, name):
+        # We redefine this method here to as to avoid some of the
+        # behaviour of debbugs.Bug from raising spurious errors during
+        # testing.
+        return getattr(self, name, None)
 
 
 class TestDebBugsDB:
@@ -494,6 +532,7 @@ class TestDebBugsDB:
                 'debbugs-log.pl exited with code 512')
 
         comment_data = open(self.data_file).read()
+        bug._emails = []
         bug.comments = [comment.strip() for comment in
             comment_data.split('--\n')]
 
@@ -506,13 +545,16 @@ class TestDebBugs(DebBugs):
     """
     import_comments = False
 
-    def __init__(self, txn, bugtracker, bugs):
-        super(TestDebBugs, self).__init__(txn, bugtracker)
+    def __init__(self, baseurl, bugs):
+        super(TestDebBugs, self).__init__(baseurl)
         self.bugs = bugs
         self.debbugs_db = TestDebBugsDB()
 
     def _findBug(self, bug_id):
         if bug_id not in self.bugs:
             raise BugNotFound(bug_id)
-        return self.bugs[bug_id]
+
+        bug = self.bugs[bug_id]
+        self.debbugs_db.load_log(bug)
+        return bug
 

@@ -29,7 +29,7 @@ preconditions stated in this tests introduction.
 
 findExpirableBugTasks() requires a parameter for the minimum days old
 (min_days_old) that the bugtask has been in the unattended Incomplete
-status.
+status. It also requires specifying the user that is doing the search.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskStatus, IBugTaskSet)
@@ -38,13 +38,13 @@ status.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
     Traceback (most recent call last):
     ...
-    TypeError: findExpirableBugTasks() takes at least 2 arguments (1 given)
+    TypeError: findExpirableBugTasks() takes at least 3 arguments (1 given)
 
 Looking back 9,999 days, findExpirableBugTasks() reports that there are
 no expirable bugtasks in the sampledata.
 
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(9999)
-    >>> len(expirable_bugtasks)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(9999, None)
+    >>> expirable_bugtasks.count()
     0
 
 
@@ -115,6 +115,22 @@ Let's also make some bugs that almost qualify for expiration.
     >>> assigned_bugtask.bug.permits_expiration
     True
     >>> assigned_bugtask.bug.can_expire
+    False
+
+    # A bug with two Ubuntu tasks, one assigned Incomplete, and one
+    # Invalid task, is not expirable.
+    >>> another_assigned_bugtask = create_old_bug('assigned', 61, ubuntu)
+    >>> another_assigned_bugtask.transitionToAssignee(sample_person)
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> invalid_bugtask = bugtaskset.createTask(
+    ...     bug=another_assigned_bugtask.bug, owner=sample_person,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_evolution.sourcepackagename,
+    ...     status=BugTaskStatus.INVALID)
+    >>> sync_bugtasks([another_assigned_bugtask, invalid_bugtask])
+    >>> another_assigned_bugtask.bug.permits_expiration
+    True
+    >>> another_assigned_bugtask.bug.can_expire
     False
 
     # A bugtask that is not expirable because its status is CONFIRMED.
@@ -202,16 +218,16 @@ The value of the min_days_old controls the bugtasks that are
 returned. The oldest bug in this test is 351 days old, the youngest is
 31 days old. There are no bugs older than 351 days.
 
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(351)
-    >>> len(expirable_bugtasks)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(351, None)
+    >>> expirable_bugtasks.count()
     0
 
 While there are bugtasks older than 350 days in the data, the hoary
 bugtask does not display because its bug has other bugtasks that are
 valid.
 
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
-    >>> len(expirable_bugtasks)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350, None)
+    >>> expirable_bugtasks.count()
     0
 
     >>> hoary_bugtask.bug.can_expire
@@ -235,7 +251,7 @@ will be expirable.
     hoary        True    351  Incomplete  False     False  False  False
     thunderbird  False   351  Won't Fix   False     False  False  False
 
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350, None)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True    351  Incomplete  False     False  False  False
@@ -253,7 +269,7 @@ not returned by findExpirableBugTasks().
 Reducing the age to 60 days old, both hoary and jokosher bugtasks
 are returned.
 
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60, None)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True    351  Incomplete  False     False  False  False
@@ -267,7 +283,7 @@ that has the hoary and ubuntu bugtasks with 0 min_days_old returns just
 the hoary bugtask.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-    ...     0, bug=hoary_bugtask.bug)
+    ...     0, None, bug=hoary_bugtask.bug)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True    351  Incomplete  False     False  False  False
@@ -280,7 +296,7 @@ Passing ubuntu with 0 min_days_old shows that the distribution has two
 bugtasks that can expire if they are not confirmed.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-    ...     0, target=ubuntu)
+    ...     0, None, target=ubuntu)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True    351  Incomplete  False     False  False  False
@@ -291,9 +307,77 @@ Thunderbird has not enabled bug expiration. Even when the min_days_old
 is set to 0, no bugtasks are replaced.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-    ...     0, target=thunderbird)
+    ...     0, None, target=thunderbird)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+
+
+== Privacy ==
+
+The user parameter indicates which user is performing the search. Only
+bugs that the user has permission to view are returned. A value of None
+indicates the anonymous user.
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=None, target=ubuntu)
+    >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
+    >>> print sorted(bug.title for bug in visible_bugs)
+    [u'expirable_distro', u'recent']
+
+If one of the bugs is set to private, anonymous users can no longer see
+it as being marked for expiration.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> private_bug = ubuntu_bugtask.bug
+    >>> private_bug.title
+    u'expirable_distro'
+    >>> private_bug.setPrivate(True, sample_person)
+    True
+    >>> syncUpdate(private_bug)
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=None, target=ubuntu)
+    >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
+    >>> print sorted(bug.title for bug in visible_bugs)
+    [u'recent']
+
+No Privileges Person can't see the bug either...
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> private_bug.unsubscribe(no_priv)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=no_priv, target=ubuntu)
+    >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
+    >>> print sorted(bug.title for bug in visible_bugs)
+    [u'recent']
+
+... unless he's subscribed to the bug.
+
+    >>> private_bug.subscribe(no_priv, sample_person)
+    <BugSubscription at ...>
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=no_priv, target=ubuntu)
+    >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
+    >>> print sorted(bug.title for bug in visible_bugs)
+    [u'expirable_distro', u'recent']
+
+The Janitor needs to be able to access all bugs, even private ones, in
+order to be able to expire them. If the Janitor is passed as the user,
+even the private bugs are returned.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> janitor = getUtility(ILaunchpadCelebrities).janitor
+    >>> private_bug.isSubscribed(janitor)
+    False
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=janitor, target=ubuntu)
+    >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
+    >>> print sorted(bug.title for bug in visible_bugs)
+    [u'expirable_distro', u'recent']
+
+    >>> private_bug.setPrivate(False, sample_person)
+    True
 
 
 == The default expiration age ==
@@ -312,11 +396,11 @@ days or more.
 
 == Running the script ==
 
-There are no Invalid Bugtasks in sampledata.
+There is one Invalid Bugtasks in sampledata, from the tests above.
 
     >>> from canonical.launchpad.database import BugTask
     >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
-    0
+    1
 
     >>> # We want to check the hoary bugtask messages later.
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
@@ -376,16 +460,16 @@ was expired. The remaining bugtasks are unchanged.
     recent       True     31  Incomplete  False     False  False  False
     no_expire    False    61  Incomplete  False     False  False  False
 
-Only the three test bugtasks were expired in the entire database.
+Only the three test bugtasks were expired in the entire database. The
+evolution task was already Invalid.
 
     >>> invalid_bugtasks = BugTask.selectBy(status=BugTaskStatus.INVALID)
-    >>> invalid_bugtasks.count()
-    3
     >>> summarize_bugtasks(invalid_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True      0  Invalid     False     False  False  False
     hoary        True      0  Invalid     False     False  False  False
     jokosher     True      0  Invalid     False     False  False  False
+    evolution    True     61  Invalid     False     False  False  False
 
 The bugtasks statusexplanation was updated to explain the change in
 status.
@@ -435,7 +519,7 @@ expired.
     True
     >>> no_expiration_bugtask.bug.can_expire
     True
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60, None)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     no_expire    True    61   Incomplete  False     False  False  False

@@ -1,8 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 """Virtual host handling for the Launchpad webapp."""
 
-from canonical.config import config
-
 __all__ = ['allvhosts']
 
 
@@ -69,30 +67,56 @@ class AllVirtualHostsConfiguration:
     self.hostnames : set of hostnames handled by the vhost config
     """
 
-    def __init__(self, launchpad_conf_vhosts):
+    def __init__(self):
         """Initialize all virtual host settings from launchpad.conf.
 
         launchpad_conf_vhosts: The virtual_hosts config item from
         launchpad.conf.
 
         """
-        self.use_https = launchpad_conf_vhosts.use_https
+        self._has_vhost_data = False
 
-        self.configs = {}
-        self.hostnames = set()
-        for conf_item_name in launchpad_conf_vhosts.getSectionAttributes():
-            vhost = getattr(launchpad_conf_vhosts, conf_item_name)
-            if getattr(vhost, 'hostname', None) is None:
+
+    def _getVHostData(self):
+        """Parse the vhosts on demand."""
+        # Avoid the circular imports inherent with the use of canonical.lazr.
+        if self._has_vhost_data:
+            return
+        from canonical.config import config
+        self._use_https = config.vhosts.use_https
+        self._configs = {}
+        self._hostnames = set()
+        for section in config.getByCategory('vhost'):
+            if section.hostname is None:
                 continue
-            self.configs[conf_item_name] = config = VirtualHostConfig(
-                vhost.hostname,
-                vhost.althostnames,
-                vhost.rooturl,
-                self.use_https)
-            self.hostnames.add(config.hostname)
-            self.hostnames.update(config.althostnames)
+            category, vhost = section.category_and_section_names
+            self._configs[vhost] = config = VirtualHostConfig(
+                section.hostname,
+                section.althostnames,
+                section.rooturl,
+                self._use_https)
+            self._hostnames.add(config.hostname)
+            self._hostnames.update(config.althostnames)
+        self._has_vhost_data = True
 
+    @property
+    def use_https(self):
+        """Do the vhosts use HTTPS?"""
+        self._getVHostData()
+        return self._use_https
+
+    @property
+    def configs(self):
+        """Return the VirtualHostConfig dict."""
+        self._getVHostData()
+        return self._configs
+
+    @property
+    def hostnames(self):
+        """Return the set of hostnames."""
+        self._getVHostData()
+        return self._hostnames
 
 # The only public API to this module, the global virtual host configuration.
-allvhosts = AllVirtualHostsConfiguration(config.launchpad.vhosts)
+allvhosts = AllVirtualHostsConfiguration()
 

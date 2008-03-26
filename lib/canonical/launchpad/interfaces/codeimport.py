@@ -17,7 +17,7 @@ from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root, RevisionControlSystems)
 
@@ -31,7 +31,7 @@ class CodeImportReviewStatus(DBEnumeratedType):
 
     NEW = DBItem(1, """Pending Review
 
-        This code import request has recently been filed an has not
+        This code import request has recently been filed and has not
         been reviewed yet.
         """)
 
@@ -62,17 +62,17 @@ class ICodeImport(Interface):
         title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
         description=_("The Bazaar branch produced by the import system."))
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The community contact for this import."))
 
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assignee'), required=False, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The person in charge of handling this import."))
@@ -100,7 +100,7 @@ class ICodeImport(Interface):
             "The version control system to import from. "
             "Can be CVS or Subversion."))
 
-    svn_branch_url = URIField(title=_("Branch"), required=False,
+    svn_branch_url = URIField(title=_("Branch URL"), required=False,
         description=_(
             "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
@@ -158,8 +158,8 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
 
     def getAll():
@@ -173,6 +173,12 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+    def getByCVSDetails(cvs_root, cvs_module):
+        """Get the CodeImport with the specified CVS details."""
+
+    def getBySVNDetails(svn_branch_url):
+        """Get the CodeImport with the specified SVN details."""
 
     def delete(id):
         """Delete a CodeImport given its id."""

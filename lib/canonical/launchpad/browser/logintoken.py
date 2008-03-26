@@ -16,6 +16,7 @@ __all__ = [
 
 import urllib
 import pytz
+import cgi
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
@@ -29,6 +30,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
@@ -303,8 +305,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person.password = data.get('password')
         self.context.consume()
 
-        if self.request.form.get('logmein'):
-            self.logInPersonByEmail(self.context.email)
+        self.logInPersonByEmail(self.context.email)
 
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
@@ -358,14 +359,15 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                 signedcontent.encode('ASCII'))
         except (GPGVerificationError, UnicodeEncodeError), e:
             self.addError(_(
-                'Launchpad could not verify your signature: %s'
-                % str(e)))
+                'Launchpad could not verify your signature: ${err}',
+                mapping=dict(err=str(e))))
             return
 
         if signature.fingerprint != self.context.fingerprint:
             self.addError(_(
-                'The key used to sign the content (%s) is not the key '
-                'you were registering' % signature.fingerprint))
+                'The key used to sign the content (${fprint}) is not the '
+                'key you were registering',
+                mapping=dict(fprint=signature.fingerprint)))
             return
 
         # We compare the word-splitted content to avoid failures due
@@ -389,10 +391,12 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         if lpkey:
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
-            self.request.response.addInfoNotification(_(
-                'Key %s successfully reactivated. '
-                '<a href="%s/+editpgpkeys">See more Information</a>'
-                % (lpkey.displayname, person_url)))
+            msgid = _(
+                'Key ${lpkey} successfully reactivated. '
+                '<a href="${url}/+editpgpkeys">See more Information'
+                '</a>',
+                mapping=dict(lpkey=lpkey.displayname, url=person_url))
+            self.request.response.addInfoNotification(structured(msgid))
             self.context.consume()
             return
 
@@ -408,30 +412,32 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
         self.context.consume()
         self.request.response.addInfoNotification(_(
-            "The key %s was successfully validated. " % (lpkey.displayname)))
+            "The key ${lpkey} was successfully validated. ",
+            mapping=dict(lpkey=lpkey.displayname)))
         guessed, hijacked = self._guessGPGEmails(key.emails)
 
         if len(guessed):
             # build email list
             emails = ' '.join([email.email for email in guessed])
-
-            self.request.response.addInfoNotification(_(
+            msgid = _(
                 '<p>Some email addresses were found in your key but are '
-                'not registered with Launchpad:<code>%s</code>. If you '
-                'want to use these addressess with Launchpad, you need to '
-                '<a href="%s/+editemails\">confirm them</a>.</p>'
-                % (emails, person_url)))
+                'not registered with Launchpad:<code>${emails}</code>. If you '
+                'want to use these addresses with Launchpad, you need to '
+                '<a href="${url}/+editemails\">confirm them</a>.</p>',
+                mapping=dict(emails=emails, url=person_url))
+            self.request.response.addInfoNotification(structured(msgid))
 
         if len(hijacked):
             # build email list
             emails = ' '.join([email.email for email in hijacked])
-            self.request.response.addInfoNotification(_(
+            msgid = _(
                 "<p>Also some of them were registered into another "
-                "account(s):<code>%s</code>. Those accounts, probably "
+                "account(s):<code>${emails}</code>. Those accounts, probably "
                 "already belong to you, in this case you should be able to "
                 "<a href=\"/people/+requestmerge\">merge them</a> into your "
-                "current account.</p>"
-                % emails))
+                "current account.</p>",
+                mapping=dict(emails=emails))
+            self.request.response.addInfoNotification(structured(msgid))
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP
@@ -488,32 +494,37 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         try:
             key = gpghandler.retrieveKey(fingerprint)
         except GPGKeyNotFoundError:
-            self.addError(_(
-                'Launchpad could not import this OpenPGP key, because %s. '
+            self.addError(
+                structured(_(
+                'Launchpad could not import this OpenPGP key, because ${key}. '
                 'Check that you published it correctly in the global key ring '
                 '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
                 'entered the fingerprint correctly (as produced by <kbd>'
                 'gpg --fingerprint YOU</kdb>). Try later or '
-                '<a href="%s/+editpgpkeys">cancel your request</a>.'
-                % (key, person_url)))
+                '<a href="${url}/+editpgpkeys">cancel your request</a>.',
+                mapping=dict(key=key, url=person_url))))
             return None
 
         # If key is globally revoked, skip the import and consume the token.
         if key.revoked:
-            self.addError(_(
-                'The key %s cannot be validated because it has been '
+            self.addError(
+                    structured(_(
+                'The key ${key} cannot be validated because it has been '
                 'publicly revoked. You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editpgpkeys">find and import</a> '
-                'the new key.' % (key.keyid, person_url)))
+                'process to <a href="${url}/+editpgpkeys">find and import</a> '
+                'the new key.',
+                mapping=dict(key=key.keyid, url=person_url))))
             return None
 
         if key.expired:
-            self.addError(_(
-                'The key %s cannot be validated because it has expired. '
+            self.addError(
+                        structured(_(
+                'The key ${key} cannot be validated because it has expired. '
                 'Change the expiry date (in a terminal, enter '
                 '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
-                'then enter <kbd>expire</kbd>), and try again.' % key.keyid))
+                'then enter <kbd>expire</kbd>), and try again.',
+                mapping=dict(key=key.keyid))))
             return None
 
         return key
@@ -540,17 +551,20 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         if email is not None:
             if email.person.id != requester.id:
                 dupe = email.person
+                dname = cgi.escape(dupe.name)
                 # Yes, hardcoding an autogenerated field name is an evil
                 # hack, but if it fails nothing will happen.
                 # -- Guilherme Salgado 2005-07-09
                 url = allvhosts.configs['mainsite'].rooturl
-                url += '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
-                self.addError(_(
+                url += '/people/+requestmerge?field.dupeaccount=%s' % dname
+                self.addError(
+                        structured(_(
                     'This email address is already registered for another '
                     'Launchpad user account. This account can be a '
                     'duplicate of yours, created automatically, and in this '
-                    'case you should be able to <a href="%s">merge them</a> '
-                    'into a single one.' % url))
+                    'case you should be able to <a href="${url}">merge them'
+                    '</a> into a single one.',
+                    mapping=dict(url=url))))
             elif email.status in validated:
                 self.addError(_(
                     "This email address is already registered and validated "
@@ -663,8 +677,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         """Verify if the email address is not used by an existing account."""
         if self.email is not None and self.email.person.is_valid_person:
             self.addError(_(
-                'The email address %s is already registered.'
-                % self.context.email))
+                'The email address ${email} is already registered.',
+                mapping=dict(email=self.context.email)))
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):

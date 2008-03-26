@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_CONTACT_BUGTASK_STATUSES',
+    'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
     'BugTaskStatus',
@@ -32,7 +33,8 @@ __all__ = [
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'valid_remote_bug_url']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -44,7 +46,8 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, StrippedTextLine, Summary, Tag)
+    ProductNameField, PublicPersonChoice,
+    StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -53,7 +56,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
-    DBEnumeratedType, DBItem, use_template)
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -225,6 +228,26 @@ class BugTaskStatusSearch(DBEnumeratedType):
         details were supplied yet..
         """)
 
+
+class BugTagsSearchCombinator(EnumeratedType):
+    """Bug Tags Search Combinator
+
+    The possible values for combining the list of tags in a bug search.
+    """
+
+    ANY = Item("""
+        Any
+
+        Search for bugs tagged with any of the specified tags.
+        """)
+
+    ALL = Item("""
+        All
+
+        Search for bugs tagged with all of the specified tags.
+        """)
+
+
 class BugTaskStatusSearchDisplay(DBEnumeratedType):
     """Bug Task Status
 
@@ -302,7 +325,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         default=BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     bugtargetdisplayname = Text(
         title=_("The short, descriptive name of the target"), readonly=True)
@@ -373,7 +396,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
 
-    def subscribe(person):
+    def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
         This method is required here so that MentorshipOffers can happen on
@@ -473,6 +496,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         in that distribution. If the task is not a package task, returns
         None.
         """
+
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
@@ -579,6 +603,11 @@ class IBugTaskSearch(IBugTaskSearchBase):
     tag = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
@@ -892,12 +921,14 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, bug=None, target=None):
+    def findExpirableBugTasks(min_days_old, user, bug=None, target=None):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
             inactivity for a bugtask to be considered expirable. Setting
             this parameter to 0 will return all bugtask that can expire.
+        :param user: The `IPerson` doing the search. Only bugs the user
+            has permission to view are returned.
         :param bug: An `IBug`. If a bug is provided, only bugtasks that belong
             to the bug may be returned. If bug is None, all bugs are searched.
         :param target: An `IBugTarget`. If a target is provided, only
@@ -990,6 +1021,7 @@ class IAddBugTaskForm(Interface):
         title=_('Visited steps'), required=False,
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
+
 
 class IAddBugTaskWithProductCreationForm(Interface):
 

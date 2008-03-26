@@ -29,84 +29,21 @@
     />
 
   <content class="canonical.launchpad.database.Person">
-    <allow attributes="account_status account_status_comment activesignatures
-      addLanguage addressline1 addressline2 allwikis
-      approver_specs archive assignKarma
-      assigned_specs assigned_specs_in_progress authored_branches
-      branches browsername city
-      claimedBounties clearInTeamCache convertToTeam country created_specs
-      creation_comment creation_rationale currentShipItRequest
-      datecreated defaultRenewalPeriodIsRequiredForSomeTeams
-      defaultexpirationdate
-      defaultmembershipperiod defaultrenewalperiod
-      defaultrenewedexpirationdate
-      displayname drafted_specs entitlements
-      feedback_specs findPathToTeam getActiveMemberships
-      getAdministratedTeams getBranch getBugContactOpenBugCounts
-      getBugContactPackages getDirectAnswerQuestionTargets
-      getInactiveMemberships
-      getInvitedMemberships getLatestApprovedMembershipsForPerson
-      getLatestMaintainedPackages
-      getLatestUploadedButNotMaintainedPackages getLatestUploadedPPAPackages
-      getOwnedOrDrivenPillars
-      getProjectsAndCategoriesContributedTo getProposedMemberships
-      getSuperTeams
-      getTeamAdminsEmailAddresses getTeamAnswerQuestionTargets gpgkeys
-      guessedemails hasParticipationEntryFor hide_email_addresses
-      homepage_content id inTeam
-      inactivegpgkeys inactivesignatures ircnicknames isBugContributor
-      isBugContributorInTarget
-      isTeam isUploader is_openid_enabled
-      is_trusted_on_shipit is_ubuntero is_valid_person
-      is_valid_person_or_team iterTopProjectsContributedTo jabberids
-      join karma karma_category_caches
-      languages lastShippedRequest latestKarma
-      leave mailing_list merged
-      myactivememberships name open_membership_invitations
-      openid_identifier organization otherwikis
-      ownedBounties password pastShipItRequests
-      pendinggpgkeys personCannotHaveIcon phone
-      postcode preferredemail preferredemail_sha1
-      province registered_branches registrant
-      removeLanguage renewal_policy reviewerBounties
-      safe_email_or_blank searchTasks setContactAddress
-      setMembershipData setPreferredEmail
-      shippedShipItRequestsOfCurrentSeries
-      signedcocs sshkeys subscribedBounties
-      subscribed_branches subscribed_specs subscriptionpolicy
-      team_mentorships teamdescription teamowner
-      teamownerID teams_indirectly_participated_in teams_participated_in
-      teams_with_icons timezone title
-      translatable_languages translation_groups translation_history
-      ubuntuwiki unique_displayname unvalidatedemails
-      validateAndEnsurePreferredEmail validatedemails visibility"
-      />
+    <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
-    <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>
-    <allow interface="canonical.launchpad.interfaces.IHasMentoringOffers"/>
-    <allow interface="canonical.launchpad.interfaces.IQuestionCollection"/>
-    <allow interface="canonical.launchpad.interfaces.IHasLogo"/>
-    <allow interface="canonical.launchpad.interfaces.IHasMugshot"/>
-    <allow interface="canonical.launchpad.interfaces.IHasIcon"/>
+    <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
 
     <require
       permission="launchpad.View"
-      attributes="
-        active_member_count activemembers adminmembers all_member_count
-        allmembers approvedmembers deactivated_member_count
-        deactivatedmembers expired_member_count expiredmembers
-        getDirectAdministrators getMembersByStatus getSubTeams
-        inactive_member_count inactivemembers invited_member_count
-        invited_members pendingmembers proposed_member_count
-        proposedmembers"
+      interface="canonical.launchpad.interfaces.IPersonViewRestricted"
       />
     <require
       permission="launchpad.Edit"
-      attributes="addMember"
+      interface="canonical.launchpad.interfaces.IPersonEditRestricted"
       />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPerson"
+      set_schema="canonical.launchpad.interfaces.IPersonPublic"
       />
     <require
       permission="launchpad.Special"
@@ -120,6 +57,10 @@
     <require
       permission="launchpad.Admin"
       attributes="deactivateAllMembers"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
   </content>
 
@@ -170,7 +111,8 @@
     for="canonical.launchpad.interfaces.IPerson"
     schema="canonical.launchpad.interfaces.IPerson"
     label="Review person"
-    fields="name displayname password"
+    fields="name displayname password
+            personal_standing personal_standing_reason"
     permission="launchpad.Admin"
     template="../templates/person-review.pt"
     >
@@ -262,11 +204,6 @@
       attribute="showSSHKeys"
       />
     <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/person-bounties.pt"
-      />
-    <browser:page
       name="+portlet-emails"
       template="../templates/person-portlet-emails.pt"
       />
@@ -279,12 +216,8 @@
       template="../templates/person-portlet-details.pt"
       />
     <browser:page
-      name="+pagelet-details"
-      template="../templates/person-pagelet-details.pt"
-      />
-    <browser:page
-      name="+pagelet-contact-details"
-      template="../templates/person-pagelet-contact-details.pt"
+      name="+portlet-contact-details"
+      template="../templates/person-portlet-contact-details.pt"
       />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
@@ -293,6 +226,18 @@
       template="../templates/team-listing.pt"
       />
   </browser:pages>
+
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    class="canonical.launchpad.browser.PersonView"
+    facet="bounties"
+    for="canonical.launchpad.interfaces.IPerson"
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/person-bounties.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
@@ -556,10 +501,10 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonAuthoredBranchesView"
+    class="canonical.launchpad.browser.PersonOwnedBranchesView"
     permission="zope.Public"
     facet="branches"
-    name="+authoredbranches"
+    name="+ownedbranches"
     template="../templates/person-branches.pt"
     />
 
@@ -659,6 +604,14 @@
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.TeamAddMyTeamsView"
+    name="+add-my-teams"
+    template="../templates/team-add-my-teams.pt"
     />
 
   <browser:page

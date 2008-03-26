@@ -32,40 +32,31 @@ We display the recent revisions of a branch if it has been scanned. There's a
 === Revision information ===
 
 Underneath that heading we see the ten most-recent revisions of the branch in
-reverse-chronological order.
+reverse-chronological order.  If the revision author has been linked to a
+Launchpad person, then a link to the person is shown rather than the
+text of the revision author.
 
-    >>> def traverse_children(tag, tag_type=None):
-    ...     """Iterate over the direct children of a tag.
-    ...
-    ...     :param tag_type: If specified, only direct children of the type
-    ...         specified are returned, e.g. tag_type='div'.
-    ...     """
-    ...     def matching_tag(tag):
-    ...         return (tag_type is None or
-    ...                 getattr(tag, 'name', None) == tag_type)
-    ...     child = tag.next
-    ...     if child.parent is tag:
-    ...         if matching_tag(child):
-    ...             yield child
-    ...         while child.nextSibling is not None:
-    ...             child = child.nextSibling
-    ...             if matching_tag(child):
-    ...                 yield child
+    >>> def print_revisions(browser):
+    ...     revisions = find_tags_by_class(
+    ...         browser.contents, 'revision-details')
+    ...     for revision in revisions:
+    ...         print extract_text(revision).encode('ascii')
 
-    >>> for revision in traverse_children(revisions, 'div'):
-    ...     print extract_text(revision.div).encode('ascii')
+    >>> print_revisions(user_browser)
     6. By foo &lt;foo@localhost&gt; on 2005-10-31
     5. By foo &lt;foo@localhost&gt; on 2005-10-31
     4. By bar@localhost on 2005-10-31
-    3. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
-    2. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
-    1. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+    3. By Sample Person on 2005-10-31
+    2. By Sample Person on 2005-10-31
+    1. By Sample Person on 2005-10-31
 
 Each of the revision numbers are now anchors to codebrowse (for public
 branches).
 
-    >>> print revisions.div.div.a
-    <a href="http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
+    >>> revision = find_tags_by_class(
+    ...         user_browser.contents, 'revision-details', only_first=True)
+    >>> print revision.a
+    <a href="http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
 
 
 === Email addresses ===
@@ -78,29 +69,13 @@ In particular, we don't want search engine and spam bots harvesting email
 addresses.
 
     >>> anon_browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
-    >>> revisions = find_tag_by_id(anon_browser.contents, 'recent-revisions')
-    >>> for revision in traverse_children(revisions, 'div'):
-    ...     print extract_text(revision.div).encode('ascii')
+    >>> print_revisions(anon_browser)
     6. By foo &lt;email address hidden&gt; on 2005-10-31
     5. By foo &lt;email address hidden&gt; on 2005-10-31
     4. By &lt;email address hidden&gt; on 2005-10-31
-    3. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-    2. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-    1. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-
-
-=== Excursis ===
-
-In terms of HTML, each commit is contained in a <div> with an id of "revN",
-where "N" is the revision sequence number.
-
-The revision number, author and date are all contained in a heading (h3), and
-the commit message follows as a number of paragraphs.
-
-    >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
-    >>> def get_commit_message(sequence):
-    ...     revision = find_tag_by_id(browser.contents, 'rev%s' % sequence)
-    ...     return revision.fetch('p')
+    3. By Sample Person on 2005-10-31
+    2. By Sample Person on 2005-10-31
+    1. By Sample Person on 2005-10-31
 
 
 === Commit messages ===
@@ -108,16 +83,17 @@ the commit message follows as a number of paragraphs.
 The commit message is displayed in paragraphs underneath the revision id and
 author.
 
-    >>> for paragraph in get_commit_message(6):
-    ...     print paragraph.renderContents()
+    >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+    >>> commit_messages = find_tags_by_class(
+    ...         browser.contents, 'revision-comment')
+    >>> print commit_messages[0].p.renderContents()
     fix bug in bar
 
 
 When a commit message refers to a bug using the form "bug <bugnumber>", a link
 to that bug is created.
 
-    >>> for paragraph in get_commit_message(3):
-    ...     print paragraph.renderContents()
+    >>> print commit_messages[3].p.renderContents()
     fix <a ...>bug 1</a>
 
 
@@ -144,13 +120,17 @@ helpful message.
     This branch has not been mirrored yet.
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
-because those branches are only mirrored internally. "Published" is a better
-word for these.
+because those branches are only mirrored internally.
 
     >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
-    This branch has not been published yet.
+    This branch has not been pushed to yet.
+
+    >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    Recent revisions
+    This branch has not been imported yet.
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
@@ -284,16 +264,16 @@ link is shown.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, "recent-revisions").div)
+    ...     browser.contents, "recent-revisions").dl)
     6. By foo... fix bug in bar...
     >>> print browser.getLink('Browse code').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/files
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
 In addition, there is a "Browse revisions" link that links to the
 changelog view in codebrowse.
 
     >>> print browser.getLink('Browse revisions').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/changes
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
 In order to see the private branch, we need to log in as a user that

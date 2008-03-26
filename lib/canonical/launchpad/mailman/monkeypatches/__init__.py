@@ -33,10 +33,16 @@ def monkey_patch(mailman_path, config):
     # Calculate the parent directory of the canonical package.  This directory
     # will get appended to Mailman's sys.path.
     import canonical
+    from canonical.launchpad.mailman.config import (
+        configure_siteowner, configure_smtp)
     launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
+    # Read the email footer template for all Launchpad messages.
+    from canonical.launchpad.helpers import get_email_template
+    footer = get_email_template('mailinglist-footer.txt')
     # Write the mm_cfg.py file, filling in the dynamic values now.
-    host, port = config.mailman.smtp
-    owner_address, owner_password = config.mailman.build.site_list_owner
+    host, port = configure_smtp(config.mailman.smtp)
+    owner_address, owner_password = configure_siteowner(
+        config.mailman.build_site_list_owner)
     config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
     config_file = open(config_path, 'w')
     try:
@@ -59,19 +65,41 @@ SMTPPORT = %(smtp_port)d
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
 
-DEFAULT_EMAIL_HOST = 'launchpad.dev'
+# RFC 2369 header information
+LIST_HELP_HEADER = '%(list_help_header)s'
+LIST_SUBSCRIPTION_HEADERS = '%(list_subscription_headers)s'
+LIST_ARCHIVE_HEADER_TEMPLATE = '%(archive_url_template)s'
+LIST_OWNER_HEADER_TEMPLATE = '%(list_owner_header_template)s'
+
 SITE_LIST_OWNER = '%(site_list_owner)s'
 
-# Extend the global pipeline with a handler that ensures posters are Launchpad
-# members.
-GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
-""" % dict(launchpad_top=launchpad_top,
-           smtp_host=host,
-           smtp_port=port,
-           xmlrpc_url=config.mailman.xmlrpc_url,
-           xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
-           site_list_owner=owner_address,
-           )
+DEFAULT_MSG_FOOTER = '''_______________________________________________
+%(footer)s'''
+
+# Set up MHonArc archiving.
+PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
+-add \
+-dbfile %(var_dir)s/archives/private/%%(listname)s.mbox/mhonarc.db \
+-outdir %(var_dir)s/mhonarc/%%(listname)s \
+-stderr %(var_dir)s/logs/mhonarc \
+-stdout %(var_dir)s/logs/mhonarc \
+-spammode \
+-umask 022'
+PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
+""" % dict(
+    launchpad_top=launchpad_top,
+    smtp_host=host,
+    smtp_port=port,
+    xmlrpc_url=config.mailman.xmlrpc_url,
+    xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
+    site_list_owner=owner_address,
+    list_help_header=config.mailman.list_help_header,
+    list_subscription_headers=config.mailman.list_subscription_headers,
+    archive_url_template=config.mailman.archive_url_template,
+    list_owner_header_template=config.mailman.list_owner_header_template,
+    footer=footer,
+    var_dir=config.mailman.build_var_dir,
+    )
     finally:
         config_file.close()
     # Mailman's qrunner system requires runner modules to live in the
@@ -86,14 +114,18 @@ GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
             'import *')
     finally:
         runner_file.close()
-    # Mailman needs an additional handler at the front of the global pipeline
-    # to determine whether the poster is a Launchpad member or not.
-    handler_path = os.path.join(mailman_path,
-                                'Mailman', 'Handlers', 'LaunchpadMember.py')
-    handler_file = open(handler_path, 'w')
-    try:
-        print >> handler_file, (
-            'from canonical.launchpad.mailman.monkeypatches.lphandler '
-            'import *')
-    finally:
-        handler_file.close()
+    # Install our handler wrapper modules so that Mailman can find them.  Most
+    # of the actual code of the handler comes from our monkey patches modules.
+    for mm_name, lp_name in (('LaunchpadMember', 'lphandler'),
+                             ('LaunchpadHeaders', 'lpheaders'),
+                             ('LPModerate', 'lpmoderate'),
+                             ):
+        handler_path = os.path.join(
+            mailman_path, 'Mailman', 'Handlers', mm_name + '.py')
+        handler_file = open(handler_path, 'w')
+        try:
+            package = 'canonical.launchpad.mailman.monkeypatches'
+            module = package + '.' + lp_name
+            print >> handler_file, 'from', module, 'import *'
+        finally:
+            handler_file.close()

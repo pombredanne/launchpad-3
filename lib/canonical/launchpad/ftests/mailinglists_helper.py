@@ -1,24 +1,30 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Helper functions for testing XML-RPC services."""
 
+__metaclass__ = type
 __all__ = [
-    'beta_program_enable',
+    'apply_for_list',
     'fault_catcher',
     'get_alternative_email',
+    'mailman',
     'new_person',
     'new_team',
     'print_actions',
     'print_info',
+    'print_review_table',
     'review_list',
     ]
 
+
+import re
 import xmlrpclib
 
+from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
-from canonical.launchpad.database import MailingListSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
@@ -88,12 +94,52 @@ def print_info(info):
     """A helper function for the mailing list tests.
 
     This prints the results of the XMLRPC .getPendingActions() call.
+
+    Note that in order to make the tests that use this method a little
+    clearer, we specifically suppress printing of the mail-archive recipient.
+    You should pick the info apart manually if you want that.
     """
     for team_name in sorted(info):
         print team_name
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
-            print '   ', address, realname, flags, status
+            if (config.mailman.archive_address and
+                address == config.mailman.archive_address):
+                # Don't print this information
+                pass
+            else:
+                print '    %-23s' % address, realname, flags, status
+
+
+def print_review_table(content):
+    """Print a +mailinglists table in a nice format."""
+    table = BeautifulSoup(
+        content,
+        parseOnlyThese=SoupStrainer(attrs=dict(id='mailing-lists')))
+    for tr in table.findAll('tr'):
+        for index, thtd in enumerate(tr.findAll(['th', 'td'])):
+            if thtd.name == 'th':
+                # This is a heading.  To enable the page test to keep
+                # everything on one line with no wrapping, we'll abbreviate
+                # the first three headings.
+                if index < 3:
+                    print thtd.string[:3],
+                else:
+                    print thtd.string,
+            else:
+                # Either there's a radio button here, or a team name, or a
+                # person name.  In the former two cases, print a
+                # representation of whether the button is checked or not.  In
+                # the latter two cases, just print the text.
+                if thtd.input is None:
+                    text = re.sub(u'&nbsp;', ' ', thtd.a.contents[1])
+                    print '%s <%s>' % (text, thtd.a.get('href')),
+                else:
+                    if thtd.input.get('checked', None):
+                        print '(*)',
+                    else:
+                        print '( )',
+        print
 
 
 def new_team(team_name, with_list=False):
@@ -112,6 +158,15 @@ def new_team(team_name, with_list=False):
                              subscriptionpolicy=policy)
     if not with_list:
         return team
+    else:
+        return team, new_list_for_team(team)
+
+
+def new_list_for_team(team):
+    """A helper that creates a new, active mailing list for a team.
+
+    Used in doctests.
+    """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
     experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
@@ -121,7 +176,27 @@ def new_team(team_name, with_list=False):
     team_list.review(reviewer, MailingListStatus.APPROVED)
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
-    return team, team_list
+    flush_database_updates()
+    return team_list
+
+
+def apply_for_list(browser, team_name):
+    """Create a team and apply for its mailing list.
+
+    This should only be used in page tests.
+    """
+    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
+    browser.open('http://launchpad.dev/people/+newteam')
+    browser.getControl(name='field.name').value = team_name
+    browser.getControl('Display Name').value = displayname
+    # Use an open team for simplicity.
+    browser.getControl(
+        name='field.subscriptionpolicy').displayValue = ['Open Team']
+    browser.getControl('Create').click()
+    # Apply for the team's mailing list'
+    browser.open('http://launchpad.dev/~%s' % team_name)
+    browser.getLink('Configure mailing list').click()
+    browser.getControl('Apply for Mailing List').click()
 
 
 def new_person(first_name):
@@ -145,36 +220,6 @@ def new_person(first_name):
     getUtility(IEmailAddressSet).new(alternative_address, person,
                                      EmailAddressStatus.VALIDATED)
     return person
-
-
-def new_list_for_team(team_name, make_contact_address=False):
-    """Create a mailing list for the named team.
-
-    :param team_name: The name of the team for which to create a list.
-    :param make_contact_address: If True, the newly created list will be
-           made the team's contact address.
-
-    DO NOT use this in a non-pagetest.
-    """
-    login('foo.bar@canonical.com')
-    list_set = MailingListSet()
-    team = getUtility(IPersonSet).getByName(team_name)
-    mailing_list = list_set.new(team)
-
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    admin = list(experts.allmembers)[0]
-    mailing_list = list_set.get(team_name)
-    mailing_list.review(admin, MailingListStatus.APPROVED)
-    mailing_list.syncUpdate()
-    mailing_list.startConstructing()
-    mailing_list.syncUpdate()
-    mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
-    mailing_list.syncUpdate()
-
-    if make_contact_address:
-        team.setContactAddress(
-            getUtility(IEmailAddressSet).getByEmail(mailing_list.address))
-    logout()
 
 
 def get_alternative_email(person):
@@ -210,18 +255,19 @@ def review_list(list_name, status=None):
     mailing_list.review(lpadmin, status)
 
 
-def beta_program_enable(team_name):
-    """Join a team to the mailing list beta program team.
+class MailmanStub:
+    """A stand-in for Mailman's XMLRPC client for page tests."""
 
-    This allows the team to apply for mailing lists.
+    def act(self):
+        """Perform the effects of the Mailman XMLRPC client."""
+        # This doesn't have to be complete.
+        login('foo.bar@canonical.com')
+        mailing_list_set = getUtility(IMailingListSet)
+        for mailing_list in mailing_list_set.approved_lists:
+            mailing_list.startConstructing()
+            mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+        logout()
+        flush_database_updates()
 
-    XXX BarryWarsaw 06-Dec-2007 This function can go away when mailing lists
-    go public.  Also, DO NOT use this in a non-pagetest!
-    """
-    login('foo.bar@canonical.com')
-    person_set = getUtility(IPersonSet)
-    testers_team = person_set.getByName(config.mailman.beta_testers_team)
-    target_team = person_set.getByName(team_name)
-    reviewer = testers_team.teamowner
-    testers_team.addMember(target_team, reviewer, force_team_add=True)
-    logout()
+
+mailman = MailmanStub()

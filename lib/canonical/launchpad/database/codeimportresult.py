@@ -15,6 +15,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
+from canonical.launchpad.validators.person import public_person_validator
 
 class CodeImportResult(SQLBase):
     """See `ICodeImportResult`."""
@@ -30,7 +31,8 @@ class CodeImportResult(SQLBase):
         dbName='machine', foreignKey='CodeImportMachine', notNull=True)
 
     requesting_user = ForeignKey(
-        dbName='requesting_user', foreignKey='Person', default=None)
+        dbName='requesting_user', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
     log_excerpt = StringCol(default=None)
 
@@ -40,10 +42,7 @@ class CodeImportResult(SQLBase):
     status = EnumCol(
         enum=CodeImportResultStatus, notNull=True)
 
-    # XXX MichaelHudson, 2007-10-11
-    # We should rename date_started to date_job_started in the database.
-    # See bug #151583.
-    date_job_started = UtcDateTimeCol(dbName='date_started', notNull=True)
+    date_job_started = UtcDateTimeCol(notNull=True)
 
     @property
     def date_job_finished(self):
@@ -55,3 +54,30 @@ class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""
 
     implements(ICodeImportResultSet)
+
+    def new(self, code_import, machine, requesting_user, log_excerpt,
+            log_file, status, date_job_started):
+        """See `ICodeImportResultSet`."""
+        return CodeImportResult(
+            code_import=code_import, machine=machine,
+            requesting_user=requesting_user, log_excerpt=log_excerpt,
+            log_file=log_file, status=status,
+            date_job_started=date_job_started)
+
+    def getResultsForImport(self, code_import):
+        """See `ICodeImportResultSet`."""
+        # It makes no difference in production whether we sort by
+        # date_job_started or date_job_finished because jobs don't
+        # overlap, which is to say that there's no way for this to
+        # happen:
+        #
+        #     Job A starts for import I
+        #     Job B starts for import I
+        #     Job B finishes for import I
+        #     Job A finishes for import I
+        #
+        # We sort by date_job_started though, because that makes
+        # writing tests easier (date_job_finished is punned with
+        # date_created which is harder to influence from test code).
+        return CodeImportResult.selectBy(
+            code_import=code_import, orderBy=['-date_job_started'])

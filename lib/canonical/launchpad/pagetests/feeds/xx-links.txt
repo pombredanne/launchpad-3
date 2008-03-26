@@ -1,14 +1,14 @@
 = Link Tags for Atom Feeds =
 
-The little orange icon that appears in browsers to indicate the presence
-of an RSS or Atom feed is controlled by adding a <link> tag to the <head>
-of the document. We want appropriate pages in launchpad.net to provide
-links to corresponding Atom feeds.
+The icon that appears in a browser's address field to indicate the
+presence of an RSS or Atom feed is controlled by adding a <link> tag
+to the <head> of the document. We want appropriate pages in
+launchpad.dev to provide links to corresponding Atom feeds.
 
 
 == All Announcements on Launchpad ==
 
-The root launchpad.net url will have a link to the Atom feed which
+The root launchpad.dev url will have a link to the Atom feed which
 displays the most recent announcements for all the projects.
 
     >>> from BeautifulSoup import BeautifulSoup
@@ -16,8 +16,8 @@ displays the most recent announcements for all the projects.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="All Announcements"
-        href="http://feeds.launchpad.dev/announcements.atom" />]
+        href="http://feeds.launchpad.dev/announcements.atom"
+        title="All Announcements" />]
 
 The http://launchpad.dev/+announcements page also displays recent
 announcements for all the projects so it should have a link to the same
@@ -27,8 +27,8 @@ feed.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="All Announcements"
-        href="http://feeds.launchpad.dev/announcements.atom" />]
+        href="http://feeds.launchpad.dev/announcements.atom"
+        title="All Announcements" />]
 
 == Single Bug Feed ==
 
@@ -39,81 +39,129 @@ atom feed for that one bug.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Bug 1 Feed"
-        href="http://feeds.launchpad.dev/bugs/1/bug.atom" />]
+        href="http://feeds.launchpad.dev/bugs/1/bug.atom"
+        title="Bug 1 Feed" />]
 
 
-== Latest Bugs for a Person ==
+== Latest Bugs and Branches for a Person ==
 
-On the person page on launchpad.net and bugs.launchpad.net, we should
-show a link to the atom feed for that person's latest bugs.
+On the person page on launchpad.dev and bugs.launchpad.dev, we should
+show a link to the atom feed for that person's latest bugs and
+branches.
 
     >>> browser.open('http://launchpad.dev/~stevea')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Steve Alexander"
-        href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom" />]
+       href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom"
+       title="Latest Bugs for Steve Alexander" />,
+    <link rel="alternate" type="application/atom+xml"
+       href="http://feeds.launchpad.dev/~stevea/branches.atom"
+       title="Latest Branches for Steve Alexander" />]
+
+On the bugs subdomain, only a link to the bugs feed will be included,
+not the branches link.
+
     >>> browser.open('http://bugs.launchpad.dev/~stevea')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Steve Alexander"
-        href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom"
+        title="Latest Bugs for Steve Alexander" />]
 
 
-== Latest Bugs & Announcements for a Product ==
+== Latest Bugs, Branches, and Announcements for a Product ==
 
-On the product page on launchpad.net and bugs.launchpad.net, we should
+On the product page on launchpad.dev and bugs.launchpad.dev, we should
 show a link to the atom feed for that product's latest bugs.
 
-An announcements feed link should also be shown on the main product page.
+Feed links for announcements and branches should also be shown on the
+main product page.
 
     >>> browser.open('http://launchpad.dev/jokosher')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Announcements for Jokosher"
-        href="http://feeds.launchpad.dev/jokosher/announcements.atom" />,
+        href="http://feeds.launchpad.dev/jokosher/announcements.atom"
+        title="Announcements for Jokosher" />,
      <link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Jokosher"
-        href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom"
+        title="Latest Bugs for Jokosher" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/jokosher/branches.atom"
+	title="Latest Branches for Jokosher" />]
 
-Only bug feeds should be linked to on bugs.launchpad.net.
+Only bug feeds should be linked to on bugs.launchpad.dev.
 
     >>> browser.open('http://bugs.launchpad.dev/jokosher')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Jokosher"
-        href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom"
+        title="Latest Bugs for Jokosher" />]
 
+
+== Escaping the title ==
+
+Since the link title attribute contains the displayname of the prodect,
+it must have quotes and html escaped.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchBag, IProductSet, License)
+    >>> user = getUtility(ILaunchBag).user
+    >>> getUtility(IProductSet).createProduct(
+    ...     user, 'bad-displayname',
+    ...     'Bad displayname"><script>alert("h4x0r")</script>',
+    ...     'title foo', 'summary foo', licenses=[License.GPL])
+    <Product ...>
+    >>> flush_database_updates()
+    >>> logout()
+    >>> browser.open('http://launchpad.dev/bad-displayname')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/bad-displayname/announcements.atom"
+        title="Announcements for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/bad-displayname/latest-bugs.atom"
+        title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/bad-displayname/branches.atom"
+        title="Latest Branches for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
 
 == Latest Bugs for a Project ==
 
-On the project page on launchpad.net and bugs.launchpad.net, we should
+On the project page on launchpad.dev and bugs.launchpad.dev, we should
 show a link to the atom feed for that project's latest bugs.
 
-An announcements feed link should also be shown on the main project page.
+Feed links for announcements and branches should also be shown
+on the main project page.
 
     >>> browser.open('http://launchpad.dev/gnome')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Announcements for GNOME"
-        href="http://feeds.launchpad.dev/gnome/announcements.atom" />,
+        href="http://feeds.launchpad.dev/gnome/announcements.atom"
+        title="Announcements for GNOME" />,
      <link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for GNOME"
-        href="http://feeds.launchpad.dev/gnome/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/gnome/latest-bugs.atom"
+        title="Latest Bugs for GNOME" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/gnome/branches.atom"
+	title="Latest Branches for GNOME" />]
 
-Only bug feeds should be linked to on bugs.launchpad.net.
+Only bug feeds should be linked to on bugs.launchpad.dev.
 
     >>> browser.open('http://bugs.launchpad.dev/gnome')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for GNOME"
-        href="http://feeds.launchpad.dev/gnome/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/gnome/latest-bugs.atom"
+        title="Latest Bugs for GNOME" />]
 
 The default view for a project on bugs.launchpad.dev is +bugs. The
 default bug listing matches the latest-bugs atom feed, but any search
@@ -132,7 +180,7 @@ that the code does not display the atom feed link here inappropriately.
 
 == Latest Bugs for a Distro ==
 
-On the distro page on launchpad.net and bugs.launchpad.net, we should
+On the distro page on launchpad.dev and bugs.launchpad.dev, we should
 show a link to the atom feed for that distro's latest bugs.
 
 An announcements feed link should also be shown on the main distro page.
@@ -141,56 +189,109 @@ An announcements feed link should also be shown on the main distro page.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Announcements for Ubuntu"
-        href="http://feeds.launchpad.dev/ubuntu/announcements.atom" />,
+        href="http://feeds.launchpad.dev/ubuntu/announcements.atom"
+        title="Announcements for Ubuntu" />,
      <link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Ubuntu"
-        href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom"
+        title="Latest Bugs for Ubuntu" />]
 
-Only bug feeds should be linked to on bugs.launchpad.net.
+Only bug feeds should be linked to on bugs.launchpad.dev.
 
     >>> browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Ubuntu"
-        href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom"
+        title="Latest Bugs for Ubuntu" />]
 
 
 == Latest Bugs for a Distroseries ==
 
-On the distroseries page on bugs.launchpad.net, we should
+On the distroseries page on bugs.launchpad.dev, we should
 show a link to the atom feed for that distroseries' latest bugs.
 
     >>> browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for Hoary"
-        href="http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom"
+        title="Latest Bugs for Hoary" />]
 
 
 == Latest Bugs for a Product Series ==
 
-On the product series page on bugs.launchpad.net, we should
+On the product series page on bugs.launchpad.dev, we should
 show a link to the atom feed for that product series' latest bugs.
 
     >>> browser.open('http://bugs.launchpad.dev/firefox/1.0')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for 1.0"
-        href="http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom"
+        title="Latest Bugs for 1.0" />]
 
 
 == Latest Bugs for a Source Package ==
 
-On the source package page on bugs.launchpad.net, we should
+On the source package page on bugs.launchpad.dev, we should
 show a link to the atom feed for that source package's latest bugs.
 
     >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/cnews')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Bugs for cnews in ubuntu"
-        href="http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom" />]
+        href="http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom"
+        title="Latest Bugs for cnews in ubuntu" />]
+
+
+== Latest Branches for a Project ==
+
+On the project code page on code.launchpad.dev, we should show a link
+to the atom feed for that project's latest branches.
+
+    >>> browser.open('http://code.launchpad.dev/mozilla')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/mozilla/branches.atom" 
+        title="Latest Branches for the Mozilla Project" />]
+
+
+== Latest Branches for a Product ==
+
+On the project code page on code.launchpad.dev, we should show a link
+to the atom feed for that product's latest branches.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/firefox/branches.atom"
+	title="Latest Branches for Mozilla Firefox" />]
+
+
+== Latest Branches for a Person ==
+
+On a person's code page on code.launchpad.dev, we should show a link
+to the atom feed for that person's latest branches.
+
+    >>> browser.open('http://code.launchpad.dev/~sabdfl')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/~sabdfl/branches.atom"
+	title="Latest Branches for Mark Shuttleworth" />]
+
+
+== Latest Revisions on a Branch ==
+
+On a branch page on code.launchpad.dev, we should show a link to the
+atom feed for that branch's revisions.
+
+    >>> url = 'http://code.launchpad.dev/~sabdfl/firefox/release--0.9.1'
+    >>> browser.open(url)
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom"
+	title="Latest Revisions for Branch Mozilla Firefox 0.9.1" />]

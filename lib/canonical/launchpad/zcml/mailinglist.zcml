@@ -2,6 +2,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.MailingList">
@@ -13,6 +14,11 @@
     <content class="canonical.launchpad.database.MailingListSubscription">
         <allow
          interface="canonical.launchpad.interfaces.IMailingListSubscription"/>
+    </content>
+
+    <content class="canonical.launchpad.database.MessageApproval">
+        <allow
+          interface="canonical.launchpad.interfaces.IMessageApproval"/>
     </content>
 
     <securedutility
@@ -28,11 +34,37 @@
          interface="canonical.launchpad.interfaces.IMailingListApplication"/>
     </securedutility>
 
+    <securedutility
+        class="canonical.launchpad.database.MessageApprovalSet"
+        provides="canonical.launchpad.interfaces.IMessageApprovalSet">
+        <allow
+          interface="canonical.launchpad.interfaces.IMessageApprovalSet"/>
+    </securedutility>
+
     <xmlrpc:view
         for="canonical.launchpad.interfaces.IMailingListApplication"
         interface="canonical.launchpad.interfaces.IMailingListAPIView"
         class="canonical.launchpad.xmlrpc.MailingListAPIView"
         permission="zope.Public"
         />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMailingListSet"
+        name="+review"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IMailingListSet"
+        class="canonical.launchpad.browser.MailingListsReviewView"
+        name="+review"
+        template="../templates/mailinglists-review.pt"
+        permission="launchpad.Admin"
+        />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.IMailingList
+	 canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"
+    />
 
 </configure>

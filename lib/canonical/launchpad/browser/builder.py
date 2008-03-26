@@ -23,19 +23,18 @@ from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.launchpad.browser.build import BuildRecordsView
-
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.helpers import shortlist
-
 from canonical.launchpad.interfaces import (
-    BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
-    )
-
+    IBuilderSet, IBuilder, IBuildSet, IPerson, NotFoundError)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
-    ApplicationMenu, enabled_with_permission, canonical_url)
+    ApplicationMenu, GetitemNavigation, Link, Navigation,
+    StandardLaunchpadFacets, canonical_url, enabled_with_permission,
+    stepthrough)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.lazr import decorates
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -132,6 +131,21 @@ class CommonBuilderView:
         UTC = pytz.timezone('UTC')
         return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
 
+    def overrideHiddenBuilder(self, builder):
+        """Override the builder to HiddenBuilder as necessary.
+
+        HiddenBuilder is used if the user does not have permission to
+        see the build on the builder.
+        """
+        current_job = builder.currentjob
+        if (current_job and
+            not check_permission('launchpad.View', current_job.build)):
+            # Cloak the builder.
+            return HiddenBuilder(builder)
+        else:
+            # The build is public, don't cloak it.
+            return builder
+
 
 class BuilderSetView(CommonBuilderView):
     """Default BuilderSet view class
@@ -148,13 +162,58 @@ class BuilderSetView(CommonBuilderView):
     def hasQueuedBuilds(self):
         return bool(self.buildQueueDepthByArch)
 
+    @property
+    def builders(self):
+        """Return all active builders, with private builds cloaked.
+
+        Any builders building a private build will be cloaked and returned
+        as a HiddenBuilder.
+        """
+        builders = self.context.getBuilders()
+        return [self.overrideHiddenBuilder(builder) for builder in builders]
+
+
+class HiddenBuilder:
+    """Overrides a IBuilder building a private job.
+
+    This class modifies IBuilder attributes that should not be exposed
+    while building a job for private job (private PPA or Security).
+    """
+    decorates(IBuilder)
+
+    failnotes = None
+    currentjob = None
+    builderok = False
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def status(self):
+        if self.context.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+
+        return "NOT OK: (%s)" % mode
+
+    # This method is required because the builder history page will have this
+    # cloaked context if the builder is currently processing a private build.
+    def getBuildRecords(self, build_state=None, name=None, user=None):
+        """See `IHasBuildRecords`."""
+        return self.context.getBuildRecords(build_state, name, user)
+
 
 class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
 
-    Implements useful actions and colect useful set for the pagetemplate.
+    Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
+
+    def __init__(self, context, request):
+        context = self.overrideHiddenBuilder(context)
+        super(BuilderView, self).__init__(context, request)
 
     def cancelBuildJob(self):
         """Cancel curent job in builder."""
@@ -167,20 +226,24 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # until we can test it properly, since we can only 'abort' slaves
         # in BUILDING state it does depends of the major issue for testing
         # Auto Build System, getting slave building something sane.
-        return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
+        return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
 
-    def defaultBuildState(self):
+    @property
+    def default_build_state(self):
         """Present all jobs by default."""
         return None
 
-    def showBuilderInfo(self):
+    @property
+    def show_builder_info(self):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
+
 
 class BuilderSetAddView(AddView):
     """Builder add view
 
-    Extends zope AddView and uses IBuilderSet utitlity to create a new IBuilder
+    Extends zope AddView and uses IBuilderSet utitlity to create a new
+    IBuilder.
     """
     __used_for__ = IBuilderSet
 

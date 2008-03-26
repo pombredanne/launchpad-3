@@ -25,17 +25,27 @@ We will log in as Sample Person and edit the ubz sprint.
   >>> browser.url
   'http://launchpad.dev/sprints/ubz/+edit'
 
-If we alter the date to an ending date that precedes the starting date we 
+The sprint start and end times are expressed to the nearest minute, and
+not the second:
+
+  >>> start_control = browser.getControl('Starting Date and Time')
+  >>> start_control.value
+  '2005-10-07 19:30'
+  >>> end_control = browser.getControl('Finishing Date and Time')
+  >>> end_control.value
+  '2005-11-16 19:11'
+
+If we alter the date to an ending date that precedes the starting date we
 should receive a nice error message.
 
-  >>> browser.getControl(
-  ...     'Starting Date and Time').value = '2006-01-10 23:30'
-  >>> browser.getControl(
-  ...     'Finishing Date and Time').value = '2005-02-12 00:11'
+  >>> start_control.value = '2006-01-10 23:30'
+  >>> end_control.value = '2005-02-12 00:11'
   >>> browser.getControl('Change').click()
 
-  >>> "This event can't start after it ends" in browser.contents
-  True
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  This event can't start after it ends
 
 We fix the dates and change the address, we expect to be redirected to the
 sprint home page.
@@ -51,15 +61,19 @@ sprint home page.
   >>> browser.url
   'http://launchpad.dev/sprints/ubz'
 
-  >>> address in browser.contents
+
+The address of the sprint is now visible in the sprint details portlet.
+
+  >>> details_portlet = find_portlet(browser.contents, 'Meeting details')
+  >>> address in details_portlet.renderContents()
   True
 
-  >>> print find_portlet(browser.contents, 'Meeting details')
+  >>> print details_portlet
   <...
   ...Starts:...
-  2006-01-10 08:30:00 EST...
+  2006-01-10 08:30 EST...
   ...Ends:...
-  2006-02-12 17:00:00 EST...
+  2006-02-12 17:00 EST...
   ...
 
 
@@ -75,8 +89,8 @@ dates will be changed too, since they follow local time:
   >>> print find_portlet(browser.contents, 'Meeting details')
   <...
   ...Starts:...
-  2006-01-10 08:30:00 CST...
+  2006-01-10 08:30 CST...
   ...Ends:...
-  2006-02-12 17:00:00 CST...
+  2006-02-12 17:00 CST...
   ...
 

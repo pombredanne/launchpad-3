@@ -7,16 +7,16 @@ __metaclass__ = type
 import unittest
 
 from zope.component import getUtility
-from zope.testing import doctest
 
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
+from canonical.launchpad.database import ComponentSelection
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.ftests.test_system_documentation import (
-    LayeredDocFileSuite, setUp as standard_setup)
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IDistributionSet)
+    DistroSeriesStatus, IComponentSet, IDistributionSet)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setGlobs)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -39,7 +39,7 @@ def testGlobalsSetup(test):
 
     We can use the getUpload* without unnecessary imports.
     """
-    standard_setup(test)
+    setGlobs(test)
     test.globs['getUploadForSource'] = getUploadForSource
     test.globs['getUploadForBinary'] = getUploadForBinary
 
@@ -55,6 +55,10 @@ def prepareHoaryForUploads(test):
     hoary.status = DistroSeriesStatus.DEVELOPMENT
     test.globs['ubuntu'] = ubuntu
     test.globs['hoary'] = hoary
+    # Hoary needs to allow uploads for universe.
+    universe = getUtility(IComponentSet)['universe']
+    ComponentSelection(distroseries=hoary, component=universe)
+    LaunchpadZopelessLayer.txn.commit()
 
 
 def setUp(test):
@@ -64,41 +68,22 @@ def setUp(test):
     Log in as a Launchpad admin (foo.bar@canonical.com).
     Setup test globals and prepare hoary for uploads
     """
-    LaunchpadZopelessLayer.switchDbUser('uploader')
     login('foo.bar@canonical.com')
     testGlobalsSetup(test)
     prepareHoaryForUploads(test)
+    LaunchpadZopelessLayer.switchDbUser('uploader')
 
 
 def tearDown(test):
     logout()
 
 
-special = {
-    'epoch-handling': LayeredDocFileSuite(
-       'nascentupload-epoch-handling.txt', package=__name__,
-       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
-       optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
-
-    'closing-bugs': LayeredDocFileSuite(
-       'nascentupload-closing-bugs.txt', package=__name__,
-       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
-       optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
-
-    'publishing-accepted-sources': LayeredDocFileSuite(
-       'nascentupload-publishing-accepted-sources.txt', package=__name__,
-       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
-       optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
-    }
-
 def test_suite():
-    suite = unittest.TestSuite()
-    keys = special.keys()
-    keys.sort()
-    for key in keys:
-        special_suite = special[key]
-        suite.addTest(special_suite)
-    return suite
+    return LayeredDocFileSuite(
+       'nascentupload-closing-bugs.txt',
+       'nascentupload-epoch-handling.txt',
+       'nascentupload-publishing-accepted-sources.txt',
+       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer)
 
 
 if __name__ == '__main__':

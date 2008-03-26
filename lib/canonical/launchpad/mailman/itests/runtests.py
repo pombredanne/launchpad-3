@@ -7,9 +7,11 @@ import os
 import re
 import sys
 import errno
+import shutil
 import doctest
 import optparse
 import unittest
+# pylint: disable-msg=W0403
 import itest_helper
 
 sys.path.insert(0, itest_helper.TOP)
@@ -17,6 +19,7 @@ sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+# pylint: disable-msg=F0401
 from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
 
 execute_zcml_for_scripts()
@@ -33,8 +36,22 @@ DOCTEST_FLAGS = (doctest.ELLIPSIS |
                  doctest.REPORT_NDIFF)
 
 
-def integrationTestCleanUp(test):
+def integrationTestSetUp(testobj):
+    """Set up for all integration doctests."""
+    # We'll always need an smtp server.
+    smtpd = itest_helper.SMTPServer()
+    smtpd.start()
+    if testobj is not None:
+        testobj.globs['smtpd'] = smtpd
+
+
+def integrationTestCleanUp(testobj):
     """Common tear down for the integration tests."""
+    # Ensure the smtp server is stopped and cleared.
+    if testobj is not None:
+        smtpd = testobj.globs['smtpd']
+        smtpd.reset()
+        smtpd.stop()
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
@@ -81,26 +98,34 @@ def integrationTestCleanUp(test):
     WHERE id IN (SELECT id FROM DeathRow);
     """)
     commit()
+    # Clear out any qfiles hanging around from a previous run.  Do this first
+    # to prevent stale list references.
+    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == '.pck':
+                os.remove(os.path.join(dirpath, filename))
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
-    for team_name in ('itest-one', 'itest-two', 'itest-three'):
+    for team_name in ('itest-one', 'itest-two', 'itest-three', 'fake-team'):
         try:
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
             pass
-        backup_file = os.path.join(VAR_PREFIX, 'backups', '%s.tgz' % team_name)
+        backup_file = os.path.join(
+            VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
-    # Clear out any qfiles hanging around from a previous run.
-    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
-        for filename in filenames:
-            if os.path.splitext(filename)[1] == '.pck':
-                os.remove(os.path.join(dirpath, filename))
-
+        # Delete the MHonArc archives if they exist.
+        path = os.path.join(VAR_PREFIX, 'mhonarc')
+        try:
+            shutil.rmtree(path)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
 
 
 def find_tests(match_regexps):
@@ -122,6 +147,7 @@ def find_tests(match_regexps):
             continue
         test = doctest.DocFileSuite(
             filename,
+            setUp=integrationTestSetUp,
             tearDown=integrationTestCleanUp,
             optionflags=DOCTEST_FLAGS)
         suite.addTest(test)

@@ -16,26 +16,39 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugmessage import BugMessage
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
-
-from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.uri import find_uris_in_text
-
 from canonical.launchpad.interfaces import (
     BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
-from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
+
+
+BUG_TRACKER_URL_FORMATS = {
+    BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
+    BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
+    BugTrackerType.MANTIS:      'view.php?id=%s',
+    BugTrackerType.ROUNDUP:     'issue%s',
+    BugTrackerType.RT:          'Ticket/Display.html?id=%s',
+    BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+    BugTrackerType.TRAC:        'ticket/%s',
+    BugTrackerType.SAVANNAH:    'bugs/?%s',
+    }
 
 
 class BugWatch(SQLBase):
-    """See canonical.launchpad.interfaces.IBugWatch."""
+    """See `IBugWatch`."""
     implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -48,7 +61,9 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -56,30 +71,28 @@ class BugWatch(SQLBase):
 
     @property
     def title(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         return "%s #%s" % (self.bugtracker.title, self.remotebug)
 
     @property
     def url(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
-        url_formats = {
-            BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:        'ticket/%s',
-            BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:     'issue%s',
-            BugTrackerType.RT:          'Ticket/Display.html?id=%s',
-            BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
-            BugTrackerType.MANTIS:      'view.php?id=%s',
-        }
-        bt = self.bugtracker.bugtrackertype
-        if not url_formats.has_key(bt):
-            raise AssertionError('Unknown bug tracker type %s' % bt)
-        return urlappend(self.bugtracker.baseurl,
-                         url_formats[bt] % self.remotebug)
+        """See `IBugWatch`."""
+        bugtracker = self.bugtracker
+        bugtrackertype = self.bugtracker.bugtrackertype
+
+        if bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return bugtracker.baseurl
+        elif bugtrackertype in BUG_TRACKER_URL_FORMATS:
+            url_format = BUG_TRACKER_URL_FORMATS[bugtrackertype]
+            return urlappend(bugtracker.baseurl,
+                             url_format % self.remotebug)
+        else:
+            raise AssertionError(
+                'Unknown bug tracker type %s' % bugtrackertype)
 
     @property
     def needscheck(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         return True
 
     def updateImportance(self, remote_importance, malone_importance):
@@ -135,7 +148,7 @@ class BugWatch(SQLBase):
                 notify(event)
 
     def destroySelf(self):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
 
@@ -180,6 +193,35 @@ class BugWatch(SQLBase):
 
         return message % error_data
 
+    def hasComment(self, comment_id):
+        """See `IBugWatch`."""
+        query = """
+            BugMessage.message = Message.id
+            AND Message.rfc822msgid = %s
+            AND BugMessage.bugwatch = %s
+        """ % sqlvalues(comment_id, self)
+
+        # XXX 2008-02-13 gmb:
+        #     This might be more efficient if we used an EXISTS query.
+        comment = BugMessage.selectOne(query, clauseTables=['Message'])
+
+        return comment is not None
+
+    def addComment(self, comment_id, message):
+        """See `IBugWatch`."""
+        assert not self.hasComment(comment_id), ("Comment with ID %s has "
+            "already been imported for %s." % (comment_id, self.title))
+
+        # When linking the message we force the owner being used to the
+        # Bug Watch Updater celebrity. This allows us to avoid trying to
+        # assign karma to the authors of imported comments, since karma
+        # should only be assigned for actions that occur within
+        # Launchpad. See bug 185413 for more details.
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
+        bug_message = self.bug.linkMessage(
+            message, bugwatch=self, user=bug_watch_updater)
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
@@ -193,15 +235,17 @@ class BugWatchSet(BugSetBase):
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
+            BugTrackerType.SAVANNAH: self.parseSavannahURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
-            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
-        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        """See `IBugWatch`Set."""
         try:
             return BugWatch.get(watch_id)
         except SQLObjectNotFound:
@@ -222,11 +266,22 @@ class BugWatchSet(BugSetBase):
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
+                # We don't want to auto-create EMAILADDRESS bug trackers
+                # based on mailto: URIs in comments.
+                if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
+                    continue
+
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
                 remotebug = error.remote_bug
             except UnrecognizedBugTrackerURL:
                 # It doesn't look like a bug URL, so simply ignore it.
+                continue
+
+            # We don't create bug watches for EMAILADDRESS bug trackers
+            # from mailto: URIs in comments, so in those cases we give
+            # up.
+            if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                 continue
 
             if bug.getBugWatch(bugtracker, remotebug) is None:
@@ -240,7 +295,7 @@ class BugWatchSet(BugSetBase):
         return newwatches
 
     def fromMessage(self, message, bug):
-        """See IBugWatchSet."""
+        """See `IBugWatchSet`."""
         watches = set()
         for messagechunk in message:
             if messagechunk.blob is not None:
@@ -256,7 +311,7 @@ class BugWatchSet(BugSetBase):
         return sorted(watches, key=lambda a: a.remotebug)
 
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
-        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        """See `IBugWatchSet`."""
         return BugWatch(
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
@@ -382,8 +437,47 @@ class BugWatchSet(BugSetBase):
 
         return sf_tracker.baseurl, remote_bug
 
+    def parseSavannahURL(self, scheme, host, path, query):
+        """Extract GNU Savannah base URL and bug ID."""
+        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+        # exclude any path that isn't '/bugs/'. We also exclude query
+        # string that have a length of more or less than one, since in
+        # such cases we'd be taking a guess at the bug ID, which would
+        # probably be wrong.
+        if path != '/bugs/' or len(query) != 1:
+            return None
+
+        # The remote bug is actually a key in the query dict rather than
+        # a value, so we simply use the first and only key we come
+        # across as a best-effort guess.
+        remote_bug = query.popitem()[0]
+
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+
+        return savannah_tracker.baseurl, remote_bug
+
+    def parseEmailAddressURL(self, scheme, host, path, query):
+        """Extract an email address from a bug URL.
+
+        This method will return (mailto:<email_address>, '') since email
+        address bug trackers cannot have bug numbers. We return an empty
+        string for the remote bug since BugWatch.remotebug cannot be
+        None.
+        """
+        # We ignore anything that isn't a mailto URL.
+        if scheme != 'mailto':
+            return None
+
+        # We also reject invalid email addresses.
+        if not valid_email(path):
+            return None
+
+        return '%s:%s' % (scheme, path), ''
+
     def extractBugTrackerAndBug(self, url):
-        """See IBugWatchSet."""
+        """See `IBugWatchSet`."""
         for trackertype, parse_func in (
             self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)
@@ -406,3 +500,4 @@ class BugWatchSet(BugSetBase):
                 raise NoBugTrackerFound(base_url, remote_bug, trackertype)
 
         raise UnrecognizedBugTrackerURL(url)
+

@@ -26,7 +26,6 @@ __all__ = [
     'ProductChangeTranslatorsView',
     'ProductReviewView',
     'ProductAddSeriesView',
-    'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
@@ -39,8 +38,8 @@ __all__ = [
     'PillarSearchItem',
     ]
 
-import cgi
 from operator import attrgetter
+import urllib
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -55,10 +54,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
-    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
-    IProductSeries, IProductSet, IProject, ITranslationImportQueue,
-    License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnsafeFormGetSubmissionError)
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
+    ITranslationImportQueue, License, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -67,7 +66,8 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -80,13 +80,13 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, sorted_version_numbers,
-    StandardLaunchpadFacets, stepto, stepthrough, structured)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission,
+    sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -289,7 +289,7 @@ class ProductOverviewMenu(ApplicationMenu):
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf']
+        'branch_visibility', 'rdf', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -368,6 +368,10 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
+
 
 class ProductBugsMenu(ApplicationMenu):
 
@@ -393,12 +397,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['branch_add', 'list_branches']
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
+
+    def list_branches(self):
+        text = 'List branches'
+        summary = 'List the branches for this project'
+        return Link('+branches', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -558,7 +567,87 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
+class ProductDownloadFileMixin:
+    """Provides methods for managing download files."""
+
+    def deleteFiles(self, releases):
+        """Delete the selected files from the set of releases.
+
+        :param releases: A set of releases in the view.
+        :return: The number of files deleted.
+        """
+        del_count = 0
+        for release in releases:
+            for release_file in release.files:
+                if release_file.libraryfile.id in self.delete_ids:
+                    release.deleteFileAlias(release_file.libraryfile)
+                    self.delete_ids.remove(release_file.libraryfile.id)
+                    del_count += 1
+        return del_count
+
+    def getReleases(self):
+        """Find the releases with download files for view."""
+        raise NotImplementedError
+
+    def fileURL(self, file_, release=None):
+        """Create a download URL for the `LibraryFileAlias`."""
+        if release is None:
+            release = self.context
+        url = urlappend(canonical_url(release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        baseurl = self.fileURL(file_, release)
+        return urlappend(baseurl, '+md5')
+
+    def processDeleteFiles(self):
+        """If the 'delete_files' button was pressed, process the deletions."""
+        del_count = None
+        self.delete_ids = [int(value) for key, value in self.form.items()
+                           if key.startswith('checkbox')]
+        if 'delete_files' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['delete_files'])
+                releases = self.getReleases()
+                del_count = self.deleteFiles(releases)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification(
+                    "No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification(
+                    "1 file has been deleted.")
+            else:
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
+
+    def seriesHasDownloadFiles(self, series):
+        """Determine whether a series has any download files."""
+        for release in series.releases:
+            if release.files.count() > 0:
+                return True
+
+    @cachedproperty
+    def latest_release_with_download_files(self):
+        """Return the latest release with download files."""
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if release.files.count() > 0:
+                    return release
+        return None
+
+
+class ProductView(HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     __used_for__ = IProduct
 
@@ -684,69 +773,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFileMixin:
-    """Provides methods for managing download files."""
-
-    def deleteFiles(self, releases):
-        """Delete the selected files from the set of releases.
-
-        :param releases: A set of releases in the view.
-        :return: The number of files deleted.
-        """
-        del_count = 0
-        for release in releases:
-            for release_file in release.files:
-                if release_file.libraryfile.id in self.delete_ids:
-                    release.deleteFileAlias(release_file.libraryfile)
-                    self.delete_ids.remove(release_file.libraryfile.id)
-                    del_count += 1
-        return del_count
-
-    def getReleases(self):
-        """Find the releases with download files for view."""
-        raise NotImplementedError
-
-    def fileURL(self, file_, release=None):
-        """Create a download URL for the `LibraryFileAlias`."""
-        if release is None:
-            release = self.context
-        return "%s/+download/%s" % (canonical_url(release),
-                                    file_.filename)
-
-    def md5URL(self, file_, release=None):
-        """Create a URL for the MD5 digest."""
-        if release is None:
-            release = self.context
-        return "%s/+download/%s/+md5" % (canonical_url(release),
-                                         file_.filename)
-
-    def processDeleteFiles(self):
-        """If the 'delete_files' button was pressed, process the deletions."""
-        del_count = None
-        self.delete_ids = [int(value) for key, value in self.form.items()
-                           if key.startswith('checkbox')]
-        if 'delete_files' in self.form:
-            if self.request.method == 'POST':
-                del(self.form['delete_files'])
-                releases = self.getReleases()
-                del_count = self.deleteFiles(releases)
-            else:
-                # If there is a form submission and it is not a POST then
-                # raise an error.  This is to protect against XSS exploits.
-                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
-        if del_count is not None:
-            if del_count <= 0:
-                self.request.response.addNotification(
-                    "No files were deleted.")
-            elif del_count == 1:
-                self.request.response.addNotification(
-                    "1 file has been deleted.")
-            else:
-                self.request.response.addNotification(
-                    "%d files have been deleted." %
-                    del_count)
-
-
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
@@ -769,11 +795,10 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            for release in series.releases:
-                if release.files.count() > 0:
-                    return True
+            if self.seriesHasDownloadFiles(series):
+                return True
         return False
-    
+
     @cachedproperty
     def any_download_files_with_signatures(self):
         """Across series and releases do any download files have signatures?
@@ -802,6 +827,7 @@ class ProductDownloadFilesView(LaunchpadView,
         return (series in self.milestones and
                 release in self.milestones[series])
 
+
 class ProductBrandingView(BrandingChangeView):
 
     schema = IProduct
@@ -814,12 +840,29 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description",
-        "bug_reporting_guidelines", "project", "bugtracker",
-        "enable_bug_expiration", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
-        "screenshotsurl", "downloadurl", "programminglang",
-        "development_focus", "licenses", "license_info"]
+        "displayname",
+        "title",
+        "summary",
+        "description",
+        "bug_reporting_guidelines",
+        "project",
+        "official_codehosting",
+        "bugtracker",
+        "enable_bug_expiration",
+        "official_blueprints",
+        "official_rosetta",
+        "official_answers",
+        "homepageurl",
+        "sourceforgeproject",
+        "freshmeatproject",
+        "wikiurl",
+        "screenshotsurl",
+        "downloadurl",
+        "programminglang",
+        "development_focus",
+        "licenses",
+        "license_info",
+    ]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -871,14 +914,15 @@ class ProductChangeTranslatorsView(ProductEditView):
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
-                   "private_bugs"]
+                   "private_bugs", "reviewer_whiteboard"]
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bugcontact is None:
             self.setFieldError('private_bugs',
-                'Set a <a href="%s/+bugcontact">bug contact</a> '
-                'for this project first.' %
-                canonical_url(self.context, rootsite="bugs"))
+                structured(
+                    'Set a <a href="%s/+bugcontact">bug contact</a> '
+                    'for this project first.',
+                    canonical_url(self.context, rootsite="bugs")))
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -961,15 +1005,10 @@ class Icon:
     """An icon for use with image:icon."""
 
     def __init__(self, library_id):
-        self.library_id = library_id
+        self.library_alias = getUtility(ILibraryFileAliasSet)[library_id]
 
     def getURL(self):
-        http_url = getUtility(
-            ILibrarianClient).getURLForAlias(self.library_id)
-        if config.launchpad.vhosts.use_https:
-            return http_url.replace('http', 'https', 1)
-        else:
-            return http_url
+        return self.library_alias.getURL()
 
 
 class PillarSearchItem:
@@ -1150,88 +1189,6 @@ class ProductAddView(ProductAddViewBase):
         notify(ObjectCreatedEvent(self.product))
 
 
-class ProductBugContactEditView(LaunchpadEditFormView):
-    """Browser view class for editing the product bug contact."""
-
-    schema = IProduct
-    field_names = ['bugcontact']
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Redirect to the product page with a success message."""
-        self.updateContextFromData(data)
-
-        product = self.context
-
-        bugcontact = product.bugcontact
-        if bugcontact:
-            contact_display_value = None
-            if bugcontact.preferredemail:
-                # The bug contact was set to a new person or team.
-                contact_display_value = bugcontact.preferredemail.email
-            else:
-                # The bug contact doesn't have a preferred email address,
-                # so it must be a team.
-                assert bugcontact.isTeam(), (
-                    "Expected bug contact with no email address "
-                    "to be a team.")
-                contact_display_value = bugcontact.browsername
-
-            self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" %
-                contact_display_value)
-        else:
-            # The bug contact was set to noone.
-            self.request.response.addNotification(
-                "Successfully cleared the bug contact. There is no longer a "
-                "contact address that will receive all bugmail for this "
-                "project. You can set the bug contact again at any time.")
-
-        self.request.response.redirect(canonical_url(product))
-
-    def validate(self, data):
-        """Validates the new bug contact for the product.
-
-        The following values are valid as bug contacts:
-            * None, indicating that the bug contact field for the product
-              should be cleard in change_action().
-            * A valid Person (email address or launchpad id).
-            * A valid Team of which the current user is an administrator.
-
-        If the the bug contact entered does not meet any of the above criteria
-        then the submission will fail and the user will be notified of the
-        error.
-        """
-        # data will not have a bugcontact entry in cases where the bugcontact
-        # the user entered is valid according to the ValidPersonOrTeam
-        # vocabulary (i.e. is not a Person, Team or None).
-        if not data.has_key('bugcontact'):
-            self.setFieldError(
-                'bugcontact',
-                'You must choose a valid person or team to be the bug contact'
-                ' for %s.' %
-                cgi.escape(self.context.displayname))
-
-            return
-
-        contact = data['bugcontact']
-
-        if (contact is not None and contact.isTeam() and
-            contact not in self.user.getAdministratedTeams()):
-            error = (
-                "You cannot set %(team)s as the bug contact for "
-                "%(project)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the bug"
-                " contact for %(project)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
-
-                % {'team': cgi.escape(contact.displayname),
-                   'project': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
-            self.setFieldError('bugcontact', error)
-
-
 class ProductReassignmentView(ObjectReassignmentView):
     """Reassign product to a new owner."""
 
@@ -1264,10 +1221,14 @@ class ProductShortLink(DefaultShortLink):
         return self.context.displayname
 
 
-class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""
 
     __used_for__ = IProduct
+
+    feed_types = (
+        ProductBranchesFeedLink,
+        )
 
     @cachedproperty
     def recent_revision_branches(self):
@@ -1300,12 +1261,19 @@ class ProductBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
+
+    @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -147,6 +148,11 @@ class ILinkData(Interface):
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
 
+    # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
+    # action menu is not used anymore and we move to use inline navigation.
+    sort_key = Attribute(
+        "The sort key to use when rendering it with a group of links.")
+
 
 class ILink(ILinkData):
     """An object that represents a link in a menu.
@@ -169,6 +175,12 @@ class ILink(ILinkData):
         "Boolean to say whether this link is enabled.  Can be read and set.")
 
     escapedtext = Attribute("Text string, escaped as necessary.")
+
+    icon_url = Attribute(
+        "The full URL for this link's associated icon, if it has one.")
+
+    def render():
+        """Return a HTML representation of the link."""
 
 
 class IFacetLink(ILink):
@@ -202,34 +214,6 @@ class IBreadcrumb(Interface):
 
 
 #
-# Traversal bits
-#
-
-
-class IAfterTraverseEvent(Interface):
-    """An event which gets sent after publication traverse."""
-
-
-class AfterTraverseEvent:
-    """An event which gets sent after publication traverse."""
-
-    implements(IAfterTraverseEvent)
-
-    def __init__(self, ob, request):
-        self.object = ob
-        self.request = request
-
-
-class IBeforeTraverseEvent(
-    zope.app.publication.interfaces.IBeforeTraverseEvent):
-    pass
-
-
-class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
-    pass
-
-
-#
 # Canonical URLs
 #
 
@@ -237,7 +221,8 @@ class ICanonicalUrlData(Interface):
     """Tells you how to work out a canonical url for an object."""
 
     rootsite = Attribute(
-        'The root id to use.  None means to use the base of the current request.')
+        'The root id to use.  None means to use the base of the current '
+        'request.')
 
     inside = Attribute('The object this path is relative to.  None for root.')
 
@@ -409,8 +394,7 @@ class IBrowserFormNG(Interface):
 class ILaunchpadBrowserApplicationRequest(
     IBasicLaunchpadRequest,
     zope.publisher.interfaces.browser.IBrowserApplicationRequest):
-    """The request interface to the application for launchpad browser requests.
-    """
+    """The request interface to the application for LP browser requests."""
 
     form_ng = Object(
         title=u'IBrowserFormNG object containing the submitted form data',
@@ -540,13 +524,18 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
         """
 
     def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as, defaulting to the
-        default Launchpad user.
+        """Change the PostgreSQL user we are connected as.
 
         This involves closing the existing connection and reopening it;
         uncommitted changes will be lost. The new connection will also open
         in read/write mode so calls to readonly() will need to be made
         after switchUser.
+        """
+
+    def getUser(self):
+        """Return the current PostgreSQL user we are connected as.
+
+        The default user comes from config.launchpad.dbuser.
         """
 
 #
@@ -605,17 +594,20 @@ class INotificationResponse(Interface):
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """Append the given message to the list of notifications
+    def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
+        """Append the given message to the list of notifications.
 
-        msg may be an XHTML fragment suitable for inclusion in a block
-        tag such as <div>. It may also contain standard Python string
-        replacement markers to be filled out by the keyword arguments
-        (ie. %(foo)s). The keyword arguments inserted this way are
-        automatically HTML quoted.
+        A plain string message will be CGI escaped.  Passing a message
+        that provides the `IStructuredString` interface will return a
+        unicode string that has been properly escaped.  Passing an
+        instance of a Zope internationalized message will cause the
+        message to be translated, then CGI escaped.
 
-        level is one of the BrowserNotificationLevels: DEBUG, INFO, NOTICE,
-        WARNING, ERROR.
+        :param msg: This may be a string, `zope.i18n.Message`,
+        	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+
+        :param level: One of the `BrowserNotificationLevel` values: DEBUG,
+        	INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -629,20 +621,20 @@ class INotificationResponse(Interface):
             schema=INotificationList
             )
 
-    def addDebugNotification(msg, **kw):
-        """Shortcut to addNotification(msg, DEBUG, **kw)"""
+    def addDebugNotification(msg):
+        """Shortcut to addNotification(msg, DEBUG)."""
 
-    def addInfoNotification(msg, **kw):
-        """Shortcut to addNotification(msg, INFO, **kw)"""
+    def addInfoNotification(msg):
+        """Shortcut to addNotification(msg, INFO)."""
 
-    def addNoticeNotification(msg, **kw):
-        """Shortcut to addNotification(msg, NOTICE, **kw)"""
+    def addNoticeNotification(msg):
+        """Shortcut to addNotification(msg, NOTICE)."""
 
-    def addWarningNotification(msg, **kw):
-        """Shortcut to addNotification(msg, WARNING, **kw)"""
+    def addWarningNotification(msg):
+        """Shortcut to addNotification(msg, WARNING)."""
 
-    def addErrorNotification(msg, **kw):
-        """Shortcut to addNotification(msg, ERROR, **kw)"""
+    def addErrorNotification(msg):
+        """Shortcut to addNotification(msg, ERROR)."""
 
     def redirect(location, status=None):
         """As per IHTTPApplicationResponse.redirect, except notifications

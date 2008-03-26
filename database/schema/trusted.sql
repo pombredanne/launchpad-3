@@ -926,3 +926,30 @@ $$;
 COMMENT ON FUNCTION set_bug_number_of_duplicates() IS
 'AFTER UPDATE trigger on Bug maintaining the Bug.number_of_duplicates column';
 
+CREATE OR REPLACE FUNCTION set_bug_message_count() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.bug = OLD.bug THEN
+            RETURN NULL; -- Ignored - this is an AFTER trigger.
+        END IF;
+    END IF;
+
+    IF TG_OP <> 'DELETE' THEN
+        UPDATE Bug SET message_count = message_count + 1
+        WHERE Bug.id = NEW.bug;
+    END IF;
+
+    IF TG_OP <> 'INSERT' THEN
+        UPDATE Bug SET message_count = message_count - 1
+        WHERE Bug.id = OLD.bug;
+    END IF;
+
+    RETURN NULL; -- Ignored - this is an AFTER trigger.
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_message_count() IS
+'AFTER UPDATE trigger on BugMessage maintaining the Bug.message_count column';
+

@@ -9,6 +9,7 @@ __all__ = [
     'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'IHasStanding',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
@@ -16,7 +17,10 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonEditRestricted',
+    'IPersonPublic',
     'IPersonSet',
+    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -25,9 +29,9 @@ __all__ = [
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
+    'PersonalStanding',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
-    'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
     ]
 
@@ -39,20 +43,23 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+
+from canonical.launchpad import _
+
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, PasswordField, StrippedTextLine)
+    MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import (
     IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasLogo, IHasMugshot, IHasIcon)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -89,6 +96,43 @@ class AccountStatus(DBEnumeratedType):
 
 INACTIVE_ACCOUNT_STATUSES = [
     AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
+
+
+class PersonalStanding(DBEnumeratedType):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = DBItem(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = DBItem(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = DBItem(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -240,67 +284,6 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
         """)
 
 
-class TeamMembershipStatus(DBEnumeratedType):
-    """TeamMembership Status
-
-    According to the policies specified by each team, the membership status of
-    a given member can be one of multiple different statuses. More information
-    can be found in the TeamMembership spec.
-    """
-
-    PROPOSED = DBItem(1, """
-        Proposed
-
-        You are a proposed member of this team. To become an active member
-        your subscription has to be approved by one of the team's
-        administrators.
-        """)
-
-    APPROVED = DBItem(2, """
-        Approved
-
-        You are an active member of this team.
-        """)
-
-    ADMIN = DBItem(3, """
-        Administrator
-
-        You are an administrator of this team.
-        """)
-
-    DEACTIVATED = DBItem(4, """
-        Deactivated
-
-        Your subscription to this team has been deactivated.
-        """)
-
-    EXPIRED = DBItem(5, """
-        Expired
-
-        Your subscription to this team is expired.
-        """)
-
-    DECLINED = DBItem(6, """
-        Declined
-
-        Your proposed subscription to this team has been declined.
-        """)
-
-    INVITED = DBItem(7, """
-        Invited
-
-        You have been invited as a member of this team. In order to become an
-        actual member, you have to accept the invitation.
-        """)
-
-    INVITATION_DECLINED = DBItem(8, """
-        Invitation declined
-
-        You have been invited as a member of this team but the invitation has
-        been declined.
-        """)
-
-
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
@@ -376,14 +359,10 @@ class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
     currentpassword = PasswordField(
-            title=_('Current password'), required=True, readonly=False,
-            description=_("The password you use to log into Launchpad.")
-            )
+        title=_('Current password'), required=True, readonly=False)
 
     password = PasswordField(
-            title=_('New password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('New password'), required=True, readonly=False)
 
 
 class IPersonClaim(Interface):
@@ -404,9 +383,26 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
-              IHasLogo, IHasMugshot, IHasIcon):
-    """A Person."""
+# This has to be defined here to avoid circular import problems.
+class IHasStanding(Interface):
+    """An object that can have personal standing."""
+
+    personal_standing = Choice(
+        title=_('Personal standing'),
+        required=True,
+        vocabulary=PersonalStanding,
+        description=_('The standing of a person for non-member mailing list '
+                      'posting privileges.'))
+
+    personal_standing_reason = Text(
+        title=_('Reason for personal standing'),
+        required=False,
+        description=_("The reason the person's standing is what it is."))
+
+
+class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
+                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
+    """Public attributes for a Person."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -426,9 +422,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -610,32 +604,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     validatedemails = Attribute("Emails with status VALIDATED")
     unvalidatedemails = Attribute(
         "Emails this person added in Launchpad but are not yet validated.")
-    allmembers = Attribute(
-        "List of all direct and indirect people and teams who, one way or "
-        "another, are a part of this team. If you want a method to check if "
-        "a given person is a member of a team, you should probably look at "
-        "IPerson.inTeam().")
-    activemembers = Attribute("List of members with ADMIN or APPROVED status")
-    active_member_count = Attribute(
-        "The number of real people who are members of this team.")
-    all_member_count = Attribute(
-        "The total number of real people who are members of this team, "
-        "including subteams.")
-    adminmembers = Attribute("List of members with ADMIN status")
-    expiredmembers = Attribute("List of members with EXPIRED status")
-    expired_member_count = Attribute("Number of EXPIRED members.")
-    approvedmembers = Attribute("List of members with APPROVED status")
-    proposedmembers = Attribute("List of members with PROPOSED status")
-    proposed_member_count = Attribute("Number of PROPOSED members")
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
-    inactive_member_count = Attribute("Number of inactive members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-    deactivated_member_count = Attribute("Number of deactivated members")
-    invited_members = Attribute("List of members with INVITED status")
-    invited_member_count = Attribute("Number of members with INVITED status")
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
@@ -659,8 +627,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
-    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
-                       vocabulary='ValidTeamOwner')
+    teamowner = PublicPersonChoice(
+        title=_('Team Owner'), required=False, readonly=False,
+        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
@@ -686,6 +655,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "a mailto: prefix as a hexadecimal string. This is "
                       "used as a key by FOAF RDF spec"),
         readonly=True)
+
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
 
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
@@ -721,8 +694,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "new members can be added only by a team administrator."))
 
     renewal_policy = Choice(
-        title=_("When someone's membership is about to expire, Launchpad "
-                "should notify them and"),
+        title=_(
+            "When someone's membership is about to expire, "
+            "notify them and"),
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
@@ -760,6 +734,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("Teams may be Public, Private Membership, or Private."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
+
+    structural_subscriptions = Attribute(
+        "The structural subscriptions for this person.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1044,90 +1021,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         The person's membership may be direct or indirect.
         """
 
-    def join(team):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
-
-        Join the given team according to the policies and defaults of that
-        team:
-        - If the team subscriptionpolicy is OPEN, the user is added as
-          an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
-          a PROPOSED member and one of the team's administrators have to
-          approve the membership.
-
-        This method returns True if this person was added as a member of
-        <team> or False if that wasn't possible.
-
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'join' another team. Instead, they're added
-        as a member (using the addMember() method) by a team administrator.
-        """
-
-    def leave(team):
-        """Leave the given team.
-
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
-
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
-        """
-
-    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
-        """Add the given person as a member of this team.
-
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
-
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
-
-        The given status must be either Approved, Proposed or Admin.
-
-        The reviewer is the user who made the given person a member of this
-        team.
-        """
-
-    def setMembershipData(person, status, reviewer, expires=None,
-                          comment=None):
-        """Set the attributes of the person's membership on this team.
-
-        Set the status, dateexpires, reviewer and comment, where reviewer is
-        the user responsible for this status change and comment is the comment
-        left by the reviewer for the change.
-
-        This method will ensure that we only allow the status transitions
-        specified in the TeamMembership spec. It's also responsible for
-        filling/cleaning the TeamParticipation table when the transition
-        requires it.
-        """
-
-    def getMembersByStatus(status, orderby=None):
-        """Return the people whose membership on this team match :status:.
-
-        If no orderby is provided, Person.sortingColumns is used.
-        """
-
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
         privileges.
-        """
-
-    def getDirectAdministrators():
-        """Return this team's administrators.
-
-         This includes all direct members with admin rights and also
-         the team owner. Note that some other persons/teams might have admin
-         privilege by virtue of being a member of a team with admin rights.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -1249,6 +1148,120 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
 
+class IPersonViewRestricted(Interface):
+    """IPerson attributes that require launchpad.View permission."""
+
+    active_member_count = Attribute(
+        "The number of real people who are members of this team.")
+    activemembers = Attribute("List of members with ADMIN or APPROVED status")
+    adminmembers = Attribute("List of members with ADMIN status")
+    all_member_count = Attribute(
+        "The total number of real people who are members of this team, "
+        "including subteams.")
+    allmembers = Attribute(
+        "List of all direct and indirect people and teams who, one way or "
+        "another, are a part of this team. If you want a method to check if "
+        "a given person is a member of a team, you should probably look at "
+        "IPerson.inTeam().")
+    approvedmembers = Attribute("List of members with APPROVED status")
+    deactivated_member_count = Attribute("Number of deactivated members")
+    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    expired_member_count = Attribute("Number of EXPIRED members.")
+    expiredmembers = Attribute("List of members with EXPIRED status")
+    inactivemembers = Attribute(
+        "List of members with EXPIRED or DEACTIVATED status")
+    inactive_member_count = Attribute("Number of inactive members")
+    invited_members = Attribute("List of members with INVITED status")
+    invited_member_count = Attribute("Number of members with INVITED status")
+    pendingmembers = Attribute(
+        "List of members with INVITED or PROPOSED status")
+    proposedmembers = Attribute("List of members with PROPOSED status")
+    proposed_member_count = Attribute("Number of PROPOSED members")
+
+    def getDirectAdministrators():
+        """Return this team's administrators.
+
+         This includes all direct members with admin rights and also
+         the team owner. Note that some other persons/teams might have admin
+         privilege by virtue of being a member of a team with admin rights.
+        """
+
+    def getMembersByStatus(status, orderby=None):
+        """Return the people whose membership on this team match :status:.
+
+        If no orderby is provided, Person.sortingColumns is used.
+        """
+
+
+class IPersonEditRestricted(Interface):
+    """IPerson attributes that require launchpad.Edit permission."""
+
+    def join(team, requester=None):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+
+        :param requester: The person who requested the membership on behalf of
+        a team or None when a person requests the membership for himself.
+        """
+
+    def leave(team):
+        """Leave the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+
+        Teams cannot call this method because they're not allowed to
+        login and thus can't 'leave' another team. Instead, they have their
+        subscription deactivated (using the setMembershipData() method) by
+        a team administrator.
+        """
+
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
+
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
+
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
+        """
+
+    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
+                  comment=None, force_team_add=False):
+        """Add the given person as a member of this team.
+
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        If the person is actually a team and force_team_add is False, the
+        team will actually be invited to join this one. Otherwise the team
+        is added as if it were a person.
+
+        The given status must be either Approved, Proposed or Admin.
+
+        The reviewer is the user who made the given person a member of this
+        team.
+        """
+
+
+class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
+              IHasStanding):
+    """A Person."""
+
+
 class INewPersonForm(IPerson):
     """Interface used to create new Launchpad accounts.
 
@@ -1256,8 +1269,7 @@ class INewPersonForm(IPerson):
     """
 
     password = PasswordField(
-        title=_('Create password'), required=True, readonly=False,
-        description=_("Enter the same password in each field."))
+        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeam(IPerson, IHasIcon):
@@ -1356,7 +1368,7 @@ class IPersonSet(Interface):
         """Return the person with the given OpenID identifier, or None."""
 
     def getAllTeams(orderBy=None):
-        """Return all Teams.
+        """Return all Teams, ignoring the merged ones.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -1534,13 +1546,14 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = Choice(title=_('Owner'), vocabulary='ValidOwner', required=True)
+    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner', 
+                               required=True)
 
 
 class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 
 

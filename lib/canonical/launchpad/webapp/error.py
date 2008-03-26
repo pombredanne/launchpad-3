@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -93,7 +94,7 @@ class SystemErrorView:
             del tb
 
     def inside_div(self, html):
-        """Returns the given html text inside a div of an appropriate class."""
+        """Returns the given HTML inside a div of an appropriate class."""
 
         return ('<div class="highlighted" '
                 'style="font-family: monospace; font-size: smaller;">'
@@ -112,6 +113,20 @@ class SystemErrorView:
                 return self.inside_div(self.htmltext)
         else:
             return ''
+
+    @property
+    def oops_id_text(self):
+        """Return the OOPS ID, linkified if appropriate."""
+        oopsid = self.request.oopsid
+        oops_root_url = config.launchpad.oops_root_url
+        oops_code = '<code class="oopsid">%s</code>' % oopsid
+        if self.specialuser:
+            # The logged-in user is a Launchpad Developer,
+            # so linkify the OOPS
+            return '<a href="%s%s">%s</a>' % (
+                oops_root_url, oopsid, oops_code)
+        else:
+            return oops_code
 
     def render_as_text(self):
         """Render the exception as text.
@@ -153,6 +168,18 @@ class NotFoundView(SystemErrorView):
 
     def __call__(self):
         return self.index()
+
+    @cachedproperty
+    def referrer(self):
+        """If there is a referring page, return its URL.
+        
+        Otherwise return None.
+        """
+        referrer = self.request.get('HTTP_REFERER')
+        if referrer:
+            return referrer
+        else:
+            return None
 
 
 class RequestExpiredView(SystemErrorView):

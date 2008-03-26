@@ -9,8 +9,63 @@
         provides="canonical.launchpad.interfaces.IWebServiceApplication">
         <allow
             interface="canonical.launchpad.interfaces.IWebServiceApplication" />
-        <allow interface='zope.publisher.interfaces.IPublishTraverse' />
-        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+        <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
     </securedutility>
+
+    <!-- WebService uses the default LaunchpadRootNavigation -->
+    <view
+        for="canonical.launchpad.interfaces.IWebServiceApplication"
+        type="canonical.launchpad.layers.WebServiceLayer"
+        factory="canonical.launchpad.browser.LaunchpadRootNavigation"
+        provides="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="canonical.launchpad.rest.IBugEntry"
+        factory="canonical.launchpad.rest.BugEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.BugCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPerson"
+        provides="canonical.launchpad.rest.IPersonEntry"
+        factory="canonical.launchpad.rest.PersonEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.PersonCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        provides="canonical.launchpad.rest.ITeamMembershipEntry"
+        factory="canonical.launchpad.rest.TeamMembershipEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMessage"
+        provides="canonical.launchpad.rest.IMessageEntry"
+        factory="canonical.launchpad.rest.MessageEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugComment"
+        provides="canonical.launchpad.rest.IMessageEntry"
+        factory="canonical.launchpad.rest.bugcomment_to_entry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="canonical.launchpad.rest.IBugTaskEntry"
+        factory="canonical.launchpad.rest.BugTaskEntry"
+        />
 
 </configure>

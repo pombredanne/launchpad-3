@@ -31,12 +31,16 @@
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
     <browser:page
-      name="+roadmap"
-      template="../templates/specificationtarget-roadmap.pt" />
-    <browser:page
       name="+portlet-latestspecs"
       template="../templates/specificationtarget-portlet-latestspecs.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+roadmap"
+    for="canonical.launchpad.interfaces.IHasSpecifications"
+    class="canonical.launchpad.browser.SpecificationRoadmapView"
+    permission="zope.Public"
+    template="../templates/specificationtarget-roadmap.pt" />
 
   <browser:page
     name="+register-a-blueprint-button"
@@ -44,7 +48,6 @@
     class="canonical.launchpad.browser.RegisterABlueprintButtonView"
     permission="zope.Public"
     />
-
 
 </facet>
 

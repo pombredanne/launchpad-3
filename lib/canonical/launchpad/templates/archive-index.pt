@@ -18,6 +18,10 @@
     <div metal:fill-slot="main"
          tal:define="ppa_active view/is_active">
 
+      <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
+
+      <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
+
       <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url">url</a></h2>
 
@@ -35,7 +39,29 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
+      <h2>apt sources.list entries</h2>
+
       <tal:entries replace="structure view/sources_list_entries" />
+
+      <div id="ppa-dependencies" tal:condition="context/dependencies">
+
+        <h3>PPA dependencies</h3>
+
+        <p class="warning message">When installing packages from
+          this PPA you may need to enable one or more of the following
+          PPAs, which have been considered for building packages in
+          this context.</p>
+
+        <ul>
+           <li tal:repeat="dependency context/dependencies">
+             <a tal:attributes="href dependency/dependency/fmt:url"
+                tal:content="dependency/dependency/title" />
+             (included <span
+               tal:replace="dependency/date_created/fmt:displaydate" />)
+           </li>
+        </ul>
+
+      </div> <!-- ppa-dependencies -->
 
       <h2>Packages</h2>
 
@@ -43,21 +69,22 @@
         This PPA does not contain any packages yet.
       </p>
 
-      <h2>apt sources.list entries</h2>
-
       <tal:active_ppa condition="ppa_active">
 
       <div>
         <ul id="package_counters">
           <li id="source_counter">
-             <span tal:replace="view/source_count_text" />
-             (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
+             <tal:source_count_text replace="view/source_count_text" />
+             (<tal:sources_size
+                replace="context/sources_size/fmt:bytes" />)</li>
           <li id="binary_counter">
-             <span tal:replace="view/binary_count_text" />
-             (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
+             <tal:binary_count_text replace="view/binary_count_text" />
+             (<tal:binaries_size
+                replace="context/binaries_size/fmt:bytes" />)</li>
           <li id="total_size">
              Estimated archive size:
-             <span tal:replace="context/estimated_size/fmt:bytes" /></li>
+             <tal:estimated_size
+               replace="context/estimated_size/fmt:bytes" /></li>
         </ul>
       </div>
 
@@ -66,8 +93,9 @@
            <label for="name">Package name contains:</label>
            <input id="field.name_filter" title="Package Name" size="20"
                   type="text" name="field.name_filter"
-                  tal:attributes="value view/name_filter"/>
-           <span tal:replace="structure view/plain_status_filter_widget" />
+                  tal:attributes="value request/field.name_filter|nothing"/>
+           <tal:status_filter
+             replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
       </div>
@@ -75,12 +103,12 @@
       <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
-           condition="python: view.name_filter is not None"
+           condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
       <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
-          <tr>
+          <tr class="ppa_package_row">
             <th colspan="2">Source</th>
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
@@ -97,20 +125,20 @@
       </table>
 
       <tal:navigation_bottom
-           condition="python: view.name_filter is not None"
+           condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
-        <div id="empty-result" tal:condition="not: batch">
-           <tal:has_filter condition="view/name_filter">
-              No matching package for '<span tal:replace="view/name_filter" />'.
-           </tal:has_filter>
+        <div id="empty-result"
+             tal:define="name_filter request/field.name_filter|nothing"
+             tal:condition="not: batch">
+           No matching package for '<tal:name_filter replace="name_filter" />'.
         </div>
 
       </div>
 
       </tal:active_ppa>
 
-    </div>
+    </div> <!--main -->
 
     <p metal:fill-slot="help">
       You can view the current

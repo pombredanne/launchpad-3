@@ -67,9 +67,9 @@ class BugJanitor:
             expired_count = 0
             bugtask_set = getUtility(IBugTaskSet)
             incomplete_bugtasks = bugtask_set.findExpirableBugTasks(
-                self.days_before_expiration)
+                self.days_before_expiration, user=self.janitor)
             self.log.info(
-                'Found %d bugtasks to expire.' % len(incomplete_bugtasks))
+                'Found %d bugtasks to expire.' % incomplete_bugtasks.count())
             for bugtask in incomplete_bugtasks:
                 # We don't expire bugtasks with conjoined masters.
                 if bugtask.conjoined_master:

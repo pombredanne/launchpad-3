@@ -7,23 +7,88 @@ __all__ = [
     'MailingList',
     'MailingListSet',
     'MailingListSubscription',
+    'MessageApproval',
+    'MessageApprovalSet',
     ]
 
 from string import Template
 
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad import _
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
-    IMailingListSet, IMailingListSubscription, MailingListStatus)
+    IMailingListSet, IMailingListSubscription, IMessageApproval,
+    IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.mailman.config import configure_hostname
+from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.webapp.snapshot import Snapshot
+
+
+class MessageApproval(SQLBase):
+    """A held message."""
+
+    implements(IMessageApproval)
+
+    message_id = StringCol(notNull=True)
+
+    posted_by = ForeignKey(
+        dbName='posted_by', foreignKey='Person',
+        validator=public_person_validator,
+        notNull=True)
+
+    posted_message = ForeignKey(
+        dbName='posted_message', foreignKey='LibraryFileAlias',
+        notNull=True)
+
+    posted_date = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
+
+    status = EnumCol(enum=PostedMessageStatus,
+                     default=PostedMessageStatus.NEW,
+                     notNull=True)
+
+    disposed_by = ForeignKey(
+        dbName='disposed_by', foreignKey='Person',
+        validator=public_person_validator,
+        default=None)
+
+    disposal_date = UtcDateTimeCol(default=None)
+
+    def approve(self, reviewer):
+        """See `IMessageApproval`."""
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.APPROVAL_PENDING
+
+    def reject(self, reviewer):
+        """See `IMessageApproval`."""
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.REJECTION_PENDING
+
+    def acknowledge(self):
+        """See `IMessageApproval`."""
+        if self.status == PostedMessageStatus.APPROVAL_PENDING:
+            self.status = PostedMessageStatus.APPROVED
+        elif self.status == PostedMessageStatus.REJECTION_PENDING:
+            self.status = PostedMessageStatus.REJECTED
+        else:
+            raise AssertionError('Not an acknowledgeable state: %s' %
+                                 self.status)
 
 
 class MailingList(SQLBase):
@@ -38,28 +103,39 @@ class MailingList(SQLBase):
 
     implements(IMailingList)
 
-    team = ForeignKey(dbName='team', foreignKey='Person')
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=public_person_validator,
+        notNull=True)
 
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person')
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
-    date_registered = UtcDateTimeCol(notNull=True, default=None)
+    date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
-                          default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
-    date_reviewed = UtcDateTimeCol(notNull=True, default=None)
+    date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
-    date_activated = UtcDateTimeCol(notNull=True, default=None)
+    date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED)
+                     default=MailingListStatus.REGISTERED,
+                     notNull=True)
 
-    welcome_message_text = StringCol(default=None)
+    # Use a trailing underscore because SQLObject/importfascist doesn't like
+    # the typical leading underscore.
+    welcome_message_ = StringCol(default=None, dbName='welcome_message')
 
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
+        return '%s@%s' % (
+            self.team.name,
+            configure_hostname(config.mailman.build_host_name))
 
     @property
     def archive_url(self):
@@ -136,6 +212,7 @@ class MailingList(SQLBase):
                 % (self.status, target_state))
         self.status = target_state
         if target_state == MailingListStatus.ACTIVE:
+            self._setAndNotifyDateActivated()
             email_set = getUtility(IEmailAddressSet)
             email = email_set.getByEmail(self.address)
             if email is None:
@@ -153,6 +230,26 @@ class MailingList(SQLBase):
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
+    def _setAndNotifyDateActivated(self):
+        """Set the date_activated field and fire a
+        SQLObjectModified event.
+
+        The date_activated field is only set once - repeated calls
+        will not change the field's value.
+
+        Similarly, the modification event only fires the first time
+        that the field is set.
+        """
+        if self.date_activated is not None:
+            return
+
+        old_mailinglist = Snapshot(self, providing=providedBy(self))
+        self.date_activated = UTC_NOW
+        notify(SQLObjectModifiedEvent(
+                self,
+                object_before_modification=old_mailinglist,
+                edited_fields=['date_activated']))
+
     def deactivate(self):
         """See `IMailingList`."""
         assert self.status == MailingListStatus.ACTIVE, (
@@ -163,9 +260,6 @@ class MailingList(SQLBase):
 
     def reactivate(self):
         """See `IMailingList`."""
-        # XXX: The Mailman side of this is not yet implemented, although it
-        # will be implemented soon. -- Guilherme Salgado, 2007-10-08
-        # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
         assert self.status == MailingListStatus.INACTIVE, (
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
@@ -176,15 +270,15 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
-    def _get_welcome_message(self):
-        return self.welcome_message_text
-
     def isUsable(self):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,
                                MailingListStatus.MOD_FAILED]
+
+    def _get_welcome_message(self):
+        return self.welcome_message_
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
@@ -202,7 +296,7 @@ class MailingList(SQLBase):
         else:
             raise AssertionError(
                 'Only registered or usable mailing lists may be modified')
-        self.welcome_message_text = text
+        self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
@@ -219,9 +313,6 @@ class MailingList(SQLBase):
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if not person.hasParticipationEntryFor(self.team):
-            raise CannotSubscribe('%s is not a member of team %s' %
-                                  (person.displayname, self.team.displayname))
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
@@ -257,9 +348,9 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def getAddresses(self):
-        """See `IMailingList`."""
-        subscriptions = MailingListSubscription.select(
+    def _getSubscriptions(self):
+        """Return the IMailingListSubscriptions for this mailing list."""
+        return MailingListSubscription.select(
             """mailing_list = %s AND
                TeamParticipation.team = %s AND
                MailingList.status <> %s AND
@@ -267,12 +358,74 @@ class MailingList(SQLBase):
                TeamParticipation.person = MailingListSubscription.person
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
             distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
-        for subscription in subscriptions:
-            yield subscription.subscribed_address.email
+
+    def getSubscribedAddresses(self):
+        """See `IMailingList`."""
+        # Import here to avoid circular imports.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        # In order to handle the case where the preferred email address is
+        # used (i.e. where MailingListSubscription.email_address is NULL), we
+        # need to UNION, those using a specific address and those using the
+        # preferred address.
+        clause_tables = ('MailingList',
+                         'MailingListSubscription',
+                         'TeamParticipation')
+        preferred = EmailAddress.select("""
+            EmailAddress.person = MailingListSubscription.person AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s AND
+            MailingListSubscription.email_address IS NULL AND
+            EmailAddress.status = %s
+            """ % sqlvalues(self, self.team,
+                            MailingListStatus.INACTIVE,
+                            EmailAddressStatus.PREFERRED),
+            clauseTables=clause_tables)
+        specific = EmailAddress.select("""
+            EmailAddress.id = MailingListSubscription.email_address AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            clauseTables=clause_tables)
+        return preferred.union(specific)
+
+    def getSenderAddresses(self):
+        """See `IMailingList`."""
+        # Import here to avoid circular imports.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        return EmailAddress.select("""
+            EmailAddress.person = MailingListSubscription.person AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s AND
+            EmailAddress.status IN %s
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
+                            (EmailAddressStatus.VALIDATED,
+                             EmailAddressStatus.PREFERRED)),
+            distinct=True, clauseTables=['MailingListSubscription',
+                                         'TeamParticipation',
+                                         'MailingList'])
+
+    def holdMessage(self, message):
+        """See `IMailingList`."""
+        return MessageApproval(message_id=message.rfc822msgid,
+                               posted_by=message.owner,
+                               posted_message=message.raw,
+                               posted_date=message.datecreated,
+                               mailing_list=self)
 
 
 class MailingListSet:
     implements(IMailingListSet)
+
+    title = _('Team mailing lists')
 
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""
@@ -341,9 +494,14 @@ class MailingListSubscription(SQLBase):
 
     implements(IMailingListSubscription)
 
-    person = ForeignKey(dbName='person', foreignKey='Person')
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator,
+        notNull=True)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     date_joined = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -359,3 +517,20 @@ class MailingListSubscription(SQLBase):
         else:
             # Use the subscribed email address.
             return self.email_address
+
+
+class MessageApprovalSet:
+    """Sets of held messages."""
+
+    implements(IMessageApprovalSet)
+
+    def getMessageByMessageID(self, message_id):
+        """See `IMessageApprovalSet`."""
+        response = MessageApproval.selectBy(message_id=message_id)
+        if response.count() == 0:
+            return None
+        return response[0]
+
+    def getHeldMessagesWithStatus(self, status):
+        """See `IMessageApprovalSet`."""
+        return MessageApproval.selectBy(status=status)

@@ -14,19 +14,17 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-
-
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
-from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
-    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingStatus,
-    PackagePublishingPocket, PackageUploadStatus)
+    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -56,8 +54,7 @@ class TestQueueBase(TestCase):
         # to avoid SERIALIZATION exceptions with the Librarian.
         LaunchpadZopelessLayer.alterConnection(
                 dbuser=self.dbuser,
-                isolation=READ_COMMITTED_ISOLATION
-                )
+                isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -107,6 +104,21 @@ class TestQueueTool(TestQueueBase):
     def tearDown(self):
         """Remove test contents from disk."""
         cleanupLibrarianFiles()
+
+    def uploadPackage(self,
+            changesfile="suite/bar_1.0-1/bar_1.0-1_source.changes"):
+        """Helper function to upload a package."""
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        sync_policy = getPolicy(
+            name='sync', distro='ubuntu', distroseries='breezy-autotest')
+        bar_src = NascentUpload(
+            datadir(changesfile),
+            sync_policy, mock_logger_quiet)
+        bar_src.process()
+        bar_src.do_accept()
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        return bar_src
 
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
@@ -243,6 +255,29 @@ class TestQueueTool(TestQueueBase):
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
+    def testAcceptingSourceCreateBuilds(self):
+        """Check if accepting a source package creates build records."""
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        upload_bar_source()
+        # Swallow email generated at the upload stage.
+        stub.test_emails.pop()
+        LaunchpadZopelessLayer.txn.commit()
+
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        queue_action = self.execute_command(
+            'accept bar', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(2, len(stub.test_emails))
+
+        [queue_item] = queue_action.items
+        [queue_source] = queue_item.sources
+        sourcepackagerelease = queue_source.sourcepackagerelease
+        [build] = sourcepackagerelease.builds
+        self.assertEqual(
+            'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
+            build.title)
+        self.assertEqual(build.buildqueue_record.lastscore, 255)
+
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""
         queue_action = self.execute_command(
@@ -258,21 +293,12 @@ class TestQueueTool(TestQueueBase):
         # published, any bugs mentioned in the upload must be closed.
 
         # First we must upload the first version of 'bar' in Ubuntu Hoary.
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
-        sync_policy = getPolicy(
-            name='sync', distro='ubuntu', distroseries='breezy-autotest')
-        bar_src = NascentUpload(
-            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-            sync_policy, mock_logger_quiet)
-        bar_src.process()
-        bar_src.do_accept()
+        bar_src = self.uploadPackage()
         bar_src.queue_root.setAccepted()
         bar_src.queue_root.realiseUpload()
-        LaunchpadZopelessLayer.txn.commit()
 
         # Now make a new bugtask for the "bar" package.
         the_bug_id = 6
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
         bugtask_owner = getUtility(IPersonSet).getByName('kinnison')
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         ubuntu_bar = ubuntu.getSourcePackage('bar')
@@ -291,16 +317,10 @@ class TestQueueTool(TestQueueBase):
             'Bug status is %s, expected NEW' % bug_status)
 
         # Now, make an upload for the next version of "bar".
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
-        bar2_src = NascentUpload(
-            datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
-            sync_policy, mock_logger_quiet)
-        bar2_src.process()
-        bar2_src.do_accept()
-        LaunchpadZopelessLayer.txn.commit()
+        bar2_src = self.uploadPackage(
+            changesfile="suite/bar_1.0-2/bar_1.0-2_source.changes")
 
         # Now accept the new bar upload with the queue tool.
-        LaunchpadZopelessLayer.switchDbUser("queued")
         queue_action = self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
@@ -324,7 +344,6 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
-
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.
@@ -587,6 +606,14 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testRejectLangpackSendsNoEmail(self):
+        """Check that rejecting a language pack sends no email."""
+        queue_action = self.execute_command(
+            'reject language-pack-de', queue_name='unapproved',
+            suite_name='breezy-autotest-proposed')
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(0, len(stub.test_emails))
 
     def testRejectWithMultipleIDs(self):
         """Check if rejecting multiple items at once works.

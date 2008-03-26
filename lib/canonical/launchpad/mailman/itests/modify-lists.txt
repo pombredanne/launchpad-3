@@ -14,14 +14,6 @@ mailing list for that team, and an expert will approve that request.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -43,10 +35,11 @@ feature is exposed.
     >>> list_one.welcome_message = 'Greetings team members!'
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> logout()
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> from canonical.database.sqlbase import commit
     >>> commit()
 
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -65,8 +58,9 @@ through the web.
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Salutations team members!')
+    >>> serial_watcher.resync()
     >>> browser.getControl('Save').click()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
     # Reload the MailList object so that Mailman gets the updated data.
     >>> mailing_list.Load()

@@ -2,11 +2,11 @@
 
 __metaclass__ = type
 
-from zope.publisher.publish import mapply
-
 import thread
 import traceback
 import urllib
+
+import tickcount
 
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
@@ -15,6 +15,7 @@ import transaction
 
 from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
+from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryView
 from zope.event import notify
@@ -22,15 +23,14 @@ from zope.interface import implements, providedBy
 
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.publish import mapply
 
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
-    BeforeTraverseEvent, OffsiteFormPostError)
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
@@ -70,6 +70,9 @@ class LaunchpadBrowserPublication(
     This subclass undoes the ZODB-specific things in ZopePublication, a
     superclass of z.a.publication.BrowserPublication.
     """
+    # This class does not __init__ its parent or specify exception types
+    # so that it can replace its parent class.
+    # pylint: disable-msg=W0231,W0702
 
     root_object_interface = ILaunchpadRoot
 
@@ -99,9 +102,11 @@ class LaunchpadBrowserPublication(
             return LoginRoot()
         else:
             bag = getUtility(IOpenLaunchBag)
-            assert bag.site is None, 'Argh! Steve was wrong!'
-            root_object = getUtility(self.root_object_interface)
-            bag.add(root_object)
+            if bag.site is None:
+                root_object = getUtility(self.root_object_interface)
+                bag.add(root_object)
+            else:
+                root_object = bag.site
             return root_object
 
     # the below ovverrides to zopepublication (callTraversalHooks,
@@ -123,8 +128,9 @@ class LaunchpadBrowserPublication(
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
-        if cache.has_key(key):
-            del cache[key]
+        connection = cache.pop(key, None)
+        if connection is not None:
+            connection._makeObsolete()
         # SQLOS Connection objects also only register themselves for
         # the transaction in which they are instantiated - this is
         # no longer a problem as we are nuking the connection cache,
@@ -135,6 +141,7 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
+        request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
         try:
@@ -163,17 +170,19 @@ class LaunchpadBrowserPublication(
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
 
-        # Try to authenticate against our registry
-        prin_reg = getUtility(IPlacelessAuthUtility)
-        p = prin_reg.authenticate(request)
-        if p is None:
-            p = prin_reg.unauthenticatedPrincipal()
-            if p is None:
-                raise Unauthorized # If there's no default principal
-
-        request.setPrincipal(p)
+        principal = self.getPrincipal(request)
+        request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request."""
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
 
     def maybeRestrictToTeam(self, request):
 
@@ -230,7 +239,7 @@ class LaunchpadBrowserPublication(
 
         If a non-restricted URL can not be determined, None is returned.
         """
-        base_host = config.launchpad.vhosts.mainsite.hostname
+        base_host = config.vhost.mainsite.hostname
         production_host = config.launchpad.non_restricted_hostname
         # If we don't have a production hostname, or it is the same as
         # this instance, then we can't provide a nonRestricted URL.
@@ -295,13 +304,14 @@ class LaunchpadBrowserPublication(
         It also sets the launchpad.userid and launchpad.pageid WSGI
         environment variables.
         """
+        request._publicationticks_start = tickcount.tickcount()
         if request.response.getStatus() in [301, 302, 303, 307]:
             return ''
 
         request.setInWSGIEnvironment(
             'launchpad.userid', request.principal.id)
 
-        # launchpad.pageid contains an identifier of the form 
+        # launchpad.pageid contains an identifier of the form
         # ContextName:ViewName. It will end up in the page log.
         unrestricted_ob = removeSecurityProxy(ob)
         context = removeSecurityProxy(
@@ -318,7 +328,11 @@ class LaunchpadBrowserPublication(
             else:
                 view_name = unrestricted_ob.__class__.__name__
             pageid = '%s:%s' % (context.__class__.__name__, view_name)
-        request.setInWSGIEnvironment('launchpad.pageid', pageid)
+        # The view name used in the pageid usually comes from ZCML and so
+        # it will be a unicode string although it shouldn't.  To avoid
+        # problems we encode it into ASCII.
+        request.setInWSGIEnvironment(
+            'launchpad.pageid', pageid.encode('ASCII'))
 
         return mapply(ob, request.getPositionalArguments(), request)
 
@@ -329,7 +343,13 @@ class LaunchpadBrowserPublication(
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
-
+        orig_env = request._orig_env
+        assert hasattr(request, '_publicationticks_start'), (
+            'request._publicationticks_start, which should have been set by '
+            'callObject(), was not found.')
+        ticks = tickcount.difference(
+            request._publicationticks_start, tickcount.tickcount())
+        request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
         # Annotate the transaction with user data. That was done by
         # zope.app.publication.zopepublication.ZopePublication.
         txn = transaction.get()
@@ -353,8 +373,13 @@ class LaunchpadBrowserPublication(
 
     def afterTraversal(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
-        zopepublication but we do want to send an AfterTraverseEvent """
-        notify(AfterTraverseEvent(ob, request))
+        zopepublication."""
+        assert hasattr(request, '_traversalticks_start'), (
+            'request._traversalticks_start, which should have been set by '
+            'beforeTraversal(), was not found.')
+        ticks = tickcount.difference(
+            request._traversalticks_start, tickcount.tickcount())
+        request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
 
         # Debugging code. Please leave. -- StuartBishop 20050622
         # Set 'threads 1' in launchpad.conf if you are using this.
@@ -380,13 +405,40 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        orig_env = request._orig_env
+        ticks = tickcount.tickcount()
+        if (hasattr(request, '_publicationticks_start') and
+            not orig_env.has_key('launchpad.publicationticks')):
+            # The traversal process has been started but hasn't completed.
+            assert orig_env.has_key('launchpad.traversalticks'), (
+                'We reached the publication process so we must have finished '
+                'the traversal.')
+            ticks = tickcount.difference(
+                request._publicationticks_start, ticks)
+            request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
+        elif (hasattr(request, '_traversalticks_start') and
+              not orig_env.has_key('launchpad.traversalticks')):
+            # The traversal process has been started but hasn't completed.
+            ticks = tickcount.difference(
+                request._traversalticks_start, ticks)
+            request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
+        else:
+            # The exception wasn't raised in the middle of the traversal nor
+            # the publication, so there's nothing we need to do here.
+            pass
+
         # Reraise Retry exceptions rather than log.
         # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
-        if retry_allowed and isinstance(exc_info[1], Retry):
-            raise
-        # Retry the request if we get a database disconnection.
-        if retry_allowed and isinstance(exc_info[1], da.DisconnectionError):
+        if (retry_allowed
+            and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
+            if request.supportsRetry():
+                # Remove variables used for counting ticks as this request is
+                # going to be retried.
+                orig_env.pop('launchpad.traversalticks', None)
+                orig_env.pop('launchpad.publicationticks', None)
+            if isinstance(exc_info[1], Retry):
+                raise
             raise Retry(exc_info)
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,
@@ -424,5 +476,3 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
-
-

@@ -105,7 +105,7 @@ If it doesn't exist an exception NotFoundError is raised
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
 
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> now = time_counter()
 
 The time_counter is used to create nicely ordered 'fake' date_created
@@ -115,10 +115,9 @@ date_created values from the database.
     >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
-    >>> home_page = "http://example.com/~ddaa/"
     >>> gterm_dev = branchset.new(
     ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
-    ...     title, summary=summary, home_page=home_page, date_created=now.next())
+    ...     title, summary=summary, date_created=now.next())
 
     >>> gterm_dev.name
     u'dev'
@@ -127,14 +126,27 @@ date_created values from the database.
     >>> gterm_dev.url
     u'http://example.com/~ddaa/gterm.dev'
 
-Branches must implement the IBranch interface.
+The registrant of the branch is the user that originally registered
+the branch, whereas the owner is the current owner of the branch.
+A user can create a branch where the owner is either themselves,
+or a team that they are a member of.  The registrant is not writable,
+whereas the owner is.
 
-    >>> from canonical.launchpad.interfaces import IBranch
-    >>> verifyObject(IBranch, gterm_dev)
-    True
+    >>> login('foo.bar@canonical.com')
+    >>> import_team = personset.getByName('vcs-imports')
+    >>> gterm_dev.registrant = import_team
+    Traceback (most recent call last):
+    ForbiddenAttribute: ('registrant', <Branch ...>)
 
-Branch may or may not be associated to a product, and may have no home_page,
-no title, and no summary, and even no URL.
+    >>> gterm_dev.owner = import_team
+    >>> print gterm_dev.registrant.name
+    ddaa
+    >>> print gterm_dev.owner.name
+    vcs-imports
+    >>> gterm_dev.owner = ddaa
+
+Branch may or may not be associated to a product, and may have no title,
+and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
@@ -145,8 +157,6 @@ Branches with no URL are primarily hosted on the supermirror.
     >>> junkcode.name
     u'junkcode'
     >>> print repr(junkcode.product)
-    None
-    >>> print repr(junkcode.home_page)
     None
     >>> print repr(junkcode.title)
     None
@@ -192,6 +202,7 @@ case) and -, +, _ and @ are allowed after that.
     Traceback (most recent call last):
       ...
     LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
+
 
 == Determining the number of branches ==
 
@@ -249,7 +260,6 @@ interesting results.
     >>> list(branchset.getRecentlyImportedBranches(5))
     []
 
-    >>> login('foo.bar@canonical.com')
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
@@ -445,8 +455,8 @@ of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
-    ...     IPerson, IBranchSubscription)
+    ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    ...     IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
     >>> sabdfl.subscribed_branches.count()
     0
@@ -476,7 +486,34 @@ BranchSubscriptionNotificationLevel.
     0
 
 
-== Branches related to a person ==
+We can get the subscribers for a branch based on their level of
+subscription. From the example above, we see that sabdfl has a 'FULL'
+subscription to `gterm_dev`.
+
+    >>> def print_names(persons):
+    ...     """Print the name of each person on a new line."""
+    ...     for person in persons:
+    ...         print person.person.name
+
+    >>> subscription = gterm_dev.subscribe(
+    ...     sabdfl,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+
+    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    ...     BranchSubscriptionNotificationLevel.FULL]))
+    sabdfl
+
+    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY]))
+
+    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionNotificationLevel.FULL]))
+    sabdfl
+
+
+== branches_root related to a person ==
 
 Finally, you can get the list of related branches for a person, that includes
 the branches registered, authored and subscribed to by this person.
@@ -622,8 +659,6 @@ used to identify when a scan is needed for a branch.
 
     >>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
     >>> rev = branch.getTipRevision()
-    >>> print rev.owner.name
-    admins
     >>> print rev.date_created
     2005-10-31 17:21:47.381770+00:00
     >>> print rev.log_body
@@ -633,7 +668,7 @@ used to identify when a scan is needed for a branch.
 == Codebrowse and branches ==
 
 Most branches are able to be browsed using the loggerhead codebrowse
-instance at http://codebrowse.launchpad.net.  Branches that have no
+instance at http://bazaar.launchpad.net.  Branches that have no
 revisions or private branches are not able to be viewed using code
 browse.
 
@@ -765,21 +800,6 @@ scanned ID is.
     False
 
 
-== Getting last commit time for branches ==
-
-There is not sufficient correct data in the sample code to make this
-right, but we still want to test the corner cases.
-
-    >>> branchset.getLastCommitForBranches([])
-    {}
-    >>> branch = branchset.get(1)
-    >>> branchset.getLastCommitForBranches([branch])
-    {<Branch ...>: None}
-    >>> another = branchset.get(2)
-    >>> branchset.getLastCommitForBranches([branch, another])
-    {<Branch ...>: None, <Branch ...>: None}
-
-
 == Getting the development focus branches for products ==
 
 One of the primary initial code pages will be the "products with code" page.
@@ -818,30 +838,6 @@ Lets make gnome terminal have a user branch as the dev focus.
     thunderbird    1 None
 
 
-== Getting branches by owner ==
-
-In order to facilitate getting the branches for all the teams that a
-person is a member of, we need to be able to get branches owned by
-arbitrary people.
-
-    >>> branchset.getBranchesForOwners([])
-    []
-    >>> owners = [personset.getByName('launchpad')]
-    >>> branches = branchset.getBranchesForOwners(owners)
-    >>> import operator
-    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
-    ...     print branch.unique_name
-    ~launchpad/gnome-terminal/launchpad
-
-    >>> owners.append(personset.getByName('ddaa'))
-    >>> branches = branchset.getBranchesForOwners(owners)
-    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
-    ...     print branch.unique_name
-    ~ddaa/+junk/junkcode
-    ~ddaa/gnome-terminal/dev
-    ~launchpad/gnome-terminal/launchpad
-
-
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query
@@ -867,6 +863,7 @@ sort order, the sort is by lifecycle, product, author, name).
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~ddaa/gnome-terminal/dev
     New ~ddaa/+junk/junkcode
+    New ~vcs-imports/+junk/junkcode
 
     >>> sample_person = personset.getByName('name12')
     >>> branches = branchset.getBranchesForPerson(
@@ -889,27 +886,20 @@ sort order, the sort is by lifecycle, product, author, name).
     New ~landscape-developers/landscape/trunk
     New ~name12/+junk/junk.contrib
 
-    >>> branches = branchset.getBranchesAuthoredByPerson(
-    ...     sample_person, visible_by_user=sample_person)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~name12/firefox/main
-    Merged ~name12/gnome-terminal/slowness
-    Experimental ~name12/gnome-terminal/klingon
-    New ~name12/landscape/feature-x
-    New ~landscape-developers/landscape/trunk
-    New ~name12/+junk/junk.contrib
-
     >>> for branch in branchset.getBranchesRegisteredByPerson(
     ...     sample_person, sort_by=BranchListingSort.PRODUCT):
     ...     print branch.lifecycle_status.title, branch.unique_name
+    New ~name12/firefox/main
     Abandoned ~name12/gnome-terminal/2.4
+    Merged ~name12/gnome-terminal/slowness
     Mature ~name12/gnome-terminal/2.6
     Development ~name12/gnome-terminal/main
+    Experimental ~name12/gnome-terminal/klingon
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned
     Experimental ~name12/+junk/junk.dev
+    New ~name12/+junk/junk.contrib
 
     >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
     ...     print branch.lifecycle_status.title, branch.unique_name
@@ -1049,10 +1039,11 @@ ProductSeries.import_branch.
 
 If a user creates a branch in error, they should be able to remove that branch.
 
-A branch can be deleted if it is not associated with any bugs or blueprints,
-has no subscribers, and hasn't been associated with any product series.
+A branch can be deleted trivially if it is not associated with any bugs or
+blueprints, has no subscribers, and hasn't been associated with any product
+series.
 
-Deleting the branch is done through the BranchSet.  If the branch is not
+Deleting the branch is done through Branch.destroySelf.  If the branch is not
 deletable then an exception is raised.
 
 More details can be found in the file
@@ -1074,7 +1065,7 @@ Adding a subscriber makes it not deletable.
     ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
     >>> branch.canBeDeleted()
     False
-    >>> branchset.delete(branch)
+    >>> branch.destroySelf()
     Traceback (most recent call last):
     ...
     CannotDeleteBranch: Cannot delete branch: ~ddaa/gnome-terminal/to-delete
@@ -1084,8 +1075,39 @@ The process can be rectified though by removing the offending links.
     >>> branch.unsubscribe(ddaa)
     >>> branch.canBeDeleted()
     True
-    >>> branchset.delete(branch)
+    >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
+    None
+
+The requirements for deleting the branch can be discovered:
+
+    >>> branch = branchset.new(
+    ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
+    ...     'http://example.com/branches/to-delete', 'A branch to delete',
+    ...     date_created=now.next())
+    >>> subscription = branch.subscribe(
+    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    >>> requirements = branch.deletionRequirements()
+
+The keys in the requirements are the objects that are associated with the
+branch.
+
+    >>> [subscription] == requirements.keys()
+    True
+    >>> action, reason = requirements[subscription]
+    >>> print action
+    delete
+    >>> print reason
+    This is a subscription to this branch.
+
+Deletion can be forced by supplying break_references=True.  This will delete
+items that have mandantory references to this branch, and alter items with
+optional references to this branch.  (Of course, this will fail if
+the user does not have appropriate permissions.)
+
+    >>> branch.destroySelf(break_references=True)
+    >>> print branchset.getByUniqueName(
+    ...     '~ddaa/gnome-terminal/to-delete')
     None
 
 Branches with revisions are deletable.
@@ -1095,7 +1117,7 @@ Branches with revisions are deletable.
     1
     >>> branch.canBeDeleted()
     True
-    >>> branchset.delete(branch)
+    >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
 

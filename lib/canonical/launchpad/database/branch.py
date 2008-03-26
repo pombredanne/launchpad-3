@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,W0141
 
 __metaclass__ = type
 __all__ = [
@@ -9,14 +9,15 @@ __all__ = [
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import os
 
 import pytz
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.event import notify
+from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -31,10 +32,13 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
     BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -44,7 +48,9 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 
@@ -60,19 +66,27 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
     private = BoolCol(default=False, notNull=True)
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    author = ForeignKey(
+        dbName='author', foreignKey='Person',
+        validator=public_person_validator, default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-
-    home_page = StringCol()
 
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
@@ -122,14 +136,18 @@ class Branch(SQLBase):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.selectBy(
-            target_branch=self, date_merged=None)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     @property
     def dependent_branches(self):
         """See `IBranch`."""
-        return BranchMergeProposal.selectBy(
-            dependent_branch=self, date_merged=None)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.dependent_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
@@ -163,12 +181,16 @@ class Branch(SQLBase):
                 raise InvalidBranchMergeProposal(
                     'Target and dependent branches must be different.')
 
-        target = BranchMergeProposal.selectOneBy(
-            source_branch=self, target_branch=target_branch, date_merged=None)
-        if target is not None:
+        target = BranchMergeProposal.select("""
+            BranchMergeProposal.source_branch = %s AND
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, target_branch,
+                            BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        if target.count() > 0:
             raise InvalidBranchMergeProposal(
                 'There is already a branch merge proposal registered for '
-                'branch %s to land on %s'
+                'branch %s to land on %s that is still active.'
                 % (self.unique_name, target_branch.unique_name))
 
         if date_created is None:
@@ -183,7 +205,13 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    next_mirror_time = UtcDateTimeCol(default=None)
+    def getMergeQueue(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status = %s
+            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
+            orderBy="queue_position")
 
     @property
     def code_is_browseable(self):
@@ -256,6 +284,14 @@ class Branch(SQLBase):
             return self.unique_name
 
     @property
+    def code_reviewer(self):
+        """See `IBranch`."""
+        if self.reviewer:
+            return self.reviewer
+        else:
+            return self.owner
+
+    @property
     def sort_key(self):
         """See `IBranch`."""
         if self.product is None:
@@ -288,21 +324,110 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        # CodeImportSet imported here to avoid circular imports.
-        from canonical.launchpad.database.codeimport import CodeImportSet
-        code_import = CodeImportSet().getByBranch(self)
-        if (code_import is not None or
-            self.subscriptions.count() > 0 or
-            self.bug_branches.count() > 0 or
-            self.spec_links.count() > 0 or
-            self.landing_targets.count() > 0 or
-            self.landing_candidates.count() > 0 or
-            self.dependent_branches.count() > 0 or
-            self.associatedProductSeries().count() > 0):
+        if (len(self.deletionRequirements()) != 0):
             # Can't delete if the branch is associated with anything.
             return False
         else:
             return True
+
+    @property
+    def code_import(self):
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        return CodeImportSet().getByBranch(self)
+
+    def _deletionRequirements(self):
+        """Determine what operations must be performed to delete this branch.
+
+        Two dictionaries are returned, one for items that must be deleted,
+        one for items that must be altered.  The item in question is the
+        key, and the value is a user-facing string explaining why the item
+        is affected.
+
+        As well as the dictionaries, this method returns two list of callables
+        that may be called to perform the alterations and deletions needed.
+        """
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        alterations = {}
+        deletions = {}
+        alteration_operations = []
+        deletion_operations = []
+        # Merge proposals require their source and target branches to exist.
+        for merge_proposal in self.landing_targets:
+            deletions[merge_proposal] = _(
+                'This branch is the source branch of this merge proposal.')
+            def delete_merge_proposal():
+                merge_proposal.destroySelf()
+            deletion_operations.append(delete_merge_proposal)
+        # Cannot use self.landing_candidates, because it ignores merged
+        # merge proposals.
+        for merge_proposal in BranchMergeProposal.selectBy(
+            target_branch=self):
+            deletions[merge_proposal] = _(
+                'This branch is the target branch of this merge proposal.')
+            deletion_operations.append(merge_proposal.destroySelf)
+        for merge_proposal in BranchMergeProposal.selectBy(
+            dependent_branch=self):
+            alterations[merge_proposal] = _(
+                'This branch is the dependent branch of this merge proposal.')
+            def break_reference():
+                merge_proposal.dependent_branch = None
+                merge_proposal.syncUpdate()
+            alteration_operations.append(break_reference)
+        for subscription in self.subscriptions:
+            deletions[subscription] = _(
+                'This is a subscription to this branch.')
+            deletion_operations.append(subscription.destroySelf)
+        for bugbranch in self.bug_branches:
+            deletions[bugbranch] = _('This bug is linked to this branch.')
+            deletion_operations.append(bugbranch.destroySelf)
+        for spec_link in self.spec_links:
+            deletions[spec_link] = _(
+                'This blueprint is linked to this branch.')
+            deletion_operations.append(spec_link.destroySelf)
+        for series in self.associatedProductSeries():
+            alterations[series] = _('This series is linked to this branch.')
+            def clear_user_branch():
+                if series.user_branch == self:
+                    series.user_branch = None
+                if series.import_branch == self:
+                    series.import_branch = None
+                series.syncUpdate()
+            alteration_operations.append(clear_user_branch)
+        if self.code_import is not None:
+            deletions[self.code_import] = _(
+                'This is the import data for this branch.')
+            def delete_code_import():
+                CodeImportSet().delete(self.code_import)
+            deletion_operations.append(delete_code_import)
+        return (alterations, deletions, alteration_operations,
+            deletion_operations)
+
+    def deletionRequirements(self):
+        """See `IBranch`."""
+        alterations, deletions, _ignored, _i = (
+            self._deletionRequirements())
+        result = dict((associated_object, ('alter', reason)) for
+            associated_object, reason in alterations.iteritems())
+        # Deletion entries should overwrite alteration entries.
+        result.update((associated_object, ('delete', reason)) for
+            associated_object, reason in deletions.iteritems())
+        return result
+
+    def _breakReferences(self):
+        """Break all external references to this branch.
+
+        NULLable references will be NULLed.  References which are not NULLable
+        will cause the item holding the reference to be deleted.
+
+        This function is guaranteed to perform the operations predicted by
+        deletionRequirements, because it uses the same backing function.
+        """
+        (_alterations, _deletions, alteration_operations,
+            deletion_operations) = self._deletionRequirements()
+        for operation in alteration_operations:
+            operation()
+        for operation in deletion_operations:
+            operation()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -337,6 +462,15 @@ class Branch(SQLBase):
             person=person, branch=self)
         return subscription
 
+    def getSubscriptionsByLevel(self, notification_levels):
+        """See `IBranch`."""
+        notification_levels = [level.value for level in notification_levels]
+        return BranchSubscription.select(
+            "BranchSubscription.branch = Branch.id "
+            "AND BranchSubscription.notification_level IN (%s)"
+            % ', '.join(sqlvalues(*notification_levels)),
+            clauseTables=['Branch'])
+
     def hasSubscription(self, person):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
@@ -352,6 +486,11 @@ class Branch(SQLBase):
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+
+    def getBranchRevisionByRevisionId(self, revision_id):
+        """See `IBranch`."""
+        revision = Revision.selectOneBy(revision_id=revision_id)
+        return BranchRevision.selectOneBy(branch=self, revision=revision)
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
@@ -473,6 +612,21 @@ class Branch(SQLBase):
             self.next_mirror_time = None
         self.syncUpdate()
 
+    def destroySelf(self, break_references=False):
+        """See `IBranch`."""
+        if break_references:
+            self._breakReferences()
+        if self.canBeDeleted():
+            # Delete any branch revisions.
+            branch_ancestry = BranchRevision.selectBy(branch=self)
+            for branch_revision in branch_ancestry:
+                BranchRevision.delete(branch_revision.id)
+            # Now delete the branch itself.
+            SQLBase.destroySelf(self)
+        else:
+            raise CannotDeleteBranch(
+                "Cannot delete branch: %s" % self.unique_name)
+
 
 class BranchWithSortKeys(Branch):
     """A hack to allow the sorting of Branch queries by human-meaningful keys.
@@ -561,6 +715,11 @@ class BranchSet:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
+
+    def getBranch(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        return Branch.selectOneBy(
+            owner=owner, product=product, name=branch_name)
 
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
@@ -685,12 +844,11 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, creator, owner, product, url, title=None,
+    def new(self, branch_type, name, creator, owner, product,
+            url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
-        if not home_page:
-            home_page = None
         if date_created is None:
             date_created = UTC_NOW
 
@@ -706,9 +864,10 @@ class BranchSet:
         IBranch['name'].validate(unicode(name))
 
         branch = Branch(
+            registrant=creator,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard, private=private,
+            whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created)
 
@@ -721,20 +880,8 @@ class BranchSet:
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF)
 
+        notify(SQLObjectCreatedEvent(branch))
         return branch
-
-    def delete(self, branch):
-        """See `IBranchSet`."""
-        if branch.canBeDeleted():
-            # Delete any branch revisions.
-            branch_ancestry = BranchRevision.selectBy(branch=branch)
-            for branch_revision in branch_ancestry:
-                BranchRevision.delete(branch_revision.id)
-            # Now delete the branch itself.
-            Branch.delete(branch.id)
-        else:
-            raise CannotDeleteBranch(
-                "Cannot delete branch: %s" % branch.unique_name)
 
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
@@ -884,33 +1031,6 @@ class BranchSet:
             results = results.limit(branch_count)
         return results
 
-    def getLastCommitForBranches(self, branches):
-        """Return a map of branch id to last commit time."""
-        branch_ids = [branch.id for branch in branches]
-        if not branch_ids:
-            # Return a sensible default if given no branches
-            return {}
-        cur = cursor()
-        cur.execute("""
-            SELECT Branch.id, Revision.revision_date
-            FROM Branch
-            LEFT OUTER JOIN Revision
-            ON Branch.last_scanned_id = Revision.revision_id
-            WHERE Branch.id IN %s
-            """
-            % quote(branch_ids))
-        commits = dict(cur.fetchall())
-        return dict([(branch, commits.get(branch.id, None))
-                     for branch in branches])
-
-    def getBranchesForOwners(self, people):
-        """Return the branches that are owned by the people specified."""
-        owner_ids = [person.id for person in people]
-        if not owner_ids:
-            return []
-        branches = Branch.select('Branch.owner in %s' % quote(owner_ids))
-        return branches.prejoin(['product'])
-
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
@@ -965,6 +1085,17 @@ class BranchSet:
                 quote(lifecycle_statuses))
         return lifecycle_clause
 
+    def _dormantClause(self, hide_dormant):
+        dormant_clause = ''
+        if hide_dormant:
+            dormant_days = timedelta(
+                days=config.launchpad.branch_dormant_days)
+            last_date = datetime.utcnow() - dormant_days
+            dormant_clause = (
+                ' AND Branch.date_last_modified > %s' %
+                quote(last_date))
+        return dormant_clause
+
     @staticmethod
     def _listingSortToOrderBy(sort_by):
         """Compute a value to pass as orderBy to BranchWithSortKeys.select().
@@ -988,11 +1119,13 @@ class BranchSet:
             return order_by
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
-                             visible_by_user=None, sort_by=None):
+                             visible_by_user=None, sort_by=None,
+                             hide_dormant=False):
         """See `IBranchSet`."""
         query_params = {
             'person': person.id,
-            'lifecycle_clause': self._lifecycleClause(lifecycle_statuses)
+            'lifecycle_clause': self._lifecycleClause(lifecycle_statuses),
+            'dormant_clause': self._dormantClause(hide_dormant)
             }
         query = ('''
             Branch.id in (
@@ -1008,9 +1141,10 @@ class BranchSet:
                 FROM Branch
                 WHERE
                     Branch.owner = %(person)s
-                OR Branch.author = %(person)s
+                OR Branch.registrant = %(person)s
                 )
             %(lifecycle_clause)s
+            %(dormant_clause)s
             '''
             % query_params)
 
@@ -1018,63 +1152,74 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
-    def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
-                                    visible_by_user=None, sort_by=None):
+    def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
+                                 visible_by_user=None, sort_by=None,
+                                 hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = 'Branch.author = %s %s' % (person.id, lifecycle_clause)
+        dormant_clause = self._dormantClause(hide_dormant)
+        query = 'Branch.owner = %s %s %s' % (
+            person.id, lifecycle_clause, dormant_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None, sort_by=None):
+                                      visible_by_user=None, sort_by=None,
+                                      hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('''
-            Branch.owner = %s AND
-            (Branch.author is NULL OR
-            Branch.author != %s) %s
-            '''
-            % (person.id, person.id, lifecycle_clause))
+        dormant_clause = self._dormantClause(hide_dormant)
+        query = 'Branch.registrant = %s %s %s' % (
+            person.id, lifecycle_clause, dormant_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None, sort_by=None):
+                                      visible_by_user=None, sort_by=None,
+                                      hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        dormant_clause = self._dormantClause(hide_dormant)
         query = ('''
             Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s %s
+            AND BranchSubscription.person = %s %s %s
             '''
-            % (person.id, lifecycle_clause))
+            % (person.id, lifecycle_clause, dormant_clause))
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             clauseTables=['BranchSubscription'],
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
-                              visible_by_user=None, sort_by=None):
+                              visible_by_user=None, sort_by=None,
+                              hide_dormant=False):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        dormant_clause = self._dormantClause(hide_dormant)
 
-        query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
+        query = 'Branch.product = %s %s %s' % (
+            product.id, lifecycle_clause, dormant_clause)
 
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
-                              visible_by_user=None, sort_by=None):
+                              visible_by_user=None, sort_by=None,
+                              hide_dormant=False):
         """See `IBranchSet`."""
         assert project is not None, "Must have a valid project."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        dormant_clause = self._dormantClause(hide_dormant)
 
-        query = 'Branch.product = Product.id AND Product.project = %s %s' % (
-            project.id, lifecycle_clause)
+        query = ('''
+            Branch.product = Product.id AND
+            Product.project = %s %s %s
+            '''
+            % (project.id, lifecycle_clause, dormant_clause))
 
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),

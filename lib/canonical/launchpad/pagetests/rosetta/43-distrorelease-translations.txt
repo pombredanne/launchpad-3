@@ -94,7 +94,6 @@ last translator is displayed.
   >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+lang/de')
   >>> print extract_text(
   ...     find_tag_by_id(browser.contents, "pkgconf-mozilla-time"))
-  2005-05-06 21:12:42 UTC
   2005-05-06
   >>> print extract_text(
   ...     find_tag_by_id(browser.contents, "pkgconf-mozilla-person"))
@@ -158,7 +157,7 @@ Looking at the Spanish language overview page, we can see that there are
     >>> print extract_text(evolution_line)
     evolution-2.2
     ...
-    15 15 1 1 1 1
+    15 1 1
     ...
 
 The template title points to the general translate page:
@@ -171,8 +170,8 @@ The template title points to the general translate page:
     >>> unfiltered = all_links[0]
     >>> print extract_text(unfiltered)
     evolution-2.2
-    >>> extract_link_from_tag(unfiltered, base_href)
-    u'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+    >>> print extract_link_from_tag(unfiltered, base_href)
+    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
 
 The number of untranslated entries points to the same page, which now show
 only untranslated items. When we follow this link, the filtering combo box

@@ -16,7 +16,9 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Description, ProductBugTracker, Summary, Title, URIField)
+    Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
+    ProductBugTracker, ProductNameField, PublicPersonChoice,
+    Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -33,8 +35,6 @@ from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, ProductNameField)
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -105,21 +105,14 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             and decisions around bug tracking, translation and security
             policy will apply to this project."""))
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
-    bugcontact = Choice(
-        title=_("Bug Contact"),
-        description=_(
-            "The person or team who will receive all bugmail for this "
-            "project"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "This person or team will be able to set feature goals for "
@@ -252,6 +245,14 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
+    reviewer_whiteboard = Text(
+        title=_('Notes for the project reviewer'),
+        required=False, 
+        description=_(
+            "Notes on the project, viewable only by reviewers "
+            "(administrators and registry experts)."))
+
+
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License))
@@ -382,7 +383,7 @@ class IProductSet(Interface):
         """
 
     def getProductsWithBranches(num_products=None):
-        """Return an iterator over all products that have branches.
+        """Return an iterator over all active products that have branches.
 
         If num_products is not None, then the first `num_products` are
         returned.
@@ -390,6 +391,8 @@ class IProductSet(Interface):
 
     def getProductsWithUserDevelopmentBranches():
         """Return products that have a user branch for the development series.
+
+        Only active products are returned.
 
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """

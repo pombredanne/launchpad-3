@@ -18,12 +18,11 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTarget, IBugTaskSet, IDistribution, IMaloneApplication, IPerson)
+    IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -51,16 +50,6 @@ class BugFeedContentView(LaunchpadView):
         super(BugFeedContentView, self).__init__(context, request)
         self.feed = feed
 
-    @property
-    def bug_comments_for_display(self):
-        """Get the rendered bug comments.
-
-        Using the existing templates and views, transform the comments for the
-        bug into a representation to be used as the 'content' in the bug feed.
-        """
-        bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
-        return bug_task_view.getBugCommentsForDisplay()
-
     def render(self):
         """Render the view."""
         return ViewPageTemplateFile('templates/bug.pt')(self)
@@ -75,7 +64,7 @@ class BugsFeedBase(FeedBase):
     rootsite = "bugs"
 
     def initialize(self):
-        """See `IFeed`."""
+        """See `LaunchpadView`."""
         super(BugsFeedBase, self).initialize()
         self.setupColumns()
 
@@ -93,15 +82,14 @@ class BugsFeedBase(FeedBase):
             status = True)
 
     @property
-    def link_self(self):
-        """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
-
-    @property
     def logo(self):
         """See `IFeed`."""
         return "%s/@@/bug" % self.site_url
+
+    def _sortByDateCreated(self, bugtasks):
+        return sorted(bugtasks,
+                      key=lambda bugtask: bugtask.bug.datecreated,
+                      reverse=True)
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
@@ -112,9 +100,10 @@ class BugsFeedBase(FeedBase):
 
         The list of bugs is screened to ensure no private bugs are returned.
         """
-        return [bugtask
-                for bugtask in self._getRawItems()
-                if not bugtask.bug.private]
+        items = [bugtask
+                 for bugtask in self._getRawItems()
+                 if not bugtask.bug.private]
+        return self._sortByDateCreated(items)
 
     def getItems(self):
         """See `IFeed`."""
@@ -124,16 +113,16 @@ class BugsFeedBase(FeedBase):
         return items
 
     def itemToFeedEntry(self, bugtask):
-        """See `IFeed`."""
+        """Convert the items to FeedEntries."""
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
         content_view = BugFeedContentView(bug, self.request, self)
         entry = FeedEntry(title=title,
                           link_alternate=url,
-                          date_created=bugtask.datecreated,
+                          date_created=bug.datecreated,
                           date_updated=bug.date_last_updated,
-                          date_published=bugtask.datecreated,
+                          date_published=bug.datecreated,
                           authors=[FeedPerson(bug.owner, self.rootsite)],
                           content=FeedTypedData(content_view.render(),
                                                 content_type="html"))
@@ -220,8 +209,8 @@ class BugTargetBugsFeed(BugsFeedBase):
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         delegate_view = BugTargetView(self.context, self.request)
-        delegate_view.initialize()
-        return delegate_view.latestBugTasks(quantity=self.quantity)
+        bugtasks = delegate_view.latestBugTasks(quantity=self.quantity)
+        return get_unique_bug_tasks(bugtasks)
 
 
 class PersonBugsFeed(BugsFeedBase):
@@ -238,9 +227,11 @@ class PersonBugsFeed(BugsFeedBase):
     def _getRawItems(self):
         """Perform the search."""
         delegate_view = PersonRelatedBugsView(self.context, self.request)
+        # Since the delegate_view derives from LaunchpadFormView the view must
+        # be initialized to setup the widgets.
         delegate_view.initialize()
-        results = delegate_view.search()
-        items = results.getBugListingItems()
+        batch_navigator = delegate_view.search()
+        items = batch_navigator.batch.list
         return get_unique_bug_tasks(items)[:self.quantity]
 
 
@@ -260,10 +251,13 @@ class SearchBugsFeed(BugsFeedBase):
         search_context = getUtility(IMaloneApplication)
         delegate_view = BugsBugTaskSearchListingView(self.context,
                                                      self.request)
+        # Since the delegate_view derives from LaunchpadFormView the view must
+        # be initialized to setup the widgets.
         delegate_view.initialize()
-        results = delegate_view.search(searchtext=None,
-                      context=search_context, extra_params=None)
-        items = results.getBugListingItems()
+        batch_navigator = delegate_view.search(searchtext=None,
+                                               context=search_context,
+                                               extra_params=None)
+        items = batch_navigator.batch.list
         return get_unique_bug_tasks(items)[:self.quantity]
 
     @property

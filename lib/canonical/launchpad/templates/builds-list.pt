@@ -8,7 +8,7 @@
 
     <div style="padding: 0em 1em 2em 0em">
      <form name="build_records_state" action="" method="GET">
-          <tal:searchname condition="view/searchName">
+          <tal:searchname condition="view/search_name">
             Package:
             <input id="build_text" title="Package Name" size="20"
                    type="text" name="build_text"
@@ -31,7 +31,7 @@
   <table class="listing" tal:condition="batch">
     <tbody>
       <tal:batch_repeat repeat="complete_build batch">
-        <tr tal:define="build complete_build/build">
+        <tr class="build-row" tal:define="build complete_build/build">
           <td class="left icon">
              <tal:icon replace="structure build/image:icon" />
           </td>
@@ -57,7 +57,7 @@
               <tal:gina_record condition="not: build/buildduration">
                   <i>not available</i>
               </tal:gina_record>
-              <tal:show_builder_info condition="view/showBuilderInfo">
+              <tal:show_builder_info condition="view/show_builder_info">
                 on
                 <a
                   tal:condition="build/builder"
@@ -114,7 +114,8 @@
 
   <tal:block tal:condition="not: view/no_results">
     <div id="no-default-result" tal:condition="not: view/complete_builds">
-       No packages currently building.
+       No <tal:state condition="view/state">'<span
+         tal:replace="view/state/title" />' </tal:state>build records.
     </div>
   </tal:block>
 

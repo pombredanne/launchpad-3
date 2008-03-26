@@ -22,7 +22,7 @@ from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
-from canonical.testing.layers import TwistedLayer
+from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
 
 class MockRealm:
@@ -181,7 +181,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     Section 5.4 for more information.
     """
 
-    layer = TwistedLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
@@ -308,7 +308,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     MSG_USERAUTH_BANNER message.
     """
 
-    layer = TwistedLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         self.valid_login = 'testuser'

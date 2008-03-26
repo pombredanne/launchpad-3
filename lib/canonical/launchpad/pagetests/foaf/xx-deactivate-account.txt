@@ -11,6 +11,25 @@ to use their accounts to log in.
     >>> print extract_text(find_tags_by_class(browser.contents, "login")[0])
     Logged in as Sample Person ...
 
+Deactivating a user's account will un-assign all their bug tasks. To
+demonstrate this, we'll assign a bug to the user that we're going to
+deactivate.
+
+    >>> edit_bug_url = ("http://bugs.launchpad.dev/debian/sarge/+source/"
+    ...     "mozilla-firefox/+bug/3/+editstatus")
+    >>> browser.open(edit_bug_url)
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_sarge_mozilla-firefox.bugwatch')
+    >>> bugwatch_control.value = []
+    >>> browser.getControl('Save Changes').click()
+
+    >>> browser.open(edit_bug_url)
+    >>> assignee_control = browser.getControl(
+    ...     name='debian_sarge_mozilla-firefox.assignee.option')
+    >>> assignee_control.value = [
+    ...     'debian_sarge_mozilla-firefox.assignee.assign_to_me']
+    >>> browser.getControl('Save Changes').click()
+
 There's a link to the +deactivate-account page in a person's +edit page.
 
     >>> browser.open('http://launchpad.dev/~name12')
@@ -53,6 +72,16 @@ Sample Person can't log into Launchpad anymore.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     The email address and password do not match.
+
+The bugs that were assigned to Sample Person will no longer have an
+assignee.
+
+    >>> browser.open('http://launchpad.dev/debian/+source/'
+    ...     'mozilla-firefox/+bug/3/+viewstatus')
+    >>> print extract_text(find_main_content(browser.contents))
+    Bug #3:
+    ...To change this information, you must be logged in...
+    ...Assigned to unknown...
 
 And now the Launchpad page for that person will clearly say (s)he does not use
 Launchpad.

@@ -83,8 +83,8 @@ on other members' person pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
-    [u'My Team']
     [u'Other Team']
+    [u'My Team']
 
 
 == Teams with Icons ==
@@ -279,4 +279,4 @@ no user can set that team as the bug contact of a distribution.
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+bugcontact'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...You must choose a valid person or team to be the bug contact...

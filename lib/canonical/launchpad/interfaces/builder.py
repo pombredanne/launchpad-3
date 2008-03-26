@@ -64,8 +64,8 @@ class IBuilder(IHasOwner):
     machine is accessed through an XML-RPC interface; name, title,
     description for entity identification and browsing purposes; an LP-like
     owner which has unrestricted access to the instance; the build slave
-    machine status representation, including the field/properties: trusted,
-    builderok, status, failnotes and currentjob.
+    machine status representation, including the field/properties:
+    virtualized, builderok, status, failnotes and currentjob.
     """
     id = Attribute("Builder identifier")
     processor = Choice(
@@ -98,10 +98,10 @@ class IBuilder(IHasOwner):
                       'paragraphs of text, giving the highlights and '
                       'details.'))
 
-    trusted = Bool(
-        title=_('Trusted'), required=True,
-        description=_('Whether or not the builder is prepared to build '
-                      'untrusted packages.'))
+    virtualized = Bool(
+        title=_('Virtualised'), required=True,
+        description=_('Whether or not the builder is a virtual Xen '
+                      'instance.'))
 
     manual = Bool(
         title=_('Manual Mode'), required=False,
@@ -120,6 +120,10 @@ class IBuilder(IHasOwner):
         title=_('Virtual Machine Host'), required=False,
         description=_('The machine hostname hosting the virtual '
                       'buildd-slave, e.g.: foobar-host.ppa'))
+
+    active = Bool(
+        title=_('Active'), required=False,
+        description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
@@ -187,8 +191,8 @@ class IBuilder(IHasOwner):
         Issues 'builddmaster.vm_resume_command' specified in the configuration
         to resume the slave.
 
-        :raises: CannotResumeHost: if builder is not virtual (untrusted),
-            or if the configuration command has failed.
+        :raises: CannotResumeHost: if builder is not virtual or if the
+            configuration command has failed.
 
         :return: command stdout and stderr buffers as a tuple.
         """
@@ -273,7 +277,7 @@ class IBuilderSet(Interface):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
-            trusted=False):
+            virtualized=True):
         """Create a new Builder entry."""
 
     def count():
@@ -283,7 +287,7 @@ class IBuilderSet(Interface):
         """Return the IBuilder with the given builderid."""
 
     def getBuilders():
-        """Return all configured builders."""
+        """Return all active configured builders."""
 
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""

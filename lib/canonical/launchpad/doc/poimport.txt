@@ -107,8 +107,8 @@ Attach the import to the translations import queue:
     ...     potemplate.path, potemplate_contents, True, potemplate.owner,
     ...     productseries=series, potemplate=potemplate)
 
-The file data is stored in the Librarian, so we have to commit the transaction
-to make sure it's stored properly.
+The file data is stored in the Librarian, so we have to commit the
+transaction to make sure it's stored properly.
 
     >>> transaction.commit()
 
@@ -120,7 +120,6 @@ The entry gets approved, so it can be imported.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> saved_date = datetime.datetime.now(UTC)
-
 
 Now, we tell the PO template to import from the file data it has.
 
@@ -162,6 +161,7 @@ The file references field should be there
 
     >>> potmsgsets[2].filereferences
     u'test.c:13'
+
 
 === Import Preconditions ===
 
@@ -226,8 +226,8 @@ And the statistics reflect it.
 
 === Import With Errors ===
 
-Here are the contents of the file we'll be importing. It has some validation
-errors.
+Here are the contents of the file we'll be importing. It has some
+validation errors.
 
     >>> pofile_with_errors = r'''
     ... msgid ""
@@ -235,7 +235,8 @@ errors.
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) ? "
+    ...     "0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
@@ -262,6 +263,7 @@ errors.
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 This is the dbschema that controls the validation of a translation.
+
     >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
@@ -374,7 +376,7 @@ The import process produces an email warning us of partial failure.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
-    4. "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
+    4. "format spec... 'msgid' and 'msgstr' for argument 1 are not the same":
     <BLANKLINE>
     #, c-format
     msgid "Foo %s"
@@ -398,7 +400,8 @@ Now, let's import one without errors.
     ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) ? "
+    ...     "0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
@@ -425,9 +428,9 @@ We must approve the entry to be able to import it.
 
     >>> entry.status = RosettaImportStatus.APPROVED
 
-At this point, the statistics note that we have 3 translations coming from
-imported files (currentCount), and none updated or added in Launchpad
-Translations.
+At this point, the statistics note that we have 3 translations coming
+from imported files (currentCount), and none updated or added in
+Launchpad Translations.
 
     >>> pofile.currentCount()
     3
@@ -565,12 +568,12 @@ the exact right POFile.
 
 == Cron Scripts ==
 
-We tested already that the functionality works. Now it's time to know if the
-cronscript has any problem.
+We tested already that the functionality works. Now it's time to know
+if the cronscript has any problem.
 
-First, we are going to reactivate the entries that were already imported or
-failed. Note that we'll only reactivate the entries we use in this test;
-We don't touch entries that were in the queue previously.
+First, we are going to reactivate the entries that were already
+imported or failed. Note that we'll only reactivate the entries we use
+in this test; We don't touch entries that were in the queue previously.
 
     >>> for entry in translation_import_queue:
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
@@ -587,9 +590,9 @@ And run the import script.
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
+    INFO    Got an old version for Welsh (cy) ... in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
 
 The import script also generates the emails similar to the ones we saw
@@ -642,15 +645,14 @@ composed before, but also sends them.
     <BLANKLINE>
     The Launchpad team
 
-
-Now the auto-approval script runs.  This can happen anytime, since it's
-asynchronous to the po-import script.  The script tries to approve any entries
-that have not been approved, but look like they could be, without human
-intervention.  This involves a bit of guesswork about what the imported file
-is and where it belongs.  It similarly blocks entries that it thinks should be
-blocked, and also purges deleted or complted entries from the queue.  Running
-at this point, all it does is purge the two hand-approved Welsh translations
-that have just been imported.
+Now the auto-approval script runs. This can happen anytime, since it's
+asynchronous to the po-import script. The script tries to approve any
+entries that have not been approved, but look like they could be,
+without human intervention. This involves a bit of guesswork about what
+the imported file is and where it belongs. It similarly blocks entries
+that it thinks should be blocked, and also purges deleted or completed
+entries from the queue. Running at this point, all it does is purge the
+two hand-approved Welsh translations that have just been imported.
 
     >>> process = AutoApproveProcess(transaction, FakeLogger())
     >>> process.run()
@@ -731,9 +733,9 @@ It's in the queue now.
     >>> print entry.status.name
     NEEDS_REVIEW
 
-The auto-approval script runs again.  This time it sees the two submitted
-translations and approves them for import based on some heuristic
-intelligence.
+The auto-approval script runs again. This time it sees the two
+submitted translations and approves them for import based on some
+heuristic intelligence.
 
     >>> process = AutoApproveProcess(transaction, FakeLogger())
     >>> process.run()
@@ -742,13 +744,13 @@ intelligence.
     APPROVED
     >>> syncUpdate(entry)
 
-Now that these submissions have been approved, the next run of the import
-script picks them up and processes them.
+Now that these submissions have been approved, the next run of the
+import script picks them up and processes them.
 
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
 
     >>> print entry.status.name
@@ -775,8 +777,8 @@ message translations were ignored.
     >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
     []
 
-Imports so far have been associated with a product series.  We can also submit
-translations for a distroseries.
+Imports so far have been associated with a product series. We can also
+submit translations for a distroseries.
 
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
@@ -793,18 +795,18 @@ translations for a distroseries.
     ...     path='po/firefox.pot',
     ...     owner=person)
 
-
-As it happens, the administrator has blocked imports to warty, e.g. because an
-in-database update of its translations has been scheduled and we don't want
-interference from queued imports while that happens.  It doesn't really matter
-whether entries still get auto-approved, but we can't accept new translation
-imports just now.
+As it happens, the administrator has blocked imports to warty, e.g.
+because an in-database update of its translations has been scheduled
+and we don't want interference from queued imports while that happens.
+It doesn't really matter whether entries still get auto-approved, but
+we can't accept new translation imports just now.
 
     >>> warty.defer_translation_imports = True
     >>> syncUpdate(warty)
 
-Nevertheless, someone submits an import request for warty, not knowing or
-caring that imports are deferred.  The entry still gets approved as normal:
+Nevertheless, someone submits an import request for warty, not knowing
+or caring that imports are deferred. The entry still gets approved as
+normal:
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, True, potemplate.owner,
@@ -814,14 +816,16 @@ caring that imports are deferred.  The entry still gets approved as normal:
     >>> syncUpdate(entry)
     >>> transaction.commit()
 
-Since imports for warty are suspended, and the only entry we happen to have
-waiting right now is for warty, the queue has no importable entries for us.
+Since imports for warty are suspended, and the only entry we happen to
+have waiting right now is for warty, the queue has no importable
+entries for us.
 
     >>> warty.getFirstEntryToImport() is None
     True
 
-So if we try to import now, nothing happens.  Our request remains on the queue,
-but doesn't become a candidate for processing until warty imports are resumed.
+So if we try to import now, nothing happens. Our request remains on the
+queue, but doesn't become a candidate for processing until warty
+imports are resumed.
 
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
@@ -904,9 +908,9 @@ specified):
     >>> current_dv.translations
     [u'First form %d', u'Second form %d']
 
-However, even the third form will be imported into database (this is useful
-for when we finally define the number of plural forms for the language, we
-should not have to reimport all translations):
+However, even the third form will be imported into database (this is
+useful for when we finally define the number of plural forms for the
+language, we should not have to reimport all translations):
 
     >>> current_dv.msgstr2.translation
     u'Third form %d'

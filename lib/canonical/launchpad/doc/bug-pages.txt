@@ -285,7 +285,7 @@ subscribed to it, 'Subscribe' is shown.
 
 If we subscribe Foo Bar, 'Unsubscribe' is shown.
 
-    >>> bug_one.subscribe(foo_bar)
+    >>> bug_one.subscribe(foo_bar, foo_bar)
     <BugSubscription at ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -300,7 +300,7 @@ still say 'Unsubscribe':
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
     True
-    >>> bug_one.subscribe(launchpad_team)
+    >>> bug_one.subscribe(launchpad_team, launchpad_team)
     <BugSubscription at ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -330,7 +330,7 @@ other team, it will say only 'Subscribe'.
     >>> foo_bar.inTeam(shipit_team)
     False
     >>> bug_one.unsubscribe(launchpad_team)
-    >>> bug_one.subscribe(shipit_team)
+    >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
@@ -354,27 +354,27 @@ we can't know if the user is subscribed or not.
     Subscribers from duplicates have the option to unsubscribe as well. For
     example, Steve Alexander can currently subscribe to bug #3.
 
-        >>> bug_three = bugset.get(3)
-        >>> bug_three_bugtask = bug_three.bugtasks[0]
-        >>> getUtility(IOpenLaunchBag).clear()
-        >>> getUtility(IOpenLaunchBag).add(bug_three_bugtask)
+    >>> bug_three = bugset.get(3)
+    >>> bug_three_bugtask = bug_three.bugtasks[0]
+    >>> getUtility(IOpenLaunchBag).clear()
+    >>> getUtility(IOpenLaunchBag).add(bug_three_bugtask)
 
-        >>> login("steve.alexander@ubuntulinux.com")
+    >>> login("steve.alexander@ubuntulinux.com")
 
-        >>> bug_menu = BugContextMenu(bug_three_bugtask)
-        >>> bug_menu.subscription().text
+    >>> bug_menu = BugContextMenu(bug_three_bugtask)
+    >>> bug_menu.subscription().text
         'Subscribe'
 
     Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
     is presented with the Unsubscribe link.
 
-        >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.ftests import syncUpdate
 
-        >>> bug_two.duplicateof = bug_three
-        >>> syncUpdate(bug_two)
+    >>> bug_two.duplicateof = bug_three
+    >>> syncUpdate(bug_two)
 
-        >>> bug_menu.subscription().text
+    >>> bug_menu.subscription().text
         'Unsubscribe'
 
     Now, let's revert that duplicate marking and demonstrate it again, this
@@ -382,12 +382,12 @@ we can't know if the user is subscribed or not.
     the current user is a member. So, for Foo Bar, bug #3 has a simple
     Subscribe link initially.
 
-        >>> bug_two.duplicateof = None
-        >>> syncUpdate(bug_two)
+    >>> bug_two.duplicateof = None
+    >>> syncUpdate(bug_two)
 
-        >>> login("foo.bar@canonical.com")
+    >>> login("foo.bar@canonical.com")
 
-        >>> bug_menu.subscription().text
+    >>> bug_menu.subscription().text
         'Subscribe'
 
     Now let's subscribe Ubuntu Team directly to bug #2. When bug #2 is duped
@@ -395,13 +395,14 @@ we can't know if the user is subscribed or not.
     Bar can subscribe himself, or unsubscribe the Ubuntu Team, which got
     indirectly subscribed to bug #3 from the dupe, bug #2.
 
-        >>> bug_two.subscribe(getUtility(IPersonSet).getByName("ubuntu-team"))
+    >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
+    >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
         <BugSubscription...>
 
-        >>> bug_two.duplicateof = bug_three
-        >>> syncUpdate(bug_two)
+    >>> bug_two.duplicateof = bug_three
+    >>> syncUpdate(bug_two)
 
-        >>> bug_menu.subscription().text
+    >>> bug_menu.subscription().text
         'Subscribe/Unsubscribe'
 
 

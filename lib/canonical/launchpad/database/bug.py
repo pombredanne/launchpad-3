@@ -25,14 +25,13 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
-    IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
+    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -56,6 +55,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -152,7 +152,9 @@ class Bug(SQLBase):
     title = StringCol(notNull=True)
     description = StringCol(notNull=False,
                             default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -160,7 +162,8 @@ class Bug(SQLBase):
     private = BoolCol(notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
-        dbName='who_made_private', foreignKey='Person', default=None)
+        dbName='who_made_private', foreignKey='Person',
+        validator=public_person_validator, default=None)
     security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins
@@ -199,6 +202,7 @@ class Bug(SQLBase):
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
+    message_count = IntCol(notNull=True, default=0)
 
     @property
     def displayname(self):
@@ -285,8 +289,15 @@ class Bug(SQLBase):
         if not self.permits_expiration:
             return False
 
-        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(0, self)
-        return len(bugtasks) > 0
+        # Do the search as the Janitor, to ensure that this bug can be
+        # found, even if it's private. We don't have access to the user
+        # calling this property. If the user has access to view this
+        # property, he has permission to see the bug, so we're not
+        # exposing something we shouldn't. The Janitor has access to
+        # view all bugs.
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
+            0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+        return bugtasks.count() > 0
 
     @property
     def initial_message(self):
@@ -298,14 +309,15 @@ class Bug(SQLBase):
         """See `IBug`."""
         return 'Re: '+ self.title
 
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
 
-        return BugSubscription(bug=self, person=person)
+        return BugSubscription(
+            bug=self, person=person, subscribed_by=subscribed_by)
 
     def unsubscribe(self, person):
         """See `IBug`."""
@@ -339,6 +351,13 @@ class Bug(SQLBase):
                 bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
                 person = %d""" % (self.id, person.id)))
 
+    def getDirectSubscriptions(self):
+        """See `IBug`."""
+        return BugSubscription.select("""
+            Person.id = BugSubscription.person AND
+            BugSubscription.bug = %d""" % self.id,
+            orderBy="displayname", clauseTables=["Person"])
+
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
 
@@ -371,6 +390,43 @@ class Bug(SQLBase):
 
         return sorted(
             indirect_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscriptionsFromDuplicates(self, recipients=None):
+        """See `IBug`."""
+        if self.private:
+            return []
+
+        duplicate_subscriptions = set(
+            BugSubscription.select("""
+                BugSubscription.bug = Bug.id AND
+                Bug.duplicateof = %d""" % self.id,
+                clauseTables=["Bug"]))
+
+        # Direct and "also notified" subscribers take precedence
+        # over subscribers from duplicates.
+        duplicate_subscriptions -= set(self.getDirectSubscriptions())
+        also_notified_subscriptions = set()
+        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
+            for duplicate_subscription in duplicate_subscriptions:
+                if also_notified_subscriber == duplicate_subscription.person:
+                    also_notified_subscriptions.add(duplicate_subscription)
+                    break
+        duplicate_subscriptions -= also_notified_subscriptions
+
+        # Only add a subscriber once to the list.
+        duplicate_subscribers = set(
+            sub.person for sub in duplicate_subscriptions)
+        subscriptions = []
+        for duplicate_subscriber in duplicate_subscribers:
+            for duplicate_subscription in duplicate_subscriptions:
+                if duplicate_subscription.person == duplicate_subscriber:
+                    subscriptions.append(duplicate_subscription)
+                    break
+
+        def get_person_displayname(subscription):
+            return subscription.person.displayname
+
+        return sorted(subscriptions, key=get_person_displayname)
 
     def getSubscribersFromDuplicates(self, recipients=None):
         """See `IBug`.
@@ -419,44 +475,23 @@ class Bug(SQLBase):
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
-            # Bug contacts are indirect subscribers.
-            if (IDistroBugTask.providedBy(bugtask) or
-                IDistroSeriesBugTask.providedBy(bugtask)):
-                if bugtask.distribution is not None:
-                    distribution = bugtask.distribution
-                else:
-                    distribution = bugtask.distroseries.distribution
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                also_notified_subscribers.update(
+                    bugtask.target.getBugNotificationsRecipients(recipients))
 
-                if distribution.bugcontact:
-                    also_notified_subscribers.add(distribution.bugcontact)
-                    if recipients is not None:
-                        recipients.addDistroBugContact(
-                            distribution.bugcontact, distribution)
+            if bugtask.milestone is not None:
+                also_notified_subscribers.update(
+                    bugtask.milestone.getBugNotificationsRecipients(
+                    recipients))
 
-                if bugtask.sourcepackagename:
-                    sourcepackage = distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    for pbc in sourcepackage.bugcontacts:
-                        also_notified_subscribers.add(pbc.bugcontact)
-                        if recipients is not None:
-                            recipients.addPackageBugContact(pbc.bugcontact,
-                                                           sourcepackage)
-            else:
-                if IUpstreamBugTask.providedBy(bugtask):
-                    product = bugtask.product
-                else:
-                    assert IProductSeriesBugTask.providedBy(bugtask)
-                    product = bugtask.productseries.product
-                if product.bugcontact:
-                    also_notified_subscribers.add(product.bugcontact)
-                    if recipients is not None:
-                        recipients.addUpstreamBugContact(
-                            product.bugcontact, product)
-                else:
-                    also_notified_subscribers.add(product.owner)
-                    if recipients is not None:
-                        recipients.addUpstreamRegistrant(
-                            product.owner, product)
+            # If the target's bug contact isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bugcontact is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(
+                        pillar.owner, pillar)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
@@ -523,14 +558,17 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message, bugwatch=None):
+    def linkMessage(self, message, bugwatch=None, user=None):
         """See `IBug`."""
         if message not in self.messages:
+            if user is None:
+                user = message.owner
+
             result = BugMessage(bug=self, message=message,
                 bugwatch=bugwatch)
             getUtility(IBugWatchSet).fromText(
-                message.text_contents, self, message.owner)
-            self.findCvesInText(message.text_contents, message.owner)
+                message.text_contents, self, user)
+            self.findCvesInText(message.text_contents, user)
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -573,11 +611,9 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        attachment = getUtility(IBugAttachmentSet).create(
+        return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
-            title=title, message=message)
-        notify(SQLObjectCreatedEvent(attachment))
-        return attachment
+            title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):
         """See `IBug`."""
@@ -881,6 +917,14 @@ class Bug(SQLBase):
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See `IBug`."""
+        # If the bug tracker is of BugTrackerType.EMAILADDRESS we can
+        # never tell if a bug is already being watched upstream, since
+        # the remotebug field for such bug watches contains either '' or
+        # an RFC822 message ID. In these cases, then, we always return
+        # None for the sake of sanity.
+        if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return None
+
         # XXX: BjornT 2006-10-11:
         # This matching is a bit fragile, since bugwatch.remotebug
         # is a user editable text string. We should improve the
@@ -939,7 +983,7 @@ class Bug(SQLBase):
                 # getIndirectSubscribers() behaves differently when
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
-                    self.subscribe(person)
+                    self.subscribe(person, who)
 
             self.private = private
 
@@ -1127,7 +1171,7 @@ class BugSet:
             **extra_params)
 
         if params.subscribe_reporter:
-            bug.subscribe(params.owner)
+            bug.subscribe(params.owner, params.owner)
         if params.tags:
             bug.tags = params.tags
 
@@ -1140,9 +1184,9 @@ class BugSet:
                 context = params.distribution
 
             if context.security_contact:
-                bug.subscribe(context.security_contact)
+                bug.subscribe(context.security_contact, params.owner)
             else:
-                bug.subscribe(context.owner)
+                bug.subscribe(context.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
@@ -1151,16 +1195,16 @@ class BugSet:
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
             if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact)
+                bug.subscribe(params.product.bugcontact, params.owner)
             else:
-                bug.subscribe(params.product.owner)
+                bug.subscribe(params.product.owner, params.owner)
         else:
             # nothing to do
             pass
 
         # Subscribe other users.
         for subscriber in params.subscribers:
-            bug.subscribe(subscriber)
+            bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg)

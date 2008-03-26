@@ -1,5 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,W0611
+# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
 
 """Interfaces pertaining to the launchpad application.
 
@@ -12,32 +13,28 @@ from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX kiko 2007-02-08:
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
-    IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
-    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData,
-    UnsafeFormGetSubmissionError,
-    )
+    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
+    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
+    UnsafeFormGetSubmissionError)
 
 __all__ = [
-    'AfterTraverseEvent',
-    'BeforeTraverseEvent',
-    'IAfterTraverseEvent',
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'IBeforeTraverseEvent',
     'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
+    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -50,7 +47,6 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
-    'IHWDBApplication',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -64,7 +60,6 @@ __all__ = [
     'IPasswordResets',
     'IPrivateApplication',
     'IReadZODBAnnotation',
-    'IRegistryApplication',
     'IRosettaApplication',
     'IShipItApplication',
     'IStructuralHeaderPresentation',
@@ -102,6 +97,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
+    savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
@@ -180,10 +176,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-
-class IRegistryApplication(ILaunchpadApplication):
-    """Registry application root."""
 
 
 class IShipItApplication(ILaunchpadApplication):
@@ -356,7 +348,7 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
 class IHasSecurityContact(Interface):
     """An object that has a security contact."""
 
-    security_contact = Choice(
+    security_contact = PublicPersonChoice(
         title=_("Security Contact"),
         description=_(
             "The person or team who handles security-related bug reports"),
@@ -532,12 +524,20 @@ class ILaunchpadUsage(Interface):
     official_answers = Bool(
         title=_('People can ask questions in Launchpad Answers'),
         required=True)
+    official_blueprints = Bool(
+        title=_('This project uses blueprints'), required=True)
+    official_codehosting = Bool(
+        title=_('Code for this project is published in Bazaar branches on'
+                ' Launchpad'),
+        required=True)
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
         required=True)
     official_rosetta = Bool(
         title=_('Translations for this project are done in Launchpad'),
         required=True)
+    official_anything = Bool (
+        title=_('Uses Launchpad for something'),)
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)

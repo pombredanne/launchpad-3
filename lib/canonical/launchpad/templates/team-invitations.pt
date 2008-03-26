@@ -12,12 +12,8 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -41,8 +37,8 @@
         <tr tal:repeat="membership context/open_membership_invitations">
           <tal:block tal:define="team membership/team">
           <td>
-            <a tal:attributes="href membership/reviewer/fmt:url"
-               tal:content="membership/reviewer/browsername">Reviewer</a>
+            <a tal:attributes="href membership/proposed_by/fmt:url"
+               tal:content="membership/proposed_by/browsername">Proponent</a>
           </td>
           <td>
             <a tal:attributes="href team/fmt:url"

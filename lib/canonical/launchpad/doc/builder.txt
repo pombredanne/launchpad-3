@@ -26,16 +26,16 @@ Test some attributes:
 Test 'status' property:
 
     >>> builder.failnotes = 'Could not open Socket'
-    >>> builder.status
-    u'NOT OK : Could not open Socket (AUTO)'
+    >>> print builder.status
+    NOT OK : Could not open Socket (AUTO)
 
     >>> builder.builderok = True
-    >>> builder.status
-    u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)'
+    >>> print builder.status
+    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)
 
     >>> builder.manual = True
-    >>> builder.status
-    u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)'
+    >>> print builder.status
+    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)
 
 Confirm we can get the slave xmlrpc interface
 
@@ -140,13 +140,13 @@ in production, as 'vm_host' variable replacement.
     'echo %(vm_host)s'
 
 Before performing the command, it checks if the builder is indeed
-virtual (untrusted) and raises CannotResumeHost if it isn't.
+virtual and raises CannotResumeHost if it isn't.
 
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob.resumeSlaveHost()
     Traceback (most recent call last):
     ...
-    CannotResumeHost: Builder is trusted.
+    CannotResumeHost: Builder is not virtualized.
 
 For testing purposes resumeSlaveHost returns the stdout and stderr
 buffer resulted from the command.
@@ -170,7 +170,7 @@ CannotResumeHost exception with the results stdout and stderr.
     ERR:
     <BLANKLINE>
 
-Restore default values for resume command and builder.trusted.
+Restore default value for resume command.
 
     >>> config.builddmaster.vm_resume_command = default_resume_command
 

@@ -74,10 +74,17 @@ architectures supported for PPA.
     >>> print extract_text(
     ...    find_portlet(sample_browser.contents, 'PPA supported series'))
     PPA supported series
-    5.04 "Hoary" - development
-    hoary i386 (official, ppa)
-    4.10 "Warty" - current
-    warty i386 (official, ppa)
+    5.04
+    "Hoary"
+    - development
+    i386
+    (official)
+    4.10
+    "Warty"
+    - current
+    i386
+    (official)
+
 
 The 'accepted' checkbox is unchecked by default:
 
@@ -190,8 +197,34 @@ Any team administrator can 'edit' description & whiteboard contents,
 exactly the same as for a user-PPA, see above:
 
     >>> sample_browser.getLink("Change details").click()
-    >>> sample_browser.url
-    'http://launchpad.dev/~landscape-developers/+archive/+edit'
+    >>> print sample_browser.title
+    Edit PPA for Landscape Developers
+
+    >>> sample_browser.getControl(name="field.description").value = (
+    ...    'Yay, I can change it.')
+    >>> sample_browser.getControl("Save").click()
+
+    >>> print sample_browser.title
+    PPA for Landscape Developers
+
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Yay, I can change it.
+
+Cancelling the 'Edit' form will redirect the user to the PPA overview
+page and discard the changes.
+
+    >>> sample_browser.getLink("Change details").click()
+    >>> sample_browser.getControl(name="field.description").value = (
+    ...    'Discarded ...')
+    >>> sample_browser.getControl("Cancel").click()
+
+    >>> print sample_browser.title
+    PPA for Landscape Developers
+
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'description'))
+    Yay, I can change it.
 
 
 == Activating someone else's Personal Package Archives  ==
@@ -226,19 +259,67 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, only LP-admin can 'administer' Personal Package Archives.
+But more importantly, only LP administrators can 'administer' Personal
+Package Archives.
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> print sample_browser.getLink("Administer archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
     >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive/+admin'
 
-The administration procedure allow us to:
+Trying to shortcut the URL as a non-privileged user does not work:
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+The administration procedure allows us to:
 
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
+ * Make the PPA private or public.
+ * For private PPAs, set the buildd secret.
+ * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
+When the archive is private, the buildd secret must also be set, or an
+error is issued:
+
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = ""
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents, 'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Required for private archives.
+
+Conversely, setting the buildd secret for non-private archives also
+generates an error:
+
+    >>> admin_browser.getControl(name="field.private").value = False
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents, 'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Do not specify for non-private archives
+
+
     >>> admin_browser.getControl(name="field.enabled").value = False
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl(
+    ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'Here lives a lazy community.')
@@ -252,6 +333,22 @@ The administration procedure allow us to:
     PPA whiteboard:
     Here lives a lazy community.
 
+There is a maximum size allowed for authorized_size is set in
+`IArchive`, it is currently 20 * 1024 and the unit used in code is
+MiB. Submitting the form with an authorized_size that is too large
+will result in an error:
+
+    >>> limit = 20 * 1024
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.getControl(
+    ...     name="field.authorized_size").value = str(limit + 1)
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents,'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Value is too big
+
 The whiteboard section can be viewed by the PPA owner:
 
     >>> carlos_browser = setupBrowser(auth="Basic carlos@canonical.com:test")
@@ -261,10 +358,29 @@ The whiteboard section can be viewed by the PPA owner:
     PPA whiteboard:
     Here lives a lazy community.
 
+Cancelled changes in the administration form redirects the user to the
+PPA overview page and discards the changes.
+
+    >>> admin_browser.getControl("Cancel").click()
+    >>> admin_browser.title
+    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.whiteboard").value = (
+    ...    'It should be discarded.')
+    >>> admin_browser.getControl("Cancel").click()
+
+    >>> admin_browser.title
+    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
+    PPA whiteboard:
+    Here lives a lazy community.
+
 
 == Double submission ==
 
-If two browser windows are open at the same time on the activation page 
+If two browser windows are open at the same time on the activation page
 then when the second activation is clicked after already
 activating on the first, then it will just go to the archive page.
 

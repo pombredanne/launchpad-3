@@ -61,11 +61,11 @@ And lets define a nice printout function for PO files.
     ...         imported_fuzzy = fuzzy = ''
     ...         imported_translation = translation = None
     ...         if imported is not None:
-    ...		    imported_translation = imported.msgstr0.translation
+    ...             imported_translation = imported.msgstr0.translation
     ...             if imported.was_fuzzy_in_last_import:
     ...                 imported_fuzzy = 'yes'
     ...         if current is not None:
-    ...		    translation = current.msgstr0.translation
+    ...             translation = current.msgstr0.translation
     ...             if current.is_fuzzy:
     ...                 fuzzy = 'yes'
     ...         print "% 2d. %-18s %-18s %-4s %-18s %-4s *" % (
@@ -476,3 +476,91 @@ was already 'changed':
       imported: 5
         changed: 2
       new: 1
+
+If a translation actually uses a different plural expression from the
+one we default to in Launchpad, non-plural messages are not reordered
+(this is mostly a regression test).  The specific problematic case
+occured when formula required reordering messages (i.e. a first form
+was moved to another place), thus ending up with None for non-plural
+messages.  The PO file contents below are no different from the above
+one except for the plural expression definition.
+
+    >>> test_translation_update3 = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: %s\n"
+    ... "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=3; plural=n%%10==1 && n%%100!=11 ? 1 : "
+    ... "n%%10>=2 && n%%10<=4 && (n%%100<10 || n%%100>=20) ? 2 : 0\n"
+    ... "X-Launchpad-Export-Date: %s\n"
+    ...
+    ... # stays as imported
+    ... msgid "first"
+    ... msgstr "a"
+    ...
+    ... msgid "second"
+    ... msgstr "b-from-LP-three"
+    ...
+    ... # same as already imported one, removes the fuzzy flag
+    ... msgid "third"
+    ... msgstr "c"
+    ...
+    ... # revert to imported translation
+    ... msgid "fourth"
+    ... msgstr "d"
+    ...
+    ... # updates current translation
+    ... msgid "fifth"
+    ... msgstr "e-from-LP-two"
+    ...
+    ... # sixth message is not being updated at all
+    ... msgid "sixth"
+    ... msgstr "f"
+    ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
+
+    >>> entry = import_pofile_or_potemplate(test_translation_update3,
+    ...                                     carlos, firefox_trunk,
+    ...                                     pofile=firefox_serbian,
+    ...                                     is_imported=False)
+    >>> print entry.status.name
+    IMPORTED
+
+Neither contents nor statistics have changed, so we've got the same output.
+
+    >>> print_pofile(firefox_serbian)
+    no. msgid              translation        fuz  imported           ifuz
+     1. first              a                       a                       *
+     2. second             b-from-LP-three         b-updated               *
+     3. third              c                       c                  yes  *
+     4. fourth             d                       d                       *
+     5. fifth              e-from-LP-two           e                       *
+     6. sixth              f                       f                       *
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 6
+      imported: 5
+        changed: 2
+      new: 1
+
+Sometimes, people will send back their translations to upstream, which will
+be back with next automatic sync from upstream:
+
+    >>> entry = import_pofile_or_potemplate(test_translation_update3,
+    ...                                     carlos, firefox_trunk,
+    ...                                     pofile=firefox_serbian,
+    ...                                     is_imported=True)
+    >>> print entry.status.name
+    IMPORTED
+
+Imported strings match the ones translated in Launchpad.
+
+    >>> print_pofile(firefox_serbian)
+    no. msgid              translation        fuz  imported           ifuz
+     1. first              a                       a                       *
+     2. second             b-from-LP-three         b-from-LP-three         *
+     3. third              c                       c                       *
+     4. fourth             d                       d                       *
+     5. fifth              e-from-LP-two           e-from-LP-two           *
+     6. sixth              f                       f                       *

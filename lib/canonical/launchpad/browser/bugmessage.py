@@ -9,9 +9,6 @@ __all__ = [
 
 from StringIO import StringIO
 
-from zope.formlib import form
-from zope.schema import ValidationError
-
 from canonical.launchpad.interfaces import IBugMessageAddForm
 from canonical.launchpad.webapp import action, canonical_url
 from canonical.launchpad.webapp import LaunchpadFormView
@@ -53,7 +50,7 @@ class BugMessageAddFormView(LaunchpadFormView):
 
         # Subscribe to this bug if the checkbox exists and was selected
         if data.get('email_me'):
-            bug.subscribe(self.user)
+            bug.subscribe(self.user, self.user)
 
         # XXX: Bjorn Tillenius 2005-06-16:
         # Write proper FileUpload field and widget instead of this hack.
@@ -93,7 +90,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 comment=message, is_patch=data['patch'])
 
             self.request.response.addNotification(
-                "Attachment %(filename)s added to bug.", filename=filename)
+                "Attachment %s added to bug." % filename)
 
         self.next_url = canonical_url(self.context)
 

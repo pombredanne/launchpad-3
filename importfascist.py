@@ -27,6 +27,7 @@ permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.deathrow
     canonical.authserver.database
     canonical.launchpad.vocabularies.dbobjects
+    canonical.launchpad.validators.person
     canonical.librarian.client
     importd.Job
     """)
@@ -70,7 +71,9 @@ def is_test_module(module_path):
     Otherwise returns False.
     """
     name_splitted = module_path.split('.')
-    return 'tests' in name_splitted or 'ftests' in name_splitted
+    return ('tests' in name_splitted or
+            'ftests' in name_splitted or
+            'testing' in name_splitted)
 
 
 class attrsgetter:

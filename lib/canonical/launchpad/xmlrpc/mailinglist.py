@@ -8,13 +8,14 @@ __all__ = [
     ]
 
 
-from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, MailingListStatus)
+    IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
+    MailingListStatus, PersonalStanding, PostedMessageStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -23,9 +24,11 @@ from canonical.launchpad.xmlrpc import faults
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
 try:
-    from Mailman.MemberAdaptor import ENABLED
+    # pylint: disable-msg=F0401
+    from Mailman.MemberAdaptor import ENABLED, BYUSER
 except ImportError:
     ENABLED = 0
+    BYUSER = 2
 
 
 class MailingListAPIView(LaunchpadXMLRPCView):
@@ -95,7 +98,8 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                                            MailingListStatus.UPDATING):
                     mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
                 elif mailing_list.status == MailingListStatus.DEACTIVATING:
-                    mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+                    mailing_list.transitionToStatus(
+                        MailingListStatus.INACTIVE)
                 else:
                     return faults.UnexpectedStatusReport(
                         team_name, action_status)
@@ -113,27 +117,94 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             mailing_list = listset.get(team_name)
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
-            members = []
-            for address in mailing_list.getAddresses():
-                email_address = emailset.getByEmail(address)
+            # Map {address -> (real_name, flags, status)}
+            members = {}
+            # Hard code flags to 0 currently, meaning the member will get
+            # regular (not digest) delivery, will not get post
+            # acknowledgements, will receive their own posts, and will not
+            # be moderated.  A future phase may change some of these
+            # values.
+            flags = 0
+            # Start by getting all addresses for all users who are subscribed.
+            # These are the addresses that are allowed to post to the mailing
+            # list, but may not get deliveries of posted messages.
+            for email_address in mailing_list.getSenderAddresses():
                 real_name = email_address.person.displayname
-                # Hard code flags to 0 currently, meaning the member will get
-                # regular (not digest) delivery, will not get post
-                # acknowledgements, will receive their own posts, and will not
-                # be moderated.  A future phase may change some of these
-                # values.
-                flags = 0
-                # Hard code the status to ENABLED so that the member will
-                # receive list messages.  A future phase may change this when
-                # bounce processing is added.
-                status = ENABLED
-                members.append((address, real_name, flags, status))
-            response[team_name] = sorted(members, key=itemgetter(0))
+                # We'll mark the status of these addresses as disabled BYUSER,
+                # which seems like the closest mapping to the semantics we
+                # intend.  It doesn't /really/ matter as long as it's disabled
+                # because the reason is only evident in the Mailman web u/i,
+                # which we're not using.
+                members[email_address.email] = (real_name, flags, BYUSER)
+            # Now go through just the subscribed addresses, the main
+            # difference now being that these addresses are enabled for
+            # delivery.  If there are overlaps, the enabled flag wins.
+            for email_address in mailing_list.getSubscribedAddresses():
+                real_name = email_address.person.displayname
+                members[email_address.email] = (real_name, flags, ENABLED)
+            # Finally, add the archive recipient if there is one.  This
+            # address should never be registered in Launchpad, meaning
+            # specifically that the isRegisteredInLaunchpad() test below
+            # should always fail for it.  That way, the address can never be
+            # used to forge spam onto a list.
+            if config.mailman.archive_address:
+                members[config.mailman.archive_address] = ('', flags, ENABLED)
+            # The response must be a list of tuples.
+            response[team_name] = [
+                (address, members[address][0],
+                 members[address][1], members[address][2])
+                for address in sorted(members)]
         return response
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""
+        if (config.mailman.archive_address and
+            address == config.mailman.archive_address):
+            # Hard code that the archive address is never registered in
+            # Launchpad, so forged messages from that sender will always be
+            # discarded.
+            return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
+
+    def inGoodStanding(self, address):
+        """See `IMailingListAPIView`."""
+        person = getUtility(IPersonSet).getByEmail(address)
+        if person is None or person.isTeam():
+            return False
+        return person.personal_standing in (PersonalStanding.GOOD,
+                                            PersonalStanding.EXCELLENT)
+
+    def holdMessage(self, team_name, text):
+        """See `IMailingListAPIView`."""
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        message = getUtility(IMessageSet).fromEmail(text)
+        mailing_list.holdMessage(message)
+        return True
+
+    def getMessageDispositions(self):
+        """See `IMailingListAPIView`."""
+        message_set = getUtility(IMessageApprovalSet)
+        # A mapping from message ids to statuses.
+        response = {}
+        # Start by iterating over all held messages that are pending approval.
+        # These are messages that the team owner has approved, but Mailman
+        # hasn't yet acted upon.  For each of these, set their state to final
+        # approval.
+        approved_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.APPROVAL_PENDING)
+        for held_message in approved_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'accept')
+        # Similarly handle all held messages that have been rejected by the
+        # team administrator but not yet handled by Mailman.
+        rejected_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.REJECTION_PENDING)
+        for held_message in rejected_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'decline')
+        return response

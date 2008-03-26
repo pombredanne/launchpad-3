@@ -14,19 +14,23 @@ import sys
 import subprocess
 
 from canonical.config import config
+from canonical.launchpad.mailman.config import configure_prefix
 from canonical.launchpad.mailman.monkeypatches import monkey_patch
 
 
-def stop_mailman():
+def stop_mailman(quiet=False):
     """Stop the Mailman master qrunner, which kills all its subprocesses."""
-    mailman_path = config.mailman.build.prefix
+    mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin  = os.path.join(mailman_path, 'bin')
-    code = subprocess.call(('./mailmanctl', 'stop'), cwd=mailman_bin)
+    args = ['./mailmanctl', 'stop']
+    if quiet:
+        args.insert(1, '--quiet')
+    code = subprocess.call(args, cwd=mailman_bin)
     if code:
         print >> sys.stderr, 'mailmanctl did not stop cleanly:', code
 
 
-def start_mailman():
+def start_mailman(quiet=False):
     """Start the Mailman master qrunner.
 
     The client of start_mailman() is responsible for ensuring that
@@ -36,12 +40,15 @@ def start_mailman():
     """
     # We need the Mailman bin directory so we can run some of Mailman's
     # command line scripts.
-    mailman_path = config.mailman.build.prefix
+    mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin  = os.path.join(mailman_path, 'bin')
     # Monkey-patch the installed Mailman 2.1 tree.
     monkey_patch(mailman_path, config)
     # Start the Mailman master qrunner.
-    code = subprocess.call(('./mailmanctl', 'start'), cwd=mailman_bin)
+    args = ['./mailmanctl', 'start']
+    if quiet:
+        args.insert(1, '--quiet')
+    code = subprocess.call(args, cwd=mailman_bin)
     if code:
         print >> sys.stderr, 'mailmanctl did not start cleanly'
         sys.exit(code)

@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd. All rights reserved.
+# Copyright 2007-2008 Canonical Ltd. All rights reserved.
 
 """Functions for fixing mismatched plural form translations."""
 
@@ -10,9 +10,10 @@ __all__ = [
 
 from sqlobject import SQLObjectNotFound
 
+from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.translationmessage import TranslationMessage
-from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.launchpad.interfaces import TranslationConstants
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POHeader, plural_form_mapper)
 
@@ -52,12 +53,14 @@ def fix_pofile_plurals(pofile, logger, ztm):
         for message in pluralmessages:
             logger.debug("\tFixing translations for '%s'" % (
                 message.potmsgset.singular_text))
-            old_translations = [message.msgstr0, message.msgstr1,
-                                message.msgstr2, message.msgstr3]
-            message.msgstr0 = old_translations[plural_forms_mapping[0]]
-            message.msgstr1 = old_translations[plural_forms_mapping[1]]
-            message.msgstr2 = old_translations[plural_forms_mapping[2]]
-            message.msgstr3 = old_translations[plural_forms_mapping[3]]
+
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+                new_form = plural_forms_mapping[form]
+                assert new_form < TranslationConstants.MAX_PLURAL_FORMS, (
+                    "Translation with plural form %d in plurals mapping." %
+                    new_form)
+                translation = getattr(message, 'msgstr%d' % new_form)
+                setattr(message, 'msgstr%d' % form, translation)
 
         # We also need to update the header so we don't try to re-do the
         # migration in the future.

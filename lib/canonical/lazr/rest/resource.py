@@ -4,20 +4,90 @@
 
 __metaclass__ = type
 __all__ = [
+    'Collection',
+    'CollectionResource',
+    'Entry',
+    'EntryResource',
     'HTTPResource',
-    'ReadOnlyResource'
+    'JSONItem',
+    'ReadOnlyResource',
+    'ScopedCollection',
+    'ServiceRootResource'
     ]
 
+from datetime import datetime
+import pytz
+import simplejson
+
+from zope.app.datetimeutils import (
+    DateError, DateTimeError, DateTimeParser, SyntaxError)
+from zope.component import adapts
 from zope.interface import implements
-from canonical.lazr.interfaces import IHTTPResource
+from zope.proxy import isProxy
+from zope.schema import getFields, ValidationError
+from zope.schema.interfaces import IDatetime, IObject
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.lazr.enum import BaseItem
+
+# XXX leonardr 2008-01-25 bug=185958:
+# canonical_url code should be moved into lazr.
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lazr.interfaces import (
+    ICollection, ICollectionField, ICollectionResource, IEntry,
+    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
+    IServiceRootResource)
+
+
+class ResourceJSONEncoder(simplejson.JSONEncoder):
+    """A JSON encoder for JSON-exposable resources like entry resources.
+
+    This class works with simplejson to encode objects as JSON if they
+    implement IJSONPublishable. All EntryResource subclasses, for
+    instance, should implement IJSONPublishable.
+    """
+
+    def default(self, obj):
+        """Convert the given object to a simple data structure."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isProxy(obj):
+            # We have a security-proxied version of a built-in
+            # type. We create a new version of the type by copying the
+            # proxied version's content. That way the container is not
+            # security proxied (and simplejson will now what do do
+            # with it), but the content will still be security
+            # wrapped.
+            underlying_object = removeSecurityProxy(obj)
+            if isinstance(underlying_object, list):
+                return list(obj)
+            if isinstance(underlying_object, tuple):
+                return tuple(obj)
+            if isinstance(underlying_object, dict):
+                return dict(obj)
+        return IJSONPublishable(obj).toDataForJSON()
+
+
+class JSONItem:
+    """JSONPublishable adapter for lazr.enum."""
+    adapts(BaseItem)
+    implements(IJSONPublishable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def toDataForJSON(self):
+        """See `ISJONPublishable`"""
+        return str(self.context.title)
 
 
 class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
-    def __init__(self, request):
-        """Store the request for later processing."""
+    def __init__(self, context, request):
+        self.context = context
         self.request = request
 
     def __call__(self):
@@ -35,3 +105,335 @@ class ReadOnlyResource(HTTPResource):
         else:
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", "GET")
+
+
+class ReadWriteResource(HTTPResource):
+    """A resource that responds to GET, PUT, and PATCH."""
+    def __call__(self):
+        """Handle a GET, PUT, or PATCH request."""
+        if self.request.method == "GET":
+            return self.do_GET()
+        elif self.request.method in ["PUT", "PATCH"]:
+            type = self.request.headers['Content-Type']
+            representation = self.request.bodyStream.getCacheStream().read()
+            if self.request.method == "PUT":
+                return self.do_PUT(type, representation)
+            else:
+                return self.do_PATCH(type, representation)
+        else:
+            self.request.response.setStatus(405)
+            self.request.response.setHeader("Allow", "GET PUT PATCH")
+
+
+class EntryResource(ReadWriteResource):
+    """An individual object, published to the web."""
+    implements(IEntryResource, IJSONPublishable)
+
+    def __init__(self, context, request):
+        """Associate this resource with a specific object and request."""
+        super(EntryResource, self).__init__(context, request)
+        self.entry = IEntry(context)
+
+    def toDataForJSON(self):
+        """Turn the object into a simple data structure.
+
+        In this case, a dictionary containing all fields defined by
+        the resource interface.
+        """
+        data = {}
+        data['self_link'] = canonical_url(self.context)
+        for name, field in getFields(self.entry.schema).items():
+            value = getattr(self.entry, name)
+            if ICollectionField.providedBy(field):
+                # The field is a collection; include a link to the
+                # collection resource.
+                if value is not None:
+                    key = name + '_collection_link'
+                    data[key] = "%s/%s" % (data['self_link'], name)
+            elif IObject.providedBy(field):
+                # The field is an entry; include a link to the
+                # entry resource.
+                if value is not None:
+                    key = name + '_link'
+                    data[key] = canonical_url(value)
+            else:
+                # It's a data field; display it as part of the
+                # representation.
+                data[name] = value
+        return data
+
+    def processAsJSONHash(self, media_type, representation):
+        """Process an incoming representation as a JSON hash.
+
+        :param media_type: The specified media type of the incoming
+        representation.
+
+        :representation: The incoming representation:
+
+        :return: A tuple (dictionary, error). 'dictionary' is a Python
+        dictionary corresponding to the incoming JSON hash. 'error' is
+        an error message if the incoming representation could not be
+        processed. If there is an error, this method will set an
+        appropriate HTTP response code.
+        """
+
+        if media_type != 'application/json':
+            self.request.response.setStatus(415)
+            return None, 'Expected a media type of application/json.'
+        try:
+            h = simplejson.loads(representation)
+        except ValueError:
+            self.request.response.setStatus(400)
+            return None, "Entity-body was not a well-formed JSON document."
+        if not isinstance(h, dict):
+            self.request.response.setStatus(400)
+            return None, 'Expected a JSON hash.'
+        return h, None
+
+    def do_GET(self):
+        """Render the entry as JSON."""
+        self.request.response.setHeader('Content-type', 'application/json')
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+
+    def do_PUT(self, media_type, representation):
+        """Modify the entry's state to match the given representation.
+
+        A PUT is just like a PATCH, except the given representation
+        must be a complete representation of the entry.
+        """
+        changeset, error = self.processAsJSONHash(media_type, representation)
+        if error is not None:
+            return error
+
+        # Make sure the representation includes values for all
+        # writable attributes.
+        schema = self.entry.schema
+        for name, field in getFields(schema).items():
+            if (name.startswith('_') or ICollectionField.providedBy(field)
+                or field.readonly):
+                # This attribute is not part of the web service
+                # interface, is a collection link (which means it's
+                # read-only), or is marked read-only. It's okay for
+                # the client to omit a value for this attribute.
+                continue
+            if IObject.providedBy(field):
+                repr_name = name + '_link'
+            else:
+                repr_name = name
+            if (changeset.get(repr_name) is None
+                and getattr(self.entry, name) is not None):
+                # This entry has a value for the attribute, but the
+                # entity-body of the PUT request didn't make any assertion
+                # about the attribute. The resource's behavior under HTTP
+                # is undefined; we choose to send an error.
+                self.request.response.setStatus(400)
+                return ("You didn't specify a value for the attribute '%s'."
+                        % repr_name)
+        return self._applyChanges(changeset)
+
+    def do_PATCH(self, media_type, representation):
+        """Apply a JSON patch to the entry."""
+        changeset, error = self.processAsJSONHash(media_type, representation)
+        if error is not None:
+            return error
+        return self._applyChanges(changeset)
+
+    def _applyChanges(self, changeset):
+        """Apply a dictionary of key-value pairs as changes to an entry.
+
+        :param changeset: A dictionary. Should come from an incoming
+        representation.
+        """
+        validated_changeset = {}
+        for repr_name, value in changeset.items():
+            if repr_name == 'self_link':
+                # The self link isn't part of the schema, so it's
+                # handled separately.
+                if value == canonical_url(self.context):
+                    continue
+                else:
+                    self.request.response.setStatus(400)
+                    return ("You tried to modify the read-only attribute "
+                            "'self_link'.")
+
+            change_this_field = True
+
+            # We chop off the end of the string rather than use .replace()
+            # because there's a chance the name of the field might already
+            # have "_link" or (very unlikely) "_collection_link" in it.
+            if repr_name.endswith('_collection_link'):
+                name = repr_name[:-16]
+            elif repr_name.endswith('_link'):
+                name = repr_name[:-5]
+            else:
+                name = repr_name
+            element = self.entry.schema.get(name)
+
+            if (name.startswith('_') or element is None
+                or ((ICollection.providedBy(element)
+                     or IObject.providedBy(element)) and repr_name == name)):
+                # That last clause needs some explaining. It's the
+                # situation where we have a collection represented as
+                # 'foo_collection_link' or an object represented as
+                # 'bar_link', and the user sent in a PATCH request
+                # that tried to change 'foo' or 'bar'. This code tells
+                # the user: you can't change 'foo' or 'bar' directly;
+                # you have to use 'foo_collection_link' or 'bar_link'.
+                # (Of course, you also can't change
+                # 'foo_collection_link', but that's taken care of
+                # below.)
+                self.request.response.setStatus(400)
+                return ("You tried to modify the nonexistent attribute '%s'"
+                        % repr_name)
+
+            # Around this point the specific value provided by the client
+            # becomes relevant, so we pre-process it.
+            if IObject.providedBy(element):
+                # XXX leonardr 2008-03-10 blueprint=modify-data-links:
+                # 'value' is the URL to an object. Traverse the URL to find
+                # the actual object.
+                pass
+            elif IDatetime.providedBy(element):
+                try:
+                    value = DateTimeParser().parse(value)
+                    (year, month, day, hours, minutes, secondsAndMicroseconds,
+                     timezone) = value
+                    seconds = int(secondsAndMicroseconds)
+                    microseconds = int(
+                        round((secondsAndMicroseconds - seconds) * 1000000))
+                    if timezone not in ['Z', '+0000', '-0000']:
+                        self.request.response.setStatus(400)
+                        return ("You set the attribute '%s' to a time "
+                                "that's not UTC."
+                                % repr_name)
+                    value = datetime(year, month, day, hours, minutes,
+                                     seconds, microseconds, pytz.utc)
+                except (DateError, DateTimeError, SyntaxError):
+                    self.request.response.setStatus(400)
+                    return ("You set the attribute '%s' to a value "
+                            "that doesn't look like a date." % repr_name)
+
+            # The current value of the attribute also becomes
+            # relevant, so we obtain that. If the attribute designates
+            # an entry or collection, the 'current value' is
+            # considered to be the URL to that entry or collection.
+            if ICollectionField.providedBy(element):
+                current_value = "%s/%s" % (
+                    canonical_url(self.context), name)
+            elif IObject.providedBy(element):
+                current_value = canonical_url(getattr(self.entry, name))
+            else:
+                current_value = getattr(self.entry, name)
+
+            # Read-only attributes and collection links can't be
+            # modified. It's okay to specify a value for an attribute
+            # that can't be modified, but the new value must be the
+            # same as the current value.  This makes it possible to
+            # GET a document, modify one field, and send it back.
+            if ICollectionField.providedBy(element):
+                change_this_field = False
+                if value != current_value:
+                    self.request.response.setStatus(400)
+                    return ("You tried to modify the collection link '%s'"
+                            % repr_name)
+
+            if element.readonly:
+                change_this_field = False
+                if value != current_value:
+                    self.request.response.setStatus(400)
+                    return ("You tried to modify the read-only attribute '%s'"
+                            % repr_name)
+
+            if change_this_field is True and value != current_value:
+                try:
+                    # Do any field-specific validation.
+                    field = element.bind(self.entry)
+                    field.validate(value)
+                except ValidationError, e:
+                    self.request.response.setStatus(400)
+                    return str(e)
+                validated_changeset[name] = value
+
+        # Store the entry's current URL so we can see if it changes.
+        original_url = canonical_url(self.context)
+        # Make the changes.
+        for name, value in validated_changeset.items():
+            setattr(self.entry, name, value)
+
+        # If the modification caused the entry's URL to change, tell
+        # the client about the new URL.
+        new_url = canonical_url(self.context)
+        if new_url != original_url:
+            self.request.response.setStatus(301)
+            self.request.response.setHeader('Location', new_url)
+        return ''
+
+class CollectionResource(ReadOnlyResource):
+    """A resource that serves a list of entry resources."""
+    implements(ICollectionResource)
+
+    def do_GET(self):
+        """Fetch a collection and render it as JSON."""
+        entries = ICollection(self.context).find()
+        if entries is None:
+            entries = []
+        entry_resources = [EntryResource(entry, self.request)
+                           for entry in entries]
+        self.request.response.setHeader('Content-type', 'application/json')
+        return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
+
+
+class ServiceRootResource:
+    """A resource that responds to GET by describing the service."""
+    implements(IServiceRootResource, ICanonicalUrlData)
+
+    inside = None
+    path = ''
+    rootsite = None
+
+    def __call__(self, REQUEST=None):
+        """Handle a GET request."""
+        if REQUEST.method == "GET":
+            return "This is a web service."
+        else:
+            REQUEST.response.setStatus(405)
+            REQUEST.response.setHeader("Allow", "GET")
+
+
+class Entry:
+    """An individual entry."""
+    implements(IEntry)
+
+    def __init__(self, context):
+        """Associate the entry with some database model object."""
+        self.context = context
+
+
+class Collection:
+    """A collection of entries."""
+    implements(ICollection)
+
+    def __init__(self, context):
+        """Associate the entry with some database model object."""
+        self.context = context
+
+
+class ScopedCollection:
+    """A collection associated with some parent object."""
+    implements(IScopedCollection)
+
+    def __init__(self, context, collection):
+        """Initialize the scoped collection.
+
+        :param context: The object to which the collection is scoped.
+        :param collection: The scoped collection.
+        """
+        self.context = context
+        self.collection = collection
+        # Unknown at this time. Should be set by our call-site.
+        self.relationship = None
+
+    def find(self):
+        """See `ICollection`."""
+        return self.collection
+

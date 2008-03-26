@@ -30,6 +30,7 @@
             <td tal:repeat="value arch" tal:content="value" />
           </tr>
         </tbody>
+      </table>
     </div>
   </div>
 </metal:portlets>
@@ -38,7 +39,7 @@
 
       <table class="listing sortable" tal:attributes="id string:builders">
       <thead>
-        <tr>
+        <tr class="builder-row">
             <th>Builder</th>
             <th>Architecture</th>
             <th>Owner</th>
@@ -46,8 +47,8 @@
         </tr>
       </thead>
       <tbody>
-        <tal:builder repeat="builder context/getBuilders">
-          <tr>
+        <tal:builder repeat="builder view/builders">
+          <tr class="builder-row">
             <td>
               <a tal:attributes="href builder/fmt:url"
                  tal:content="builder/name"
@@ -58,7 +59,7 @@
             <td>
               <span tal:replace="builder/processor/name">i386</span>
               <tal:hardened
-                 condition="not: builder/trusted">&nbsp;Virtual</tal:hardened>
+                 condition="builder/virtualized">&nbsp;Virtual</tal:hardened>
             </td>
             <td>
               <a tal:replace="structure builder/owner/fmt:link" />

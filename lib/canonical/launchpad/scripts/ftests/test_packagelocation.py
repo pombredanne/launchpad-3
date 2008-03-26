@@ -3,14 +3,15 @@
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import ArchivePurpose
 from canonical.launchpad.scripts.ftpmasterbase import (
     PackageLocationError, build_package_location)
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestPackageLocation(LaunchpadZopelessTestCase):
+class TestPackageLocation(unittest.TestCase):
     """Test the `PackageLocation` class."""
+    layer = LaunchpadZopelessLayer
 
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
                            purpose=None, person_name=None):
@@ -20,7 +21,7 @@ class TestPackageLocation(LaunchpadZopelessTestCase):
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
-        location= self.getPackageLocation()
+        location = self.getPackageLocation()
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -29,8 +30,8 @@ class TestPackageLocation(LaunchpadZopelessTestCase):
 
     def testSetupLocationForPPA(self):
         """`PackageLocation` for PPA archives."""
-        location= self.getPackageLocation(purpose=ArchivePurpose.PPA,
-                                          person_name='cprov')
+        location = self.getPackageLocation(purpose=ArchivePurpose.PPA,
+                                           person_name='cprov')
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -39,7 +40,7 @@ class TestPackageLocation(LaunchpadZopelessTestCase):
 
     def testSetupLocationForPARTNER(self):
         """`PackageLocation` for PARTNER archives."""
-        location= self.getPackageLocation(purpose=ArchivePurpose.PARTNER)
+        location = self.getPackageLocation(purpose=ArchivePurpose.PARTNER)
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -132,7 +133,7 @@ class TestPackageLocation(LaunchpadZopelessTestCase):
             person_name='cprov')
         self.assertEqual(
             str(location_cprov_ppa),
-            'PPA for Celso Providelo: hoary-RELEASE')
+            'cprov: hoary-RELEASE')
 
         location_ubuntu_partner = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PARTNER)

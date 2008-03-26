@@ -1,3 +1,42 @@
+launchpad-buildd (43) dapper-cat; urgency=low
+
+  * unpack-chroot: Move the ntpdate calls below the bunzip/exec bit,
+    so we don't run ntpdate twice when unzipping tarballs, which 
+    happens on every single build on Xen hosts (like the PPA hosts).
+  * debian/control: We use adduser in postinst, depending on it helps.
+  * debian/control: Set myself as the Maintainer, since I'm in here.
+  * debian/control: Change our section from "misc" to "admin".
+  * sbuild{,-package}: Pass DEB_BUILD_OPTIONS="parallel=N" to dpkg.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Thu, 24 Jan 2008 15:39:20 -0700
+
+launchpad-buildd (42) dapper-cat; urgency=low
+
+  * sbuild: using "eq" to evaluate strings instead of "==" is ever
+    so slightly less retarded (fixed the launchpad bug #184565)
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Tue, 22 Jan 2008 16:21:54 -0700
+
+launchpad-buildd (41) dapper-cat; urgency=low
+
+  * sbuild: If we've already marked a package as "installed" with a
+    valid version, don't overwrite that version with PROVIDED.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Thu, 17 Jan 2008 10:39:26 -0700
+
+launchpad-buildd (40) dapper-cat; urgency=low
+
+  * sbuild: Don't allow versioned build-deps to be satisfied by provided
+    packages, but force them to go through the "upgrade/downgrade" tests.
+  * sbuild: Do --info and --contents on _all.deb packages as well, if
+    we're building arch:all packages.
+  * sbuild: Don't process ENV_OVERRIDE anymore, we only had an override
+    for one thing anyway (LC_ALL), and this code caused bug #87077.
+  * sbuild-package: Call sbuild with LC_ALL=C explicitely, to compensate.
+  * Makefile: clean up the makefile a bit to DTRT (as I expect it).
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Tue, 15 Jan 2008 16:51:08 -0700
+
 launchpad-buildd (39) unstable; urgency=low
 
   * If we're fed an archive_purpose argument from the builddmaster,

@@ -1,5 +1,4 @@
-Specifications
-==============
+= Specifications =
 
 A feature specification is a document that describes an idea for an
 enhancement to a product. Launchpad allows you to register your
@@ -28,6 +27,11 @@ To create a new Specification, use ISpecificationSet.new:
     ...     product=upstream_firefox)
     >>> print newspec.name
     mng
+
+To retrieve a specification by its ID, we use `ISpecificationSet.get`.
+
+    >>> specset.get(newspec.id) == newspec
+    True
 
 It should be possible to retrieve a specification by its name
     >>> upstream_firefox.getSpecification('mng').name
@@ -82,15 +86,24 @@ specs attached to mozilla-firefox).
     >>> check_permission('launchpad.Edit', newspec)
     False
 
+SpecificationSet implements the ISpecificationSet interface
 
-SpecificationDelta
-------------------
+    >>> ubuspec in specset.all_specifications
+    True
+    >>> specset.has_any_specifications
+    True
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ISpecificationSet, specset)
+    True
+
+
+== SpecificationDelta ==
 
 When we modify a specification, we can get a delta of the changes using
 ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
-    >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from zope.interface import providedBy
@@ -174,8 +187,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     True
 
 
-Specification Searching
-=======================
+== Specification Searching ==
 
 The "SpecificationSet" can be used to search across all specifications.
 
@@ -206,8 +218,7 @@ Reset firefox so we don't mess up later tests.
  >>> flush_database_updates()
 
 
-Specification Blockers and Dependencies
-=======================================
+== Specification Blockers and Dependencies ==
 
 We keep track of specification blocking and dependencies. For each spec, you
 can ask for its dependencies, or the specs which it blocks. And you can ask
@@ -234,8 +245,58 @@ set of specs-which-block-this-one-and-all-the-specs-that-block-them-too.
  e4x
 
 
-Specification Subscriptions
-===========================
+=== Dependency mapping - `ISpecificationSet.getDependencyDict` ===
+
+In order to implement the specification plan page efficiently,
+`ISpecificationSet` provides a utility method that returns a mapping
+from a sequence of specifications to their dependencies.
+
+    >>> spec_a = specset.new(
+    ...     'spec-a', 'Spec A',
+    ...     'http://www.example.com/SpecA', 'Specification A',
+    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     distribution=ubuntu)
+    >>> spec_b = specset.new(
+    ...     'spec-b', 'Spec B',
+    ...     'http://www.example.com/SpecB', 'Specification B',
+    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     distribution=ubuntu)
+    >>> spec_c = specset.new(
+    ...     'spec-c', 'Spec C',
+    ...     'http://www.example.com/SpecC', 'Specification C',
+    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     distribution=ubuntu)
+    >>> spec_d = specset.new(
+    ...     'spec-d', 'Spec D',
+    ...     'http://www.example.com/SpecD', 'Specification D',
+    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     distribution=ubuntu)
+
+When the specs provided have no dependencies, an empty dict is returned.
+
+    >>> specset.getDependencyDict([spec_a, spec_b, spec_c, spec_d])
+    {}
+
+If there are dependencies between the specs, the method returns a
+mapping between them.
+
+    >>> spec_a.createDependency(spec_b)
+    <SpecificationDependency at ...>
+    >>> spec_a.createDependency(spec_c)
+    <SpecificationDependency at ...>
+    >>> spec_c.createDependency(spec_d)
+    <SpecificationDependency at ...>
+    >>> deps_dict = specset.getDependencyDict(
+    ...     [spec_a, spec_b, spec_c, spec_d])
+    >>> for spec_id in sorted(deps_dict.keys()):
+    ...     print '%s --> %s' % (
+    ...         specset.get(spec_id).name,
+    ...         ', '.join(spec.name for spec in deps_dict[spec_id]))
+    spec-a --> spec-b, spec-c
+    spec-c --> spec-d
+
+
+== Specification Subscriptions ==
 
 You can subscribe to a specification, which means that you will be notified
 of changes to that spec (and changes to the wiki page for that spec will be
@@ -258,8 +319,7 @@ discussion of the spec.
 
 
 
-Specification Goals
-===================
+== Specification Goals ==
 
 We can propose a specification as a feature goal for a particular series
 or distroseries. That spec can then be approved or declined by the series
@@ -322,8 +382,7 @@ invalidated.
  False
 
 
-Specification Lifecycle
-=======================
+== Specification Lifecycle ==
 
 We keep track of the progress of the specification, from being "not
 started", to "started", to "complete", and we track who started it and who

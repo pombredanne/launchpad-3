@@ -325,8 +325,15 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeries in this DistroSeries, ordered by
-        architecturetag.
+        record for DistroArchSeries in this DistroSeries and in the same
+        Pocket, ordered by architecturetag.
+        """
+
+    def getSourceAndBinaryLibraryFiles():
+        """Return LibraryFileAlias records for all source and binaries.
+
+        All the published source and binary files associated with this
+        source publishing are returned as LibraryFileAlias records.
         """
 
     def changeOverride(new_component=None, new_section=None):

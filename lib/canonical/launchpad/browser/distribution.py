@@ -17,7 +17,6 @@ __all__ = [
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
-    'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionCountryArchiveMirrorsView',
     'DistributionSeriesMirrorsView',
@@ -200,7 +199,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'upload_admin', 'ppas']
+             'upload_admin', 'ppas', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -317,6 +316,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionBugsMenu(ApplicationMenu):
@@ -482,7 +485,8 @@ class DistributionPPASearchView(LaunchpadView):
         show_inactive = (self.show_inactive == 'on')
 
         ppas = self.context.searchPPAs(
-            text=self.name_filter, show_inactive=show_inactive)
+            text=self.name_filter, show_inactive=show_inactive,
+            user=self.user)
 
         self.batchnav = BatchNavigator(ppas, self.request)
         self.search_results = self.batchnav.currentBatch()
@@ -490,7 +494,7 @@ class DistributionPPASearchView(LaunchpadView):
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
-        results = self.context.source_package_caches
+        results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
 
@@ -523,7 +527,8 @@ class DistributionAddView(LaunchpadFormView):
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "domainname", "members",
-                   "official_malone", "official_rosetta", "official_answers"]
+                   "official_malone", "official_blueprints",
+                   "official_rosetta", "official_answers"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -547,8 +552,8 @@ class DistributionEditView(LaunchpadEditFormView):
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'official_malone',
-                   'enable_bug_expiration', 'official_rosetta',
-                   'official_answers']
+                   'enable_bug_expiration', 'official_blueprints',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
@@ -573,45 +578,6 @@ class DistributionEditView(LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
-
-
-class DistributionBugContactEditView(LaunchpadEditFormView):
-    """Browser view for editing the distribution bug contact."""
-    schema = IDistribution
-    field_names = ['bugcontact']
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Save the new bug contact and display a notification."""
-        self.updateContextFromData(data)
-
-        distribution = self.context
-        contact_display_value = None
-
-        if distribution.bugcontact:
-            if distribution.bugcontact.preferredemail:
-                contact_display_value = (
-                    distribution.bugcontact.preferredemail.email)
-            else:
-                contact_display_value = distribution.bugcontact.displayname
-
-        # The bug contact was set to a new person or team.
-        if contact_display_value:
-            self.request.response.addNotification(
-                "Successfully changed the distribution bug contact to %s" %
-                contact_display_value)
-        else:
-            # The bug contact was set to noone.
-            self.request.response.addNotification(
-                "Successfully cleared the distribution bug contact. This "
-                "means that there is no longer a distro-wide contact for "
-                "bugmail. You can, of course, set a distribution bug "
-                "contact again whenever you want to.")
-
-    @property
-    def next_url(self):
-        """Redirect to the distribution page."""
-        return canonical_url(self.context)
 
 
 class DistributionLanguagePackAdminView(LaunchpadEditFormView):

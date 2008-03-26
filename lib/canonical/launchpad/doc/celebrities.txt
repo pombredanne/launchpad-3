@@ -36,6 +36,16 @@ The vcs-imports celebrity owns the branches created by importd.
     True
 
 
+== bazaar-experts ==
+
+The bazaar-experts celebrity effectively has admin type privileges
+for branches, and branch related objects.
+
+    >>> bazaar_experts = personset.getByName('bazaar-experts')
+    >>> celebs.bazaar_experts == bazaar_experts
+    True
+
+
 == registry_experts ==
 
 The registry_experts celebrity has permissions to perform registry gardening
@@ -110,3 +120,22 @@ The Launchpad Administrators team is a member of that team.
 
     >>> celebs.admin.inTeam(mailing_list_experts)
     True
+
+
+== Savannah bug tracker ==
+
+There is a 'Savannah Bug Tracker' bugtracker which represents the
+bug tracker for all registered Savannah projects.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> savannah_tracker = getUtility(IBugTrackerSet).getByName(
+    ...     'savannah')
+    >>> celebs.savannah_tracker == savannah_tracker
+    True
+
+The Savannah bug tracker also has a BugTrackerAlias with the URL
+http://savannah.nognu.org/
+
+    >>> for alias in celebs.savannah_tracker.aliases:
+    ...     print alias
+    http://savannah.nognu.org/

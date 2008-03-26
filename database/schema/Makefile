@@ -33,9 +33,9 @@ CREATEDB=${PYTHON} ../../utilities/pgcreate.py
 # on production. It is generated using newbaseline.py in
 # sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
 # 
-REV=88
+REV=121
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=302fc5e82034698775098ae47b6846bc  launchpad-88-00-0.sql
+MD5SUM=8969605947a1aec8787b8489a006088f  launchpad-121-00-0.sql
 default: all
 
 test: create 
@@ -112,11 +112,12 @@ check: search_path
 
 search_path:
 	@psql -d template1 -q -A -t -c 'show search_path'
-	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ]; then \
+	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ] && [ `psql -d template1 -q -A -t -c 'show search_path'` != '"$$user",public,ts2' ]; then \
 		echo "* It appears your search path is unconfigured."; \
 		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
-		echo "* Add the following to /etc/postgresql/8.1/main/postgresql.conf:"; \
+		echo "* Add the following to /etc/postgresql/X.X/main/postgresql.conf"; \
+		echo " (where X.X is the version of the PostgreSQL DB you're connecting to):"; \
 		echo "    search_path='\$$user,public,ts2'"; \
 		echo "* Then reload PostgreSQL:";  \
 		echo "    sudo /etc/init.d/postgresql reload";  \

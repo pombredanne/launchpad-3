@@ -29,12 +29,22 @@
           </a>
         </li>
         <li>
-          <a href="https://help.launchpad.net/VcsImports">
-            <img
-              alt="Import your project"
-              src="/+icing/but-lrg-importyourproject.gif"
-            />
-          </a>
+          <tal:code-imports define="config modules/canonical.config/config">
+            <tal:production-site
+                condition="not: config/codeimport/expose_code_import">
+              <a href="https://help.launchpad.net/VcsImports">
+                <img alt="Import your project"
+                     src="/+icing/but-lrg-importyourproject.gif"/>
+              </a>
+            </tal:production-site>
+            <tal:non-production-site
+                condition="config/codeimport/expose_code_import">
+              <a href="/+code-imports/+new" id="new-code-import">
+                <img alt="Import your project"
+                     src="/+icing/but-lrg-importyourproject.gif"/>
+              </a>
+            </tal:non-production-site>
+          </tal:code-imports>
         </li>
       </ul>
                         <form class="central" action="/projects/" method="get">
@@ -50,11 +60,16 @@
                           />
                         </form>
                         <p id="application-summary">
-                          Launchpad lets you track branches of any
-                          <a href="/+project-cloud">project</a> that
-                          uses the <a href="http://bazaar-vcs.org/">Bazaar</a>
-                          version control system &mdash; and can convert many
-                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
+                          Launchpad can host your project&#8217;s source code
+                          using the <a href="http://bazaar-vcs.org/">Bazaar</a>
+                          version control system.
+                          We also import
+                          <tal:XXX condition="nothing">
+                            20080222 mpt: This link should be changed to
+                            the URL produced to fix bug 84913:
+                          </tal:XXX>
+                          <a href="/+recently-imported-branches">over 1000
+                          <abbr>CVS</abbr> and <abbr>SVN</abbr> projects</a>,
                           so you can use Bazaar with those too.
                           <a href="/+about">Learn more&#8230;</a>
                         </p>
@@ -146,11 +161,6 @@
 
     </div><!--main-->
     <div metal:fill-slot="help">
-      <p>
-        Launchpad is integrated with the
-        <a href="http://bazaar-vcs.org/">Bazaar</a> version control system.
-        (<a href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>)
-      </p>
       <p>
         To register a branch so other people can find it,
         go to the page of the project the branch belongs to,

@@ -49,6 +49,8 @@ class VPOExportSet:
         'translation1',
         'translation2',
         'translation3',
+        'translation4',
+        'translation5',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -97,12 +99,6 @@ class VPOExportSet:
 
         return self._select(where=where)
 
-    def get_potemplate_rows(self, potemplate):
-        """See IVPOExportSet."""
-        where = 'potemplate = %s' % sqlvalues(potemplate.id)
-
-        return self._select(where=where)
-
     def _get_distroseries_pofiles(self, series, date=None, component=None,
         languagepack=None):
         """Return a SQL query of PO files which would be contained in an
@@ -126,8 +122,12 @@ class VPOExportSet:
             join += '''
                   JOIN TranslationMessage ON
                     TranslationMessage.pofile = POFile.id AND
-                    TranslationMessage.date_reviewed > %s AND
-                    TranslationMessage.is_current IS TRUE''' % sqlvalues(date)
+                    TranslationMessage.is_current IS TRUE'''
+
+            where += '''
+                AND (TranslationMessage.date_reviewed > %s OR
+                     POTemplate.date_last_updated > %s)''' % sqlvalues(
+                    date, date)
 
         if component is not None:
             join += '''
@@ -165,53 +165,6 @@ class VPOExportSet:
         for (id,) in cur.fetchall():
             yield POFile.get(id)
 
-    def get_distroseries_potemplates(self, series, component=None,
-        languagepack=None):
-        """Return a SQL query of PO files which would be contained in an
-        export of a distribtuion series.
-
-        The filtering is done based on the 'series', last modified 'date',
-        archive 'component' and if it belongs to a 'languagepack'
-        """
-        join = '''
-            SELECT DISTINCT POTemplate.id
-            FROM POTemplate
-              JOIN DistroSeries ON
-                DistroSeries.id = POTemplate.distroseries'''
-
-        where = '''
-            WHERE
-              DistroSeries.id = %s
-              ''' % sqlvalues(series)
-
-        if component is not None:
-            join += '''
-            JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distroseries =
-                    DistroSeries.id
-            JOIN SourcePackageRelease ON
-                SourcePackagePublishingHistory.sourcepackagerelease =
-                    SourcePackageRelease.id
-            JOIN Component ON
-                SourcePackagePublishingHistory.component=Component.id
-            '''
-
-            where += ''' AND
-                SourcePackageRelease.sourcepackagename =
-                    POTemplate.sourcepackagename AND
-                Component.name = %s AND
-                SourcePackagePublishingHistory.dateremoved is NULL AND
-                SourcePackagePublishingHistory.archive = %s
-                ''' % sqlvalues(component, series.main_archive)
-
-        if languagepack:
-            where += ' AND POTemplate.languagepack'
-
-        cur = cursor()
-        cur.execute(join + where)
-        for (id,) in cur.fetchall():
-            yield POTemplate.get(id)
-
     def get_distroseries_pofiles_count(self, series, date=None,
                                         component=None, languagepack=None):
         """See IVPOExport."""
@@ -223,26 +176,6 @@ class VPOExportSet:
         cur.execute(final_query)
         value = cur.fetchone()
         return value[0]
-
-    def get_distroseries_rows(self, series, date=None):
-        """See IVPOExportSet."""
-
-        if date is None:
-            join = None
-            where = ('distroseries = %s AND languagepack' %
-                    sqlvalues(series.id))
-        else:
-            join = [
-                'POFile ON POFile.id = POExport.pofile',
-                'POTemplate ON POFile.potemplate = POTemplate.id',
-                'TranslationMessage ON '
-                    'TranslationMessage.pofile = POFile.id AND '
-                    'TranslationMessage.date_reviewed > %s AND '
-                    'TranslationMessage.is_current IS TRUE' % sqlvalues(date),
-            ]
-            where = 'POTemplate.distroseries = %s' % sqlvalues(series)
-
-        return self._select(join=join, where=where)
 
 
 class VPOExport:
@@ -276,7 +209,9 @@ class VPOExport:
          self.translation0,
          self.translation1,
          self.translation2,
-         self.translation3) = args
+         self.translation3,
+         self.translation4,
+         self.translation5) = args
 
         self.potemplate = POTemplate.get(potemplate)
         self.potmsgset = POTMsgSet.get(potmsgset)

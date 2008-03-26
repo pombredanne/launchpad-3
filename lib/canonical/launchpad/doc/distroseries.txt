@@ -441,31 +441,38 @@ Perform `post publication` override:
 
    >>> override = netapplet_srcrel.current_published.changeOverride(
    ...     new_section=new_section)
+
    >>> override.section == new_section
    True
-   >>> override.status.name
-   'PENDING'
-   >>> pub_hist = netapplet_srcrel.publishing_history
-   >>> pub_hist.count()
+
+   >>> print override.status.name
+   PENDING
+
+   >>> netapplet_srcrel.publishing_history.count()
    2
 
 Override information about 'pmount' is pending publication:
 
-   >>> pub_hist[0].status.name, pub_hist[0].section.name
-   ('PENDING', u'base')
+   >>> print netapplet_srcrel.current_published.status.name
+   PENDING
 
-Supersede current publication:
+   >>> print netapplet_srcrel.current_published.section.name
+   base
 
-   >>> superseded_netapplet = netapplet_srcrel.current_published.supersede()
+Supersede previous netapplet publication:
+
+   >>> last_published = netapplet_srcrel.publishing_history[1]
+   >>> superseded_netapplet = last_published.supersede()
+   >>> flush_database_updates()
+
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-We need to flush cached values.
+   >>> print superseded_netapplet.status.name
+   SUPERSEDED
 
-   >>> flush_database_updates()
-
-   >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+   >>> superseded_netapplet.datesuperseded
+   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 
 == DistroSeries Translations migration ==
@@ -483,6 +490,7 @@ transaction manager (in this case a fake one) to make these work.
     ...     def commit(self):
     ...         pass
     >>> transaction_stub = FakeTransactionManager()
+
 
 === Preconditions for migrating translations between distro series ===
 
@@ -585,9 +593,9 @@ and child distro series.
    ...         for old_pofile in old_template.pofiles:
    ...             new_pofile = new_template.getPOFileByLang(
    ...                 old_pofile.language.code, old_pofile.variant)
-   ...             old_pofile_data = old_pofile.uncachedExport(
+   ...             old_pofile_data = old_pofile.export(
    ...                 ignore_obsolete=True,force_utf8=True)
-   ...             new_pofile_data = new_pofile.uncachedExport(
+   ...             new_pofile_data = new_pofile.export(
    ...                 ignore_obsolete=True, force_utf8=True)
    ...             output = get_diff(old_pofile_data, new_pofile_data)
    ...             if output is not None:
@@ -618,7 +626,6 @@ working on Humpy, as long as they're still translating the same messages.
 Get the needed objects to prepare this test.
 
     >>> import datetime
-    >>> import pytz
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
@@ -638,7 +645,7 @@ The one submitting the string will be Carlos.  He's an editor for this POFile.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> # "Clock" that's guaranteed always to progress between calls.
     >>> now = time_counter(delta=datetime.datetime.resolution).next
 
@@ -657,7 +664,6 @@ translated in Hoary but not in Humpy.
     ...         msgid, None, context=context)
     ...     context_msg = removeSecurityProxy(context_msg)
     ...     context_msg.sequence = sequence
-    ...     potemplate.invalidateCache()
     ...     return context_msg
 
     >>> def add_translation(pofile, potmsgset, translation):
@@ -936,31 +942,76 @@ to do the translation migration to this new distro series.
     >>> testing_series = distroseriesset.new(
     ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
     ...     'Yo Momma', '99.4',hoary, hoary.owner)
+    >>> testing_series.defer_translation_imports = False
+    >>> testing_series.hide_all_translations
+    True
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(testing_series)
     >>> testing_series.getTranslationTemplates()
     []
+
+Now, we execute the script that will migrate/copy all current templates
+and translations from testing_series' parent distro series (hoary).
+
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.script import run_script
 
 The script starts its own transactions, so we need to commit here to be sure
 the new series will be available in the script.
 
-    >>> import subprocess
-    >>> import sys
-    >>> import transaction
+    >>> testing_series_id = testing_series.id
     >>> transaction.commit()
 
-Now, we execute the script that will migrate/copy all current templates and
-translations from testing_series' parent distro series (hoary)
+The script fails as long as the defer_translation_imports flag is not
+set.
 
-    >>> process = subprocess.Popen([
-    ...     sys.executable, 'scripts/copy-missing-translations-from-parent.py',
-    ...     '--distribution=ubuntu', '--series=testing', '-v'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.STDOUT)
-    >>> (output, empty) = process.communicate()
-    >>> print output
+    >>> returnvalue, output, error_output = run_script(
+    ...     'cronscripts/copy-missing-translations-from-parent.py',
+    ...     ['--distribution=ubuntu', '--series=testing', '-v'])
+    >>> returnvalue
+    1
+    >>> print error_output
+    INFO    creating lockfile
+    ERROR   Before this process starts, set the hide_all_translations and
+            defer_translation_imports flags for distribution ubuntu, series
+            testing; or use the --force option to make it happen
+            automatically.
+    DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
+
+    >>> testing_series = DistroSeries.get(testing_series_id)
+    >>> testing_series.defer_translation_imports
+    False
+    >>> testing_series.hide_all_translations
+    True
+
+It succeeds, however, when we pass the --force option.  The script then
+sets the defer_translation_imports flag itself before copying.
+
+    >>> returnvalue, output, error_output = run_script(
+    ...     'cronscripts/copy-missing-translations-from-parent.py',
+    ...     ['--distribution=ubuntu', '--series=testing', '-v', '--force'])
+    >>> returnvalue
+    0
+    >>> print error_output
     INFO    creating lockfile
     INFO    Starting...
     INFO    Done...
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
+
+
+After completing, the script restores the defer_translation_imports
+flag to its previous value (off).
+
+    >>> testing_series = DistroSeries.get(testing_series_id)
+    >>> testing_series.defer_translation_imports
+    False
+    >>> testing_series.hide_all_translations
+    True
+
+
+    >>> # Set the flag again to facilitate further testing.
+    >>> testing_series.defer_translation_imports = True
 
 Once the script finished, new distro series does have templates.
 
@@ -994,6 +1045,15 @@ the future.
 
    >>> hoary_pub_sources.count()
    6
+
+   >>> for pub in hoary_pub_sources:
+   ...     print pub.displayname
+   alsa-utils 1.0.9a-4ubuntu1 in hoary
+   cnews cr.g7-37 in hoary
+   evolution 1.0 in hoary
+   libstdc++ b8p in hoary
+   linux-source-2.6.15 2.6.15.3 in hoary
+   pmount 0.1-2 in hoary
 
    >>> hoary_pub_source = hoary_pub_sources[0]
 

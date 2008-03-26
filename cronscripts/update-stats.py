@@ -7,7 +7,7 @@
 import _pythonpath
 
 from zope.component import getUtility
-from canonical.lp import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadStatisticSet, IPersonSet
@@ -17,7 +17,7 @@ from canonical.config import config
 
 class StatUpdater(LaunchpadCronScript):
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
 
         self.logger.debug('Starting the stats update')
 

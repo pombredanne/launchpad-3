@@ -12,12 +12,14 @@
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description driver
-                      owner project bugcontact security_contact
+                      owner project security_contact
                       homepageurl wikiurl screenshotsurl
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_answers enable_bug_expiration
+                      official_blueprints official_malone official_answers
+                      official_codehosting
+                      enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot
                       license_info licenses bug_reporting_guidelines"
@@ -32,7 +34,8 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate private_bugs"
+      set_attributes="name active reviewed autoupdate private_bugs 
+                      reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
@@ -60,6 +63,19 @@
       permission="launchpad.Moderate"
       attributes="newFAQ"
       />
+    <!-- IStructuralSubscriptionTarget -->
+    <allow attributes="bug_subscriptions getSubscriptions
+                       getSubscription getBugNotificationsRecipients
+                       parent_subscription_target" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="addSubscription addBugSubscription
+                    removeBugSubscription" />
+    <!-- IHasBugcontact -->
+    <allow attributes="bugcontact" />
+    <require
+        permission="launchpad.Edit"
+        attributes="setBugContact" />
   </content>
 
   <browser:defaultView
@@ -299,6 +315,10 @@
       name="+portlet-latestbranches"
       template="../templates/product-portlet-latestbranches.pt"
       />
+    <browser:page
+      name="+portlet-productfiles"
+      template="../templates/product-portlet-latestfiles.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -347,15 +367,16 @@
       />
   </browser:pages>
 
-  <browser:pages
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    facet="bounties"
     for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public" >
-    <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/related-bounties.pt"
-      />
-  </browser:pages>
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/related-bounties.pt"
+    />
 
   <browser:page
     name="+edit"
@@ -373,15 +394,6 @@
     class="canonical.launchpad.browser.ProductBrandingView"
     permission="launchpad.Edit"
     template="../templates/object-branding.pt"
-    />
-
-  <browser:page
-    name="+bugcontact"
-    for="canonical.launchpad.interfaces.IProduct"
-    facet="bugs"
-    class="canonical.launchpad.browser.ProductBugContactEditView"
-    permission="launchpad.Edit"
-    template="../templates/product-bugcontact.pt"
     />
 
   <browser:page

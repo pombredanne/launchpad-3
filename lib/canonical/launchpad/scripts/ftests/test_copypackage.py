@@ -8,7 +8,6 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopier, SoyuzScriptError)
@@ -16,10 +15,12 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import PackagePublishingStatus
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestCopyPackageScript(LaunchpadZopelessTestCase):
+class TestCopyPackageScript(unittest.TestCase):
     """Test the copy-package.py script."""
+    layer = LaunchpadZopelessLayer
 
     def runCopyPackage(self, extra_args=None):
         """Run copy-package.py, returning the result and output.
@@ -73,8 +74,9 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class TestCopyPackage(LaunchpadZopelessTestCase):
+class TestCopyPackage(unittest.TestCase):
     """Test the CopyPackageHelper class."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Anotate pending publishing records provided in the sampledata.
@@ -82,8 +84,6 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         The records annotated will be excluded during the operation checks,
         see checkCopies().
         """
-        LaunchpadZopelessTestCase.setUp(self)
-
         pending_sources = SecureSourcePackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.sources_pending_ids = [pub.id for pub in pending_sources]
@@ -102,10 +102,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to PackageCopier.
         """
-        test_args=['-s', from_suite,
-                   '-d', from_distribution,
-                   '--to-suite', to_suite,
-                   '--to-distribution', to_distribution]
+        test_args = ['-s', from_suite,
+                     '-d', from_distribution,
+                     '--to-suite', to_suite,
+                     '--to-distribution', to_distribution]
 
         if confirm_all:
             test_args.append('-y')
@@ -171,7 +171,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         # We have to compare IDs because the copied list is actually a
         # list of Secure*PublishingHistory records and the lookups are
-        # the records from the correspondent DB view *PackagePublishingHistory.
+        # the records from the correspondent DB view
+        # *PackagePublishingHistory.
         copied_ids = [pub.id for pub in copied]
         pending_ids = sources_pending_ids + binaries_pending_ids
 
@@ -225,8 +226,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         time they were released.
         """
         copy_helper = self.getCopier(
-            sourcename='commercialpackage', from_partner=True, to_partner=True,
-            from_suite='breezy-autotest', to_suite='hoary')
+            sourcename='commercialpackage', from_partner=True,
+            to_partner=True, from_suite='breezy-autotest', to_suite='hoary')
         copied = copy_helper.mainTask()
 
         self.assertEqual(
@@ -245,8 +246,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         """Check the copy operation from PPA to PRIMARY Archive.
 
         That's the preliminary workflow for 'syncing' sources from PPA to
-        the ubuntu PRIMARY archive. Note that copying binaries it not allowed,
-        see testBinaryCopyFromPpaToPrimaryIsDenied.
+        the ubuntu PRIMARY archive.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
@@ -255,7 +255,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertEqual(
             str(copy_helper.location),
-            'PPA for Celso Providelo: warty-RELEASE')
+            'cprov: warty-RELEASE')
         self.assertEqual(
             str(copy_helper.destination),
             'Primary Archive for Ubuntu Linux: hoary-RELEASE')
@@ -277,10 +277,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertEqual(
             str(copy_helper.location),
-            'PPA for Celso Providelo: warty-RELEASE')
+            'cprov: warty-RELEASE')
         self.assertEqual(
             str(copy_helper.destination),
-            'PPA for Mark Shuttleworth: hoary-RELEASE')
+            'sabdfl: hoary-RELEASE')
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
@@ -399,27 +399,6 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             "Cross-PARTNER copies are not allowed.",
             copy_helper.mainTask)
 
-    def testCrossPartnerCopiesFails(self):
-        """Check that it fails when cross-PARTNER copies are requested.
-
-        SoyuzScriptError is raised for cross-PARTNER copies, packages
-        published in PARTNER archive can only be copied within PARTNER
-        archive.
-        """
-        copy_helper = self.getCopier(from_partner=True)
-
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cross-PARTNER copies are not allowed.",
-            copy_helper.mainTask)
-
-        copy_helper = self.getCopier(to_partner=True)
-
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cross-PARTNER copies are not allowed.",
-            copy_helper.mainTask)
-
     def testPpaPartnerInconsistentLocations(self):
         """Check if PARTNER and PPA inconsistent arguments are caught.
 
@@ -442,21 +421,25 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
-    def testBinaryCopyFromPpaToPrimaryIsDenied(self):
-        """Check if copying binaries from PPA to PRIMARY archive is denied.
-
-        SoyuzScriptError is raised if the user tries to copy binaries from
-        a PPA to PRIMARY archive.
+    def testBinaryCopyFromPpaToPrimaryWorks(self):
+        """Check whether copying binaries from PPA to PRIMARY archive works.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
             from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
 
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cannot copy binaries from PPA to PRIMARY archive.",
-            copy_helper.mainTask)
+        self.assertEqual(
+            str(copy_helper.location),
+            'cprov: warty-RELEASE')
+        self.assertEqual(
+            str(copy_helper.destination),
+            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
 
+        # 'iceweasel' has only one binary built for it
+        # The source and the binary got copied.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

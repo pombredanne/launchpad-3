@@ -23,6 +23,8 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.buildmaster.master import determineArchitecturesToBuild
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -67,6 +69,10 @@ class PackageUploadQueue:
     def __init__(self, distroseries, status):
         self.distroseries = distroseries
         self.status = status
+
+
+class LanguagePackEncountered(Exception):
+    """Thrown when not wanting to email notifications for language packs."""
 
 
 class PackageUpload(SQLBase):
@@ -191,6 +197,79 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def _createBuilds(self, pub_source, ignore_pas=False, logger=None,):
+        """Create corresponding Build records for a published source.
+
+        :param pub_source: source publication record ,
+             `ISourcePackagePublishingHistory`;
+        :param ignore_pas: whether or not to initialise and respect
+             Package-architecture-specific (P-a-s) for creating builds;
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        P-a-s should be only initialised and considered when accepting
+        sources to the PRIMARY archive (in drescher). We explicitly ignore
+        P-a-s for sources targeted to PPAs and when accepting NEW sources
+        (acceptFromQueue).
+        """
+        if self.isPPA() or ignore_pas:
+            pas_verify = None
+        else:
+            pas_verify = BuildDaemonPackagesArchSpecific(
+                config.builddmaster.root, self.distroseries)
+
+        if self.isPPA():
+            archs_available = [
+                arch for arch in self.distroseries.ppa_architectures]
+        else:
+            archs_available = self.distroseries.architectures
+
+        build_archs = determineArchitecturesToBuild(
+            pub_source, archs_available, self.distroseries, pas_verify)
+
+        for arch in build_archs:
+            debug(logger,
+                  "Creating PENDING build for %s." % arch.architecturetag)
+            build = pub_source.sourcepackagerelease.createBuild(
+                distroarchseries=arch, archive=self.archive,
+                pocket=self.pocket)
+            build_queue = build.createBuildQueueEntry()
+            build_queue.score()
+
+    def _closeBugs(self, changesfile_path, logger=None):
+        """Close bugs for a just-accepted source.
+
+        :param changesfile_path: path to the context changesfile.
+        :param logger: optional context Logger object (used on DEBUG level);
+
+        It does not close bugs for PPA sources.
+        """
+        if self.isPPA():
+            debug(logger, "Not closing bugs for PPA source.")
+            return
+
+        debug(logger, "Closing bugs.")
+        changesfile_object = open(changesfile_path, 'r')
+        close_bugs_for_queue_item(
+            self, changesfile_object=changesfile_object)
+        changesfile_object.close()
+
+    def acceptFromUploader(self, changesfile_path, logger=None):
+        """See `IPackageUpload`."""
+        debug(logger, "Setting it to ACCEPTED")
+        self.setAccepted()
+
+        # If it is a pure-source upload we can further process it
+        # in order to have a pending publishing record in place.
+        # This change is based on discussions for bug #77853 and aims
+        # to fix a deficiency on published file lookup system.
+        if not self._isSingleSourceUpload():
+            return
+
+        debug(logger, "Creating PENDING publishing record.")
+        [pub_source] = self.realiseUpload()
+        self._createBuilds(pub_source, logger=logger)
+        self._closeBugs(changesfile_path, logger)
+
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setAccepted()
@@ -202,10 +281,9 @@ class PackageUpload(SQLBase):
         # publishing records now so that the user doesn't have to
         # wait for a publisher cycle (which calls process-accepted
         # to do this).
-        if ((self.sources.count() == 1) and
-            (self.builds.count() == 0) and
-            (self.customfiles.count() == 0)):
-            self.realiseUpload()
+        if self._isSingleSourceUpload():
+            [pub_source] = self.realiseUpload()
+            self._createBuilds(pub_source, ignore_pas=True)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -216,6 +294,12 @@ class PackageUpload(SQLBase):
         self.setRejected()
         self.notify(logger=logger, dry_run=dry_run)
         self.syncUpdate()
+
+    def _isSingleSourceUpload(self):
+        """Return True if this upload contains only a single source."""
+        return ((self.sources.count() == 1) and
+                (self.builds.count() == 0) and
+                (self.customfiles.count() == 0))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
@@ -335,14 +419,15 @@ class PackageUpload(SQLBase):
                 "series in the '%s' state." % (
                 self.pocket.name, self.distroseries.status.name))
 
+        publishing_records = []
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
         for queue_source in self.sources:
             queue_source.verifyBeforePublish()
-            queue_source.publish(logger)
+            publishing_records.append(queue_source.publish(logger))
         for queue_build in self.builds:
-            queue_build.publish(logger)
+            publishing_records.extend(queue_build.publish(logger))
         for customfile in self.customfiles:
             try:
                 customfile.publish(logger)
@@ -352,6 +437,8 @@ class PackageUpload(SQLBase):
                 return
 
         self.setDone()
+
+        return publishing_records
 
     def addSource(self, spr):
         """See `IPackageUpload`."""
@@ -409,6 +496,9 @@ class PackageUpload(SQLBase):
         """Return a list of tuples of (filename, component, section).
 
         Component and section are only set where the file is a source upload.
+        If an empty list is returned, it means there are no files.
+        Raises LanguagePackRejection if a language pack is detected.
+        No emails should be sent for language packs.
         """
         files = []
         if self.contains_source:
@@ -420,7 +510,7 @@ class PackageUpload(SQLBase):
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
-                return None
+                raise LanguagePackEncountered
             for sprfile in spr.files:
                 files.append(
                     (sprfile.libraryfile.filename, spr.component.name,
@@ -633,9 +723,14 @@ class PackageUpload(SQLBase):
         changes, changes_lines = self._getChangesDict(changes_file_object)
 
         # "files" will contain a list of tuples of filename,component,section.
-        # If files is None, we don't need to send an email if this is not
+        # If files is empty, we don't need to send an email if this is not
         # a rejection.
-        files = self._buildUploadedFilesList()
+        try:
+            files = self._buildUploadedFilesList()
+        except LanguagePackEncountered:
+            # Don't send emails for language packs.
+            return
+
         if not files and self.status != PackageUploadStatus.REJECTED:
             return
 

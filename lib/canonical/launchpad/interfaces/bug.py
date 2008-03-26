@@ -20,16 +20,18 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Title, DuplicateBug, Tag)
+    ContentNameField, DuplicateBug, PublicPersonChoice, Title, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.bugattachment import (
+    bug_attachment_size_constraint)
 
 
 class CreateBugParams:
@@ -156,7 +158,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         default=False)
     date_made_private = Datetime(
         title=_('Date Made Private'), required=False)
-    who_made_private = Choice(
+    who_made_private = PublicPersonChoice(
         title=_('Who Made Private'), required=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who set this bug private."))
@@ -207,14 +209,22 @@ class IBug(IMessageTarget, ICanBeMentored):
     number_of_duplicates = Int(
         title=_('The number of bugs marked as duplicates of this bug'),
         required=True, readonly=True)
+    message_count = Int(
+        title=_('The number of comments on this bug'),
+        required=True, readonly=True)
 
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
-    def subscribe(person):
-        """Subscribe person to the bug. Returns an IBugSubscription."""
+    def subscribe(person, subscribed_by):
+        """Subscribe `person` to the bug.
+
+        :param person: the subscriber.
+        :param subscribed_by: the person who created the subscription.
+        :return: an `IBugSubscription`.
+        """
 
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
@@ -238,6 +248,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         duplicate of this bug, otherwise False.
         """
 
+    def getDirectSubscriptions():
+        """A sequence of IBugSubscriptions directly linked to this bug."""
+
     def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
@@ -259,9 +272,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         from duplicates.
         """
 
+    def getSubscriptionsFromDuplicates():
+        """Return IBugSubscriptions subscribed from dupes of this bug."""
+
     def getSubscribersFromDuplicates():
-        """Return IPersons subscribed from dupes of this bug.
-        """
+        """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None):
         """Return a complete INotificationRecipientSet instance.
@@ -505,12 +520,17 @@ class IBugAddForm(IBug):
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(
-        title=_('Further information, steps to reproduce,'
-                ' version information, etc.'),
+        title=_('Further information'),
         required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
+    filecontent = Bytes(
+        title=u"Attachment", required=False,
+        constraint=bug_attachment_size_constraint)
+    patch = Bool(title=u"This attachment is a patch", required=False,
+        default=False)
+    attachment_description = Title(title=u'Description', required=False)
 
 
 class IProjectBugAddForm(IBugAddForm):

@@ -22,7 +22,8 @@ from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
-from canonical.launchpad.fields import ContentNameField, URIField
+from canonical.launchpad.fields import (
+    ContentNameField, PublicPersonChoice, URIField)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -109,7 +110,7 @@ class RevisionControlSystems(DBEnumeratedType):
     """
 
     CVS = DBItem(1, """
-        Concurrent Version System
+        Concurrent Versions System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread
@@ -159,7 +160,8 @@ def validate_cvs_module(cvsmodule):
         raise LaunchpadValidationError(
             'The CVS module contains illegal characters.')
     if cvsmodule == 'CVS':
-        raise LaunchpadValidationError('A CVS module can not be called "CVS".')
+        raise LaunchpadValidationError(
+            'A CVS module can not be called "CVS".')
     return True
 
 
@@ -194,9 +196,10 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or 'trunk'."), constraint=name_validator)
     datecreated = Datetime(title=_('Date Registered'), required=True,
         readonly=True)
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_('Project owner, either a valid Person or Team'))
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
@@ -258,7 +261,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='Branch',
+        vocabulary='BranchRestrictedOnProduct',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))
@@ -327,7 +330,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The branch in this module."
             " Only MAIN branches are imported."))
     svnrepository = URIField(title=_("Branch"), required=False,
-        description=_("The URL of a Subversion branch, starting with svn:// or"
+        description=_(
+            "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn", "svn+ssh"],
         allow_userinfo=False, # Only anonymous access is supported.
@@ -376,7 +380,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """has the series source failed automatic testing by roomba?"""
 
     def importUpdated():
-        """Import or sync run completed successfully, update last-synced times.
+        """Import or sync run completed successfully, update last-synced.
 
         If datelastsynced is set, and import_branch.last_mirrored is more
         recent, then this is the date of the currently published import. Save

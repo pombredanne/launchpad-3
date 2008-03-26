@@ -3,12 +3,22 @@
 __metaclass__ = type
 
 __all__ = [
-    'StandardShipItRequestAddView', 'ShippingRequestApproveOrDenyView',
-    'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
-    'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-    'ShipItExportsView', 'ShipItNavigation', 'ShipItReportsView',
-    'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
-    'ShippingRequestSetNavigation', 'ShipitFrontPageView']
+    'ShipItExportsView',
+    'ShipitFrontPageView',
+    'ShipItLoginView',
+    'ShipItLoginForServerCDsView',
+    'ShipItNavigation',
+    'ShipItReportsView',
+    'ShipItRequestServerCDsView',
+    'ShipItRequestView',
+    'ShipItUnauthorizedView',
+    'ShippingRequestAdminView',
+    'ShippingRequestApproveOrDenyView',
+    'ShippingRequestSetNavigation',
+    'ShippingRequestsView',
+    'StandardShipItRequestAddView',
+    'StandardShipItRequestSetNavigation',
+    'StandardShipItRequestsView']
 
 from operator import attrgetter
 
@@ -22,8 +32,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import (
-    intOrZero, get_email_template, shortlist)
+from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -31,7 +40,6 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
-from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
@@ -99,6 +107,8 @@ def shipit_is_open(flavour):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    standard_order_page = '/myrequest'
+    custom_order_page = '/specialrequest'
     series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
@@ -133,9 +143,20 @@ class ShipItLoginView(LoginOrRegister):
         current_order = user.currentShipItRequest()
         if (current_order and
             current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
-            self.request.response.redirect('specialrequest')
+            self.request.response.redirect(self.custom_order_page)
         else:
-            self.request.response.redirect('myrequest')
+            self.request.response.redirect(self.standard_order_page)
+
+
+class ShipItLoginForServerCDsView(ShipItLoginView):
+    """The login page used when users want Server CDs."""
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def __init__(self, context, request):
+        super(ShipItLoginForServerCDsView, self).__init__(context, request)
+        self.flavour = ShipItFlavour.SERVER
 
 
 def _get_flavour_from_layer(request):
@@ -157,11 +178,8 @@ def _get_flavour_from_layer(request):
 class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
-    from_email_addresses = {
-        ShipItFlavour.UBUNTU: config.shipit.ubuntu_from_email_address,
-        ShipItFlavour.EDUBUNTU: config.shipit.edubuntu_from_email_address,
-        ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
-
+    standard_order_page = '/myrequest'
+    custom_order_page = '/specialrequest'
     should_show_custom_request = False
     # This only exists so that our tests can simulate the creation (through
     # the web UI) of requests containing CDs of serieses other than the
@@ -182,7 +200,6 @@ class ShipItRequestView(GeneralFormView):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
-        self.from_email_address = self.from_email_addresses[self.flavour]
         self.fieldNames = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']
@@ -195,11 +212,9 @@ class ShipItRequestView(GeneralFormView):
         These fields include the 'reason' and quantity widgets for users to
         make custom orders.
         """
-        if self.flavour == ShipItFlavour.UBUNTU:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour == ShipItFlavour.KUBUNTU:
+        ubuntu_kubuntu_and_server = [
+            ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
+        if self.flavour in ubuntu_kubuntu_and_server:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
@@ -227,11 +242,11 @@ class ShipItRequestView(GeneralFormView):
         # amazon.com. -- Guilherme Salgado, 2007-09-24
         return u''
         if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
-                self)
+            return ViewPageTemplateFile(
+                '../templates/shipit-ubuntu-dvds.pt')(self)
         elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile('../templates/shipit-kubuntu-dvds.pt')(
-                self)
+            return ViewPageTemplateFile(
+                '../templates/shipit-kubuntu-dvds.pt')(self)
         else:
             # We don't have DVDs for Edubuntu. :-(
             return u''
@@ -281,7 +296,7 @@ class ShipItRequestView(GeneralFormView):
     @property
     def download_url(self):
         """Return the URL where the ISO images of this flavour are located."""
-        if self.flavour == ShipItFlavour.UBUNTU:
+        if self.flavour in [ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]:
             return "http://www.ubuntu.com/download"
         elif self.flavour == ShipItFlavour.EDUBUNTU:
             return "http://www.edubuntu.org/Download"
@@ -300,10 +315,10 @@ class ShipItRequestView(GeneralFormView):
 
     @property
     def initial_values(self):
-        """Get initial values from this user's current request, if there's one.
+        """Initial values from this user's current order, if there's one.
 
-        If this user has no current request, then get the initial values from
-        the last shipped request made by this user.
+        If this user has no current order, then get the initial values from
+        the last shipped order made by this user.
         """
         field_values = {}
         user = getUtility(ILaunchBag).user
@@ -432,13 +447,14 @@ class ShipItRequestView(GeneralFormView):
             current_order = getUtility(IShippingRequestSet).new(
                 self.user, kw.get('recipientdisplayname'), kw.get('country'),
                 kw.get('city'), kw.get('addressline1'), kw.get('phone'),
-                kw.get('addressline2'), kw.get('province'), kw.get('postcode'),
-                kw.get('organization'), reason)
+                kw.get('addressline2'), kw.get('province'),
+                kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
                        'can take up to <strong>ten weeks<strong> to deliver. '
                        'For quicker processing, choose a '
-                       '<a href="/myrequest">standard option</a> instead.')
+                       '<a href="%s">standard option</a> instead.'
+                       % self.standard_order_page)
             else:
                 msg = ('Request accepted. Please note that requests usually '
                        'take from 4 to 6 weeks to deliver, depending on the '
@@ -494,7 +510,8 @@ class ShipItRequestView(GeneralFormView):
 
         current_flavours = current_order.getContainedFlavours()
 
-        max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
+        max_size_for_auto_approval = (
+            ShipItConstants.max_size_for_auto_approval)
         new_total_of_cds = current_order.getTotalCDs()
         shipped_orders = self.user.shippedShipItRequestsOfCurrentSeries()
         if new_total_of_cds > max_size_for_auto_approval:
@@ -545,11 +562,6 @@ class ShipItRequestView(GeneralFormView):
             # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
-        if current_order.isAwaitingApproval():
-            # This request needs manual approval, so we need to notify the
-            # shipit admins.
-            self._notifyShipItAdmins(current_order)
-
         return msg
 
     def userAlreadyRequestedFlavours(self, flavours):
@@ -573,8 +585,8 @@ class ShipItRequestView(GeneralFormView):
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
             errors.append(LaunchpadValidationError(_(
-                "Shipping to your country requires a postcode, but you didn't "
-                "provide one. Please enter one below.")))
+                "Shipping to your country requires a postcode, but you "
+                "didn't provide one. Please enter one below.")))
 
         if self.quantity_fields_mapping:
             total_cds = 0
@@ -587,21 +599,16 @@ class ShipItRequestView(GeneralFormView):
         if errors:
             raise WidgetsError(errors)
 
-    def _notifyShipItAdmins(self, order):
-        """Notify the shipit admins by email that there's a new request."""
-        subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
-        recipient = order.recipient
-        headers = {'Reply-To': order.recipient_email}
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
-        replacements = {'recipientname': order.recipientdisplayname,
-                        'recipientemail': order.recipient_email,
-                        'requesturl': canonical_url(order),
-                        'shipped_requests': shipped_requests.count(),
-                        'reason': order.reason}
-        message = get_email_template('shipit-custom-request.txt') % replacements
-        shipit_admins = config.shipit.admins_email_address
-        simple_sendmail(
-            self.from_email_address, shipit_admins, subject, message, headers)
+
+class ShipItRequestServerCDsView(ShipItRequestView):
+    """Where users can request Ubuntu Server Edition CDs."""
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def __init__(self, context, request):
+        super(ShipItRequestServerCDsView, self).__init__(context, request)
+        self.flavour = ShipItFlavour.SERVER
 
 
 class _SelectMenuOption:
@@ -630,7 +637,8 @@ class ShippingRequestsView:
 
     @cachedproperty
     def shipitrequests(self):
-        return shortlist(self.batchNavigator.currentBatch(), longest_expected=100)
+        return shortlist(
+            self.batchNavigator.currentBatch(), longest_expected=100)
 
     @cachedproperty
     def totals_for_shipitrequests(self):
@@ -964,8 +972,9 @@ class ShippingRequestApproveOrDenyView(
         return not (self.context.isCancelled() or self.context.isShipped())
 
 
-class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
-    """The page where admins can create new requests or change existing ones."""
+class ShippingRequestAdminView(
+        GeneralFormView, ShippingRequestAdminMixinView):
+    """Where admins can make new orders or change existing ones."""
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -1018,18 +1027,18 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
             errors.append(LaunchpadValidationError(_(
-                "Shipping to your country requires a postcode, but you didn't "
-                "provide one. Please enter one below.")))
+                "Shipping to your country requires a postcode, but you "
+                "didn't provide one. Please enter one below.")))
 
         if errors:
             raise WidgetsError(errors)
 
     def process(self, *args, **kw):
         # All requests created through the admin UI have the shipit_admin
-        # celeb as the recipient. This is so because shipit administrators have
-        # to be able to create requests on behalf of people who don't have a
-        # Launchpad account, and only the shipit_admin celeb is allowed to
-        # have more than one open request at a time.
+        # celeb as the recipient. This is so because shipit administrators
+        # have to be able to create requests on behalf of people who don't
+        # have a Launchpad account, and only the shipit_admin celeb is allowed
+        # to have more than one open request at a time.
         shipit_admin = getUtility(ILaunchpadCelebrities).shipit_admin
         form = self.request.form
         quantities = {}

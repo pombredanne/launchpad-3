@@ -4,9 +4,6 @@
   omit-tag="">
 <metal:basic_filebug_widgets define-macro="basic_filebug_widgets">
 
-  <metal:bug_reporting_guidelines
-      use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
-
   <tal:bugtarget
       tal:define="widget nocall:view/widgets/bugtarget|nothing"
       tal:condition="widget">
@@ -68,6 +65,18 @@
   <metal:description tal:define="widget nocall:view/widgets/comment">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
+
+  <metal:bug_reporting_guidelines
+      use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
+
+  <tr>
+    <td colspan="2">
+
+      <metal:attachment-form
+          use-macro="context/@@bug-attachment-macros/attachment-form" />
+
+    </td>
+  </tr>
 
   <tr tal:define="security_context view/getSecurityContext">
     <td colspan="2" width="100%"
@@ -338,8 +347,10 @@
 <metal:bug_reporting_guidelines define-macro="bug_reporting_guidelines">
   <tr tal:condition="context/bug_reporting_guidelines|nothing">
     <td colspan="2" id="bug-reporting-guidelines">
-      <div class="guidelines"
-           tal:content="structure context/bug_reporting_guidelines/fmt:text-to-html" />
+      <p>Please include, if possible:</p>
+      <div tal:content=
+        "structure context/bug_reporting_guidelines/fmt:text-to-html"
+      />
     </td>
   </tr>
 </metal:bug_reporting_guidelines>

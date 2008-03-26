@@ -163,8 +163,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distroseries = %s AND
-                   SourcePackagePublishingHistory.archive IN %s AND
-                   SourcePackagePublishingHistory.dateremoved is NULL
+                   SourcePackagePublishingHistory.archive IN %s
                 """ % sqlvalues(
                         self.sourcepackagename,
                         self.distroseries,
@@ -272,14 +271,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         releases = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
+            SourcePackageRelease.sourcepackagename = %s AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.archive IN %s
             ''' % sqlvalues(self.sourcepackagename, self.distribution,
                             self.distribution.all_distro_archive_ids),
             clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
@@ -312,11 +310,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def direct_packaging(self):
         """See `ISourcePackage`."""
-        # get any packagings matching this sourcepackage
+        # XXX flacoste 2008-02-28 For some crack reasons, it is possible
+        # for multiple productseries (of the same product) to state that they
+        # are packaged in the same source package. This creates all sort of
+        # weirdness documented in bug #196774. But in order to work around bug
+        # #181770, use a sort order that will be stable. I guess it makes the
+        # most sense to return the latest one.
         return Packaging.selectFirstBy(
             sourcepackagename=self.sourcepackagename,
             distroseries=self.distroseries,
-            orderBy='packaging')
+            orderBy=['packaging', '-datecreated'])
 
     @property
     def packaging(self):
@@ -440,18 +443,28 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # and make sure this change is immediately available
         flush_database_updates()
 
+    def __hash__(self):
+        """See `ISourcePackage`."""
+        return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)
+
     def __eq__(self, other):
-        """See canonical.launchpad.interfaces.ISourcePackage."""
+        """See `ISourcePackage`."""
         return (
             (ISourcePackage.providedBy(other)) and
             (self.distroseries.id == other.distroseries.id) and
             (self.sourcepackagename.id == other.sourcepackagename.id))
 
     def __ne__(self, other):
-        """See canonical.launchpad.interfaces.ISourcePackage."""
+        """See `ISourcePackage`."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now and this method only returns records for SPRs in a
+        # distribution).
+
         """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
