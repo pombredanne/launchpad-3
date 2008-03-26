@@ -123,7 +123,7 @@ class FeedBase(LaunchpadView):
     def getItems(self):
         """See `IFeed`."""
         if self.items is None:
-            self.items = self.getItemsWorker()
+            self.items = self._getItemsWorker()
         return self.items
 
     def _getItemsWorker(self):
