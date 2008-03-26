@@ -98,18 +98,33 @@ or subscribed to its mailing list, she still can't post to it.
     >>> len(smtpd.getMessages())
     0
 
-However, the message is being held for team owner approval, both in Launchpad
-and in Mailman.
+The message is held for team owner approval, both in Launchpad and in Mailman.
 
-    >>> itest_helper.num_requests_pending('itest-one')
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
     1
+    >>> itest_helper.print_mailman_hold('itest-one', holds[0])
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Subject: An unsubscribed post
+    Message-ID: <third-injection>
+    <BLANKLINE>
+    Hi, I am not a member of this team's list (yet).
+    <BLANKLINE>
+    
     >>> from canonical.launchpad.interfaces import IMessageSet
     >>> from zope.component import getUtility
     >>> messages = getUtility(IMessageSet).get('<third-injection>')
     >>> len(messages)
     1
     >>> print messages[0].text_contents
-    XXX
+    Hi, I am not a member of this team's list (yet).
+    <BLANKLINE>
+
+The team administrator can accept or decline this posting.  By declining the
+message, Launchpad forgets about it, but Mailman sends a rejection.
+
+    
 
 
 == Verified and registered member postings ==
