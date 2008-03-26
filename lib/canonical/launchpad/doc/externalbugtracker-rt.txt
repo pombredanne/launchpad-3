@@ -66,6 +66,14 @@ The different hosts will have different credentials properties.
     >>> rt_two.credentials
     {'user': 'eggs', 'pass': 'spam'}
 
+The default username and password for RT instances are 'guest' and
+'guest'. The credentials property for an RT instance that we don't have
+specific credentials for will return the default credentials.
+
+    >>> rt_three = CredentialRequestTracker('http://foobar.com')
+    >>> rt_three.credentials
+    {'user': 'guest', 'pass': 'guest'}
+
 
 == Status Conversion ==
 

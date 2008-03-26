@@ -8,7 +8,8 @@ __all__ = ['RequestTracker']
 import email
 import urllib
 import urllib2
-import urlparse
+
+from urlparse import urlparse
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
@@ -40,7 +41,7 @@ class RequestTracker(ExternalBugTracker):
         """
         hostname = urlparse(self.baseurl)[1]
         try:
-            return credentials_map[hostname]
+            return self.credentials_map[hostname]
         except KeyError:
             return {'user': 'guest', 'pass': 'guest'}
 
