@@ -137,8 +137,8 @@ class BranchMergeProposal(SQLBase):
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
-    def getCreationNotificationRecipients(self, min_level):
-        """See IBranchMergeProposal.getCreationNotificationRecipients"""
+    def getNotificationRecipients(self, min_level):
+        """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
         branches = [self.source_branch, self.target_branch]
         if self.dependent_branch is not None:

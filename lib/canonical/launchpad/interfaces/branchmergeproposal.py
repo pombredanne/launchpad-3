@@ -196,8 +196,8 @@ class IBranchMergeProposal(Interface):
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
 
-    def getCreationNotificationRecipients(min_level):
-        """Return the people who should be notified on creation
+    def getNotificationRecipients(min_level):
+        """Return the people who should be notified.
 
         Recipients will be returned as a dictionary where the key is the
         person, and the values are (subscription, rationale) tuples.

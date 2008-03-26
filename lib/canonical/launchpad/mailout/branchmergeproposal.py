@@ -22,15 +22,23 @@ def send_merge_proposal_created_notifications(merge_proposal, event):
     BMPMailer.forCreation(merge_proposal, event.user).sendAll()
 
 
+def send_merge_proposal_modified_notifications(merge_proposal, event):
+    """Notify branch subscribers when merge proposals are created."""
+    if event.user is None:
+        return
+    BMPMailer.forModification(merge_proposal, event.user).sendAll()
+
+
 class BMPMailer:
     """Send mailings related to BranchMergeProposal events"""
 
-    def __init__(self, recipients, merge_proposal, from_address):
+    def __init__(self, recipients, merge_proposal, from_address, delta=None):
         self._recipients = NotificationRecipientSet()
         for recipient, (subscription, rationale) in recipients.iteritems():
             self._recipients.add(recipient, subscription, rationale)
         self.merge_proposal = merge_proposal
         self.from_address = from_address
+        self.delta = delta
 
     @staticmethod
     def forCreation(merge_proposal, from_user):
@@ -40,13 +48,32 @@ class BMPMailer:
         :param from_user: The user that the creation notification should
             come from.
         """
-        recipients = merge_proposal.getCreationNotificationRecipients(
+        recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
         return BMPMailer(recipients, merge_proposal, from_address)
+
+    @staticmethod
+    def forModification(old_merge_proposal, merge_proposal, from_user):
+        """Return a mailer for BranchMergeProposal creation.
+
+        :param merge_proposal: The BranchMergeProposal that was created.
+        :param from_user: The user that the creation notification should
+            come from.
+        """
+        recipients = merge_proposal.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        assert from_user.preferredemail is not None, (
+            'The sender must have an email address.')
+        from_address = format_address(
+            from_user.displayname, from_user.preferredemail.email)
+        delta = MergeProposalDelta.construct(
+                old_merge_proposal, merge_proposal)
+        return BMPMailer(recipients, merge_proposal, from_address,
+                         delta)
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""

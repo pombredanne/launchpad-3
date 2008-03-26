@@ -90,6 +90,12 @@ Baz Qux has proposed merging foo into bar.
         else:
             self.fail('Did not detect bogus team recipient.')
 
+    def test_forModification(self):
+        """"""
+        merge_proposal = self.makeProposalWithSubscriber()
+        mailer = BMPMailer.forModification(
+            old_merge_proposal, merge_proposal, from_user)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
