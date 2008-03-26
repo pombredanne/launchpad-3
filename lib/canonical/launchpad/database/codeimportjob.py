@@ -21,8 +21,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
-    ICodeImportEventSet, ICodeImportJob,
+    CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
+    CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
     ICodeImportJobWorkflowPublic, ICodeImportResultSet)
 from canonical.launchpad.validators.person import public_person_validator
@@ -221,7 +221,7 @@ class CodeImportJobWorkflow:
                import_job.state.name))
         code_import = import_job.code_import
         machine = import_job.machine
-        getUtility(ICodeImportResultSet).new(
+        result = getUtility(ICodeImportResultSet).new(
             code_import=code_import, machine=machine,
             log_excerpt=import_job.logtail,
             requesting_user=import_job.requesting_user,
@@ -235,5 +235,9 @@ class CodeImportJobWorkflow:
         # Only start a new one if not invalid or suspended.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)
+        # If the status was successful, update the date_last_successful.
+        if status == CodeImportResultStatus.SUCCESS:
+            naked_import = removeSecurityProxy(code_import)
+            naked_import.date_last_successful = result.date_created
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)

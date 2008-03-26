@@ -830,6 +830,21 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             finish_event, CodeImportEventType.FINISH,
             code_import, machine)
 
+    def test_successfulResultUpdatesCodeImportLastSuccessful(self):
+        # finishJob() updates CodeImport.date_last_successful if and only if
+        # the status was success.
+        for status in CodeImportResultStatus.items:
+            running_job = self.makeRunningJob()
+            code_import = running_job.code_import
+            machine = running_job.machine
+            self.assertTrue(code_import.date_last_successful is None)
+            getUtility(ICodeImportJobWorkflow).finishJob(
+                running_job, status, None)
+            if status == CodeImportResultStatus.SUCCESS:
+                self.assertTrue(code_import.date_last_successful is not None)
+            else:
+                self.assertTrue(code_import.date_last_successful is None)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
