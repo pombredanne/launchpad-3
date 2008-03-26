@@ -468,7 +468,7 @@ the translations in .po file format.
     |     0 | rosetta-grumpy/xpi/firefox/
     |    82 | rosetta-grumpy/xpi/firefox/es.po
     |    74 | rosetta-grumpy/xpi/firefox/en.po
-    |    75 | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |   ... | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
     |     2 | rosetta-grumpy/mapping.txt
 
