@@ -28,10 +28,8 @@ from zope.component import adapts, getMultiAdapter
 from zope.interface import implements
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.publisher.base import BaseRequest
-from zope.schema import Datetime, ValidationError, getFields
-from zope.schema.interfaces import IDatetime, IField, IObject
+from zope.schema import ValidationError, getFields
+from zope.schema.interfaces import IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -40,18 +38,13 @@ from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
-from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
     IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IScopedCollection, IServiceRootResource)
-
-# XXX leonardr 2008-01-25 bug=185958:
-# canonical_url code should be moved into lazr.
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.webapp import canonical_url
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):

@@ -25,7 +25,7 @@ from zope.interface import Attribute, Interface
 # the import fascist complains because they are not in __all__ there.
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
-from zope.schema import List, Object, TextLine
+from zope.schema import List, Object
 from zope.schema.interfaces import IObject, IField
 
 

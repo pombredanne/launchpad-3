@@ -13,7 +13,6 @@ __all__ = [
 
 from zope.component import adapts
 from zope.schema import Choice, Object, TextLine
-from zope.schema.interfaces import IVocabulary
 
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.interface import use_template
