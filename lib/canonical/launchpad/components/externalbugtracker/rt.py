@@ -9,7 +9,6 @@ import email
 import urllib
 import urllib2
 
-from urlparse import urlparse
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
@@ -17,6 +16,7 @@ from canonical.launchpad.components.externalbugtracker import (
     InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.webapp.url import urlparse
 
 
 class RequestTracker(ExternalBugTracker):
