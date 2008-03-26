@@ -13,7 +13,8 @@ __all__ = [
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp import (
+    LaunchpadView, canonical_url)
 from canonical.launchpad.interfaces import (
     BuildStatus, PackagePublishingStatus)
 
@@ -141,7 +142,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         return results
 
     @cachedproperty
-    def cached_builds(self):
+    def builds(self):
         """Return a list of Builds for the context published source."""
         return list(self.context.getBuilds())
 
@@ -150,23 +151,32 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         """Return the contents of the 'Built' column.
 
         If any build for this source is still PENDING or BUILDING, return the
-        'build-building' icon, followed by the architectures building.
+        'build-building' icon, followed by the architectures building linking
+        to their corresponding build pages.
 
         If all builds have quiesced and any of them has failed (
         FAILEDTOBUILD, MANUALDEPWAIT, CHROOTWAIT or FAILEDTOUPLOAD) return
-        the 'no' icon, followed by the architectures where the source failed.
+        the 'no' icon, followed by the architectures where the source failed,
+        also linking to their corresponding build page.
 
         Finally, if all builds have quiesced and none of them failed, return
         the 'yes' icon.
         """
-        def content_template(alt, image, text=''):
-            return '<img alt="%s" src="%s" /> %s' % (alt, image, text)
+        def content_template(alt, image, builds=None):
+            icon = '<img alt="%s" src="%s" /> ' % (alt, image)
+            if builds is None:
+                return icon
+            arch_links = []
+            for build in builds:
+                arch_tag = build.distroarchseries.architecturetag
+                arch_links.append(
+                    '<a href="%s">%s</a>' % (canonical_url(build), arch_tag))
+            return icon + " ".join(arch_links)
 
         def collect_builds(states):
             wanted = []
             for state in states:
-                candidates = [build.distroarchseries.architecturetag
-                              for build in self.cached_builds
+                candidates = [build for build in self.builds
                               if build.buildstate == state]
                 wanted.extend(candidates)
             return wanted
@@ -181,15 +191,12 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         failures = collect_builds(failed_states)
         pending = collect_builds(pending_states)
 
-        # XXX cprov 20080320: We might want to give precedence for 'failures',
-        # even when the source is still having 'pending' jobs.
-        if pending:
-            text = " ".join(pending)
+        if len(pending) != 0:
             return content_template(
-                'Still building', '/@@/build-building', text=text)
-        elif failures:
-            text = " ".join(failures)
-            return content_template('Build failures', '/@@/no', text=text)
+                'Still building', '/@@/build-building', builds=pending)
+        elif len(failures) != 0:
+            return content_template(
+                'Build failures', '/@@/no', builds=failures)
         else:
             return content_template('Built successfully', '/@@/yes')
 

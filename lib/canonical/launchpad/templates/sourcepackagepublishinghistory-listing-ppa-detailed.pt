@@ -18,7 +18,7 @@
          >foo - 1.0</tal:source_name>
     </td>
     <td>
-     <tal:view_changesfile
+      <tal:view_changesfile
         define="source context/sourcepackagerelease"
         condition="context/archive/required:launchpad.Admin">
         <a tal:condition="source/upload_changesfile"
@@ -49,7 +49,7 @@
            replace="structure context/sourcepackagerelease/@@+changelog"/>
       <h3>Builds</h3>
       <ul style="margin-top: 0; margin-bottom: 0">
-        <li tal:repeat="build view/cached_builds">
+        <li tal:repeat="build view/builds">
           <tal:icon replace="structure build/image:icon" />
           <a tal:attributes="href build/fmt:url"
              tal:content="build/distroarchseries/architecturetag">i386</a>
