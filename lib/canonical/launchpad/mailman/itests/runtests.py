@@ -137,6 +137,13 @@ def integrationTestCleanUp(testobj):
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
+    # Clean up the library data.  Remove only the librarian files, not any
+    # intermediate directories.
+    from canonical.config import config
+    for dirpath, dirnames, filenames in os.walk(config.librarian_server.root):
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            os.remove(path)
 
 
 def find_tests(match_regexps):
