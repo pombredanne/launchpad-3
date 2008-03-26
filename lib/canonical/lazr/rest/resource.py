@@ -157,9 +157,6 @@ class CustomOperationResourceMixin:
 
         This is used by both EntryResource and CollectionResource.
         """
-        get_args = dict([(str(arg), value)
-                         for (arg, value) in self.request.form.items()
-                         if arg != u'_get'])
         try:
             operation = getMultiAdapter((self.context, self.request),
                                         IResourceGETOperation,
@@ -167,7 +164,8 @@ class CustomOperationResourceMixin:
         except ValueError:
             raise NotFound(self, self.request['QUERY_STRING'])
 
-        result = operation(**get_args)
+        del(self.request.form['_op'])
+        result = operation()
         if isinstance(result, str) or isinstance(result, unicode):
             # The operation took care of everything and just needs
             # this string served to the client.
@@ -280,7 +278,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Render the entry as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.get('_get')
+        operation_name = self.request.form.get('_op')
         if operation_name is not None:
             result = self.handleCustomGET(operation_name)
             if isinstance(result, str) or isinstance(result, unicode):
@@ -500,7 +498,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.get('_get')
+        operation_name = self.request.form.get('_op')
         if operation_name is not None:
             result = self.handleCustomGET(operation_name)
             if isinstance(result, str) or isinstance(result, unicode):
