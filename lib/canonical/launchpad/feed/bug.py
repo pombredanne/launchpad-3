@@ -22,25 +22,9 @@ from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
+    IBug, IBugSet, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-
-
-def get_unique_bug_tasks(items):
-    """Given a list of BugTasks return a list with one BugTask per Bug.
-
-    A Bug can have many BugTasks.  In order to avoid duplicate data, the list
-    is trimmed to have only one representative BugTask per Bug.
-    """
-    ids = set()
-    unique_items = []
-    for item in items:
-        if item.bug.id in ids:
-            continue
-        ids.add(item.bug.id)
-        unique_items.append(item)
-    return unique_items
 
 
 class BugFeedContentView(LaunchpadView):
@@ -53,6 +37,15 @@ class BugFeedContentView(LaunchpadView):
     def render(self):
         """Render the view."""
         return ViewPageTemplateFile('templates/bug.pt')(self)
+
+
+class BugFeedEntry(FeedEntry):
+    """See `IFeedEntry`."""
+    def construct_id(self):
+        url_path = urlparse(self.link_alternate)[2]
+        return 'tag:launchpad.net,%s:%s' % (
+            self.date_created.date().isoformat(),
+            url_path)
 
 
 class BugsFeedBase(FeedBase):
@@ -86,9 +79,9 @@ class BugsFeedBase(FeedBase):
         """See `IFeed`."""
         return "%s/@@/bug" % self.site_url
 
-    def _sortByDateCreated(self, bugtasks):
-        return sorted(bugtasks,
-                      key=lambda bugtask: bugtask.bug.datecreated,
+    def _sortByDateCreated(self, bugs):
+        return sorted(bugs,
+                      key=lambda bug: bug.datecreated,
                       reverse=True)
 
     def _getRawItems(self):
@@ -100,23 +93,21 @@ class BugsFeedBase(FeedBase):
 
         The list of bugs is screened to ensure no private bugs are returned.
         """
-        items = [bugtask
-                 for bugtask in self._getRawItems()
-                 if not bugtask.bug.private]
-        return self._sortByDateCreated(items)
+        bugs = [bug for bug in self._getRawItems()
+                 if not bug.private]
+        return self._sortByDateCreated(bugs)
 
     def getItems(self):
         """See `IFeed`."""
-        items = self.getPublicRawItems()
-        # Convert the items into their feed entry representation.
-        items = [self.itemToFeedEntry(item) for item in items]
-        return items
+        bugs = self.getPublicRawItems()
+        # Convert the bugs into their feed entry representation.
+        bugs = [self.itemToFeedEntry(bug) for bug in bugs]
+        return bugs
 
-    def itemToFeedEntry(self, bugtask):
+    def itemToFeedEntry(self, bug):
         """Convert the items to FeedEntries."""
-        bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
-        url = canonical_url(bugtask, rootsite=self.rootsite)
+        url = canonical_url(bug, rootsite=self.rootsite)
         content_view = BugFeedContentView(bug, self.request, self)
         entry = FeedEntry(title=title,
                           link_alternate=url,
@@ -131,6 +122,26 @@ class BugsFeedBase(FeedBase):
     def renderHTML(self):
         """See `IFeed`."""
         return ViewPageTemplateFile('templates/bug-html.pt')(self)
+
+    def getBugsFromBugtasks(self, tasks):
+        """Given a list of BugTasks return the list of associated bugs.
+
+        Since a Bug can have multiple BugTasks, we only select bugs that have not
+        yet been seen.
+        """
+        bug_ids = []
+        for task in tasks:
+            if task.bugID in bug_ids:
+                continue
+            bug_ids.append(task.bugID)
+            if len(bug_ids) >= self.quantity:
+                break
+        # For database efficiency we want to do something like the following:
+        # bugs = self.context.select("id in %s" % sqlvalues(bug_ids))
+        # Should this be a new method on BugSet?
+        bugset = getUtility(IBugSet)
+        bugs = [bugset.get(bug_id) for bug_id in bug_ids]
+        return bugs
 
 
 class BugFeed(BugsFeedBase):
@@ -163,9 +174,7 @@ class BugFeed(BugsFeedBase):
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
-        bugtasks = list(self.context.bugtasks)
-        # All of the bug tasks are for the same bug.
-        return bugtasks[:1]
+        return [self.context]
 
 
 class BugTargetBugsFeed(BugsFeedBase):
@@ -209,8 +218,17 @@ class BugTargetBugsFeed(BugsFeedBase):
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         delegate_view = BugTargetView(self.context, self.request)
-        bugtasks = delegate_view.latestBugTasks(quantity=self.quantity)
-        return get_unique_bug_tasks(bugtasks)
+        # XXX: BradCrittenden 2008-03-25 bug=206811:
+        # The feed should have `self.quantity` entries, each representing a
+        # bug.  Our query returns bugtasks, not bugs.  We then work backward
+        # to find the bugs associated with the bugtasks.  In order to get
+        # `self.quantity` bugs we need to fetch more than that number of
+        # bugtasks.  As a hack, we're just getting 2 times the number and
+        # hoping it is sufficient.  The correct action would be to get a
+        # batched result and work through the batches until a suffient number
+        # of bugs are found.
+        bugtasks = delegate_view.latestBugTasks(quantity=self.quantity * 2)
+        return self.getBugsFromBugtasks(bugtasks)
 
 
 class PersonBugsFeed(BugsFeedBase):
@@ -230,9 +248,10 @@ class PersonBugsFeed(BugsFeedBase):
         # Since the delegate_view derives from LaunchpadFormView the view must
         # be initialized to setup the widgets.
         delegate_view.initialize()
-        batch_navigator = delegate_view.search()
-        items = batch_navigator.batch.list
-        return get_unique_bug_tasks(items)[:self.quantity]
+        batch_navigator = delegate_view.search(
+            extra_params=dict(orderby='-datecreated'))
+        items = batch_navigator.batch.list[:self.quantity * 2]
+        return self.getBugsFromBugtasks(items)
 
 
 class SearchBugsFeed(BugsFeedBase):
@@ -257,8 +276,10 @@ class SearchBugsFeed(BugsFeedBase):
         batch_navigator = delegate_view.search(searchtext=None,
                                                context=search_context,
                                                extra_params=None)
-        items = batch_navigator.batch.list
-        return get_unique_bug_tasks(items)[:self.quantity]
+        # XXX: BradCrittenden 2008-03-25 bug=206811:
+        # See description above.
+        items = batch_navigator.batch.list[:self.quantity * 2]
+        return self.getBugsFromBugtasks(items)
 
     @property
     def title(self):

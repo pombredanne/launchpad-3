@@ -18,13 +18,32 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
     IAnnouncementSet, IDistribution, IHasAnnouncements, IProduct, IProject)
 from canonical.launchpad.interfaces import IFeedsApplication
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData)
+
+
+class AnnouncementFeedEntry(FeedEntry):
+    def construct_id(self):
+        url_path = urlparse(self.link_alternate)[2]
+        # Strip the first portion of the path, which will be the
+        # project/product identifier but is not wanted in the <id> as it may
+        # change if the entry is re-assigned which would break the permanence
+        # of the <id>.
+        try:
+            unique_url_path = url_path[url_path.index('/', 1):]
+        except ValueError:
+            # This condition should not happen, but if the call to index
+            # raises a ValueError because '/' was not in the path, then fall
+            # back to using the entire path.
+            unique_url_path = url_path
+        return 'tag:launchpad.net,%s:%s' % (
+            self.date_created.date().isoformat(),
+            unique_url_path)
 
 
 class AnnouncementsFeedBase(FeedBase):
@@ -71,15 +90,15 @@ class AnnouncementsFeedBase(FeedBase):
         # updated, and published.  For some data, the created and published
         # dates will be the same.  The announcements also only have a singe
         # author.
-        entry = FeedEntry(title=title,
-                          link_alternate=entry_link_alternate,
-                          date_created=announcement.date_created,
-                          date_updated=announcement.date_updated,
-                          date_published=announcement.date_announced,
-                          authors=[FeedPerson(
-                                    announcement.registrant,
-                                    rootsite="mainsite")],
-                          content=content)
+        entry = AnnouncementFeedEntry(
+            title=title,
+            link_alternate=entry_link_alternate,
+            date_created=announcement.date_created,
+            date_updated=announcement.date_updated,
+            date_published=announcement.date_announced,
+            authors=[FeedPerson(announcement.registrant,
+                                rootsite="mainsite")],
+            content=content)
         return entry
 
     def _entryTitle(self, announcement):

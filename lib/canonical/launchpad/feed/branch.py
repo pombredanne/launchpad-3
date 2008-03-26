@@ -121,8 +121,8 @@ class BranchListingFeed(BranchFeedBase):
         delegate_view.initialize()
         branches_batch = delegate_view.branches()
         batch = branches_batch.batch
-        branches = list(batch.list)
-        return branches[:self.quantity]
+        branches = list(batch.list[:self.quantity])
+        return branches
 
 
 class ProductBranchFeed(BranchListingFeed):
