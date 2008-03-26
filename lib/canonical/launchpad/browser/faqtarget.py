@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import stepthrough
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class FAQTargetNavigationMixin:
@@ -17,6 +18,9 @@ class FAQTargetNavigationMixin:
     @stepthrough('+faq')
     def traverse_faq(self, name):
         """Return the FAQ by ID."""
-        return self.context.getFAQ(name)
-
+        try:
+            id_ = int(name)
+        except ValueError:
+            return NotFoundError
+        return self.context.getFAQ(id_)
 
