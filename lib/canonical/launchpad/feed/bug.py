@@ -93,6 +93,8 @@ class BugsFeedBase(FeedBase):
 
         The list of bugs is screened to ensure no private bugs are returned.
         """
+        # XXX: BradCrittenden 2008-03-26 bug=206811: The screening of private
+        # bugs should be done in the database query.
         bugs = [bug for bug in self._getRawItems()
                  if not bug.private]
         return self._sortByDateCreated(bugs)
