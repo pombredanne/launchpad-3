@@ -201,7 +201,7 @@ class XpiTestCase(unittest.TestCase):
                         u'(foozilla.play.fire)')
                 self.assertEquals(
                     message.sourcecomment,
-                    u"Translators, don't play with fire!")
+                    u" Translators, don't play with fire! \n")
 
             elif message.msgid_singular.msgid == u'foozilla.utf8':
                 # Now, we can see that special UTF-8 chars are extracted
@@ -217,7 +217,7 @@ class XpiTestCase(unittest.TestCase):
                 # access key is a special notation that is supposed to be
                 # translated with a key shortcut.
                 self.assertEquals(
-                    message.singular_text, u'foozilla.menu.accesskey')
+                    message.singular_text, u'M')
                 self.assertEquals(
                     message.filereferences,
                     u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
@@ -225,12 +225,15 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment, u"Default key in en_US: 'M'")
+                    message.sourcecomment,
+                    u"Select the shortcut key that you want to use. Please,\n"
+                    u"don't change this translation if you are not really\n"
+                    u"sure about what you are doing.\n")
             elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
                 self.assertEquals(
-                    message.singular_text, u'foozilla.menu.commandkey')
+                    message.singular_text, u'm')
                 self.assertEquals(
                     message.filereferences,
                     u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
@@ -238,7 +241,10 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment, u"Default key in en_US: 'm'")
+                    message.sourcecomment,
+                    u"Select the shortcut key that you want to use. Please,\n"
+                    u"don't change this translation if you are not really\n"
+                    u"sure about what you are doing.\n")
 
         # Check that we got all messages.
         self.assertEquals(
@@ -335,11 +341,14 @@ class XpiTestCase(unittest.TestCase):
         # access key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
-            potmsgset.singular_text, u'foozilla.menu.accesskey')
+            potmsgset.singular_text, u'M')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment, u"Default key in en_US: 'M'")
+            potmsgset.sourcecomment,
+            u"Select the shortcut key that you want to use. Please,\n"
+            u"don't change this translation if you are not really\n"
+            u"sure about what you are doing.\n")
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
@@ -351,11 +360,14 @@ class XpiTestCase(unittest.TestCase):
         # command key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
-            potmsgset.singular_text, u'foozilla.menu.commandkey')
+            potmsgset.singular_text, u'm')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment, u"Default key in en_US: 'm'")
+            potmsgset.sourcecomment,
+            u"Select the shortcut key that you want to use. Please,\n"
+            u"don't change this translation if you are not really\n"
+            u"sure about what you are doing.\n")
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
