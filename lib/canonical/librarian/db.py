@@ -18,8 +18,9 @@ class Library:
     def __init__(self, restricted=False):
         """Create a new database access object.
 
-        :param restricted: If this is set to true, only restricted files
-        will be served. Otherwise only public files will be served.
+        :param restricted: If this is set to true, only restricted
+            will be served. Otherwise only public files will be served.
+            Files created in this library will marked as restricted.
         """
         self.restricted = restricted
 
