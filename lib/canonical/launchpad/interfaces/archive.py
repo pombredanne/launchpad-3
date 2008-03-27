@@ -99,6 +99,10 @@ class IArchive(IHasOwner):
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
 
+    expanded_archive_dependencies = Attribute(
+        "The expanded list of archive dependencies. It includes the implicit "
+        "PRIMARY archive dependency for PPAs.")
+
     archive_url = Attribute("External archive URL.")
 
     title = Attribute("Archive Title.")
