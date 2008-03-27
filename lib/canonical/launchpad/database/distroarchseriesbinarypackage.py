@@ -12,6 +12,7 @@ __all__ = [
 
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -68,7 +69,7 @@ class DistroArchSeriesBinaryPackage:
         return 'Binary Package "%s" in %s' % (
             self.binarypackagename.name, self.distroarchseries.title)
 
-    @property
+    @cachedproperty
     def cache(self):
         """See IDistroArchSeriesBinaryPackage."""
         query = """

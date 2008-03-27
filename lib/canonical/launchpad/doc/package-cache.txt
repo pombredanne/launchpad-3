@@ -418,7 +418,6 @@ description for the context binary package.
   ...     binarypackagename=foobar_name, summary='main foobar',
   ...     description='main foobar description')
 
-
 The DistroSeriesBinaryPackage.
 
   >>> foobar_binary = warty.getBinaryPackage('foobar')
@@ -431,7 +430,6 @@ The DistroSeriesBinaryPackage.
 
   >>> print foobar_binary.description
   main foobar description
-
 
 The DistroArchSeriesBinaryPackage.
 
@@ -454,8 +452,10 @@ cache entry for a PPA package with the same name.
   ...     archive=cprov.archive, distroseries=warty,
   ...     binarypackagename=foobar_name, summary='ppa foobar')
 
+  >>> foobar_binary = warty.getBinaryPackage('foobar')
   >>> foobar_binary.cache != ppa_cache
   True
 
+  >>> foobar_arch_binary = warty_i386.getBinaryPackage('foobar')
   >>> foobar_arch_binary.cache != ppa_cache
   True
