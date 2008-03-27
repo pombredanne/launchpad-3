@@ -29,6 +29,7 @@ __all__ = [
     'validate_date_interval'
     ]
 
+from cgi import escape
 import re
 import string
 import urllib
@@ -303,7 +304,7 @@ def valid_cve_sequence(value):
 def _validate_email(email):
     if not valid_email(email):
         raise LaunchpadValidationError(_(dedent("""
-            %s isn't a valid email address.""" % email)))
+            %s isn't a valid email address.""" % escape(email))))
 
 
 def validate_new_team_email(email):
