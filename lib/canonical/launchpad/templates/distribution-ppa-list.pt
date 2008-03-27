@@ -11,10 +11,6 @@
 >
 <body>
 
-  <metal:portlets fill-slot="portlets">
-    <tal:portlet replace="structure context/@@+portlet-ppa-architectures" />
-  </metal:portlets>
-
   <div metal:fill-slot="main">
 
     <h1>Personal Package Archives for <span tal:replace="context/title" /></h1>
@@ -25,8 +21,30 @@
        <a href="https://help.launchpad.net/PPAQuickStart"
        >quick-start guide</a>.</p>
 
-    <p>You can search for a PPA by the owner name or by any word
-       in its description.</p>
+    <div class="left">
+      <div class="section">
+        <h2>PPA numbers</h2>
+        <ul>
+          <li>Number of registered PPAs: <span
+            tal:replace="view/number_of_registered_ppas" /></li>
+          <li>Number of activate PPAs: <span
+            tal:replace="view/number_of_active_ppas" /></li>
+          <li>Number of published sources: <span
+            tal:replace="view/number_of_ppa_sources" /></li>
+          <li>Number of published binaries: <span
+            tal:replace="view/number_of_ppa_binaries" /></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="section"
+           tal:content="structure context/@@+portlet-ppa-architectures" />
+    </div>
+
+    <p>You can search for a PPA by onwer name, a word on its
+    description, source or binary names and binary summaries and
+    descriptions.</p>
 
     <form name="ppa_search" action="" method="GET">
       <label for="name">PPAs containing:</label>
@@ -42,25 +60,27 @@
 
     <tal:batch define="batch view/search_results">
 
-      <tal:navigation_top
-           replace="structure view/batchnav/@@+navigation-links-upper" />
+      <div id="ppa_list" tal:condition="batch">
+        <tal:navigation_top
+             replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing sortable" id="ppa_list" tal:condition="batch">
-        <thead>
-          <tr>
-            <th>Owner</th>
-            <th>Description</th>
-            <th>Sources</th>
-            <th>Binaries</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
-        </tbody>
-      </table>
+        <table class="listing sortable">
+          <thead>
+            <tr>
+              <th>Owner</th>
+              <th>Description</th>
+              <th>Sources</th>
+              <th>Binaries</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
+          </tbody>
+        </table>
 
-      <tal:navigation_bottom
-           replace="structure view/batchnav/@@+navigation-links-lower" />
+        <tal:navigation_bottom
+             replace="structure view/batchnav/@@+navigation-links-lower" />
+      </div>
 
       <div id="empty-result" tal:condition="not: batch">
         <tal:has_filter condition="view/name_filter">
