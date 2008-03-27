@@ -249,7 +249,7 @@ attribute set.
     True
 
     >>> print file_alias.http_url
-    http://localhost:58023/.../private.txt
+    http://localhost:58005/.../private.txt
 
     >>> transaction.commit()
     >>> file_alias.open()
@@ -277,7 +277,7 @@ But using the restricted librarian will work:
 
     >>> file_url = restricted_client.getURLForAlias(private_file_id)
     >>> print file_url
-    http://localhost:58023/.../private.txt
+    http://localhost:58005/.../private.txt
 
 Trying to access that file directly on the normal librarian will fail
 (by switching the port)
@@ -324,7 +324,7 @@ file:
     ...     'another-private.txt', len(private_content),
     ...     StringIO(private_content), 'text/plain')
     >>> print url
-    http://localhost:58023/.../another-private.txt
+    http://localhost:58005/.../another-private.txt
 
 The file can then immediately be retrieved:
 
