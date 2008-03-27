@@ -218,7 +218,9 @@ class Bug(SQLBase):
         result = BugTask.select('BugTask.bug = %d' % self.id)
         result = result.prejoin(
             ["assignee", "product", "sourcepackagename",
-             "owner", "distroseries", "bugwatch"])
+             "owner", "bugwatch"])
+        # Do not use the defaul orderBy as the prejoins cause ambiguities
+        # across the tables.
         result = result.orderBy("id")
         return sorted(result, key=bugtask_sort_key)
 

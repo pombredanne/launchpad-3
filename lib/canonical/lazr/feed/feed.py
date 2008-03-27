@@ -129,7 +129,10 @@ class FeedBase(LaunchpadView):
     def _getItemsWorker(self):
         """Create the list of items.
 
-        Called by getItems which may cache the results.
+        Called by getItems which may cache the results.  The caching is
+        necessary since `getItems` is called multiple times in the course of
+        constructing a single feed and pulling together the list of items is
+        potentially expensive.
         """
         raise NotImplementedError
 
@@ -242,7 +245,10 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        self.id = self.construct_id()
+        if id_ is None:
+            self.id = self.construct_id()
+        else:
+            self.id = id_
 
     @property
     def last_modified(self):
