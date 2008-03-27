@@ -38,8 +38,8 @@ point to the bugs themselves.
     >>> for link in alternate_links:
     ...     print link
     <link rel="alternate" href="http://bugs.launchpad.dev/jokosher" />
-    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/12" />
-    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/11" />
+    <link rel="alternate" href="http://bugs.launchpad.dev/bugs/12" />
+    <link rel="alternate" href="http://bugs.launchpad.dev/bugs/11" />
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
@@ -57,7 +57,7 @@ point to the bugs themselves.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
     >>> print extract_text(entry.id)
-    tag:launchpad.net,2007-03-15:/+bug/12
+    tag:launchpad.net,2007-03-15:/bugs/12
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
@@ -67,7 +67,7 @@ point to the bugs themselves.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
     >>> print extract_text(entry.id)
-    tag:launchpad.net,2007-03-15:/+bug/11
+    tag:launchpad.net,2007-03-15:/bugs/11
 
 The Atom feed must have the content-type of "application/atom+xml".
 
