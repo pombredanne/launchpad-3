@@ -64,6 +64,9 @@ cookbooks, and dishes. The inconsistent naming is intentional.
     ...
     ...     def get(self, name):
     ...         "Retrieve a single cookbook by name."
+    ...
+    ...     def findRecipes(self, name):
+    ...         "Find recipes with a given name, across cookbooks."
 
     >>> class IDishSet(Interface):
     ...     def getAll(self):
@@ -162,6 +165,16 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
+    ...
+    ...     def findRecipes(self, name):
+    ...         """Find recipes for a given dish across cookbooks."""
+    ...         matches = []
+    ...         for c in self.cookbooks:
+    ...             for r in c.recipes:
+    ...                 if r.dish.name == name:
+    ...                     matches.append(r)
+    ...                     break
+    ...         return matches
     >>> protect_schema(CookbookSet, ICookbookSet)
 
 Here's a simple AuthorSet with predefined authors.
@@ -546,6 +559,40 @@ The default adapter will also work just fine with the comments scoped
 collection.
 
 
+== Custom operations ==
+
+The CookbookSet class defines a method called 'findRecipes'. This is
+exposed through the cookbook collection resource as a custom operation
+called 'find_recipes'.
+
+    >>> from canonical.lazr.rest import ResourceGETOperation
+    >>> from zope.schema import TextLine
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> from canonical.lazr.interfaces import IResourceGETOperation
+    >>> class FindRecipesOperation(ResourceGETOperation):
+    ...    """An operation that searches for recipes across cookbooks."""
+    ...    params = [ TextLine(__name__='name') ]
+    ...
+    ...    def call(self, name):
+    ...        return self.context.findRecipes(name)
+    >>> provideAdapter(FindRecipesOperation,
+    ...                [ICookbookSet, IHTTPApplicationRequest],
+    ...                IResourceGETOperation, "find_recipes")
+
+The same underlying method is exposed through the recipe entry
+resource as a custom operation called 'find_similar_recipes'.
+
+    >>> class FindSimilarRecipesOperation(ResourceGETOperation):
+    ...    """Finds recipes with the same name."""
+    ...    params = []
+    ...
+    ...    def call(self):
+    ...        return CookbookSet().findRecipes(self.context.dish.name)
+    >>> provideAdapter(FindSimilarRecipesOperation,
+    ...                [IRecipe, IHTTPApplicationRequest],
+    ...                IResourceGETOperation, "find_similar_recipes")
+
+
 == Resource objects ==
 
 LAZR's Resource objects are the objects that actually handle incoming
@@ -605,6 +652,7 @@ will act as though you had performed a GET on the URL
     ...     request.setPublication(WebServicePublication(None))
     ...     # Set the "current" request.
     ...     login(ANONYMOUS, request)
+    ...     request.processInputs()
     ...     return request
 
     >>> request = create_web_service_request('/')
@@ -648,6 +696,21 @@ parsed with standard tools.
 
     >>> import simplejson
     >>> representation = simplejson.loads(collection())
+
+A collection may also expose a number of custom operations through
+GET. The cookbook collection exposes a custom GET operation called
+'find_recipes', which searches for recipes with a given name across
+cookbooks.
+
+    >>> request = create_web_service_request('cookbooks',
+    ...    environ={'QUERY_STRING' :
+    ...             '_op=find_recipes&name=Roast%20chicken'})
+    >>> operation_resource = request.traverse(app)
+    >>> chicken_recipes = simplejson.loads(operation_resource())
+    >>> sorted([c['instructions'] for c in chicken_recipes])
+    [u'A perfectly roasted chicken is...',
+     u'Draw, singe, stuff, and truss...',
+     u'You can always judge...']
 
 
 == Entry resources ==
@@ -735,6 +798,21 @@ Another example traversing to a comment:
     [(u'self_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
+
+An entry may expose a number of custom operations through GET. The
+recipe entry exposes a custom GET operation called
+'find_similar_recipes', which searches for recipes with the same name
+across cookbooks.
+
+    >>> request = create_web_service_request(
+    ...     'cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken',
+    ...     environ={'QUERY_STRING' : '_op=find_similar_recipes'})
+    >>> operation_resource = request.traverse(app)
+    >>> chicken_recipes = simplejson.loads(operation_resource())
+    >>> sorted([c['instructions'] for c in chicken_recipes])
+    [u'A perfectly roasted chicken is...',
+     u'Draw, singe, stuff, and truss...',
+     u'You can always judge...']
 
 
 == Requesting non available resources ==
