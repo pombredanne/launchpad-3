@@ -2,6 +2,7 @@
 
 """Base classes for one-off HTTP operations."""
 
+from zope.app.form.interfaces import InputErrors
 from zope.formlib.form import Fields, setUpWidgets
 from zope.interface import implements
 
@@ -67,6 +68,7 @@ class ResourceOperation:
                     validated_values[field_name] = widget.getInputValue()
                 else:
                     errors.append("%s: %s" % (field_name, widget.error()))
+
 
         finally:
             # Restore the old form in case someone else needs it.

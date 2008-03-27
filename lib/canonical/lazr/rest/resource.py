@@ -157,20 +157,20 @@ class CustomOperationResourceMixin:
         except ValueError:
             raise NotFound(self, self.request['QUERY_STRING'])
 
-        del(self.request.form['_op'])
         result = operation()
-        if isinstance(result, str) or isinstance(result, unicode):
+        if isinstance(result, basestring):
             # The operation took care of everything and just needs
             # this string served to the client.
             return result
 
         # The operation returned a collection or entry. It will be
         # serialized to JSON.
-        if hasattr(result, '__iter__'):
-            result = [EntryResource(entry, self.request) for entry in result]
-        else:
-            result = EntryResource(entry, self.request)
-        return result
+        try:
+            iterator = iter(result)
+        except TypeError:
+            # Result is a single entry
+            return EntryResource(entry, self.request)
+        return [EntryResource(entry, self.request) for entry in iterator]
 
 
 class ReadOnlyResource(HTTPResource):
@@ -271,10 +271,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Render the entry as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.get('_op')
+        operation_name = self.request.form.get('ws_op')
         if operation_name is not None:
+            del self.request.form['ws_op']
             result = self.handleCustomGET(operation_name)
-            if isinstance(result, str) or isinstance(result, unicode):
+            if isinstance(result, basestring):
                 # The custom operation took care of everything and
                 # just needs this string served to the client.
                 return result
@@ -491,8 +492,9 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.get('_op')
+        operation_name = self.request.form.get('ws_op')
         if operation_name is not None:
+            del self.request.form['ws_op']
             result = self.handleCustomGET(operation_name)
             if isinstance(result, str) or isinstance(result, unicode):
                 # The custom operation took care of everything and

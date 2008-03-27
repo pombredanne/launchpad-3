@@ -24,7 +24,7 @@ Some entries support custom operations through GET. You can get a list
 of a team's active members by invoking a custom operation.
 
   >>> active_members = webservice.get(
-  ...     "/~admins?_op=members_by_status&status=APPROVED").jsonBody()
+  ...     "/~admins?ws_op=members_by_status&status=APPROVED").jsonBody()
   >>> sorted([m['name'] for m in active_members])
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'lifeless', u'spiv',
    u'stevea', u'stub']
@@ -32,10 +32,17 @@ of a team's active members by invoking a custom operation.
 Custom operations may have error handling.
 
   >>> print webservice.get(
-  ...     "/~admins?_op=members_by_status&status=NOSUCHSTATUS")
+  ...     "/~admins?ws_op=members_by_status&status=NOSUCHSTATUS")
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value
+
+Trying to invoke a nonexistent custom operation yields an error.
+
+  >>> print webservice.get(
+  ...     "/~admins?ws_op=no_such_operation")
+  HTTP/1.1 404 Not Found
+  ...
 
 
 == Modification ==

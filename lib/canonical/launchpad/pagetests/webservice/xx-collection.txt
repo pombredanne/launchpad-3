@@ -56,7 +56,7 @@ results. Here's a custom operation on the collection of people, called
 
   >>> def search_people(text):
   ...     return sorted(webservice.get(
-  ...         "/people?_op=people&text=" + text).jsonBody())
+  ...         "/people?ws_op=people&text=" + text).jsonBody())
 
 
   >>> [p['name'] for p in search_people("admins")]
@@ -66,7 +66,7 @@ results. Here's a custom operation on the collection of people, called
   >>> [p['name'] for p in search_people("nosuchperson")]
   []
 
-  >>> print webservice.get("/people?_op=people&text=")
+  >>> print webservice.get("/people?ws_op=people&text=")
   HTTP/1.1 400 Bad Request
   ...
   text: Required input is missing.

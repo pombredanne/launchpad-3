@@ -174,6 +174,9 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...                 if r.dish.name == name:
     ...                     matches.append(r)
     ...                     break
+    ...         # A somewhat arbitrary assertion included for
+    ...         # the sake of demonstration.
+    ...         assert len(matches) > 0, "No matches for %s" % name
     ...         return matches
     >>> protect_schema(CookbookSet, ICookbookSet)
 
@@ -574,7 +577,12 @@ called 'find_recipes'.
     ...    params = [ TextLine(__name__='name') ]
     ...
     ...    def call(self, name):
-    ...        return self.context.findRecipes(name)
+    ...        try:
+    ...            return self.context.findRecipes(name)
+    ...        except AssertionError, e:
+    ...            self.request.response.setStatus(400)
+    ...            return str(e)
+
     >>> provideAdapter(FindRecipesOperation,
     ...                [ICookbookSet, IHTTPApplicationRequest],
     ...                IResourceGETOperation, "find_recipes")
@@ -587,7 +595,12 @@ resource as a custom operation called 'find_similar_recipes'.
     ...    params = []
     ...
     ...    def call(self):
-    ...        return CookbookSet().findRecipes(self.context.dish.name)
+    ...        try:
+    ...            return CookbookSet().findRecipes(self.context.dish.name)
+    ...        except AssertionError, e:
+    ...            self.request.response.setStatus(400)
+    ...            return str(e)
+
     >>> provideAdapter(FindSimilarRecipesOperation,
     ...                [IRecipe, IHTTPApplicationRequest],
     ...                IResourceGETOperation, "find_similar_recipes")
@@ -704,7 +717,7 @@ cookbooks.
 
     >>> request = create_web_service_request('cookbooks',
     ...    environ={'QUERY_STRING' :
-    ...             '_op=find_recipes&name=Roast%20chicken'})
+    ...             'ws_op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
     >>> sorted([c['instructions'] for c in chicken_recipes])
@@ -712,6 +725,15 @@ cookbooks.
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
 
+Custom operations may include custom error checking. Error messages
+are passed along to the client.
+
+    >>> request = create_web_service_request('cookbooks',
+    ...    environ={'QUERY_STRING' :
+    ...             'ws_op=find_recipes&name=NoSuchRecipe'})
+    >>> operation_resource = request.traverse(app)
+    >>> print operation_resource()
+    No matches for NoSuchRecipe
 
 == Entry resources ==
 
@@ -806,7 +828,7 @@ across cookbooks.
 
     >>> request = create_web_service_request(
     ...     'cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken',
-    ...     environ={'QUERY_STRING' : '_op=find_similar_recipes'})
+    ...     environ={'QUERY_STRING' : 'ws_op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
     >>> sorted([c['instructions'] for c in chicken_recipes])
