@@ -271,9 +271,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Render the entry as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.get('ws_op')
+        operation_name = self.request.form.pop('ws_op', None)
         if operation_name is not None:
-            del self.request.form['ws_op']
             result = self.handleCustomGET(operation_name)
             if isinstance(result, basestring):
                 # The custom operation took care of everything and
@@ -492,9 +491,8 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.get('ws_op')
+        operation_name = self.request.form.pop('ws_op', None)
         if operation_name is not None:
-            del self.request.form['ws_op']
             result = self.handleCustomGET(operation_name)
             if isinstance(result, str) or isinstance(result, unicode):
                 # The custom operation took care of everything and

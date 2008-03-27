@@ -68,8 +68,6 @@ class ResourceOperation:
                     validated_values[field_name] = widget.getInputValue()
                 else:
                     errors.append("%s: %s" % (field_name, widget.error()))
-
-
         finally:
             # Restore the old form in case someone else needs it.
             self.request.form = old_form
