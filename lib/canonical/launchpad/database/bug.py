@@ -215,7 +215,7 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See `IBug`."""
-        result = BugTask.select('BugTask.bug = %d' % self.id)
+        result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
         result = result.prejoin(
             ["assignee", "product", "sourcepackagename",
              "owner", "bugwatch"])
