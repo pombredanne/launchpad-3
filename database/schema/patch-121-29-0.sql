@@ -15,14 +15,14 @@ CREATE TABLE ShipItSurveyQuestion (
 
 CREATE TABLE ShipItSurveyAnswer (
     id serial PRIMARY KEY,
-    question TEXT NOT NULL UNIQUE
+    answer TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE ShipItSurveyResult (
     id serial PRIMARY KEY,
     survey integer NOT NULL REFERENCES ShipItSurvey,
     question integer NOT NULL REFERENCES ShipItSurveyQuestion,
-    answer integer REFERENCES ShipItSurveyQuestion
+    answer integer REFERENCES ShipItSurveyAnswer
 );
 
 -- For quick exports
