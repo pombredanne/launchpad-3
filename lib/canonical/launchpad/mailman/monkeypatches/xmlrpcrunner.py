@@ -494,8 +494,8 @@ class XMLRPCRunner(Runner):
                         syslog('xmlrpc', 'Missing declined message-id: %s',
                                message_id)
                     else:
-                        mlist.HandleRequest(request_id, mm_cfg.DISCARD)
-                        syslog('vette', 'Discarded: %s', message_id)
+                        mlist.HandleRequest(request_id, mm_cfg.REJECT)
+                        syslog('vette', 'Rejected: %s', message_id)
                         changes_detected = True
                 mlist.Save()
             finally:

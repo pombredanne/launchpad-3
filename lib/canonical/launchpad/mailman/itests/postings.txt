@@ -126,7 +126,8 @@ message, Launchpad forgets about it, but Mailman sends a rejection.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IMessageApprovalSet, IPersonSet)
-    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_one = person_set.getByName('itest-one')
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<third-injection>')
@@ -135,25 +136,104 @@ message, Launchpad forgets about it, but Mailman sends a rejection.
 
     >>> message_approval.reject(team_one.teamowner)
     >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
     >>> commit()
     >>> serial_watcher.wait()
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<third-injection>')
     >>> message_approval.status
-    <DBItem PostedMessageStatus.REJECTION, (0) New status>
+    <DBItem PostedMessageStatus.REJECTED, (50) Rejected>
     >>> holds = itest_helper.pending_hold_ids('itest-one')
     >>> len(holds)
     0
+
+    >>> smtp_watcher.wait()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    MIME-Version: 1.0
+    ...
+    Subject: Request to mailing list Itest-one rejected
+    From: itest-one-bounces@lists.launchpad.dev
+    To: anne.person@example.com
+    ...
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Received: by smtp2mbox
+    <BLANKLINE>
+    Your request to the Itest-one mailing list
+    <BLANKLINE>
+        Posting of your message titled "An unsubscribed post"
+    <BLANKLINE>
+    has been rejected by the list moderator.  The moderator gave the
+    following reason for rejecting your request:
+    <BLANKLINE>
+    "[No reason given]"
+    <BLANKLINE>
+    Any questions or comments should be directed to the list administrator
+    at:
+    <BLANKLINE>
+        itest-one-owner@lists.launchpad.dev
+    <BLANKLINE>
+    <BLANKLINE>
+
+While Anne is trying to compose a new, on-topic message, Cris joins the
+mailing list.
+
+    >>> cris = new_person('Cris')
+    >>> cris.join(team_one)
+    >>> list_one.subscribe(cris)
+    >>> serial_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+
+Now Anne posts another message to the mailing list she is not subscribed to.
+This time, her message is on topic and is accepted.
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: Another unsubscribed post
+    ... Message-ID: <fourth-injection>
+    ...
+    ... Hi, I am still not yet a member of this team's list.
+    ... """)
+
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
+
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.NEW, (0) New status>
+    >>> message_approval.approve(team_one.teamowner)
+    >>> serial_watcher.resync()
+    >>> smtp_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.APPROVED, (40) Approved>
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    0
+    >>> smtp_watcher.wait()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    XXX
 
 
 == Verified and registered member postings ==
 
 Anne now joins the team and subscribes to the mailing list.  She can now post
 to the mailing list.
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> person_set = getUtility(IPersonSet)
-    >>> team_one = person_set.getByName('itest-one')
 
     # Subscribe Anne with her preferred address.
     >>> anne.join(team_one)
@@ -167,7 +247,6 @@ to the mailing list.
     anne.person@example.com Preferred Email Address
     >>> smtpd.reset()
     >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev

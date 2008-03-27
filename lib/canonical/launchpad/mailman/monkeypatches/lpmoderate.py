@@ -45,7 +45,7 @@ def process(mlist, msg, msgdata):
     # handler, we don't craft all the notification messages about this hold.
     # We also need to keep track of the message-id (which better be unique)
     # because that's how we communicate about the message's status.
-    request_id = mlist.HoldMessage(msg, msgdata)
+    request_id = mlist.HoldMessage(msg, 'Not subscribed', msgdata)
     # This is a hack because by default Mailman cannot look up held messages
     # by message-id.  This works because Mailman's persistency layer simply
     # pickles the MailList object, mostly without regard to a known schema.
