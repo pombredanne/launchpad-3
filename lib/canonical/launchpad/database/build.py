@@ -297,11 +297,12 @@ class Build(SQLBase):
                 # the number of machines available in the build pool.
                 result = headjob_delay + int(sum_of_delays/pool_size)
         else:
-            # Indicate that the estimated dispatch time is unknown.
+            # The build pool for this job is empty, indicate that the
+            # estimated dispatch time is not known.
             result = -1
 
         if result == -1:
-            # We don't know what the estimated dispatch time is.
+            # We don't know the estimated dispatch time.
             result = datetime.utcfromtimestamp(0)
         else:
             result = datetime.utcnow() + timedelta(seconds=result)
