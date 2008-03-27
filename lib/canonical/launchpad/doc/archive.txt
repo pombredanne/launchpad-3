@@ -816,17 +816,27 @@ allowing them.
 Archive allows a lookup on a single binary package dependency
 candidate by its name, via the `PublishedPackage` table:
 
-   >>> hoary_i386 = hoary['i386']
+   >>> warty_i386 = warty['i386']
+
    >>> candidate = ubuntu.main_archive.findDepCandidateByName(
-   ...     hoary_i386, "pmount")
+   ...     warty_i386, "pmount")
    >>> print candidate.binarypackagename
    pmount
 
-Since 'at' isn't available in our sampledata (not even published),
-None is returned:
+   >>> candidate = cprov.archive.findDepCandidateByName(
+   ...     warty_i386, "pmount")
+   >>> print candidate.binarypackagename
+   pmount
+
+Since 'python2.4' isn't available in our sampledata (not even
+published), None is returned:
 
    >>> ubuntu.main_archive.findDepCandidateByName(
-   ...     hoary_i386, "at") is None
+   ...     warty_i386, "python2.4") is None
+   True
+
+   >>> cprov.archive.findDepCandidateByName(
+   ...     warty_i386, "python2.4") is None
    True
 
 
