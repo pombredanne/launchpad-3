@@ -235,9 +235,15 @@ class TranslationImportQueueView(HasTranslationImportsView):
 
         :return: A form.Fields instance containing the target field.
         """
+        status_filter = self.request.get('field.filter_status', 'all')
+        if status_filter == 'all':
+            status = None
+        else:
+            status = RosettaImportStatus.items[status_filter]
+
         return self.createFilterFieldHelper(
             name='filter_target',
-            source=TranslationImportTargetVocabularyFactory(),
+            source=TranslationImportTargetVocabularyFactory(status),
             title='Choose which target to show')
 
 
@@ -246,9 +252,20 @@ class TranslationImportTargetVocabularyFactory:
 
     implements(IContextSourceBinder)
 
+    status = None
+
+    def __init__(self, status=None):
+        self.status = status
+
     def __call__(self, context):
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        targets = translation_import_queue.getPillarObjectsWithImports()
+        import_queue = getUtility(ITranslationImportQueue)
+        targets = import_queue.getPillarObjectsWithImports()
+
+        if self.status is None:
+            filtered_targets = None
+        else:
+            filtered_targets = set(import_queue.getPillarObjectsWithImports(
+                self.status))
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:
@@ -258,5 +275,10 @@ class TranslationImportTargetVocabularyFactory:
                 term_name = '%s/%s' % (target.distribution.name, target.name)
             else:
                 term_name = target.name
-            terms.append(SimpleTerm(term_name, term_name, target.displayname))
+
+            displayname = target.displayname
+            if filtered_targets is not None and target in filtered_targets:
+                displayname += '*'
+
+            terms.append(SimpleTerm(term_name, term_name, displayname))
         return SimpleVocabulary(terms)

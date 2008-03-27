@@ -6,87 +6,112 @@ is no human readable labels associated with them.
 
 Let's add 100 files to the queue so we have enough entries to play with.
 
-  >>> import canonical.launchpad
-  >>> import os.path
-  >>> test_file_name = os.path.join(
-  ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
-  >>> tarball = open(test_file_name)
+    >>> import canonical.launchpad
+    >>> import os.path
+    >>> test_file_name = os.path.join(
+    ...     os.path.dirname(canonical.launchpad.__file__),
+    ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
+    >>> tarball = open(test_file_name)
 
-  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/evolution/trunk/'
-  ...     '+translations-upload')
-  >>> file_ctrl = browser.getControl('File:')
-  >>> file_ctrl.add_file(
-  ...     tarball, 'application/x-gzip', 'foo.tar.gz')
-  >>> browser.getControl('Request Upload').click()
-  >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag
-  <div...Thank you for your upload. 100 files from the tarball will be reviewed...
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/evolution/trunk/'
+    ...     '+translations-upload')
+    >>> file_ctrl = browser.getControl('File:')
+    >>> file_ctrl.add_file(
+    ...     tarball, 'application/x-gzip', 'foo.tar.gz')
+    >>> browser.getControl('Request Upload').click()
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag
+    <div...Thank you for your upload. 100 files from the tarball will be
+    reviewed...
 
 Check that the import queue has the needed entries to do filtering and that
 we have all the entries we just imported plus the two entries already included
 in sample data.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports')
-  >>> browser.getLink('Next')
-  <Link text='Next' url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...All targets...
-  ...Evolution...
-  ...All statuses...
-  ...Approved...
-  ...Imported...
-  ...Deleted...
-  ...Failed...
-  ...Needs Review...
-  ...Blocked...
-  ...All files...
-  ...Only po files...
-  ...Only pot files...
-  ...1...5...of...102 results...
+    >>> browser.open('http://translations.launchpad.dev/+imports')
+    >>> browser.getLink('Next')
+    <Link text='Next' url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...All targets...
+    ...Evolution...
+    ...All statuses...
+    ...Approved...
+    ...Imported...
+    ...Deleted...
+    ...Failed...
+    ...Needs Review...
+    ...Blocked...
+    ...All files...
+    ...Only po files...
+    ...Only pot files...
+    ...1...5...of...102 results...
+
+    >>> def print_targets(browser):
+    ...     """Print contents of the import target dropdown."""
+    ...     tags = find_tags_by_class(browser.contents, "inlined-widget")
+    ...     for tag in tags:
+    ...         content = extract_text(tag).encode(
+    ...             'us-ascii', 'backslashreplace').strip()
+    ...         if content == 'All targets':
+    ...             break
+    ...         print content
+
+The only target in the target filter dropdown is Evolution.
+
+    >>> print_targets(browser)
+    All targets
+    Evolution
 
 The entries that need review, as we can see, initially, are all entries minus
 the two already included in sample data.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
-  >>> browser.getControl(name='field.filter_status', index=0).value
-  ['NEEDS_REVIEW']
-  >>> browser.getControl(name='field.filter_extension', index=0).value
-  ['all']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...5...of...100 results...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+    >>> browser.getControl(name='field.filter_status', index=0).value
+    ['NEEDS_REVIEW']
+    >>> browser.getControl(name='field.filter_extension', index=0).value
+    ['all']
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...1...5...of...100 results...
+
+Since we're filtering for "needs review" state, and Evolution has queue
+entries in that state, Evolution now shows up in the target dropdown
+with an asterisk.
+
+    >>> print_targets(browser)
+    All targets
+    Evolution*
 
 Let's select only the .po files, we get now only 96 entries.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?field.filter_status=all'
-  ...     '&field.filter_extension=po')
-  >>> browser.getControl(name='field.filter_status', index=0).value
-  ['all']
-  >>> browser.getControl(name='field.filter_extension', index=0).value
-  ['po']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...5...of...96 results...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=all&field.filter_extension=po')
+    >>> browser.getControl(name='field.filter_status', index=0).value
+    ['all']
+    >>> browser.getControl(name='field.filter_extension', index=0).value
+    ['po']
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...1...5...of...96 results...
 
 And now, all entries that are .pot files, we should get just 6.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?field.filter_status=all'
-  ...     '&field.filter_extension=pot')
-  >>> browser.getControl(name='field.filter_status', index=0).value
-  ['all']
-  >>> browser.getControl(name='field.filter_extension', index=0).value
-  ['pot']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...5...of...6 results...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=all&field.filter_extension=pot')
+    >>> browser.getControl(name='field.filter_status', index=0).value
+    ['all']
+    >>> browser.getControl(name='field.filter_extension', index=0).value
+    ['pot']
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...1...5...of...6 results...
 
 Now, we want the approved entries.
 
@@ -100,6 +125,13 @@ Now, we want the approved entries.
   >>> print browser.contents
   <!DOCTYPE...
   ...There are no entries that match this filtering...
+
+Evolution shows up in the dropdown without asterisk again, since it has
+no entries matching the status we filter for.
+
+    >>> print_targets(browser)
+    All targets
+    Evolution
 
 Let's change the status of the third entry on the queue to be blocked.
 
@@ -121,6 +153,10 @@ We can see now an entry blocked.
   >>> print browser.contents
   <!DOCTYPE...
   ...1...1...of...1 result...
+
+    >>> print_targets(browser)
+    All targets
+    Evolution*
 
 And the entries that need review are only 99
 
