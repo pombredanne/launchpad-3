@@ -287,8 +287,9 @@ class Build(SQLBase):
         else:
             # There are jobs ahead of us. Divide the delay total by
             # the number of machines available in the build pool.
-            pool_size = float(getUtility(
-                IBuilderSet).getBuildersByProcessor(self.processor).count())
+            pool_size = float(getUtility(IBuilderSet).getBuildersForQueue(
+                            self.processor,
+                            self.is_virtualized).count())
 
             # Handle the case of zero sized build pools.
             if pool_size > 0:

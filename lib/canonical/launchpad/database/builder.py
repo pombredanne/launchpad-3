@@ -691,6 +691,7 @@ class BuilderSet(object):
         buildMaster.scanActiveBuilders()
         return buildMaster
 
-    def getBuildersByProcessor(self, processor):
-        """Return all builders for the given processor."""
-        return Builder.selectBy(builderok=True, processor=processor)
+    def getBuildersForQueue(self, processor, virtualized):
+        """Get all builders for given processor/virtualization setting."""
+        return Builder.selectBy(builderok=True, processor=processor,
+                                virtualized=virtualized)
