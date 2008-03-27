@@ -54,11 +54,10 @@ property should be empty ('None')
     True
 
 The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
-hence ask for its estimated build start time. The latter should either
-be now or some time in the future.
-    >>> import datetime
-    >>> pending_build.estimated_buildstart > (datetime.datetime.utcnow()
-    ...     - datetime.timedelta(minutes=1))
+hence ask for its estimated build start time. The latter will be undefined
+however because the corresponding build pool is empty.
+    >>> from datetime import datetime as DT
+    >>> pending_build.estimated_buildstart == DT.utcfromtimestamp(0)
     True
 
 The currently published component is provided via the 'current_component'
