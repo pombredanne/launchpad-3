@@ -795,6 +795,37 @@ dependency list.
     >>> print depwait_build.dependencies
     mozilla-firefox
 
+'pmount' dependency is also satisfied in the Celso's PPA context,
+even when it is published in a component not allowed in its current
+component domain ('ogre_components'). That's because PPAs implicitly
+depend on all components of its distribution PRIMARY archive.
+
+    >>> depwait_build.dependencies = 'biscuit, pmount'
+
+    >>> login('foo.bar@canonical.com')
+    >>> universe_component = getUtility(IComponentSet)['universe']
+    >>> pmount_pub.secure_record.component = universe_component
+    >>> removeSecurityProxy(depwait_build).archive = cprov.archive
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
+
+    >>> print depwait_build.ogre_components
+    ['main']
+
+    >>> print pmount_pub.component.name
+    universe
+
+    >>> depwait_build.updateDependencies()
+    >>> print depwait_build.dependencies
+    biscuit
+
+Restore depwait_build previous state.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pmount_pub.secure_record.component = main_component
+    >>> removeSecurityProxy(depwait_build).archive = hoary.main_archive
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
 
 === Retrying DEPWAIT builds ===
 

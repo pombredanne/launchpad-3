@@ -308,7 +308,14 @@ class Build(SQLBase):
             dep_candidate.binarypackageversion, version, relation):
             return False
 
-        if dep_candidate.component not in self.ogre_components:
+        # Only PRIMARY archive build dependencies should be restricted
+        # to the ogre_components. Both PARTNER and PPA can reach
+        # dependencies from all components in the PRIMARY archive.
+        # Moreover, PARTNER and PPA component domain is single, i.e,
+        # PARTNER only contains packages in 'partner' component and PPAs
+        # only contains packages in 'main' component.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            dep_candidate.component not in self.ogre_components):
             return False
 
         return True
