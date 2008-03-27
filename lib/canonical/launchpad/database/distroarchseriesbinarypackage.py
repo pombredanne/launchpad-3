@@ -101,7 +101,6 @@ class DistroArchSeriesBinaryPackage:
             return self.cache.description
         return None
 
-
     def __getitem__(self, version):
         """See IDistroArchSeriesBinaryPackage."""
         query = """

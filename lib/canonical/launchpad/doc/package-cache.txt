@@ -285,7 +285,7 @@ reached via searches:
 
 == PPA package caches ==
 
-Package caches are also poulated for PPAs, allowing users to search
+Package caches are also populated for PPAs, allowing users to search
 for them considering the packages currently published in their context.
 
 We will use Celso's PPA.
