@@ -258,7 +258,7 @@ def collect_archive_message_ids(team_name):
             if mo:
                 message_ids.append(mo.group('id'))
                 break
-    return message_ids
+    return sorted(message_ids)
 
 
 def pending_hold_ids(list_name):
