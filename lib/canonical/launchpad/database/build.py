@@ -287,6 +287,7 @@ class Build(SQLBase):
                         self.processor,
                         self.is_virtualized).count())
 
+        # Handle the case of zero sized build pools.
         if pool_size > 0:
             if sum_of_delays is None:
                 # This job is the head job.
@@ -294,7 +295,6 @@ class Build(SQLBase):
             else:
                 # There are jobs ahead of us. Divide the delay total by
                 # the number of machines available in the build pool.
-                # Handle the case of zero sized build pools.
                 result = headjob_delay + int(sum_of_delays/pool_size)
         else:
             # Indicate that the estimated dispatch time is unknown.
