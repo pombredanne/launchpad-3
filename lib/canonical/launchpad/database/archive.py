@@ -28,6 +28,7 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
@@ -534,6 +535,18 @@ class Archive(SQLBase):
         self.package_description_cache = " ".join(cache_contents)
         self.sources_cached = sources_cached.count()
         self.binaries_cached = binaries_cached.count()
+
+    def findDepCandidateByName(self, distroarchseries, name):
+        """See IPublishedSet."""
+        archives = [self.id]
+        query = """
+            binarypackagename = %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            packagepublishingstatus = %s
+        """ % sqlvalues(name, distroarchseries, archives,
+                        PackagePublishingStatus.PUBLISHED)
+        return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""

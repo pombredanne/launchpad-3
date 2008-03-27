@@ -297,7 +297,9 @@ class Build(SQLBase):
         satisfied and if it is reachable in the build context.
         """
         name, version, relation = self._parseDependencyToken(token)
-        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        dep_candidate = self.archive.findDepCandidateByName(
+            self.distroarchseries, name)
 
         if not dep_candidate:
             return False

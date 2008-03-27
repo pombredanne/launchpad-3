@@ -32,19 +32,6 @@ interrogate this information.
 
 See more information about getReleasePackages below.
 
-DistroArchSeries class has a built-in method to return a single
-dependency package candidate by its name as a PublishedPackage
-instance:
-
-   >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
-   u'pmount'
-
-Since 'at' isn't available in our sampledata (not even published),
-None is returned:
-
-   >>> hoary_i386.findDepCandidateByName("at") is None
-   True
-
 Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 

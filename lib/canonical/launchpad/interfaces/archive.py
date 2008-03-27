@@ -210,6 +210,13 @@ class IArchive(IHasOwner):
         Person table indexes while searching.
         """
 
+    def findDepCandidateByName(distroarchseries, name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
+        """
+
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
 

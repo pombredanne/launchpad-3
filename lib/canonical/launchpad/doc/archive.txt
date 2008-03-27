@@ -811,6 +811,25 @@ allowing them.
     No dependencies recorded.
 
 
+== Find binary package dependency candidates ==
+
+Archive allows a lookup on a single binary package dependency
+candidate by its name, via the `PublishedPackage` table:
+
+   >>> hoary_i386 = hoary['i386']
+   >>> candidate = ubuntu.main_archive.findDepCandidateByName(
+   ...     hoary_i386, "pmount")
+   >>> print candidate.binarypackagename
+   pmount
+
+Since 'at' isn't available in our sampledata (not even published),
+None is returned:
+
+   >>> ubuntu.main_archive.findDepCandidateByName(
+   ...     hoary_i386, "at") is None
+   True
+
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
