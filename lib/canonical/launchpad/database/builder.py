@@ -693,4 +693,4 @@ class BuilderSet(object):
 
     def getBuildersByProcessor(self, processor):
         """Return all builders for the given processor."""
-        return Builder.selectBy(processor=processor)
+        return Builder.selectBy(builderok=True, processor=processor)

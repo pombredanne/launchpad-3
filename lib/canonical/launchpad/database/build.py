@@ -248,7 +248,8 @@ class Build(SQLBase):
             # pending jobs.
             return None
 
-        result = 0
+        # The -1 indicates that the estimated dispatch time is unknown.
+        result = -1
 
         cur = cursor()
         # For a given build job in position N in the build queue the
@@ -288,9 +289,20 @@ class Build(SQLBase):
             # the number of machines available in the build pool.
             pool_size = float(getUtility(
                 IBuilderSet).getBuildersByProcessor(self.processor).count())
-            result = headjob_delay + int(sum_of_delays/pool_size)
 
-        result = datetime.utcnow() + timedelta(seconds=result)
+            # Handle the case of zero sized build pools.
+            if pool_size > 0:
+                result = headjob_delay + int(sum_of_delays/pool_size)
+            else:
+                # Indicate that the estimated dispatch time is unknown.
+                result = -1
+
+        if result == -1:
+            # We don't know what the estimated dispatch time is.
+            result = datetime.utcfromtimestamp(0)
+        else:
+            result = datetime.utcnow() + timedelta(seconds=result)
+                
         return result
 
     def _getHeadjobDelay(self):
