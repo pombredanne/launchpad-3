@@ -207,4 +207,12 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             held_message.acknowledge()
             response[held_message.message_id] = (
                 held_message.mailing_list.team.name, 'decline')
+        # Similarly handle all held messages that have been discarded by the
+        # team administrator but not yet handled by Mailman.
+        rejected_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.DISCARD_PENDING)
+        for held_message in rejected_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'discard')
         return response
