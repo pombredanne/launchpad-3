@@ -6,8 +6,8 @@ __all__ = ['Build', 'BuildSet']
 
 
 import apt_pkg
-import logging
 from datetime import datetime, timedelta
+import logging
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -22,6 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import cursor
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -38,7 +39,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.database.sqlbase import cursor
 
 class Build(SQLBase):
     implements(IBuild)
@@ -276,7 +276,7 @@ class Build(SQLBase):
         cur.execute(sum_query)
         # Get the sum of the estimated build time for jobs that are
         # ahead of us in the queue.
-        sum_of_delays = cur.fetchone()[0]
+        [sum_of_delays] = cur.fetchone()
 
         # Get build dispatch time for job at the head of the queue.
         headjob_delay = self._getHeadjobDelay()
@@ -341,7 +341,7 @@ class Build(SQLBase):
         # building on the respective machine pool (current build
         # set)
         remainders = cur.fetchall()
-        build_delays = set([int(row[0]) for row in remainders])
+        build_delays = set([row[0] and int(row[0]) for row in remainders])
 
         # This is the head job delay in seconds.
         headjob_delay = len(build_delays) and max(build_delays) or 0
