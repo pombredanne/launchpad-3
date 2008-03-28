@@ -23,7 +23,6 @@ Setup the script runner:
     >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
     ...                       "manage-chroot.py")
 
-
 Create and populate a temporary file and pretend it is a chroot:
 
     >>> import tempfile
@@ -31,7 +30,6 @@ Create and populate a temporary file and pretend it is a chroot:
     >>> temp_fd = open(filepath, 'w')
     >>> temp_fd.write('fooooooooooo baaaaaaaaaar')
     >>> temp_fd.close()
-
 
 Setup a function to return a ManageChrootScript object given some
 parameters.
@@ -52,7 +50,6 @@ parameters.
     ...     manage_chroot.logger = FakeLogger()
     ...     manage_chroot.setupLocation()
     ...     return manage_chroot
-
 
 We will execute the real script once using Popen to show that it exists
 and is executable.  After this first run, we'll call the script object
@@ -80,6 +77,20 @@ We can add a new chroot for ubuntu/hoary/i386 with the "add" command:
     DEBUG   Removing lock file...
     <BLANKLINE>
 
+Using an invalid command results in an error.
+
+    >>> from canonical.launchpad.scripts.ftpmasterbase import (
+    ...     SoyuzScriptError)
+    >>> manage_chroot = getScriptObject("bogus")
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    ERROR Allowed actions: ['add', 'update', 'remove', 'get']
+    Unknown action: bogus
 
 Attempting to operate on a chroot for an unknown suite (distroseries)
 results in an error.
@@ -94,6 +105,16 @@ results in an error.
     ...     print "Did not get expected exception"
     Could not find suite 'foo'
 
+Specifiying a bad architecture results in an error.
+
+    >>> manage_chroot = getScriptObject("add", arch="bogus")
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    Architecture not found: u'Unknown architecture bogus for ubuntu hoary'
 
 We can update the previous chroot with the "update" command:
 (we'll use the same file, it doesn't matter for our purposes):
@@ -108,14 +129,11 @@ Remove the temporary file created by this script
 
     >>> os.remove(filepath)
 
-
 Adding a chroot using a non-existent path will result in an error.
 
     >>> filepath = os.path.join(config.root, "no-such-file")
 
     >>> manage_chroot = getScriptObject("add", filepath=filepath)
-    >>> from canonical.launchpad.scripts.ftpmasterbase import (
-    ...     SoyuzScriptError)
     >>> try:
     ...      manage_chroot.mainTask()
     ... except SoyuzScriptError, info:
@@ -125,12 +143,10 @@ Adding a chroot using a non-existent path will result in an error.
     DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     Could not open: ...no-such-file
 
-
 Commit the work done so far so the librarian has the uploaded file.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
-
 
 Using the "get" command will retrieve a specified chroot to a given
 filename.
@@ -143,7 +159,6 @@ filename.
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
     DEBUG   Writing to '...foo'.
 
-
 The downloaded chroot file now exists in the filepath specified.
 
     >>> os.path.exists(filepath)
@@ -153,7 +168,6 @@ Remove it to avoid noise in test tree:
 
     >>> os.remove(filepath)
 
-
 Using the "remove" command will remove a previously uploaded chroot.
 
     >>> manage_chroot = getScriptObject("remove")
@@ -161,7 +175,6 @@ Using the "remove" command will remove a previously uploaded chroot.
     DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) removed.
-
 
 Trying to retrieve a removed chroot will fail.
 
@@ -177,7 +190,6 @@ Trying to retrieve a removed chroot will fail.
     Chroot was deleted.
 
   >>> os.remove(filepath)
-
 
 When the librarian is not running, attempting to upload a chroot file
 results in an appropriate error.

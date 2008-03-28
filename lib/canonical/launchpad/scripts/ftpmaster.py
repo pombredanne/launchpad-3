@@ -1663,7 +1663,7 @@ class ObsoleteDistroseries(SoyuzScript):
 
 
 class ManageChrootScript(SoyuzScript):
-    """`SoyuzScript` that obsoletes a distroseries."""
+    """`SoyuzScript` that manages chroot files."""
 
     usage = "%prog -d <distribution> -s <suite> -a <architecture> -f file"
     description = "Manage the chroot files used by the builders."
@@ -1681,34 +1681,25 @@ class ManageChrootScript(SoyuzScript):
             help='Chroot file path')
 
     def mainTask(self):
-        """Set up a ManageChroot object and invoke it."""
+        """Set up a ChrootManager object and invoke it."""
         if len(self.args) != 1:
             raise SoyuzScriptError(
                 "manage-chroot.py <add|update|remove|get>")
 
-        action = self.args[0]
+        [action] = self.args
 
-        try:
-            distribution = getUtility(
-                IDistributionSet)[self.options.distribution_name]
-        except NotFoundError, info:
-            raise SoyuzScriptError("Distribution not found: %s" % info)
-
-        try:
-            if self.options.suite is not None:
-                series, dummypocket = distribution.getDistroSeriesAndPocket(
-                    self.options.suite)
-            else:
-                series = distribution.currentseries
-        except NotFoundError, info:
-            raise SoyuzScriptError("Series not found: %s" % info)
+        distribution = self.location.distribution
+        series = self.location.distroseries
 
         try:
             distroarchseries = series[self.options.architecture]
         except NotFoundError, info:
             raise SoyuzScriptError("Architecture not found: %s" % info)
 
+        # We don't want to have to force the user to confirm transactions
+        # for manage-chroot.py, so disable that feature of SoyuzScript.
         self.options.confirm_all = True
+
         self.logger.debug(
             "Initialising ChrootManager for '%s'" % (distroarchseries.title))
         chroot_manager = ChrootManager(
