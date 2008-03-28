@@ -1147,12 +1147,16 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
     implements(ITraversable)
 
     def _make_external_link(self, summary):
+        if summary:
+            summary = escape(summary)
+        else:
+            summary = '&mdash;'
         url = self._context.url
         if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
-            return escape(summary)
+            return summary
         else:
             return '<a class="link-external" href="%s">%s</a>' % (
-                escape(url), escape(summary))
+                escape(url), summary)
 
     def external_link(self):
         summary = self._context.bugtracker.name
@@ -1162,8 +1166,7 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
         return self._make_external_link(summary)
 
     def external_link_short(self):
-        summary = self._context.remotebug or '-'
-        return self._make_external_link(summary)
+        return self._make_external_link(self._context.remotebug)
 
     def traverse(self, name, furtherPath):
         if name == 'url':
