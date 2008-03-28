@@ -107,7 +107,7 @@ to the bug tracker page.
   >>> 'This is a test MANTIS tracker.' in user_browser.contents
   True
 
-For Email Address bug trackers we show the upstream email address as
+For Email Address bug trackers, we show the upstream email address as
 the location of the bug tracker, but obfuscate it for anonymous users:
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
@@ -442,7 +442,8 @@ anonymous users.
 First we must create a new bug watch on an Email Address bug tracker:
 
   >>> user_browser.open(
-  ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product')
+  ...     'http://bugs.launchpad.dev'
+  ...     '/jokosher/+bug/12/+choose-affected-product')
   >>> user_browser.getControl('Project').value = 'gnome-terminal'
   >>> user_browser.getControl('Continue').click()
   >>> user_browser.getControl(

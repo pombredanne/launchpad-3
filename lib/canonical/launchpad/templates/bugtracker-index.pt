@@ -36,7 +36,7 @@
         </tr>
       </thead>
 
-      <tbody tal:define="obfuscate not:view/user">
+      <tbody>
         <tal:watches repeat="watch watches">
           <tr tal:define="hide not:watch/bug/required:launchpad.View">
             <tal:hide-watch-details condition="hide">
@@ -58,14 +58,7 @@
                   </span>
                 </a>
               </td>
-              <td>
-                <a tal:condition="obfuscate"
-                   tal:attributes="href watch/url/fmt:obfuscate-email"
-                   tal:content="watch/remotebug">53656</a>
-                <a tal:condition="not:obfuscate"
-                   tal:attributes="href watch/url"
-                   tal:content="watch/remotebug">53656</a>
-              </td>
+              <td tal:content="structure watch/fmt:external-link-short" />
               <td tal:content="watch/remotestatus" />
             </tal:show-watch-details>
           </tr>
@@ -87,30 +80,14 @@
     Location
   </h2>
 
-  <tal:user condition="view/user">
-    <ul id="bugtracker-urls">
-      <li tal:define="baseurl context/baseurl">
-        <a class="link-external" tal:attributes="href baseurl">
-          <strong tal:content="baseurl" />
-        </a>
-      </li>
-      <li tal:repeat="alias context/aliases">
-        <strong tal:content="alias" /> (Alias)
-      </li>
-    </ul>
-  </tal:user>
-  <tal:not-user condition="not:view/user">
-    <ul id="bugtracker-urls">
-      <li tal:define="baseurl context/baseurl/fmt:obfuscate-email">
-        <a class="link-external" tal:attributes="href baseurl">
-          <strong tal:content="baseurl" />
-        </a>
-      </li>
-      <li tal:repeat="alias context/aliases">
-        <strong tal:content="alias/fmt:obfuscate-email" /> (Alias)
-      </li>
-    </ul>
-  </tal:not-user>
+  <ul id="bugtracker-urls">
+    <li>
+      <strong tal:content="structure context/fmt:external-link" />
+    </li>
+    <li tal:repeat="alias context/fmt:aliases">
+      <strong tal:content="alias" /> (Alias)
+    </li>
+  </ul>
 
   <h2 tal:condition="context/contactdetails">
     Contact details
@@ -123,7 +100,8 @@
   </div>
 
   <h2 tal:condition="context/watches">Bug watches</h2>
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-upper" />
+  <tal:navigation
+      replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:block define="watches view/batchnav/batch"
              condition="watches">
@@ -132,7 +110,8 @@
 
   </tal:block>
 
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-lower" />
+  <tal:navigation
+      replace="structure view/batchnav/@@+navigation-links-lower" />
 
 </div>
 

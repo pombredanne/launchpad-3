@@ -8,25 +8,12 @@
               url current_task/fmt:url">
   <h2>Remote bug watches</h2>
   <div class="portletBody portletContent">
-    <ul class="remote bug" tal:define="user view/user">
+    <ul class="remote bug">
       <li tal:repeat="watch context/watches">
         <a tal:attributes="href watch/fmt:url"
            ><img src="/@@/edit" alt="[Edit]"
            title="Change watch details" /></a>
-        <tal:user condition="user">
-          <a tal:attributes="href watch/url">
-            <span tal:replace="watch/bugtracker/name" />
-            <span tal:condition="watch/remotebug"
-                  tal:replace="string:#${watch/remotebug}" />
-          </a>
-        </tal:user>
-        <tal:not-user condition="not:user">
-          <a tal:attributes="href watch/url/fmt:obfuscate-email">
-            <span tal:replace="watch/bugtracker/name" />
-            <span tal:condition="watch/remotebug"
-                  tal:replace="string:#${watch/remotebug}" />
-          </a>
-        </tal:not-user>
+        <tal:watch replace="structure watch/fmt:external-link" />
         <tal:block tal:condition="watch/remotestatus">
           <br />[<span tal:content="watch/remotestatus" />]
         </tal:block>
