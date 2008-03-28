@@ -67,8 +67,7 @@ Let's select only the .po files, we get now only 96 entries.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
-    ...     'field.filter_status=all'
-    ...     '&field.filter_extension=po')
+    ...     'field.filter_status=all&field.filter_extension=po')
     >>> browser.getControl(name='field.filter_status', index=0).value
     ['all']
     >>> browser.getControl(name='field.filter_extension', index=0).value
