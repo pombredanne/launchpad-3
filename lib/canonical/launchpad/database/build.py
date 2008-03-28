@@ -333,7 +333,7 @@ class Build(SQLBase):
                 builder.processor = %s
             ORDER BY
                 remainder;
-            """ % sqlvalues(self.is_virtualized, self.buildstate,
+            """ % sqlvalues(self.is_virtualized, BuildStatus.BUILDING,
                     self.processor)
 
         cur.execute(delay_query)
@@ -351,9 +351,9 @@ class Build(SQLBase):
                 # This job is currently building and taking longer
                 # than estimated i.e. we don't have a clue when it
                 # will be finished. Make a wild guess (2 minutes?).
-                build_delay = 120
-            if build_delay < headjob_delay:
-                headjob_delay = build_delay
+                delay = 120
+            if delay < headjob_delay:
+                headjob_delay = delay
 
         return headjob_delay
 
