@@ -92,19 +92,6 @@ Using an invalid command results in an error.
     ERROR Allowed actions: ['add', 'update', 'remove', 'get']
     Unknown action: bogus
 
-Attempting to operate on a chroot for an unknown suite (distroseries)
-results in an error.
-
-    >>> from canonical.launchpad.scripts.ftpmasterbase import (
-    ...     PackageLocationError)
-    >>> try:
-    ...     manage_chroot = getScriptObject("add", suite="foo")
-    ... except PackageLocationError, info:
-    ...     print info
-    ... else:
-    ...     print "Did not get expected exception"
-    Could not find suite 'foo'
-
 Specifiying a bad architecture results in an error.
 
     >>> manage_chroot = getScriptObject("add", arch="bogus")
