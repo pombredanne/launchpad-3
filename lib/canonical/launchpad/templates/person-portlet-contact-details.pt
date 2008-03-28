@@ -52,7 +52,7 @@
             <tal:not_logged_in condition="not: request/lp:person">
               <td>
                 <a href="+login">Log in</a> for email information.
-              <td>
+              </td>
             </tal:not_logged_in>
 
           </tal:has_preferredemail>
