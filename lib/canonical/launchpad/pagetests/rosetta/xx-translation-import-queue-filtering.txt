@@ -30,40 +30,46 @@ Check that the import queue has the needed entries to do filtering and that
 we have all the entries we just imported plus the two entries already included
 in sample data.
 
-    >>> browser.open('http://translations.launchpad.dev/+imports')
-    >>> browser.getLink('Next')
-    <Link text='Next' url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...All targets...
-    ...Evolution...
-    ...All statuses...
-    ...Approved...
-    ...Imported...
-    ...Deleted...
-    ...Failed...
-    ...Needs Review...
-    ...Blocked...
-    ...All files...
-    ...Only po files...
-    ...Only pot files...
-    ...1...5...of...102 results...
+    >>> def print_batch_heading(browser):
+    ...     """Print "x -> y of z results" batch navigator heading."""
+    ...     heading = find_tags_by_class(browser.contents, 'batch-navigation-index')[0]
+    ...     print extract_text(heading).encode('us-ascii', 'backslashreplace')
+
+    >>> def print_dropdown(browser, name, index=0):
+    ...     """Print contents of named dropdown."""
+    ...     dropdown = browser.getControl(name=name, index=index)
+    ...     for item in dropdown.displayOptions:
+    ...         print item
 
     >>> def print_targets(browser):
     ...     """Print contents of the import target dropdown."""
-    ...     tags = find_tags_by_class(browser.contents, "inlined-widget")
-    ...     for tag in tags:
-    ...         content = extract_text(tag).encode(
-    ...             'us-ascii', 'backslashreplace').strip()
-    ...         if content == 'All targets':
-    ...             break
-    ...         print content
+    ...     print_dropdown(browser, 'field.filter_target')
 
-The only target in the target filter dropdown is Evolution.
+    >>> browser.open('http://translations.launchpad.dev/+imports')
+    >>> browser.getLink('Next')
+    <Link text='Next' url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
+
+The queue contains import requests for only one target: Evolution.  This
+is shown in a view filter dropdown, as well as an option to display all
+targets.
 
     >>> print_targets(browser)
     All targets
     Evolution
+
+Another dropdown gives us a choice to filter by status.
+
+    >>> print_dropdown(browser, 'field.filter_status')
+    All statuses
+    Approved
+    Imported
+    Deleted
+    Failed
+    Needs Review
+    Blocked
+
+    >>> print_batch_heading(browser)
+    1 ... 5 of 102 results
 
 The entries that need review, as we can see, initially, are all entries minus
 the two already included in sample data.
@@ -75,9 +81,9 @@ the two already included in sample data.
     ['NEEDS_REVIEW']
     >>> browser.getControl(name='field.filter_extension', index=0).value
     ['all']
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...1...5...of...100 results...
+
+    >>> print_batch_heading(browser)
+    1 ... 5 of 100 results
 
 Since we're filtering for "needs review" state, and Evolution has queue
 entries in that state, Evolution now shows up in the target dropdown
@@ -96,9 +102,8 @@ Let's select only the .po files, we get now only 96 entries.
     ['all']
     >>> browser.getControl(name='field.filter_extension', index=0).value
     ['po']
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...1...5...of...96 results...
+    >>> print_batch_heading(browser)
+    1 ... 5 of 96 results
 
 And now, all entries that are .pot files, we should get just 6.
 
@@ -109,22 +114,21 @@ And now, all entries that are .pot files, we should get just 6.
     ['all']
     >>> browser.getControl(name='field.filter_extension', index=0).value
     ['pot']
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...1...5...of...6 results...
+    >>> print_batch_heading(browser)
+    1 ... 5 of 6 results
 
 Now, we want the approved entries.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_status=APPROVED&field.filter_extension=all')
-  >>> browser.getControl(name='field.filter_status', index=0).value
-  ['APPROVED']
-  >>> browser.getControl(name='field.filter_extension', index=0).value
-  ['all']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...There are no entries that match this filtering...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=APPROVED&field.filter_extension=all')
+    >>> browser.getControl(name='field.filter_status', index=0).value
+    ['APPROVED']
+    >>> browser.getControl(name='field.filter_extension', index=0).value
+    ['all']
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...There are no entries that match this filtering...
 
 Evolution shows up in the dropdown without asterisk again, since it has
 no entries matching the status we filter for.
@@ -135,24 +139,23 @@ no entries matching the status we filter for.
 
 Let's change the status of the third entry on the queue to be blocked.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports')
-  >>> browser.getControl(name='field.status_3').value
-  ['NEEDS_REVIEW']
-  >>> browser.getControl(name='field.status_3').value = ['BLOCKED']
-  >>> browser.getControl('Change status').click()
-  >>> print browser.url
-  http://translations.launchpad.dev/+imports/+index
+    >>> browser.open('http://translations.launchpad.dev/+imports')
+    >>> browser.getControl(name='field.status_3').value
+    ['NEEDS_REVIEW']
+    >>> browser.getControl(name='field.status_3').value = ['BLOCKED']
+    >>> browser.getControl('Change status').click()
+    >>> print browser.url
+    http://translations.launchpad.dev/+imports/+index
 
 We can see now an entry blocked.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_status=BLOCKED&field.filter_extension=all')
-  >>> browser.getControl(name='field.status_3').value
-  ['BLOCKED']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...1...of...1 result...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=BLOCKED&field.filter_extension=all')
+    >>> browser.getControl(name='field.status_3').value
+    ['BLOCKED']
+    >>> print_batch_heading(browser)
+    1 ... 1 of 1 result
 
     >>> print_targets(browser)
     All targets
@@ -160,61 +163,57 @@ We can see now an entry blocked.
 
 And the entries that need review are only 99
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
-  >>> browser.getControl(name='field.filter_status', index=0).value
-  ['NEEDS_REVIEW']
-  >>> browser.getControl(name='field.filter_extension', index=0).value
-  ['all']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...5...of...99 results...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+    >>> browser.getControl(name='field.filter_status', index=0).value
+    ['NEEDS_REVIEW']
+    >>> browser.getControl(name='field.filter_extension', index=0).value
+    ['all']
+    >>> print_batch_heading(browser)
+    1 ... 5 of 99 results
 
 Let's delete the fourth entry.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports')
-  >>> browser.getControl(name='field.status_4').value
-  ['NEEDS_REVIEW']
-  >>> browser.getControl(name='field.status_4').value = ['DELETED']
-  >>> browser.getControl('Change status').click()
-  >>> browser.url
-  'http://translations.launchpad.dev/+imports/+index'
+    >>> browser.open('http://translations.launchpad.dev/+imports')
+    >>> browser.getControl(name='field.status_4').value
+    ['NEEDS_REVIEW']
+    >>> browser.getControl(name='field.status_4').value = ['DELETED']
+    >>> browser.getControl('Change status').click()
+    >>> browser.url
+    'http://translations.launchpad.dev/+imports/+index'
 
 And see that we have one deleted.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_status=DELETED&field.filter_extension=all')
-  >>> browser.getControl(name='field.status_4').value
-  ['DELETED']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...1...of...1 result...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=DELETED&field.filter_extension=all')
+    >>> browser.getControl(name='field.status_4').value
+    ['DELETED']
+    >>> print_batch_heading(browser)
+    1 ... 1 of 1 result
 
 And now, we only have 98 entries that need review.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
-  >>> browser.getControl(name='field.filter_status', index=0).value
-  ['NEEDS_REVIEW']
-  >>> browser.getControl(name='field.filter_extension', index=0).value
-  ['all']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...5...of...98 results...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+    >>> browser.getControl(name='field.filter_status', index=0).value
+    ['NEEDS_REVIEW']
+    >>> browser.getControl(name='field.filter_extension', index=0).value
+    ['all']
+    >>> print_batch_heading(browser)
+    1 ... 5 of 98 results
 
 We can also filter by target. In this case, Evolution.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/+imports?'
-  ...     'field.filter_target=evolution')
-  >>> browser.getControl(name='field.filter_target', index=0).value
-  ['evolution']
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...1...5...of...102 results...
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_target=evolution')
+    >>> browser.getControl(name='field.filter_target', index=0).value
+    ['evolution']
+    >>> print_batch_heading(browser)
+    1 ... 5 of 102 results
 
 Also, we can filter by distro series, to do that, first we need to upload
 something in the queue.
