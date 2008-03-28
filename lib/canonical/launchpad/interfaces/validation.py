@@ -298,7 +298,7 @@ def valid_cve_sequence(value):
         return True
     else:
         raise LaunchpadValidationError(_(
-            "%s is not a valid CVE number" % value))
+            "%s is not a valid CVE number"), value)
 
 
 def _validate_email(email):
