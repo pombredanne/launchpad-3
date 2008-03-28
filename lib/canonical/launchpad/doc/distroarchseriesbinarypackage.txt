@@ -149,3 +149,69 @@ latter view comes from SBPPH, though.
 
 Note that it is only really possible to have two packages in the
 "Published" status if domination hasn't run yet.
+
+== Package caches and summaries ==
+
+Bug 208233 teaches us that DistroArchSeriesBinaryPackage summaries use
+package caches to generate their output, and unfortunately that means
+they can interact with PPA-published packages. Here's a test that
+ensures that they work:
+
+  >>> from canonical.launchpad.interfaces import (
+  ...   IDistributionSet, IPersonSet)
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> warty = ubuntu['warty']
+
+First, update caches for Celso's PPA:
+
+  >>> from canonical.testing import LaunchpadZopelessLayer
+  >>> from canonical.config import config
+  >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
+
+  >>> class TestLog:
+  ...     def debug(self, msg):
+  ...         print 'DEBUG: %s' % msg
+
+  >>> ubuntu.updateCompleteSourcePackageCache(
+  ...    archive=cprov.archive, ztm=transaction, log=TestLog())
+  DEBUG: Considering source 'pmount'
+  ...
+
+  >>> warty.updateCompletePackageCache(
+  ...    archive=cprov.archive, ztm=transaction, log=TestLog())
+  DEBUG: Considering binary 'mozilla-firefox'
+  ...
+
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
+  >>> flush_database_updates()
+
+Then, supersede all pmount publications in warty for pmount:
+
+  >>> LaunchpadZopelessLayer.switchDbUser('lucille')
+  >>> from canonical.launchpad.database import (
+  ...   DistroArchSeries, DistroArchSeriesBinaryPackage,
+  ...   BinaryPackageName, BinaryPackagePublishingHistory)
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> warty_i386 = DistroArchSeries.get(1)
+  >>> pmount_name = BinaryPackageName.selectOneBy(name="pmount")
+  >>> pmount_warty_i386 = DistroArchSeriesBinaryPackage(warty_i386,
+  ...                                                   pmount_name)
+  >>> pubs = BinaryPackagePublishingHistory.selectBy(
+  ...       archive=1,
+  ...       distroarchseries=warty_i386,
+  ...       status=PackagePublishingStatus.PUBLISHED)
+  >>> for p in pubs:
+  ...   if p.binarypackagerelease.binarypackagename == pmount_name:
+  ...       s = p.supersede()
+  >>> transaction.commit()
+  >>> flush_database_updates()
+  >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
+
+And then, try and print its summary:
+
+  >>> pmount_warty_i386.summary
+  u'pmount shortdesc'
+
+

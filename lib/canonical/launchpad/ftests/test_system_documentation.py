@@ -408,6 +408,11 @@ special = {
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
+            '../doc/distroarchseriesbinarypackage.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'script-monitoring.txt': LayeredDocFileSuite(
             '../doc/script-monitoring.txt',
             setUp=setUp, tearDown=tearDown,
