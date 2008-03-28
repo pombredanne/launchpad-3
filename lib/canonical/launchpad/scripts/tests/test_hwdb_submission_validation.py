@@ -249,7 +249,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def testAssertErrorMessage(self):
         """Test the assertErrorMessage method."""
         log_template = ('Parsing submission %s:\n'
-                        '-:%i: element node_name: Relax-NG validity error : %s')
+                        '-:%i: element node_name: Relax-NG validity error :'
+                        ' %s')
         self.log.error(log_template % ('assert_test_1', 123, 'log message 1'))
         self.log.error(log_template % ('assert_test_1', 234, 'log message 2'))
         self.log.error(log_template % ('assert_test_2', 345, 'log message 2'))
