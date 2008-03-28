@@ -26,9 +26,9 @@ Let's add 100 files to the queue so we have enough entries to play with.
     <div...Thank you for your upload. 100 files from the tarball will be
     reviewed...
 
-Check that the import queue has the needed entries to do filtering and that
-we have all the entries we just imported plus the two entries already included
-in sample data.
+Check that the import queue has the needed entries to do filtering and
+that we have all the entries we just imported plus the two entries
+already included in sample data.
 
     >>> def print_batch_heading(browser):
     ...     """Print "x -> y of z results" batch navigator heading."""
@@ -71,8 +71,8 @@ Another dropdown gives us a choice to filter by status.
     >>> print_batch_heading(browser)
     1 ... 5 of 102 results
 
-The entries that need review, as we can see, initially, are all entries minus
-the two already included in sample data.
+The entries that need review, as we can see, initially, are all entries
+minus the two already included in sample data.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -215,8 +215,8 @@ We can also filter by target. In this case, Evolution.
     >>> print_batch_heading(browser)
     1 ... 5 of 102 results
 
-Also, we can filter by distro series, to do that, first we need to upload
-something in the queue.
+Also, we can filter by distro series, to do that, first we need to
+upload something in the queue.
 
     >>> import transaction
     >>> from StringIO import StringIO
@@ -235,7 +235,8 @@ something in the queue.
     # Commit the transaction so librarian stores the uploaded file.
     >>> transaction.commit()
 
-Now, main translation import queue page allows you to filter by distribution:
+Now, main translation import queue page allows you to filter by
+distribution:
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/+imports')
