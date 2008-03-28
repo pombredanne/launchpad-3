@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 """Browser views for ITranslationImportQueue."""
 
@@ -262,13 +262,12 @@ class TranslationImportTargetVocabularyFactory:
 
     def __call__(self, context):
         import_queue = getUtility(ITranslationImportQueue)
-        targets = import_queue.getPillarObjectsWithImports()
+        targets = import_queue.getRequestTargets()
 
         if self.status is None:
             filtered_targets = None
         else:
-            filtered_targets = set(import_queue.getPillarObjectsWithImports(
-                self.status))
+            filtered_targets = set(import_queue.getRequestTargets(self.status))
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:

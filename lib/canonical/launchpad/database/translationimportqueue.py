@@ -829,8 +829,8 @@ class TranslationImportQueue:
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['dateimported'])
 
-    def getPillarObjectsWithImports(self, status=None):
-        """See ITranslationImportQueue."""
+    def getRequestTargets(self, status=None):
+        """See `ITranslationImportQueue`."""
         # XXX DaniloSegan 2007-05-22: When imported on the module level,
         # it errs out with: "ImportError: cannot import name Person"
         from canonical.launchpad.database.distroseries import DistroSeries
