@@ -24,7 +24,8 @@ import urlparse
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
-from zope.component import adapts, getMultiAdapter
+from zope.component import (
+    adapts, ComponentLookupError, getAdapters, getMultiAdapter)
 from zope.interface import implements
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
@@ -44,7 +45,7 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
     IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
-    IScopedCollection, IServiceRootResource)
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -93,6 +94,8 @@ class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
+    # Whether or not the resource will respond to POST requests.
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -140,6 +143,15 @@ class HTTPResource:
         request.setPublication(publication)
         return request.traverse(publication.getApplication(self.request))
 
+    def implementsPOST(self):
+        """Returns true if this resource will respond to POST.
+
+        Right now this means the resource has defined one or more
+        custom POST operations.
+        """
+        return len(getAdapters((self.context, self.request),
+                               IResourcePOSTOperation)) > 0
+
 
 class CustomOperationResourceMixin:
 
@@ -154,7 +166,7 @@ class CustomOperationResourceMixin:
             operation = getMultiAdapter((self.context, self.request),
                                         IResourceGETOperation,
                                         name=operation_name)
-        except ValueError:
+        except ValueError, ComponentLookupError:
             raise NotFound(self, self.request['QUERY_STRING'])
 
         result = operation()
@@ -172,21 +184,60 @@ class CustomOperationResourceMixin:
             return EntryResource(entry, self.request)
         return [EntryResource(entry, self.request) for entry in iterator]
 
+    def handleCustomPOST(self, operation_name):
+        """Execute a custom write-type operation triggered through POST.
+
+        This is used by both EntryResource and CollectionResource.
+        """
+
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourcePOSTOperation,
+                                        name=operation_name)
+        except ValueError, ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
+        return operation()
+
+    def do_POST(self):
+        """Invoke a custom operation.
+
+        Note for future: the standard meaning of POST (ie. when no
+        custom operation is specified) is "create a new subordinate
+        resource."  Code should eventually go into Collectionresource
+        that implements POST to create a new entry inside the
+        collection.
+        """
+        operation_name = self.request.form.get('ws_op')
+        if operation_name is None:
+            self.request.response.setStatus(400)
+            return "No operation name given."
+        del self.request.form['ws_op']
+        return self.handleCustomPOST(operation_name)
+
 
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
     def __call__(self):
-        """Handle a GET request."""
+        """Handle a GET or (if implemented) POST request."""
+        implements_post = False
         if self.request.method == "GET":
             return self.do_GET()
+        elif self.request.method == "POST" and self.implementsPOST():
+            return self.do_POST()
         else:
+            if self.implementsPOST():
+                allow_string = "GET POST"
+            else:
+                allow_string = "GET"
             self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", "GET")
+            self.request.response.setHeader("Allow", allow_string)
 
 
 class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
+
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
         if self.request.method == "GET":
@@ -198,9 +249,15 @@ class ReadWriteResource(HTTPResource):
                 return self.do_PUT(type, representation)
             else:
                 return self.do_PATCH(type, representation)
+        elif self.request.method == "POST" and self.implementsPOST():
+            return self.do_POST()
         else:
+            if self.implementsPOST():
+                allow_string = "GET POST PUT PATCH"
+            else:
+                allow_string = "GET PUT PATCH"
             self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", "GET PUT PATCH")
+            self.request.response.setHeader("Allow", allow_string)
 
 
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):

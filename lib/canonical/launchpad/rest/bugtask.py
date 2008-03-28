@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BugTaskEntry',
+    'ChangeBugTaskStatusOperation',
     'IBugTaskEntry'
 ]
 
@@ -13,7 +14,7 @@ from zope.component import adapts
 from zope.schema import Bool, Choice, Datetime, Object, Text
 
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest import Entry
+from canonical.lazr.rest import Entry, ResourcePOSTOperation
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
@@ -109,3 +110,33 @@ class BugTaskEntry(Entry):
         """Perform a simple name mapping."""
         return self.context.datecreated
 
+class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
+    """An operation that modifies a bug task's status.
+
+    Note for future: to implement this without creating a custom
+    operation, handle a write to the bug task's 'status' attribute by
+    calling transitionToStatus().
+    """
+
+    params = [ Choice(__name__='status', vocabulary=BugTaskStatus) ]
+
+    def call(self, status):
+        """Execute the operation.
+
+        :param status: A DBItem from BugTaskStatus
+        """
+        import pdb; pdb.set_trace()
+        person = self.request.person
+        try:
+            self.context.transitionToStatus(status, person)
+        except AssertionError:
+            # An AssertionArror might mean that the person isn't
+            # authenticated as someone who can make the transition
+            # (status code 401) or that there's no such status (status
+            # code 400). Unfortunately there's no way to distinguish
+            # between the two without refactoring or duplicating
+            # canTransitionToStatus, so for now we'll use 400 for
+            # everything.
+            self.request.response.setStatus(400)
+            return str(error)
+        return ''

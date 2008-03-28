@@ -84,4 +84,12 @@
         factory="canonical.launchpad.rest.BugTaskEntry"
         />
 
+     <adapter
+       for="canonical.launchpad.interfaces.IBugTask
+            zope.publisher.interfaces.http.IHTTPApplicationRequest"
+       provides="canonical.lazr.interfaces.IResourcePOSTOperation"
+       factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
+       name="change_status"
+       />
+
 </configure>

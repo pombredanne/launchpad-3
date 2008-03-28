@@ -2,7 +2,7 @@
 
 All entries in the Launchpad web service work pretty much the same
 way. This document illustrates the general features of entries, using
-Launchpad people as examples.
+Launchpad people and bug tasks as examples.
 
 
 == Reading ==
@@ -29,10 +29,27 @@ of a team's active members by invoking a custom operation.
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'lifeless', u'spiv',
    u'stevea', u'stub']
 
+Some entries support custom operations through POST. You can change a
+bug's status by invoking a custom operation.
+
+  >>> bugtask_path = '/debian/+source/mozilla-firefox/+bug/1'
+  >>> print webservice.post(bugtask_path,
+  ...                       'application/x-www-form-urlencoded',
+  ...                       'ws_op=change_status&status=CONFIRMED')
+  HTTP/1.1 200 OK
+  ...
+
 Custom operations may have error handling.
 
   >>> print webservice.get(
   ...     "/~admins?ws_op=members_by_status&status=NOSUCHSTATUS")
+  HTTP/1.1 400 Bad Request
+  ...
+  status: Invalid value
+
+  >>> print webservice.post(bugtask_path,
+  ...                       'application/x-www-form-urlencoded',
+  ...                       'ws_op=change_status&status=NOSUCHSTATUS')
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value
@@ -43,6 +60,7 @@ Trying to invoke a nonexistent custom operation yields an error.
   ...     "/~admins?ws_op=no_such_operation")
   HTTP/1.1 404 Not Found
   ...
+
 
 
 == Modification ==
