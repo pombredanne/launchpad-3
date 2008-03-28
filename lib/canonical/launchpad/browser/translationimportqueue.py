@@ -239,7 +239,10 @@ class TranslationImportQueueView(HasTranslationImportsView):
         if status_filter == 'all':
             status = None
         else:
-            status = RosettaImportStatus.items[status_filter]
+            try:
+                status = RosettaImportStatus.items[status_filter]
+            except LookupError:
+                status = None
 
         return self.createFilterFieldHelper(
             name='filter_target',
