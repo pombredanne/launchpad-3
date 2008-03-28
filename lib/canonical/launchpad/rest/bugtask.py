@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 
-from zope.component import adapts
+from zope.component import adapts, getUtility
 from zope.schema import Bool, Choice, Datetime, Object, Text
 
 from canonical.lazr.interfaces import IEntry
@@ -18,7 +18,7 @@ from canonical.lazr.rest import Entry, ResourcePOSTOperation
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
-    BugTaskImportance, BugTaskStatus, IBug, IBugTask, IPerson)
+    BugTaskImportance, BugTaskStatus, IBug, IBugTask, ILaunchBag, IPerson)
 from canonical.lazr import decorates
 
 
@@ -125,10 +125,9 @@ class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
 
         :param status: A DBItem from BugTaskStatus
         """
-        import pdb; pdb.set_trace()
-        person = self.request.person
+        user = getUtility(ILaunchBag).user
         try:
-            self.context.transitionToStatus(status, person)
+            self.context.transitionToStatus(status, user)
         except AssertionError:
             # An AssertionArror might mean that the person isn't
             # authenticated as someone who can make the transition

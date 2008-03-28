@@ -38,7 +38,7 @@ bug's status by invoking a custom operation.
   >>> print webservice.post(bugtask_path,
   ...                       'application/x-www-form-urlencoded',
   ...                       'ws_op=change_status&status=CONFIRMED')
-  HTTP/1.1 200 OK
+  HTTP/1.1 200 Ok
   ...
 
 Custom operations may have error handling.
@@ -62,7 +62,6 @@ Trying to invoke a nonexistent custom operation yields an error.
   ...     "/~admins?ws_op=no_such_operation")
   HTTP/1.1 404 Not Found
   ...
-
 
 
 == Modification ==
