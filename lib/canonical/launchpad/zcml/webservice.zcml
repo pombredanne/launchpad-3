@@ -61,6 +61,14 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IPersonSet
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
+        factory="canonical.launchpad.rest.PersonFactoryOperation"
+        name="create_person"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.ITeamMembership"
         provides="canonical.launchpad.rest.ITeamMembershipEntry"
         factory="canonical.launchpad.rest.TeamMembershipEntry"

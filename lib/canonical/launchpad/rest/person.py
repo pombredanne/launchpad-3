@@ -9,19 +9,22 @@ __all__ = [
     'IPersonEntry',
     'PersonCollection',
     'PersonEntry',
+    'PersonFactoryOperation'
     ]
 
-from zope.component import adapts
+from zope.component import adapts, getUtility
 from zope.schema import Choice, Object, TextLine
 
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
-from canonical.lazr.rest import ResourceGETOperation
+from canonical.lazr.rest import ResourceGETOperation, ResourcePOSTOperation
 
 from canonical.launchpad.interfaces import (
-    IPerson, ITeamMembership, TeamMembershipStatus)
+    EmailAddressAlreadyTaken, IPerson, ILaunchBag, ITeamMembership,
+    PersonCreationRationale, TeamMembershipStatus)
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr import decorates
 
@@ -86,6 +89,16 @@ class GetMembersByStatusOperation(ResourceGETOperation):
         return self.context.getMembersByStatus(status.value)
 
 
+class PersonCollection(Collection):
+    """A collection of people."""
+
+    def find(self):
+        """Return all the people and teams on the site."""
+        # Pass an empty query into find() to get all people
+        # and teams.
+        return self.context.find("")
+
+
 class GetPeopleOperation(ResourceGETOperation):
     """An operation that retrieves people that match the given filter.
 
@@ -109,12 +122,37 @@ class GetPeopleOperation(ResourceGETOperation):
         return self.context.find(text)
 
 
-class PersonCollection(Collection):
-    """A collection of people."""
+class PersonFactoryOperation(ResourcePOSTOperation):
+    """An operation that creates a new person.
 
-    def find(self):
-        """Return all the people and teams on the site."""
-        # Pass an empty query into find() to get all people
-        # and teams.
-        return self.context.find("")
+    Note for future: to implement this without creating a custom
+    operation, define a standard factory method for PersonCollection.
+    """
 
+    params = [ TextLine(__name__='email_address', required=True),
+               TextLine(__name__='comment', required=False),
+               TextLine(__name__='name', required=False),
+               TextLine(__name__='display_name', required=False),
+               TextLine(__name__='password', required=False) ]
+
+    def call(self, email_address, comment, name,
+             display_name, password):
+        "Execute the operation."
+        user = getUtility(ILaunchBag).user
+        try:
+            person, emailaddress = self.context.createPersonAndEmail(
+                email_address,
+                PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                comment, name, display_name, password, registrant=user)
+        except EmailAddressAlreadyTaken:
+            self.request.response.setStatus(409) # Conflict
+            return "The email addres '%s' is already in use." % email_address
+        if person is None:
+            # Unfortunately we don't know why person creation failed,
+            # only that it did fail.
+            self.request.response.setStatus(400)
+        else:
+            self.request.response.setStatus(201)
+            self.request.response.setHeader("Location",
+                                            canonical_url(person))
+        return ''

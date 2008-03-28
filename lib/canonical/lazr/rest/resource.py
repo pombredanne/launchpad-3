@@ -24,8 +24,8 @@ import urlparse
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
-from zope.component import (
-    adapts, ComponentLookupError, getAdapters, getMultiAdapter)
+from zope.component import adapts, getAdapters, getMultiAdapter
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
@@ -166,7 +166,7 @@ class CustomOperationResourceMixin:
             operation = getMultiAdapter((self.context, self.request),
                                         IResourceGETOperation,
                                         name=operation_name)
-        except ValueError, ComponentLookupError:
+        except (ValueError, ComponentLookupError):
             raise NotFound(self, self.request['QUERY_STRING'])
 
         result = operation()
@@ -181,7 +181,7 @@ class CustomOperationResourceMixin:
             iterator = iter(result)
         except TypeError:
             # Result is a single entry
-            return EntryResource(entry, self.request)
+            return EntryResource(result, self.request)
         return [EntryResource(entry, self.request) for entry in iterator]
 
     def handleCustomPOST(self, operation_name):
@@ -189,12 +189,11 @@ class CustomOperationResourceMixin:
 
         This is used by both EntryResource and CollectionResource.
         """
-
         try:
             operation = getMultiAdapter((self.context, self.request),
                                         IResourcePOSTOperation,
                                         name=operation_name)
-        except ValueError, ComponentLookupError:
+        except (ValueError, ComponentLookupError):
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
         return operation()
