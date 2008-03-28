@@ -202,6 +202,19 @@ class PostedMessageStatus(DBEnumeratedType):
         A message held for first-post moderation has been rejected.
         """)
 
+    DISCARD_PENDING = DBItem(60, """
+        Discard pending
+
+        The team administrator has discarded this message, but Mailman has not
+        yet been informed of this status.
+        """)
+
+    DISCARDED = DBItem(70, """
+        Discarded
+
+        A message held for first-post moderation has been discarded.
+        """)
+
 
 class IMailingList(Interface):
     """A mailing list."""
@@ -698,6 +711,15 @@ class IMessageApproval(Interface):
         """Reject the message.
 
         This sets the status to REJECTION_PENDING because the approval must
+        still be recognized by Mailman.
+
+        :param reviewer: The person who did the review.
+        """
+
+    def discard(reviewer):
+        """Discard the message.
+
+        This sets the status to DISCARD_PENDING because the approval must
         still be recognized by Mailman.
 
         :param reviewer: The person who did the review.

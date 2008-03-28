@@ -80,12 +80,20 @@ class MessageApproval(SQLBase):
         self.disposal_date = UTC_NOW
         self.status = PostedMessageStatus.REJECTION_PENDING
 
+    def discard(self, reviewer):
+        """See `IMessageApproval`."""
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.DISCARD_PENDING
+
     def acknowledge(self):
         """See `IMessageApproval`."""
         if self.status == PostedMessageStatus.APPROVAL_PENDING:
             self.status = PostedMessageStatus.APPROVED
         elif self.status == PostedMessageStatus.REJECTION_PENDING:
             self.status = PostedMessageStatus.REJECTED
+        elif self.status == PostedMessageStatus.DISCARD_PENDING:
+            self.status = PostedMessageStatus.DISCARDED
         else:
             raise AssertionError('Not an acknowledgeable state: %s' %
                                  self.status)
