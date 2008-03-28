@@ -50,9 +50,10 @@ But not every element may have that collection scoped to it:
 
 A collection may expose custom named operations in response to GET
 requests. A named operation may do anything consistent with the nature
-of a GET request, but it's usually used to serve search
-results. Here's a custom operation on the collection of people, called
-'people'.
+of a GET request, but it's usually used to serve search results. The
+custom operation to be invoked is named in the query string's
+'ws_op' argument. Here's a custom operation on the collection of
+people, called 'people'.
 
   >>> def search_people(text):
   ...     return sorted(webservice.get(

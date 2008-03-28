@@ -174,9 +174,10 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...                 if r.dish.name == name:
     ...                     matches.append(r)
     ...                     break
-    ...         # A somewhat arbitrary assertion included for
-    ...         # the sake of demonstration.
-    ...         assert len(matches) > 0, "No matches for %s" % name
+    ...         # A somewhat arbitrary and draconian bit of error handling
+    ...         # for the sake of demonstration.
+    ...         if len(matches) == 0:
+    ...             raise ValueError("No matches for %s" % name)
     ...         return matches
     >>> protect_schema(CookbookSet, ICookbookSet)
 
@@ -566,7 +567,8 @@ collection.
 
 The CookbookSet class defines a method called 'findRecipes'. This is
 exposed through the cookbook collection resource as a custom operation
-called 'find_recipes'.
+called 'find_recipes'. Each custom operation is implemented as a class
+that implementsIResourceGETOperation.
 
     >>> from canonical.lazr.rest import ResourceGETOperation
     >>> from zope.schema import TextLine
@@ -579,9 +581,13 @@ called 'find_recipes'.
     ...    def call(self, name):
     ...        try:
     ...            return self.context.findRecipes(name)
-    ...        except AssertionError, e:
+    ...        except ValueError, e:
     ...            self.request.response.setStatus(400)
     ...            return str(e)
+
+To register the class we just defined as implementing the
+'find_recipes' operation, we need to register it as a named adapter
+providing IResourceGETOperation for the ICookbookSet interface.
 
     >>> provideAdapter(FindRecipesOperation,
     ...                [ICookbookSet, IHTTPApplicationRequest],

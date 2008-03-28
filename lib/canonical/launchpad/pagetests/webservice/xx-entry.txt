@@ -20,8 +20,10 @@ Salgado'.
 
 == Custom operations ==
 
-Some entries support custom operations through GET. You can get a list
-of a team's active members by invoking a custom operation.
+Some entries support custom operations through GET. The custom
+operation to be invoked is named in the query string's 'ws_op'
+argument. You can get a list of a team's active members by specifying
+the 'members_by_status' operation.
 
   >>> active_members = webservice.get(
   ...     "/~admins?ws_op=members_by_status&status=APPROVED").jsonBody()
