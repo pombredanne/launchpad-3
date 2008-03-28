@@ -267,7 +267,8 @@ class TranslationImportTargetVocabularyFactory:
         if self.status is None:
             filtered_targets = None
         else:
-            filtered_targets = set(import_queue.getRequestTargets(self.status))
+            filtered_targets = set(
+                import_queue.getRequestTargets(self.status))
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:
