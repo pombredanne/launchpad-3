@@ -48,9 +48,28 @@ class OAuthRequestTokenView(LaunchpadView):
         return body
 
 
+def token_exists_and_is_not_reviewed(form, action):
+    return form.token is not None and not form.token.is_reviewed
+
+
+def create_oauth_permission_actions():
+    """Return a list of `Action`s for each possible `OAuthPermission`."""
+    actions = Actions()
+    def success(form, action, data):
+        form.reviewToken(action.permission)
+    for permission in OAuthPermission.items:
+        action = Action(
+            permission.title, name=permission.name, success=success,
+            condition=token_exists_and_is_not_reviewed)
+        action.permission = permission
+        actions.append(action)
+    return actions
+
+
 class OAuthAuthorizeTokenView(LaunchpadFormView):
     """Where users authorize consumers to access Launchpad on their behalf."""
 
+    actions = create_oauth_permission_actions()
     label = "Authorize application to access Launchpad on your behalf"
     schema = IOAuthRequestToken
     field_names = []
@@ -60,22 +79,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
         key = self.request.form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
-        self.action_descriptions = {}
-        self.actions = Actions()
-        def success(form, action, data):
-            form.reviewToken(action.permission)
-        for permission in OAuthPermission.items:
-            action = Action(
-                permission.title, name=permission.name, success=success,
-                condition=self.tokenExistsAndIsNotReviewed.im_func)
-            action.permission = permission
-            action.form = self
-            self.action_descriptions[action] = permission.description
-            self.actions.append(action)
         super(OAuthAuthorizeTokenView, self).initialize()
-
-    def tokenExistsAndIsNotReviewed(self, action):
-        return self.token is not None and not self.token.is_reviewed
 
     def reviewToken(self, permission):
         self.token.review(self.user, permission)

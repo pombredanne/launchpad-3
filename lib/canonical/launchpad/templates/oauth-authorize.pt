@@ -38,7 +38,7 @@
                 </td>
                 <td>
                   <span class="lesser"
-                    tal:content="python:view.action_descriptions[action]" />
+                    tal:content="action/permission/description" />
                 </td>
               </tr>
             </table>
