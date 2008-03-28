@@ -11,13 +11,6 @@
           <th>Type:</th>
           <td><tal:branch-type replace="context/branch_type/title" /></td>
         </tr>
-        <tr tal:condition="context/home_page">
-          <th>External links:</th>
-          <td>
-            <a tal:attributes="href context/home_page"
-               class="link">Home page</a>
-          </td>
-        </tr>
         <tr tal:condition="not:view/owner_is_registrant">
           <th>Registrant:</th>
           <td>

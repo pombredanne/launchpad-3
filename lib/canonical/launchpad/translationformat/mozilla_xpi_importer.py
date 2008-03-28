@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -6,9 +6,10 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
+import cElementTree
 import logging
 import os
-import cElementTree
+import re
 from email.Utils import parseaddr
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -83,7 +84,6 @@ class MozillaZipFile:
         self.filename = filename
         self.header = None
         self.messages = []
-        self._msgids = []
         self.last_translator = None
 
         zip = ZipFile(StringIO(content), 'r')
@@ -130,27 +130,26 @@ class MozillaZipFile:
             self.filename.startswith('en-US.xpi') and
             message.translations and (
                 message.msgid_singular.endswith('.accesskey') or
-                message.msgid_singular.endswith('.commandkey')))
+                message.msgid_singular.endswith('.commandkey') or
+                message.msgid_singular.endswith('.key')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
         for message in newdata:
-            if message.msgid_singular in self._msgids:
-                logging.info(
-                    "Duplicate message ID '%s'." % message.msgid_singular)
-                continue
-
             self._updateMessageFileReferences(message)
 
             # Special case accesskeys and commandkeys:
             # these are single letter messages, lets display
             # the value as a source comment.
             if self._isKeyShortcutMessage(message):
-                message.source_comment = u"Default key in en_US: '%s'" % (
-                    message.translations[TranslationConstants.SINGULAR_FORM])
-                message.resetAllTranslations()
-
-            self._msgids.append(message.msgid_singular)
+                comment = (
+                    u"Select the shortcut key that you want to use. Please,\n"
+                    u"don't change this translation if you are not really\n"
+                    u"sure about what you are doing.\n")
+                if message.source_comment:
+                    message.source_comment += comment
+                else:
+                    message.source_comment = comment
             self.messages.append(message)
 
 
@@ -180,13 +179,14 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started:
             return
 
-        # Comments would be multiline.
-        for line in contents.split(u'\n'):
-            line = line.strip()
-            if self.last_comment is not None:
-                self.last_comment = u'%s %s' % (self.last_comment, line)
-            elif len(line) > 0:
-                self.last_comment = line
+        if self.last_comment is not None:
+            self.last_comment += contents
+        elif len(contents) > 0:
+            self.last_comment = contents
+
+        if self.last_comment and not self.last_comment.endswith('\n'):
+            # Comments must end always with a new line.
+            self.last_comment += '\n'
 
     def new_general_entity(self, name, value):
         """See `xmldtd.WFCDTD`."""
@@ -200,6 +200,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         # don't have a way to show the line number with the source reference.
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
         message.addTranslation(TranslationConstants.SINGULAR_FORM, value)
+        message.singular_text = value
         message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
@@ -303,9 +304,14 @@ class PropertyFile:
                     ignore_comment = False
                     line = line[1:].strip()
                     if last_comment:
-                        last_comment = u' '.join((last_comment, line))
-                    else:
+                        last_comment += line
+                    elif len(line) > 0:
                         last_comment = line
+
+                    if last_comment and not last_comment.endswith('\n'):
+                        # Comments must end always with a new line.
+                        last_comment += '\n'
+
                     last_comment_line_num = line_num
                     continue
                 elif len(line) == 0:
@@ -324,6 +330,9 @@ class PropertyFile:
                         if ignore_comment:
                             last_comment = None
                             ignore_comment = False
+
+                        # Comments must end always with a new line.
+                        last_comment += '\n'
                     elif line.startswith(self.license_block_text):
                         # It's a comment with a license notice, this
                         # comment can be ignored.
@@ -344,7 +353,7 @@ class PropertyFile:
                     continue
                 elif line.startswith(u'//'):
                     # It's an 'end of the line comment'
-                    last_comment = line[2:].strip()
+                    last_comment = '%s\n' % line[2:].strip()
                     last_comment_line_num = line_num
                     # Jump to next line
                     break
@@ -398,9 +407,10 @@ class PropertyFile:
                 message.msgid_singular = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
+                value = translation.strip()
                 message.addTranslation(
-                    TranslationConstants.SINGULAR_FORM,
-                    translation.strip())
+                    TranslationConstants.SINGULAR_FORM, value)
+                message.singular_text = value
                 message.source_comment = last_comment
                 self.messages.append(message)
 
@@ -409,6 +419,116 @@ class PropertyFile:
                 last_comment_line_num = 0
                 is_message = False
                 translation = u''
+
+
+def find_end_of_common_prefix(strings):
+    """Find index of first character (if any) where strings differ.
+
+    :param strings: a list of strings.
+    :return: index directly after that of last character that is identical
+        across all strings.
+    """
+    min_length = min([len(string) for string in strings])
+    if len(strings) <= 1:
+        return min_length
+
+    head = strings[0]
+    tail = strings[1:]
+    for index in xrange(min_length):
+        base_char = head[index]
+        for string in tail:
+            if string[index] != base_char:
+                return index
+
+    # Scan backwards for a slash, and break there.  Things are a bit prettier
+    # if we avoid breaking in the middle of a directory name.
+    while min_length > 0 and head[min_length-1] != '/':
+        min_length -= 1
+
+    return min_length
+
+
+def normalize_file_references(filename):
+    """Strip trailing crud off a file reference string.
+
+    A file reference string consists of comma-separated file paths, each
+    followed by an optional line number and a repetition of the msgid:
+    "foo/bar:123(splat)" or "foo/bar(splat)".  This function whittles
+    either example down to "foo/bar".
+    """
+    return re.sub('(:[0-9]+)?\([^)]+\)', '', filename)
+
+
+def disambiguate(messages):
+    """Resolve possible duplicate message ids in `messages`.
+
+    Where messages are identical and occur in the exact same file(s), one
+    copy is removed.  Context information is added to resolve clashes between
+    identical message identifiers in different files inside the XPI.
+
+    :param messages: a list of `TranslationMessageData` objects representing
+        the full set of messages in an XPI.
+    :return: a disambiguated list of `TranslationMessageData` objects.
+    """
+    result = []
+    # Messages we've already seen.  Maps msgid_singular to a dict that in turn
+    # maps file_references to a previously processed TranslationMessageData.
+    seen = {}
+
+    # Sets of message ids that occur in multiple files, that need
+    # disambiguation by context.
+    clashes = set()
+
+    for message in messages:
+        references = normalize_file_references(message.file_references)
+        if message.msgid_singular in seen:
+            similar_messages = seen[message.msgid_singular]
+            if references in similar_messages:
+                # This is a completely senseless duplication, within the same
+                # file.  Ignore it.
+                logging.info(
+                    "Duplicate message ID '%s' in %s."
+                    % (message.msgid_singular, message.file_references))
+            else:
+                # There is already a message with the same identifier in a
+                # different file.  Accept it as a separate message.
+                similar_messages[references] = message
+                clashes.add(message.msgid_singular)
+                result.append(message)
+        else:
+            # New message.  Store it.
+            seen[message.msgid_singular] = {references: message}
+            result.append(message)
+
+    # Go over messages with clashing identifiers, and provide context.
+    for msgid in clashes:
+        cousins = seen[msgid]
+        filenames = set()
+        for message in cousins.itervalues():
+            filenames.update(message.file_references_list)
+        # Context is based on the originating file's path.  We can't use the
+        # whole path, because it may contain language codes.
+        # Instead, eliminate common prefixes from the file_references strings
+        # for any set of clashing messages, and use the rest of those strings
+        # as context strings.
+        # XXX: JeroenVermeulen 2008-03-20 spec=xpi-manifest-parsing: Context
+        # should really be based on chrome path, and be set for every string.
+        # To figure out proper chrome paths we need to be able to parse
+        # manifest files first.
+        context_start = find_end_of_common_prefix(list(filenames))
+        for message in cousins.itervalues():
+            context_components = []
+
+            for filename in message.file_references_list:
+                component = normalize_file_references(
+                    filename[context_start:])
+                context_components.append(component)
+
+            context = ','.join(context_components)
+            if len(context) > 0:
+                message.context = context
+
+    return result
 
 
 class MozillaXpiImporter:
@@ -457,10 +577,11 @@ class MozillaXpiImporter:
         parser = MozillaZipFile(self.basepath, self.content.read())
 
         self._translation_file.header = parser.header
-        self._translation_file.messages = parser.messages
+        self._translation_file.messages = disambiguate(parser.messages)
 
         return self._translation_file
 
     def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
         return MozillaHeader(header_string)
+

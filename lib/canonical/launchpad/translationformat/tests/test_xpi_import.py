@@ -11,7 +11,6 @@ import zipfile
 from zope.component import getUtility
 
 import canonical.launchpad
-from canonical.launchpad.helpers import test_diff
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImportQueue,
@@ -20,10 +19,17 @@ from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer
 
-def get_en_US_xpi_file_to_import():
+
+source_comment_for_shortcuts = (
+    u"Select the shortcut key that you want to use. Please,\n"
+    u"don't change this translation if you are not really\n"
+    u"sure about what you are doing.\n")
+
+
+def get_en_US_xpi_file_to_import(subdir):
     """Return an en-US.xpi file object ready to be imported.
 
-    The file is generated from translationformat/tests/firefox-data/es-US.
+    The file is generated from translationformat/tests/firefox-data/<subdir>.
     """
     # en-US.xpi file is a ZIP file which contains embedded JAR file (which is
     # also a ZIP file) and a couple of other files.  Embedded JAR file is
@@ -32,7 +38,7 @@ def get_en_US_xpi_file_to_import():
     # Get the root path where the data to generate .xpi file is stored.
     test_root = os.path.join(
         os.path.dirname(canonical.launchpad.__file__),
-        'translationformat/tests/firefox-data/en-US')
+        'translationformat/tests/firefox-data', subdir)
 
     # First create a en-US.jar file to be included in XPI file.
     jarfile = tempfile.TemporaryFile()
@@ -86,10 +92,13 @@ class XpiTestCase(unittest.TestCase):
             owner=self.importer)
         self.spanish_firefox = self.firefox_template.newPOFile('es')
 
-    def setUpTranslationImportQueueForTemplate(self):
-        """Return an ITranslationImportQueueEntry for testing purposes."""
+    def setUpTranslationImportQueueForTemplate(self, subdir):
+        """Return an ITranslationImportQueueEntry for testing purposes.
+
+        :param subdir: subdirectory in firefox-data to get XPI data from.
+        """
         # Get the file to import.
-        en_US_xpi =  get_en_US_xpi_file_to_import()
+        en_US_xpi = get_en_US_xpi_file_to_import(subdir)
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
@@ -108,11 +117,14 @@ class XpiTestCase(unittest.TestCase):
 
         return getUtility(ITranslationImportQueue)[entry_id]
 
-    def setUpTranslationImportQueueForTranslation(self):
-        """Return an ITranslationImportQueueEntry for testing purposes."""
+    def setUpTranslationImportQueueForTranslation(self, subdir):
+        """Return an ITranslationImportQueueEntry for testing purposes.
+
+        :param subdir: subdirectory in firefox-data to get XPI data from.
+        """
         # Get the file to import. Given the way XPI file format works, we can
         # just use the same template file like a translation one.
-        es_xpi =  get_en_US_xpi_file_to_import()
+        es_xpi = get_en_US_xpi_file_to_import(subdir)
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
@@ -158,7 +170,7 @@ class XpiTestCase(unittest.TestCase):
     def test_TemplateImport(self):
         """Test XPI template file import."""
         # Prepare the import queue to handle a new .xpi import.
-        entry = self.setUpTranslationImportQueueForTemplate()
+        entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
@@ -196,7 +208,7 @@ class XpiTestCase(unittest.TestCase):
                         u'(foozilla.play.fire)')
                 self.assertEquals(
                     message.sourcecomment,
-                    u"Translators, don't play with fire!")
+                    u" Translators, don't play with fire! \n")
 
             elif message.msgid_singular.msgid == u'foozilla.utf8':
                 # Now, we can see that special UTF-8 chars are extracted
@@ -212,7 +224,7 @@ class XpiTestCase(unittest.TestCase):
                 # access key is a special notation that is supposed to be
                 # translated with a key shortcut.
                 self.assertEquals(
-                    message.singular_text, u'foozilla.menu.accesskey')
+                    message.singular_text, u'M')
                 self.assertEquals(
                     message.filereferences,
                     u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
@@ -220,12 +232,12 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment, u"Default key in en_US: 'M'")
+                    message.sourcecomment, source_comment_for_shortcuts)
             elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
                 self.assertEquals(
-                    message.singular_text, u'foozilla.menu.commandkey')
+                    message.singular_text, u'm')
                 self.assertEquals(
                     message.filereferences,
                     u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
@@ -233,7 +245,7 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment, u"Default key in en_US: 'm'")
+                    message.sourcecomment, source_comment_for_shortcuts)
 
         # Check that we got all messages.
         self.assertEquals(
@@ -247,7 +259,7 @@ class XpiTestCase(unittest.TestCase):
     def test_TwiceTemplateImport(self):
         """Test a template import done twice."""
         # Prepare the import queue to handle a new .xpi import.
-        entry = self.setUpTranslationImportQueueForTemplate()
+        entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
@@ -274,8 +286,9 @@ class XpiTestCase(unittest.TestCase):
     def test_TranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
-        template_entry = self.setUpTranslationImportQueueForTemplate()
-        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        template_entry = self.setUpTranslationImportQueueForTemplate('en-US')
+        translation_entry = self.setUpTranslationImportQueueForTranslation(
+            'en-US')
 
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(
@@ -329,11 +342,11 @@ class XpiTestCase(unittest.TestCase):
         # access key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
-            potmsgset.singular_text, u'foozilla.menu.accesskey')
+            potmsgset.singular_text, u'M')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment, u"Default key in en_US: 'M'")
+            potmsgset.sourcecomment, source_comment_for_shortcuts)
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
@@ -345,11 +358,11 @@ class XpiTestCase(unittest.TestCase):
         # command key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
-            potmsgset.singular_text, u'foozilla.menu.commandkey')
+            potmsgset.singular_text, u'm')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment, u"Default key in en_US: 'm'")
+            potmsgset.sourcecomment, source_comment_for_shortcuts)
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
@@ -358,7 +371,8 @@ class XpiTestCase(unittest.TestCase):
 
     def test_GetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""
-        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        translation_entry = self.setUpTranslationImportQueueForTranslation(
+            'en-US')
         importer = MozillaXpiImporter()
         translation_file = importer.parse(translation_entry)
 
@@ -367,6 +381,49 @@ class XpiTestCase(unittest.TestCase):
         name, email = translation_file.header.getLastTranslator()
         self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
         self.assertEqual(email, u'carlos@canonical.com')
+
+    def test_ClashingMessageIds(self):
+        """Test correct handling of clashing message ids in XPI file."""
+        queue_entry = self.setUpTranslationImportQueueForTranslation(
+            'clashing_ids')
+        importer = MozillaXpiImporter()
+        template = importer.parse(queue_entry)
+
+        messages = sorted([
+            (message.msgid_singular, message.context, message.singular_text)
+            for message in template.messages])
+        self.assertEquals(
+            [
+             (u'foozilla.clashing.key',
+              u'mac/extra.dtd',
+              u'This message is Mac-specific, and comes from DTD.'),
+             (u'foozilla.clashing.key',
+              u'mac/extra.properties',
+              u'This message is Mac-specific, and comes from properties.'),
+             (u'foozilla.clashing.key',
+              u'main.dtd',
+              u'This message is in the main DTD.'),
+             (u'foozilla.clashing.key',
+              u'main.properties',
+              u'This message is in the main properties file.'),
+             (u'foozilla.clashing.key',
+              u'unix/extra.dtd',
+              u'This message is Unix-specific, and comes from DTD.'),
+             (u'foozilla.clashing.key',
+              u'unix/extra.properties',
+              u'This message is Unix-specific, and comes from properties.'),
+             (u'foozilla.clashing.key',
+              u'win/extra.dtd',
+              u'This message is Windows-specific, and comes from DTD.'),
+             (u'foozilla.clashing.key',
+              u'win/extra.properties',
+              u'This message is Windows-specific, '
+                  'and comes from properties.'),
+             (u'foozilla.regular.message',
+              None,
+              u'A non-clashing message.'),
+            ],
+            messages)
 
 
 def test_suite():
