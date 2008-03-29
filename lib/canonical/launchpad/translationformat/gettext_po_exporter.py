@@ -1,8 +1,8 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Export module for gettext's .po file format.
 
-You can read more about this file format at:
+Find more about this file format at:
 http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#PO-Files
 """
 
@@ -13,16 +13,14 @@ __all__ = [
     ]
 
 import os
-import tempfile
 
-from cStringIO import StringIO
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationFormatExporter, TranslationConstants, TranslationFileFormat)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.translationformat.translation_export import (
-    ExportedTranslationFile, LaunchpadWriteTarFile)
+    ExportedTranslationFile, ExportFileStorage)
 
 
 def comments_text_representation(translation_message):
@@ -79,6 +77,7 @@ def comments_text_representation(translation_message):
         text.append(u'#, %s' % u', '.join(flags))
 
     return u'\n'.join(text)
+
 
 def wrap_text(text, prefix, wrap_width):
     r'''Return a list of strings with the given text wrapped to given width.
@@ -317,6 +316,7 @@ def wrap_text(text, prefix, wrap_width):
             wrapped_lines.append(u'"%s"' % (local_escape(line)))
     return wrapped_lines
 
+
 def msgid_text_representation(translation_message, wrap_width):
     """Return text representation of the msgids.
 
@@ -340,6 +340,7 @@ def msgid_text_representation(translation_message, wrap_width):
         text = ['#~ ' + line for line in text]
 
     return u'\n'.join(text)
+
 
 def translation_text_representation(translation_message, wrap_width):
     """Return text representation of the translations.
@@ -370,6 +371,7 @@ def translation_text_representation(translation_message, wrap_width):
         text = ['#~ ' + line for line in text]
 
     return u'\n'.join(text)
+
 
 def export_translation_message(translation_message, wrap_width=77):
     r'''Return a text representing translation_message.
@@ -434,83 +436,6 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
-class SinglePoFileStorageStrategy:
-    """Store a single file for export.
-
-    Provides a way to store a single PO or POT file, but through the same API
-    that `TarballFileStorageStrategy` offers to store any number of files into
-    a single tarball.  Both classes have an `addFile` operation, though a
-    `SinglePoFileStorageStrategy` instance will only let you add a single
-    file.
-
-    (The type of the stored file matters in this strategy because the storage
-    strategy declares the MIME type of the file it produces).
-    """
-    path = None
-    extension = None
-
-    def addFile(self, path, extension, content):
-        """Add file to be stored.  This type of storage takes exactly 1 file.
-
-        :param path: location and name of this file.
-        :param extension: filename suffix (as found at end of path).
-        :param content: contents of file.
-        """
-        assert path is not None, "Storing file without path."
-        assert self.path is None, "Multiple files added; expected just one."
-        self.path = path
-        self.extension = extension
-        self.content = content
-
-    def export(self):
-        """Export as `ExportedTranslationFile`."""
-        assert self.path is not None, "Exporting empty file."
-        output = ExportedTranslationFile(StringIO(self.content))
-        output.path = self.path
-        # We use x-po for consistency with other .po editors like GTranslator.
-        output.content_type = 'application/x-po'
-        output.file_extension = self.extension
-        return output
-
-
-class TarballFileStorageStrategy:
-    """Store any number of files for export as a tarball.
-
-    Similar to `SinglePoFileStorageStrategy`, but lets you store any number of
-    files using the same API.  Each file is written into the resulting tarball
-    as soon as it is added.  There is no need to keep the full contents of the
-    tarball in memory at any single time.
-    """
-    def __init__(self):
-        self.buffer = tempfile.TemporaryFile()
-        self.tar_writer = LaunchpadWriteTarFile(self.buffer)
-
-    def addFile(self, path, extension, content):
-        """Add file to be stored.
-
-        :param path: location and name of this file, relative to root of tar
-            archive.
-        :param extension: filename suffix (ignored here).
-        :param content: contents of file.
-        """
-        self.tar_writer.add_file(path, content)
-
-    def export(self):
-        """Export as `ExportedTranslationFile`."""
-        self.tar_writer.close()
-        self.buffer.seek(0)
-        output = ExportedTranslationFile(self.buffer)
-
-        # Don't set path; let the caller decide.
-
-        # For tar.gz files, the standard content type is application/x-gtar.
-        # You can see more info on
-        #   http://en.wikipedia.org/wiki/List_of_archive_formats
-        output.content_type = 'application/x-gtar'
-        output.file_extension = 'tar.gz'
-        return output
-
-
 class GettextPOExporter:
     """Support class to export Gettext .po files."""
     implements(ITranslationFormatExporter)
@@ -539,23 +464,15 @@ class GettextPOExporter:
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
 
-    def exportTranslationFiles(self, translation_file_list,
-                               ignore_obsolete=False, force_utf8=False):
+    def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
+                               force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        assert len(translation_file_list) > 0, (
-            'Got an empty list of files to export!')
-
         # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can
         # unify with the language-pack export code?
 
-        if len(translation_file_list) == 1:
-            # Export single file.
-            storage = SinglePoFileStorageStrategy()
-        else:
-            # Export multiple files, wrapped up as a tarball.
-            storage = TarballFileStorageStrategy()
+        storage = ExportFileStorage('application/x-po')
 
-        for translation_file in translation_file_list:
+        for translation_file in translation_files:
             dirname = os.path.dirname(translation_file.path)
             if dirname == '':
                 # There is no directory in the path. Use
