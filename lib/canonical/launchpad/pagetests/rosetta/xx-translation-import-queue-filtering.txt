@@ -1,5 +1,5 @@
-With this test we are going to test the entries filtering on the translation
-import queue form.
+With this test we are going to test the entries filtering on the
+translation import queue form.
 
 To get the filter widgets we will use their names directly because there
 is no human readable labels associated with them.
@@ -47,7 +47,9 @@ already included in sample data.
 
     >>> browser.open('http://translations.launchpad.dev/+imports')
     >>> browser.getLink('Next')
-    <Link text='Next' url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
+    <Link
+      text='Next'
+      url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
 
 The queue contains import requests for only one target: Evolution.  This
 is shown in a view filter dropdown, as well as an option to display all
@@ -244,7 +246,7 @@ distribution:
     ...     name='field.filter_target', index=0).value = ['ubuntu/hoary']
     >>> user_browser.getControl('Filter').click()
     >>> print user_browser.url
-    http://translations.launchpad.dev/+imports/+index?field.filter_target=ubuntu/hoary&...
+    http://.../+imports/+index?field.filter_target=ubuntu/hoary&...
 
 And we only get the entry we just uploaded.
 
