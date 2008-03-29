@@ -221,4 +221,7 @@ Now, if that bug is actually fixed, this works:
   >>> pmount_warty_i386.summary
   u'pmount shortdesc'
 
+  >>> pmount_warty_i386.description
+  u'pmount description'
+
 Yay!
