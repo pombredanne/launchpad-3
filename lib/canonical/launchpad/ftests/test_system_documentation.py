@@ -371,6 +371,11 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown),
+    'branch-status-client.txt': LayeredDocFileSuite(
+            '../doc/branch-status-client.txt',
+            setUp=branchStatusSetUp, tearDown=branchStatusTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'translationimportqueue.txt': LayeredDocFileSuite(
             '../doc/translationimportqueue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
