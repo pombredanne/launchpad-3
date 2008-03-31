@@ -36,6 +36,7 @@ class MockBug:
             'Bug Title', 'Initial message.', owner=owner)
         self.owner = owner
         self.bugtasks = []
+        self.tags = []
 
     @property
     def title(self):

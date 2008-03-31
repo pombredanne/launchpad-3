@@ -265,3 +265,51 @@ the process's name.
     >>> config.answertracker.days_before_expiration
     15
 
+The initial instance_name is set via the LPCONFIG environment variable.
+Because Config is designed to failover to the default development
+environment, and the testrunner overrides the environment and config,
+we need to reconfigure the environment and reload the canonical.config
+module to test CanonicalConfig's behaviour.
+
+# XXX sinzui 2008-03-25 bug=78545: This cannot be tested until the
+# config can be restored when this test is torn down.
+
+#    >>> true_config = config
+#    >>> import os
+#    >>> from canonical.config import LPCONFIG, DEFAULT_SECTION
+#    >>> os.environ[LPCONFIG] = 'mailman-itests'
+#    >>> os.environ[DEFAULT_SECTION] = 'default'
+
+#    # reload the CanonicalConfig class object.
+#    >>> config_module = reload(canonical.config)
+#    >>> from canonical.config import config
+
+#    >>> config.filename
+#    '.../configs/mailman-itests/launchpad-lazr.conf'
+#    >>> config.extends.filename
+#    '.../configs/default/launchpad-lazr.conf'
+#    >>> config.database.dbname
+#    'launchpad_dev'
+
+#And the staging ZConfig (that is deprecated) is also selected.
+
+#    >>> config.dbname
+#    'launchpad_dev'
+#    >>> config._cache.default
+#    <SectionValue for canonical 'default'>
+#    >>> config._cache.testrunner
+#    Traceback (most recent call last):
+#     ...
+#    AttributeError: 'zope.thread.local' object has no attribute 'testrunner'
+
+#We need to reset the config for the testrunner.
+
+#    >>> config = true_config
+#    >>> canonical.config.config = config
+#    >>> config.filename
+#    '.../configs/testrunner/launchpad-lazr.conf'
+#    >>> config.dbname
+#    'launchpad_ftest'
+#    >>> config._cache.testrunner
+#    <SectionValue for canonical 'testrunner'>
+

@@ -20,7 +20,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IExportedTranslationFile, ITranslationExporter,
-    ITranslationFormatExporter)
+    ITranslationFormatExporter, TranslationFileFormat)
 
 
 class ExportedTranslationFile:
@@ -67,7 +67,10 @@ class TranslationExporter:
     def getExporterProducingTargetFileFormat(self, file_format):
         """See `ITranslationExporter`."""
         for exporter in subscribers([self], ITranslationFormatExporter):
-            if exporter.format == file_format:
+            if (exporter.format == file_format or
+                (file_format == TranslationFileFormat.XPI and
+                 exporter.format == TranslationFileFormat.XPIPO)):
+                # XPIPO is a special case for XPI exports.
                 return exporter
 
         return None

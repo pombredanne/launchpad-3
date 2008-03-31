@@ -217,8 +217,13 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See `IBug`."""
-        result = BugTask.selectBy(bug=self)
-        result.prejoin(["assignee"])
+        result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
+        result = result.prejoin(
+            ["assignee", "product", "sourcepackagename",
+             "owner", "bugwatch"])
+        # Do not use the defaul orderBy as the prejoins cause ambiguities
+        # across the tables.
+        result = result.orderBy("id")
         return sorted(result, key=bugtask_sort_key)
 
     @property
@@ -1217,4 +1222,3 @@ class BugSet:
                 owner=params.owner, status=params.status)
 
         return bug
-

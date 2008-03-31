@@ -38,6 +38,7 @@ COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a 
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
 COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
 COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
+COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
 
 -- BranchMergeProposal
 
@@ -1565,6 +1566,13 @@ COMMENT ON TABLE ShockAndAwe IS 'Information about specific Shock And Awe progra
 COMMENT ON COLUMN ShockAndAwe.name IS 'The name of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.title IS 'The title of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And Awe program';
+
+-- ShipItSurvey*
+COMMENT ON TABLE ShipItSurvey IS 'A sequence of questions and their answers given by a ShipIt user.';
+COMMENT ON TABLE ShipItSurveyQuestion IS 'The text of a question that is asked of ShipIt users.';
+COMMENT ON TABLE ShipItSurveyAnswer IS 'The text of an answer given by ShipIt users. Answers are usually multiple choice, but freeform answers could be stored here too.';
+COMMENT ON TABLE ShipItSurveyResult IS 'A single element in a ShipItSurvey.';
+COMMENT ON COLUMN ShipItSurveyResult.answer IS 'The given answer. NULL indicates not answered (which may be different to declined to answer).';
 
 -- Shipment
 COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';

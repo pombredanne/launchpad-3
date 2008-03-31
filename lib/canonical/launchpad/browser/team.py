@@ -19,7 +19,6 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
-from zope.publisher.interfaces import NotFound
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -38,8 +37,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus, TeamContactMethod,
-    TeamMembershipStatus, UnexpectedFormData, is_participant_in_beta_program)
+    ITeamCreation, LoginTokenType, MailingListStatus,
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -142,17 +141,6 @@ class MailingListTeamBaseView(LaunchpadFormView):
         return None
 
     @property
-    def can_create_mailing_list(self):
-        """Is it allowed to create a mailing list for this team?
-
-        `list_is_usable` must return false and mailing lists must be enabled
-        for this team.  Once mailing lists are enabled globally, this should
-        be replacable with not list_is_usable.
-        """
-        return (is_participant_in_beta_program(self.context) and
-                not self.list_is_usable)
-
-    @property
     def list_is_usable(self):
         """Checks whether or not the list is usable; ie. accepting messages.
 
@@ -236,8 +224,8 @@ class TeamContactAddressView(MailingListTeamBaseView):
             email = data['contact_address']
             if not email:
                 self.setFieldError(
-                    'contact_address',
-                    'Enter the contact address you want to use for this team.')
+                   'contact_address',
+                   'Enter the contact address you want to use for this team.')
                 return
             email = getUtility(IEmailAddressSet).getByEmail(
                 data['contact_address'])
@@ -346,20 +334,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
 
-    def initialize(self):
-        """Hide this view if mailing lists are not enabled for this team.
-
-        Once mailing lists are enabled globally, this method should be
-        removed.
-        """
-        if is_participant_in_beta_program(self.context):
-            # It's okay to let this team configure its mailing list, so let
-            # the normal view initialization procedure continue.
-            super(TeamMailingListConfigurationView, self).initialize()
-        else:
-            # Pretend as if this view doesn't exist at all.
-            raise NotFound(self, '+mailinglist', request=self.request)
-
     @action('Save', name='save')
     def save_action(self, action, data):
         """Sets the welcome message for a mailing list."""
@@ -389,7 +363,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             validator=cancel_list_creation_validator)
     def cancel_list_creation(self, action, data):
         """Cancels a pending mailing list registration."""
-        getUtility(IMailingListSet).get(self.context.name).cancelRegistration()
+        mailing_list_set = getUtility(IMailingListSet)
+        mailing_list_set.get(self.context.name).cancelRegistration()
         self.request.response.addInfoNotification(
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
@@ -436,7 +411,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
     def reactivate_list_validator(self, action, data):
-        """Adds an error if someone tries to reactivate a non-deactivated list.
+        """Adds an error if a non-deactivated list is reactivated.
 
         This can only happen through bypassing the UI.
         """
