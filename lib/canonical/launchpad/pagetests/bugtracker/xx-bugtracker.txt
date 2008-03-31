@@ -460,22 +460,23 @@ Then we can see how logged-in users and anonymous users see the page:
   ...     for watch in watches:
   ...         bug, remote_bug, status = watch.findAll('td')
   ...         print extract_text(bug)
-  ...         print '  --> %s: %s' % (extract_text(remote_bug),
-  ...                                 remote_bug.a.get('href'))
+  ...         print '  --> %s: %s' % (
+  ...             extract_text(remote_bug),
+  ...             (remote_bug.a and remote_bug.a.get('href')))
 
   >>> user_browser.open(
   ...     'http://launchpad.dev/bugs/bugtrackers/email')
   >>> print_watches(user_browser)
   #12:
   Copy, Cut and Delete operations should work on selections
-    --> : mailto:bugs@example.com
+    --> &mdash;: mailto:bugs@example.com
 
   >>> anon_browser.open(
   ...     'http://launchpad.dev/bugs/bugtrackers/email')
   >>> print_watches(anon_browser)
   #12:
   Copy, Cut and Delete operations should work on selections
-    --> : mailto:&lt;email address hidden&gt;
+    --> &mdash;: None
 
 
 == Related projects portlet ==

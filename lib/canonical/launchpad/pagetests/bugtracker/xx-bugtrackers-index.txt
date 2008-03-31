@@ -10,8 +10,8 @@ bugtrackers currently registered:
     ...         print '------------------------'
     ...         print '\n'.join([
     ...             extract_text(title),
-    ...             extract_text(location.a),
-    ...             '  --> %s' % location.a.get('href'),
+    ...             extract_text(location),
+    ...             '  --> %s' % (location.a and location.a.get('href')),
     ...             ' '.join(extract_text(linked).split()),
     ...             extract_text(type),
     ...             extract_text(watches)])
@@ -50,7 +50,7 @@ Email addresses are obfuscated if the user is not logged-in:
     ...
     Email bugtracker
     mailto:&lt;email address hidden&gt;
-      --> mailto:&lt;email address hidden&gt;
+      --> None
     &mdash;
     Email Address
     0

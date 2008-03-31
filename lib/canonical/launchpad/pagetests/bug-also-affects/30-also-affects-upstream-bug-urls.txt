@@ -177,9 +177,12 @@ confirmation.
     ...     bug_watches = find_portlet(
     ...         browser.contents, 'Remote bug watches')
     ...     for li in bug_watches('li'):
-    ...         bug_watch_link = li.findAll('a')[1]
-    ...         print ' '.join(extract_text(bug_watch_link).splitlines())
-    ...         print '  --> %s' % bug_watch_link.get('href')
+    ...         print ' '.join(extract_text(li).splitlines())
+    ...         bug_watch_link = li.find('a', {'class': 'link-external'})
+    ...         if bug_watch_link is None:
+    ...             print '  --> None'
+    ...         else:
+    ...             print '  --> %s' % bug_watch_link.get('href')
 
     >>> print_remote_bug_watches_portlet(user_browser)
     auto-dark-master-o-bugs
@@ -191,4 +194,4 @@ not logged in.
     >>> anon_browser.open(user_browser.url)
     >>> print_remote_bug_watches_portlet(anon_browser)
     auto-dark-master-o-bugs
-      --> mailto:&lt;email address hidden&gt;
+      --> None
