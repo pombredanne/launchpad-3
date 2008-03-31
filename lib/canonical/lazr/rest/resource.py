@@ -41,6 +41,7 @@ from canonical.lazr.enum import BaseItem
 # canonical_url code should be moved into lazr.
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
@@ -563,7 +564,18 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
             entries = self.collection.find()
             if entries is None:
                 raise NotFound(self, self.collection_name)
-            result = [EntryResource(entry, self.request) for entry in entries]
+            navigator = BatchNavigator(entries, self.request)
+            resources = [EntryResource(entry, self.request)
+                           for entry in navigator.batch]
+            result = { 'entries' : resources,
+                       'total_size' : navigator.batch.listlength,
+                       'start' : navigator.batch.start }
+            next_url = navigator.nextBatchURL()
+            if next_url != "":
+                result['next_collection_link'] = next_url
+            prev_url = navigator.prevBatchURL()
+            if prev_url != "":
+                result['prev_collection_link'] = prev_url
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
