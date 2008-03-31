@@ -1,10 +1,9 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """Twisted TestCase that doesn't interfere with existing signal handlers."""
 
 __metaclass__ = type
-
-__all__ = []
 
 import thread
 from unittest import TestLoader
@@ -14,41 +13,47 @@ from canonical.twistedsupport import MethodDeferrer
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from zope.interface import Interface
+from zope.interface import implements, Interface
+
+
+class IFoo(Interface):
+    """Simple interface used in TestMethodDeferrer."""
+
+    def simpleMethod(x):
+        """Returns `x`."""
+
+    def checkThreadID(self, main_thread_id):
+        """Raise an error if the current thread is the main thread."""
+
+
+class Foo:
+    """Implements `IFoo` for TestMethodDeferrer."""
+
+    implements(IFoo)
+
+    def __init__(self):
+        self.log = []
+
+    def checkThreadID(self, main_thread_id):
+        if thread.get_ident() == main_thread_id:
+            raise AssertionError("Not running in thread")
+
+    def simpleMethod(self, x):
+        self.log.append(('foo', x))
+        return x
+
+    def notInInterface(self, x):
+        self.log.append(('bar', x))
+        return x
 
 
 class TestMethodDeferrer(TrialTestCase):
 
     layer = TwistedLayer
 
-    class IFoo(Interface):
-        def foo(x):
-            """Returns `x`."""
-
-        def checkThreadID(self, main_thread_id):
-            """Raise an error if the current thread is the main thread."""
-
-    class Foo:
-
-        def __init__(self):
-            self.log = []
-
-        def checkThreadID(self, main_thread_id):
-            if thread.get_ident() == main_thread_id:
-                raise AssertionError("Not running in thread")
-
-        def foo(self, x):
-            self.log.append(('foo', x))
-            return x
-
-        def bar(self, x):
-            self.log.append(('bar', x))
-            return x
-
-
     def setUp(self):
-        self.original = self.Foo()
-        self.wrapped = MethodDeferrer(self.original, self.IFoo)
+        self.original = Foo()
+        self.wrapped = MethodDeferrer(self.original, IFoo)
 
     def checkLog(self, pass_through, expected_log):
         self.assertEqual(self.original.log, expected_log)
@@ -57,7 +62,7 @@ class TestMethodDeferrer(TrialTestCase):
     def test_callsUnderlying(self):
         # Calling a published method on an object wrapped with a
         # MethodDeferrer calls the underlying method.
-        deferred = self.wrapped.foo(42)
+        deferred = self.wrapped.simpleMethod(42)
         deferred.addCallback(self.assertEqual, 42)
         deferred.addCallback(self.checkLog, [('foo', 42)])
         return deferred
@@ -65,7 +70,8 @@ class TestMethodDeferrer(TrialTestCase):
     def test_onlyAllowsPublishedMethods(self):
         # If you try to call a method that isn't advertised on an interface
         # provided to MethodDeferrer, you will get an AttributeError.
-        self.assertRaises(AttributeError, lambda: self.wrapped.bar(42))
+        self.assertRaises(
+            AttributeError, lambda: self.wrapped.notInInterface(42))
 
     def test_checkRunningInThread(self):
         # Of course, the wrapped methods actually do run in separate threads.

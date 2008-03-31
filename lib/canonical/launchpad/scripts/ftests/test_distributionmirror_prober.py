@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0703
+
 """distributionmirror-prober tests."""
 
 __metaclass__ = type
@@ -230,8 +232,10 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
     host = 'foo.bar'
 
     def setUp(self):
-        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
-        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+        self.orig_host_requests = dict(
+            distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(
+            distributionmirror_prober.host_timeouts)
 
     def tearDown(self):
         # Restore the globals that our tests fiddle with.
@@ -311,8 +315,10 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
-        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+        self.orig_host_requests = dict(
+            distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(
+            distributionmirror_prober.host_timeouts)
         distributionmirror_prober.host_requests = {}
         distributionmirror_prober.host_timeouts = {}
         root = DistributionMirrorTestHTTPServer()
@@ -410,7 +416,7 @@ class TestMultiLock(unittest.TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_second_lock(self):
-        """MultiLock.run acquires the second lock before running a function."""
+        """MultiLock.run acquires the second lock before running functions."""
         # Keep lock_two busy.
         deferred = defer.Deferred()
         self.lock_two.run(lambda: deferred)
@@ -611,7 +617,8 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
             self.callbacks.deleteMirrorSeries(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
         except Exception, e:
-            self.fail("A bad response code shouldn't be propagated. Got %s" % e)
+            self.fail(
+                "A bad response code shouldn't be propagated. Got %s" % e)
         try:
             self.callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
         except Exception, e:

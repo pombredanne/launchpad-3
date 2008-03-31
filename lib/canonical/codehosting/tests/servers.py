@@ -99,6 +99,7 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
 class Authserver(Server):
 
     def __init__(self):
+        Server.__init__(self)
         self.authserver = None
 
     def setUp(self):
@@ -145,6 +146,7 @@ class AuthserverOutOfProcess(Server):
     """Server to run the authserver out-of-process."""
 
     def __init__(self):
+        Server.__init__(self)
         self.tachandler = AuthserverTac()
 
     def setUp(self):
@@ -172,11 +174,12 @@ class AuthserverWithKeysMixin:
         parent = os.path.dirname(key_pair_path)
         if not os.path.isdir(parent):
             os.makedirs(parent)
-        shutil.copytree(sibpath(__file__, 'keys'), os.path.join(key_pair_path))
+        shutil.copytree(
+            sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
     def setUpTestUser(self):
-        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
-        SSH key.
+        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a
+        known SSH key.
         """
         person_set = getUtility(IPersonSet)
         testUser = person_set.getByName('no-priv')
@@ -188,12 +191,12 @@ class AuthserverWithKeysMixin:
         ssh_key_set = getUtility(ISSHKeySet)
         ssh_key_set.new(
             testUser, SSHKeyType.DSA,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1kt'
-            'FPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeV'
-            'YHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViT'
-            'aalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ'
-            '2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
-            'testuser')
+            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
+            'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
+            'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
+            'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
+            '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
+            'gw==', 'testuser')
         commit()
         self.setUpKeys()
 
@@ -265,6 +268,7 @@ class FakeLaunchpadServer(LaunchpadServer):
 class CodeHostingServer(Server):
 
     def __init__(self, authserver, branches_root, mirror_root):
+        Server.__init__(self)
         self.authserver = authserver
         self._branches_root = branches_root
         self._mirror_root = mirror_root
@@ -282,7 +286,7 @@ class CodeHostingServer(Server):
         shutil.rmtree(self._branches_root)
         return self.authserver.tearDown()
 
-    def getTransport(self, relpath):
+    def getTransport(self, relpath=None):
         """Return a new transport for 'relpath', adding necessary cleanup."""
         raise NotImplementedError()
 
@@ -351,8 +355,8 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
             self, 'sftp', authserver, branches_root, mirror_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        """Run the given function, close all SFTP connections, and wait for the
-        server to acknowledge the end of the session.
+        """Run the given function, close all SFTP connections, and wait for
+        the server to acknowledge the end of the session.
         """
         ever_connected = threading.Event()
         done = threading.Event()
@@ -386,8 +390,8 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
 
 class _TestSSHService(SSHService):
-    """SSH service that uses the the _TestLaunchpadAvatar and installs the test
-    keys in a place that the SSH server can find them.
+    """SSH service that uses the the _TestLaunchpadAvatar and installs the
+    test keys in a place that the SSH server can find them.
 
     This class, _TestLaunchpadAvatar and _TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first

@@ -58,9 +58,9 @@ class TacTestSetup:
         if rv != 0:
             raise TacException('Error %d running %s' % (rv, args))
 
-        # Wait for the daemon to fully start (as determined by watching the log
-        # file).  If it takes more than 10 seconds, we assume it's gone wrong,
-        # and raise TacException.
+        # Wait for the daemon to fully start (as determined by watching the
+        # log file). If it takes more than 10 seconds, we assume it's gone
+        # wrong, and raise TacException.
         start = time.time()
         while True:
             if time.time() > start + 10:

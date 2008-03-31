@@ -1,4 +1,6 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
+# pylint: disable-msg=W0603
 
 """Layers used by Canonical tests.
 
