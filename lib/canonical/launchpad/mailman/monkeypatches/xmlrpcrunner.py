@@ -460,11 +460,14 @@ class XMLRPCRunner(Runner):
         # same time.
         by_list = {}
         for message_id, (team_name, action) in dispositions.items():
-            accepts, declines = by_list.setdefault(team_name, ([], []))
+            accepts, declines, discards = by_list.setdefault(
+                team_name, ([], [], []))
             if action == 'accept':
                 accepts.append(message_id)
             elif action == 'decline':
                 declines.append(message_id)
+            elif action == 'discard':
+                discards.append(message_id)
             else:
                 syslog('xmlrpc',
                        'Skipping invalid disposition "%s" for message-id: %s',
@@ -478,7 +481,7 @@ class XMLRPCRunner(Runner):
                        team_name)
                 continue
             try:
-                accepts, declines = by_list[team_name]
+                accepts, declines, discards = by_list[team_name]
                 for message_id in accepts:
                     request_id = mlist.held_message_ids.pop(message_id, None)
                     if request_id is None:
@@ -496,6 +499,15 @@ class XMLRPCRunner(Runner):
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.REJECT)
                         syslog('vette', 'Rejected: %s', message_id)
+                        changes_detected = True
+                for message_id in discards:
+                    request_id = mlist.held_message_ids.pop(message_id, None)
+                    if request_id is None:
+                        syslog('xmlrpc', 'Missing declined message-id: %s',
+                               message_id)
+                    else:
+                        mlist.HandleRequest(request_id, mm_cfg.DISCARD)
+                        syslog('vette', 'Discarded: %s', message_id)
                         changes_detected = True
                 mlist.Save()
             finally:

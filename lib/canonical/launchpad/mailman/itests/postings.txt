@@ -121,8 +121,9 @@ The message is held for team owner approval, both in Launchpad and in Mailman.
     Hi, I am not a member of this team's list (yet).
     <BLANKLINE>
 
-The team administrator can accept or decline this posting.  By declining the
-message, Launchpad forgets about it, but Mailman sends a rejection.
+The team administrator can accept, decline or discard this posting.  By
+declining the message, Launchpad forgets about it, while Mailman sends a
+rejection notice to Anne.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IMessageApprovalSet, IPersonSet)
@@ -177,6 +178,44 @@ message, Launchpad forgets about it, but Mailman sends a rejection.
         itest-one-owner@lists.launchpad.dev
     <BLANKLINE>
     <BLANKLINE>
+
+Anne posts another message to the mailing list that she is not subscribed to.
+This message is deemed to be spam and is discarded.  No rejection notice is
+sent to Anne.
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: Wanna buy something?
+    ... Message-ID: <fourteenth-injection>
+    ...
+    ... Hi, do you want to buy something?
+    ... """)
+
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
+
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourteenth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.NEW, (0) New status>
+    >>> message_approval.discard(team_one.teamowner)
+    >>> serial_watcher.resync()
+    >>> smtp_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourteenth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    0
+    >>> len(smtpd.getMessages())
+    0
 
 Now Anne posts another message to the mailing list she is not subscribed to.
 This time, her message is on topic and is accepted.
