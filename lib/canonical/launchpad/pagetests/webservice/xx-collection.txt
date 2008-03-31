@@ -98,17 +98,36 @@ custom operation to be invoked is named in the query string's
 'ws_op' argument. Here's a custom operation on the collection of
 people, called 'people'.
 
-  >>> def search_people(text):
-  ...     return sorted(webservice.get(
-  ...         "/people?ws_op=people&text=" + text).jsonBody())
+  >>> def search_people(text, start=0):
+  ...     return webservice.get(
+  ...         "/people?ws_op=people&text=%s&start=%s" %
+  ...             (text, start)).jsonBody()
 
+A custom operation that returns a list of objects is paginated, just
+like a collection.
 
-  >>> [p['name'] for p in search_people("admins")]
-  [u'admins', u'ubuntu-mirror-admins', u'rosetta-admins',
-   u'launchpad-buildd-admins', u'shipit-admins']
+  >>> s_people = search_people("s")
+  >>> s_people['total_size']
+  8
+  >>> s_people['next_collection_link']
+  u'http://api.launchpad.dev/people?ws_op=people&text=s&start=5&batch=5'
+  >>> [p['name'] for p in sorted(s_people['entries'])]
+  [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
 
-  >>> [p['name'] for p in search_people("nosuchperson")]
+  >>> s_people_batch_2 = search_people("s", 5)
+  >>> [p['name'] for p in sorted(s_people_batch_2['entries'])]
+  [u'skacel', u'stub', u'ubuntu-team']
+
+Just as a collection may be empty, a custom operation may return an
+empty list of results:
+
+  >>> empty_list = search_people("nosuchperson")
+  >>> empty_list['total_size']
+  0
+  >>> [p['name'] for p in empty_list['entries']]
   []
+
+Custom operations may have custom error handling.
 
   >>> print webservice.get("/people?ws_op=people&text=")
   HTTP/1.1 400 Bad Request

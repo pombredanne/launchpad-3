@@ -153,8 +153,27 @@ class HTTPResource:
         return len(getAdapters((self.context, self.request),
                                IResourcePOSTOperation)) > 0
 
+class BatchingResourceMixin:
 
-class CustomOperationResourceMixin:
+    """A mixin for resources that need to batch lists of entries."""
+
+    def batch(self, entries, request):
+        navigator = BatchNavigator(entries, request)
+        resources = [EntryResource(entry, request)
+                     for entry in navigator.batch]
+        batch = { 'entries' : resources,
+                  'total_size' : navigator.batch.listlength,
+                  'start' : navigator.batch.start }
+        next_url = navigator.nextBatchURL()
+        if next_url != "":
+            batch['next_collection_link'] = next_url
+        prev_url = navigator.prevBatchURL()
+        if prev_url != "":
+            batch['prev_collection_link'] = prev_url
+        return batch
+
+
+class CustomOperationResourceMixin(BatchingResourceMixin):
 
     """A mixin for resources that implement a collection-entry pattern."""
 
@@ -216,7 +235,9 @@ class CustomOperationResourceMixin:
         except TypeError:
             # Result is a single entry
             return EntryResource(result, self.request)
-        return [EntryResource(entry, self.request) for entry in iterator]
+
+        # Serve a single batch from the collection.
+        return self.batch(result, self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -564,18 +585,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
             entries = self.collection.find()
             if entries is None:
                 raise NotFound(self, self.collection_name)
-            navigator = BatchNavigator(entries, self.request)
-            resources = [EntryResource(entry, self.request)
-                           for entry in navigator.batch]
-            result = { 'entries' : resources,
-                       'total_size' : navigator.batch.listlength,
-                       'start' : navigator.batch.start }
-            next_url = navigator.nextBatchURL()
-            if next_url != "":
-                result['next_collection_link'] = next_url
-            prev_url = navigator.prevBatchURL()
-            if prev_url != "":
-                result['prev_collection_link'] = prev_url
+            result = self.batch(entries, self.request)
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
