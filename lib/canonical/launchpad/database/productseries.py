@@ -31,13 +31,15 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, NotFoundError, PackagingType,
-    RevisionControlSystems, SpecificationSort, SpecificationGoalStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus)
+    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
+    PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationImplementationStatus, SpecificationSort)
 
 
 class NoImportBranchError(Exception):
@@ -59,10 +61,12 @@ class DatePublishedSyncError(Exception):
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                    HasTranslationImportsMixin):
+                    HasTranslationImportsMixin,
+                    StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
-        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates,
+        IStructuralSubscriptionTarget)
 
     _table = 'ProductSeries'
 

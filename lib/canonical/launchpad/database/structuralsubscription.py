@@ -115,6 +115,8 @@ class StructuralSubscriptionTargetMixin:
             args['sourcepackagename'] = None
         elif IMilestone.providedBy(self):
             args['milestone'] = self
+        elif IProductSeries.providedBy(self):
+            args['productseries'] = self
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.')
