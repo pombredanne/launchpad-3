@@ -126,3 +126,15 @@ should get a nice error message.
     There is 1 error.
     unstable is already in use by another series.
 
+
+== Product series bug subscriptions ==
+
+To receive email notifications about bugs pertaining to a product series,
+we can create structural bug subscriptions.
+
+    >>> browser.open('http://launchpad.dev/firefox/unstable')
+    >>> browser.getLink('Subscribe to bug mail').click()
+    >>> print browser.url
+    http://launchpad.dev/firefox/unstable/+subscribe
+    >>> print browser.title
+    Bug subscriptions for Mozilla Firefox Series: unstable
