@@ -68,6 +68,10 @@ A target's parent can be retrieved using the
    >>> print ff_milestone.parent_subscription_target.displayname
    Mozilla Firefox
 
+   >>> ff_trunk = firefox.getSeries('trunk')
+   >>> ff_trunk.parent_subscription_target == firefox
+   True
+
 When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
