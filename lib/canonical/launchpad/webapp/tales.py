@@ -1112,10 +1112,10 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         """
         url = self._context.baseurl
         if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
-            return escape('mailto:<email address hidden>')
+            return escape(u'mailto:<email address hidden>')
         else:
             href = escape(url)
-            return '<a class="link-external" href="%s">%s</a>' % (href, href)
+            return u'<a class="link-external" href="%s">%s</a>' % (href, href)
 
     def aliases(self):
         """Generate alias URLs, obfuscating where necessary.
@@ -1126,11 +1126,18 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         anonymous = getUtility(ILaunchBag).user is None
         for alias in self._context.aliases:
             if anonymous and alias.startswith('mailto:'):
-                yield 'mailto:<email address hidden>'
+                yield escape(u'mailto:<email address hidden>')
             else:
                 yield alias
 
     def traverse(self, name, furtherPath):
+        """See `ITraversable`.
+
+        Names supported:
+          url: As for `ObjectFormatterAPI`.
+          external-link: See `external_link`.
+          aliases: See `aliases`.
+        """
         if name == 'url':
             return self.url()
         elif name == 'external-link':
@@ -1146,29 +1153,54 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
 
     implements(ITraversable)
 
-    def _make_external_link(self, summary):
-        if summary:
-            summary = escape(summary)
+    def _make_external_link(self, summary=None):
+        """Return an external HTML link to the target of the bug watch.
+
+        If a summary is not specified or empty, an em-dash is used as
+        the content of the link.
+
+        If the user is not logged in and the URL of the bug watch is
+        an email address, only the summary is returned (i.e. no link).
+        """
+        if summary is None or len(summary) == 0:
+            summary = u'&mdash;'
         else:
-            summary = '&mdash;'
+            summary = escape(summary)
         url = self._context.url
         if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
             return summary
         else:
-            return '<a class="link-external" href="%s">%s</a>' % (
+            return u'<a class="link-external" href="%s">%s</a>' % (
                 escape(url), summary)
 
     def external_link(self):
+        """Return an HTML link with a detailed link text.
+
+        The link text is formed from the bug tracker name and the
+        remote bug number.
+        """
         summary = self._context.bugtracker.name
         remotebug = self._context.remotebug
-        if remotebug:
-            summary = '%s #%s' % (summary, remotebug)
+        if remotebug is not None and len(remotebug) > 0:
+            summary = u'%s #%s' % (summary, remotebug)
         return self._make_external_link(summary)
 
     def external_link_short(self):
+        """Return an HTML link with a short link text.
+
+        The link text is formed from the bug tracker name and the
+        remote bug number.
+        """
         return self._make_external_link(self._context.remotebug)
 
     def traverse(self, name, furtherPath):
+        """See `ITraversable`.
+
+        Names supported:
+          url: As for `ObjectFormatterAPI`.
+          external-link: See `external_link`.
+          external-link-short: See `external_link_short`.
+        """
         if name == 'url':
             return self.url()
         elif name == 'external-link':
