@@ -242,14 +242,28 @@ class Build(SQLBase):
 
     @property
     def estimated_buildstart(self):
-        """See `IBuild`."""
+        """See `IBuild`.
+        
+        The estimated dispatch time for the build job at hand is
+        calculated from the following ingredients:
+            * the start time for the head job (job at the
+              head of the respective build queue)
+            * the estimated build durations of all jobs that
+              precede the job at hand in the build queue
+              (divided by the number of machines in the respective
+              build pool)
+        If either of the above cannot be determined the estimated
+        dispatch is not known in which case the EPOCH time stamp
+        is returned.
+        """
         if self.buildstate != BuildStatus.NEEDSBUILD:
             # Estimated build start times are only available for
             # pending jobs.
             return None
 
-        # The -1 indicates that the estimated dispatch time is unknown.
-        result = -1
+        # The epoch time stamp indicates that the estimated dispatch
+        # time is not known.
+        result = datetime.utcfromtimestamp(0)
 
         cur = cursor()
         # For a given build job in position N in the build queue the
@@ -283,28 +297,29 @@ class Build(SQLBase):
 
         # Get the number of machines that are available in the build
         # pool for this build job.
-        pool_size = float(getUtility(IBuilderSet).getBuildersForQueue(
+        pool_size = getUtility(IBuilderSet).getBuildersForQueue(
                         self.processor,
-                        self.is_virtualized).count())
+                        self.is_virtualized).count()
 
-        # In the case of zero sized build pools the result will remain
-        # -1 (estimated dispatch time not known).
+        # The estimated dispatch time can only be calculated for
+        # non-zero-sized build pools
         if pool_size > 0:
+            # This is the estimated build job start time in seconds
+            # from now.
+            start_time = 0
+
             if sum_of_delays is None:
                 # This job is the head job.
-                result = headjob_delay
+                start_time = headjob_delay
             else:
                 # There are jobs ahead of us. Divide the delay total by
                 # the number of machines available in the build pool.
-                result = headjob_delay + int(sum_of_delays/pool_size)
+                # Please note: we need the pool size to be a floating
+                # pointer number for the purpose of the division below.
+                pool_size = float(pool_size)
+                start_time = headjob_delay + int(sum_of_delays/pool_size)
+            result = datetime.utcnow() + timedelta(seconds=start_time)
 
-        if result == -1:
-            # The estimated dispatch time is not known.
-            result = datetime.utcfromtimestamp(0)
-        else:
-            # An estimated dispatch time is available.
-            result = datetime.utcnow() + timedelta(seconds=result)
-                
         return result
 
     def _getHeadjobDelay(self):
