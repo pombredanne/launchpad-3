@@ -79,9 +79,11 @@ class DistroArchSeriesBinaryPackage:
         curr = self.currentrelease
         if curr is not None:
             return curr.summary
-        general = DistroSeriesPackageCache.selectOneBy(
-            distroseries=self.distroseries,
-            binarypackagename=self.binarypackagename)
+        general = DistroSeriesPackageCache.selectOne("""
+            distroseries = %s AND binarypackagename = %s AND
+            archive IN %s""" % 
+            sqlvalues(self.distroseries, self.binarypackagename, 
+                          self.distribution.all_distro_archive_ids))
         if general is not None:
             return general.summary
         return None
@@ -92,9 +94,11 @@ class DistroArchSeriesBinaryPackage:
         curr = self.currentrelease
         if curr is not None:
             return curr.description
-        general = DistroSeriesPackageCache.selectOneBy(
-            distroseries=self.distroseries,
-            binarypackagename=self.binarypackagename)
+        general = DistroSeriesPackageCache.selectOne("""
+            distroseries = %s AND binarypackagename = %s AND
+            archive IN %s""" % 
+            sqlvalues(self.distroseries, self.binarypackagename, 
+                          self.distribution.all_distro_archive_ids))
         if general is not None:
             return general.description
         return None
