@@ -1,225 +1,197 @@
-== Manage-Chroot Tool ==
+= Manage-Chroot Tool =
 
-This tool is used for add or update chroots for suites (distroseries)
-and DistroArchSeriess.
+This tool is used to add or update chroots for suites (distroseries)
+and DistroArchSeries.
 
 Chroots are compressed files which contains a pristine ubuntu
-work-tree, they are used to build packages. When LP is requested to
-build "foo in dapper/i386", it needs to use the respective chroot.
+work-tree and are used to build packages.  When Launchpad is requested
+to build "foo in dapper/i386", it needs to use the respective chroot on
+the builder.
 
 This script is based on the IDistroArchSeries.addOrUpdateChroot
 method, which is better tested in doc/pocketchroot.txt.
 
+It allows the user to add, update, remove and get chroot files.
 
-Let's setup the script runner:
+Setup the script runner:
 
-  >>> import subprocess
-  >>> import os
-  >>> import sys
-  >>> from canonical.config import config
+    >>> import subprocess
+    >>> import os
+    >>> import sys
+    >>> from canonical.config import config
 
-  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "manage-chroot.py")
-
+    >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+    ...                       "manage-chroot.py")
 
 Create and populate a temporary file and pretend it is a chroot:
 
-  >>> import tempfile
-  >>> filepath = tempfile.mktemp()
-  >>> temp_fd = open(filepath, 'w')
-  >>> temp_fd.write('fooooooooooo baaaaaaaaaar')
-  >>> temp_fd.close()
+    >>> import tempfile
+    >>> filepath = tempfile.mktemp()
+    >>> temp_fd = open(filepath, 'w')
+    >>> temp_fd.write('fooooooooooo baaaaaaaaaar')
+    >>> temp_fd.close()
 
-Adding a new chroot for ubuntu/hoary/i386:
+Setup a function to return a ManageChrootScript object given some
+parameters.
 
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) added.
-  INFO    Success.
-  <BLANKLINE>
+    >>> from canonical.launchpad.scripts.ftpmaster import ManageChrootScript
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> def getScriptObject(command, distribution='ubuntu', suite='hoary',
+    ...                     arch='i386', filepath=filepath):
+    ...     test_args = ['-s', suite,
+    ...                  '-d', distribution,
+    ...                  '-a', arch,
+    ...                  '-f', filepath,
+    ...                  '-v',
+    ...                  command]
+    ...
+    ...     manage_chroot = ManageChrootScript(
+    ...         name='manage-chroot', test_args=test_args)
+    ...     manage_chroot.logger = FakeLogger()
+    ...     manage_chroot.setupLocation()
+    ...     return manage_chroot
 
+We will execute the real script once using Popen to show that it exists
+and is executable.  After this first run, we'll call the script object
+directly for speed (Popen is slow).
 
-Update the previous chroot (with the same file, just a test):
+We can add a new chroot for ubuntu/hoary/i386 with the "add" command:
 
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "update",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) updated.
-  INFO    Success.
-  <BLANKLINE>
+    >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
+    ...                             "-d", "ubuntu",
+    ...                             "-s", "hoary",
+    ...                             "-a", "i386",
+    ...                             "-f", filepath],
+    ...                            stdout=subprocess.PIPE,
+    ...                            stderr=subprocess.PIPE,)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
+    >>> print stderr
+    INFO    creating lockfile
+    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
+    DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) added.
+    INFO    Transaction committed.
+    INFO    Success.
+    DEBUG   Removing lock file...
+    <BLANKLINE>
 
+Using an invalid command results in an error.
 
-Check the error when requesting to add a chroot for an unknown suite
-<distroseries> term, extensively used in soyuz context):
+    >>> from canonical.launchpad.scripts.ftpmasterbase import (
+    ...     SoyuzScriptError)
+    >>> manage_chroot = getScriptObject("bogus")
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    ERROR Allowed actions: ['add', 'update', 'remove', 'get']
+    Unknown action: bogus
 
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "foo",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  ERROR   Series not found: 'foo'
-  <BLANKLINE>
+Specifiying a bad architecture results in an error.
+
+    >>> manage_chroot = getScriptObject("add", arch="bogus")
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    Architecture not found: u'Unknown architecture bogus for ubuntu hoary'
+
+We can update the previous chroot with the "update" command:
+(we'll use the same file, it doesn't matter for our purposes):
+
+    >>> manage_chroot = getScriptObject("update")
+    >>> manage_chroot.mainTask()
+    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
+    DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) updated.
 
 Remove the temporary file created by this script
 
-  >>> os.remove(filepath)
+    >>> os.remove(filepath)
 
-Try to add a chroot from a not found path, the script should complain
-before changing anything in the DB:
+Adding a chroot using a non-existent path will result in an error.
 
-  >>> filepath = os.path.join(config.root, "no-such-file")
+    >>> filepath = os.path.join(config.root, "no-such-file")
 
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  ERROR   Could not open: ...no-such-file
-  <BLANKLINE>
+    >>> manage_chroot = getScriptObject("add", filepath=filepath)
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    Could not open: ...no-such-file
 
+Commit the work done so far so the librarian has the uploaded file.
 
-Retrieve a specified chroot to a given filename, download the file
-from librarian and store in the specified file:
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> LaunchpadZopelessLayer.txn.commit()
 
-  >>> filepath = os.path.join(config.root, "foo")
+Using the "get" command will retrieve a specified chroot to a given
+filename.
 
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "get",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
-  DEBUG   Writing to '...foo'.
-  INFO    Success.
-  <BLANKLINE>
+    >>> filepath = os.path.join(config.root, "foo")
 
+    >>> manage_chroot = getScriptObject("get", filepath=filepath)
+    >>> manage_chroot.mainTask()
+    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
+    DEBUG   Writing to '...foo'.
 
-Check if the file is where it was supposed to be:
+The downloaded chroot file now exists in the filepath specified.
 
-  >>> os.path.exists(filepath)
-  True
+    >>> os.path.exists(filepath)
+    True
 
 Remove it to avoid noise in test tree:
 
-  >>> os.remove(filepath)
+    >>> os.remove(filepath)
 
+Using the "remove" command will remove a previously uploaded chroot.
 
-Remove an uploaded chroot, invalidate the respective PocketChroot entry:
+    >>> manage_chroot = getScriptObject("remove")
+    >>> manage_chroot.mainTask()
+    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
+    DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) removed.
 
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "remove",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386"],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
-  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) removed.
-  INFO    Success.
-  <BLANKLINE>
+Trying to retrieve a removed chroot will fail.
 
-
-Trying to retrieve a removed/invalidated chroot will fail with proper
-message:
-
-  >>> filepath = os.path.join(config.root, "duuh")
-
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "get",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  ERROR   Chroot was deleted.
-  <BLANKLINE>
+    >>> filepath = os.path.join(config.root, "duuh")
+    >>> manage_chroot = getScriptObject("get", filepath=filepath)
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    Chroot was deleted.
 
   >>> os.remove(filepath)
 
+When the librarian is not running, attempting to upload a chroot file
+results in an appropriate error.
 
-We now need to shutdown the Librarian for this next bit. Unfortunately,
-we can't use LibrarianLayer.hide() because that will not propagate to
-the subprocess.
+    >>> from canonical.testing.layers import LibrarianLayer
+    >>> LibrarianLayer.hide()
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().tearDown()
-
-Check the behavior with no Librarian instance running:
-
-  >>> filepath = os.path.join(config.root, "COPYING")
-
-  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "hoary",
-  ...                             "-a", "i386",
-  ...                             "-f", filepath],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stderr
-  DEBUG   Intitialising connetion.
-  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-  ERROR   Librarian upload failed: (111, 'Connection refused')
-  <BLANKLINE>
-
-  >>> LibrarianTestSetup().setUp()
+    >>> filepath = os.path.join(config.root, "COPYING")
+    >>> manage_chroot = getScriptObject("add", filepath=filepath)
+    >>> try:
+    ...      manage_chroot.mainTask()
+    ... except SoyuzScriptError, info:
+    ...     print info
+    ... else:
+    ...     print "Did not get expected exception"
+    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    Librarian upload failed: (111, 'Connection refused')
 

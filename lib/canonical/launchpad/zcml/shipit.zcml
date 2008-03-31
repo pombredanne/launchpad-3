@@ -128,6 +128,15 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItLoginForServerCDsView"
+        permission="zope.Public"
+        name="login-server"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        template="../templates/shipit-login.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"
         permission="launchpad.AnyPerson"
         attribute="renderStandardrequestForm"
@@ -136,10 +145,28 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItRequestServerCDsView"
+        permission="launchpad.AnyPerson"
+        attribute="renderStandardrequestForm"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        name="myrequest-server">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"
         permission="launchpad.AnyPerson"
         attribute="renderCustomrequestForm"
         name="specialrequest">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItRequestServerCDsView"
+        permission="launchpad.AnyPerson"
+        attribute="renderCustomrequestForm"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        name="specialrequest-server">
     </browser:page>
 
     <!-- XXX: Guilherme Salgado 2006-05-24:

@@ -356,6 +356,8 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
+            self.potemplate.source_file = (
+                translation_import_queue_entry.content)
             if importer.uses_source_string_msgids:
                 # We use the special 'en' language as the way to store the
                 # English strings to show instead of the msgids.
@@ -556,6 +558,9 @@ class TranslationImporter:
                 }
 
                 errors.append(error)
+                if logger is not None:
+                    logger.info(
+                        "Conflicting updates on message %d." % potmsgset.id)
                 continue
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but

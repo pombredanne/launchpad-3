@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 """Logging setup for scripts.
@@ -263,7 +263,7 @@ def _logger(level, out_stream, name=None):
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
     hdlr = logging.StreamHandler(strm=out_stream)
-    if config.default_section == 'testrunner':
+    if config.instance_name == 'testrunner':
         # Don't output timestamps in the test environment
         fmt = '%(levelname)-7s %(message)s'
     else:

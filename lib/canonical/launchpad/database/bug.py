@@ -24,14 +24,13 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.mailnotification import (
-    get_bugtask_indirect_subscribers)
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
     IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
     ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
-    IProductSeries, IQuestionTarget, ISourcePackage, NominationError,
+    IProductSeries, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -216,8 +215,13 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See `IBug`."""
-        result = BugTask.selectBy(bug=self)
-        result.prejoin(["assignee"])
+        result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
+        result = result.prejoin(
+            ["assignee", "product", "sourcepackagename",
+             "owner", "bugwatch"])
+        # Do not use the defaul orderBy as the prejoins cause ambiguities
+        # across the tables.
+        result = result.orderBy("id")
         return sorted(result, key=bugtask_sort_key)
 
     @property
@@ -470,9 +474,29 @@ class Bug(SQLBase):
         also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
-            bugtask_subscribers = get_bugtask_indirect_subscribers(
-                bugtask, recipients=recipients)
-            also_notified_subscribers.update(bugtask_subscribers)
+            # Assignees are indirect subscribers.
+            if bugtask.assignee:
+                also_notified_subscribers.add(bugtask.assignee)
+                if recipients is not None:
+                    recipients.addAssignee(bugtask.assignee)
+
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                also_notified_subscribers.update(
+                    bugtask.target.getBugNotificationsRecipients(recipients))
+
+            if bugtask.milestone is not None:
+                also_notified_subscribers.update(
+                    bugtask.milestone.getBugNotificationsRecipients(
+                    recipients))
+
+            # If the target's bug contact isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bugcontact is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(
+                        pillar.owner, pillar)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
@@ -539,14 +563,17 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message, bugwatch=None):
+    def linkMessage(self, message, bugwatch=None, user=None):
         """See `IBug`."""
         if message not in self.messages:
+            if user is None:
+                user = message.owner
+
             result = BugMessage(bug=self, message=message,
                 bugwatch=bugwatch)
             getUtility(IBugWatchSet).fromText(
-                message.text_contents, self, message.owner)
-            self.findCvesInText(message.text_contents, message.owner)
+                message.text_contents, self, user)
+            self.findCvesInText(message.text_contents, user)
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -589,11 +616,9 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        attachment = getUtility(IBugAttachmentSet).create(
+        return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
-            title=title, message=message)
-        notify(SQLObjectCreatedEvent(attachment))
-        return attachment
+            title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):
         """See `IBug`."""
@@ -1203,4 +1228,3 @@ class BugSet:
                 owner=params.owner, status=params.status)
 
         return bug
-
