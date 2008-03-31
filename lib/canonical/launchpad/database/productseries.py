@@ -35,12 +35,11 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IHasTranslationTemplates, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, ImportStatus,
-    NotFoundError, PackagingType, RevisionControlSystems,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationImplementationStatus,
-    SpecificationSort)
+    IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
+    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
+    PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationImplementationStatus, SpecificationSort)
 
 
 class NoImportBranchError(Exception):
