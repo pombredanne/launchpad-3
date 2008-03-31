@@ -159,7 +159,7 @@ It is possible to access the project's product through the project URL.
 
 == Project bug subscriptions ==
 
-To receive email notifications about bugs pretaining to a project, we
+To receive email notifications about bugs pertaining to a project, we
 can create structural bug subscriptions.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')

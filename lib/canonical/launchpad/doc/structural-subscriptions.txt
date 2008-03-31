@@ -144,3 +144,27 @@ is still a subscriber, by being subscribed to Ubuntu.
    ...     evolution_package.getBugNotificationsRecipients(
    ...         recipients=recipients))
    name16
+
+A project is the parent of each of its products.
+
+Fireox does not have any subscribers.
+
+   >>> print_bug_subscribers(firefox.getBugNotificationsRecipients())
+
+Mozilla is the parent of Fireox.
+
+   >>> from canonical.launchpad.interfaces import IProjectSet
+   >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+   >>> print firefox.parent_subscription_target.displayname
+   the Mozilla Project
+
+Foobar subscribes to bug notificatios or Mozilla.
+
+   >>> mozilla.addBugSubscription(foobar, foobar)
+   <StructuralSubscription at ...>
+
+As a result of subscribing to Mozilla, Foobar is now a subscriber of
+Firefox.
+
+   >>> print_bug_subscribers(firefox.getBugNotificationsRecipients())
+   name16
