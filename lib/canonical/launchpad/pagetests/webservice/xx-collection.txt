@@ -87,6 +87,10 @@ the collection of people.
   ...                            'application/x-www-form-urlencoded',
   ...                            command)
 
+  >>> print webservice.get("/~serviceuser")
+  HTTP/1.1 404 Not Found
+  ...
+
   >>> print create_person("serviceuser@example.com",
   ...                     "Comment", "serviceuser", "Service User",
   ...                     "password")
@@ -95,12 +99,20 @@ the collection of people.
   Location: http://api.launchpad.dev/~serviceuser
   <BLANKLINE>
 
+  >>> print webservice.get("/~serviceuser")
+  HTTP/1.1 200 Ok
+  ...
+
   >>> print create_person("serviceuser2@example.com",
   ...                     "", "", "displayname", "")
   HTTP/1.1 201 Created
   ...
   Location: http://api.launchpad.dev/~serviceuser2
   <BLANKLINE>
+
+  >>> print webservice.get("/~serviceuser2")
+  HTTP/1.1 200 Ok
+  ...
 
 Standard person-creation rules apply. For instance, you can't create a
 person with a name that's taken.
@@ -117,3 +129,19 @@ You also can't create a person with an email address that's taken.
   HTTP/1.1 409 Conflict
   ...
   The email addres 'serviceuser@example.com' is already in use.
+
+A POST request has no meaning right now unless it specifies a custom
+operation.
+
+  >>> print webservice.post("/people", 'text/plain', '')
+  HTTP/1.1 400 Bad Request
+  ...
+  No operation name given.
+
+You can't invoke a nonexistent operation:
+
+  >>> print webservice.post("/people", 'application/x-www-form-urlencoded',
+  ...                       'ws_op=nosuchop')
+  HTTP/1.1 400 Bad Request
+  ...
+  No such operation: nosuchop

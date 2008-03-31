@@ -1,5 +1,10 @@
 = Entries =
 
+Most objects published by the Launchpad web service are entries:
+self-contained data structures with an independent existence from any
+other entry. Entries are distinguished from collections, which are
+groupings of entries.
+
 All entries in the Launchpad web service work pretty much the same
 way. This document illustrates the general features of entries, using
 Launchpad people and bug tasks as examples.
@@ -35,11 +40,17 @@ Some entries support custom operations through POST. You can change a
 bug's status by invoking a custom operation.
 
   >>> bugtask_path = '/debian/+source/mozilla-firefox/+bug/1'
+  >>> webservice.get(bugtask_path).jsonBody()['status']
+  u'Confirmed'
+
   >>> print webservice.post(bugtask_path,
   ...                       'application/x-www-form-urlencoded',
-  ...                       'ws_op=change_status&status=CONFIRMED')
+  ...                       'ws_op=change_status&status=INVALID')
   HTTP/1.1 200 Ok
   ...
+
+  >>> webservice.get(bugtask_path).jsonBody()['status']
+  u'Invalid'
 
 Custom operations may have error handling.
 
@@ -55,6 +66,13 @@ Custom operations may have error handling.
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value
+
+  >>> print webservice.post(bugtask_path,
+  ...                       'application/x-www-form-urlencoded',
+  ...                       'ws_op=change_status&status=TRIAGED')
+  HTTP/1.1 401 Unauthorized
+  ...
+  Only Bug Contacts may change status to Triaged.
 
 Trying to invoke a nonexistent custom operation yields an error.
 

@@ -640,8 +640,8 @@ a named factory operation for creating a new cookbook.
     ...    def call(self, author_name, title):
     ...        cookbook = CookbookSet().new_cookbook(author_name, title)
     ...        self.request.response.setStatus(201)
-    ...        self.request.response.setHeader("Location",
-    ...            canonical_url(cookbook))
+    ...        self.request.response.setHeader(
+    ...            "Location", canonical_url(cookbook))
     ...        return cookbook
 
     >>> from canonical.lazr.interfaces import IResourcePOSTOperation
@@ -762,7 +762,8 @@ GET. The cookbook collection exposes a custom GET operation called
 'find_recipes', which searches for recipes with a given name across
 cookbooks.
 
-    >>> request = create_web_service_request('cookbooks',
+    >>> request = create_web_service_request(
+    ...    'cookbooks',
     ...    environ={'QUERY_STRING' :
     ...             'ws_op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
@@ -775,7 +776,8 @@ cookbooks.
 Custom operations may include custom error checking. Error messages
 are passed along to the client.
 
-    >>> request = create_web_service_request('cookbooks',
+    >>> request = create_web_service_request(
+    ...    'cookbooks',
     ...    environ={'QUERY_STRING' :
     ...             'ws_op=find_recipes&name=NoSuchRecipe'})
     >>> operation_resource = request.traverse(app)

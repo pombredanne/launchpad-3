@@ -149,8 +149,8 @@ class HTTPResource:
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        return len(getAdapters((self.context, self.request),
-                               IResourcePOSTOperation)) > 0
+        return len(getAdapters(
+                (self.context, self.request), IResourcePOSTOperation)) > 0
 
 
 class CustomOperationResourceMixin:
@@ -162,13 +162,9 @@ class CustomOperationResourceMixin:
 
         This is used by both EntryResource and CollectionResource.
         """
-        try:
-            operation = getMultiAdapter((self.context, self.request),
-                                        IResourceGETOperation,
-                                        name=operation_name)
-        except (ValueError, ComponentLookupError):
-            raise NotFound(self, self.request['QUERY_STRING'])
-
+        operation = getMultiAdapter((self.context, self.request),
+                                    IResourceGETOperation,
+                                    name=operation_name)
         return self._processCustomOperationResult(operation())
 
     def handleCustomPOST(self, operation_name):
@@ -180,7 +176,7 @@ class CustomOperationResourceMixin:
             operation = getMultiAdapter((self.context, self.request),
                                         IResourcePOSTOperation,
                                         name=operation_name)
-        except (ValueError, ComponentLookupError):
+        except ComponentLookupError:
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
         return self._processCustomOperationResult(operation())

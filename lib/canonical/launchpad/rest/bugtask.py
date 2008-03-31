@@ -124,6 +124,7 @@ class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
         """Execute the operation.
 
         :param status: A DBItem from BugTaskStatus
+        :return: An error message or the empty string.
         """
         user = getUtility(ILaunchBag).user
         try:
