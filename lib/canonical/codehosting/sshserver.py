@@ -7,8 +7,8 @@ import logging
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import session, filetransfer
-from twisted.conch.ssh import factory, userauth, connection
+from twisted.conch.ssh import (
+    channel, connection, factory, filetransfer, session, userauth)
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -36,6 +36,17 @@ class SubsystemOnlySession(session.SSHSession, object):
     def closeReceived(self):
         # Without this, the client hangs when its finished transferring.
         self.loseConnection()
+
+    def loseConnection(self):
+        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
+        # implementation of session.SSHSession. The default implementation
+        # will try to call loseConnection on the client transport even if it's
+        # None. I don't know *why* it is None, so this doesn't necessarily
+        # address the root cause.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.loseConnection()
+        channel.SSHChannel.loseConnection(self)
 
 
 class LaunchpadAvatar(avatar.ConchUser):
