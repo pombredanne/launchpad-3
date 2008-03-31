@@ -128,14 +128,13 @@ class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
         user = getUtility(ILaunchBag).user
         try:
             self.context.transitionToStatus(status, user)
-        except AssertionError:
+        except AssertionError, error:
             # An AssertionArror might mean that the person isn't
             # authenticated as someone who can make the transition
             # (status code 401) or that there's no such status (status
-            # code 400). Unfortunately there's no way to distinguish
-            # between the two without refactoring or duplicating
-            # canTransitionToStatus, so for now we'll use 400 for
-            # everything.
-            self.request.response.setStatus(400)
+            # code 400). The custom operation validation code catches
+            # nonexistent statuses, so we can assume the problem is an
+            # authorization problem.
+            self.request.response.setStatus(401)
             return str(error)
         return ''
