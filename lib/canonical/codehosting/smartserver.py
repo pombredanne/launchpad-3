@@ -67,7 +67,7 @@ class ExecOnlySession:
         except ForbiddenCommand, e:
             protocol.write(str(e) + '\r\n')
             protocol.loseConnection()
-            raise
+            return
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
