@@ -10,7 +10,7 @@
 
         <b>Location:</b><br />
         <img alt="" src="/@@/link" />
-        <span tal:replace="structure context/fmt:external-link" /><br />
+        <a tal:replace="structure context/fmt:external-link" /><br />
 
         <b>Tracker Type:</b>
         <span tal:replace="context/bugtrackertype/title">BugZilla</span>

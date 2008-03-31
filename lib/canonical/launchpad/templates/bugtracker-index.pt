@@ -58,7 +58,11 @@
                   </span>
                 </a>
               </td>
-              <td tal:content="structure watch/fmt:external-link-short" />
+              <td>
+                <a tal:replace="structure watch/fmt:external-link-short">
+                  1234
+                </a>
+              </td>
               <td tal:content="watch/remotestatus" />
             </tal:show-watch-details>
           </tr>
@@ -82,7 +86,11 @@
 
   <ul id="bugtracker-urls">
     <li>
-      <strong tal:content="structure context/fmt:external-link" />
+      <strong>
+        <a tal:replace="structure context/fmt:external-link">
+          http://bugs.example.com/
+        </a>
+      </strong>
     </li>
     <li tal:repeat="alias context/fmt:aliases">
       <strong tal:content="alias" /> (Alias)
