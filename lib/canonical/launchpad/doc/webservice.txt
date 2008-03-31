@@ -130,10 +130,12 @@ Here are the "model objects" themselves:
     >>> A1 = Author(u"Julia Child")
     >>> A2 = Author(u"Irma S. Rombauer")
     >>> A3 = Author(u"James Beard")
+    >>> AUTHORS = [A1, A2, A3]
 
     >>> C1 = Cookbook(u"Mastering the Art of French Cooking", A1)
     >>> C2 = Cookbook(u"The Joy of Cooking", A2)
     >>> C3 = Cookbook(u"James Beard's American Cookery", A3)
+    >>> COOKBOOKS = [C1, C2, C3]
 
     >>> D1 = Dish("Roast chicken")
     >>> C1_D1 = Recipe(1, C1, D1, u"You can always judge...")
@@ -155,7 +157,16 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     >>> class CookbookSet:
     ...     implements(ICookbookSet)
     ...     def __init__(self):
-    ...         self.cookbooks = [C1, C2, C3]
+    ...         self.cookbooks = COOKBOOKS
+    ...
+    ...     def new_cookbook(self, author_name, title):
+    ...         authors = AuthorSet()
+    ...         author = authors.getAuthor(author_name)
+    ...         if author is None:
+    ...             author = authors.new_author(author_name)
+    ...         cookbook = Cookbook(title, author)
+    ...         self.cookbooks.append(cookbook)
+    ...         return cookbook
     ...
     ...     def getAll(self):
     ...         return self.cookbooks
@@ -186,7 +197,12 @@ Here's a simple AuthorSet with predefined authors.
     >>> class AuthorSet:
     ...     implements(IAuthorSet)
     ...     def __init__(self):
-    ...         self.authors = [A1, A2, A3]
+    ...         self.authors = AUTHORS
+    ...
+    ...     def new_author(self, name):
+    ...         author = Author(name)
+    ...         self.authors.append(author)
+    ...         return author
     ...
     ...     def getAllAuthors(self):
     ...         return self.authors
@@ -611,6 +627,28 @@ resource as a custom operation called 'find_similar_recipes'.
     ...                [IRecipe, IHTTPApplicationRequest],
     ...                IResourceGETOperation, "find_similar_recipes")
 
+Named GET operations are read-only operations like searches, but
+resource can also expose named write operations, through POST. Here's
+a named factory operation for creating a new cookbook.
+
+    >>> from canonical.lazr.rest import ResourcePOSTOperation
+    >>> class CookbookFactoryOperation(ResourcePOSTOperation):
+    ...    """An operation that creates a new cookbook."""
+    ...    params = [ TextLine(__name__='author_name'),
+    ...               TextLine(__name__='title'), ]
+    ...
+    ...    def call(self, author_name, title):
+    ...        cookbook = CookbookSet().new_cookbook(author_name, title)
+    ...        self.request.response.setStatus(201)
+    ...        self.request.response.setHeader("Location",
+    ...            canonical_url(cookbook))
+    ...        return cookbook
+
+    >>> from canonical.lazr.interfaces import IResourcePOSTOperation
+    >>> provideAdapter(CookbookFactoryOperation,
+    ...                [ICookbookSet, IHTTPApplicationRequest],
+    ...                IResourcePOSTOperation, "create_cookbook")
+
 
 == Resource objects ==
 
@@ -618,9 +656,9 @@ LAZR's Resource objects are the objects that actually handle incoming
 HTTP requests. There are a few very common types of HTTP resources,
 and LAZR defines classes for some of them. For instance, there's the
 "collection" resource that responds to GET (to get the items in the
-collection) and POST (to call methods on the collection). LAZR
-implements this as a CollectionResource which uses the HTTP arguments
-to drive Collection methods like find().
+collection) and POST (to invoke named operations on the
+collection). LAZR implements this as a CollectionResource which uses
+the HTTP arguments to drive Collection methods like find().
 
 Of course, a CollectionResource has to expose a collection _of_
 something. That's why each CollectionResource is associated with some
@@ -655,19 +693,22 @@ will act as though you had performed a GET on the URL
 
     >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from canonical.launchpad.webapp.servers import WebServicePublication
+    >>> from StringIO import StringIO
 
     >>> def create_web_service_request(
-    ...     path_info, method='GET', body_instream=None, environ=None):
+    ...     path_info, method='GET', body=None, environ=None):
     ...     test_environ = {
     ...         'SERVER_URL': 'http://api.launchpad.dev',
     ...         'HTTP_HOST': 'api.launchpad.dev',
     ...         'PATH_INFO': path_info,
     ...     }
-    ...     if environ:
+    ...     if environ is not None:
     ...         test_environ.update(environ)
+    ...     if body is not None:
+    ...         test_environ['CONTENT_LENGTH'] = len(body)
+    ...     body = StringIO(body)
     ...     request = WebServiceTestRequest(
-    ...         body_instream=body_instream, environ=test_environ,
-    ...         method=method)
+    ...         body_instream=body, environ=test_environ, method=method)
     ...     request.setPublication(WebServicePublication(None))
     ...     # Set the "current" request.
     ...     login(ANONYMOUS, request)
@@ -740,6 +781,44 @@ are passed along to the client.
     >>> operation_resource = request.traverse(app)
     >>> print operation_resource()
     No matches for NoSuchRecipe
+
+Collections may also support named POST operations. These operations
+are often factory operations. Here we create a new cookbook for an
+existing author:
+
+    >>> body = ("ws_op=create_cookbook&title=Beard%20on%20Bread&"
+    ...        "author_name=James%20Beard")
+    >>> request = create_web_service_request('cookbooks', 'POST', body,
+    ...    {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
+    >>> operation_resource = request.traverse(app)
+    >>> result = operation_resource()
+
+    >>> request.response.getStatus()
+    201
+    >>> request.response.getHeader('Location')
+    'http://api.launchpad.dev/cookbooks/Beard%20on%20Bread'
+
+Here we create a cookbook for a new author.
+
+    >>> body = ("ws_op=create_cookbook&title=Everyday%20Greens&"
+    ...        "author_name=Deborah%20Madison")
+    >>> request = create_web_service_request('cookbooks', 'POST', body,
+    ...    {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
+    >>> operation_resource = request.traverse(app)
+    >>> result = operation_resource()
+    >>> request.response.getStatus()
+    201
+    >>> request.response.getHeader('Location')
+    'http://api.launchpad.dev/cookbooks/Everyday%20Greens'
+
+The new Author object is created implicitly and is published as a
+resource afterwards.
+
+    >>> request = create_web_service_request('/authors/Deborah%20Madison')
+    >>> author = request.traverse(app)
+    >>> simplejson.loads(author())['name']
+    u'Deborah Madison'
+
 
 == Entry resources ==
 
@@ -888,12 +967,11 @@ of assertions about what the object *should* look like.
 
 Here, we modify the name of one of the cookbooks.
 
-    >>> from StringIO import StringIO
     >>> headers = { 'CONTENT_TYPE' : 'application/json' }
-    >>> body = StringIO('{"name" : "The Joy of Cooking (revised)"}')
+    >>> body = '{"name" : "The Joy of Cooking (revised)"}'
 
     >>> patch_request = create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking', body_instream=body,
+    ...     '/cookbooks/The%20Joy%20of%20Cooking', body=body,
     ...     environ=headers, method='PATCH')
     >>> joy_resource_patch = patch_request.traverse(app)
     >>> joy_resource_patch()
@@ -921,10 +999,10 @@ Here, we use PUT to change the cookbook's name back to what it was
 before. Note that we send the entire dictionary back to the server.
 
     >>> joy['name'] = 'The Joy of Cooking'
-    >>> body = StringIO(simplejson.dumps(joy))
+    >>> body = simplejson.dumps(joy)
     >>> put_request = create_web_service_request(
     ...     '/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29',
-    ...     body_instream=body, environ=headers, method='PUT')
+    ...     body=body, environ=headers, method='PUT')
 
     >>> joy_resource_put = put_request.traverse(app)
     >>> joy_resource_put()
@@ -953,7 +1031,7 @@ their URLs, we make the change by modifying the cookbook's
     >>> joy['author_link'] = u'http://api.launchpad.dev/authors/Julia%20Child'
     >>> resource = create_web_service_request(
     ...     '/cookbooks/The%20Joy%20of%20Cooking',
-    ...     body_instream=StringIO(simplejson.dumps(joy)), environ=headers,
+    ...     body=simplejson.dumps(joy), environ=headers,
     ...     method='PUT').traverse(app)
     >>> resource()
     ''

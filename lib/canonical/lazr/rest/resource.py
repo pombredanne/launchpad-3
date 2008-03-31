@@ -169,20 +169,7 @@ class CustomOperationResourceMixin:
         except (ValueError, ComponentLookupError):
             raise NotFound(self, self.request['QUERY_STRING'])
 
-        result = operation()
-        if isinstance(result, basestring):
-            # The operation took care of everything and just needs
-            # this string served to the client.
-            return result
-
-        # The operation returned a collection or entry. It will be
-        # serialized to JSON.
-        try:
-            iterator = iter(result)
-        except TypeError:
-            # Result is a single entry
-            return EntryResource(result, self.request)
-        return [EntryResource(entry, self.request) for entry in iterator]
+        return self._processCustomOperationResult(operation())
 
     def handleCustomPOST(self, operation_name):
         """Execute a custom write-type operation triggered through POST.
@@ -196,7 +183,7 @@ class CustomOperationResourceMixin:
         except (ValueError, ComponentLookupError):
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
-        return operation()
+        return self._processCustomOperationResult(operation())
 
     def do_POST(self):
         """Invoke a custom operation.
@@ -213,6 +200,22 @@ class CustomOperationResourceMixin:
             return "No operation name given."
         del self.request.form['ws_op']
         return self.handleCustomPOST(operation_name)
+
+    def _processCustomOperationResult(self, result):
+        """Process the result of a custom operation."""
+        if isinstance(result, basestring):
+            # The operation took care of everything and just needs
+            # this string served to the client.
+            return result
+
+        # The operation returned a collection or entry. It will be
+        # serialized to JSON.
+        try:
+            iterator = iter(result)
+        except TypeError:
+            # Result is a single entry
+            return EntryResource(result, self.request)
+        return [EntryResource(entry, self.request) for entry in iterator]
 
 
 class ReadOnlyResource(HTTPResource):
