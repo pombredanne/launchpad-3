@@ -13,7 +13,7 @@
         <a tal:attributes="href watch/fmt:url"
            ><img src="/@@/edit" alt="[Edit]"
            title="Change watch details" /></a>
-        <tal:watch replace="structure watch/fmt:external-link" />
+        <a tal:replace="structure watch/fmt:external-link" />
         <tal:block tal:condition="watch/remotestatus">
           <br />[<span tal:content="watch/remotestatus" />]
         </tal:block>

@@ -45,7 +45,9 @@
           <td><a tal:attributes="href bugtracker/name"
                  tal:content="bugtracker/title">$Bugtracker.title
               </a></td>
-          <td tal:content="structure bugtracker/fmt:external-link" />
+          <td>
+            <a tal:replace="structure bugtracker/fmt:external-link" />
+          </td>
           <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
             <tal:pillars condition="pillar_data">
               <tal:pillar-entry repeat="pillar pillar_data/pillars">
