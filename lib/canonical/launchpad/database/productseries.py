@@ -527,9 +527,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
-    @property
-    def import_source_summary(self):
-        assert self.rcstype is not None
+    def getImportDetailsForDisplay(self):
+        assert self.rcstype is not None, (
+            "Only makes sense for series with import details set.")
         if self.rcstype == RevisionControlSystems.CVS:
             return '%s %s' % (self.cvsroot, self.cvsmodule)
         elif self.rcstype == RevisionControlSystems.SVN:

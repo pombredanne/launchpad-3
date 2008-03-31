@@ -55,7 +55,7 @@
           <td><a tal:attributes="href series/fmt:url"
                  tal:content="series/displayname"
               >Series.name</a></td>
-          <td tal:content="series/import_source_summary">
+          <td tal:content="series/getImportDetailsForDisplay">
             :pserver:user@host:/cvsroot module
           </td>
           <td>
