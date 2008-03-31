@@ -16,7 +16,7 @@
                        date_created date_review_requested date_reviewed
                        root_message
                        isPersonValidReviewer isMergable
-                       getCreationNotificationRecipients isValidTransition
+                       getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
         permission="launchpad.Edit"
