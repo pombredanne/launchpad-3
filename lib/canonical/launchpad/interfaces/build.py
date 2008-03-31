@@ -80,7 +80,7 @@ class IBuild(Interface):
 
     estimated_buildstart = Attribute(
         "Estimated start (or dispatch) time for a job that needs building "
-        "or 'None' for build jobs in other states")
+        "or None for build jobs in other states")
 
     def retry():
         """Restore the build record to its initial state.

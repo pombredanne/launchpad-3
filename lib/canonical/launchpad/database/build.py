@@ -287,7 +287,8 @@ class Build(SQLBase):
                         self.processor,
                         self.is_virtualized).count())
 
-        # Handle the case of zero sized build pools.
+        # In the case of zero sized build pools the result will remain
+        # -1 (estimated dispatch time not known).
         if pool_size > 0:
             if sum_of_delays is None:
                 # This job is the head job.
@@ -296,22 +297,18 @@ class Build(SQLBase):
                 # There are jobs ahead of us. Divide the delay total by
                 # the number of machines available in the build pool.
                 result = headjob_delay + int(sum_of_delays/pool_size)
-        else:
-            # The build pool for this job is empty, indicate that the
-            # estimated dispatch time is not known.
-            result = -1
 
         if result == -1:
-            # We don't know the estimated dispatch time.
+            # The estimated dispatch time is not known.
             result = datetime.utcfromtimestamp(0)
         else:
+            # An estimated dispatch time is available.
             result = datetime.utcnow() + timedelta(seconds=result)
                 
         return result
 
     def _getHeadjobDelay(self):
-        """Get estimated dispatch time for job at the head of the queue.
-        """
+        """Get estimated dispatch time for job at the head of the queue."""
         cur = cursor()
         # The query below yields the remaining build times (in seconds
         # since EPOCH) for the jobs that are currently building on the
