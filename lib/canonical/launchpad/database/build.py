@@ -339,9 +339,9 @@ class Build(SQLBase):
                 Archive
                 JOIN Build ON
                     Build.archive = Archive.id
-                JOIN BuildQueue ON 
+                JOIN BuildQueue ON
                     Build.id = BuildQueue.build
-                JOIN Builder ON 
+                JOIN Builder ON
                     Builder.id = BuildQueue.builder
             WHERE
                 Archive.require_virtualized = %s AND
