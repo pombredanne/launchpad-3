@@ -12,22 +12,18 @@ __all__ = [
 
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.binarypackagerelease import (
-    BinaryPackageRelease
-    )
+    BinaryPackageRelease)
 from canonical.launchpad.database.distroarchseriesbinarypackagerelease import (
-    DistroArchSeriesBinaryPackageRelease
-    )
+    DistroArchSeriesBinaryPackageRelease)
 from canonical.launchpad.database.distroseriespackagecache import (
-    DistroSeriesPackageCache
-    )
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory
-    )
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus
-    )
+    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus)
 
 
 class DistroArchSeriesBinaryPackage:
@@ -73,19 +69,27 @@ class DistroArchSeriesBinaryPackage:
         return 'Binary Package "%s" in %s' % (
             self.binarypackagename.name, self.distroarchseries.title)
 
+    @cachedproperty
+    def cache(self):
+        """See IDistroArchSeriesBinaryPackage."""
+        query = """
+            distroseries = %s AND
+            archive IN %s AND
+            binarypackagename = %s
+        """ % sqlvalues(self.distroseries,
+                        self.distribution.all_distro_archive_ids,
+                        self.binarypackagename)
+
+        return DistroSeriesPackageCache.selectOne(query)
+
     @property
     def summary(self):
         """See IDistroArchSeriesBinaryPackage."""
         curr = self.currentrelease
         if curr is not None:
             return curr.summary
-        general = DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND binarypackagename = %s AND
-            archive IN %s""" % 
-            sqlvalues(self.distroseries, self.binarypackagename, 
-                          self.distribution.all_distro_archive_ids))
-        if general is not None:
-            return general.summary
+        if self.cache is not None:
+            return self.cache.summary
         return None
 
     @property
@@ -94,15 +98,9 @@ class DistroArchSeriesBinaryPackage:
         curr = self.currentrelease
         if curr is not None:
             return curr.description
-        general = DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND binarypackagename = %s AND
-            archive IN %s""" % 
-            sqlvalues(self.distroseries, self.binarypackagename, 
-                          self.distribution.all_distro_archive_ids))
-        if general is not None:
-            return general.description
+        if self.cache is not None:
+            return self.cache.description
         return None
-
 
     def __getitem__(self, version):
         """See IDistroArchSeriesBinaryPackage."""
