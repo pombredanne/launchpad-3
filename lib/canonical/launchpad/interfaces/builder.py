@@ -312,5 +312,6 @@ class IBuilderSet(Interface):
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
         """
+
     def getBuildersForQueue(self, processor, virtualized):
-        """Get all builders for given processor/virtualization setting."""
+        """Return all builders for given processor/virtualization setting."""

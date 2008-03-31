@@ -243,7 +243,7 @@ class Build(SQLBase):
     @property
     def estimated_buildstart(self):
         """See `IBuild`.
-        
+
         The estimated dispatch time for the build job at hand is
         calculated from the following ingredients:
             * the start time for the head job (job at the
@@ -271,18 +271,20 @@ class Build(SQLBase):
         # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
         sum_query = """
             SELECT
-                EXTRACT(EPOCH FROM SUM(qbuild.estimated_build_duration))
+                EXTRACT(EPOCH FROM SUM(Build.estimated_build_duration))
             FROM
-                build qbuild, buildqueue qbuildqueue, archive qarchive
+                Archive
+                JOIN Build ON
+                    Build.archive = Archive.id
+                JOIN BuildQueue ON
+                    Build.id = BuildQueue.build
             WHERE
-                qbuild.buildstate = 0 AND
-                qbuildqueue.build = qbuild.id AND
-                qbuild.archive = qarchive.id AND
-                qbuild.processor = %s AND
-                qarchive.require_virtualized = %s AND
-                ((qbuildqueue.lastscore > %s) OR
-                 ((qbuildqueue.lastscore = %s) AND
-                  (qbuild.id < %s)))
+                Build.buildstate = 0 AND
+                Build.processor = %s AND
+                Archive.require_virtualized = %s AND
+                ((BuildQueue.lastscore > %s) OR
+                 ((BuildQueue.lastscore = %s) AND
+                  (Build.id < %s)))
              """ % sqlvalues(self.processor, self.is_virtualized,
                       self.buildqueue_record.lastscore,
                       self.buildqueue_record.lastscore, self)
@@ -298,8 +300,7 @@ class Build(SQLBase):
         # Get the number of machines that are available in the build
         # pool for this build job.
         pool_size = getUtility(IBuilderSet).getBuildersForQueue(
-                        self.processor,
-                        self.is_virtualized).count()
+            self.processor, self.is_virtualized).count()
 
         # The estimated dispatch time can only be calculated for
         # non-zero-sized build pools
@@ -330,19 +331,22 @@ class Build(SQLBase):
         # machine pool of interest.
         delay_query = """
             SELECT
-                CAST (EXTRACT(EPOCH FROM 
-                        (build.estimated_build_duration -
-                        (now() - buildqueue.buildstart))) AS INTEGER)
+                CAST (EXTRACT(EPOCH FROM
+                        (Build.estimated_build_duration -
+                        (NOW() - BuildQueue.buildstart))) AS INTEGER)
                     AS remainder
             FROM
-                build, builder, buildqueue, archive
+                Archive
+                JOIN Build ON
+                    Build.archive = Archive.id
+                JOIN BuildQueue ON 
+                    Build.id = BuildQueue.build
+                JOIN Builder ON 
+                    Builder.id = BuildQueue.builder
             WHERE
-                buildqueue.build = build.id AND
-                buildqueue.builder = builder.id AND
-                build.archive = archive.id AND
-                archive.require_virtualized = %s AND
-                build.buildstate = %s AND
-                builder.processor = %s
+                Archive.require_virtualized = %s AND
+                Build.buildstate = %s AND
+                Builder.processor = %s
             ORDER BY
                 remainder;
             """ % sqlvalues(self.is_virtualized, BuildStatus.BUILDING,
@@ -351,7 +355,7 @@ class Build(SQLBase):
         cur.execute(delay_query)
         # Get the remaining build times for the jobs currently
         # building on the respective machine pool (current build
-        # set)
+        # set).
         remainders = cur.fetchall()
         build_delays = set([row[0] and int(row[0]) for row in remainders])
 

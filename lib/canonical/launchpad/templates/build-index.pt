@@ -79,7 +79,10 @@
               tal:content="context/datecreated/fmt:approximatedate" />
           </tr>
 
-          <tal:buildstart define="estimated_buildstart context/estimated_buildstart">
+          <tal:buildstart
+            define="estimated_buildstart context/estimated_buildstart"
+            condition="estimated_buildstart">
+
             <tr tal:condition="python:estimated_buildstart.year == 1970">
               <th>Estimated build start:</th>
               <td
@@ -87,12 +90,16 @@
                 Not available
               </td>
             </tr>
+
             <tr tal:condition="python:estimated_buildstart.year != 1970">
               <th>Estimated build start:</th>
               <td
                tal:attributes="title estimated_buildstart/fmt:datetime"
-               tal:content="estimated_buildstart/fmt:approximatedate" />
+               tal:content="estimated_buildstart/fmt:approximatedate">
+                3 hours
+              </td>
             </tr>
+
           </tal:buildstart>
 
           <tal:not_built condition="not: context/was_built">

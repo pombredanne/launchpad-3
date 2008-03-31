@@ -692,6 +692,6 @@ class BuilderSet(object):
         return buildMaster
 
     def getBuildersForQueue(self, processor, virtualized):
-        """Get all builders for given processor/virtualization setting."""
+        """See `IBuilderSet`."""
         return Builder.selectBy(builderok=True, processor=processor,
                                 virtualized=virtualized)

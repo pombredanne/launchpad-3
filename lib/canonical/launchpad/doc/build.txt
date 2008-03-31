@@ -48,14 +48,15 @@ Let's check the complex properties of a build object.
     False
 
 The 'firefox_build' is already finished and the `estimated_buildstart`
-property should be empty ('None')
+property should be empty (None)
 
     >>> firefox_build.estimated_buildstart is None
     True
 
 The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
-hence ask for its estimated build start time. The latter will be undefined
-however because the corresponding build pool is empty.
+hence ask for its estimated build start time. The latter will be
+undefined however because the corresponding build pool is empty.
+
     >>> from datetime import datetime as DT
     >>> pending_build.estimated_buildstart == DT.utcfromtimestamp(0)
     True
