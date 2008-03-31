@@ -4,8 +4,8 @@ An anonymous user visits the +builds page. He can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 
-    >>> anon_browser.open("http://launchpad.dev/+builds/")
-    >>> anon_browser.getLink("bob").click()
+    >>> anon_browser.open("http://launchpad.dev/+builds")
+    >>> anon_browser.getLink("Bob The Builder").click()
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
@@ -47,7 +47,7 @@ the builder actions.
     ...     auth='Basic celso.providelo@canonical.com:cprov')
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('bob').click()
+    >>> cprov_browser.getLink('Bob The Builder').click()
 
 Celso sees the available actions in the 'Actions' portlet.
 
@@ -224,7 +224,7 @@ when they judge it convenient, for instance, when the builder present
 transient failures or is used for another purpose.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('bob').click()
+    >>> cprov_browser.getLink('Bob The Builder').click()
     >>> print cprov_browser.title
     Build machine Bob The Builder
 
@@ -244,12 +244,14 @@ Farm list. Celso cannot see the link to it.
     >>> cprov_browser.getLink("Build Farm").click()
 
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Build machines for Launchpad
-    Builder          Architecture Owner                    Status
-    frog Automatic   386 Virtual  Launchpad Buildd Admins  Not available
+    Launchpad build machines
+    Building PPA packages
+    386                 0 waiting
+    The frog builder    NOT OK : None (AUTO)
+    Building other packages
     Generated at ...
 
-    >>> cprov_browser.getLink('bob').click()
+    >>> cprov_browser.getLink('Bob The Builder').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
