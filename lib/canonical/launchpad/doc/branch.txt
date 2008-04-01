@@ -520,7 +520,8 @@ subscription to `gterm_dev`.
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
 
     >>> print_names(gterm_dev.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))
@@ -1110,7 +1111,8 @@ The requirements for deleting the branch can be discovered:
     ...     'http://example.com/branches/to-delete', 'A branch to delete',
     ...     date_created=now.next())
     >>> subscription = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
