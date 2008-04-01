@@ -11,7 +11,6 @@ __all__ = [
     'get_default_foreign_tree_store']
 
 
-import logging
 import os
 import shutil
 import tempfile

@@ -28,9 +28,10 @@ from canonical.codehosting.codeimport.tests.test_foreigntree import (
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
+from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import BranchType, BranchTypeError
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.testing import LaunchpadScriptLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 import pysvn
 
@@ -42,7 +43,7 @@ class WorkerTest(TestCaseWithTransport):
     factories for some code import objects.
     """
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def assertDirectoryTreesEqual(self, directory1, directory2):
         """Assert that `directory1` has the same structure as `directory2`.
@@ -457,17 +458,16 @@ class TestActualImportMixin:
         archive_name = treestore._getTarballName(self.job.code_import)
         if tree_transport.has(archive_name):
             tree_transport.delete(archive_name)
-        import transaction
-        transaction.commit()
+        branchstore = get_default_bazaar_branch_store()
+        branchname = '%08x' % self.job.code_import.branch.id
+        if branchstore.transport.has(branchname):
+            shutil.rmtree(branchstore.transport.base[len('file://'):] + '/' + branchname)
+        commit()
         script_path = os.path.join(
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts', 'code-import-worker.py')
-        retcode = subprocess.call([script_path, str(self.job.id), '-qqqqqq'])
-        if retcode != 0:
-            print self.job.code_import.svn_branch_url
-            import time
-            time.sleep(1000)
+        retcode = subprocess.call([script_path, str(self.job.id), '-qqqq'])
         self.assertEqual(retcode, 0)
 
         self.addCleanup(lambda: tree_transport.delete(archive_name))
