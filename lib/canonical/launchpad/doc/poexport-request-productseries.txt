@@ -47,6 +47,7 @@ Now we request that the queue be processed.
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in
     Evolution trunk
+    log> Stored file at http://.../launchpad-export.tar.gz
 
 We need to make sure the Librarian data has settled into place.
 
