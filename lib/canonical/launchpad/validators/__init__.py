@@ -38,18 +38,13 @@ class LaunchpadValidationError(ValidationError):
     may contain XHTML markup suitable for inclusion in an inline tag
     such as <span>.
 
-    >>> LaunchpadValidationError('<b>oops</b>').snippet()
-    u'<b>oops</b>'
+    >>> LaunchpadValidationError('<br/>oops').snippet()
+    u'&lt;br/&gt;oops'
 
-    >>> LaunchpadValidationError('<b>%s</b>','>>').snippet()
-    u'<b>&gt;&gt;</b>'
-
-    >>> LaunchpadValidationError('<b>%(foo)s</b>', foo='>>').snippet()
-    u'<b>&gt;&gt;</b>'
-
-    >>> LaunchpadValidationError('<a title="%s">Oops</a>',
-    ... '"Quoted"').snippet()
-    u'<a title="&quot;Quoted&quot;">Oops</a>'
+    >>> from canonical.launchpad.webapp.menu import structured
+    >>> LaunchpadValidationError(structured('<a title="%s">Ok</a>',
+    ... '<evil/>')).snippet()
+    u'<a title="&lt;evil/&gt;">Ok</a>'
     """
     implements(ILaunchpadValidationError)
 
