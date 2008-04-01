@@ -126,7 +126,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         >>> err = WidgetInputError("foo", "Foo", TooSmallError())
         >>> view = WidgetInputErrorView(err, None)
         >>> view.snippet()
-        u'Foo input &lt; 1'
+        'Foo input &lt; 1'
         """
         if (hasattr(self.context, 'errors') and
                 ILaunchpadValidationError.providedBy(self.context.errors)):
