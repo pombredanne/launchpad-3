@@ -11,6 +11,7 @@ See README.txt for discussion
 
 __metaclass__ = type
 
+from canonical.launchpad.webapp.menu import escape
 from zope.schema.interfaces import ValidationError
 from zope.app.form.interfaces import IWidgetInputError
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
@@ -22,15 +23,6 @@ from zope.app.form.browser.exception import (
 import cgi
 
 __all__ = ['LaunchpadValidationError']
-
-def _quote(txt):
-    """HTML quote text, including the \" character so the quoted text can
-    be included in an attribute.
-
-    >>> _quote(u'> "foo" <')
-    u'&gt; &quot;foo&quot; &lt;'
-    """
-    return cgi.escape(txt, quote=True)
 
 
 class ILaunchpadValidationError(IWidgetInputError):
@@ -68,17 +60,11 @@ class LaunchpadValidationError(ValidationError):
         will be HTML quoted and merged into the message using standard
         Python string interpolation.
         """
-        if args:
-            message = message % tuple(_quote(arg) for arg in args)
-        elif kw:
-            quoted_keyword_arguments = {}
-            for (key, value) in kw.items():
-                quoted_keyword_arguments[key] = _quote(value)
-            message = message % quoted_keyword_arguments
+        message = escape(message)
         # We stuff our message into self.args (a list) because this
         # is an exception, and exceptions use self.args (and the form
         # machinery expects it to be here).
-        self.args = [unicode(message)]
+        self.args = [message]
 
     def snippet(self):
         """Render as an HTML error message, as per IWidgetInputErrorView."""
@@ -131,5 +117,5 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         if (hasattr(self.context, 'errors') and
                 ILaunchpadValidationError.providedBy(self.context.errors)):
             return self.context.errors.snippet()
-        return _quote(self.context.doc())
+        return escape(self.context.doc())
 
