@@ -138,7 +138,7 @@ diagram:
 newsampledata:
 	$(PYTHON) fti.py --null -d launchpad_dev -q
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|secret\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\)" \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
 	$(PYTHON) fti.py --force -d launchpad_dev -q
