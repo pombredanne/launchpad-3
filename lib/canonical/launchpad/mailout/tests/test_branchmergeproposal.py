@@ -9,9 +9,9 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus)
+    EmailAddressStatus, IBranchMergeProposal)
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, snapshot
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
@@ -92,9 +92,11 @@ Baz Qux has proposed merging foo into bar.
 
     def test_forModification(self):
         """"""
-        merge_proposal = self.makeProposalWithSubscriber()
+        merge_proposal, person = self.makeProposalWithSubscriber()
+        old_merge_proposal = snapshot.Snapshot(
+            merge_proposal, providing=IBranchMergeProposal)
         mailer = BMPMailer.forModification(
-            old_merge_proposal, merge_proposal, from_user)
+            old_merge_proposal, merge_proposal, merge_proposal.registrant)
 
 
 def test_suite():

@@ -51,3 +51,21 @@ class BranchDelta:
         else:
             return None
 
+
+class BranchMergeProposalDelta:
+
+    def __init__(self, **kwargs):
+
+        self.__dict__.update(kwargs)
+
+    def construct(old_merge_proposal, new_merge_proposal):
+        delta = ObjectDelta(old_merge_proposal, new_merge_proposal)
+        delta.recordNewValues(("whiteboard"))
+        delta.recordNewAndOld((
+            'registrant', 'source_branch', 'target_branch', 'depenent_branch',
+            'queue_status', 'supersedes'))
+        if delta.changes:
+            changes = delta.changes
+            return BranchMergeProposalDelta(**changes)
+        else:
+            return None
