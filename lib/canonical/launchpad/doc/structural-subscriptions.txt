@@ -74,6 +74,12 @@ A target's parent can be retrieved using the
    >>> print ff_trunk.parent_subscription_target.displayname
    Mozilla Firefox
 
+   >>> warty = ubuntu.getSeries('warty')
+   >>> warty.parent_subscription_target == ubuntu
+   True
+   >>> print warty.parent_subscription_target.displayname
+   Ubuntu
+
 When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
