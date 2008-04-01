@@ -64,21 +64,26 @@ Tweak some of the properties of the job in state BUILDING.
 
 Make sure current job is in state BuildStatus.BUILDING.
 
-    >>> print cur_build.buildstate.value
-    6
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> cur_build.buildstate == BuildStatus.BUILDING
+    True
 
 Set a recent build start time.
 
     >>> cur_bqueue.lastscore = 1111
-    >>> cur_bqueue.buildstart = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
+    >>> cur_bqueue.buildstart = datetime(2008, 4, 1, 10, 45, 39,
+    ...                                  tzinfo=UTC)
     >>> print cur_bqueue.buildstart
     2008-04-01 10:45:39+00:00
 
-Set an appropriate build duration.
+Set an appropriate estimated build duration. Please note, the estimated
+build duration will be exposed on the IBuild interface in one of the
+forthcoming branches and may at present only be changed directly.
 
-    >>> cur_build.buildduration = timedelta(minutes=55)
-    >>> print cur_build.buildduration
-    0:55:00
+    >>> from canonical.database.sqlbase import cursor
+    >>> cur = cursor()
+    >>> cur.execute("UPDATE build SET estimated_build_duration = "
+    ...             "interval '55 minutes' WHERE id=%s" % cur_build.id)
 
 Commit all changes to database.
 
@@ -89,4 +94,5 @@ Commit all changes to database.
 
 Check the estimated build start time for the pending job.
 
-    >>> alsa_build.estimated_buildstart
+    >>> alsa_build.estimated_buildstart > datetime.utcnow()
+    True
