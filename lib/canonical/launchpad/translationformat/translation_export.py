@@ -169,7 +169,29 @@ class LaunchpadWriteTarFile:
             self.add_file(filename, files[filename])
 
 
-class SingleFileStorageStrategy:
+class StorageStrategy:
+    """Implementation strategy for `ExportFileStorage`.
+
+    Storage for single files is implemented by `SingleFileStorageStrategy`;
+    multiple files go into a `TarballFileStorageStrategy`.
+    """
+    def addFile(self, path, extension, content):
+        """Add a file to be stored."""
+        raise NotImplementedError()
+
+    def isEmpty(self):
+        """Is this storage object still devoid of files?"""
+        raise NotImplementedError()
+
+    def isFull(self):
+        """Does this storage object have its fill of files?"""
+        raise NotImplementedError()
+
+    def export(self):
+        raise NotImplementedError()
+
+
+class SingleFileStorageStrategy(StorageStrategy):
     """Store a single file for export.
 
     Provides a way to store a single PO or POT file, but through the same API
@@ -180,6 +202,7 @@ class SingleFileStorageStrategy:
     (The type of the stored file matters in this strategy because the storage
     strategy declares the MIME type of the file it produces).
     """
+
     path = None
     extension = None
     mimetype = None
@@ -188,7 +211,7 @@ class SingleFileStorageStrategy:
         self.mimetype = mimetype
 
     def addFile(self, path, extension, content):
-        """See `ExportFileStorage`."""
+        """See `StorageStrategy`."""
         assert path is not None, "Storing file without path."
         assert self.path is None, "Multiple files added; expected just one."
         self.path = path
@@ -196,18 +219,18 @@ class SingleFileStorageStrategy:
         self.content = content
 
     def isEmpty(self):
-        """Is self still in its initial state, without any files stored?"""
+        """See `StorageStrategy`."""
         return self.path is None
 
     def isFull(self):
-        """Does this object already have its fill of files?
+        """See `StorageStrategy`.
 
         A `SingleFileStorageStrategy` can only store one file.
         """
         return not self.isEmpty()
 
     def export(self):
-        """See `ExportFileStorage`."""
+        """See `StorageStrategy`."""
         assert self.path is not None, "Exporting empty file."
         output = ExportedTranslationFile(StringIO(self.content))
         output.path = self.path
@@ -217,7 +240,7 @@ class SingleFileStorageStrategy:
         return output
 
 
-class TarballFileStorageStrategy:
+class TarballFileStorageStrategy(StorageStrategy):
     """Store any number of files for export as a tarball.
 
     Similar to `SingleFileStorageStrategy`, but lets you store any number of
@@ -236,23 +259,23 @@ class TarballFileStorageStrategy:
                 single_file_storage.extension, single_file_storage.content)
 
     def addFile(self, path, extension, content):
-        """See `ExportFileStorage`."""
+        """See `StorageStrategy`."""
         self.empty = False
         self.tar_writer.add_file(path, content)
 
     def isEmpty(self):
-        """Is self still in its initial state, without any files stored?"""
+        """See `StorageStrategy`."""
         return self.empty
 
     def isFull(self):
-        """Does this object already have its fill of files?
+        """See `StorageStrategy`.
 
         A `TarballFileStorageStrategy` can store any number of files, so no.
         """
         return False
 
     def export(self):
-        """See `ExportFileStorage`."""
+        """See `StorageStrategy`."""
         self.tar_writer.close()
         self.buffer.seek(0)
         output = ExportedTranslationFile(self.buffer)
@@ -272,7 +295,7 @@ class ExportFileStorage:
     def __init__(self, mimetype):
         # Start out with a single file.  We can replace that strategy later if
         # we get more than one file.
-        self.store = SingleFileStorageStrategy(mimetype)
+        self._store = SingleFileStorageStrategy(mimetype)
 
     def addFile(self, path, extension, content):
         """Add file to be stored.
@@ -282,14 +305,14 @@ class ExportFileStorage:
         :param extension: filename suffix (ignored here).
         :param content: contents of file.
         """
-        if self.store.isFull():
+        if self._store.isFull():
             # We're still using a single-file storage strategy, but we just
             # received our second file.  Switch to tarball strategy.
-            self.store = TarballFileStorageStrategy(self.store)
-        self.store.addFile(path, extension, content)
+            self._store = TarballFileStorageStrategy(self._store)
+        self._store.addFile(path, extension, content)
 
     def export(self):
         """Export as `ExportedTranslationFile`."""
-        assert not self.store.isEmpty(), "Got empty list of files to export."
-        return self.store.export()
+        assert not self._store.isEmpty(), "Got empty list of files to export."
+        return self._store.export()
 

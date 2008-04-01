@@ -54,8 +54,8 @@ def comments_text_representation(translation_message):
     u'#, fuzzy, c-format'
     '''
     text = []
-    # comment and source_comment always end in a newline, so
-    # splitting by \n always results in an empty last element
+    # Comment and source_comment always end in a newline, so
+    # splitting by \n always results in an empty last element.
     if translation_message.comment:
         for line in translation_message.comment.split('\n')[:-1]:
             text.append(u'#' + line)
@@ -239,14 +239,14 @@ def wrap_text(text, prefix, wrap_width):
         return ret.replace(u'\n', u'\\n')
 
     # Quickly get escaped character byte widths using
-    #   escaped_length.get(char, 1)
+    #   escaped_length.get(char, 1).
     escaped_length = {
         '\\': 2,
         '\"': 2,
         '\t': 2,
         '\n': 2}
 
-    # What characters to wrap at
+    # Wrap at these characters.
     wrap_at = [' ', '\t', '\n', '-', '\\']
 
     if wrap_width is None:
@@ -255,7 +255,7 @@ def wrap_text(text, prefix, wrap_width):
     if not text:
         return wrapped_lines
     if '\n' not in text[:-1]:
-        # If there are no new-lines, or it's at the end of string.
+        # Either there are no new-lines, or it's at the end of string.
         unwrapped_line = u'%s "%s"' % (prefix, local_escape(text))
         if len(unwrapped_line) <= wrap_width:
             return [unwrapped_line]
@@ -292,9 +292,9 @@ def wrap_text(text, prefix, wrap_width):
                         escaped_new_block_len += escaped_char_len
                 else:
                     if escaped_line_len == 0:
-                        # Word is too long to fit into single line,
-                        # break it carefully, watching not to break
-                        # in the middle of the escape
+                        # Word is too long to fit into single line.
+                        # Break it carefully; avoid doing so in the middle of
+                        # the escape sequence.
                         line = new_block
                         line_len = len(line)
                         escaped_line_len = escaped_new_block_len
