@@ -59,25 +59,25 @@ Tweak some of the properties of the job in state BUILDING.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> bob_the_builder = builder_set.get(1)
-    >>> current_bqueue = bob_the_builder.currentjob
-    >>> current_build = current_bqueue.build
+    >>> cur_bqueue = bob_the_builder.currentjob
+    >>> cur_build = cur_bqueue.build
 
 Make sure current job is in state BuildStatus.BUILDING.
 
-    >>> print current_build.buildstate.value
+    >>> print cur_build.buildstate.value
     6
 
 Set a recent build start time.
 
-    >>> current_bqueue.lastscore = 1111
-    >>> current_bqueue.buildstart = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
-    >>> print current_bqueue.buildstart
+    >>> cur_bqueue.lastscore = 1111
+    >>> cur_bqueue.buildstart = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
+    >>> print cur_bqueue.buildstart
     2008-04-01 10:45:39+00:00
 
 Set an appropriate build duration.
 
-    >>> current_build.buildduration = timedelta(minutes=55)
-    >>> print current_build.buildduration
+    >>> cur_build.buildduration = timedelta(minutes=55)
+    >>> print cur_build.buildduration
     0:55:00
 
 Commit all changes to database.
