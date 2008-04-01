@@ -464,12 +464,12 @@ class TestActualImportMixin:
         """
         treestore = get_default_foreign_tree_store()
         tree_transport = treestore.transport
-        archive_name = treestore._getTarballName(self.job.code_import)
+        archive_name = treestore._getTarballName(code_import)
         if tree_transport.has(archive_name):
             tree_transport.delete(archive_name)
         branchstore = get_default_bazaar_branch_store()
         branch_transport = branchstore.transport
-        branch_name = '%08x' % self.job.code_import.branch.id
+        branch_name = '%08x' % code_import.branch.id
         if branchstore.transport.has(branch_name):
             branchstore.transport.delete_tree(branch_name)
 
