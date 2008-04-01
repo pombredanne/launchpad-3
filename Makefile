@@ -46,9 +46,9 @@ check_loggerhead_on_merge:
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
-	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
-	    wc -l` -eq 0 ]
+	[ ! -f database-frozen.txt -o \
+	  `PYTHONPATH= bzr status -S database/schema/ | \
+	      grep -v "\(^P\.\|pending\|security.cfg\|Makefile\)" | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]

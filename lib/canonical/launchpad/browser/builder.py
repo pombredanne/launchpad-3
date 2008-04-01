@@ -15,6 +15,7 @@ __all__ = ['BuilderSetNavigation',
            'BuilderView']
 
 import datetime
+import operator
 import pytz
 
 import zope.security.interfaces
@@ -25,7 +26,6 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBuilderSet, IBuilder, IBuildSet, IPerson, NotFoundError)
 from canonical.launchpad.webapp import (
@@ -155,14 +155,6 @@ class BuilderSetView(CommonBuilderView):
     __used_for__ = IBuilderSet
 
     @cachedproperty
-    def buildQueueDepthByArch(self):
-        return shortlist(self.context.getBuildQueueDepthByArch())
-
-    @cachedproperty
-    def hasQueuedBuilds(self):
-        return bool(self.buildQueueDepthByArch)
-
-    @property
     def builders(self):
         """Return all active builders, with private builds cloaked.
 
@@ -171,6 +163,75 @@ class BuilderSetView(CommonBuilderView):
         """
         builders = self.context.getBuilders()
         return [self.overrideHiddenBuilder(builder) for builder in builders]
+
+    @property
+    def ppa_builders(self):
+        """Return a BuilderCategory object for PPA builders."""
+        builder_category = BuilderCategory(
+            'Building PPA packages', virtualized=True)
+        builder_category.groupBuilders(self.builders)
+        return builder_category
+
+    @property
+    def other_builders(self):
+        """Return a BuilderCategory object for PPA builders."""
+        builder_category = BuilderCategory(
+            'Building other packages', virtualized=False)
+        builder_category.groupBuilders(self.builders)
+        return builder_category
+
+
+class BuilderGroup:
+    """A group of builders for the processor.
+
+    Also stores the corresponding 'queue_size', the number of pending jobs
+    in this context.
+    """
+    def __init__(self, processor_name, queue_size, builders):
+        self.processor_name = processor_name
+        self.queue_size = queue_size
+        self.builders = builders
+
+
+class BuilderCategory:
+    """A category of builders.
+
+    A collection of BuilderGroups as 'PPA builders' and 'Other builders'.
+    """
+    def __init__(self, title, virtualized):
+        self.title = title
+        self.virtualized = virtualized
+        self._builder_groups = []
+
+    @property
+    def groups(self):
+        """Return a list of BuilderGroups ordered by 'processor_name'."""
+        return sorted(self._builder_groups,
+                      key=operator.attrgetter('processor_name'))
+
+    def groupBuilders(self, all_builders):
+        """Group the given builders as a collection of Buildergroups.
+
+        A BuilderGroup will be initialized for each processor.
+        """
+        builders = [builder for builder in all_builders
+                    if builder.virtualized is self.virtualized]
+
+        grouped_builders = {}
+        for builder in builders:
+            if builder.processor in grouped_builders:
+                grouped_builders[builder.processor].append(builder)
+            else:
+                grouped_builders[builder.processor] = [builder]
+
+        builderset = getUtility(IBuilderSet)
+        for processor, builders in grouped_builders.iteritems():
+            queue_size = builderset.getBuildQueueSizeForProcessor(
+                processor, virtualized=self.virtualized)
+            builder_group = BuilderGroup(
+                processor.name, queue_size,
+                sorted(builders, key=operator.attrgetter('title')))
+            self._builder_groups.append(builder_group)
 
 
 class HiddenBuilder:
