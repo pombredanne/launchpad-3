@@ -8,8 +8,8 @@ __all__ = [
 
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
-
 from canonical.launchpad.interfaces import (
     IDistroSeriesBinaryPackage)
 from canonical.launchpad.database.distroseriespackagecache import (
@@ -49,7 +49,7 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         return self.distroseries.distribution
 
-    @property
+    @cachedproperty
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
         return DistroSeriesPackageCache.selectOne("""

@@ -52,7 +52,7 @@
             <tal:not_logged_in condition="not: request/lp:person">
               <td>
                 <a href="+login">Log in</a> for email information.
-              <td>
+              </td>
             </tal:not_logged_in>
 
           </tal:has_preferredemail>
@@ -120,7 +120,7 @@
 	  <tr tal:condition="context/is_openid_enabled">
 	    <th>OpenID login:<br/>
 	      <span style="font-weight:normal">
-		(<a href="https://help.launchpad.net/openid"
+		(<a href="https://help.launchpad.net/OpenID"
 		    >What's&nbsp;this?</a>)</span>
 	    </th>
             <td title="This URL is not disclosed to others.">
