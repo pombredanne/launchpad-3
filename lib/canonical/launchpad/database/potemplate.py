@@ -463,7 +463,6 @@ class POTemplate(SQLBase, RosettaStats):
         building them all beforehand and keeping them in memory at the same
         time.
         """
-        translation_exporter = getUtility(ITranslationExporter)
         for translation_file in self.pofiles:
             yield ITranslationFileData(translation_file)
 
@@ -471,6 +470,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
+        translation_exporter = getUtility(ITranslationExporter)
         translation_format_exporter = (
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
