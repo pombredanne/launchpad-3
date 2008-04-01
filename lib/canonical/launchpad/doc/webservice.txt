@@ -159,11 +159,11 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...     def __init__(self):
     ...         self.cookbooks = COOKBOOKS
     ...
-    ...     def new_cookbook(self, author_name, title):
+    ...     def newCookbook(self, author_name, title):
     ...         authors = AuthorSet()
     ...         author = authors.getAuthor(author_name)
     ...         if author is None:
-    ...             author = authors.new_author(author_name)
+    ...             author = authors.newAuthor(author_name)
     ...         cookbook = Cookbook(title, author)
     ...         self.cookbooks.append(cookbook)
     ...         return cookbook
@@ -199,7 +199,7 @@ Here's a simple AuthorSet with predefined authors.
     ...     def __init__(self):
     ...         self.authors = AUTHORS
     ...
-    ...     def new_author(self, name):
+    ...     def newAuthor(self, name):
     ...         author = Author(name)
     ...         self.authors.append(author)
     ...         return author
@@ -628,17 +628,19 @@ resource as a custom operation called 'find_similar_recipes'.
     ...                IResourceGETOperation, "find_similar_recipes")
 
 Named GET operations are read-only operations like searches, but
-resource can also expose named write operations, through POST. Here's
+resources can also expose named write operations, through POST. Here's
 a named factory operation for creating a new cookbook.
 
     >>> from canonical.lazr.rest import ResourcePOSTOperation
     >>> class CookbookFactoryOperation(ResourcePOSTOperation):
     ...    """An operation that creates a new cookbook."""
-    ...    params = [ TextLine(__name__='author_name'),
-    ...               TextLine(__name__='title'), ]
+    ...    params = (
+    ...        TextLine(__name__='author_name'),
+    ...        TextLine(__name__='title'),
+    ...    )
     ...
     ...    def call(self, author_name, title):
-    ...        cookbook = CookbookSet().new_cookbook(author_name, title)
+    ...        cookbook = CookbookSet().newCookbook(author_name, title)
     ...        self.request.response.setStatus(201)
     ...        self.request.response.setHeader(
     ...            "Location", canonical_url(cookbook))
@@ -693,7 +695,7 @@ will act as though you had performed a GET on the URL
 
     >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from canonical.launchpad.webapp.servers import WebServicePublication
-    >>> from StringIO import StringIO
+    >>> from cStringIO import StringIO
 
     >>> def create_web_service_request(
     ...     path_info, method='GET', body=None, environ=None):
@@ -704,11 +706,14 @@ will act as though you had performed a GET on the URL
     ...     }
     ...     if environ is not None:
     ...         test_environ.update(environ)
-    ...     if body is not None:
+    ...     if body is None:
+    ...         body_instream = body
+    ...     else:
     ...         test_environ['CONTENT_LENGTH'] = len(body)
-    ...     body = StringIO(body)
+    ...         body_instream = StringIO(body)
     ...     request = WebServiceTestRequest(
-    ...         body_instream=body, environ=test_environ, method=method)
+    ...         body_instream=body_instream, environ=test_environ,
+    ...         method=method)
     ...     request.setPublication(WebServicePublication(None))
     ...     # Set the "current" request.
     ...     login(ANONYMOUS, request)
@@ -789,9 +794,10 @@ are often factory operations. Here we create a new cookbook for an
 existing author:
 
     >>> body = ("ws_op=create_cookbook&title=Beard%20on%20Bread&"
-    ...        "author_name=James%20Beard")
-    >>> request = create_web_service_request('cookbooks', 'POST', body,
-    ...    {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
+    ...         "author_name=James%20Beard")
+    >>> request = create_web_service_request(
+    ...     'cookbooks', 'POST', body,
+    ...     {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
     >>> operation_resource = request.traverse(app)
     >>> result = operation_resource()
 
@@ -803,9 +809,10 @@ existing author:
 Here we create a cookbook for a new author.
 
     >>> body = ("ws_op=create_cookbook&title=Everyday%20Greens&"
-    ...        "author_name=Deborah%20Madison")
-    >>> request = create_web_service_request('cookbooks', 'POST', body,
-    ...    {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
+    ...         "author_name=Deborah%20Madison")
+    >>> request = create_web_service_request(
+    ...     'cookbooks', 'POST', body,
+    ...     {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
     >>> operation_resource = request.traverse(app)
     >>> result = operation_resource()
     >>> request.response.getStatus()
@@ -969,7 +976,7 @@ of assertions about what the object *should* look like.
 
 Here, we modify the name of one of the cookbooks.
 
-    >>> headers = { 'CONTENT_TYPE' : 'application/json' }
+    >>> headers = {'CONTENT_TYPE' : 'application/json'}
     >>> body = '{"name" : "The Joy of Cooking (revised)"}'
 
     >>> patch_request = create_web_service_request(

@@ -43,9 +43,8 @@ bug's status by invoking a custom operation.
   >>> webservice.get(bugtask_path).jsonBody()['status']
   u'Confirmed'
 
-  >>> print webservice.post(bugtask_path,
-  ...                       'application/x-www-form-urlencoded',
-  ...                       'ws_op=change_status&status=INVALID')
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'change_status', {}, status='INVALID')
   HTTP/1.1 200 Ok
   ...
 
@@ -60,16 +59,14 @@ Custom operations may have error handling.
   ...
   status: Invalid value
 
-  >>> print webservice.post(bugtask_path,
-  ...                       'application/x-www-form-urlencoded',
-  ...                       'ws_op=change_status&status=NOSUCHSTATUS')
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'change_status', {}, status='NOSUCHSTATUS')
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value
 
-  >>> print webservice.post(bugtask_path,
-  ...                       'application/x-www-form-urlencoded',
-  ...                       'ws_op=change_status&status=TRIAGED')
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'change_status', {}, status='TRIAGED')
   HTTP/1.1 401 Unauthorized
   ...
   Only Bug Contacts may change status to Triaged.

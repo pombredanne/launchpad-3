@@ -94,8 +94,6 @@ class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
-    # Whether or not the resource will respond to POST requests.
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -144,13 +142,14 @@ class HTTPResource:
         return request.traverse(publication.getApplication(self.request))
 
     def implementsPOST(self):
-        """Returns true if this resource will respond to POST.
+        """Returns True if this resource will respond to POST.
 
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        return len(getAdapters(
-                (self.context, self.request), IResourcePOSTOperation)) > 0
+        adapters = getAdapters((self.context, self.request),
+                               IResourcePOSTOperation)
+        return len(adapters) > 0
 
 
 class CustomOperationResourceMixin:
@@ -161,6 +160,10 @@ class CustomOperationResourceMixin:
         """Execute a custom search-type operation triggered through GET.
 
         This is used by both EntryResource and CollectionResource.
+
+        :param operation_name: The name of the operation to invoke.
+        :return: The result of the operation: either a string or an
+        object that needs to be serialized to JSON.
         """
         operation = getMultiAdapter((self.context, self.request),
                                     IResourceGETOperation,
@@ -171,6 +174,10 @@ class CustomOperationResourceMixin:
         """Execute a custom write-type operation triggered through POST.
 
         This is used by both EntryResource and CollectionResource.
+
+        :param operation_name: The name of the operation to invoke.
+        :return: The result of the operation: either a string or an
+        object that needs to be serialized to JSON.
         """
         try:
             operation = getMultiAdapter((self.context, self.request),
@@ -184,11 +191,11 @@ class CustomOperationResourceMixin:
     def do_POST(self):
         """Invoke a custom operation.
 
-        Note for future: the standard meaning of POST (ie. when no
-        custom operation is specified) is "create a new subordinate
-        resource."  Code should eventually go into Collectionresource
-        that implements POST to create a new entry inside the
-        collection.
+        XXX leonardr 2008-04-01 bug=210265:
+        The standard meaning of POST (ie. when no custom operation is
+        specified) is "create a new subordinate resource."  Code
+        should eventually go into CollectionResource that implements
+        POST to create a new entry inside the collection.
         """
         operation_name = self.request.form.get('ws_op')
         if operation_name is None:
@@ -219,7 +226,6 @@ class ReadOnlyResource(HTTPResource):
 
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
-        implements_post = False
         if self.request.method == "GET":
             return self.do_GET()
         elif self.request.method == "POST" and self.implementsPOST():
