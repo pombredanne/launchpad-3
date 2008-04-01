@@ -690,7 +690,7 @@ special = {
             ),
     'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
             '../doc/build-estimated-dispatch-time.txt',
-            setUp=manageChrootSetup,
+            setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer,
             ),
     }
