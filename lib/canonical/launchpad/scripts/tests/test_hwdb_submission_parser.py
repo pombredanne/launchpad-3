@@ -180,16 +180,16 @@ class TestHWDBSubmissionParser(TestCase):
         """Different encodings are properly handled."""
         xml_template = '''<?xml version="1.0" encoding="%s"?>
                           <property type="str" name="foo">%s</property>'''
-        euro_symbol = u'\u20ac'
+        umlaut = u'\xe4'
         parser = SubmissionParser()
-        for encoding in ('utf-8', 'iso8859-15'):
-            xml = xml_template % (encoding, euro_symbol.encode(encoding))
+        for encoding in ('utf-8', 'iso-8859-1'):
+            xml = xml_template % (encoding, umlaut.encode(encoding))
             tree = etree.parse(StringIO(xml))
             node = tree.getroot()
             result = parser._parseProperty(node)
-            self.assertEqual(result, ('foo', (euro_symbol, 'str')),
+            self.assertEqual(result, ('foo', (umlaut, 'str')),
                 'Invalid parsing result for string encoding %s, '
-                'expected the Euro symbol (0x20AC), got %s'
+                'expected am umlaut (\xe4), got %s'
                     % (encoding, repr(result)))
 
     def testIntegerPropertyTypes(self):
