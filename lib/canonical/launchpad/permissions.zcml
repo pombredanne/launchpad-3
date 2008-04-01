@@ -45,6 +45,4 @@
   <permission id="launchpad.Owner" title="The role of someone who created or
         otherwise owns an object." />
 
-  <permission id="launchpad.WEGSND" title="What even god should not do" />
-
 </configure>
