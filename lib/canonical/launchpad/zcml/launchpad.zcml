@@ -348,6 +348,13 @@
 
 </facet>
 
+<adapter
+  provides="canonical.launchpad.interfaces.IObjectPrivacy"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  permission="zope.Public"
+  />
+
 <!--
 Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
