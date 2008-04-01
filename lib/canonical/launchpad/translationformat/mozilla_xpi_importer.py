@@ -130,7 +130,8 @@ class MozillaZipFile:
             self.filename.startswith('en-US.xpi') and
             message.translations and (
                 message.msgid_singular.endswith('.accesskey') or
-                message.msgid_singular.endswith('.commandkey')))
+                message.msgid_singular.endswith('.commandkey') or
+                message.msgid_singular.endswith('.key')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
@@ -141,10 +142,14 @@ class MozillaZipFile:
             # these are single letter messages, lets display
             # the value as a source comment.
             if self._isKeyShortcutMessage(message):
-                message.source_comment = u"Default key in en_US: '%s'" % (
-                    message.translations[TranslationConstants.SINGULAR_FORM])
-                message.resetAllTranslations()
-
+                comment = (
+                    u"Select the shortcut key that you want to use. Please,\n"
+                    u"don't change this translation if you are not really\n"
+                    u"sure about what you are doing.\n")
+                if message.source_comment:
+                    message.source_comment += comment
+                else:
+                    message.source_comment = comment
             self.messages.append(message)
 
 
@@ -174,13 +179,14 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started:
             return
 
-        # Comments would be multiline.
-        for line in contents.split(u'\n'):
-            line = line.strip()
-            if self.last_comment is not None:
-                self.last_comment = u'%s %s' % (self.last_comment, line)
-            elif len(line) > 0:
-                self.last_comment = line
+        if self.last_comment is not None:
+            self.last_comment += contents
+        elif len(contents) > 0:
+            self.last_comment = contents
+
+        if self.last_comment and not self.last_comment.endswith('\n'):
+            # Comments must end always with a new line.
+            self.last_comment += '\n'
 
     def new_general_entity(self, name, value):
         """See `xmldtd.WFCDTD`."""
@@ -298,9 +304,14 @@ class PropertyFile:
                     ignore_comment = False
                     line = line[1:].strip()
                     if last_comment:
-                        last_comment = u' '.join((last_comment, line))
-                    else:
+                        last_comment += line
+                    elif len(line) > 0:
                         last_comment = line
+
+                    if last_comment and not last_comment.endswith('\n'):
+                        # Comments must end always with a new line.
+                        last_comment += '\n'
+
                     last_comment_line_num = line_num
                     continue
                 elif len(line) == 0:
@@ -319,6 +330,9 @@ class PropertyFile:
                         if ignore_comment:
                             last_comment = None
                             ignore_comment = False
+
+                        # Comments must end always with a new line.
+                        last_comment += '\n'
                     elif line.startswith(self.license_block_text):
                         # It's a comment with a license notice, this
                         # comment can be ignored.
@@ -339,7 +353,7 @@ class PropertyFile:
                     continue
                 elif line.startswith(u'//'):
                     # It's an 'end of the line comment'
-                    last_comment = line[2:].strip()
+                    last_comment = '%s\n' % line[2:].strip()
                     last_comment_line_num = line_num
                     # Jump to next line
                     break

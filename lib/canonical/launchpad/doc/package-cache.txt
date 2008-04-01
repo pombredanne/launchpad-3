@@ -285,7 +285,7 @@ reached via searches:
 
 == PPA package caches ==
 
-Package caches are also poulated for PPAs, allowing users to search
+Package caches are also populated for PPAs, allowing users to search
 for them considering the packages currently published in their context.
 
 We will use Celso's PPA.
@@ -406,9 +406,9 @@ New values were stored:
 
 == DistroSeriesBinaryPackage cache lookups ==
 
-The DistroSeriesBinaryPackage object uses a DistroSeriesPackageCache
-record to present summary and description for the context binary
-package.
+The DistroSeriesBinaryPackage and DistroArchSeriesBinaryPackage
+objects uses a DistroSeriesPackageCache record to present summary and
+description for the context binary package.
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
   >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
@@ -417,6 +417,8 @@ package.
   ...     archive=ubuntu.main_archive, distroseries=warty,
   ...     binarypackagename=foobar_name, summary='main foobar',
   ...     description='main foobar description')
+
+The DistroSeriesBinaryPackage.
 
   >>> foobar_binary = warty.getBinaryPackage('foobar')
 
@@ -429,6 +431,20 @@ package.
   >>> print foobar_binary.description
   main foobar description
 
+The DistroArchSeriesBinaryPackage.
+
+  >>> warty_i386 = warty['i386']
+  >>> foobar_arch_binary = warty_i386.getBinaryPackage('foobar')
+
+  >>> foobar_arch_binary.cache == primary_cache
+  True
+
+  >>> print foobar_arch_binary.summary
+  main foobar
+
+  >>> print foobar_arch_binary.description
+  main foobar description
+
 This lookup mechanism will continue to work even after we have added a
 cache entry for a PPA package with the same name.
 
@@ -436,5 +452,10 @@ cache entry for a PPA package with the same name.
   ...     archive=cprov.archive, distroseries=warty,
   ...     binarypackagename=foobar_name, summary='ppa foobar')
 
+  >>> foobar_binary = warty.getBinaryPackage('foobar')
   >>> foobar_binary.cache != ppa_cache
+  True
+
+  >>> foobar_arch_binary = warty_i386.getBinaryPackage('foobar')
+  >>> foobar_arch_binary.cache != ppa_cache
   True
