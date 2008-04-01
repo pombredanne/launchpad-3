@@ -1,0 +1,93 @@
+Create a setup with one job building and another one pending.
+
+Activate builders present in sampledata, we need to be logged in as a
+member of launchpad-buildd-admin:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('celso.providelo@canonical.com')
+
+Set IBuilder.builderok of all present builders:
+
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> builder_set = getUtility(IBuilderSet)
+
+    >>> builder_set.count()
+    2
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> for b in builder_set:
+    ...     b.builderok = True
+    ...     print "builder: name='%s', id=%d" % (b.name, b.id)
+    ...     syncUpdate(b)
+    builder: name='bob', id=1
+    builder: name='frog', id=2
+
+Use ubuntu/hoary.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary.main_archive.require_virtualized
+    False
+
+The 'alsa-utils' package will is the one to be built.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingPocket)
+    >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
+    >>> alsa_spr = alsa_hoary.currentrelease.sourcepackagerelease
+    >>> print alsa_spr.title
+    alsa-utils - 1.0.9a-4
+
+Create new Build and BuildQueue instances (in ubuntu/hoary/i386) for
+the pending job.
+
+    >>> from datetime import timedelta
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> alsa_build = alsa_spr.createBuild(
+    ...     hoary['i386'], PackagePublishingPocket.RELEASE,
+    ...     hoary.main_archive)
+    >>> alsa_bqueue = alsa_build.createBuildQueueEntry()
+    >>> alsa_bqueue.lastscore = 500
+    >>> alsa_build.buildduration = timedelta(minutes=72)
+    >>> alsa_build.buildstate = BuildStatus.NEEDSBUILD
+
+Tweak some of the properties of the job in state BUILDING.
+
+    >>> from datetime import timedelta
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> bob_the_builder = builder_set.get(1)
+    >>> current_bqueue = bob_the_builder.currentjob
+    >>> current_build = current_bqueue.build
+
+Make sure current job is in state BuildStatus.BUILDING.
+
+    >>> print current_build.buildstate.value
+    6
+
+Set a recent build start time.
+
+    >>> current_bqueue.lastscore = 1111
+    >>> current_bqueue.buildstart = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
+    >>> print current_bqueue.buildstart
+    2008-04-01 10:45:39+00:00
+
+Set an appropriate build duration.
+
+    >>> current_build.buildduration = timedelta(minutes=55)
+    >>> print current_build.buildduration
+    0:55:00
+
+Commit all changes to database.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> commit()
+    >>> flush_database_updates()
+
+Check the estimated build start time for the pending job.
+
+    >>> alsa_build.estimated_buildstart

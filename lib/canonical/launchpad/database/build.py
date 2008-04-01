@@ -293,6 +293,7 @@ class Build(SQLBase):
         # Get the sum of the estimated build time for jobs that are
         # ahead of us in the queue.
         [sum_of_delays] = cur.fetchone()
+        print "sum_of_delays : %s" % str(sum_of_delays)
 
         # Get build dispatch time for job at the head of the queue.
         headjob_delay = self._getHeadjobDelay()
@@ -302,6 +303,7 @@ class Build(SQLBase):
         pool_size = getUtility(IBuilderSet).getBuildersForQueue(
             self.processor, self.is_virtualized).count()
 
+        print "pool_size : %s" % str(pool_size)
         # The estimated dispatch time can only be calculated for
         # non-zero-sized build pools
         if pool_size > 0:
@@ -329,6 +331,24 @@ class Build(SQLBase):
         # The query below yields the remaining build times (in seconds
         # since EPOCH) for the jobs that are currently building on the
         # machine pool of interest.
+        # TODO: remove test code below
+        q1 = """
+            SELECT
+                build.id AS build_id,
+                build.estimated_build_duration AS build_ebd,
+                buildqueue.id AS bq_id,
+                buildqueue.lastscore AS score,
+                buildqueue.buildstart AS bstart
+            FROM
+                build, buildqueue
+            WHERE
+                build.buildstate = 6 AND
+                buildqueue.build = build.id
+             """
+        cur.execute(q1)
+        testdata = cur.fetchall()
+        print "testdata : %s" % str(testdata)
+        # TODO: remove test code above
         delay_query = """
             SELECT
                 CAST (EXTRACT(EPOCH FROM
@@ -357,6 +377,7 @@ class Build(SQLBase):
         # building on the respective machine pool (current build
         # set).
         remainders = cur.fetchall()
+        print "remainders : %s" % str(remainders)
         build_delays = set([row[0] and int(row[0]) for row in remainders])
 
         # This is the head job delay in seconds.
