@@ -182,20 +182,32 @@ class TestPerson(unittest.TestCase):
                 ' branch author, a branch owner and a branch registrant.')
 
     def test_visibility_validator_bug(self):
-        bug = getUtility(IBugSet).createBug(
-            CreateBugParams(
-                owner=self.otherteam,
-                title='title foo',
-                comment='comment foo',
-                description='description foo',
-                datecreated=self.now))
+        bug_params = CreateBugParams(
+            owner=self.otherteam,
+            title='title foo',
+            comment='comment foo',
+            description='description foo',
+            datecreated=self.now)
+        bug_params.setBugTarget(product=self.bzr)
+        bug = getUtility(IBugSet).createBug(bug_params)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
                 'This team cannot be made private since it is used as a'
-                ' bug owner, a bug subscriber and a commenter.')
+                ' bug owner, a bug subscriber, a bugtask owner and a'
+                ' commenter.')
+        bug.bugtasks[0].transitionToAssignee(self.otherteam)
+        flush_database_updates()
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is used as a'
+                ' bug assignee, a bug owner, a bug subscriber, a bugtask'
+                ' owner and a commenter.')
 
     def test_visibility_validator_specification_subscriber(self):
         email = getUtility(IEmailAddressSet).new(
