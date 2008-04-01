@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from canonical.codehosting.codeimport.worker import (
