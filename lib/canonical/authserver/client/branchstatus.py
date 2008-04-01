@@ -39,9 +39,9 @@ class BranchStatusClient:
 
     def recordSuccess(self, name, hostname, date_started, date_completed):
 
-        # utctimetuple returns a time.struct_t, not a tuple, and xmlrpclib does
-        # not know how to marshall this type. So we need to apply tuple() to
-        # the return value of utctimetuple() to be able to transmit it.
+        # utctimetuple returns a time.struct_t, not a tuple, and xmlrpclib
+        # does not know how to marshall this type. So we need to apply tuple()
+        # to the return value of utctimetuple() to be able to transmit it.
         started_tuple = tuple(date_started.utctimetuple())
         completed_tuple = tuple(date_completed.utctimetuple())
 

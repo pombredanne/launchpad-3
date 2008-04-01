@@ -18,7 +18,6 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (

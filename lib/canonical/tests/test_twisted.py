@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = ['TwistedTestCase']
 
-from unittest import TestSuite, TestCase, TestLoader, TestResult
+from unittest import TestCase, TestLoader, TestResult
 import signal
 
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -21,8 +21,8 @@ class TwistedTestCase(TrialTestCase):
         sigterm = signal.getsignal(signal.SIGTERM)
         sigchld = signal.getsignal(signal.SIGCHLD)
         try:
-            # TrialTestCase will start a reactor, which will install some signal
-            # handlers.
+            # TrialTestCase will start a reactor, which will install some
+            # signal handlers.
             return TrialTestCase.run(self, result)
         finally:
             # Restore the original signal handlers
@@ -34,9 +34,9 @@ class TwistedTestCase(TrialTestCase):
 class TestCaseThatChangesSignals(TwistedTestCase):
 
     def clobber(self):
-        # clobber SIGINT, SIGTERM and SIGCHLD, because other Twisted test cases
-        # may have already run, so this sets a unique test handler that cannot
-        # exist elsewhere.
+        # clobber SIGINT, SIGTERM and SIGCHLD, because other Twisted test
+        # cases may have already run, so this sets a unique test handler that
+        # cannot exist elsewhere.
         def dummy_handler(signal, frame):
             pass
         signal.signal(signal.SIGINT, dummy_handler)
@@ -54,7 +54,8 @@ class TestCaseThatChangesSignals(TwistedTestCase):
 
     def a_test_that_errors(self):
         self.clobber()
-        1/0
+        # Assign it to something to silence pylint.
+        x = 1/0
 
 
 class SignalRestorationTestCase(TestCase):
@@ -78,8 +79,8 @@ class SignalRestorationTestCase(TestCase):
             # Run the test case
             testcase(result)
 
-            # The signals should be restored, even though the test case clobbered
-            # them.
+            # The signals should be restored, even though the test case
+            # clobbered them.
             self.assertSignalsUnchanged(sigint, sigterm, sigchld)
 
     def assertSignalsUnchanged(self, sigint, sigterm, sigchld):
