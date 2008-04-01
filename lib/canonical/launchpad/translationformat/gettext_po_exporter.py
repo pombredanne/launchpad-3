@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     ITranslationFormatExporter, TranslationConstants, TranslationFileFormat)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.translationformat.translation_export import (
-    ExportedTranslationFile, ExportFileStorage)
+    ExportFileStorage)
 
 
 def comments_text_representation(translation_message):
