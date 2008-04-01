@@ -1,0 +1,96 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+  <body>
+    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+<p style="font-size: normal; float: right; width: 15em; padding: 0.5em;
+border: 1px solid green; margin: 0.5em; margin-left: 1em">
+Hi there! This is a message from the team that develops Launchpad (this
+is <a href="/~launchpad/+mugshots">what we look like</a> if you're
+curious).  We're working hard to make sure Launchpad is the best project
+hosting and registration site out there. We hope you enjoy it here.
+
+<br />
+<br />
+
+PS: do <a href="/feedback">tell us</a> if you don't!
+</p>
+
+<h2>A brand new project in Launchpad</h2>
+
+<p style="font-size: larger">
+We know you are here because you want to register a project, but let us
+steal a minute of your time to point out a few important things before
+you proceed with the actual registration.
+</p>
+
+<ul style="font-size: larger">
+  <li><b>Want to test drive Launchpad?</b>
+  If you want a volatile test area, use <a
+  href="https://staging.launchpad.net/"><b>staging.launchpad.net</b></a>,
+  our test and code staging instance. You can use that server to create
+  sample projects, file random bugs and even push throw-away branches, all
+  without disturbing the community actively using Launchpad.
+
+  <li style="margin-top: 1em"><b>Not sure what Launchpad is?</b> It's
+  many things (and sometimes a bit confusing). You can check out <a
+  href="https://help.launchpad.net/FeatureHighlights">our user
+  handbook</a> or, if you are the sort that likes pretty pictures, <a
+  href="https://launchpad.net/+tour">take our guided tour</a>.
+
+  <li style="margin-top: 1em"><b>Is the project already registered?</b>
+  Launchpad is both a hosting and a registration facility, and someone
+  else may have already registered your project before you.
+  <br />
+  <b style="margin-left: 1em">Check here:</b>
+  <form style="display: inline; font-size: smaller" action="/projects">
+    <input type="text" name="text" />
+    <input type="submit" value="go!" />
+  </form>
+  <br />
+  <ul style="margin-top: 0; margin-bottom: 0">
+  <li>If you find a project you own, <a href="/launchpad/+addquestion">ask
+  here</a> and we'll hand the project over to you.
+  <li>If you want to translate that project to your language, <a
+  href="/rosetta/+addquestion">ask here first</a>.
+  </ul>
+
+  <li style="margin-top: 1em"><b>Requesting Ubuntu CDs</b> is done at <a
+  href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
+  <form style="display: inline; font-size: smaller"
+        action="https://shipit.ubuntu.com/">
+    <input type="submit" value="Oh, I want Ubuntu CDs" />
+  </form>
+  <br /><small>(this
+  may sound weird to you, but a lot of people register projects in order to
+  request CDs!)</small>
+
+
+  <li style="margin-top: 1em; list-style-type: circle">At this point
+  you're set to move on to <a href="/projects/+new" style="border: 2px
+  solid blue"><b>the project
+  registration form</b></a>.<br /> Thanks for listening!
+</ul>
+
+</div>
+
+</body>
+</html>

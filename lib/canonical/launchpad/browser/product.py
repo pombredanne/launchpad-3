@@ -525,7 +525,7 @@ class ProductSetContextMenu(ContextMenu):
 
     def register(self):
         text = 'Register a project'
-        return Link('+new', text, icon='add')
+        return Link('+new-guided', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
