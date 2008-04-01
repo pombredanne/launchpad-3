@@ -78,7 +78,7 @@ class LaunchpadValidationError(ValidationError):
         # We stuff our message into self.args (a list) because this
         # is an exception, and exceptions use self.args (and the form
         # machinery expects it to be here).
-        self.args = [message]
+        self.args = [unicode(message)]
 
     def snippet(self):
         """Render as an HTML error message, as per IWidgetInputErrorView."""
