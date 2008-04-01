@@ -451,18 +451,24 @@ class TestActualImportMixin:
         bazaar_tree = worker.getBazaarWorkingTree()
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
-    def test_import_script(self):
-        # XXX
+    def cleanUpDefaultStores(self):
         treestore = get_default_foreign_tree_store()
         tree_transport = treestore.transport
         archive_name = treestore._getTarballName(self.job.code_import)
         if tree_transport.has(archive_name):
             tree_transport.delete(archive_name)
         branchstore = get_default_bazaar_branch_store()
-        branchname = '%08x' % self.job.code_import.branch.id
-        if branchstore.transport.has(branchname):
-            shutil.rmtree(branchstore.transport.base[len('file://'):] + '/' + branchname)
+        branch_transport = branchstore.transport
+        branch_name = '%08x' % self.job.code_import.branch.id
+        if branchstore.transport.has(branch_name):
+            branchstore.transport.delete_tree(branch_name)
+
+    def test_import_script(self):
+        # XXX
         commit()
+
+        self.cleanUpDefaultStores()
+
         script_path = os.path.join(
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
@@ -470,7 +476,7 @@ class TestActualImportMixin:
         retcode = subprocess.call([script_path, str(self.job.id), '-qqqq'])
         self.assertEqual(retcode, 0)
 
-        self.addCleanup(lambda: tree_transport.delete(archive_name))
+        self.addCleanup(self.cleanUpDefaultStores)
 
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))
