@@ -221,7 +221,7 @@ class ImportWorker:
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
             uses this to fetch and store the Bazaar branches that are created
             and updated during the import process.
-        :param logger: A Logger to pass to cscvs.
+        :param logger: A `Logger` to pass to cscvs.
         """
         self.job = getUtility(ICodeImportJobSet).getById(job_id)
         self.foreign_tree_store = foreign_tree_store

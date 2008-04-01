@@ -18,8 +18,8 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
-import canonical
 from canonical.cachedproperty import cachedproperty
+from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -451,8 +451,12 @@ class TestActualImportMixin:
         bazaar_tree = worker.getBazaarWorkingTree()
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
-    def cleanUpDefaultStores(self):
-        """Clean up default branch and foreign tree stores.
+    def cleanUpDefaultStoresForImport(self, code_import):
+        """Clean up default branch and foreign tree stores for an import.
+
+        This checks for an existing branch and/or foreign tree tarball
+        corresponding to the passed in import and deletes them if they
+        are found.
 
         If there are tarballs or branches in the default stores that
         might conflict with working on our job, life gets very, very
@@ -472,18 +476,21 @@ class TestActualImportMixin:
     def test_import_script(self):
         # Like test_import, but using the code-import-worker.py script
         # to perform the import.
+
+        # We need to commit the creation of the code import and code
+        # import job that's done in setUp() so that the subprocess we
+        # launch can see it.
         commit()
 
-        self.cleanUpDefaultStores()
+        self.cleanUpDefaultStoresForImport(self.job.code_import)
 
         script_path = os.path.join(
-            os.path.dirname(
-                os.path.dirname(os.path.dirname(canonical.__file__))),
-            'scripts', 'code-import-worker.py')
+            get_rocketfuel_root(), 'scripts', 'code-import-worker.py')
         retcode = subprocess.call([script_path, str(self.job.id), '-qqq'])
         self.assertEqual(retcode, 0)
 
-        self.addCleanup(self.cleanUpDefaultStores)
+        self.addCleanup(
+            lambda : self.cleanUpDefaultStoresForImport(self.job.code_import))
 
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))

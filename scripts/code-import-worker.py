@@ -1,7 +1,13 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""When passed a CodeImportJob id on the command line, process that job."""
+"""When passed a CodeImportJob id on the command line, process that job.
+
+By 'processing a job' we mean importing or updating a code import from
+a remote, non-Bazaar, repository.
+
+This script is usually run by the code-import-dispatcher cronscript.
+"""
 
 __metaclass__ = type
 
