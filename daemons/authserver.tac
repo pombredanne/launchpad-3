@@ -22,7 +22,11 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 #
 # This was added to allow us to safely revert r5793, which is suspected of
 # causing serious performance regressions on the authserver.
-config.launchpad.dbuser = 'authserver'
+config_data = dedent("""
+    [database]
+    dbuser: authserver
+    """)
+config.push('authserver', config_data)
 
 execute_zcml_for_scripts(use_web_security=True)
 
