@@ -1172,7 +1172,6 @@ class IPersonViewRestricted(Interface):
     proposedmembers = Attribute("List of members with PROPOSED status")
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-
     def getDirectAdministrators():
         """Return this team's administrators.
 
