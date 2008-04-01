@@ -25,8 +25,8 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
-    IOAuthRequestToken, IOAuthRequestTokenSet, OAuthPermission,
-    NonceAlreadyUsed)
+    IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed)
+from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
 
 
 # How many hours should a request token be valid for?
@@ -89,8 +89,6 @@ class OAuthToken(SQLBase):
         dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person', notNull=False, default=None)
-    permission = EnumCol(
-        enum=OAuthPermission, notNull=False, default=None)
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
@@ -100,6 +98,8 @@ class OAuthToken(SQLBase):
 class OAuthAccessToken(OAuthToken):
     """See `IOAuthAccessToken`."""
     implements(IOAuthAccessToken)
+
+    permission = EnumCol(enum=AccessLevel, notNull=True)
 
     def ensureNonce(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
@@ -123,6 +123,7 @@ class OAuthRequestToken(OAuthToken):
     """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
 
+    permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
 
     def review(self, user, permission):
@@ -140,9 +141,10 @@ class OAuthRequestToken(OAuthToken):
         assert self.permission != OAuthPermission.UNAUTHORIZED, (
             'The user did not grant access to this consumer.')
         key, secret = create_token_key_and_secret(table=OAuthAccessToken)
+        access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=self.permission)
+            secret=secret, permission=access_level)
         self.destroySelf()
         return access_token
 

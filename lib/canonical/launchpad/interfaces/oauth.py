@@ -24,7 +24,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
 
 
 # The challenge included in responses with a 401 status.
@@ -117,11 +117,6 @@ class IOAuthToken(Interface):
     person = Object(
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
-    permission = Choice(
-        title=_('Access level'), required=True, readonly=False,
-        vocabulary=OAuthPermission,
-        description=_('The level of access given to the application acting '
-                      'on your behalf.'))
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     date_expires = Datetime(
@@ -145,6 +140,12 @@ class IOAuthAccessToken(IOAuthToken):
     consumer.  The consumer then exchanges an `IOAuthRequestToken` for it.
     """
 
+    permission = Choice(
+        title=_('Access level'), required=True, readonly=False,
+        vocabulary=AccessLevel,
+        description=_('The level of access given to the application acting '
+                      'on your behalf.'))
+
     def ensureNonce(nonce, timestamp):
         """Ensure the nonce hasn't been used with a different timestamp.
 
@@ -165,6 +166,11 @@ class IOAuthRequestToken(IOAuthToken):
     request token is exchanged for an access token and is then destroyed.
     """
 
+    permission = Choice(
+        title=_('Permission'), required=True, readonly=False,
+        vocabulary=OAuthPermission,
+        description=_('The permission you give to the application which may '
+                      'act on your behalf.'))
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '

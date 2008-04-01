@@ -8,9 +8,11 @@ These applications (also called consumers) are managed by the
 OAuthConsumerSet utility.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     AccessLevel, OAuthPermission)
     >>> from canonical.launchpad.interfaces import (
     ...     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet,
-    ...     IOAuthNonce, IOAuthRequestToken, IPersonSet, OAuthPermission)
+    ...     IOAuthNonce, IOAuthRequestToken, IPersonSet)
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> verifyObject(IOAuthConsumerSet, consumer_set)
     True
@@ -128,11 +130,20 @@ Once a request token has been reviewed it may be exchanged for an access
 token. That may happen only if the user actually granted some sort of
 permission to the consumer when reviewing the request.
 
+The access token's permission will be the same as the request token's
+one, but it is an item of AccessLevel rather than OAuthPermission
+because the former doesn't have an UNAUTHORIZED item (which doesn't
+make sense in access tokens).
+
     >>> request_token.is_reviewed
     True
+    >>> request_token.permission
+    <DBItem OAuthPermission.WRITE_PUBLIC...
     >>> access_token = request_token.createAccessToken()
     >>> verifyObject(IOAuthAccessToken, access_token)
     True
+    >>> access_token.permission
+    <DBItem AccessLevel.WRITE_PUBLIC...
 
 After the access token is generated, the request token is deleted.
 
@@ -184,7 +195,7 @@ An access token can only be changed by the person associated with it.
     ...
     Unauthorized:...
     >>> login(access_token.person.preferredemail.email)
-    >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
+    >>> access_token.permission = AccessLevel.WRITE_PUBLIC
 
 From any given person it's possible to retrieve his non-expired access
 tokens.
