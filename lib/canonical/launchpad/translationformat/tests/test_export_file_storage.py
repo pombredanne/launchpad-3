@@ -13,13 +13,13 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class ExportFileStorageTestCase(unittest.TestCase):
-    """Class test for translation importer component"""
+    """Test class for translation importer component."""
     layer = LaunchpadZopelessLayer
 
     def testEmpty(self):
         """Behaviour of empty storage."""
         storage = ExportFileStorage('application/x-po')
-        # (Not inserting any files)
+        # Try not inserting any files, so the storage object remains empty.
         self.assertTrue(storage.store.isEmpty())
         self.assertFalse(storage.store.isFull())
         # Can't export an empty storage.
@@ -33,7 +33,8 @@ class ExportFileStorageTestCase(unittest.TestCase):
         # it's full now that we've added one file.
         self.assertTrue(storage.store.isFull())
         # If we add another file however, the storage object transparently
-        # switches to a TarballFileStorageStrategy (which is not full).
+        # switches to a TarballFileStorageStrategy.  That type of storage
+        # object is never full.
         storage.addFile('/tmp/another/test/file.po', 'po', 'test file two')
         self.assertFalse(storage.store.isFull())
         # We can now add any number of files without filling the storage
@@ -45,14 +46,13 @@ class ExportFileStorageTestCase(unittest.TestCase):
         """Test export of single file."""
         storage = ExportFileStorage('application/x-po')
         storage.addFile('/tmp/a/test/file.po', 'po', 'test file')
-        file = storage.export()
-        self.assertEquals(file.path, '/tmp/a/test/file.po')
-        self.assertEquals(file.file_extension, 'po')
-        self.assertEquals(file.read(), 'test file')
+        outfile = storage.export()
+        self.assertEquals(outfile.path, '/tmp/a/test/file.po')
+        self.assertEquals(outfile.file_extension, 'po')
+        self.assertEquals(outfile.read(), 'test file')
 
     def testTarball(self):
         """Test export of tarball."""
-        """Test export of single file."""
         storage = ExportFileStorage('application/x-po')
         storage.addFile('/tmp/a/test/file.po', 'po', 'test file')
         storage.addFile('/tmp/another/test.po', 'po', 'another test file')
