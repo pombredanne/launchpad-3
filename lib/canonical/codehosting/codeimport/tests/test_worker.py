@@ -452,6 +452,12 @@ class TestActualImportMixin:
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
     def cleanUpDefaultStores(self):
+        """Clean up default branch and foreign tree stores.
+
+        If there are tarballs or branches in the default stores that
+        might conflict with working on our job, life gets very, very
+        confusing.
+        """
         treestore = get_default_foreign_tree_store()
         tree_transport = treestore.transport
         archive_name = treestore._getTarballName(self.job.code_import)
@@ -464,7 +470,8 @@ class TestActualImportMixin:
             branchstore.transport.delete_tree(branch_name)
 
     def test_import_script(self):
-        # XXX
+        # Like test_import, but using the code-import-worker.py script
+        # to perform the import.
         commit()
 
         self.cleanUpDefaultStores()
@@ -473,7 +480,7 @@ class TestActualImportMixin:
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts', 'code-import-worker.py')
-        retcode = subprocess.call([script_path, str(self.job.id), '-qqqq'])
+        retcode = subprocess.call([script_path, str(self.job.id), '-qqq'])
         self.assertEqual(retcode, 0)
 
         self.addCleanup(self.cleanUpDefaultStores)
