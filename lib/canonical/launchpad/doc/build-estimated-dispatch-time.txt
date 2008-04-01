@@ -56,7 +56,6 @@ Tweak some of the properties of the job in state BUILDING.
 
     >>> from datetime import timedelta
     >>> from datetime import datetime
-    >>> from canonical.launchpad.interfaces import BuildStatus
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> bob_the_builder = builder_set.get(1)
