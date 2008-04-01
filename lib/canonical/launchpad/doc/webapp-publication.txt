@@ -1134,8 +1134,9 @@ The feeds implementation always returns the anonymous user.
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 
-The webservice implementation returns the user associated with the
-access token specified in the request.
+The webservice implementation returns the principal for the person
+associated with the access token specified in the request.  The
+principal's access_level will be the one specified in the token.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
@@ -1154,8 +1155,11 @@ access token specified in the request.
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
     >>> test_request.processInputs()
-    >>> print publication.getPrincipal(test_request).title
+    >>> principal = publication.getPrincipal(test_request)
+    >>> print principal.title
     Guilherme Salgado
+    >>> principal.access_level
+    <DBItem AccessLevel.WRITE_PUBLIC...
 
 If the token is expired or doesn't exist, an Unauthorized exception is
 raised, though.
