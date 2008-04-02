@@ -135,7 +135,7 @@ class IBuild(Interface):
         estimated start time is not available.
 
         Please note: this method only makes sense for build jobs that are
-        pending (i.e. still waiting in the build queue). calling it for
+        pending (i.e. still waiting in the build queue). Calling it for
         jobs in other states will trigger an exception.
         """
 

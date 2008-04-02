@@ -300,7 +300,7 @@ class Build(SQLBase):
             self.processor, self.is_virtualized).count()
 
         # The estimated dispatch time can only be calculated for
-        # non-zero-sized build pools
+        # non-zero-sized build pools.
         if pool_size > 0:
             # This is the estimated build job start time in seconds
             # from now.
@@ -359,10 +359,11 @@ class Build(SQLBase):
         # This is the head job delay in seconds.
         headjob_delay = len(build_delays) and max(build_delays) or 0
 
-        # did all currently building jobs overdraw their estimated
+        # Did all currently building jobs overdraw their estimated
         # time budget?
         if headjob_delay < 0:
-            # yes, reset to two minutes.
+            # Yes, this is the case. Reset the head job delay to two
+            # minutes.
             headjob_delay = 120
 
         for delay in reversed(sorted(build_delays)):
