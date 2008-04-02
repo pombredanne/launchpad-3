@@ -34,6 +34,7 @@ from subprocess import Popen, PIPE
 from operator import attrgetter
 
 from zope.component import getUtility
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
@@ -1012,20 +1013,41 @@ class SpecificationTreeGraphView(LaunchpadView):
         return output
 
 
+def log_oops(error, request):
+    """Log an oops report without raising an error."""
+    info = (error.__class__, error, None)
+    globalErrorUtility = getUtility(IErrorReportingUtility)
+    globalErrorUtility.raising(info, request)
+
+
 class SpecificationTreePNGView(SpecificationTreeGraphView):
 
     def render(self):
         """Render a PNG displaying the specification dependency graph."""
-        self.request.response.setHeader('Content-type', 'image/png')
-        return self.renderGraphvizGraph('png')
+        try:
+            image = self.renderGraphvizGraph('png')
+            self.request.response.setHeader('Content-type', 'image/png')
+            return image
+        except (ProblemRenderingGraph, OSError), error:
+            log_oops(error, self.request)
+            self.request.response.redirect(
+                '/+icing/blueprints-deptree-error.png')
+            return None
 
 
 class SpecificationTreeImageTag(SpecificationTreeGraphView):
 
     def render(self):
         """Render the image and image map tags for this dependency graph."""
-        return (u'<img src="deptree.png" usemap="#deptree" />\n' +
-                self.renderGraphvizGraph('cmapx').decode('UTF-8'))
+        try:
+            image_map = self.renderGraphvizGraph('cmapx').decode('UTF-8')
+        except (ProblemRenderingGraph, OSError), error:
+            log_oops(error, self.request)
+            image_map = (
+                u'<p class="error message">'
+                u'There was an error when linking the dependency tree. '
+                u'Reload the page to link the image.</p>')
+        return (u'<img src="deptree.png" usemap="#deptree" />\n' + image_map)
 
 
 class SpecificationTreeDotOutput(SpecificationTreeGraphView):
