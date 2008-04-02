@@ -385,7 +385,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
-        form = self.form
         ubuntupkg = self.form.get('ubuntupkg', '')
         if ubuntupkg == '':
             # No package was selected.
@@ -420,8 +419,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
         """
-        form = self.form
-
         file = self.request.form['file']
         if not isinstance(file, FileUpload):
             if file == '':
