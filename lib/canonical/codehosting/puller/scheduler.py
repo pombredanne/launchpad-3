@@ -430,9 +430,7 @@ class JobScheduler:
         elements. It's expected that the contents of the set will be modified
         by `PullerMaster` objects.
         """
-        return set(
-            [config.error_reports.oops_prefix + str(i)
-             for i in range(config.supermirror.maximum_workers)])
+        return set(str(i) for i in range(config.supermirror.maximum_workers)])
 
     def _run(self, puller_masters):
         """Run all branches_to_mirror registered with the JobScheduler."""

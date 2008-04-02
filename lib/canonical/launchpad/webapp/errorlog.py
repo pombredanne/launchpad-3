@@ -207,15 +207,15 @@ class ErrorReportingUtility:
         self.lastid_lock = threading.Lock()
         self.prefix = config.error_reports
 
-    def setOopsPrefix(self, append_to_prefix):
+    def appendToOopsPrefix(self, token):
         """Append a string to the oops prefix.
 
-        :param append_to_prefix: a string to append to a opps_prefix.
+        :param token: a string to append to a opps_prefix.
             Scripts that run multiple processes can append a string to
             the oops_prefix to create a unqiue identifier for each
             process.
         """
-        self.prefix = config.error_reports + append_to_prefix
+        self.prefix = config.error_reports + token
 
     def _findLastOopsIdFilename(self, directory):
         """Find details of the last OOPS reported in the given directory.
