@@ -6,8 +6,6 @@
 
 This is a dummy logger class to capture the export's log messages.
 
-    >>> import sys
-    >>> import traceback
     >>> from canonical.launchpad.ftests.logger import MockLogger
     >>> from canonical.launchpad.database import Person
     >>> person = Person.selectOneBy(name='name12')
@@ -20,7 +18,7 @@ consists of a series of requests for all templates and translations attached
 to the product series.
 
     >>> from canonical.launchpad.database import (
-    ...     POFile, POTemplate, Product, ProductSeries)
+    ...     POTemplate, Product, ProductSeries)
     >>> evolution_product = Product.selectOneBy(name='evolution')
     >>> evolution_trunk = ProductSeries.selectOneBy(
     ...     product=evolution_product, name='trunk')
