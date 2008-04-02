@@ -7,6 +7,7 @@ import re
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.menu import structured
 
 
 def valid_email(emailaddr):
@@ -73,5 +74,5 @@ def email_validator(emailaddr):
     LaunchpadValidationError: Invalid email 'not-valid'.
     """
     if not valid_email(emailaddr):
-        raise LaunchpadValidationError(_("Invalid email '%s'."), emailaddr)
+        raise LaunchpadValidationError(_("Invalid email '%s'.") % emailaddr)
     return True
