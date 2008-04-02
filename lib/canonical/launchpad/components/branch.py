@@ -58,11 +58,12 @@ class BranchMergeProposalDelta:
 
         self.__dict__.update(kwargs)
 
+    @staticmethod
     def construct(old_merge_proposal, new_merge_proposal):
         delta = ObjectDelta(old_merge_proposal, new_merge_proposal)
         delta.recordNewValues(("whiteboard"))
         delta.recordNewAndOld((
-            'registrant', 'source_branch', 'target_branch', 'depenent_branch',
+            'registrant', 'source_branch', 'target_branch', 'dependent_branch',
             'queue_status', 'supersedes'))
         if delta.changes:
             changes = delta.changes

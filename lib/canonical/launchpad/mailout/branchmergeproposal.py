@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailout.notificationrecipientset import (
@@ -70,8 +71,9 @@ class BMPMailer:
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
-        delta = MergeProposalDelta.construct(
+        delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
+        assert delta is not None
         return BMPMailer(recipients, merge_proposal, from_address,
                          delta)
 
