@@ -235,18 +235,9 @@ class TranslationImportQueueView(HasTranslationImportsView):
 
         :return: A form.Fields instance containing the target field.
         """
-        status_filter = self.request.get('field.filter_status', 'all')
-        if status_filter == 'all':
-            status = None
-        else:
-            try:
-                status = RosettaImportStatus.items[status_filter]
-            except LookupError:
-                status = None
-
         return self.createFilterFieldHelper(
             name='filter_target',
-            source=TranslationImportTargetVocabularyFactory(status),
+            source=TranslationImportTargetVocabularyFactory(self),
             title='Choose which target to show')
 
 
@@ -255,20 +246,34 @@ class TranslationImportTargetVocabularyFactory:
 
     implements(IContextSourceBinder)
 
-    status = None
+    def __init__(self, view):
+        """Create `TranslationImportTargetVocabularyFactory`.
 
-    def __init__(self, status=None):
-        self.status = status
+        :param view: The view that called this factory.  We access its
+            filter_status widget later to see which status it filters for.
+        """
+        self.view = view
 
     def __call__(self, context):
         import_queue = getUtility(ITranslationImportQueue)
         targets = import_queue.getRequestTargets()
+        filtered_targets = set()
 
-        if self.status is None:
-            filtered_targets = None
-        else:
-            filtered_targets = set(
-                import_queue.getRequestTargets(self.status))
+        # Read filter_status, in order to mark targets that have requests with
+        # that status pending.  This works because we set up the filter_status
+        # widget before the filter_target one, which uses this vocabulary
+        # factory.
+        status_widget = self.view.widgets['filter_status']
+        if status_widget.hasInput():
+            status_filter = status_widget.getInputValue()
+            if status_filter != 'all':
+                try:
+                    status = RosettaImportStatus.items[status_filter]
+                    filtered_targets = set(
+                        import_queue.getRequestTargets(status))
+                except LookupError:
+                    # Unknown status.  Ignore.
+                    pass
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:
@@ -280,7 +285,7 @@ class TranslationImportTargetVocabularyFactory:
                 term_name = target.name
 
             displayname = target.displayname
-            if filtered_targets is not None and target in filtered_targets:
+            if target in filtered_targets:
                 displayname += '*'
 
             terms.append(SimpleTerm(term_name, term_name, displayname))
