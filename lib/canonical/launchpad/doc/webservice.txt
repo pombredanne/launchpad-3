@@ -886,18 +886,17 @@ entry's resource), and possibly links to associated resources.
     >>> request = create_web_service_request('/cookbooks')
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
-    >>> entries = sorted(representation['entries'])
-    >>> len(entries)
-    5
-    >>> entries[1]['name']
-    u'The Joy of Cooking'
-    >>> entries[1]['self_link']
-    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
+    >>> entries = sorted(representation['entries'],
+    ...                  key=lambda x: x['name'])
+    >>> entries[0]['name']
+    u'Beard on Bread'
+    >>> entries[0]['self_link']
+    u'http://api.launchpad.dev/cookbooks/Beard%20on%20Bread'
 
 Each cookbook, for instance, has a link to its author.
 
-    >>> entries[1]['author_link']
-    u'http://api.launchpad.dev/authors/Irma%20S.%20Rombauer'
+    >>> entries[0]['author_link']
+    u'http://api.launchpad.dev/authors/James%20Beard'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
