@@ -6,12 +6,13 @@ from unittest import TestLoader, TestCase
 
 from canonical.testing import LaunchpadFunctionalLayer
 
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus, IBranchMergeProposal)
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
-from canonical.launchpad.webapp import canonical_url, snapshot
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
@@ -93,9 +94,8 @@ Baz Qux has proposed merging foo into bar.
     def test_forModification(self):
         """"""
         merge_proposal, person = self.makeProposalWithSubscriber()
-        old_merge_proposal = snapshot.Snapshot(
-            merge_proposal, providing=IBranchMergeProposal)
-        mailer = BMPMailer.forModification(
+        old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        self.assertRaises(AssertionError, BMPMailer.forModification,
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
 
 

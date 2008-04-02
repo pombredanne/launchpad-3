@@ -8,6 +8,7 @@ from zope.interface import implements
 
 from canonical.launchpad.components import ObjectDelta
 from canonical.launchpad.interfaces import IBranchDelta
+from canonical.launchpad.webapp import snapshot
 
 # XXX: thumper 2006-12-20: This needs to be extended
 # to cover bugs and specs linked and unlinked, as
@@ -54,19 +55,24 @@ class BranchDelta:
 
 class BranchMergeProposalDelta:
 
-    def __init__(self, **kwargs):
+    delta_values = (
+        'registrant', 'source_branch', 'target_branch', 'dependent_branch',
+        'queue_status', 'supersedes')
+    new_values = ('whiteboard',)
 
+    def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-    @staticmethod
-    def construct(old_merge_proposal, new_merge_proposal):
+    @classmethod
+    def construct(klass, old_merge_proposal, new_merge_proposal):
         delta = ObjectDelta(old_merge_proposal, new_merge_proposal)
-        delta.recordNewValues(("whiteboard"))
-        delta.recordNewAndOld((
-            'registrant', 'source_branch', 'target_branch', 'dependent_branch',
-            'queue_status', 'supersedes'))
-        if delta.changes:
-            changes = delta.changes
-            return BranchMergeProposalDelta(**changes)
-        else:
+        delta.recordNewValues(klass.new_values)
+        delta.recordNewAndOld(klass.delta_values)
+        if not delta.changes:
             return None
+        return BranchMergeProposalDelta(**delta.changes)
+
+    @classmethod
+    def snapshot(klass, merge_proposal):
+        names = klass.new_values + klass.delta_values
+        return snapshot.Snapshot(merge_proposal, names=names)
