@@ -98,6 +98,17 @@ class TestProberProtocolAndFactory(TrialTestCase):
         self.failUnlessEqual(prober.connect_port, 3128)
         self.failUnlessEqual(prober.connect_path, self.urls['200'])
 
+    def test_connect_cancels_existing_timeout_call(self):
+        prober = ProberFactory(self.urls['200'])
+        prober.timeoutCall = reactor.callLater(
+            30, prober.failWithTimeoutError)
+        old_timeout_call = prober.timeoutCall
+        self.failUnless(old_timeout_call.active())
+        prober.connect()
+        self.failIf(old_timeout_call.active())
+        self.failUnless(prober.timeoutCall.active())
+        return prober._deferred
+
     def _test_connect_to_host(self, url, host):
         """Check that a ProberFactory created with the given url will actually
         connect to the given host.
