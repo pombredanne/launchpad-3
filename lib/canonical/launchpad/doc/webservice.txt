@@ -883,11 +883,12 @@ The collection resource is a list of entries. Each entry has some
 associated information (like 'name'), a 'self_link' (the URL to the
 entry's resource), and possibly links to associated resources.
 
+    >>> import operator
     >>> request = create_web_service_request('/cookbooks')
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
     >>> entries = sorted(representation['entries'],
-    ...                  key=lambda x: x['name'])
+    ...                  key=operator.itemgetter('name'))
     >>> entries[0]['name']
     u'Beard on Bread'
     >>> entries[0]['self_link']
