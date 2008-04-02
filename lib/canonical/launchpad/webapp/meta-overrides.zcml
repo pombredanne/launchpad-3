@@ -50,4 +50,10 @@
         />
 </meta:directives>
 
+<meta:directive
+    namespace="http://namespaces.zope.org/zope"
+    name="permission"
+    schema="canonical.launchpad.webapp.metazcml.IDefineLaunchpadPermissionDirective"
+    handler="canonical.launchpad.webapp.metazcml.definePermission" />
+
 </configure>
