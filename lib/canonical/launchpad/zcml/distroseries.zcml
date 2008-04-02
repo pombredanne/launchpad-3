@@ -36,6 +36,14 @@
         set_attributes="version name status owner nominatedarchindep
                         changeslist"
         />
+    <!-- IStructuralSubscriptionTarget -->
+    <allow attributes="bug_subscriptions getBugNotificationsRecipients
+                       getSubscription getSubscriptions
+                       parent_subscription_target" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="addBugSubscription addSubscription
+                    removeBugSubscription" />
   </content>
 
   <securedutility

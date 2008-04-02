@@ -6,11 +6,11 @@ __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
     'ForeignTreeStore',
+    'ImportWorker',
     'get_default_bazaar_branch_store',
     'get_default_foreign_tree_store']
 
 
-import logging
 import os
 import shutil
 import tempfile
@@ -212,7 +212,7 @@ class ImportWorker:
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
     def __init__(self, job_id, foreign_tree_store, bazaar_branch_store,
-                 log_level=2):
+                 logger):
         """Construct an `ImportWorker`.
 
         :param job_id: The database ID of the `CodeImportJob` to run.
@@ -221,17 +221,14 @@ class ImportWorker:
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
             uses this to fetch and store the Bazaar branches that are created
             and updated during the import process.
-        :param log_level: Controls the level of information in the (cscvs?)
-           logs. Pick a number between one and five, just to be safe.
+        :param logger: A `Logger` to pass to cscvs.
         """
-        # XXX: JonathanLange 2008-02-22: `log_level` really needs better
-        # documentation.
         self.job = getUtility(ICodeImportJobSet).getById(job_id)
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
         self.working_directory = tempfile.mkdtemp()
         self._foreign_branch = None
-        self._logger = logging.Logger("importd", 50 - log_level * 10)
+        self._logger = logger
         self._bazaar_working_tree_path = os.path.join(
             self.working_directory, self.BZR_WORKING_TREE_PATH)
         self._foreign_working_tree_path = os.path.join(

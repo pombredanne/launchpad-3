@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch,
+    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, InvalidBranchMergeProposal,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
@@ -200,10 +200,12 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
-        return BranchMergeProposal(
+        bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
+        notify(SQLObjectCreatedEvent(bmp))
+        return bmp
 
     def getMergeQueue(self):
         """See `IBranch`."""
@@ -439,7 +441,8 @@ class Branch(SQLBase):
             """ % sqlvalues(self, self))
 
     # subscriptions
-    def subscribe(self, person, notification_level, max_diff_lines):
+    def subscribe(self, person, notification_level, max_diff_lines,
+                  review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -448,10 +451,11 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines)
+                max_diff_lines=max_diff_lines, review_level=review_level)
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
+            subscription.review_level = review_level
         return subscription
 
     def getSubscription(self, person):
@@ -878,7 +882,8 @@ class BranchSet:
             branch.subscribe(
                 implicit_subscription,
                 BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF)
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL)
 
         notify(SQLObjectCreatedEvent(branch))
         return branch
