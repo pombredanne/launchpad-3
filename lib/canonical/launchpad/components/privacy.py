@@ -14,6 +14,6 @@ class ObjectPrivacy:
     def __init__(self, object):
         try:
             self.is_private = object.private
-        except ForbiddenAttribute:
+        except (AttributeError, ForbiddenAttribute):
             self.is_private = False
 
