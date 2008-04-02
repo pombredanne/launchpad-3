@@ -235,6 +235,7 @@ Once the queue is processed, the queue is empty again.
 
     >>> import logging
     >>> process_queue(transaction, logging.getLogger())
+    INFO:...Stored file at http://.../po_evolution-2.2.pot
 
     >>> export_request_set.entry_count
     0
