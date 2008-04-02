@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-""""""
+"""Helpers for running a child process and communicating things about it."""
 
 __metaclass__ = type
 __all__ = ['ProcessMonitorProtocol', 'ProcessMonitorProtocolWithTimeout']
@@ -15,8 +15,8 @@ from twisted.python import failure, log
 class ProcessMonitorProtocol(ProcessProtocol):
     """Support for running a process and reporting on its progress.
 
-    The idea is this: you want to run a subprocess.  Occasionally, you want to
-    report on what it is doing to some other entity: maybe it's a multistep
+    The idea is this: you want to run a child process.  Occasionally, you want
+    to report on what it is doing to some other entity: maybe it's a multistep
     task and you want to update a row in a database to reflect which step it
     is currently on.  This class provides a runNotification() method that
     helps with this, taking a callable that performs this notfication, maybe
@@ -28,8 +28,8 @@ class ProcessMonitorProtocol(ProcessProtocol):
        two callables, the deferred returned by the first must fire before the
        second callable will be called.
 
-     - A notification failing is treated as a fatal error: the subprocess is
-       killed and the 'termination deferred' fired.
+     - A notification failing is treated as a fatal error: the child process
+       is killed and the 'termination deferred' fired.
 
      - Because there are multiple things that can go wrong more-or-less at
        once (the process can exit with an error condition at the same time as
@@ -38,11 +38,11 @@ class ProcessMonitorProtocol(ProcessProtocol):
        deferred and log.err()ing the others.
 
      - The deferred passed into the constructor will not be fired until the
-       subprocess has exited and all pending notifications have completed.
+       child process has exited and all pending notifications have completed.
        Note that Twisted does not tell us the process has exited until all of
        it's output has been processed.
 
-    :ivar _deferred: The deferred that will be fired when the subprocess
+    :ivar _deferred: The deferred that will be fired when the child process
         exits.
     :ivar _clock: A provider of Twisted's IReactorTime, to allow testing that
         does not depend on an external clock.  If a clock is not explicitly
@@ -53,7 +53,7 @@ class ProcessMonitorProtocol(ProcessProtocol):
         a while and then send SIGKILL if required.  We stash the DelayedCall
         here so that it can be cancelled if the SIGINT causes the process to
         exit.
-    :ivar _termination_failure: When we kill the subprocess in response to
+    :ivar _termination_failure: When we kill the child process in response to
         some unexpected error, we report the reason we killed it to
         self._deferred, not that it exited because we killed it.
     """

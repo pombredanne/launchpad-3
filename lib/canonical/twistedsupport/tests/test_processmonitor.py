@@ -1,3 +1,10 @@
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
+"""Tests for ProcessMonitorProtocol and ProcessMonitorProtocolWithTimeout."""
+
+__metaclass__ = type
+
+
 import unittest
 
 from twisted.internet import defer, error, task
@@ -21,27 +28,19 @@ def makeFailure(exception_factory, *args, **kwargs):
 
 
 class ProcessMonitorProtocolTestsMixin:
+    """Helpers to allow direct testing of ProcessMonitorProtocol.
 
-    class StubPullerListener:
-        """Stub listener object that records calls."""
-
-        def __init__(self):
-            self.calls = []
-
-        def startMirroring(self):
-            self.calls.append('startMirroring')
-
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
-
-        def mirrorFailed(self, message, oops):
-            self.calls.append(('mirrorFailed', message, oops))
+    Also useful for testing subclasses of ProcessMonitorProtocol.
+    """
 
     class StubTransport:
-        """Stub transport that implements the minimum for a ProcessProtocol.
+        """Stub process transport that implements the minimum we need.
 
         We're manually manipulating the protocol, so we don't need a real
-        transport.
+        transport and associated process.
+
+        A little complexity is required to only call
+        self.protocol.processEnded() once.
         """
 
         only_sigkill_kills = False
@@ -65,9 +64,13 @@ class ProcessMonitorProtocolTestsMixin:
                 self.protocol.processEnded(reason)
 
     def makeProtocol(self):
+        """Construct an instance of ProcessMonitorProtocol to be tested.
+
+        Override this in subclasses."""
         raise NotImplementedError
 
     def simulateProcessExit(self, clean=True):
+        """Pretend the child process we're monitoring has exited."""
         self.protocol.transport.exited = True
         if clean:
             exc = error.ProcessDone(None)
@@ -86,15 +89,17 @@ class ProcessMonitorProtocolTestsMixin:
 
 class TestProcessMonitorProtocol(
     ProcessMonitorProtocolTestsMixin, TrialTestCase):
+    """Tests for `ProcessMonitorProtocol`."""
 
     layer = TwistedLayer
 
     def makeProtocol(self):
+        """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
         return ProcessMonitorProtocol(
             self.termination_deferred, self.clock)
 
     def test_processTermination(self):
-        # The protocol fires a Deferred when it is terminated.
+        # The protocol fires a Deferred when the child process terminates.
         self.simulateProcessExit()
         return self.termination_deferred
 
@@ -106,8 +111,8 @@ class TestProcessMonitorProtocol(
             self.termination_deferred, error.ProcessTerminated)
 
     def test_unexpectedError(self):
-        # unexpectedError() sends SIGINT to the subprocess but the termination
-        # deferred is fired with original passed-in failure.
+        # unexpectedError() sends SIGINT to the child process but the
+        # termination deferred is fired with originally passed-in failure.
         self.protocol.unexpectedError(
             makeFailure(RuntimeError, 'error message'))
         self.assertEqual(
@@ -145,6 +150,18 @@ class TestProcessMonitorProtocol(
         self.protocol.runNotification(calls.append, 'called')
         self.assertEqual(calls, ['called'])
 
+    def test_runNotificationFailure(self):
+        # If a notification function fails, the child process is killed and
+        # the manner of failure reported.
+        def fail():
+            raise RuntimeError
+        self.protocol.runNotification(fail)
+        self.assertEqual(
+            [('signalProcess', 'INT')],
+            self.protocol.transport.calls)
+        return self.assertFailure(
+            self.termination_deferred, RuntimeError)
+
     def test_runNotificationSerialization(self):
         # If two calls are made to runNotification, the second function passed
         # is not called until any deferred returned by the first one fires.
@@ -156,21 +173,9 @@ class TestProcessMonitorProtocol(
         deferred.callback(None)
         self.assertEqual(calls, ['called'])
 
-    def test_runNotificationFailure(self):
-        # If a notification function fails, the subprocess is killed and the
-        # manner of failure reported.
-        def fail():
-            raise RuntimeError
-        self.protocol.runNotification(fail)
-        self.assertEqual(
-            [('signalProcess', 'INT')],
-            self.protocol.transport.calls)
-        return self.assertFailure(
-            self.termination_deferred, RuntimeError)
-
     def test_failingNotificationCancelsPendingNotifications(self):
-        # If a notification function fails, the subprocess is killed and the
-        # manner of failure reported.
+        # If a notification returns a deferred which subsequently errbacks,
+        # any pending notifications are not run.
         deferred = defer.Deferred()
         calls = []
         self.protocol.runNotification(lambda : deferred)
@@ -212,6 +217,8 @@ class TestProcessMonitorProtocol(
         # notification is pending and the notification subsequently
         # fails, the ProcessTerminated is still passed on to the
         # termination deferred.
+        # XXX MichaelHudson 2008-04-02: The notification failure will be
+        # log.err()ed, which cannot be tested until we upgrade Twisted.
         deferred = defer.Deferred()
         self.protocol.runNotification(lambda : deferred)
         self.simulateProcessExit(clean=False)
@@ -223,6 +230,8 @@ class TestProcessMonitorProtocol(
         # If unexpectedError is called while a notification is pending and the
         # notification subsequently fails, the first failure "wins" and is
         # passed on to the termination deferred.
+        # XXX MichaelHudson 2008-04-02: The discarded failure will be
+        # log.err()ed, which cannot be tested until we upgrade Twisted.
         deferred = defer.Deferred()
         self.protocol.runNotification(lambda : deferred)
         self.protocol.unexpectedError(makeFailure(TypeError))
@@ -233,12 +242,14 @@ class TestProcessMonitorProtocol(
 
 class TestProcessMonitorProtocolWithTimeout(
     ProcessMonitorProtocolTestsMixin, TrialTestCase):
+    """Tests for `ProcessMonitorProtocolWithTimeout`."""
 
     layer = TwistedLayer
 
     timeout = 5
 
     def makeProtocol(self):
+        """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
         return ProcessMonitorProtocolWithTimeout(
             self.termination_deferred, self.timeout, self.clock)
 
@@ -254,7 +265,7 @@ class TestProcessMonitorProtocolWithTimeout(
         self.clock.advance(self.timeout - 1)
         self.protocol.resetTimeout()
         self.clock.advance(2)
-        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+        self.simulateProcessExit()
         return self.termination_deferred
 
     def test_processExitingResetsTimeout(self):

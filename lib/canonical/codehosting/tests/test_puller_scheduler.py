@@ -237,7 +237,6 @@ class TestPullerMasterProtocol(ProcessMonitorProtocolTestsMixin, TrialTestCase):
         """If the process prints to stderr, then the Deferred fires an
         errback, even if it terminated successfully.
         """
-
         def check_failure(failure):
             failure.trap(Exception)
             self.assertEqual('error message', failure.error)
