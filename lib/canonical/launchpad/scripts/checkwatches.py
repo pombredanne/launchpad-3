@@ -13,7 +13,6 @@ import sys
 import pytz
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
