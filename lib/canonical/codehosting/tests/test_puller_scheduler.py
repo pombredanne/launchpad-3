@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702,W0222
 
 __metaclass__ = type
@@ -26,7 +26,8 @@ from canonical.codehosting.puller.worker import (
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.testing import (
+    reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.launchpad.webapp import errorlog
 
 
@@ -120,6 +121,21 @@ class TestJobScheduler(unittest.TestCase):
 
 class ProcessMonitorProtocolTestsMixin:
 
+    class StubPullerListener:
+        """Stub listener object that records calls."""
+
+        def __init__(self):
+            self.calls = []
+
+        def startMirroring(self):
+            self.calls.append('startMirroring')
+
+        def mirrorSucceeded(self, last_revision):
+            self.calls.append(('mirrorSucceeded', last_revision))
+
+        def mirrorFailed(self, message, oops):
+            self.calls.append(('mirrorFailed', message, oops))
+
     class StubTransport:
         """Stub transport that implements the minimum for a ProcessProtocol.
 
@@ -168,6 +184,8 @@ class ProcessMonitorProtocolTestsMixin:
 
 class TestProcessMonitorProtocol(
     ProcessMonitorProtocolTestsMixin, TrialTestCase):
+
+    layer = TwistedLayer
 
     def makeProtocol(self):
         return scheduler.ProcessMonitorProtocol(
@@ -314,6 +332,8 @@ class TestProcessMonitorProtocol(
 class TestProcessMonitorProtocolWithTimeout(
     ProcessMonitorProtocolTestsMixin, TrialTestCase):
 
+    layer = TwistedLayer
+
     timeout = 5
 
     def makeProtocol(self):
@@ -348,6 +368,8 @@ class TestProcessMonitorProtocolWithTimeout(
 
 class TestPullerMasterProtocol(ProcessMonitorProtocolTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
+
+    layer = TwistedLayer
 
     class StubPullerListener:
         """Stub listener object that records calls."""
@@ -550,6 +572,8 @@ class TestPullerMasterProtocol(ProcessMonitorProtocolTestsMixin, TrialTestCase):
 
 class TestPullerMaster(TrialTestCase):
 
+    layer = TwistedLayer
+
     def setUp(self):
         self.status_client = FakeBranchStatusClient()
         self.arbitrary_branch_id = 1
@@ -619,6 +643,8 @@ class TestPullerMaster(TrialTestCase):
 
 
 class TestPullerMasterSpawning(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         from twisted.internet import reactor
@@ -705,7 +731,7 @@ protocol = PullerWorkerProtocol(sys.stdout)
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = LaunchpadScriptLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         BranchTestCase.setUp(self)
