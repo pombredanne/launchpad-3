@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""XXX."""
+""""""
 
 __metaclass__ = type
 __all__ = ['ProcessMonitorProtocol', 'ProcessMonitorProtocolWithTimeout']
@@ -9,7 +9,7 @@ __all__ = ['ProcessMonitorProtocol', 'ProcessMonitorProtocolWithTimeout']
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.policies import TimeoutMixin
-from twisted.python import failure
+from twisted.python import failure, log
 
 
 class ProcessMonitorProtocol(ProcessProtocol):
@@ -19,8 +19,8 @@ class ProcessMonitorProtocol(ProcessProtocol):
     report on what it is doing to some other entity: maybe it's a multistep
     task and you want to update a row in a database to reflect which step it
     is currently on.  This class provides a runNotification() method that
-    helps with this.  It takes a callable that performs this notfication,
-    maybe returning a deferred.
+    helps with this, taking a callable that performs this notfication, maybe
+    returning a deferred.
 
     Design decisions:
 
@@ -31,9 +31,11 @@ class ProcessMonitorProtocol(ProcessProtocol):
      - A notification failing is treated as a fatal error: the subprocess is
        killed and the 'termination deferred' fired.
 
-     - If a notification fails and the subprocess exits with a non-zero exit
-       code, there are two failures that could be reported.  Currently, the
-       notification failure 'wins'.
+     - Because there are multiple things that can go wrong more-or-less at
+       once (the process can exit with an error condition at the same time as
+       unexpectedError is called for some reason), we take the policy of
+       reporting the first thing that we notice going wrong to the termination
+       deferred and log.err()ing the others.
 
      - The deferred passed into the constructor will not be fired until the
        subprocess has exited and all pending notifications have completed.
@@ -95,8 +97,13 @@ class ProcessMonitorProtocol(ProcessProtocol):
         This method sends SIGINT to the subprocess and schedules a SIGKILL for
         five seconds time in case the SIGINT doesn't kill the process.
         """
-        if self._termination_failure is None:
-            self._termination_failure = failure
+        if self._termination_failure is not None:
+            log.msg(
+                "unexpectedError called for second time, dropping error:",
+                isError=True)
+            log.err(failure)
+            return
+        self._termination_failure = failure
         try:
             self.transport.signalProcess('INT')
         except error.ProcessExitedAlready:
@@ -122,21 +129,27 @@ class ProcessMonitorProtocol(ProcessProtocol):
     def processEnded(self, reason):
         """See `ProcessProtocol.processEnded`.
 
-        Fires the termination deferred with reason or, if the process died
-        because we killed it, why we killed it.
+        Fires the termination deferred with reason or, if something more
+        exciting has already gone wrong, what that is.
         """
         ProcessProtocol.processEnded(self, reason)
         if self._sigkill_delayed_call is not None:
             self._sigkill_delayed_call.cancel()
             self._sigkill_delayed_call = None
 
+        if not reason.check(error.ProcessDone):
+            if self._termination_failure is None:
+                self._termination_failure = reason
+            # else:
+            #     We _could_ log.err(reason) here, but the process is almost
+            #     certainly dying because of the zap we gave it in
+            #     unexpectedError, so we don't.
+
         def fire_final_deferred():
-            if self._termination_failure is not None:
-                self._deferred.errback(self._termination_failure)
-            elif reason.check(error.ProcessDone):
-                self._deferred.callback(None)
-            else:
-                self._deferred.errback(reason)
+            # We defer reading _termination_failure off self until we have the
+            # lock in case there is a pending notification that fails and so
+            # sets _termination_failure to something interesting.
+            self._deferred.callback(self._termination_failure)
 
         self._notification_lock.run(fire_final_deferred)
 

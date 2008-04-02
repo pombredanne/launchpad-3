@@ -83,6 +83,7 @@ class ProcessMonitorProtocolTestsMixin:
             self.protocol, self.clock)
         self.protocol.connectionMade()
 
+
 class TestProcessMonitorProtocol(
     ProcessMonitorProtocolTestsMixin, TrialTestCase):
 
@@ -207,16 +208,16 @@ class TestProcessMonitorProtocol(
             self.termination_deferred, RuntimeError)
 
     def test_uncleanExitAndPendingNotificationFails(self):
-        # If the process exits with a non-zero exit code while a notification
-        # is pending and the notification subsequently fails, the
-        # notification's failure is passed on to the termination deferred,
-        # rather than the ProcessTerminated.
+        # If the process exits with a non-zero exit code while a
+        # notification is pending and the notification subsequently
+        # fails, the ProcessTerminated is still passed on to the
+        # termination deferred.
         deferred = defer.Deferred()
         self.protocol.runNotification(lambda : deferred)
         self.simulateProcessExit(clean=False)
         deferred.errback(makeFailure(RuntimeError))
         return self.assertFailure(
-            self.termination_deferred, RuntimeError)
+            self.termination_deferred, error.ProcessTerminated)
 
     def test_unexpectedErrorAndNotificationFailure(self):
         # If unexpectedError is called while a notification is pending and the
