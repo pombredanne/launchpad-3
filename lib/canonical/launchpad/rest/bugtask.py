@@ -110,25 +110,29 @@ class BugTaskEntry(Entry):
         """Perform a simple name mapping."""
         return self.context.datecreated
 
+
 class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
     """An operation that modifies a bug task's status.
 
-    Note for future: to implement this without creating a custom
-    operation, handle a write to the bug task's 'status' attribute by
-    calling transitionToStatus().
+    XXX leonardr 2008-04-01 bug=210265:
+    To implement this without creating a custom operation, call
+    transitionToStatus() when the client writes to the bug task's
+    'status' attribute.
     """
 
-    params = [ Choice(__name__='status', vocabulary=BugTaskStatus) ]
+    params = (Choice(__name__='status', vocabulary=BugTaskStatus),)
 
     def call(self, status):
         """Execute the operation.
 
         :param status: A DBItem from BugTaskStatus
+        :return: An error message or the empty string.
         """
         user = getUtility(ILaunchBag).user
         try:
             self.context.transitionToStatus(status, user)
         except AssertionError, error:
+            # XXX leonardr 2008-04-01 bug=210381
             # An AssertionArror might mean that the person isn't
             # authenticated as someone who can make the transition
             # (status code 401) or that there's no such status (status

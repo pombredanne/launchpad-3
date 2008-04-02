@@ -18,7 +18,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
     IAnnouncementSet, IDistribution, IHasAnnouncements, IProduct, IProject)
 from canonical.launchpad.interfaces import IFeedsApplication
@@ -71,15 +71,20 @@ class AnnouncementsFeedBase(FeedBase):
         # updated, and published.  For some data, the created and published
         # dates will be the same.  The announcements also only have a singe
         # author.
-        entry = FeedEntry(title=title,
-                          link_alternate=entry_link_alternate,
-                          date_created=announcement.date_created,
-                          date_updated=announcement.date_updated,
-                          date_published=announcement.date_announced,
-                          authors=[FeedPerson(
-                                    announcement.registrant,
-                                    rootsite="mainsite")],
-                          content=content)
+
+        entry_id = 'tag:launchpad.net,%s:/+announcement/%d' % (
+            announcement.date_created.date().isoformat(),
+            announcement.id)
+        entry = FeedEntry(
+            title=title,
+            link_alternate=entry_link_alternate,
+            date_created=announcement.date_created,
+            date_updated=announcement.date_updated,
+            date_published=announcement.date_announced,
+            authors=[FeedPerson(announcement.registrant,
+                                rootsite="mainsite")],
+            content=content,
+            id_=entry_id)
         return entry
 
     def _entryTitle(self, announcement):
@@ -102,8 +107,11 @@ class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):
     # launchpad/zcml/feeds.zcml.
     usedfor = IFeedsApplication
 
-    def getItems(self):
-        """See `IFeed`."""
+    def _getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         # Return a list of items that will be the entries in the feed.  Each
         # item shall be an instance of `IFeedEntry`.
 
@@ -151,8 +159,11 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
     # This view is used for any class implementing `IHasAnnouncments`.
     usedfor = IHasAnnouncements
 
-    def getItems(self):
-        """See `IFeed`."""
+    def _getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         # The quantity is defined in FeedBase or config file.
         items = self.context.announcements(limit=self.quantity)
         # Convert the items into their feed entry representation.

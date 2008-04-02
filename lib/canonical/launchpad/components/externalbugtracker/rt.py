@@ -8,7 +8,7 @@ __all__ = ['RequestTracker']
 import email
 import urllib
 import urllib2
-import urlparse
+
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
@@ -16,6 +16,7 @@ from canonical.launchpad.components.externalbugtracker import (
     InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.webapp.url import urlparse
 
 
 class RequestTracker(ExternalBugTracker):
@@ -25,6 +26,11 @@ class RequestTracker(ExternalBugTracker):
     batch_url = 'REST/1.0/search/ticket/'
     batch_query_threshold = 1
 
+    credentials_map = {
+        'rt.cpan.org': {
+            'user': 'launchpad@launchpad.net',
+            'pass': 'th4t3'}}
+
     @property
     def credentials(self):
         """Return the authentication credentials needed to log in.
@@ -33,13 +39,9 @@ class RequestTracker(ExternalBugTracker):
         these will be returned. Otherwise the RT default guest
         credentials (username and password of 'guest') will be returned.
         """
-        credentials_map = {
-            'rt.cpan.org': {'user': 'launchpad@launchpad.net',
-                            'pass': 'th4t3'}}
-
         hostname = urlparse(self.baseurl)[1]
         try:
-            return credentials_map[hostname]
+            return self.credentials_map[hostname]
         except KeyError:
             return {'user': 'guest', 'pass': 'guest'}
 

@@ -71,12 +71,13 @@ class PersonEntry(Entry):
 class GetMembersByStatusOperation(ResourceGETOperation):
     """An operation that retrieves team members with the given status.
 
-    Note for future: to implement this without creating a custom
-    operation, expose a 'status' filter on a collection of team
-    memberships or team members.
+    XXX leonardr 2008-04-01 bug=210265:
+    To implement this without creating a custom operation, expose a
+    'status' filter on a collection of team memberships or team
+    members.
     """
 
-    params = [ Choice(__name__='status', vocabulary=TeamMembershipStatus) ]
+    params = (Choice(__name__='status', vocabulary=TeamMembershipStatus),)
 
     def call(self, status):
         """Execute the operation.
@@ -108,11 +109,12 @@ class GetPeopleOperation(ResourceGETOperation):
     want to expose it, we must write code that maps some subset of
     the web service schema to the database schema.
 
-    Note for future: to implement this without creating a custom
-    operation, expose a 'status' filter on the collection of people.
+    XXX leonardr 2008-04-01 bug=210265:
+    To implement this without creating a custom operation, expose a
+    'status' filter on the collection of people.
     """
 
-    params = [ TextLine(__name__='text') ]
+    params = (TextLine(__name__='text'),)
 
     def call(self, text):
         """Execute the operation.
@@ -125,19 +127,33 @@ class GetPeopleOperation(ResourceGETOperation):
 class PersonFactoryOperation(ResourcePOSTOperation):
     """An operation that creates a new person.
 
-    Note for future: to implement this without creating a custom
-    operation, define a standard factory method for PersonCollection.
+    XXX leonardr 2008-04-01 bug=210265:
+    To implement this without creating a custom operation, define a
+    standard factory method for PersonCollection.
     """
 
-    params = [ TextLine(__name__='email_address', required=True),
-               TextLine(__name__='comment', required=False),
-               TextLine(__name__='name', required=False),
-               TextLine(__name__='display_name', required=False),
-               TextLine(__name__='password', required=False) ]
+    params = (
+        TextLine(__name__='email_address', required=True),
+        TextLine(__name__='comment', required=False),
+        TextLine(__name__='name', required=False),
+        TextLine(__name__='display_name', required=False),
+        TextLine(__name__='password', required=False),
+        )
 
     def call(self, email_address, comment, name,
              display_name, password):
-        "Execute the operation."
+        """Execute the operation.
+
+        :param email_address: An email address for the new person.
+        :param comment: Comment on the person's creation. Must be of
+           the following form: "when %(action_details)s" (e.g. "when
+           the foo package was imported into Ubuntu Breezy").
+        :param name: The person's Launchpad name.
+        :param display_name: The person's display name.
+        :param password: The person's password.
+
+        :return: The empty string.
+        """
         user = getUtility(ILaunchBag).user
         try:
             person, emailaddress = self.context.createPersonAndEmail(
@@ -146,8 +162,9 @@ class PersonFactoryOperation(ResourcePOSTOperation):
                 comment, name, display_name, password, registrant=user)
         except EmailAddressAlreadyTaken:
             self.request.response.setStatus(409) # Conflict
-            return "The email addres '%s' is already in use." % email_address
+            return "The email address '%s' is already in use." % email_address
         if person is None:
+            # XXX leonardr 2008-04-01 bug=210389
             # Unfortunately we don't know why person creation failed,
             # only that it did fail.
             self.request.response.setStatus(400)

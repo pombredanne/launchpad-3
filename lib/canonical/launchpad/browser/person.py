@@ -1646,10 +1646,15 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
-        """Return the open bugs related to a person."""
+    def search(self, extra_params=None):
+        """Return the open bugs related to a person.
+
+        :param extra_params: A dict that provides search params added to
+            the search criteria taken from the request. Params in
+            `extra_params` take precedence over request params.
+        """
         context = self.context
-        params = self.buildSearchParams()
+        params = self.buildSearchParams(extra_params=extra_params)
         subscriber_params = copy.copy(params)
         subscriber_params.subscriber = context
         assignee_params = copy.copy(params)

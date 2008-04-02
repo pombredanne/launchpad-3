@@ -92,7 +92,7 @@ ucci\u00F3n
             '''
 
         property_file = PropertyFile('test.properties', dedent(content))
-        expected = {u'default-first-title-mac': u'Foo bar comment.',
+        expected = {u'default-first-title-mac': u'Foo bar comment.\n',
                     u'foo': None}
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
@@ -110,11 +110,12 @@ ucci\u00F3n
 
         property_file = PropertyFile('test.properties', dedent(content))
         expected_comments = {
-            u'default-first-title-mac': u'Foo bar comment.',
-            u'foo': u'Something'
+            u'default-first-title-mac': u'Foo bar comment.\n',
+            u'foo': u'Something\n'
             }
-        parsed_comments = dict([(message.msgid_singular, message.source_comment)
-                   for message in property_file.messages])
+        parsed_comments = dict(
+            [(message.msgid_singular, message.source_comment)
+             for message in property_file.messages])
 
         self.assertEquals(expected_comments, parsed_comments)
 
@@ -148,12 +149,12 @@ ucci\u00F3n
 
         property_file = PropertyFile('test.properties', dedent(content))
         expected = {
-            u'default-first-title-mac': u' single line comment ',
-            u'foo': u" Multi line comment\n   yeah, it's multiple! ",
+            u'default-first-title-mac': u' single line comment \n',
+            u'foo': u" Multi line comment\n   yeah, it's multiple! \n",
             u'long_comment': (
                 u' Even with nested comment tags, we handle this as' +
                 u' multiline comment:\n# fooo\nfoos = bar\n' +
-                u'something = else // Comment me!')
+                u'something = else // Comment me!\n')
             }
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
@@ -171,7 +172,7 @@ ucci\u00F3n
             '''
 
         property_file = PropertyFile('test.properties', dedent(content))
-        expected = {u'default-first-title-mac': u'Foo bar comment.',
+        expected = {u'default-first-title-mac': u'Foo bar comment.\n',
                     u'foo': None}
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])

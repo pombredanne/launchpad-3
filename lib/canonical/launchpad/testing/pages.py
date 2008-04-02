@@ -123,6 +123,13 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers)
 
+    def named_post(self, path, operation_name, headers, **kwargs):
+        kwargs['ws_op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, value)
+                         for key, value in kwargs.items()])
+        return self.post(path, 'application/x-www-form-urlencoded', data,
+                         headers)
+
     def patch(self, path, media_type, data, headers=None):
         """Make a PATCH request."""
         return self._make_request_with_entity_body(
