@@ -24,7 +24,7 @@ class UpperBatchNavigationView(LaunchpadView):
 
 
 class LowerBatchNavigationView(LaunchpadView):
-    """Render the bottom navigation links only if there are multiple batches."""
+    """Only render bottom navigation links if there are multiple batches."""
 
     def render(self):
         if (self.context.currentBatch() and
@@ -95,7 +95,8 @@ class BatchNavigator:
                                     strict_parsing=False)
         return urllib.urlencode(
             [(key, value) for (key, value) in query_parts
-             if key not in [self.start_variable_name, self.batch_variable_name]])
+             if key not in [self.start_variable_name,
+                            self.batch_variable_name]])
 
     def generateBatchURL(self, batch):
         url = ""
