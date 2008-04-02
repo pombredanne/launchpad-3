@@ -1258,13 +1258,8 @@ class POFileToTranslationFileDataAdapter:
 
         for row in rows:
             assert row.pofile == pofile, 'Got a row for a different IPOFile.'
-
-            # Skip messages which are neither in the PO template nor in the PO
-            # file. (Messages which are in the PO template but not in the PO
-            # file are untranslated, and messages which are not in the PO
-            # template but in the PO file are obsolete.)
-            if row.sequence == 0 and not row.is_imported:
-                continue
+            assert row.sequence != 0 or row.is_imported, (
+                "Got uninteresting row.")
 
             # Create new message set
             msgset = TranslationMessageData()

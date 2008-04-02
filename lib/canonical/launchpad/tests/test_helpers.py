@@ -2,13 +2,16 @@
 
 import unittest
 
+from canonical.testing import LaunchpadFunctionalLayer
 from zope.testing.doctest import DocTestSuite
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
 
 from canonical.launchpad import helpers
+from canonical.launchpad.ftests import login
 from canonical.launchpad.translationformat import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
+from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
 def make_test_tarball_1():
@@ -91,10 +94,6 @@ def test_shortest():
     ['foo']
     >>> helpers.shortest(['xyzzy', 'foo', 'bar'])
     ['foo', 'bar']
-    """
-
-def test_simple_popen2():
-    r"""
     """
 
 
@@ -228,8 +227,8 @@ class TruncateTextTest(unittest.TestCase):
         self.assertEqual('foo', helpers.truncate_text('foooo', 3))
 
     def test_words_arent_split(self):
-        """When the truncation would leave only half of the last word, then the
-        whole word is removed.
+        """When the truncation would leave only half of the last word, then
+        the whole word is removed.
         """
         self.assertEqual('foo', helpers.truncate_text('foo bar', 5))
 
@@ -239,12 +238,44 @@ class TruncateTextTest(unittest.TestCase):
         self.assertEqual(text, helpers.truncate_text(text, len(text)))
 
 
+class TestEmailPeople(unittest.TestCase):
+    """Tests for emailPeople"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+
+    def test_emailPeopleIndirect(self):
+        """Ensure emailPeople uses indirect memberships."""
+        team_member = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(team_member)
+        super_team = self.factory.makeTeam(team)
+        recipients = helpers.emailPeople(super_team)
+        self.assertEqual(set([team_member]), recipients)
+
+    def test_emailPeopleTeam(self):
+        """Ensure emailPeople uses teams with preferredemail."""
+        team_member = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(
+            team_member, email='team@bar.com', password='password')
+        super_team = self.factory.makeTeam(team)
+        recipients = helpers.emailPeople(super_team)
+        self.assertEqual(set([team]), recipients)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
     suite.addTest(DocTestSuite(helpers))
     suite.addTest(
         unittest.TestLoader().loadTestsFromTestCase(TruncateTextTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(TestEmailPeople))
     return suite
 
 if __name__ == '__main__':

@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0703
+
 """distributionmirror-prober tests."""
 
 __metaclass__ = type
@@ -12,6 +14,7 @@ import unittest
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 
 from sqlobject import SQLObjectNotFound
@@ -22,7 +25,6 @@ from canonical.launchpad.interfaces import PackagePublishingPocket
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroSeries
-from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts import distributionmirror_prober
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
@@ -34,7 +36,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -62,7 +64,9 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class TestProberProtocolAndFactory(TwistedTestCase):
+class TestProberProtocolAndFactory(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.orig_proxy = os.getenv('http_proxy')
@@ -93,6 +97,17 @@ class TestProberProtocolAndFactory(TwistedTestCase):
         self.failUnlessEqual(prober.connect_host, 'squid.internal')
         self.failUnlessEqual(prober.connect_port, 3128)
         self.failUnlessEqual(prober.connect_path, self.urls['200'])
+
+    def test_connect_cancels_existing_timeout_call(self):
+        prober = ProberFactory(self.urls['200'])
+        prober.timeoutCall = reactor.callLater(
+            30, prober.failWithTimeoutError)
+        old_timeout_call = prober.timeoutCall
+        self.failUnless(old_timeout_call.active())
+        prober.connect()
+        self.failIf(old_timeout_call.active())
+        self.failUnless(prober.timeoutCall.active())
+        return prober._deferred
 
     def _test_connect_to_host(self, url, host):
         """Check that a ProberFactory created with the given url will actually
@@ -228,8 +243,10 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
     host = 'foo.bar'
 
     def setUp(self):
-        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
-        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+        self.orig_host_requests = dict(
+            distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(
+            distributionmirror_prober.host_timeouts)
 
     def tearDown(self):
         # Restore the globals that our tests fiddle with.
@@ -295,7 +312,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
         self.failIf(should_skip_host(self.host))
 
 
-class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -306,9 +323,13 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
     actually connect to the server.
     """
 
+    layer = TwistedLayer
+
     def setUp(self):
-        self.orig_host_requests = dict(distributionmirror_prober.host_requests)
-        self.orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
+        self.orig_host_requests = dict(
+            distributionmirror_prober.host_requests)
+        self.orig_host_timeouts = dict(
+            distributionmirror_prober.host_timeouts)
         distributionmirror_prober.host_requests = {}
         distributionmirror_prober.host_timeouts = {}
         root = DistributionMirrorTestHTTPServer()
@@ -406,7 +427,7 @@ class TestMultiLock(unittest.TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_second_lock(self):
-        """MultiLock.run acquires the second lock before running a function."""
+        """MultiLock.run acquires the second lock before running functions."""
         # Keep lock_two busy.
         deferred = defer.Deferred()
         self.lock_two.run(lambda: deferred)
@@ -607,7 +628,8 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
             self.callbacks.deleteMirrorSeries(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
         except Exception, e:
-            self.fail("A bad response code shouldn't be propagated. Got %s" % e)
+            self.fail(
+                "A bad response code shouldn't be propagated. Got %s" % e)
         try:
             self.callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
         except Exception, e:
