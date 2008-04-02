@@ -5,19 +5,20 @@
 __metaclass__ = type
 __all__ = [
     'BugTaskEntry',
+    'ChangeBugTaskStatusOperation',
     'IBugTaskEntry'
 ]
 
 
-from zope.component import adapts
+from zope.component import adapts, getUtility
 from zope.schema import Bool, Choice, Datetime, Object, Text
 
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest import Entry
+from canonical.lazr.rest import Entry, ResourcePOSTOperation
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
-    BugTaskImportance, BugTaskStatus, IBug, IBugTask, IPerson)
+    BugTaskImportance, BugTaskStatus, IBug, IBugTask, ILaunchBag, IPerson)
 from canonical.lazr import decorates
 
 
@@ -109,3 +110,35 @@ class BugTaskEntry(Entry):
         """Perform a simple name mapping."""
         return self.context.datecreated
 
+
+class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
+    """An operation that modifies a bug task's status.
+
+    XXX leonardr 2008-04-01 bug=210265:
+    To implement this without creating a custom operation, call
+    transitionToStatus() when the client writes to the bug task's
+    'status' attribute.
+    """
+
+    params = (Choice(__name__='status', vocabulary=BugTaskStatus),)
+
+    def call(self, status):
+        """Execute the operation.
+
+        :param status: A DBItem from BugTaskStatus
+        :return: An error message or the empty string.
+        """
+        user = getUtility(ILaunchBag).user
+        try:
+            self.context.transitionToStatus(status, user)
+        except AssertionError, error:
+            # XXX leonardr 2008-04-01 bug=210381
+            # An AssertionArror might mean that the person isn't
+            # authenticated as someone who can make the transition
+            # (status code 401) or that there's no such status (status
+            # code 400). The custom operation validation code catches
+            # nonexistent statuses, so we can assume the problem is an
+            # authorization problem.
+            self.request.response.setStatus(401)
+            return str(error)
+        return ''

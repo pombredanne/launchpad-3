@@ -39,9 +39,33 @@
         />
 
     <adapter
+       for="canonical.launchpad.interfaces.IPerson
+            zope.publisher.interfaces.http.IHTTPApplicationRequest"
+       provides="canonical.lazr.interfaces.IResourceGETOperation"
+       factory="canonical.launchpad.rest.GetMembersByStatusOperation"
+       name="members_by_status"
+       />
+
+    <adapter
         for="canonical.launchpad.interfaces.IPersonSet"
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.PersonCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IResourceGETOperation"
+        factory="canonical.launchpad.rest.GetPeopleOperation"
+        name="people"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
+        factory="canonical.launchpad.rest.PersonFactoryOperation"
+        name="create_person"
         />
 
     <adapter
@@ -67,5 +91,13 @@
         provides="canonical.launchpad.rest.IBugTaskEntry"
         factory="canonical.launchpad.rest.BugTaskEntry"
         />
+
+     <adapter
+       for="canonical.launchpad.interfaces.IBugTask
+            zope.publisher.interfaces.http.IHTTPApplicationRequest"
+       provides="canonical.lazr.interfaces.IResourcePOSTOperation"
+       factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
+       name="change_status"
+       />
 
 </configure>

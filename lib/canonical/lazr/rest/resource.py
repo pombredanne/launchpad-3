@@ -18,26 +18,34 @@ __all__ = [
 from datetime import datetime
 import pytz
 import simplejson
+from StringIO import StringIO
+import urllib
+import urlparse
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
-from zope.component import adapts
+from zope.component import adapts, getAdapters, getMultiAdapter
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.proxy import isProxy
-from zope.schema import getFields, ValidationError
+from zope.publisher.interfaces import NotFound
+from zope.schema import ValidationError, getFields
 from zope.schema.interfaces import IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import config
 
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
+from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
-    IServiceRootResource)
+    IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -94,21 +102,146 @@ class HTTPResource:
         """See `IHTTPResource`."""
         pass
 
+    def dereference_url(self, url):
+        """Look up a resource in the web service by URL.
+
+        Representations use URLs to refer to other resources in the
+        web service. When processing an incoming representation it's
+        often necessary to see which object a URL refers to. This
+        method calls the URL traversal code to dereference a URL into
+        a published object.
+
+        :param url: The URL to a resource.
+
+        :raise NotFoundError: If the URL does not designate a
+        published object.
+        """
+        (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
+
+        request_host = self.request.get('HTTP_HOST')
+        if config.vhosts.use_https:
+            site_protocol = 'https'
+        else:
+            site_protocol = 'http'
+
+        if (host != request_host or protocol != site_protocol or
+            query != '' or fragment != ''):
+            raise NotFound(self, url, self.request)
+
+        path_parts = map(urllib.unquote, path.split('/')[1:])
+        path_parts.reverse()
+
+        # Import here is neccessary to avoid circular import.
+        from canonical.launchpad.webapp.servers import WebServiceClientRequest
+        request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
+        setFirstLayer(request, WebServiceLayer)
+        request.setTraversalStack(path_parts)
+
+        publication = self.request.publication
+        request.setPublication(publication)
+        return request.traverse(publication.getApplication(self.request))
+
+    def implementsPOST(self):
+        """Returns True if this resource will respond to POST.
+
+        Right now this means the resource has defined one or more
+        custom POST operations.
+        """
+        adapters = getAdapters((self.context, self.request),
+                               IResourcePOSTOperation)
+        return len(adapters) > 0
+
+
+class CustomOperationResourceMixin:
+
+    """A mixin for resources that implement a collection-entry pattern."""
+
+    def handleCustomGET(self, operation_name):
+        """Execute a custom search-type operation triggered through GET.
+
+        This is used by both EntryResource and CollectionResource.
+
+        :param operation_name: The name of the operation to invoke.
+        :return: The result of the operation: either a string or an
+        object that needs to be serialized to JSON.
+        """
+        operation = getMultiAdapter((self.context, self.request),
+                                    IResourceGETOperation,
+                                    name=operation_name)
+        return self._processCustomOperationResult(operation())
+
+    def handleCustomPOST(self, operation_name):
+        """Execute a custom write-type operation triggered through POST.
+
+        This is used by both EntryResource and CollectionResource.
+
+        :param operation_name: The name of the operation to invoke.
+        :return: The result of the operation: either a string or an
+        object that needs to be serialized to JSON.
+        """
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourcePOSTOperation,
+                                        name=operation_name)
+        except ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
+        return self._processCustomOperationResult(operation())
+
+    def do_POST(self):
+        """Invoke a custom operation.
+
+        XXX leonardr 2008-04-01 bug=210265:
+        The standard meaning of POST (ie. when no custom operation is
+        specified) is "create a new subordinate resource."  Code
+        should eventually go into CollectionResource that implements
+        POST to create a new entry inside the collection.
+        """
+        operation_name = self.request.form.get('ws_op')
+        if operation_name is None:
+            self.request.response.setStatus(400)
+            return "No operation name given."
+        del self.request.form['ws_op']
+        return self.handleCustomPOST(operation_name)
+
+    def _processCustomOperationResult(self, result):
+        """Process the result of a custom operation."""
+        if isinstance(result, basestring):
+            # The operation took care of everything and just needs
+            # this string served to the client.
+            return result
+
+        # The operation returned a collection or entry. It will be
+        # serialized to JSON.
+        try:
+            iterator = iter(result)
+        except TypeError:
+            # Result is a single entry
+            return EntryResource(result, self.request)
+        return [EntryResource(entry, self.request) for entry in iterator]
+
 
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
     def __call__(self):
-        """Handle a GET request."""
+        """Handle a GET or (if implemented) POST request."""
         if self.request.method == "GET":
             return self.do_GET()
+        elif self.request.method == "POST" and self.implementsPOST():
+            return self.do_POST()
         else:
+            if self.implementsPOST():
+                allow_string = "GET POST"
+            else:
+                allow_string = "GET"
             self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", "GET")
+            self.request.response.setHeader("Allow", allow_string)
 
 
 class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
+
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
         if self.request.method == "GET":
@@ -120,12 +253,18 @@ class ReadWriteResource(HTTPResource):
                 return self.do_PUT(type, representation)
             else:
                 return self.do_PATCH(type, representation)
+        elif self.request.method == "POST" and self.implementsPOST():
+            return self.do_POST()
         else:
+            if self.implementsPOST():
+                allow_string = "GET POST PUT PATCH"
+            else:
+                allow_string = "GET PUT PATCH"
             self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", "GET PUT PATCH")
+            self.request.response.setHeader("Allow", allow_string)
 
 
-class EntryResource(ReadWriteResource):
+class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
@@ -181,7 +320,7 @@ class EntryResource(ReadWriteResource):
             self.request.response.setStatus(415)
             return None, 'Expected a media type of application/json.'
         try:
-            h = simplejson.loads(representation)
+            h = simplejson.loads(unicode(representation))
         except ValueError:
             self.request.response.setStatus(400)
             return None, "Entity-body was not a well-formed JSON document."
@@ -192,8 +331,22 @@ class EntryResource(ReadWriteResource):
 
     def do_GET(self):
         """Render the entry as JSON."""
+        # Handle a custom operation, probably a search.
+        operation_name = self.request.form.pop('ws_op', None)
+        if operation_name is not None:
+            result = self.handleCustomGET(operation_name)
+            if isinstance(result, basestring):
+                # The custom operation took care of everything and
+                # just needs this string served to the client.
+                return result
+        else:
+            # No custom operation was specified. Implement a standard GET,
+            # which serves a JSON representation of the entry.
+            result = self
+
+        # Serialize the result to JSON.
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+        return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
     def do_PUT(self, media_type, representation):
         """Modify the entry's state to match the given representation.
@@ -287,12 +440,26 @@ class EntryResource(ReadWriteResource):
                         % repr_name)
 
             # Around this point the specific value provided by the client
-            # becomes relevant, so we pre-process it.
-            if IObject.providedBy(element):
-                # XXX leonardr 2008-03-10 blueprint=modify-data-links:
-                # 'value' is the URL to an object. Traverse the URL to find
-                # the actual object.
-                pass
+            # becomes relevant, so we pre-process it if necessary.
+            if (IObject.providedBy(element)
+                and not ICollectionField.providedBy(element)):
+                # 'value' is the URL to an object. Dereference the URL
+                # to find the actual object.
+                try:
+                    value = self.dereference_url(value)
+                except NotFound:
+                    self.request.response.setStatus(400)
+                    return ("Your value for the attribute '%s' wasn't "
+                            "the URL to any object published by this web "
+                            "service." % repr_name)
+                underlying_object = removeSecurityProxy(value)
+                value = underlying_object.context
+                # The URL points to an object, but is it an object of the
+                # right type?
+                if not element.schema.providedBy(value):
+                    self.request.response.setStatus(400)
+                    return ("Your value for the attribute '%s' doesn't "
+                            "point to the right kind of object." % repr_name)
             elif IDatetime.providedBy(element):
                 try:
                     value = DateTimeParser().parse(value)
@@ -315,8 +482,8 @@ class EntryResource(ReadWriteResource):
 
             # The current value of the attribute also becomes
             # relevant, so we obtain that. If the attribute designates
-            # an entry or collection, the 'current value' is
-            # considered to be the URL to that entry or collection.
+            # a collection, the 'current value' is considered to be
+            # the URL to that entry or collection.
             if ICollectionField.providedBy(element):
                 current_value = "%s/%s" % (
                     canonical_url(self.context), name)
@@ -345,13 +512,17 @@ class EntryResource(ReadWriteResource):
                             % repr_name)
 
             if change_this_field is True and value != current_value:
-                try:
-                    # Do any field-specific validation.
-                    field = element.bind(self.entry)
-                    field.validate(value)
-                except ValidationError, e:
-                    self.request.response.setStatus(400)
-                    return str(e)
+                if not IObject.providedBy(element):
+                    try:
+                        # Do any field-specific validation.
+                        field = element.bind(self.context)
+                        field.validate(value)
+                    except ValidationError, e:
+                        self.request.response.setStatus(400)
+                        error = str(e)
+                        if error == "":
+                            error = "Validation error"
+                        return error
                 validated_changeset[name] = value
 
         # Store the entry's current URL so we can see if it changes.
@@ -368,19 +539,36 @@ class EntryResource(ReadWriteResource):
             self.request.response.setHeader('Location', new_url)
         return ''
 
-class CollectionResource(ReadOnlyResource):
+
+class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
+    def __init__(self, context, request):
+        """Associate this resource with a specific object and request."""
+        super(CollectionResource, self).__init__(context, request)
+        self.collection = ICollection(context)
+
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entries = ICollection(self.context).find()
-        if entries is None:
-            entries = []
-        entry_resources = [EntryResource(entry, self.request)
-                           for entry in entries]
+        # Handle a custom operation, probably a search.
+        operation_name = self.request.form.pop('ws_op', None)
+        if operation_name is not None:
+            result = self.handleCustomGET(operation_name)
+            if isinstance(result, str) or isinstance(result, unicode):
+                # The custom operation took care of everything and
+                # just needs this string served to the client.
+                return result
+        else:
+            # No custom operation was specified. Implement a standard GET,
+            # which retrieves the items in the collection.
+            entries = self.collection.find()
+            if entries is None:
+                raise NotFound(self, self.collection_name)
+            result = [EntryResource(entry, self.request) for entry in entries]
+
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
+        return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
 
 class ServiceRootResource:
