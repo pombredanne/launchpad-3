@@ -66,15 +66,24 @@ for jobs that are still in the build queue.
     >>> build_details = extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'build-details'))
     >>> print_text(build_details)
-    Changes file: not available
-    Archive: ubuntu archive
-    Component: main
-    Status: Needs building
-    Queued: 2006-02-14
-    Estimated build start: Not available
-    Build score: 10
-    Build log: not available
-    Finished: not available
+    Changes file:
+    not available
+    Archive:
+    ubuntu archive
+    Component:
+    main
+    Status:
+    Needs building
+    Queued:
+    2006-02-14
+    Estimated build start:
+    not available
+    Build score:
+    10
+    Build log:
+    not available
+    Finished:
+    not available
 
 == Build Retrying ==
 

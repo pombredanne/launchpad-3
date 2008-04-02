@@ -83,7 +83,7 @@
             condition="context/buildstate/enumvalue:NEEDSBUILD">
 
             <tr
-              define="estimated_buildstart context/getEstimatedBuildStartTime">
+              tal:define="estimated_buildstart context/getEstimatedBuildStartTime">
               <th>Estimated build start:</th>
               <td tal:condition="estimated_buildstart"
                   tal:content="estimated_buildstart/fmt:approximatedate">
