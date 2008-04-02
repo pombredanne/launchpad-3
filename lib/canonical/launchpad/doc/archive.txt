@@ -817,7 +817,7 @@ allowing them.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
-Since the 'dependency' property only return explicitly recorded
+Since the 'dependency' property only returns explicitly recorded
 archive dependencies and we usually need the expanded list when
 inspecting the build domain we have also implemented the
 'expanded_archive_dependencies' property. It returns implicit
@@ -857,13 +857,13 @@ candidate by its name, via the `PublishedPackage` table:
 Since 'python2.4' isn't available in our sampledata (not even
 published), None is returned:
 
-    >>> ubuntu.main_archive.findDepCandidateByName(
-    ...     warty_i386, "python2.4") is None
-    True
+    >>> print ubuntu.main_archive.findDepCandidateByName(
+    ...     warty_i386, "python2.4")
+    None
 
-    >>> cprov.archive.findDepCandidateByName(
-    ...     warty_i386, "python2.4") is None
-    True
+    >>> print cprov.archive.findDepCandidateByName(
+    ...     warty_i386, "python2.4")
+    None
 
 This method is aware of the archive dependency tree. So, even when a
 package is not published on the context PPA but is available somewhere

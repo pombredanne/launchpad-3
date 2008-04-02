@@ -3,7 +3,6 @@
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> from canonical.launchpad.interfaces import (
-   ...    IDistroArchSeriesBinaryPackageRelease,
    ...    IDistroArchSeriesBinaryPackage,
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
@@ -131,8 +130,7 @@ publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingPocket,
-    ...    PackagePublishingStatus)
+    ...    IDistributionSet, IPersonSet, PackagePublishingPocket)
     >>> from canonical.launchpad.database.publishing import (
     ...     SecureBinaryPackagePublishingHistory)
 
