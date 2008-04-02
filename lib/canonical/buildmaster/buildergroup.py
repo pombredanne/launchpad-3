@@ -23,8 +23,8 @@ from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
-    BuildDaemonError, BuildStatus, IBuildQueueSet, BuildJobMismatch, IBuildSet,
-    IBuilderSet, NotFoundError, pocketsuffix
+    ArchivePurpose, BuildDaemonError, BuildStatus, IBuildQueueSet,
+    BuildJobMismatch, IBuildSet, IBuilderSet, NotFoundError, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
@@ -297,12 +297,12 @@ class BuilderGroup:
         upload_dir = os.path.join(incoming, upload_leaf)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
 
-        # build the right UPLOAD_PATH so the distribution and archive
+        # Build the right UPLOAD_PATH so the distribution and archive
         # can be correctly found during the upload:
-        #  * For trusted:        <distribution>/[FILES]
-        #  * For PPA(untrusted): ~<person>/<distribution>/[FILES]
+        #  * For non-PPA: <distribution>/[FILES]
+        #  * For PPA:     ~<person>/<distribution>/[FILES]
         distribution_name = queueItem.build.distribution.name
-        if queueItem.is_trusted:
+        if queueItem.build.archive.purpose != ArchivePurpose.PPA:
             target_path = "%s" % distribution_name
         else:
             archive = queueItem.build.archive

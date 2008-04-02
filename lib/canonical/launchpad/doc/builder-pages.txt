@@ -18,7 +18,6 @@ Let's instantiate the view for +index:
     >>> builder_view.now()
     '...'
 
-
 == Builder history ==
 
 Let's instantiate a view for +history:
@@ -137,6 +136,7 @@ where builder 'Frog' is building a job from Celso's private PPA.
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.private = True
+    >>> cprov.archive.buildd_secret = "secret"
 
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
@@ -144,7 +144,27 @@ where builder 'Frog' is building a job from Celso's private PPA.
     >>> random_build = 2
     >>> cprov_builds = getUtility(
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
-    >>> private_job = BuildQueue(build=cprov_builds[random_build], builder=frog)
+    >>> private_job = BuildQueue(
+    ...     build=cprov_builds[random_build], builder=frog)
+
+Finally, we will remove any publications of the source behind our
+build of interest that are not in cprov's archive, so that we know
+we're dealing with a single private source publication.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> random_spr = cprov_builds[random_build].sourcepackagerelease
+    >>> non_cprov_publications = [
+    ...     pub for pub in random_spr.publishings 
+    ...     if pub.archive != cprov.archive]
+    >>> for pub in non_cprov_publications:
+    ...     discard = pub.supersede()
+
+flush_database_caches seems to be required because random_spr.publishings
+is an SQLObject MultipleJoin.
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
 
 At the content class level, all the information about the current job
 is widely available:
@@ -230,3 +250,176 @@ again.
     >>> print nopriv_view.context.status
     IDLE (AUTO)
 
+    >>> login(ANONYMOUS)
+
+
+== BuilderSet view ==
+
+BuilderSetView offer a way to treat the currently registered builders
+in categories. They are:
+
+ * 'Building other packages': a group of builders capable of building
+   'trusted' sources, ubuntu official packages. The 'non-vitualized'
+   build-farm.
+
+ * 'Building PPP packages': a group of builders capable of building
+   'untrusted' sources, PPA packages. The 'virtualized' build-farm.
+
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> builderset = getUtility(IBuilderSet)
+
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
+
+In order to have a proper dataset for the tests we will populate the
+builder table with several builders for different categories and
+architectures.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> from canonical.launchpad.database.processor import Processor
+    >>> i386 = Processor.selectOneBy(name='386')
+    >>> amd64 = Processor.selectOneBy(name='amd64')
+    >>> hppa = Processor.selectOneBy(name='hppa')
+
+    >>> a_builder = builderset.new(
+    ...     i386, url='http://hamburger', name="hamburger",
+    ...     title="The Hamburger Builder", description="Uhmmm", owner=cprov,
+    ...     virtualized=True)
+
+    >>> a_builder = builderset.new(
+    ...     hppa, url='http://cheese', name="cheese",
+    ...     title="The Cheese Builder", description="Uhmmm", owner=cprov,
+    ...     virtualized=True)
+
+    >>> a_builder = builderset.new(
+    ...     amd64, url='http://bacon', name="bacon",
+    ...     title="The Bacon Builder", description="Uhmmm", owner=cprov,
+    ...     virtualized=True)
+
+    >>> a_builder = builderset.new(
+    ...     i386, url='http://egg', name="egg",
+    ...     title="The Egg Builder", description="Uhmmm", owner=cprov,
+    ...     virtualized=False)
+
+    >>> a_builder = builderset.new(
+    ...     hppa, url='http://ham', name="ham",
+    ...     title="The Ham Builder", description="Uhmmm", owner=cprov,
+    ...     virtualized=False)
+
+    >>> a_builder = builderset.new(
+    ...     amd64, url='http://prosciuto', name="prosciuto",
+    ...     title="The Prosciuto Builder", description="Uhmmm", owner=cprov,
+    ...     virtualized=False)
+
+The 'Other' builder category is a `BuilderCategory` class, which
+contains the following attributes:
+
+ * title: the title that will be presented for this category in the UI;
+
+ * virtualized: wheter the category represents the virtualized or
+   non-virtualized build-farm;
+
+ * groups: a property that return all `BuilderGroup` instanced
+   available in this category ordered by processor name.
+
+    >>> builder_category = builderset_view.other_builders
+
+    >>> print builder_category
+    <...BuilderCategory ...>
+
+    >>> print builder_category.title
+    Building other packages
+
+    >>> print builder_category.virtualized
+    False
+
+    >>> print builder_category.groups[0]
+    <...BuilderGroup ...>
+
+Similarly to what is done in the UI, we have a helper that prints the
+grouped builders within a category in a easy manner.
+
+    >>> def print_category(category):
+    ...     for group in category.groups:
+    ...         print group.processor_name, group.queue_size
+    ...         for builder in group.builders:
+    ...             print builder.title
+
+    >>> print_category(builder_category)
+    386 1
+    Bob The Builder
+    The Egg Builder
+    amd64 0
+    The Prosciuto Builder
+    hppa 0
+    The Ham Builder
+
+Each `BuilderGroup` contains the following attributes:
+
+ * processor_name: the `Processor` name of all builders in this group;
+
+ * queue_size: the number of jobs wainting to be processed for one of
+   the builders in this group
+
+ * builders: a list of `Builder`s in this group.
+
+    >>> [i386_group, amd64_group, hppa_group] = builder_category.groups
+
+    >>> print i386_group.processor_name
+    386
+
+    >>> print i386_group.queue_size
+    1
+
+    >>> for builder in i386_group.builders:
+    ...     print builder.title
+    Bob The Builder
+    The Egg Builder
+
+The 'PPA' builder category is also available in BuilderSetView as a
+`BuilderCategory`.
+
+    >>> builder_category = builderset_view.ppa_builders
+
+    >>> print builder_category.title
+    Building PPA packages
+
+    >>> print builder_category.virtualized
+    True
+
+    >>> print_category(builder_category)
+    386 0
+    The Hamburger Builder
+    The frog builder
+    amd64 0
+    The Bacon Builder
+    hppa 0
+    The Cheese Builder
+
+We change the sampledata to create a pending build in for the 386
+processor queue in the PPA category.
+
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> any_failed_build = cprov.archive.getBuildRecords(
+    ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+
+    >>> login('foo.bar@canonical.com')
+    >>> any_failed_build.retry()
+    >>> login(ANONYMOUS)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Now the pending build is included in the right category and group.
+
+    >>> builder_category = builderset_view.ppa_builders
+    >>> print_category(builder_category)
+    386 1
+    The Hamburger Builder
+    The frog builder
+    amd64 0
+    The Bacon Builder
+    hppa 0
+    The Cheese Builder

@@ -16,6 +16,7 @@ __all__ = [
     ]
 
 import re
+import cgi
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -110,7 +111,7 @@ class RevisionControlSystems(DBEnumeratedType):
     """
 
     CVS = DBItem(1, """
-        Concurrent Version System
+        Concurrent Versions System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread
@@ -145,7 +146,7 @@ def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
     except CvsRootError, e:
-        raise LaunchpadValidationError(str(e))
+        raise LaunchpadValidationError(cgi.escape(str(e)))
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
     if root.hostname.count('.') == 0:

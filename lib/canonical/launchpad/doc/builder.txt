@@ -119,6 +119,30 @@ attributes of builder instance as: builderok and trust.
     u'dummy'
     u'frog'
 
+'getBuildQueueSizeForProcessor' returns the number of pending builds
+for a given Processor. The callsites can also control which build-farm
+they are interested via the 'virtualized' argument.
+
+    >>> from canonical.launchpad.database.processor import Processor
+    >>> p386 = Processor.selectOneBy(name='386')
+    >>> amd64 = Processor.selectOneBy(name='amd64')
+
+'virtualized' defaults to False, so if not passed, it will return the
+size of the non-virtualized (trusted) build queue.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386)
+    1
+
+The 'amd64' build queue is empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(amd64)
+    0
+
+The virtualized build queue for 386 is also empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
+    0
+
 
 == Resuming buildd slaves ==
 
@@ -140,13 +164,13 @@ in production, as 'vm_host' variable replacement.
     'echo %(vm_host)s'
 
 Before performing the command, it checks if the builder is indeed
-virtual (untrusted) and raises CannotResumeHost if it isn't.
+virtual and raises CannotResumeHost if it isn't.
 
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob.resumeSlaveHost()
     Traceback (most recent call last):
     ...
-    CannotResumeHost: Builder is trusted.
+    CannotResumeHost: Builder is not virtualized.
 
 For testing purposes resumeSlaveHost returns the stdout and stderr
 buffer resulted from the command.
@@ -170,7 +194,7 @@ CannotResumeHost exception with the results stdout and stderr.
     ERR:
     <BLANKLINE>
 
-Restore default values for resume command and builder.trusted.
+Restore default value for resume command.
 
     >>> config.builddmaster.vm_resume_command = default_resume_command
 

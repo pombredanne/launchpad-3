@@ -24,8 +24,8 @@ from bzrlib.workingtree import WorkingTree
 
 from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
 
-from canonical.authserver.client import get_blocking_proxy
 from canonical.codehosting.tests.helpers import adapt_suite, ServerTestCase
+from canonical.authserver.client.twistedclient import get_blocking_proxy
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -266,7 +266,7 @@ class AcceptanceTests(SSHTestCase):
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
             url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            summary=None, home_page=None, whiteboard=None, private=private,
+            summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
     @defer_to_thread

@@ -59,18 +59,18 @@ list of emails to send:
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    ...
+    --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -84,20 +84,6 @@ list of emails to send:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -114,7 +100,20 @@ list of emails to send:
     of the bug.
     <BLANKLINE>
     ----------------------------------------------------------------------
-
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    ...
+    Firefox does not support SVG
+    http://bugs.launchpad.dev/bugs/1
+    You received this bug notification because you are subscribed to
+    mozilla-firefox in ubuntu.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
 
 You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
@@ -168,23 +167,25 @@ subject, though, which is often the case when someone replies via email.
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: Re: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
+    ...
+    To: foo.bar@canonical.com
     ...
 
     >>> flush_notifications()
@@ -206,10 +207,10 @@ Let's add a few changes and see how it looks like:
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     ** Summary changed to: New summary.
     <BLANKLINE>
@@ -218,13 +219,15 @@ Let's add a few changes and see how it looks like:
     ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
+    ...
+    To: foo.bar@canonical.com
     ...
 
 If we insert a comment and some more changes, they will be included in
@@ -252,10 +255,10 @@ in the order they were added:
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -270,12 +273,14 @@ in the order they were added:
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
+    ...
+    To: foo.bar@canonical.com
     ...
 
 If we insert yet another comment, it will be sent as a separate email.
@@ -293,10 +298,10 @@ If we insert yet another comment, it will be sent as a separate email.
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -311,8 +316,8 @@ If we insert yet another comment, it will be sent as a separate email.
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -320,20 +325,26 @@ If we insert yet another comment, it will be sent as a separate email.
     To: test@canonical.com
     ...
     To: foo.bar@canonical.com
+    ...
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     another comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
+    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
+    ...
+    To: foo.bar@canonical.com
     ...
 
     >>> flush_notifications()
@@ -361,18 +372,18 @@ If we add three comments, three notifications will be sent:
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -380,17 +391,19 @@ If we add three comments, three notifications will be sent:
     To: test@canonical.com
     ...
     To: foo.bar@canonical.com
+    ...
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     another comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -398,22 +411,26 @@ If we add three comments, three notifications will be sent:
     To: test@canonical.com
     ...
     To: foo.bar@canonical.com
+    ...
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     yet another comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
+    ...
+    To: foo.bar@canonical.com
     ...
 
     >>> flush_notifications()
@@ -443,37 +460,38 @@ change in between, three notifications will be sent:
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
     ...
-    <BLANKLINE>
     To: foo.bar@canonical.com
+    ...
+    To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     ** Summary changed to: New summary.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -481,22 +499,26 @@ change in between, three notifications will be sent:
     To: test@canonical.com
     ...
     To: foo.bar@canonical.com
+    ...
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     ...
     To: test@canonical.com
+    ...
+    To: foo.bar@canonical.com
     ...
 
     >>> flush_notifications()
@@ -580,44 +602,34 @@ well:
     ...     for message in messages:
     ...         print_notification_headers(message)
     ...         print
-    To: mark@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Debian)
-    <BLANKLINE>
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
+    <BLANKLINE>
+    To: mark@hbd.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    X-Launchpad-Message-Rationale: Registrant (Debian)
     <BLANKLINE>
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
-    To: mark@hbd.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Debian)
-    <BLANKLINE>
     To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
+    To: mark@hbd.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    X-Launchpad-Message-Rationale: Registrant (Debian)
+    <BLANKLINE>
     To: test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Assignee
-    <BLANKLINE>
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
-    <BLANKLINE>
-    To: mark@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     To: support@ubuntu.com
@@ -625,8 +637,33 @@ well:
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
+    To: mark@hbd.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Assignee
+    <BLANKLINE>
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    <BLANKLINE>
+    To: support@ubuntu.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
+    To: mark@hbd.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Assignee
+    <BLANKLINE>
+    To: test@canonical.com
+    From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
@@ -634,21 +671,6 @@ well:
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
-    <BLANKLINE>
-    To: mark@hbd.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Assignee
-    <BLANKLINE>
-    To: support@ubuntu.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    To: test@canonical.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
 
 There's a blank line before the signature, and the signature marker has
@@ -667,8 +689,8 @@ a trailing space.
      '-- ',
      'Firefox does not support SVG',
      'http://bugs.launchpad.dev/bugs/1',
-     'You received this bug notification because you are a direct subscriber',
-     'of the bug.']
+     'You received this bug notification because you are subscribed to',
+     'mozilla-firefox in ubuntu.']
 
     >>> flush_notifications()
 
@@ -698,11 +720,11 @@ notification will be sent to all members individually.
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print message['To']
-    foo.bar@canonical.com
     marilize@hbd.com
     mark@hbd.com
-    support@ubuntu.com
     test@canonical.com
+    support@ubuntu.com
+    foo.bar@canonical.com
 
     >>> flush_notifications()
 
@@ -765,26 +787,9 @@ top of the email:
     >>> for bug_notifications, messages in get_email_notifications(notifications):
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu) via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: marilize@hbd.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
+    Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -794,14 +799,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/...
+    http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
+    Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Assignee via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -811,31 +816,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/...
+    http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a bug assignee (via
     bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
+    Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -845,9 +833,43 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/...
+    http://bugs.launchpad.dev/bugs/16
     You received this bug notification because you are a direct subscriber
     of the bug.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 16] subject
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
+    *** This bug is a duplicate of bug 1 ***
+        http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    --
+    new bug
+    http://bugs.launchpad.dev/bugs/16
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 16] subject
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu) via Bug 1
+    <BLANKLINE>
+    *** This bug is a duplicate of bug 1 ***
+        http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    --
+    new bug
+    http://bugs.launchpad.dev/bugs/16
+    You received this bug notification because you are subscribed to
+    mozilla-firefox in ubuntu (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
 
@@ -969,63 +991,68 @@ makes it write out the emails it sends.
     >>> process.returncode
     0
     >>> print err
-    INFO creating lockfile
-    INFO    Notifying mark@hbd.com about bug 2.
-    ...
+    INFO    creating lockfile
     INFO    Notifying support@ubuntu.com about bug 2.
     ...
-    From: Sample Person <test@canonical.com>
-    To: support@ubuntu.com
-    Reply-To: Bug 2 <2@bugs.launchpad.net>
-    References: foo@example.com-332342--1231
-    ...
-    X-Launchpad-Message-Rationale: Registrant (Tomcat)
+    INFO    Notifying mark@hbd.com about bug 2.
     ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
     From: Sample Person <test@canonical.com>
     To: test@canonical.com
     Reply-To: Bug 2 <2@bugs.launchpad.net>
+    References: foo@example.com-332342--1231
     ...
-    a comment.
-    <BLANKLINE>
-    ** Summary changed to: New summary.
-    ...
-    INFO    Notifying foo.bar@canonical.com about bug 1.
-    ...
-    From: Sample Person <test@canonical.com>
-    To: foo.bar@canonical.com
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    ...
-    a comment.
-    <BLANKLINE>
-    ** Summary changed to: New summary.
+    X-Launchpad-Message-Rationale: Assignee
     ...
     INFO    Notifying marilize@hbd.com about bug 1.
     ...
     INFO    Notifying mark@hbd.com about bug 1.
     ...
-    INFO    Notifying support@ubuntu.com about bug 1.
-    ...
     INFO    Notifying test@canonical.com about bug 1.
+    ...
+    INFO    Notifying support@ubuntu.com about bug 1.
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
     ...
     From: Sample Person <test@canonical.com>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
     ...
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    ...
+    INFO    Notifying marilize@hbd.com about bug 1.
+    ...
+    INFO    Notifying mark@hbd.com about bug 1.
+    ...
+    INFO    Notifying test@canonical.com about bug 1.
+    ...
+    INFO    Notifying support@ubuntu.com about bug 1.
+    ...
+    INFO    Notifying foo.bar@canonical.com about bug 1.
+    ...
+    From: Sample Person <test@canonical.com>
+    To: foo.bar@canonical.com
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    ...
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    Errors-To: bounces@canonical.com
+    Return-Path: bounces@canonical.com
+    Precedence: bulk
+    X-Generated-By: Launchpad (canonical.com)
+    <BLANKLINE>
     another comment.
     <BLANKLINE>
     ** Summary changed to: Old summary.
-    ...
-    INFO    Notifying marilize@hbd.com about bug 1.
-    ...
-    INFO    Notifying mark@hbd.com about bug 1.
-    ...
-    INFO    Notifying support@ubuntu.com about bug 1.
-    ...
-    INFO    Notifying test@canonical.com about bug 1.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    Firefox does not support SVG
+    http://bugs.launchpad.dev/bugs/1
+    You received this bug notification because you are subscribed to
+    mozilla-firefox in ubuntu.
     ...
 
     >>> flush_notifications()
@@ -1036,7 +1063,6 @@ makes it write out the emails it sends.
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
-    >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> subscription = bug_three.subscribe(sample_person, sample_person)
 
@@ -1070,7 +1096,7 @@ specified:
     False
 
 
-== The X-Launchpad-Bug-Private header ==
+== The X-Launchpad-Bug-Tags header ==
 
 First, a helper function that triggers notifications by adding a
 comment to a given bug, another that returns a sorted list of new
@@ -1096,6 +1122,58 @@ email messages, and a third that combines the first two.
     ...     notifications = trigger_notifications(bug)
     ...     return get_email_messages(notifications)
 
+If a bug is tagged, those tags will be included in the message in the
+X-Launchpad-Bug-Tags header.
+
+    >>> bug_three.tags
+    [u'layout-test']
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     message.get_all('X-Launchpad-Bug-Tags')
+    [u'layout-test']
+    [u'layout-test']
+
+If we add a tag to bug three that will also be included in the header.
+The tags will be space-separated to allow the list to be wrapped if it
+gets over-long.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(
+    ...     config.malone.bugnotification_dbuser)
+
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     message.get_all('X-Launchpad-Bug-Tags')
+    [u'another-tag layout-test yet-another']
+
+If we remove the tags from the bug, the X-Launchpad-Bug-Tags header
+won't be included.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_three.tags = []
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(
+    ...     config.malone.bugnotification_dbuser)
+
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     message.get_all('X-Launchpad-Bug-Tags')
+
+
+== The X-Launchpad-Bug-Private header ==
+
 When a notification is sent out about a bug, the
 X-Launchpad-Bug-Private header shows if the bug is marked as
 private. It can have the value "yes" or "no".
@@ -1106,7 +1184,6 @@ private. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
     mark@hbd.com ['no']
-    test@canonical.com ['no']
 
 Predictably, private bugs are sent with a slightly different header:
 
@@ -1118,7 +1195,6 @@ Predictably, private bugs are sent with a slightly different header:
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
     mark@hbd.com ['yes']
-    test@canonical.com ['yes']
 
 
 == The X-Launchpad-Bug-Security-Vulnerability header ==
@@ -1134,7 +1210,6 @@ security vulnerability. It can have the value "yes" or "no".
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
     mark@hbd.com ['no']
-    test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
@@ -1147,7 +1222,6 @@ simple "yes":
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
     mark@hbd.com ['yes']
-    test@canonical.com ['yes']
 
 
 == Verbose bug notifications ==

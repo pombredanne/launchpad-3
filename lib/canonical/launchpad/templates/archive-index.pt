@@ -18,6 +18,8 @@
     <div metal:fill-slot="main"
          tal:define="ppa_active view/is_active">
 
+      <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
+
       <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
 
       <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
@@ -113,6 +115,7 @@
             <th>Status</th>
             <th>Series</th>
             <th>Section</th>
+            <th>Built</th>
           </tr>
         </thead>
         <tbody>

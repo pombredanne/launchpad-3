@@ -27,6 +27,14 @@
             interface="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
             set_attributes="import_branch"
             />
+        <!-- IStructuralSubscriptionTarget -->
+        <allow attributes="bug_subscriptions getBugNotificationsRecipients
+                           getSubscription getSubscriptions
+                           parent_subscription_target" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="addBugSubscription addSubscription
+                        removeBugSubscription" />
     </content>
 
     <browser:menus

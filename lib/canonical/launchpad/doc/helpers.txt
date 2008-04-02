@@ -1,17 +1,12 @@
-Helper Functions and Classes
-============================
+= Helper Functions and Classes =
 
 There are some helper functions and classes located in
 canonical.launchpad.helpers which can be used in order to avoid
 duplicating code in different parts of Launchpad.
 
-Getting a valid name as our database asks for from a string
------------------------------------------------------------
 
-    >>> from zope.component import getUtility
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import IPersonSet, IHasOwner
-    >>> from canonical.launchpad.ftests import login
+== Getting a valid name as our database asks for from a string ==
+
     >>> from canonical.launchpad.helpers import getValidNameFromString
 
 The string has capital letters.
@@ -39,3 +34,43 @@ A mix of all previous cases.
     'evil-string-not-following-our-rules'
 
 
+== Concatenating lists English-style ==
+
+The english_list function takes a list of strings and concatenates
+them in a form suitable for inclusion in an English sentence. For
+lists of 3 or more elements it follows the advice given in The
+Elements of Style, chapter II, section 2.
+
+    >>> from canonical.launchpad.helpers import english_list
+
+By default, it joins the last two elements in the list with 'and', and
+joins the rest of the list with ','. It also adds whitespace around
+these delimiters as appropriate.
+
+    >>> english_list([])
+    ''
+    >>> english_list(['Fred'])
+    'Fred'
+    >>> english_list(['Fred', 'Bob'])
+    'Fred and Bob'
+    >>> english_list(['Fred', 'Bob', 'Harold'])
+    'Fred, Bob, and Harold'
+
+It accepts any iterable that yields strings:
+
+    >>> english_list('12345')
+    '1, 2, 3, 4, and 5'
+    >>> english_list(str(i) for i in xrange(5))
+    '0, 1, 2, 3, and 4'
+
+It does not convert non-string elements:
+
+    >>> english_list(range(3))
+    Traceback (most recent call last):
+    ...
+    TypeError: sequence item 0: expected string, int found
+
+The conjunction can be changed:
+
+    >>> english_list('123', 'or')
+    '1, 2, or 3'

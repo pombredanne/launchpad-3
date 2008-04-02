@@ -119,7 +119,7 @@ class TestArchiveOverrider(unittest.TestCase):
         self.log.read()
 
     def test_initialize_missing_args(self):
-        """ArchiveOverrider should raise if no required attributes are passed"""
+        """ArchiveOverrider raises on missing attributes."""
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary')
         self.assertRaises(
@@ -200,41 +200,22 @@ class TestArchiveOverrider(unittest.TestCase):
             ArchiveOverriderError, changer.initialize)
         self.log.read()
 
-    def assertBinaryPublished(self, distroarchseries, name, version,
-                              component_name, section_name, priority_name):
+    def assertCurrentBinary(self, distroarchseries, name, version,
+                            component_name, section_name, priority_name):
         """Assert if the current binary publication matches the given data."""
         dasbpr = distroarchseries.getBinaryPackage(name)[version]
         pub = dasbpr.current_publishing_record
-        self.assertEqual(pub.status.name, 'PUBLISHED')
+        self.assertTrue(pub.status.name in ['PUBLISHED', 'PENDING'])
         self.assertEqual(pub.component.name, component_name)
         self.assertEqual(pub.section.name, section_name)
         self.assertEqual(pub.priority.name, priority_name)
 
-    def assertSourcePublished(self, distroseries, name, version,
-                              component_name, section_name):
+    def assertCurrentSource(self, distroseries, name, version,
+                            component_name, section_name):
         """Assert if the current source publication matches the given data."""
         dsspr = distroseries.getSourcePackage(name)[version]
         pub = dsspr.current_published
-        self.assertEqual(pub.status.name, 'PUBLISHED')
-        self.assertEqual(pub.component.name, component_name)
-        self.assertEqual(pub.section.name, section_name)
-
-    def assertBinaryPending(self, distroarchseries, name, version,
-                            component_name, section_name, priority_name):
-        """Assert if the pending binary publication matches the given data."""
-        dasbpr = distroarchseries.getBinaryPackage(name)[version]
-        pub = dasbpr.publishing_history[0]
-        self.assertEqual(pub.status.name, 'PENDING')
-        self.assertEqual(pub.component.name, component_name)
-        self.assertEqual(pub.section.name, section_name)
-        self.assertEqual(pub.priority.name, priority_name)
-
-    def assertSourcePending(self, distroseries, name, version,
-                            component_name, section_name):
-        """Assert if the pending binary publication matches the given data."""
-        dsspr = distroseries.getSourcePackage(name)[version]
-        pub = dsspr.publishing_history[0]
-        self.assertEqual(pub.status.name, 'PENDING')
+        self.assertTrue(pub.status.name in ['PUBLISHED', 'PENDING'])
         self.assertEqual(pub.component.name, component_name)
         self.assertEqual(pub.section.name, section_name)
 
@@ -245,8 +226,8 @@ class TestArchiveOverrider(unittest.TestCase):
         already tested in place. Inspect the log to verify if the correct
         source was picked and correct arguments was passed.
         """
-        self.assertSourcePublished(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
+        self.assertCurrentSource(
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
@@ -260,7 +241,7 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO Override Priority to: 'EXTRA'\n"
             "INFO 'mozilla-firefox - 0.9/main/base' source overridden")
 
-        self.assertSourcePending(
+        self.assertCurrentSource(
             self.warty, 'mozilla-firefox', '0.9', 'main', 'base')
 
     def test_processSourceChange_with_changed_archive(self):
@@ -287,39 +268,36 @@ class TestArchiveOverrider(unittest.TestCase):
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
         changer.initialize()
-        changer.processSourceChange('mozilla-firefox')
+        changer.processSourceChange('foobar')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "ERROR 'mozilla-firefox' source isn't published in hoary")
+            "ERROR 'foobar' source isn't published in hoary")
 
     def test_processSourceChange_no_change(self):
         """Source override when the source is already in the desired state.
 
         Nothing is done and the situation is logged.
         """
-        self.assertSourcePublished(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
+        self.assertCurrentSource(
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='main', section_name='web',
+            component_name='main', section_name='editors',
             priority_name='extra')
         changer.initialize()
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'web'\n"
+            "INFO Override Section to: 'editors'\n"
             "INFO Override Priority to: 'EXTRA'\n"
             "INFO 'mozilla-firefox - 0.9/main/editors' remained the same")
 
-        # Note that there is already another PENDING publishing record
-        # for mozilla-firefox in warty and it is targeted to section 'base'
-        # XXX cprov 20071020: we don't treat this case very well.
-        self.assertSourcePending(
+        self.assertCurrentSource(
             self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
 
     def test_processBinaryChange_success(self):
@@ -330,16 +308,17 @@ class TestArchiveOverrider(unittest.TestCase):
         correct binary was picked and correct argument was passed.
         """
         hoary_i386 = self.hoary['i386']
-        self.assertBinaryPublished(
+        self.assertCurrentBinary(
             hoary_i386, 'pmount', '0.1-1', 'universe', 'editors', 'IMPORTANT')
 
         hoary_hppa = self.hoary['hppa']
-        self.assertBinaryPublished(
+        self.assertCurrentBinary(
             hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
-            component_name='main', section_name='devel', priority_name='extra')
+            component_name='main', section_name='devel',
+            priority_name='extra')
         changer.initialize()
         changer.processBinaryChange('pmount')
         self.assertEqual(
@@ -352,9 +331,9 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
                 "overridden in hoary i386")
 
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             hoary_hppa, 'pmount', '2:1.9-1', 'main', 'devel', 'EXTRA')
 
     def test_processBinaryChangeWithBuildInParentRelease(self):
@@ -364,11 +343,11 @@ class TestArchiveOverrider(unittest.TestCase):
         the binaries were built in the parent_series.
         """
         hoary_i386 = self.hoary['i386']
-        self.assertBinaryPublished(
+        self.assertCurrentBinary(
             hoary_i386, 'pmount', '0.1-1', 'universe', 'editors', 'IMPORTANT')
 
         hoary_hppa = self.hoary['hppa']
-        self.assertBinaryPublished(
+        self.assertCurrentBinary(
             hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
 
         pmount_i386 = hoary_i386.getBinaryPackage('pmount')['0.1-1']
@@ -383,7 +362,8 @@ class TestArchiveOverrider(unittest.TestCase):
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
-            component_name='main', section_name='devel', priority_name='extra')
+            component_name='main', section_name='devel',
+            priority_name='extra')
         changer.initialize()
         changer.processBinaryChange('pmount')
         self.assertEqual(
@@ -396,9 +376,9 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
                 "overridden in hoary i386")
 
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             hoary_hppa, 'pmount', '2:1.9-1', 'main', 'devel', 'EXTRA')
 
     def test_processBinaryChange_with_changed_archive(self):
@@ -441,16 +421,18 @@ class TestArchiveOverrider(unittest.TestCase):
         picking the correct source.
         """
         warty_i386 = self.warty['i386']
-        self.assertBinaryPublished(
+        self.assertCurrentBinary(
             warty_i386, 'mozilla-firefox', '1.0', 'main', 'base', 'IMPORTANT')
-        self.assertBinaryPublished(
-            warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'base', 'EXTRA')
+        self.assertCurrentBinary(
+            warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'base',
+            'EXTRA')
 
         warty_hppa = self.warty['hppa']
-        self.assertBinaryPublished(
+        self.assertCurrentBinary(
             warty_hppa, 'mozilla-firefox', '0.9', 'main', 'base', 'EXTRA')
-        self.assertBinaryPublished(
-            warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'base', 'EXTRA')
+        self.assertCurrentBinary(
+            warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'base',
+            'EXTRA')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
@@ -472,13 +454,13 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
                 "binary overridden in warty i386")
 
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             warty_i386, 'mozilla-firefox', '1.0', 'main', 'web', 'EXTRA')
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'web', 'EXTRA')
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             warty_hppa, 'mozilla-firefox', '0.9', 'main', 'web', 'EXTRA')
-        self.assertBinaryPending(
+        self.assertCurrentBinary(
             warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'web', 'EXTRA')
 
     def test_processChildrenChange_error(self):
