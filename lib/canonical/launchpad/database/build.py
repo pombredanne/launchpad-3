@@ -354,10 +354,13 @@ class Build(SQLBase):
         # building on the respective machine pool (current build
         # set).
         remainders = cur.fetchall()
-        build_delays = set([row[0] and int(row[0]) for row in remainders])
+        build_delays = set([int(row[0]) for row in remainders if row[0]])
 
-        # This is the head job delay in seconds.
-        headjob_delay = len(build_delays) and max(build_delays) or 0
+        # This is the head job delay in seconds. Initialize it here.
+        if len(build_delays):
+            headjob_delay = max(build_delays)
+        else:
+            headjob_delay = 0
 
         # Did all currently building jobs overdraw their estimated
         # time budget?
