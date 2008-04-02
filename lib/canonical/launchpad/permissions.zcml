@@ -1,6 +1,8 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <permission
+    id="zope.Public" title="Public stuff" access_level="read" />
+  <permission
     id="launchpad.View" title="Viewing something" access_level="read" />
 
   <permission
