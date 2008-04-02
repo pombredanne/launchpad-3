@@ -582,21 +582,13 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
-    @action(_('Update'), name='update')
+    def not_import(self, action=None):
+        return self.context.import_branch is None
+
+    @action(_('Update'), name='update',
+            condition=not_import)
     def update_action(self, action, data):
         self.updateContextFromData(data)
-        # Clear out old revision control details.
-        if self.context.rcstype == RevisionControlSystems.CVS:
-            self.context.rcstype = None
-            self.context.cvsroot = None
-            self.context.cvsmodule = None
-            self.context.cvsbranch = None
-        elif self.context.rcstype == RevisionControlSystems.SVN:
-            self.context.rcstype = None
-            self.context.svnrepository = None
-        else:
-            # Nothing to clear out.
-            assert self.context.rcstype is None, "rcstype is not None"
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
