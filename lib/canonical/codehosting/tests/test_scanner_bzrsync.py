@@ -25,7 +25,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    IBranchSet, IPersonSet, IRevisionSet)
+    CodeReviewNotificationLevel, IBranchSet, IPersonSet, IRevisionSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError, get_diff, get_revision_message)
@@ -674,7 +674,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         branch.subscribe(
             test_user,
             BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.FIVEKLINES)
+            BranchSubscriptionDiffSize.FIVEKLINES,
+            CodeReviewNotificationLevel.NOEMAIL)
         LaunchpadZopelessLayer.txn.commit()
         return branch
 

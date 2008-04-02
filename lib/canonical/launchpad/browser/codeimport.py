@@ -22,9 +22,9 @@ from zope.schema import Choice, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    branch_name_validator, CodeImportReviewStatus, IBranchSet,
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities,
-    RevisionControlSystems)
+    branch_name_validator, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, IBranchSet, ICodeImport, ICodeImportSet,
+    ILaunchpadCelebrities, RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -167,7 +167,8 @@ class CodeImportNewView(LaunchpadFormView):
         code_import.branch.subscribe(
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.NODIFF)
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
 
         self.next_url = canonical_url(code_import.branch)
 

@@ -54,6 +54,7 @@ just subscribed.
     You have subscribed to this branch with:
     Only send notifications for branch attribute changes such
     as name, description and whiteboard.
+    Send email about any code review activity for this branch.
 
 There should be only one person subscribed to the branch now.
 
@@ -90,6 +91,7 @@ informational message for us to see.
     Send notifications for both branch attribute updates
     and new revisions added to the branch.
     Limit the generated diff to 5000 lines.
+    Send email about any code review activity for this branch.
 
     >>> print_subscribers(browser.contents)
     No Privileges Person
@@ -165,6 +167,7 @@ specify the person to subscribe.  The person field is required.
     Send notifications for both branch attribute updates
     and new revisions added to the branch.
     Limit the generated diff to 5000 lines.
+    Send email about any code review activity for this branch.
     >>> print_subscribers(browser.contents)
     Mark Shuttleworth
 
@@ -202,6 +205,7 @@ Sample Person is a member of Landscape Developers.
     Send notifications for both branch attribute updates
     and new revisions added to the branch.
     Limit the generated diff to 1000 lines.
+    Send email about any code review activity for this branch.
 
     >>> anon_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')

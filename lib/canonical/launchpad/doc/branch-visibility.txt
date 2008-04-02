@@ -127,11 +127,13 @@ Subscribing the Ubuntu team to the branch will allow Jeff to have access
 to the branch.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    ...     CodeReviewNotificationLevel)
 
     >>> branch.subscribe(ubuntu_team,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
-    ...     BranchSubscriptionDiffSize.NODIFF)
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...>
 
     >>> access.checkAuthenticated(jdub)
