@@ -21,10 +21,8 @@ from zope.component import getUtility
 from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
-from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
-from twisted.internet import defer, process
-from twisted.python import components
+from twisted.internet import defer
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -35,7 +33,6 @@ from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
-from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.transport import LaunchpadServer
@@ -102,6 +99,7 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
 class Authserver(Server):
 
     def __init__(self):
+        Server.__init__(self)
         self.authserver = None
 
     def setUp(self):
@@ -148,6 +146,7 @@ class AuthserverOutOfProcess(Server):
     """Server to run the authserver out-of-process."""
 
     def __init__(self):
+        Server.__init__(self)
         self.tachandler = AuthserverTac()
 
     def setUp(self):
@@ -175,11 +174,12 @@ class AuthserverWithKeysMixin:
         parent = os.path.dirname(key_pair_path)
         if not os.path.isdir(parent):
             os.makedirs(parent)
-        shutil.copytree(sibpath(__file__, 'keys'), os.path.join(key_pair_path))
+        shutil.copytree(
+            sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
     def setUpTestUser(self):
-        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
-        SSH key.
+        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a
+        known SSH key.
         """
         person_set = getUtility(IPersonSet)
         testUser = person_set.getByName('no-priv')
@@ -191,12 +191,12 @@ class AuthserverWithKeysMixin:
         ssh_key_set = getUtility(ISSHKeySet)
         ssh_key_set.new(
             testUser, SSHKeyType.DSA,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1kt'
-            'FPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeV'
-            'YHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViT'
-            'aalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ'
-            '2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
-            'testuser')
+            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
+            'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
+            'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
+            'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
+            '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
+            'gw==', 'testuser')
         commit()
         self.setUpKeys()
 
@@ -268,6 +268,7 @@ class FakeLaunchpadServer(LaunchpadServer):
 class CodeHostingServer(Server):
 
     def __init__(self, authserver, branches_root, mirror_root):
+        Server.__init__(self)
         self.authserver = authserver
         self._branches_root = branches_root
         self._mirror_root = mirror_root
@@ -285,7 +286,7 @@ class CodeHostingServer(Server):
         shutil.rmtree(self._branches_root)
         return self.authserver.tearDown()
 
-    def getTransport(self, relpath):
+    def getTransport(self, relpath=None):
         """Return a new transport for 'relpath', adding necessary cleanup."""
         raise NotImplementedError()
 
@@ -354,8 +355,8 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
             self, 'sftp', authserver, branches_root, mirror_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        """Run the given function, close all SFTP connections, and wait for the
-        server to acknowledge the end of the session.
+        """Run the given function, close all SFTP connections, and wait for
+        the server to acknowledge the end of the session.
         """
         ever_connected = threading.Event()
         done = threading.Event()
@@ -378,66 +379,19 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
         SSHCodeHostingServer.__init__(
             self, 'bzr+ssh', authserver, branches_root, mirror_root)
 
-    def setUp(self):
-        SSHCodeHostingServer.setUp(self)
-        # XXX: JonathanLange 2007-06-25, Twisted definitely does not expect us
-        # to be calling waitpid in a child thread. The reactor's process
-        # cleanup goes a little haywire. Monkey-patching reapAllProcess
-        # disables the guts of Twisted's process monitoring / cleanup.
-        self._reapAllProcesses = process.reapAllProcesses
-        process.reapAllProcesses = lambda: None
-
-    def tearDown(self):
-        process.reapAllProcesses = self._reapAllProcesses
-        return SSHCodeHostingServer.tearDown(self)
-
-    def runWithFakeAdapter(self, (new_adapter, original, interface), function,
-                           *args, **kwargs):
-        """Run function with new_adapter as the adapter from original to
-        interface.
-        """
-        old_allow_duplicates = components.ALLOW_DUPLICATES
-        components.ALLOW_DUPLICATES = True
-        old_adapter = components.getAdapterFactory(original, interface, None)
-        components.registerAdapter(new_adapter, original, interface)
-        try:
-            return function(*args, **kwargs)
-        finally:
-            if old_adapter is not None:
-                components.registerAdapter(old_adapter, original, interface)
-            components.ALLOW_DUPLICATES = old_allow_duplicates
-
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
         server to acknowledge the end of the session.
         """
-        pids = []
-
-        def make_test_launchpad_server(avatar):
-            server = launch_smart_server(avatar)
-            real_exec_command = server.execCommand
-            def execCommand(protocol, command):
-                real_exec_command(protocol, command)
-                pids.append(server._transport.pid)
-            server.execCommand = execCommand
-            return server
-
         try:
-            return self.runWithFakeAdapter(
-                (make_test_launchpad_server, LaunchpadAvatar, ISession),
-                func, *args, **kwargs)
+            return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
-            for pid in pids:
-                try:
-                    os.waitpid(pid, 0)
-                except OSError:
-                    """Process has already been killed."""
 
 
 class _TestSSHService(SSHService):
-    """SSH service that uses the the _TestLaunchpadAvatar and installs the test
-    keys in a place that the SSH server can find them.
+    """SSH service that uses the the _TestLaunchpadAvatar and installs the
+    test keys in a place that the SSH server can find them.
 
     This class, _TestLaunchpadAvatar and _TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
