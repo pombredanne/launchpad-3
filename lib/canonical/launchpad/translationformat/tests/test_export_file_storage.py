@@ -20,8 +20,8 @@ class ExportFileStorageTestCase(unittest.TestCase):
         """Behaviour of empty storage."""
         storage = ExportFileStorage('application/x-po')
         # Try not inserting any files, so the storage object remains empty.
-        self.assertTrue(storage.store.isEmpty())
-        self.assertFalse(storage.store.isFull())
+        self.assertTrue(storage._store.isEmpty())
+        self.assertFalse(storage._store.isFull())
         # Can't export an empty storage.
         self.assertRaises(AssertionError, storage.export)
 
@@ -31,16 +31,16 @@ class ExportFileStorageTestCase(unittest.TestCase):
         storage.addFile('/tmp/a/test/file.po', 'po', 'test file')
         # The storage object starts out with a SingleFileStorageStrategy, so
         # it's full now that we've added one file.
-        self.assertTrue(storage.store.isFull())
+        self.assertTrue(storage._store.isFull())
         # If we add another file however, the storage object transparently
         # switches to a TarballFileStorageStrategy.  That type of storage
         # object is never full.
         storage.addFile('/tmp/another/test/file.po', 'po', 'test file two')
-        self.assertFalse(storage.store.isFull())
+        self.assertFalse(storage._store.isFull())
         # We can now add any number of files without filling the storage
         # object.
         storage.addFile('/tmp/yet/another/test/file.po', 'po', 'test file 3')
-        self.assertFalse(storage.store.isFull())
+        self.assertFalse(storage._store.isFull())
 
     def testSingle(self):
         """Test export of single file."""
