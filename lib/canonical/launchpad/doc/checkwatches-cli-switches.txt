@@ -23,8 +23,8 @@ external connections.
     >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
     >>> updater._login()
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
-    INFO...No watches to update on http://bugs.debian.org
-    INFO...No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG...No watches to update on http://bugs.debian.org
+    DEBUG...No watches to update on http://bugzilla.gnome.org/bugs
 
 This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
@@ -33,7 +33,7 @@ line.
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     ['cronscripts/checkwatches.py', '--bug-tracker=mozilla.org',
-    ...      '--bug-tracker=debbugs'], stdin=subprocess.PIPE,
+    ...      '--bug-tracker=debbugs', '-v'], stdin=subprocess.PIPE,
     ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out
@@ -43,9 +43,10 @@ line.
 
     >>> print err
     INFO    creating lockfile
-    INFO    No watches to update on https://bugzilla.mozilla.org/
-    INFO    No watches to update on http://bugs.debian.org
+    DEBUG   No watches to update on https://bugzilla.mozilla.org/
+    DEBUG   No watches to update on http://bugs.debian.org
     INFO    Time for this run: ... seconds.
+    DEBUG   Removing lock file:...
     <BLANKLINE>
 
 The help for the checkwatches cronscript explains the usage of the bug
