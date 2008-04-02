@@ -25,6 +25,10 @@ from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
+
+LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
+
+
 class BugTrackerNameField(ContentNameField):
 
     errormessage = _("%s is already in use by another bugtracker.")
@@ -37,24 +41,30 @@ class BugTrackerNameField(ContentNameField):
         return getUtility(IBugTrackerSet).getByName(name)
 
 
-class BugTrackerBaseURL(UniqueField):
-    """A bug tracker base URL that's not used by any other bug trackers.
+class BugTrackerURL(URIField, UniqueField):
+    """A bug tracker URL that's not used by any other bug trackers.
 
     When checking if the URL is already registered with another
     bugtracker, it takes into account that the URL may differ slightly,
     i.e. it could end with a slash or be https instead of http.
     """
 
+    # See `UniqueField`.
     errormessage = _("%s is already registered in Launchpad.")
-    attribute = 'baseurl'
+
+    @property
+    def attribute(self):
+        """See `UniqueField`."""
+        return self.getName()
 
     @property
     def _content_iface(self):
+        """See `UniqueField`."""
         return IBugTracker
 
-    def _getByAttribute(self, base_url):
+    def _getByAttribute(self, url):
         """See `UniqueField`."""
-        return getUtility(IBugTrackerSet).queryByBaseURL(base_url)
+        return getUtility(IBugTrackerSet).queryByBaseURL(url)
 
 
 class BugTrackerType(DBEnumeratedType):
@@ -148,8 +158,9 @@ class IBugTracker(Interface):
         description=_(
             'A brief introduction or overview of this bug tracker instance.'),
         required=False)
-    baseurl = BugTrackerBaseURL(
+    baseurl = BugTrackerURL(
         title=_('Location'),
+        allowed_schemes=LOCATION_SCHEMES_ALLOWED,
         description=_(
             'The top-level URL for the bug tracker, or an upstream email '
             'address. This must be accurate so that Launchpad can link to '
@@ -159,7 +170,8 @@ class IBugTracker(Interface):
         description=_(
             'A list of URLs or email addresses that all lead to the same '
             'bug tracker, or commonly seen typos, separated by whitespace.'),
-        value_type=URIField(), required=False)
+        value_type=BugTrackerURL(allowed_schemes=LOCATION_SCHEMES_ALLOWED),
+        required=False)
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
@@ -258,8 +270,9 @@ class IBugTrackerAlias(Interface):
     bugtracker = Object(
         title=_('The bugtracker for which this is an alias.'),
         schema=IBugTracker)
-    base_url = BugTrackerBaseURL(
+    base_url = BugTrackerURL(
         title=_('Location'),
+        allowed_schemes=LOCATION_SCHEMES_ALLOWED,
         description=_('Another URL or email address for the bug tracker.'))
 
 
