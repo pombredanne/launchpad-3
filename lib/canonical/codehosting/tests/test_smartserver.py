@@ -245,7 +245,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
         # Note that Conch doesn't have a well-defined way of rejecting
         # commands. Disconnecting in execCommand will do. We don't raise
-        # an exception since it will just log an OOPS.
+        # an exception to avoid logging an OOPS.
         protocol = MockProcessTransport('cat')
         self.assertEqual(
             None, self.session.execCommand(protocol, 'cat'))
