@@ -17,6 +17,5 @@ We are not able to link a branch to a series with an import branch.
 >>> browser.getControl('Update').click()
 Traceback (most recent call last):
 LookupError: label 'Update'
->>> ("Cannot change link because this series is linked to an import."
+>>> assert ("Cannot change link because this series is linked to an import."
 ...     in browser.contents)
-True
