@@ -173,6 +173,18 @@ class BatchingResourceMixin:
     """A mixin for resources that need to batch lists of entries."""
 
     def batch(self, entries, request):
+        """Prepare a batch from a (possibly huge) list of entries.
+
+        :return: A hash:
+        'entries' contains a list of EntryResource objects for the
+          entries that actually made it into this batch
+        'total_size' contains the total size of the list.
+        'next_url', if present, contains a URL to get the next batch
+         in the list.
+        'prev_url', if present, contains a URL to get the previous batch
+         in the list.
+        'start' contains the starting index of this batch
+        """
         navigator = WebServiceBatchNavigator(entries, request)
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch]
