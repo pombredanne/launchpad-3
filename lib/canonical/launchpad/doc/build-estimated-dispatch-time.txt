@@ -54,7 +54,6 @@ the pending job.
 
 Tweak some of the properties of the job in state BUILDING.
 
-    >>> from datetime import timedelta
     >>> from datetime import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -94,5 +93,6 @@ Commit all changes to database.
 
 Check the estimated build start time for the pending job.
 
-    >>> alsa_build.estimated_buildstart > datetime.utcnow()
+    >>> now = datetime.utcnow()
+    >>> alsa_build.getEstimatedBuildStartTime() > now
     True

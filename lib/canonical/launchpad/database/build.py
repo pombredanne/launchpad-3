@@ -240,8 +240,7 @@ class Build(SQLBase):
         """See `IBuild`."""
         return self.component_dependencies[self.current_component.name]
 
-    @property
-    def estimated_buildstart(self):
+    def getEstimatedBuildStartTime(self):
         """See `IBuild`.
 
         The estimated dispatch time for the build job at hand is
@@ -256,14 +255,12 @@ class Build(SQLBase):
         dispatch is not known in which case the EPOCH time stamp
         is returned.
         """
-        if self.buildstate != BuildStatus.NEEDSBUILD:
-            # Estimated build start times are only available for
-            # pending jobs.
-            return None
+        # This method may only be invoked for pending jobs.
+        assert self.buildstate == BuildStatus.NEEDSBUILD
 
-        # The epoch time stamp indicates that the estimated dispatch
-        # time is not known.
-        result = datetime.utcfromtimestamp(0)
+        # A None value indicates that the estimated dispatch time is not
+        # available.
+        result = None
 
         cur = cursor()
         # For a given build job in position N in the build queue the

@@ -78,10 +78,6 @@ class IBuild(Interface):
         "The components this build is allowed to use. It returns a string "
         "that can be used directly at the end of sources.list lines.")
 
-    estimated_buildstart = Attribute(
-        "Estimated start (or dispatch) time for a job that needs building "
-        "or None for build jobs in other states.")
-
     def retry():
         """Restore the build record to its initial state.
 
@@ -131,6 +127,17 @@ class IBuild(Interface):
         doc/build-notification.txt for further information.
         """
 
+    def getEstimatedBuildStartTime():
+        """Get the estimated build start time for a pending build job.
+
+        A time stamp and a None value is returned in the case of success
+        and failure respectively. A None return value indicates that an
+        estimated start time is not available.
+
+        Please note: this method only makes sense for build jobs that are
+        pending (i.e. still waiting in the build queue). calling it for
+        jobs in other states will trigger an exception.
+        """
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -148,7 +155,7 @@ class IBuildSet(Interface):
     def getPendingBuildsForArchSet(archseries):
         """Return all pending build records within a group of ArchSerieses
 
-        Pending means that buildstatus is NEEDSBUILDING.
+        Pending means that buildstate is NEEDSBUILD.
         """
 
     def getBuildsForBuilder(builder_id, status=None, name=None):

@@ -17,7 +17,7 @@
     </metal:portlets>
 
     <div metal:fill-slot="main">
-        
+
       <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
 
       <div class="informational message"
@@ -80,23 +80,17 @@
           </tr>
 
           <tal:buildstart
-            define="estimated_buildstart context/estimated_buildstart"
-            condition="estimated_buildstart">
+            condition="context/buildstate/enumvalue:NEEDSBUILD">
 
-            <tr tal:condition="python:estimated_buildstart.year == 1970">
+            <tr
+              define="estimated_buildstart context/getEstimatedBuildStartTime">
               <th>Estimated build start:</th>
-              <td
-               tal:attributes="title estimated_buildstart/fmt:datetime">
-                Not available
-              </td>
-            </tr>
-
-            <tr tal:condition="python:estimated_buildstart.year != 1970">
-              <th>Estimated build start:</th>
-              <td
-               tal:attributes="title estimated_buildstart/fmt:datetime"
-               tal:content="estimated_buildstart/fmt:approximatedate">
+              <td tal:condition="estimated_buildstart"
+                  tal:content="estimated_buildstart/fmt:approximatedate">
                 3 hours
+              </td>
+              <td tal:condition="not: estimated_buildstart">
+                <i>not available</i>
               </td>
             </tr>
 
