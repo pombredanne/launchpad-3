@@ -181,6 +181,7 @@ class ProberFactory(protocol.ClientFactory):
         # callback in the chain.
         self._deferred = defer.Deferred()
         self.timeout = timeout
+        self.timeoutCall = None
         self.setURL(url.encode('ascii'))
 
     def probe(self):
@@ -208,7 +209,7 @@ class ProberFactory(protocol.ClientFactory):
     def connect(self):
         host_requests[self.request_host] += 1
         reactor.connectTCP(self.connect_host, self.connect_port, self)
-        if hasattr(self, 'timeoutCall') and self.timeoutCall.active():
+        if self.timeoutCall is not None and self.timeoutCall.active():
             self._cancelTimeout(None)
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
