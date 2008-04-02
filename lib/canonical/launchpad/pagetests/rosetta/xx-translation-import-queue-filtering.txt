@@ -4,8 +4,6 @@ translation import queue form.
 To get the filter widgets we will use their names directly because there
 is no human readable labels associated with them.
 
-Let's add 100 files to the queue so we have enough entries to play with.
-
     >>> import canonical.launchpad
     >>> import os.path
     >>> test_file_name = os.path.join(
@@ -13,7 +11,13 @@ Let's add 100 files to the queue so we have enough entries to play with.
     ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
     >>> tarball = open(test_file_name)
 
+Our star for this session is Carlos, who has full access rights to the
+import queue.
+
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+
+For starters, Carlos uploads a tarball with 100 files to the queue.
+
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/'
     ...     '+translations-upload')
@@ -26,13 +30,14 @@ Let's add 100 files to the queue so we have enough entries to play with.
     <div...Thank you for your upload. 100 files from the tarball will be
     reviewed...
 
-Check that the import queue has the needed entries to do filtering and
-that we have all the entries we just imported plus the two entries
-already included in sample data.
+On the import queue page, Carlos sees widgets for filtering his view of
+the queue, as well as the entries he just imported and the two that were
+already included in the sample data.
 
     >>> def print_batch_heading(browser):
     ...     """Print "x -> y of z results" batch navigator heading."""
-    ...     heading = find_tags_by_class(browser.contents, 'batch-navigation-index')[0]
+    ...     heading = find_tags_by_class(
+    ...         browser.contents, 'batch-navigation-index')[0]
     ...     print extract_text(heading).encode('us-ascii', 'backslashreplace')
 
     >>> def print_dropdown(browser, name, index=0):
@@ -49,7 +54,7 @@ already included in sample data.
     >>> browser.getLink('Next')
     <Link
       text='Next'
-      url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
+      url='http://.../+imports/+index?start=5&batch=5'>
 
 The queue contains import requests for only one target: Evolution.  This
 is shown in a view filter dropdown, as well as an option to display all
@@ -59,7 +64,7 @@ targets.
     All targets
     Evolution
 
-Another dropdown gives us a choice to filter by status.
+Another dropdown offers the option to filter by status.
 
     >>> print_dropdown(browser, 'field.filter_status')
     All statuses
@@ -73,12 +78,13 @@ Another dropdown gives us a choice to filter by status.
     >>> print_batch_heading(browser)
     1 ... 5 of 102 results
 
-The entries that need review, as we can see, initially, are all entries
-minus the two already included in sample data.
+Carlos chooses to filter on Needs Review.  The entries that need review,
+initially, are all entries minus the two already included in sample
+data.
 
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/+imports?'
-    ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+    >>> browser.getControl(
+    ...     name='field.filter_status', index=0).value = ['NEEDS_REVIEW']
+    >>> browser.getControl('Filter').click()
     >>> browser.getControl(name='field.filter_status', index=0).value
     ['NEEDS_REVIEW']
     >>> browser.getControl(name='field.filter_extension', index=0).value
@@ -87,15 +93,15 @@ minus the two already included in sample data.
     >>> print_batch_heading(browser)
     1 ... 5 of 100 results
 
-Since we're filtering for "needs review" state, and Evolution has queue
-entries in that state, Evolution now shows up in the target dropdown
-with an asterisk.
+Since Evolution has queue entries in the Needs Review state, Evolution
+now shows up in the target dropdown with an asterisk.
 
     >>> print_targets(browser)
     All targets
     Evolution*
 
-Let's select only the .po files, we get now only 96 entries.
+Now Carlos selects only the .po files, and only 96 of the entries are
+shown.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -107,7 +113,7 @@ Let's select only the .po files, we get now only 96 entries.
     >>> print_batch_heading(browser)
     1 ... 5 of 96 results
 
-And now, all entries that are .pot files, we should get just 6.
+When filtering for .pot files, the other 6 entries show up instead.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -119,7 +125,7 @@ And now, all entries that are .pot files, we should get just 6.
     >>> print_batch_heading(browser)
     1 ... 5 of 6 results
 
-Now, we want the approved entries.
+Next Carlos filters for Approved entries.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -133,13 +139,13 @@ Now, we want the approved entries.
     ...There are no entries that match this filtering...
 
 Evolution shows up in the dropdown without asterisk again, since it has
-no entries matching the status we filter for.
+no entries matching the status that Carlos is filtering for.
 
     >>> print_targets(browser)
     All targets
     Evolution
 
-Let's change the status of the third entry on the queue to be blocked.
+Carlos changes the status of the third entry to Blocked.
 
     >>> browser.open('http://translations.launchpad.dev/+imports')
     >>> browser.getControl(name='field.status_3').value
@@ -149,7 +155,7 @@ Let's change the status of the third entry on the queue to be blocked.
     >>> print browser.url
     http://translations.launchpad.dev/+imports/+index
 
-We can see now an entry blocked.
+The entry now shows up in the Blocked filter.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -163,7 +169,7 @@ We can see now an entry blocked.
     All targets
     Evolution*
 
-And the entries that need review are only 99
+And the entries that need review are only 99.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -175,7 +181,7 @@ And the entries that need review are only 99
     >>> print_batch_heading(browser)
     1 ... 5 of 99 results
 
-Let's delete the fourth entry.
+The fourth entry, Carlos deletes by setting its status to Deleted.
 
     >>> browser.open('http://translations.launchpad.dev/+imports')
     >>> browser.getControl(name='field.status_4').value
@@ -185,7 +191,7 @@ Let's delete the fourth entry.
     >>> browser.url
     'http://translations.launchpad.dev/+imports/+index'
 
-And see that we have one deleted.
+It shows up in the Deleted filter.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -195,7 +201,7 @@ And see that we have one deleted.
     >>> print_batch_heading(browser)
     1 ... 1 of 1 result
 
-And now, we only have 98 entries that need review.
+Thus only 98 entries remain in the Needs Review filter.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -207,7 +213,7 @@ And now, we only have 98 entries that need review.
     >>> print_batch_heading(browser)
     1 ... 5 of 98 results
 
-We can also filter by target. In this case, Evolution.
+It's also possible to filter by target. In this case, Evolution.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
@@ -217,8 +223,7 @@ We can also filter by target. In this case, Evolution.
     >>> print_batch_heading(browser)
     1 ... 5 of 102 results
 
-Also, we can filter by distro series, to do that, first we need to
-upload something in the queue.
+Carlos uploads files for Evolution in Ubuntu Hoary.
 
     >>> import transaction
     >>> from StringIO import StringIO
@@ -237,8 +242,8 @@ upload something in the queue.
     # Commit the transaction so librarian stores the uploaded file.
     >>> transaction.commit()
 
-Now, main translation import queue page allows you to filter by
-distribution:
+Hoary now shows up as a filter option in the target filter dropdown.
+Carlos selects that option and filters for it.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/+imports')
@@ -248,7 +253,7 @@ distribution:
     >>> print user_browser.url
     http://.../+imports/+index?field.filter_target=ubuntu/hoary&...
 
-And we only get the entry we just uploaded.
+The only entry that shows up now is the one Carlos just uploaded.
 
     >>> import_list = find_tag_by_id(
     ...     user_browser.contents, 'import-entries-list')
