@@ -327,13 +327,16 @@ reset, reflecting that nothing is cached in the database yet.
   0
 
 The sampledata contains no package caches, so attempts to find
-'pmount' (a source) or 'firefox' (a binary name term) fail.
+'pmount' (a source), 'firefox' (a binary name term) or 'shortdesc' (a
+term used in the pmount binary summary) fail.
 
   >>> ubuntu.searchPPAs(text='pmount').count()
   0
   >>> ubuntu.searchPPAs(text='firefox').count()
   0
   >>> ubuntu.searchPPAs(text='warty').count()
+  0
+  >>> ubuntu.searchPPAs(text='shortdesc').count()
   0
 
 If we populate the package caches and update the archive caches, the
@@ -360,6 +363,8 @@ same queries work, pointing to Celso's PPA.
   >>> print ubuntu.searchPPAs(text='firefox')[0].title
   PPA for Celso Providelo
   >>> print ubuntu.searchPPAs(text='warty')[0].title
+  PPA for Celso Providelo
+  >>> print ubuntu.searchPPAs(text='shortdesc')[0].title
   PPA for Celso Providelo
 
 
