@@ -64,24 +64,28 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
-    IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
-    IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
-    IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
-    SpecificationSort, SpecificationImplementationStatus)
+    IBuildSet, ICanPublishPackages, IDistroSeries, IDistroSeriesSet,
+    IHasBuildRecords, IHasQueueItems, IHasTranslationTemplates,
+    ILibraryFileAliasSet, IPublishedPackageSet, ISourcePackage,
+    ISourcePackageName, ISourcePackageNameSet, IStructuralSubscriptionTarget,
+    LanguagePackType, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
+    SpecificationGoalStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin):
+                   HasTranslationImportsMixin,
+                   StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
-        IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates, ICanPublishPackages)
+        ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
+        IHasTranslationTemplates, IStructuralSubscriptionTarget)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']

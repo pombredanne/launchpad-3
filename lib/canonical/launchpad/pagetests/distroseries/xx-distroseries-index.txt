@@ -7,3 +7,16 @@ distribution series.
     >>> user_browser.getLink('Help translate').click()
     >>> print user_browser.title
     Translations of The Hoary Hedgehog Release in Launchpad
+
+
+== Distribution series bug subscriptions ==
+
+To receive email notifications about bugs pertaining to a distribution
+series, we can create structural bug subscriptions.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> admin_browser.getLink('Subscribe to bug mail').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/warty/+subscribe
+    >>> print admin_browser.title
+    Bug subscriptions for The Warty Warthog Release
