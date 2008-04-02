@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Tests for ProcessMonitorProtocol and ProcessMonitorProtocolWithTimeout."""
 

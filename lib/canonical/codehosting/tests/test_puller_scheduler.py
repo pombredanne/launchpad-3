@@ -1,5 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702,W0222
+# pylint: disable-msg=W0222
 
 __metaclass__ = type
 
@@ -109,7 +109,8 @@ class TestJobScheduler(unittest.TestCase):
             os.unlink(self.masterlock)
 
 
-class TestPullerMasterProtocol(ProcessMonitorProtocolTestsMixin, TrialTestCase):
+class TestPullerMasterProtocol(
+    ProcessMonitorProtocolTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
 
     layer = TwistedLayer
