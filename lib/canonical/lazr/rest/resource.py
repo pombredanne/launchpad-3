@@ -38,7 +38,7 @@ from canonical.config import config
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url code should be moved into lazr.
+# canonical_url and BatchNavigator code should be moved into lazr.
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -153,12 +153,28 @@ class HTTPResource:
         return len(getAdapters((self.context, self.request),
                                IResourcePOSTOperation)) > 0
 
+
+class WebServiceBatchNavigator(BatchNavigator):
+    """A batch navigator that speaks to web service clients.
+
+    This batch navigator differs from others in the names of the query
+    variables it expects. This class expects the starting point to be
+    contained in the query variable "ws_start" and the size of the
+    batch to be contained in the query variable ""ws_size". When this
+    navigator serves links, it includes query variables by those
+    names.
+    """
+
+    start_variable_name = "ws_start"
+    batch_variable_name = "ws_size"
+
+
 class BatchingResourceMixin:
 
     """A mixin for resources that need to batch lists of entries."""
 
     def batch(self, entries, request):
-        navigator = BatchNavigator(entries, request)
+        navigator = WebServiceBatchNavigator(entries, request)
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch]
         batch = { 'entries' : resources,
