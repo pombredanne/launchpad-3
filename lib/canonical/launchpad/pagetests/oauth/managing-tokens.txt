@@ -1,0 +1,58 @@
+= Managing OAuth access tokens =
+
+All access tokens for a given user can be seen and/or revoked from that
+user's +oauth-tokens page.
+
+    >>> my_browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
+    >>> main_content = find_tag_by_id(my_browser.contents, 'maincontent')
+    >>> print extract_text(main_content)
+    Authorized applications
+    ...
+    foobar123451432
+        Authorized...to read non-private data
+    launchpad-library
+        Authorized...to change anything
+
+For each token we have a separate <form> with the token and consumer
+keys stored in hidden <input>s as well as the button to revoke the
+authorization.
+
+    >>> li = main_content.find('li')
+    >>> for input in li.find('form').findAll('input'):
+    ...     print input['name'], input['value']
+    consumer_key foobar123451432
+    token_key ...
+    revoke Revoke Authorization
+
+    >>> for input in li.findNextSibling('li').find('form').findAll('input'):
+    ...     print input['name'], input['value']
+    consumer_key launchpad-library
+    token_key ...
+    revoke Revoke Authorization
+
+If a token is revoked the application will not be able to access
+Launchpad on that user's behalf anymore, nor will that application be
+shown as one of the authorized ones.
+
+    >>> my_browser.getControl('Revoke Authorization', index=1).click()
+    >>> my_browser.title
+    'Guilherme Salgado in Launchpad'
+    >>> for message in get_feedback_messages(my_browser.contents):
+    ...     print message
+    Authorization revoked successfully.
+
+    >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
+    >>> print extract_text(find_tag_by_id(my_browser.contents, 'maincontent'))
+    Authorized applications
+    ...
+    foobar123451432
+        Authorized...to read non-private data
+
+That page is protected with the launchpad.Edit permission, for obvious
+reasons, so users can only access their own.
+
+    >>> user_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...launchpad.Edit...

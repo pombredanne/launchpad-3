@@ -531,6 +531,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     subscribedBounties = Attribute(
         'Bounties to which this person subscribes.')
 
+    oauth_access_tokens = Attribute(_("Non-expired access tokens"))
+
     sshkeys = Attribute(_('List of SSH keys'))
 
     timezone = Choice(

@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702,W0222
 
 __metaclass__ = type
@@ -26,7 +26,8 @@ from canonical.codehosting.puller.worker import (
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.testing import (
+    reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.launchpad.webapp import errorlog
 
 
@@ -120,6 +121,8 @@ class TestJobScheduler(unittest.TestCase):
 
 class TestPullerMasterProtocol(TrialTestCase):
     """Tests for the process protocol used by the job manager."""
+
+    layer = TwistedLayer
 
     class StubPullerListener:
         """Stub listener object that records calls."""
@@ -379,6 +382,8 @@ class TestPullerMasterProtocol(TrialTestCase):
 
 class TestPullerMaster(TrialTestCase):
 
+    layer = TwistedLayer
+
     def setUp(self):
         self.status_client = FakeBranchStatusClient()
         self.arbitrary_branch_id = 1
@@ -448,6 +453,8 @@ class TestPullerMaster(TrialTestCase):
 
 
 class TestPullerMasterSpawning(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         from twisted.internet import reactor
@@ -534,7 +541,7 @@ protocol = PullerWorkerProtocol(sys.stdout)
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = LaunchpadScriptLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         BranchTestCase.setUp(self)

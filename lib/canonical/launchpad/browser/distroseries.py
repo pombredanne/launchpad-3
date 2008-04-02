@@ -149,7 +149,8 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
     usedfor = IDistroSeries
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue']
+             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
+             'subscribe']
 
     def edit(self):
         text = 'Change details'
@@ -201,6 +202,10 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
     def queue(self):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistroSeriesBugsMenu(ApplicationMenu):

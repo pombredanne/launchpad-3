@@ -11,6 +11,7 @@ __all__ = [
     'ChrootManager',
     'ChrootManagerError',
     'LpQueryDistro',
+    'ManageChrootScript',
     'ObsoleteDistroseries',
     'PackageCopier',
     'PackageRemover',
@@ -1660,3 +1661,62 @@ class ObsoleteDistroseries(SoyuzScript):
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 
+
+class ManageChrootScript(SoyuzScript):
+    """`SoyuzScript` that manages chroot files."""
+
+    usage = "%prog -d <distribution> -s <suite> -a <architecture> -f file"
+    description = "Manage the chroot files used by the builders."
+    success_message = "Success."
+
+    def add_my_options(self):
+        """Add script options."""
+        SoyuzScript.add_distro_options(self)
+        SoyuzScript.add_transaction_options(self)
+        self.parser.add_option(
+            '-a', '--architecture', dest='architecture', default=None,
+            help='Architecture tag')
+        self.parser.add_option(
+            '-f', '--filepath', dest='filepath', default=None,
+            help='Chroot file path')
+
+    def mainTask(self):
+        """Set up a ChrootManager object and invoke it."""
+        if len(self.args) != 1:
+            raise SoyuzScriptError(
+                "manage-chroot.py <add|update|remove|get>")
+
+        [action] = self.args
+
+        distribution = self.location.distribution
+        series = self.location.distroseries
+
+        try:
+            distroarchseries = series[self.options.architecture]
+        except NotFoundError, info:
+            raise SoyuzScriptError("Architecture not found: %s" % info)
+
+        # We don't want to have to force the user to confirm transactions
+        # for manage-chroot.py, so disable that feature of SoyuzScript.
+        self.options.confirm_all = True
+
+        self.logger.debug(
+            "Initialising ChrootManager for '%s'" % (distroarchseries.title))
+        chroot_manager = ChrootManager(
+            distroarchseries, filepath=self.options.filepath)
+
+        if action in chroot_manager.allowed_actions:
+            chroot_action = getattr(chroot_manager, action)
+        else:
+            self.logger.error(
+                "Allowed actions: %s" % chroot_manager.allowed_actions)
+            raise SoyuzScriptError("Unknown action: %s" % action)
+
+        try:
+            chroot_action()
+        except ChrootManagerError, info:
+            raise SoyuzScriptError(info)
+        else:
+            # Collect extra debug messages from chroot_manager.
+            for debug_message in chroot_manager._messages:
+                self.logger.debug(debug_message)

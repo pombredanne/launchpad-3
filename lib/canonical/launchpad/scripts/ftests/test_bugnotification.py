@@ -13,6 +13,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.database import BugTask
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -35,6 +36,7 @@ class MockBug:
             'Bug Title', 'Initial message.', owner=owner)
         self.owner = owner
         self.bugtasks = []
+        self.tags = []
 
     @property
     def title(self):
@@ -70,6 +72,16 @@ class DBExceptionBug(MockBug):
         BugTask(bug=bug_one, product=firefox, owner=self.owner)
 
 
+class MockBugNotificationRecipient:
+    """A mock BugNotificationRecipient for testing."""
+
+    def __init__(self):
+        self.person = getUtility(IPersonSet).getByEmail(
+            'no-priv@canonical.com')
+        self.reason_header = 'Test Rationale'
+        self.reason_body = 'Test Reason'
+
+
 class MockBugNotification:
     """A mock BugNotification used for testing.
 
@@ -81,6 +93,7 @@ class MockBugNotification:
         self.bug = bug
         self.is_comment = is_comment
         self.date_emailed = date_emailed
+        self.recipients = [MockBugNotificationRecipient()]
 
 
 class TestGetEmailNotificattions(unittest.TestCase):
@@ -136,15 +149,19 @@ class TestGetEmailNotificattions(unittest.TestCase):
         """
         email_notifications = get_email_notifications(
             notifications_to_send, date_emailed=self.now)
-
         to_addresses = set()
         sent_notifications = []
         for notifications, messages in email_notifications:
             for message in messages:
                 to_addresses.add(message['to'])
-            recipients = notifications[0].bug.getBugNotificationRecipients()
-            expected_to_addresses = recipients.getEmails()
-            self.assertEqual(expected_to_addresses, sorted(to_addresses))
+            recipients = {}
+            for notification in notifications:
+                for recipient in notification.recipients:
+                    for address in contactEmailAddresses(recipient.person):
+                        recipients[address] = recipient
+            expected_to_addresses = recipients.keys()
+            self.assertEqual(
+                sorted(expected_to_addresses), sorted(to_addresses))
             sent_notifications += notifications
         return sent_notifications
 
@@ -157,7 +174,7 @@ class TestGetEmailNotificattions(unittest.TestCase):
             ]
         sent_notifications = self._getAndCheckSentNotifications(
             notifications_to_send)
-        self.assertEqual(sent_notifications, [self.bug_one_notification])
+        self.assertEqual(sent_notifications, notifications_to_send)
 
 
     def test_catch_simple_exception_in_the_middle(self):
@@ -172,7 +189,7 @@ class TestGetEmailNotificattions(unittest.TestCase):
             notifications_to_send)
         self.assertEqual(
             sent_notifications,
-            [self.bug_one_notification, self.bug_one_another_notification])
+            notifications_to_send)
 
     def test_catch_db_exception_last(self):
         # Make sure that the first notification is sent even if the
@@ -184,7 +201,7 @@ class TestGetEmailNotificattions(unittest.TestCase):
             ]
         sent_notifications = self._getAndCheckSentNotifications(
             notifications_to_send)
-        self.assertEqual(sent_notifications, [self.bug_one_notification])
+        self.assertEqual(sent_notifications, notifications_to_send)
 
         # The transaction should have been rolled back and restarted
         # properly, so getting something from the database shouldn't
@@ -204,8 +221,7 @@ class TestGetEmailNotificattions(unittest.TestCase):
         sent_notifications = self._getAndCheckSentNotifications(
             notifications_to_send)
         self.assertEqual(
-            sent_notifications,
-            [self.bug_one_notification, self.bug_one_another_notification])
+            sent_notifications, notifications_to_send)
 
         # The transaction should have been rolled back and restarted
         # properly, so getting something from the database shouldn't

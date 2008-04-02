@@ -1,0 +1,48 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <metal:portlets fill-slot="portlets" />
+
+  <div metal:fill-slot="main">
+    <h1>Authorized applications</h1>
+    <p>These applications have been authorized to access Launchpad on your
+    behalf.  If you revoke an authorization, that application will not be
+    allowed to do anything in Launchpad on your behalf.
+    </p>
+    <ul>
+      <li tal:repeat="token view/tokens">
+        <form method="post">
+          <label tal:content="token/consumer/key">Consumer</label>
+          <p>Authorized,
+            <tal:date-reviewed 
+                content="token/date_created/fmt:approximatedate" />,
+            to
+            <tal:permission content="token/permission/title/lower" />
+            <tal:expires condition="token/date_expires">
+              until <tal:date content="token/date_expires/fmt:date" />
+            </tal:expires>
+          </p>
+          <input tal:attributes="value token/consumer/key" type="hidden"
+                 name="consumer_key" />
+          <input tal:attributes="value token/key" type="hidden"
+                 name="token_key" />
+          <input type="submit" name="revoke" value="Revoke Authorization" />
+          <br />
+          <br />
+        </form>
+      </li>
+    </ul>
+
+  </div>
+
+</body>
+</html>
