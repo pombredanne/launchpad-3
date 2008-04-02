@@ -121,6 +121,8 @@ class TestJobScheduler(unittest.TestCase):
 
 class ProcessMonitorProtocolTestsMixin:
 
+    layer = TwistedLayer
+
     class StubPullerListener:
         """Stub listener object that records calls."""
 
