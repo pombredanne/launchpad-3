@@ -393,6 +393,7 @@ displayed:
   #1:  Firefox does not support SVG  304014
   #7:  A test bug                    280883
 
+
 === Private bugs ===
 
 If the user is not permitted to view one of the watches only very
@@ -433,6 +434,7 @@ the remote trackers to see what's going on. Giving them an adjusted
 total is misleading. There would be a disconnect between what
 Launchpad reports and what it does, which again could lead them to
 think that Launchpad is broken or lying.
+
 
 === Anonymous users ===
 
