@@ -93,6 +93,9 @@ class DummyTranslationMessage(TranslationMessageMixIn):
 
         self.id = None
         self.pofile = pofile
+        self.potemplate = pofile.potemplate
+        self.language = pofile.language
+        self.variant = pofile.variant
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
@@ -137,6 +140,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     _table = 'TranslationMessage'
 
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    potemplate = ForeignKey(
+        foreignKey='POTemplate', dbName='potemplate', notNull=False,
+        default=None)
+    language = ForeignKey(
+        foreignKey='Language', dbName='language', notNull=False, default=None)
+    variant = StringCol(dbName='variant', notNull=False, default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(
