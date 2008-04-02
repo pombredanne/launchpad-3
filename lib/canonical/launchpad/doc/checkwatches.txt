@@ -71,7 +71,8 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
-The timeout will also produce an OOPS report.
+The timeout will also produce an OOPS report and the OOPS id will be
+included in the logged error message.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
     >>> oops_hook.install()
@@ -92,7 +93,7 @@ The timeout will also produce an OOPS report.
     ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
-    ERROR:root:Connection timed out when updating http://bugs.example.com
+    ERROR...Connection timed out when updating ... (OOPS-...)
     OOPS-...
     baseurl=u'http://bugs.example.com'
     bugtracker=u'example-bugs'
@@ -191,5 +192,5 @@ requests are actually made.
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com
-    ERROR Connection timed out when updating http://bugs.example.com
+    ERROR Connection timed out when updating ... (OOPS-...)
 
