@@ -710,6 +710,7 @@ def get_bug_delta(old_bug, new_bug, user):
 
     if changes:
         changes["bug"] = new_bug
+        changes["bug_before_modification"] = old_bug
         changes["bugurl"] = canonical_url(new_bug)
         changes["user"] = user
 
@@ -780,12 +781,19 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers,
         key=operator.attrgetter('displayname'))
 
-def add_bug_change_notifications(bug_delta):
+def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
+    recipients = bug_delta.bug.getBugNotificationRecipients(
+        old_bug=bug_delta.bug_before_modification)
+    if old_bugtask is not None:
+        old_bugtask_recipients = BugNotificationRecipients()
+        get_bugtask_indirect_subscribers(
+            old_bugtask, recipients=old_bugtask_recipients)
+        recipients.update(old_bugtask_recipients)
     for text_change in changes:
         bug_delta.bug.addChangeNotification(
-            text_change, person=bug_delta.user)
+            text_change, person=bug_delta.user, recipients=recipients)
 
 
 def notify_bugtask_added(bugtask, event):
@@ -820,7 +828,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_deltas=bugtask_delta,
         user=event.user)
 
-    add_bug_change_notifications(bug_delta)
+    add_bug_change_notifications(
+        bug_delta, old_bugtask=event.object_before_modification)
 
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers

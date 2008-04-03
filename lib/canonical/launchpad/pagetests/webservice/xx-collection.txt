@@ -3,10 +3,7 @@
 The Launchpad web service exposes a collection of people and teams,
 which responds to GET.
 
-  >>> people_collection = webservice(r"""
-  ... GET /people HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> people_collection = webservice.get("/people").jsonBody()
 
   >>> people_collection = sorted(people_collection)
   >>> people_collection[0]['name']
@@ -18,10 +15,7 @@ which responds to GET.
 
 The elements of a collection can be looked up by unique identifier:
 
-  >>> admins_team = webservice(r"""
-  ... GET /~admins HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> admins_team = webservice.get("/~admins").jsonBody()
   >>> sorted(admins_team.items())
   [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
    (u'displayname', u'Launchpad Administrators'),
@@ -37,10 +31,7 @@ The elements of a collection can be looked up by unique identifier:
 
 A collection may be scoped to an element:
 
-  >>> team_members = webservice(r"""
-  ... GET /~admins/members HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> team_members = webservice.get("/~admins/members").jsonBody()
   >>> team_members = sorted(team_members)
   >>> len(team_members)
   11
@@ -51,9 +42,102 @@ A collection may be scoped to an element:
 
 But not every element may have that collection scoped to it:
 
-  >>> print webservice(r"""
-  ... GET /~spiv/members HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).getStatus()
+  >>> print webservice.get("/~spiv/members").getStatus()
   404
 
+
+== Custom operations ==
+
+A collection may expose custom named operations in response to GET
+requests. A named operation may do anything consistent with the nature
+of a GET request, but it's usually used to serve search results. The
+custom operation to be invoked is named in the query string's
+'ws_op' argument. Here's a custom operation on the collection of
+people, called 'people'.
+
+  >>> def search_people(text):
+  ...     return sorted(webservice.get(
+  ...         "/people?ws_op=people&text=" + text).jsonBody())
+
+
+  >>> [p['name'] for p in search_people("admins")]
+  [u'admins', u'ubuntu-mirror-admins', u'rosetta-admins',
+   u'launchpad-buildd-admins', u'shipit-admins']
+
+  >>> [p['name'] for p in search_people("nosuchperson")]
+  []
+
+  >>> print webservice.get("/people?ws_op=people&text=")
+  HTTP/1.1 400 Bad Request
+  ...
+  text: Required input is missing.
+
+A collection may also expose named operations in response to POST
+requests. These operations are usually factories. Here's a helper
+method that creates a new person by invoking a factory operation on
+the collection of people.
+
+  >>> def create_person(email_address, comment, name,
+  ...                   display_name, password):
+  ...     return webservice.named_post(
+  ...         "/people", "create_person", {}, email_address=email_address,
+  ...         comment=comment, name=name, display_name=display_name,
+  ...         password=password)
+
+  >>> print webservice.get('~serviceuser')
+  HTTP/1.1 404 Not Found
+  ...
+
+  >>> print create_person("serviceuser@example.com",
+  ...                     "Comment", "serviceuser", "Service User",
+  ...                     "password")
+  HTTP/1.1 201 Created
+  ...
+  Location: http://api.launchpad.dev/~serviceuser
+  <BLANKLINE>
+
+  >>> print webservice.get('~serviceuser')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print create_person("serviceuser2@example.com",
+  ...                     "", "", "Your Name Here", "")
+  HTTP/1.1 201 Created
+  ...
+  Location: http://api.launchpad.dev/~serviceuser2
+  <BLANKLINE>
+
+  >>> print webservice.get('~serviceuser2')
+  HTTP/1.1 200 Ok
+  ...
+
+Standard person-creation rules apply. For instance, you can't create a
+person with a name that's taken.
+
+  >>> print create_person("serviceuser3@example.com", "", "serviceuser",
+  ...                     "Name already taken", "password")
+  HTTP/1.1 400 Bad Request
+  ...
+
+You also can't create a person with an email address that's taken.
+
+  >>> print create_person("serviceuser@example.com", "", "serviceuser3",
+  ...                     "Email address already taken", "password")
+  HTTP/1.1 409 Conflict
+  ...
+  The email address 'serviceuser@example.com' is already in use.
+
+A POST request has no meaning right now unless it specifies a custom
+operation.
+
+  >>> print webservice.post("/people", 'text/plain', '')
+  HTTP/1.1 400 Bad Request
+  ...
+  No operation name given.
+
+You can't invoke a nonexistent operation:
+
+  >>> print webservice.named_post("/people", "nosuchop", {})
+  HTTP/1.1 400 Bad Request
+  ...
+  No such operation: nosuchop

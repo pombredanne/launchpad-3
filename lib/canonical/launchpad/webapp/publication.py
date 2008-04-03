@@ -109,7 +109,7 @@ class LaunchpadBrowserPublication(
                 root_object = bag.site
             return root_object
 
-    # the below ovverrides to zopepublication (callTraversalHooks,
+    # The below overrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
     # assumption that there will never be a ZODB "local"
     # authentication service (such as the "pluggable auth service").
@@ -339,7 +339,8 @@ class LaunchpadBrowserPublication(
     def afterCall(self, request, ob):
         """See `zope.publisher.interfaces.IPublication`.
 
-        Our implementation aborts() the transaction on read-only requests.
+        Our implementation calls self.finishReadOnlyRequest(), which by
+        default aborts the transaction, for read-only requests.
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
@@ -357,7 +358,7 @@ class LaunchpadBrowserPublication(
 
         # Abort the transaction on a read-only request.
         if request.method in ['GET', 'HEAD']:
-            txn.abort()
+            self.finishReadOnlyRequest(txn)
         else:
             txn.commit()
 
@@ -365,6 +366,14 @@ class LaunchpadBrowserPublication(
         # by zope.app.publication.browser.BrowserPublication
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def finishReadOnlyRequest(self, txn):
+        """Hook called at the end of a read-only request.
+
+        By default it abort()s the transaction, but subclasses may need to
+        commit it instead, so they must overwrite this.
+        """
+        txn.abort()
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does

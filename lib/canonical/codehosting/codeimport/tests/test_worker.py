@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
+import logging
 import os
 import shutil
+import subprocess
 import tempfile
 import time
 import unittest
@@ -17,6 +19,7 @@ from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
+from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -25,9 +28,10 @@ from canonical.codehosting.codeimport.tests.test_foreigntree import (
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
+from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import BranchType, BranchTypeError
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.testing import LaunchpadScriptLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 import pysvn
 
@@ -39,7 +43,7 @@ class WorkerTest(TestCaseWithTransport):
     factories for some code import objects.
     """
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def assertDirectoryTreesEqual(self, directory1, directory2):
         """Assert that `directory1` has the same structure as `directory2`.
@@ -335,7 +339,8 @@ class TestWorkerCore(WorkerTest):
         """Make an ImportWorker that only uses fake branches."""
         return ImportWorker(
             self.job.id, FakeForeignTreeStore(),
-            self.makeBazaarBranchStore())
+            self.makeBazaarBranchStore(),
+            logging.getLogger("silent"))
 
     def test_construct(self):
         # When we construct an ImportWorker, it has a CodeImportJob and a
@@ -412,7 +417,8 @@ class TestActualImportMixin:
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return ImportWorker(
-            self.job.id, self.foreign_store, self.bazaar_store)
+            self.job.id, self.foreign_store, self.bazaar_store,
+            logging.getLogger())
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
@@ -444,6 +450,56 @@ class TestActualImportMixin:
         # Check that the new revisions are in the Bazaar branch.
         bazaar_tree = worker.getBazaarWorkingTree()
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
+
+    def cleanUpDefaultStoresForImport(self, code_import):
+        """Clean up default branch and foreign tree stores for an import.
+
+        This checks for an existing branch and/or foreign tree tarball
+        corresponding to the passed in import and deletes them if they
+        are found.
+
+        If there are tarballs or branches in the default stores that
+        might conflict with working on our job, life gets very, very
+        confusing.
+        """
+        treestore = get_default_foreign_tree_store()
+        tree_transport = treestore.transport
+        archive_name = treestore._getTarballName(code_import)
+        if tree_transport.has(archive_name):
+            tree_transport.delete(archive_name)
+        branchstore = get_default_bazaar_branch_store()
+        branch_transport = branchstore.transport
+        branch_name = '%08x' % code_import.branch.id
+        if branchstore.transport.has(branch_name):
+            branchstore.transport.delete_tree(branch_name)
+
+    def test_import_script(self):
+        # Like test_import, but using the code-import-worker.py script
+        # to perform the import.
+
+        # We need to commit the creation of the code import and code
+        # import job that's done in setUp() so that the subprocess we
+        # launch can see it.
+        commit()
+
+        self.cleanUpDefaultStoresForImport(self.job.code_import)
+
+        script_path = os.path.join(
+            get_rocketfuel_root(), 'scripts', 'code-import-worker.py')
+        retcode = subprocess.call([script_path, str(self.job.id), '-qqq'])
+        self.assertEqual(retcode, 0)
+
+        self.addCleanup(
+            lambda : self.cleanUpDefaultStoresForImport(self.job.code_import))
+
+        tree_path = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tree_path))
+
+        bazaar_tree = get_default_bazaar_branch_store().pull(
+            self.job.code_import.branch, tree_path)
+
+        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+
 
 
 class TestCVSImport(WorkerTest, TestActualImportMixin):
