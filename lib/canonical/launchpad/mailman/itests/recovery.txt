@@ -31,16 +31,17 @@ failed.  The mailing list would be in the CONSTRUCTING state.  We simulate
 that here by manually tweaking the list back to that transitory state.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingListSet, MailingListStatus)
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
-    >>> itest_one = mailing_list_set.get('itest-one')
+    >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
     >>> itest_one.status = MailingListStatus.CONSTRUCTING
     >>> serial_watcher.resync()
-    >>> flush_database_updates()
+    >>> commit()
 
 Now we just wait for Mailman to resynchronize its state with Launchpad.
 
@@ -55,9 +56,12 @@ Now we just wait for Mailman to resynchronize its state with Launchpad.
 Another situation can occur if the team owner updates the mailing list, say by
 giving it a welcome message.
 
+    >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
+    >>> itest_one.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
     >>> itest_one.status = MailingListStatus.UPDATING
     >>> serial_watcher.resync()
-    >>> flush_database_updates()
+    >>> commit()
     >>> serial_watcher.wait()
     >>> itest_one = mailing_list_set.get('itest-one')
     >>> itest_one.status
