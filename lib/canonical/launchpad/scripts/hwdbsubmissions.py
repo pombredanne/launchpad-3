@@ -15,12 +15,20 @@ from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
+from tempfile import NamedTemporaryFile
 
-from lxml import etree
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
+
 import pytz
 
 from canonical.config import config
-
+from canonical.launchpad.helpers import simple_popen2
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -37,6 +45,73 @@ _time_regex = re.compile(r"""
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 
+
+class RelaxNGValidator:
+    """A validator for Relax NG schemas."""
+
+    def __init__(self, relax_ng_filename):
+        """Create a validator instance.
+
+        :param relax_ng_filename: The name of a file containing the schema.
+        """
+        self.relax_ng_filename = relax_ng_filename
+        self._errors = ''
+
+    def validate(self, xml):
+        """Validate the string xml
+
+        :return: True, if xml is valid, else False.
+        """
+        # XXX Abel Deuring, 2008-03-20
+        # The original implementation of the validation used the lxml
+        # package. Unfortunately, running lxml's Relax NG validator
+        # caused segfaults during PQM test runs, hence this class uses
+        # an external validator.
+
+        # Performance penalty of the external validator:
+        # Using the lxml validator, the tests in this module need ca.
+        # 3 seconds on a 2GHz Core2Duo laptop.
+        # If the xml data to be validated is passed to xmllint via
+        # canonical.launchpad.helpers.simple_popen2, the run time
+        # of the tests is 38..40 seconds; if the validation input
+        # is not passed via stdin but saved in a temporary file,
+        # the tests need 28..30 seconds.
+
+        xml_file = NamedTemporaryFile()
+        xml_file.write(xml)
+        xml_file.flush()
+        command = 'xmllint -noout -relaxng %s %s'% (self.relax_ng_filename,
+                                                    xml_file.name)
+        result = simple_popen2(command, '').strip()
+
+        # The output consists of lines describing possible errors; the
+        # last line is either "(file) fails to validate" or
+        # "(file) validates".
+        parts = result.rsplit('\n', 1)
+        if len(parts) > 1:
+            self._errors = parts[0]
+            status = parts[1]
+        else:
+            self._errors = ''
+            status = parts[0]
+        if status == xml_file.name + ' fails to validate':
+            return False
+        elif status == xml_file.name + ' validates':
+            return True
+        else:
+            raise AssertionError(
+                'Unexpected result of running xmllint: %s' % result)
+
+    @property
+    def error_log(self):
+        """A string with the errors detected by the validator.
+
+        Each line contains one error; if the validation was successful,
+        error_log is the empty string.
+        """
+        return self._errors
+
+
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
 
@@ -44,15 +119,14 @@ class SubmissionParser:
         if logger is None:
             logger = getLogger()
         self.logger = logger
-        self.doc_parser = etree.XMLParser(remove_comments=True)
+        self.doc_parser = etree.XMLParser()
 
         self.validator = {}
         directory = os.path.join(config.root, 'lib', 'canonical',
                                  'launchpad', 'scripts')
         for version, relax_ng_filename in _relax_ng_files.items():
             path = os.path.join(directory, relax_ng_filename)
-            relax_ng_doc = etree.parse(path)
-            self.validator[version] = etree.RelaxNG(relax_ng_doc)
+            self.validator[version] = RelaxNGValidator(path)
         self._setMainSectionParsers()
         self._setHardwareSectionParsers()
         self._setSoftwareSectionParsers()
@@ -69,10 +143,9 @@ class SubmissionParser:
         """
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
-        except etree.XMLSyntaxError, error_value:
+        except SyntaxError, error_value:
             self._logError(error_value, submission_key)
             return None
-        self.docinfo = tree.docinfo
 
         submission_doc = tree.getroot()
         if submission_doc.tag != 'system':
@@ -87,7 +160,7 @@ class SubmissionParser:
         self.submission_format_version = version
 
         validator = self.validator[version]
-        if not validator(tree):
+        if not validator.validate(submission):
             self._logError(
                 'Relax NG validation failed.\n%s' % validator.error_log,
                 submission_key)

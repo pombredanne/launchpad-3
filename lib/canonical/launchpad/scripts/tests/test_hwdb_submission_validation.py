@@ -78,8 +78,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = 'No XML'
         result, submission_id = self.runValidator(sample_data)
         self.handler.assertLogsMessage(
-            "Parsing submission %s: line 1: "
-                "Start tag expected, '<' not found" % submission_id,
+            "Parsing submission %s: "
+                "syntax error: line 1, column 0" % submission_id,
             logging.ERROR)
         self.assertEqual(result, None, 'Expected detection of non-XML data')
 
@@ -129,7 +129,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         Bytes with bit 7 set must be detected as invalid.
         """
-        sample_data_ascii_encoded = self._setEncoding('ascii')
+        sample_data_ascii_encoded = self._setEncoding('US-ASCII')
         result, submission_id = self.runValidator(sample_data_ascii_encoded)
         self.assertNotEqual(result, None,
                             'Valid submission with ASCII encoding rejected')
@@ -145,8 +145,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(result, None,
                          'Invalid submission with ASCII encoding accepted')
         self.handler.assertLogsMessage(
-            "Parsing submission %s: line 28: Premature end of data in tag "
-                "system line 2" % submission_id,
+            "Parsing submission %s: "
+                "not well-formed (invalid token): line 28, column 25"
+                % submission_id,
             logging.ERROR)
 
     def testISO8859_1_Encoding(self):
@@ -190,8 +191,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                          'Invalid submissison with UTF-8 encoding accepted')
         self.handler.assertLogsMessage(
             "Parsing submission %s: "
-                "line 1: Input is not proper UTF-8, indicate encoding !\n"
-                "Bytes: 0xC3 0x22 0x2F 0x3E" % submission_id,
+                "not well-formed (invalid token): line 1, column 21"
+                % submission_id,
             logging.ERROR)
 
     # Using self.log.assertLogsMessage, the usual way to assert the
@@ -227,13 +228,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             candidate = r.getMessage()
             if candidate.startswith('Parsing submission %s:'
                                     % submission_key):
-                # It seems that lxml currently (version 1.3.3) interprets
-                # error codes from the Relax NG validator as xmlParserErrors
-                # and inserts corresponding texts into the message.
-                # Thus we search for
-                # <string>:(line):ERROR:RELAXNGV:(wrong text):(message)
-                if re.search('^<string>:\d+:ERROR:RELAXNGV:[^\n]+: %s$'
-                                 % re.escape(message),
+                if re.search(
+                    '(:\d+: element .*?: )?Relax-NG validity error : %s$'
+                    % re.escape(message),
                              candidate, re.MULTILINE):
                     return
                 else:
@@ -252,7 +249,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def testAssertErrorMessage(self):
         """Test the assertErrorMessage method."""
         log_template = ('Parsing submission %s:\n'
-                        '<string>:%i:ERROR:RELAXNGV:NONSENSE: %s')
+                        '-:%i: element node_name: Relax-NG validity error :'
+                        ' %s')
         self.log.error(log_template % ('assert_test_1', 123, 'log message 1'))
         self.log.error(log_template % ('assert_test_1', 234, 'log message 2'))
         self.log.error(log_template % ('assert_test_2', 345, 'log message 2'))
@@ -1546,7 +1544,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # The attribute target is required.
         # Note that the expected error message from the validator
         # is identical to the last error message expected in
-        # testAliasesTag: lxml's Relax NG validator is sometimes
+        # testAliasesTag: libxml2's Relax NG validator is sometimes
         # not as informative as one might wish.
         sample_data = self.sample_data.replace(
             '<alias target="65">', '<alias>')
@@ -2509,7 +2507,4 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
 
 def test_suite():
-    # XXX 2008-02-29 jamesh bug=196936:
-    #return TestLoader().loadTestsFromName(__name__)
-    from unittest import TestSuite
-    return TestSuite()
+    return TestLoader().loadTestsFromName(__name__)
