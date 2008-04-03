@@ -452,6 +452,7 @@ class XMLRPCRunner(Runner):
             # succeeded or not, however, it's unlikely that an action would
             # fail leaving the mailing list in a usable state.  Therefore, if
             # the list is loadable and lockable, we'll say it succeeded.
+            # pylint: disable-msg=W0702
             try:
                 mlist = MailList(team_name)
                 mlist.Unlock()
