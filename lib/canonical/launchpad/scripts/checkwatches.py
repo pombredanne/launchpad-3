@@ -13,7 +13,6 @@ import sys
 import pytz
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -602,6 +601,7 @@ class BugWatchUpdater(object):
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        report_oops(message, properties, info)
+        oops_info = report_oops(message, properties, info)
+
         # Also put it in the log.
-        self.log.error(message)
+        self.log.error("%s (%s)" % (message, oops_info.oopsid))

@@ -356,6 +356,8 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
+            self.potemplate.source_file = (
+                translation_import_queue_entry.content)
             if importer.uses_source_string_msgids:
                 # We use the special 'en' language as the way to store the
                 # English strings to show instead of the msgids.

@@ -18,11 +18,10 @@
             <a tal:attributes="href python:view.fileURL(file.libraryfile, release)"
                tal:content="file/libraryfile/filename">filename</a>
             (<a tal:attributes="href
-                python:view.md5URL(file.libraryfile, release)">md5</a>
-            <tal:signature condition="file/signature">,
-              <a tal:attributes="href
-                 python:view.fileURL(file.signature,release)">sig</a>
-            </tal:signature>)
+                python:view.md5URL(file.libraryfile,
+                release)">md5</a><tal:signature
+                condition="file/signature">,<a tal:attributes="href
+                python:view.fileURL(file.signature,release)">sig</a></tal:signature>)
           </td>
         </tr>
       </tbody>
