@@ -1,0 +1,64 @@
+= Error recovery =
+
+Under various conditions, reporting status from Mailman to Launchpad can
+fail.  For example, if during construction, the reportStatus() call has
+connectivity problems, the successful creation of the mailing list will never
+be reported, and Launchpad will not know that the list should be active.
+
+Another case is where the list is modified, say to give it a welcome message,
+but again the reportStatus() call fails.  In both these cases, Mailman and
+Launchpad should eventually resynchronize their state automatically.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> serial_watcher.wait()
+
+
+== Lost construction ==
+
+The mailing list is now active, but let's say that the status reporting
+failed.  The mailing list would be in the CONSTRUCTING state.  We simulate
+that here by manually tweaking the list back to that transitory state.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMailingListSet, MailingListStatus)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> mailing_list_set = getUtility(IMailingListSet)
+    >>> itest_one = mailing_list_set.get('itest-one')
+    >>> itest_one.status = MailingListStatus.CONSTRUCTING
+    >>> serial_watcher.resync()
+    >>> flush_database_updates()
+
+Now we just wait for Mailman to resynchronize its state with Launchpad.
+
+    >>> serial_watcher.wait()
+    >>> itest_one = mailing_list_set.get('itest-one')
+    >>> itest_one.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
+
+
+== Lost updates ==
+
+Another situation can occur if the team owner updates the mailing list, say by
+giving it a welcome message.
+
+    >>> itest_one.status = MailingListStatus.UPDATING
+    >>> serial_watcher.resync()
+    >>> flush_database_updates()
+    >>> serial_watcher.wait()
+    >>> itest_one = mailing_list_set.get('itest-one')
+    >>> itest_one.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>

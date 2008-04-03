@@ -9,6 +9,8 @@
         <allow interface="canonical.launchpad.interfaces.IMailingList"/>
         <require permission="launchpad.AnyPerson"
                  set_attributes="welcome_message"/>
+        <require permission="launchpad.Admin"
+                 set_attributes="status"/>
     </content>
 
     <content class="canonical.launchpad.database.MailingListSubscription">

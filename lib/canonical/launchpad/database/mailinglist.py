@@ -488,6 +488,12 @@ class MailingListSet:
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
 
+    @property
+    def unsynchronized_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.select('status IN %s' % sqlvalues(
+            (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
+
 
 class MailingListSubscription(SQLBase):
     """A mailing list subscription."""

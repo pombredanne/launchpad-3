@@ -64,8 +64,8 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                        for mailing_list in list_set.deactivated_lists]
         if deactivated:
             response['deactivate'] = deactivated
-        # Finally, do modified lists.  Currently, the only value that can be
-        # modified is the welcome message.
+        # Do modified lists.  Currently, the only value that can be modified
+        # is the welcome message.
         modified = []
         for mailing_list in list_set.modified_lists:
             changes = (mailing_list.team.name,
@@ -74,6 +74,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             mailing_list.startUpdating()
         if modified:
             response['modify'] = modified
+        # Handle unsynchronized lists.
+        unsynchronized = [mailing_list.team.name
+                          for mailing_list in list_set.unsynchronized_lists]
+        if unsynchronized:
+            response['unsynchronized'] = unsynchronized
         return response
 
     def reportStatus(self, statuses):
