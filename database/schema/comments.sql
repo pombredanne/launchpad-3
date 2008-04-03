@@ -1057,7 +1057,7 @@ COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bo
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
-COMMENT ON COLUMN BugMessage.remote_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment.';
+COMMENT ON COLUMN BugMessage.remote_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
