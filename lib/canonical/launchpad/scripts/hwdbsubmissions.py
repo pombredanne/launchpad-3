@@ -360,6 +360,8 @@ class SubmissionParser:
                  dictionary with the properties of the device (see
                  _parseProperties for details).
         """
+        # The Relax NG validation ensures that the attributes "id" and
+        # "udi" exist; it also ensures that "id" contains an integer.
         device_data = {'id': int(device_node.get('id')),
                        'udi': device_node.get('udi')}
         parent = device_node.get('parent', None)
@@ -406,6 +408,8 @@ class SubmissionParser:
                 'Parsing submission %s: Unexpected tag <%s> in <processors>'
                    % (self.submission_key, processors_node.tag))
             processor = {}
+            # The RelaxNG validation ensures that the attribute "id" exists
+            # and that it contains an integer.
             processor['id'] = int(processor_node.get('id'))
             processor['name'] = processor_node.get('name')
             processor['properties'] = self._parseProperties(processor_node)
@@ -429,6 +433,8 @@ class SubmissionParser:
             assert alias_node.tag == 'alias', (
                 'Parsing submission %s: Unexpected tag <%s> in <aliases>'
                     % (self.submission_key, alias_node.tag))
+            # The RelaxNG validation ensures that the attribute "target"
+            # exists and that it contains an integer.
             alias = {'target': int(alias_node.get('target'))}
             for sub_node in alias_node.getchildren():
                 # The Relax NG svalidation ensures that we have exactly
@@ -491,7 +497,11 @@ class SubmissionParser:
                 raise ValueError(
                     '<package name="%s"> appears more than once in <packages>'
                     % package_name)
-            packages[package_name] = self._parseProperties(package_node)
+            # The RelaxNG validation ensures that the attribute "id" exists
+            # and that it contains an integer.
+            package_data = {'id': int(package_node.get('id'))}
+            package_data['properties'] = self._parseProperties(package_node)
+            packages[package_name] = package_data
         return packages
 
     def _parseXOrg(self, xorg_node):
@@ -717,8 +727,9 @@ class SubmissionParser:
     def findDuplicateIDs(self, parsed_data):
         """Return the set of duplicate IDs.
 
-        The IDs of devices and processors should be unique; this
-        method returns a list of duplicate IDs found in a submission.
+        The IDs of devices, processors and software packages should be
+        unique; this method returns a list of duplicate IDs found in a
+        submission.
         """
         all_ids = set()
         duplicates = self._findDuplicates(
@@ -729,28 +740,35 @@ class SubmissionParser:
             all_ids,
             [processor['id']
              for processor in parsed_data['hardware']['processors']]))
+        duplicates.update(self._findDuplicates(
+            all_ids,
+            [package['id']
+             for package in parsed_data['software']['packages'].values()]))
         return duplicates
 
     def _getIDMap(self, parsed_data):
-        """Return a dictionary mapping IDs to devices and processors."""
-        id_device_map = {}
+        """Return a dictionary ID -> devices, processors and packages."""
+        id_map = {}
         hal_devices = parsed_data['hardware']['hal']['devices']
         for device in hal_devices:
-            id_device_map[device['id']] = device
+            id_map[device['id']] = device
 
         for processor in parsed_data['hardware']['processors']:
-            id_device_map[processor['id']] = processor
+            id_map[processor['id']] = processor
 
-        return id_device_map
+        for package in parsed_data['software']['packages'].values():
+            id_map[package['id']] = package
+
+        return id_map
 
     def findInvalidIDReferences(self, parsed_data):
         """Return the set of invalid references to IDs.
 
-        The sub-tag <target> of <question> references a device or processor
-        node by its ID; the submission must contain a <device> or <processor>
-        tag with this ID. This method returns a set of those IDs mentioned
-        in <target> nodes that have no corresponding device or processor
-        node.
+        The sub-tag <target> of <question> references a device, processor
+        of package node by its ID; the submission must contain a <device>,
+        <processor> or <software> tag with this ID. This method returns a
+        set of those IDs mentioned in <target> nodes that have no
+        corresponding device or processor node.
         """
         id_device_map = self._getIDMap(parsed_data)
         known_ids = set(id_device_map.keys())

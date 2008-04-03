@@ -709,7 +709,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         in the standard sample data.
 
-        The values of 'id' and 'parent' must be integers.
+        The values of 'id' and 'parent' must be integers. "id" must not
+        be emtpy.
         """
         for only_attribute in ('id', 'udi'):
             sample_data = self.replaceSampledata(
@@ -733,6 +734,17 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             "Type integer doesn't allow value 'NoInteger'",
             "invalid content of the 'id' attribute of <device>")
+
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<device id="" udi="foo">',
+            from_text='<device',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            "Invalid attribute id for element device",
+            "empty 'id' attribute of <device>")
 
         sample_data = self.replaceSampledata(
             data=self.sample_data,
@@ -1456,7 +1468,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Element processor failed to validate attributes',
-            'missing attribute "name" of <processors>')
+            'missing attribute "name" of <processor>')
 
         sample_data = self.sample_data.replace(
             '<processor id="123" name="0">', '<processor name="0">')
@@ -1464,7 +1476,26 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Element processor failed to validate attributes',
-            'missing attribute "id" attribute of <processors>')
+            'missing attribute "id" attribute of <processor>')
+
+        # "id" must not be empty.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">', '<processor id="" name="0">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute id for element processor',
+            'empty attribute "id" of <processor>')
+
+        # "id" must have integer content.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">',
+            '<processor id="noInteger" name="0">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute id for element processor',
+            'invalid content of attribute "name" of <processor>')
 
         # other attributes are invalid.
         sample_data = self.sample_data.replace(
@@ -1474,7 +1505,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Invalid attribute foo for element processor',
-            'missing attribute "id" attribute of <processors>')
+            'invalid attribute of <processor>')
 
         # Other sub-tags than <property> are invalid.
         sample_data = self.insertSampledata(
@@ -1561,6 +1592,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Extra element aliases in interleave',
+            'missing attribute of <alias>')
+
+        # target must not be empty.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias target="">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element hardware failed to validate content',
             'missing attribute of <alias>')
 
         # Other attributes are not allowed. We get again the same
@@ -1841,17 +1881,46 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Test the validation of <package> tag attributes."""
         # The attribute "name" is required.
         sample_data = self.sample_data.replace(
-            '<package name="metacity">', '<package>')
+            '<package name="metacity" id="200">', '<package id="200">')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
             'Extra element packages in interleave',
-            'detection missing required attribute name in <package>')
+            'detection of missing required attribute name in <package>')
+
+        # The attribute "id" is required.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity" id="200">', '<package name="metacity">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of missing required attribute id in <package>')
+
+        # The attribute "id" must not be empty.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity" id="200">',
+            '<package name="metacity" id="">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of empty required attribute id in <package>')
+
+        # The attribute "id" must have integer content.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity" id="200">',
+            '<package name="metacity" id="noInteger">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of non-integer content of attribute id in <package>')
 
         # Other attributes are not allowed.
         sample_data = self.sample_data.replace(
-            '<package name="metacity">',
-            '<package name="metacity" foo="bar">')
+            '<package name="metacity" id="200">',
+            '<package name="metacity" id="200" foo="bar">')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1874,8 +1943,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # At least one <property> tag is required
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<package name="metacity"/>',
-            from_text='<package name="metacity">',
+            replace_text='<package name="metacity" id="200"/>',
+            from_text='<package name="metacity" id="200">',
             to_text='</package>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
@@ -1888,7 +1957,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # CDATA content is not allowed.
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text='<nonsense/>',
+            insert_text='nonsense',
             where='</package>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
@@ -2405,7 +2474,25 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Element target failed to validate attributes',
-             'missing attribute "id" for <target>')
+            'detection of missing attribute "id" for <target>')
+
+        # "id" must not be empty.
+        sample_data = self.sample_data.replace('<target id="42">',
+                                               '<target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element target failed to validate attributes',
+            'detection of empty attribute "id" for <target>')
+
+        # "id" must have integer content.
+        sample_data = self.sample_data.replace('<target id="42">',
+                                               '<target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element target failed to validate attributes',
+            'detection of <target> attribute "id" with non-integer content')
 
         # Other attributes are not allowed.
         sample_data = self.replaceSampledata(
@@ -2417,7 +2504,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Invalid attribute foo for element target',
-             'detection of invalid <target> attribute')
+            'detection of invalid <target> attribute')
 
     def testTargetTagCData(self):
         """Test the validation of <target> tag CDATA content."""
