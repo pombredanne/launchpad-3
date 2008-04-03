@@ -25,6 +25,8 @@ class ITranslationTemplateItem(Interface):
         title=_("The template this translation is in"),
         readonly=False, required=False, schema=IPOTemplate)
 
+    sequence = Int("The ordering of this set within its file.")
+
     potmsgset = Object(
         title=_("The template message that this translation is for"),
         readonly=True, required=True, schema=IPOTMsgSet)

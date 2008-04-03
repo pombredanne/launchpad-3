@@ -20,5 +20,6 @@ class TranslationTemplateItem(SQLBase):
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,
         default=None)
+    sequence = IntCol(dbName='sequence', notNull=True)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
