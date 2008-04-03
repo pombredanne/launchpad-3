@@ -511,8 +511,8 @@ class LaunchpadBrowserPublication(
         scoreboard_path = (
             config.debug.references_scoreboard_file % thread.get_ident())
 
-        # Read in previous scoreboard if it is non-empty.
-        if os.stat(scoreboard_path).st_size > 0:
+        # Read in previous scoreboard if it exists.
+        if os.path.exists(scoreboard_path):
             scoreboard = open(scoreboard_path, 'r')
             try:
                 prev_rss = float(scoreboard.readline().strip())

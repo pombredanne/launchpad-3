@@ -27,12 +27,15 @@ thread identifier.)
 
     >>> scoreboard, scoreboard_path = tempfile.mkstemp(
     ...     suffix='.txt', prefix='scoreboard-%d-' % thread.get_ident())
-    >>> scoreboard = os.fdopen(scoreboard)
+    >>> os.close(scoreboard)
     >>> scoreboard_path_template = scoreboard_path.replace(
     ...     '-%d-' % thread.get_ident(), '-%d-')
     >>> references_log, references_log_path = tempfile.mkstemp(
     ...     suffix='log', prefix="references-leak-")
-    >>> references_log= os.fdopen(references_log)
+    >>> os.close(references_log)
+
+    # endRequest() doesn't expect that file to exists.
+    >>> os.remove(scoreboard_path)
     >>> config.push('debug-references', dedent("""\
     ...     [debug]
     ...     references: True
@@ -63,6 +66,7 @@ The first line of the scoreboard is the number of bytes of RSS used and
 then a list of count and types.
 
     >>> import re
+    >>> scoreboard = open(scoreboard_path, 'r')
     >>> lines = scoreboard.readlines()
     >>> re.match('\d+\.0$', lines[0].strip()) is not None
     True
@@ -76,6 +80,7 @@ The format is date pageid increase_in_RSS type=increase type=increase...
     >>> os.stat(references_log_path).st_size
     0L
     >>> publication.endRequest(create_request(), None)
+    >>> references_log = open(references_log_path, 'r')
     >>> references_log.read()
     "... View:+template ...Mb... <type 'dict'>=...; ...\n"
 
