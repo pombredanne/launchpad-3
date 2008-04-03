@@ -288,15 +288,14 @@ class SourcePackageRelease(SQLBase):
         if archive.purpose != ArchivePurpose.PRIMARY:
             archives.append(distroarchseries.main_archive.id)
 
-        # Look for all sourcepackagerelease instances that match the name
+        # Look for all sourcepackagerelease instances that match the name.
         matching_sprs = SourcePackageRelease.select("""
             SourcePackageName.name = %s AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id
             """ % sqlvalues(self.name),
             clauseTables=['SourcePackageName', 'SourcePackageRelease'])
 
-        # Get the most recent (successfully built) build record for this
-        # package.
+        # Get the (successfully built) build records for this package.
         completed_builds = Build.select("""
             sourcepackagerelease IN %s AND
             distroarchseries = %s AND

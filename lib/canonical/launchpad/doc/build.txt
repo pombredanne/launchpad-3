@@ -895,7 +895,6 @@ test this behaviour.
 
 Create oldest SourcePackageRelease instance.
 
-    >>> login('foo.bar@canonical.com')
     >>> oldest_spr = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='ebdtest')
@@ -905,9 +904,7 @@ Create oldest build instance.
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
-    >>> login('foo.bar@canonical.com')
-    >>> oldest_build = \
-    ...     oldest_spr.sourcepackagerelease.createBuild(
+    >>> oldest_build = oldest_spr.sourcepackagerelease.createBuild(
     ...         test_publisher.breezy_autotest_hppa,
     ...         PackagePublishingPocket.UPDATES,
     ...         test_publisher.breezy_autotest.main_archive,
@@ -923,17 +920,13 @@ is set to the default value (5 minutes)
 
 Create intermediate SourcePackageRelease instance.
 
-    >>> login('foo.bar@canonical.com')
     >>> medium_spr = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='ebdtest')
 
 Create intermediate build instance.
 
-    >>> from datetime import datetime, timedelta
-    >>> login('foo.bar@canonical.com')
-    >>> medium_build = \
-    ...     medium_spr.sourcepackagerelease.createBuild(
+    >>> medium_build = medium_spr.sourcepackagerelease.createBuild(
     ...         test_publisher.breezy_autotest_hppa,
     ...         PackagePublishingPocket.UPDATES,
     ...         test_publisher.breezy_autotest.main_archive,
@@ -949,7 +942,6 @@ value equals the oldest instance's 'buildduration'.
 
 Create most recent SourcePackageRelease instance.
 
-    >>> login('foo.bar@canonical.com')
     >>> recent_spr = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='ebdtest')
@@ -957,9 +949,7 @@ Create most recent SourcePackageRelease instance.
 Create most recent build instance. Please note: this one is in state
 NEEDSBUILD.
 
-    >>> login('foo.bar@canonical.com')
-    >>> recent_build = \
-    ...     recent_spr.sourcepackagerelease.createBuild(
+    >>> recent_build = recent_spr.sourcepackagerelease.createBuild(
     ...         test_publisher.breezy_autotest_hppa,
     ...         PackagePublishingPocket.UPDATES,
     ...         test_publisher.breezy_autotest.main_archive,
@@ -973,16 +963,13 @@ value equals the intermediate instance's 'buildduration'.
 
 Create a SourcePackageRelease instance in a PPA.
 
-    >>> login('foo.bar@canonical.com')
     >>> ppa_spr = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='ebdtest')
 
 Create most recent build instance.
 
-    >>> login('foo.bar@canonical.com')
-    >>> ppa_build = \
-    ...     ppa_spr.sourcepackagerelease.createBuild(
+    >>> ppa_build = ppa_spr.sourcepackagerelease.createBuild(
     ...         test_publisher.breezy_autotest_hppa,
     ...         PackagePublishingPocket.UPDATES,
     ...         cprov.archive,

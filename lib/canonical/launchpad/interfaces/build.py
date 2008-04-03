@@ -13,7 +13,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Timedelta
 
+from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 class IBuild(Interface):
@@ -31,7 +33,9 @@ class IBuild(Interface):
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     archive = Attribute("The archive")
-    estimated_build_duration = Attribute("Estimated Build Duration Interval")
+    estimated_build_duration = Timedelta(
+        title=_("Estimated Build Duration"), required=False,
+        description=_("Estimated build duration interval"))
 
     # Properties
     current_component = Attribute(
