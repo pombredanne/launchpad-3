@@ -113,13 +113,6 @@ class IDistroArchSeries(IHasOwner):
         this distro arch series.
         """
 
-    def findDepCandidateByName(name):
-        """Return the last published binarypackage by given name.
-
-        Return the PublishedPackage record by binarypackagename or None if
-        not found.
-        """
-
 
 class IDistroArchSeriesSet(Interface):
     """Interface for DistroArchSeriesSet"""

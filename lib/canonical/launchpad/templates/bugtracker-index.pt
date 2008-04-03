@@ -59,8 +59,9 @@
                 </a>
               </td>
               <td>
-                <a tal:content="watch/remotebug"
-                   tal:attributes="href watch/url">53656</a>
+                <a tal:replace="structure watch/fmt:external-link-short">
+                  1234
+                </a>
               </td>
               <td tal:content="watch/remotestatus" />
             </tal:show-watch-details>
@@ -80,12 +81,18 @@
   </p>
 
   <h2>
-    URLs
+    Location
   </h2>
 
   <ul id="bugtracker-urls">
-    <li><strong tal:content="context/baseurl" /> (Base URL)</li>
-    <li tal:repeat="alias context/aliases">
+    <li>
+      <strong>
+        <a tal:replace="structure context/fmt:external-link">
+          http://bugs.example.com/
+        </a>
+      </strong>
+    </li>
+    <li tal:repeat="alias context/fmt:aliases">
       <strong tal:content="alias" /> (Alias)
     </li>
   </ul>
@@ -101,7 +108,8 @@
   </div>
 
   <h2 tal:condition="context/watches">Bug watches</h2>
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-upper" />
+  <tal:navigation
+      replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:block define="watches view/batchnav/batch"
              condition="watches">
@@ -110,7 +118,8 @@
 
   </tal:block>
 
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-lower" />
+  <tal:navigation
+      replace="structure view/batchnav/@@+navigation-links-lower" />
 
 </div>
 

@@ -63,7 +63,7 @@ class WebServiceCaller:
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
                  *args, **kwargs):
-        """Obtain the information neccessary to sign OAuth requests."""
+        """Obtain the information necessary to sign OAuth requests."""
         if oauth_consumer_key is not None and oauth_access_key is not None:
             login(ANONYMOUS)
             self.consumer = getUtility(IOAuthConsumerSet).getByKey(
@@ -91,7 +91,7 @@ class WebServiceCaller:
             full_headers.update(request.to_header(OAUTH_REALM))
         if headers is not None:
             full_headers.update(headers)
-        header_strings = ["%s: %s" % (header, value)
+        header_strings = ["%s: %s" % (header, str(value))
                           for header, value in full_headers.items()]
         request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
                                                    "\n".join(header_strings))
@@ -122,6 +122,13 @@ class WebServiceCaller:
         """Make a POST request."""
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers)
+
+    def named_post(self, path, operation_name, headers, **kwargs):
+        kwargs['ws_op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, value)
+                         for key, value in kwargs.items()])
+        return self.post(path, 'application/x-www-form-urlencoded', data,
+                         headers)
 
     def patch(self, path, media_type, data, headers=None):
         """Make a PATCH request."""
