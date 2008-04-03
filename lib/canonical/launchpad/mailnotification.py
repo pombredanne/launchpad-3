@@ -354,14 +354,20 @@ def send_process_error_notification(to_address, subject, error_msg,
         :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
     """
-    if failing_command is not None:
-        failed_command_information = 'Failing command:\n    %s' % str(
-            failing_command)
+    if isinstance(failing_command, list):
+        failing_commands = failing_command
+    elif failing_command is None:
+        failing_commands = []
     else:
-        failed_command_information = ''
+        failing_commands = [failing_command]
+    failed_commands_information = ''
+    if len(failing_commands) > 0:
+        failed_commands_information = 'Failing command:'
+        for failing_command in failing_commands:
+            failed_commands_information += '\n    %s' % str(failing_command)
 
     body = get_email_template('email-processing-error.txt') % {
-            'failed_command_information': failed_command_information,
+            'failed_command_information': failed_commands_information,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)
     body = mailwrapper.format(body)

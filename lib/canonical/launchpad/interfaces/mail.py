@@ -81,6 +81,15 @@ class IMailHandler(Interface):
 class EmailProcessingError(Exception):
     """Something went wrong while processing an email command."""
 
+    def __init__(self, args, stop_processing=False):
+        """Initialize
+
+        :args: The standard exception extra arguments.
+        "stop_processing: Should processing email stop?
+        """
+        Exception.__init__(self, args)
+        self.stop_processing = stop_processing
+
 
 class BugTargetNotFound(Exception):
     """A bug target couldn't be found."""

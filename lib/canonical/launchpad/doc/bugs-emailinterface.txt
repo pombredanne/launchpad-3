@@ -1725,7 +1725,7 @@ send_process_error_notification().
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     'test@canonical.com', 'Some subject', 'Some error message.',
-    ...     msg, failing_command='foo bar')
+    ...     msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
