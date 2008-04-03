@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 import binascii
 import os
@@ -7,8 +8,8 @@ import logging
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import session, filetransfer
-from twisted.conch.ssh import factory, userauth, connection
+from twisted.conch.ssh import (
+    channel, connection, factory, filetransfer, session, userauth)
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -17,6 +18,7 @@ from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 
 from twisted.internet import defer
+from twisted.internet.protocol import connectionDone
 
 from twisted.python import components, failure
 
@@ -37,15 +39,28 @@ class SubsystemOnlySession(session.SSHSession, object):
         # Without this, the client hangs when its finished transferring.
         self.loseConnection()
 
+    def loseConnection(self):
+        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
+        # implementation of session.SSHSession.loseConnection. The default
+        # implementation will try to call loseConnection on the client
+        # transport even if it's None. I don't know *why* it is None, so this
+        # doesn't necessarily address the root cause.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.loseConnection()
+        # This is called by session.SSHSession.loseConnection. SSHChannel is
+        # the base class of SSHSession.
+        channel.SSHChannel.loseConnection(self)
+
 
 class LaunchpadAvatar(avatar.ConchUser):
 
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
-        # Double-check that we don't get unicode -- directory names on the file
-        # system are a sequence of bytes as far as we're concerned.  We don't
-        # want any tricky login names turning into a security problem.
-        # (I'm reasonably sure twisted.cred guarantees this will be str, but in
-        # the meantime let's make sure).
+        # Double-check that we don't get unicode -- directory names on the
+        # file system are a sequence of bytes as far as we're concerned. We
+        # don't want any tricky login names turning into a security problem.
+        # (I'm reasonably sure twisted.cred guarantees this will be str, but
+        # in the meantime let's make sure).
         assert type(avatarId) is str
 
         self.avatarId = avatarId
@@ -105,7 +120,8 @@ class LaunchpadAvatar(avatar.ConchUser):
         Returns a Deferred with the new branch ID.
         """
         self.logger.info(
-            'Creating branch: (%r, %r, %r)', userName, productName, branchName)
+            'Creating branch: (%r, %r, %r)', userName, productName,
+            branchName)
         return self._launchpad.createBranch(
             loginID, userName, productName, branchName)
 
@@ -120,8 +136,8 @@ class LaunchpadAvatar(avatar.ConchUser):
         return productID
 
     def _runAsUser(self, f, *args, **kwargs):
-        # Version of UnixConchUser._runAsUser with the setuid bits stripped out
-        # -- we don't need them.
+        # Version of UnixConchUser._runAsUser with the setuid bits stripped
+        # out -- we don't need them.
         try:
             f = iter(f)
         except TypeError:
@@ -316,5 +332,5 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         filetransfer.FileTransferServer.__init__(self, data, avatar)
         self.logger = avatar.logger
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason=connectionDone):
         self.logger.info('Connection lost: %s', reason)
