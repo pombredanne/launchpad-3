@@ -99,6 +99,10 @@ class IArchive(IHasOwner):
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
 
+    expanded_archive_dependencies = Attribute(
+        "The expanded list of archive dependencies. It includes the implicit "
+        "PRIMARY archive dependency for PPAs.")
+
     archive_url = Attribute("External archive URL.")
 
     title = Attribute("Archive Title.")
@@ -208,6 +212,13 @@ class IArchive(IHasOwner):
 
         Also include owner 'name' and 'displayname' to avoid inpecting the
         Person table indexes while searching.
+        """
+
+    def findDepCandidateByName(distroarchseries, name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
         """
 
     def getArchiveDependency(dependency):

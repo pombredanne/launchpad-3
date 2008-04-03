@@ -3,7 +3,6 @@
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> from canonical.launchpad.interfaces import (
-   ...    IDistroArchSeriesBinaryPackageRelease,
    ...    IDistroArchSeriesBinaryPackage,
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
@@ -31,19 +30,6 @@ interrogate this information.
    pmount
 
 See more information about getReleasePackages below.
-
-DistroArchSeries class has a built-in method to return a single
-dependency package candidate by its name as a PublishedPackage
-instance:
-
-   >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
-   u'pmount'
-
-Since 'at' isn't available in our sampledata (not even published),
-None is returned:
-
-   >>> hoary_i386.findDepCandidateByName("at") is None
-   True
 
 Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
@@ -144,8 +130,7 @@ publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingPocket,
-    ...    PackagePublishingStatus)
+    ...    IDistributionSet, IPersonSet, PackagePublishingPocket)
     >>> from canonical.launchpad.database.publishing import (
     ...     SecureBinaryPackagePublishingHistory)
 
