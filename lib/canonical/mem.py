@@ -13,8 +13,26 @@ and improve APIs as needed.
 
 """
 
-import os
+__metatype__ = type
+__all__ = [
+    'classesWithMostRefs',
+    'deltaCounts',
+    'logInThread',
+    'memory',
+    'mostRefs',
+    'printCounts',
+    'readCounts',
+    'resident',
+    'stacksize',
+    ]
+
+
 import gc
+import os
+import sys
+import types
+import threading
+import time
 
 
 _proc_status = '/proc/%d/status' % os.getpid()
@@ -82,19 +100,67 @@ def dump_garbage():
 
 # This is spiv's reference count code, under 'MIT Licence if I'm pressed'.
 #
-import gc, sys, types
-import threading, time
 
-def mostRefs(n=30):
+def classesWithMostRefs(n=30):
+    """Return the n ClassType object with the most reference count.
+
+    This gives an idea of the number of objects in the system by type,
+    since each instance will have one reference to the class.
+
+    :return: A list of tuple (count, type).
+    """
     d = {}
     for obj in gc.get_objects():
         if type(obj) in (types.ClassType, types.TypeType):
             d[obj] = sys.getrefcount(obj)
     counts = [(x[1],x[0]) for x in d.items()]
     counts.sort()
-    counts = counts[-n:]
-    counts.reverse()
-    return counts
+    return reversed(counts[-n:])
+
+
+def mostRefs(n=30):
+    """Return the n types with the most reference count.
+
+    This one uses a different algorithm than  classesWithMostRefs. It counts
+    the number of objects of given type in gc.get_objects().
+
+    :return: A list of tuple (count, type).
+    """
+    d = {}
+    for obj in gc.get_objects():
+        if type(obj) is types.InstanceType:
+            cls = obj.__class__
+        else:
+            cls = type(obj)
+        d[cls] = d.get(cls, 0) + 1
+    counts = [(x[1],x[0]) for x in d.items()]
+    counts.sort()
+    return reversed(counts[-n:])
+
+
+def deltaCounts(counts1, counts2, n=30):
+    """Compare two references counts lists and return the increase."""
+    counts1_map = dict((ref_type, count) for count, ref_type in counts1)
+    counts2_map = dict((ref_type, count) for count, ref_type in counts2)
+    types1 = set(counts1_map.keys())
+    types2 = set(counts2_map.keys())
+    delta = []
+    # Types that disappeared.
+    for ref_type in types1.difference(types2):
+        delta.append((-counts1_map[ref_type], ref_type))
+
+    # Types that changed.
+    for ref_type in types1.intersection(types2):
+        diff = counts2_map[ref_type] - counts1_map[ref_type]
+        if diff != 0:
+            delta.append((diff, ref_type))
+
+    # New types.
+    for ref_type in types2.difference(types1):
+        delta.append((counts2_map[ref_type], ref_type))
+
+    delta.sort()
+    return reversed(delta[-n:])
 
 
 def printCounts(counts, file=None):
@@ -103,6 +169,14 @@ def printCounts(counts, file=None):
             print c, obj
         else:
             file.write("%s %s\n" % (c, obj))
+
+def readCounts(file):
+    """Reverse of printCounts()"""
+    counts = []
+    for line in file.readlines():
+        count, ref_type = line.strip().split(' ', 1)
+        counts.append((int(count), ref_type))
+    return counts
 
 
 def logInThread(n=30):
@@ -118,6 +192,7 @@ def _logRefsEverySecond(log, n):
         log.write('\n')
         log.flush()
         time.sleep(1)
+
 
 if __name__=="__main__":
     counts = mostRefs()
