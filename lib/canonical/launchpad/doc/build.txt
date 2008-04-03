@@ -957,7 +957,6 @@ Create most recent SourcePackageRelease instance.
 Create most recent build instance. Please note: this one is in state
 NEEDSBUILD.
 
-    >>> from datetime import datetime, timedelta
     >>> login('foo.bar@canonical.com')
     >>> recent_build = \
     ...     recent_spr.sourcepackagerelease.createBuild(
@@ -981,7 +980,6 @@ Create a SourcePackageRelease instance in a PPA.
 
 Create most recent build instance.
 
-    >>> from datetime import datetime, timedelta
     >>> login('foo.bar@canonical.com')
     >>> ppa_build = \
     ...     ppa_spr.sourcepackagerelease.createBuild(
