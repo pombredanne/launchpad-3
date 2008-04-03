@@ -1,0 +1,97 @@
+= Memory debugging =
+
+Application server can leak references, and this is hard to track down.
+The LaunchpadBrowserPublication contains special purpose memory
+debugging helper to help diagnose such problems.
+
+The memory leaking diagnosis is invoked at endRequest() only when the
+debug.references variable is true. It is turned off by default.
+
+    >>> from canonical.config import config
+    >>> config.debug.references
+    False
+
+Setting it to true, will save in endRequest() a dump of the current
+memory usage and counts in the file specified in
+config.debug.references_scoreboard_file. (We also set the
+config.debug.references_leak_log file which will contain the
+differential diagnostic.)
+
+    >>> import os
+    >>> import tempfile
+    >>> import thread
+    >>> from textwrap import dedent
+
+(The scoreboard filename needs a %d placeholder to interpolate the
+thread identifier.)
+
+    >>> scoreboard, scoreboard_path = tempfile.mkstemp(
+    ...     suffix='.txt', prefix='scoreboard-%d-' % thread.get_ident())
+    >>> scoreboard = os.fdopen(scoreboard)
+    >>> scoreboard_path_template = scoreboard_path.replace(
+    ...     '-%d-' % thread.get_ident(), '-%d-')
+    >>> references_log, references_log_path = tempfile.mkstemp(
+    ...     suffix='log', prefix="references-leak-")
+    >>> references_log= os.fdopen(references_log)
+    >>> config.push('debug-references', dedent("""\
+    ...     [debug]
+    ...     references: True
+    ...     references_scoreboard_file: %s
+    ...     references_leak_log: %s
+    ...     """ % (scoreboard_path_template, references_log_path)))
+
+So the first time endRequest() is called, the references count is dumped
+to the scoreboard file.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.adapter import set_request_started
+    >>> def create_request(pageid='View:+template'):
+    ...     request = LaunchpadTestRequest()
+    ...     # Adds some expected requests variables by endRequest().
+    ...     request._orig_env['launchpad.pageid'] = pageid
+    ...     request.oopsid = None
+    ...     # Prevents warnings when endRequest() is called.
+    ...     set_request_started()
+    ...     return request
+
+    >>> from canonical.launchpad.webapp.publication import (
+    ...     LaunchpadBrowserPublication)
+    >>> publication = LaunchpadBrowserPublication(None)
+    >>> publication.endRequest(create_request(), None)
+
+The first line of the scoreboard is the number of bytes of RSS used and
+then a list of count and types.
+
+    >>> import re
+    >>> lines = scoreboard.readlines()
+    >>> re.match('\d+\.0$', lines[0].strip()) is not None
+    True
+    >>> re.match('\d+ <type.*>$', lines[1].strip()) is not None
+    True
+
+On the second request, the scoreboard will be compared to the previous
+one and differences will be reported in the references leak log file.
+The format is date pageid increase_in_RSS type=increase type=increase...
+
+    >>> os.stat(references_log_path).st_size
+    0L
+    >>> publication.endRequest(create_request(), None)
+    >>> references_log.read()
+    "... View:+template ...Mb... <type 'dict'>=...; ...\n"
+
+Of course when the tool is off, none of the above processing takes
+place:
+
+    >>> ignored = config.pop('debug-references')
+    >>> scoreboard.close()
+    >>> references_log.close()
+    >>> os.remove(scoreboard_path)
+    >>> os.remove(references_log_path)
+
+    >>> publication.endRequest(create_request(), None)
+    >>> os.path.exists(
+    ...     config.debug.references_scoreboard_file % thread.get_ident())
+    False
+    >>> os.path.exists(config.debug.references_leak_log)
+    False
+

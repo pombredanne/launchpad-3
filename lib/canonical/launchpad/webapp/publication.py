@@ -2,7 +2,9 @@
 
 __metaclass__ = type
 
+import os
 import thread
+from time import strftime
 import traceback
 import urllib
 
@@ -29,6 +31,8 @@ from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
+from canonical.mem import (
+    deltaCounts, mostRefs, printCounts, readCounts, resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
@@ -465,6 +469,9 @@ class LaunchpadBrowserPublication(
         superclass.endRequest(self, request, object)
         da.clear_request_started()
 
+        if config.debug.references:
+            self.debugReferencesLeak(request)
+
         # Maintain operational statistics.
         OpStats.stats['requests'] += 1
 
@@ -485,3 +492,59 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
+
+    def debugReferencesLeak(self, request):
+        """See what kind of references are increasing.
+
+        This logs the current RSS and references count by types in a
+        scoreboard file. If that file exists, we compare the current stats
+        with the previous one and logs the increase along the current page id.
+
+        Note that this only provides reliable results when only one thread is
+        processing requests.
+        """
+        current_rss = resident()
+        # Convert type to string, because that's what we get when reading
+        # the old scoreboard.
+        current_refs = [
+            (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
+        scoreboard_path = (
+            config.debug.references_scoreboard_file % thread.get_ident())
+
+        # Read in previous scoreboard if it is non-empty.
+        if os.stat(scoreboard_path).st_size > 0:
+            scoreboard = open(scoreboard_path, 'r')
+            try:
+                prev_rss = float(scoreboard.readline().strip())
+                prev_refs = readCounts(scoreboard)
+            finally:
+                scoreboard.close()
+            mem_leak = current_rss - prev_rss
+            delta_refs = deltaCounts(prev_refs, current_refs)
+            self.logReferencesLeak(request, mem_leak, delta_refs)
+
+        # Save the current scoreboard.
+        scoreboard = open(scoreboard_path, 'w')
+        try:
+            print >>scoreboard, current_rss
+            printCounts(current_refs, scoreboard)
+        finally:
+            scoreboard.close()
+
+    def logReferencesLeak(self, request, mem_leak, delta_refs):
+        """Log the time, pageid, increase in RSS and increase in references.
+        """
+        log = open(config.debug.references_leak_log, 'a')
+        try:
+            leak_in_mb = mem_leak / (1024*1024)
+            formatted_delta = "; ".join(
+                "%s=%d" % (ref_type, count)
+                for count, ref_type in delta_refs)
+            print >>log, '%s %s %.2fMb %s' % (
+                strftime('%Y-%m-%d:%H:%M:%S'),
+                request._orig_env['launchpad.pageid'],
+                leak_in_mb,
+                formatted_delta)
+        finally:
+            log.close()
+

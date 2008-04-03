@@ -654,6 +654,10 @@ class LaunchpadTestRequest(TestRequest):
         """See IBasicLaunchpadRequest."""
         return None, None
 
+    def setInWSGIEnvironment(self, key, value):
+        """See IBasicLaunchpadRequest."""
+        self._orig_env[key] = value
+
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
