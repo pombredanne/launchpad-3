@@ -6,7 +6,7 @@ __all__ = [
     ]
 
 from zope.interface import implements
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import ITranslationTemplateItem
