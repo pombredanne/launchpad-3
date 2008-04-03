@@ -48,7 +48,7 @@ class LaunchpadValidationError(ValidationError):
     """
     implements(ILaunchpadValidationError)
 
-    def __init__(self, message, *args, **kw):
+    def __init__(self, message):
         """Create a LaunchpadValidationError instance.
 
         `message` should be an HTML quoted string. Extra arguments
