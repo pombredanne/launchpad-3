@@ -10,6 +10,7 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch)
 from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mailout import deltaLines
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -121,39 +122,9 @@ def send_branch_modified_notifications(branch, event):
             # The subscription is None if we added the branch owner above.
             to_addresses.add(email_address)
 
-    indent = ' '*4
-    info_lines = []
-
-    # Fields for which we have old and new values.
-    for field_name in ('name', 'title', 'url'):
-        delta = getattr(branch_delta, field_name)
-        if delta is not None:
-            title = IBranch[field_name].title
-            old_item = delta['old']
-            if old_item is None:
-                old_item = '(not set)'
-            new_item = delta['new']
-            if new_item is None:
-                new_item = '(not set)'
-            info_lines.append("%s%s: %s => %s" % (
-                indent, title, old_item, new_item))
-
-    # lifecycle_status is different as it is an Enum type.
-    if branch_delta.lifecycle_status is not None:
-        old_item = branch_delta.lifecycle_status['old']
-        new_item = branch_delta.lifecycle_status['new']
-        title = IBranch['lifecycle_status'].title
-        info_lines.append("%s%s: %s => %s" % (
-            indent, title, old_item.title, new_item.title))
-
-    # Fields for which we only have the new value.
-    for field_name in ('summary', 'whiteboard'):
-        delta = getattr(branch_delta, field_name)
-        if delta is not None:
-            title = IBranch[field_name].title
-            if info_lines:
-                info_lines.append('')
-            info_lines.append('%s changed to:\n\n%s' % (title, delta))
+    info_lines = deltaLines(
+        branch_delta, ('name', 'title', 'url', 'lifecycle_status'),
+        ('summary', 'whiteboard'), IBranch)
 
     if not info_lines:
         # The specification was modified, but we don't yet support

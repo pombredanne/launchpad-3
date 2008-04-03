@@ -9,7 +9,9 @@ __metaclass__ = type
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces import IBranchMergeProposal
 from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mailout import deltaLines
 from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
@@ -76,6 +78,10 @@ class BMPMailer:
         assert delta is not None
         return BMPMailer(recipients, merge_proposal, from_address,
                          delta)
+
+    def deltaLines(self):
+        return deltaLines(self.delta, self.delta.delta_values,
+            self.delta.new_values, IBranchMergeProposal)
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""

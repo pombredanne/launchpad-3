@@ -91,12 +91,32 @@ Baz Qux has proposed merging foo into bar.
         else:
             self.fail('Did not detect bogus team recipient.')
 
-    def test_forModification(self):
-        """"""
+    def test_forModificationNoModification(self):
+        """Ensure an assertion is raised if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
         self.assertRaises(AssertionError, BMPMailer.forModification,
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
+
+    def makeMergeProposalMailerModification(self):
+        merge_proposal, person = self.makeProposalWithSubscriber()
+        old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        merge_proposal.commit_message = 'new commit message'
+        return BMPMailer.forModification(
+            old_merge_proposal, merge_proposal, merge_proposal.registrant)
+
+    def test_forModificationWithModificationDelta(self):
+        """Ensure the right delta is filled out if there is a change."""
+        mailer = self.makeMergeProposalMailerModification()
+        self.assertEqual({'old': None, 'new': 'new commit message'},
+            mailer.delta.commit_message)
+
+    def test_forModificationWithModificationDeltaLines(self):
+        """Ensure the right delta is filled out if there is a change."""
+        mailer = self.makeMergeProposalMailerModification()
+        self.assertEqual(
+            ['    Commit Message: (not set) => new commit message'],
+            mailer.deltaLines())
 
 
 def test_suite():
