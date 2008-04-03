@@ -13,19 +13,13 @@
         <li tal:condition="series/active">
           <a tal:attributes="href series/fmt:url">
              <tal:version replace="series/version" />
-             "<tal:codename replace="series/displayname" />"
-          </a>
-          - <tal:status replace="series/status/name/fmt:lower" />
-
-          <ul class="architecture" tal:define="archs series/ppa_architectures"
-              tal:condition="archs">
-            <li tal:repeat="arch archs">
-              <a tal:attributes="href arch/fmt:url">
-                <tal:title replace="arch/architecturetag" />
-                <tal:official condition="arch/official">
-                  (official)
-                </tal:official>
-              </a>
+             "<tal:codename replace="series/displayname" />"</a>
+          (<tal:status replace="series/status/name/fmt:lower" />):
+          <ul class="architecture">
+            <li>
+              <tal:archs repeat="arch series/ppa_architectures">
+                <tal:arch replace="arch/architecturetag">i386</tal:arch>
+              </tal:archs>
             </li>
           </ul>
         </li>
