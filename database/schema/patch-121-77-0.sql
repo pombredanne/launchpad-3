@@ -10,7 +10,7 @@ ALTER TABLE TranslationMessage
 CREATE TABLE TranslationTemplateItem(
     id serial PRIMARY KEY,
     potemplate integer NOT NULL REFERENCES POTemplate(id),
-    sequence integer NOT NULL,
+    sequence integer NOT NULL CHECK (sequence > 0),
     potmsgset integer NOT NULL REFERENCES POTMsgSet(id));
 
 CREATE UNIQUE INDEX translationtemplateitem__potemplate__potmsgset__key
