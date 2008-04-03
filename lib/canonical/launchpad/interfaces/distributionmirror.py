@@ -23,11 +23,12 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad import _
+from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -249,10 +250,11 @@ class DistroMirrorURIField(URIField):
         mirror = self.getMirrorByURI(str(uri))
         if mirror is not None:
             message = _(
-                'The distribution mirror <a href="%s">%s</a> is already '
-                'registered with this URL.')
-            raise LaunchpadValidationError(
-                message, canonical_url(mirror), mirror.title)
+                'The distribution mirror <a href="${url}">${mirror}</a> '
+                'is already registered with this URL.',
+                mapping={'url': canonical_url(mirror),
+                         'mirror': mirror.title})
+            raise LaunchpadValidationError(structured(message))
 
 
 class DistroMirrorHTTPURIField(DistroMirrorURIField):

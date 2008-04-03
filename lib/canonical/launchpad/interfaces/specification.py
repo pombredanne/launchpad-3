@@ -540,7 +540,7 @@ class SpecURLField(TextLine):
 
         specification = getUtility(ISpecificationSet).getByURL(specurl)
         if specification is not None:
-            raise LaunchpadValidationError(self.errormessage, specurl)
+            raise LaunchpadValidationError(self.errormessage % specurl)
 
 
 class INewSpecification(Interface):

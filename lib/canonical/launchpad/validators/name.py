@@ -9,6 +9,8 @@ from textwrap import dedent
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.menu import structured
+
 
 valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]+$")
 invalid_name_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
@@ -52,10 +54,11 @@ def valid_name(name):
 def name_validator(name):
     """Return True if the name is valid, or raise a LaunchpadValidationError"""
     if not valid_name(name):
-        raise LaunchpadValidationError(_(dedent("""
-            Invalid name '%s'. Names must start with a letter or
+        message = _(dedent("""
+            Invalid name '${name}'. Names must start with a letter or
             number and be lowercase. The characters <samp>+</samp>,
             <samp>-</samp> and <samp>.</samp> are also allowed after the
-            first character.
-            """)), name)
+            first character."""), mapping={'name': name})
+
+        raise LaunchpadValidationError(structured(message))
     return True

@@ -92,7 +92,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     "%s.product" % self.name)
                 raise LaunchpadValidationError(
                     "There is no project named '%s' registered in"
-                    " Launchpad", entered_name)
+                    " Launchpad" % entered_name)
         elif form_value == 'package':
             try:
                 distribution = self.distribution_widget.getInputValue()
@@ -101,7 +101,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     "%s.distribution" % self.name)
                 raise LaunchpadValidationError(
                     "There is no distribution named '%s' registered in"
-                    " Launchpad", entered_name)
+                    " Launchpad" % entered_name)
 
             if self.package_widget.hasInput():
                 try:
@@ -110,8 +110,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s",
-                        entered_name, distribution.displayname)
+                        "There is no package name '%s' published in %s"
+                         % (entered_name, distribution.displayname))
                 if package_name is None:
                     return distribution
                 try:
@@ -119,8 +119,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         package_name.name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s",
-                        package_name.name, distribution.displayname)
+                        "There is no package name '%s' published in %s"
+                        % (package_name.name, distribution.displayname))
                 return distribution.getSourcePackage(source_name)
             else:
                 return distribution
