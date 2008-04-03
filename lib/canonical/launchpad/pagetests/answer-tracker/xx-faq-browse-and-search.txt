@@ -162,3 +162,19 @@ distribution FAQs.
     FAQs for Ubuntu
     >>> print browser.url
     http://answers.launchpad.dev/ubuntu/+faqs
+
+
+== Accessing an FAQ directly ==
+
+Asking for a non-existent FAQ or an invalid ID will raise a 404 error.
+
+    >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+faq/171717')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+    >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+faq/bad')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+

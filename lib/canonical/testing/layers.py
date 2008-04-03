@@ -1,4 +1,6 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
+# pylint: disable-msg=W0603
 
 """Layers used by Canonical tests.
 
@@ -30,8 +32,10 @@ __all__ = [
 
 import logging
 import os
+import signal
 import socket
 import sys
+from textwrap import dedent
 import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -351,10 +355,6 @@ class LibrarianLayer(BaseLayer):
             LibrarianLayer.reveal()
         LibrarianLayer._check_and_reset()
 
-    # The hide and reveal methods mess with the config. Store the
-    # original values so things can be recovered.
-    _orig_librarian_port = config.librarian.upload_port
-
     # Flag maintaining state of hide()/reveal() calls
     _hidden = False
 
@@ -381,7 +381,11 @@ class LibrarianLayer(BaseLayer):
             LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
 
         host, port = LibrarianLayer._fake_upload_socket.getsockname()
-        config.librarian.upload_port = port
+        librarian_data = dedent("""
+            [librarian]
+            upload_port: %s
+            """ % port)
+        config.push('hide_librarian', librarian_data)
 
     @classmethod
     @profiled
@@ -391,7 +395,7 @@ class LibrarianLayer(BaseLayer):
         This just involves restoring the config to the original value.
         """
         LibrarianLayer._hidden = False
-        config.librarian.upload_port = LibrarianLayer._orig_librarian_port
+        config.pop('hide_librarian')
 
 
 # We store a reference to the DB-API connect method here when we
@@ -714,8 +718,23 @@ class TwistedLayer(BaseLayer):
         pass
 
     @classmethod
+    def _save_signals(cls):
+        """Save the current signal handlers."""
+        TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
+        TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
+        TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+
+    @classmethod
+    def _restore_signals(cls):
+        """Restore the signal handlers."""
+        signal.signal(signal.SIGINT, TwistedLayer._original_sigint)
+        signal.signal(signal.SIGTERM, TwistedLayer._original_sigterm)
+        signal.signal(signal.SIGCHLD, TwistedLayer._original_sigchld)
+
+    @classmethod
     @profiled
     def testSetUp(cls):
+        TwistedLayer._save_signals()
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
         if interfaces.IReactorThreads.providedBy(reactor):
@@ -739,6 +758,7 @@ class TwistedLayer(BaseLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
+        TwistedLayer._restore_signals()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):

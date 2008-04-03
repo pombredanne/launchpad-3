@@ -212,11 +212,12 @@ Check that the log looks ok.
     Number of PO files to export: 2
     Exporting PO file ... (1/2)
     Exporting PO file ... (2/2)
+    Exporting XPI template files.
     Adding timestamp file
     Adding mapping file
     Done.
     Upload complete, file alias: ...
-
+    Registered the language pack.
 
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
@@ -369,6 +370,109 @@ template has.  That's why we get both translations:
     |     1 | rosetta-grumpy/mapping.txt
 
 
+== Language pack with XPI translations ==
+
+Launchpad supports XPI file imports. However, we don't have an export
+process ready, and thus, we do it with an external script that does
+that last part based on .po files and the original en-US.xpi file. To
+achieve that, we export all translations for XPI files in a special
+directory: xpi/translation_domain/
+
+=== Sample data initialisation ===
+
+We need to import an XPI template and a translation to see those files
+exported as part of language packs.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ITranslationImportQueue, RosettaImportStatus)
+    >>> from canonical.launchpad.translationformat.tests.test_xpi_import \
+    ...     import get_en_US_xpi_file_to_import
+
+We are going to import translations for mozilla-firefox package in
+grumpy distro series.
+
+    >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
+    >>> spn = SourcePackageName.byName('mozilla-firefox')
+    >>> firefox_template = POTemplate(
+    ...     name='firefox', translation_domain='firefox',
+    ...     distroseries=series, sourcepackagename=spn,
+    ...     owner=mark, languagepack=True, path='en-US.xpi',
+    ...     header=pot_header)
+
+Attach the en-US.xpi (the template) file.
+
+    >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
+    >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> published = True
+    >>> template_entry = translation_import_queue.addOrUpdateEntry(
+    ...     firefox_template.path, en_US_xpi.read(), published,
+    ...     mark, distroseries=series, sourcepackagename=spn,
+    ...     potemplate=firefox_template)
+
+Attach the es.xpi file (the translation) file.
+
+    >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
+    >>> firefox_es_translation = firefox_template.newPOFile('es')
+    >>> translation_entry = translation_import_queue.addOrUpdateEntry(
+    ...     'es.xpi', es_xpi.read(), published,
+    ...     mark, distroseries=series, sourcepackagename=spn,
+    ...     potemplate=firefox_template,
+    ...     pofile=firefox_es_translation)
+
+Before we are ready to import the attached files, we need to approve
+them first.
+
+    >>> template_entry.status = RosettaImportStatus.APPROVED
+    >>> translation_entry.status = RosettaImportStatus.APPROVED
+
+Given that the files are attached to Librarian, we need to commit the
+transaction to make sure it's stored properly and available.
+
+    >>> transaction.commit()
+
+We do now the import from the queue:
+
+    >>> (subject, body) = firefox_template.importFromQueue(template_entry)
+    >>> (subject, body) = firefox_es_translation.importFromQueue(
+    ...     translation_entry)
+    >>> flush_database_caches()
+    >>> transaction.commit()
+
+
+=== Language pack export with XPI files ===
+
+We are now ready to get an exported language pack with XPI files.
+
+    >>> language_pack = export_language_pack(
+    ...     distribution_name='ubuntu',
+    ...     series_name='grumpy',
+    ...     component=None,
+    ...     force_utf8=True,
+    ...     output_file=None,
+    ...     logger=logger)
+    >>> transaction.commit()
+
+We get other entries in language pack + en-US.xpi file and
+the translations in .po file format.
+
+    >>> tarfile = string_to_tarfile(language_pack.file.read())
+    >>> examine_tarfile(tarfile)
+    |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/es/
+    |     0 | rosetta-grumpy/es/LC_MESSAGES/
+    |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
+    |     0 | rosetta-grumpy/cy/
+    |     0 | rosetta-grumpy/cy/LC_MESSAGES/
+    |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     0 | rosetta-grumpy/xpi/
+    |     0 | rosetta-grumpy/xpi/firefox/
+    |    82 | rosetta-grumpy/xpi/firefox/es.po
+    |    74 | rosetta-grumpy/xpi/firefox/en.po
+    |   ... | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |     1 | rosetta-grumpy/timestamp.txt
+    |     2 | rosetta-grumpy/mapping.txt
+
+
 == Script arguments and concurrency ==
 
 The language-pack-exporter script requires two arguments to run: the
@@ -413,6 +517,7 @@ different distribution and series combinations.
     INFO    creating lockfile
     INFO    Exporting translations for series hoary of distribution ubuntu.
     INFO    Number of PO files to export: 12
+    INFO    Exporting XPI template files.
     INFO    Adding timestamp file
     INFO    Adding mapping file
     INFO    Done.

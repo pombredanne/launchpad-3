@@ -390,6 +390,9 @@ class TestTrac(Trac):
     for the sake of making test data sane.
     """
 
+    # We remove the batch_size limit for the purposes of the tests so
+    # that we can test batching and not batching correctly.
+    batch_size = None
     batch_query_threshold = 10
     supports_single_exports = True
     trace_calls = False
@@ -414,6 +417,9 @@ class TestRoundup(Roundup):
     needed.
     """
 
+    # We remove the batch_size limit for the purposes of the tests so
+    # that we can test batching and not batching correctly.
+    batch_size = None
     trace_calls = False
 
     def urlopen(self, url):

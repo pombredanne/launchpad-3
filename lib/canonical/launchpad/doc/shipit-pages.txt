@@ -57,7 +57,7 @@ class.
     >>> review_request_view = create_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
-    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Server']
+    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Ubuntu Server Edition']
 
     >>> [arch.title for arch in review_request_view.ordered_architectures]
     ['PC', '64-bit PC']
@@ -76,7 +76,7 @@ And this is the order we use when generating the widgets matrix.
     ['Ubuntu', u'PC', u'64-bit PC']
     ['Kubuntu', u'PC', u'64-bit PC']
     ['Edubuntu', u'PC', None]
-    ['Server', u'PC', u'64-bit PC']
+    ['Ubuntu Server Edition', u'PC', u'64-bit PC']
 
 Similarly to the quantity widgets, we use a table to display the quantities
 requested by the user. But in this case, the shipit admins are not supposed to

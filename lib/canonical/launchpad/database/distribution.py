@@ -151,10 +151,28 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         joinColumn='distribution', prejoins=["uploader", "component"])
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
+    official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
+        default=False)
+
+    @property
+    def official_codehosting(self):
+        # XXX: Aaron Bentley 2008-01-22
+        # At this stage, we can't directly associate branches with source
+        # packages or anything else resulting in a distribution, so saying
+        # that a distribution supports codehosting at this stage makes
+        # absolutely no sense at all.
+        return False
+
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+
+    @property
+    def official_anything(self):
+        return True in (self.official_malone, self.official_rosetta,
+                        self.official_blueprints, self.official_answers)
+
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',

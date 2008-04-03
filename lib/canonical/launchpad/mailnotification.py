@@ -208,6 +208,11 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
+    # If the bug has tags we add an X-Launchpad-Bug-Tags header.
+    if bug.tags:
+        tag_string = ' '.join(bug.tags)
+        msg.add_header('X-Launchpad-Bug-Tags', tag_string)
+
     # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
     # headers. These are simple yes/no values denoting privacy and
     # security for the bug.
@@ -705,6 +710,7 @@ def get_bug_delta(old_bug, new_bug, user):
 
     if changes:
         changes["bug"] = new_bug
+        changes["bug_before_modification"] = old_bug
         changes["bugurl"] = canonical_url(new_bug)
         changes["user"] = user
 
@@ -775,12 +781,19 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers,
         key=operator.attrgetter('displayname'))
 
-def add_bug_change_notifications(bug_delta):
+def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
+    recipients = bug_delta.bug.getBugNotificationRecipients(
+        old_bug=bug_delta.bug_before_modification)
+    if old_bugtask is not None:
+        old_bugtask_recipients = BugNotificationRecipients()
+        get_bugtask_indirect_subscribers(
+            old_bugtask, recipients=old_bugtask_recipients)
+        recipients.update(old_bugtask_recipients)
     for text_change in changes:
         bug_delta.bug.addChangeNotification(
-            text_change, person=bug_delta.user)
+            text_change, person=bug_delta.user, recipients=recipients)
 
 
 def notify_bugtask_added(bugtask, event):
@@ -815,7 +828,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_deltas=bugtask_delta,
         user=event.user)
 
-    add_bug_change_notifications(bug_delta)
+    add_bug_change_notifications(
+        bug_delta, old_bugtask=event.object_before_modification)
 
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
@@ -1656,16 +1670,19 @@ def notify_specification_subscription_modified(specsub, event):
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
+
 def notify_mailinglist_activated(mailinglist, event):
-    """Notify the active members of a team and its subteams that a mailing
-    list is available.
+    """Notification that a mailng list is available.
+
+    All active members of a team and its subteams receive notification when
+    the team's mailing list is available.
     """
     # We will use the setting of the date_activated field as a hint
     # that this list is new, and that noboby has subscribed yet.  See
     # `MailingList.transitionToStatus()` for the details.
     old_date = event.object_before_modification.date_activated
     new_date = event.object.date_activated
-    list_looks_new = (old_date is None) and (new_date is not None)
+    list_looks_new = old_date is None and new_date is not None
 
     if not (list_looks_new and mailinglist.isUsable()):
         return
@@ -1689,18 +1706,7 @@ def notify_mailinglist_activated(mailinglist, event):
             members.add(person)
         return members
 
-    beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-
     for person in contacts_for(team):
-
-        # XXX mars 2008-02-21:
-        # This should be removed when the Mailing List Beta is over.
-        #
-        # Only send an invitation to Beta testers, because they are
-        # the only people that can sign up for the list!
-        if not person.inTeam(beta_testers):
-            continue
-
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,

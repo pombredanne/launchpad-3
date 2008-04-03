@@ -1,0 +1,28 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="lazr">
+
+    <class class="canonical.lazr.rest.CollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
+    <class class="canonical.lazr.rest.EntryResource">
+        <allow interface='canonical.lazr.interfaces.IEntryResource' />
+        <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
+    </class>
+
+    <!-- Generic adapter for scoped collection -->
+    <adapter
+        for="* *"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+    <adapter
+        for="canonical.lazr.enum.BaseItem"
+        provides="canonical.lazr.interfaces.IJSONPublishable"
+        factory="canonical.lazr.rest.JSONItem"
+        />
+
+</configure>

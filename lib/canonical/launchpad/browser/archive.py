@@ -102,6 +102,12 @@ class ArchiveContextMenu(ContextMenu):
 class ArchiveViewBase:
     """Common features for Archive view classes."""
 
+    def isPrivate(self):
+        """Return whether the archive is private or not."""
+        # This is used by the main container template to decide whether
+        # to render the privacy graphics or not.
+        return self.context.private
+
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
@@ -389,13 +395,16 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         for source in selected_sources:
             messages.append('<br/>%s' % source.displayname)
         messages.append('</p>')
-        messages.append("<p>Deletion comment: %s</p>" % comment)
+        # Replace the 'comment' content added by the user via structured(),
+        # so it will be quoted appropriately.
+        messages.append("<p>Deletion comment: %(comment)s</p>")
 
         notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(
+            structured(notification, comment=comment))
 
 
-class ArchiveEditDependenciesView(LaunchpadFormView):
+class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
 
     schema = IArchiveEditDependenciesForm
@@ -590,7 +599,7 @@ class ArchiveActivateView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
 
-class ArchiveBuildsView(BuildRecordsView):
+class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
     """Build Records View for IArchive."""
 
     __used_for__ = IHasBuildRecords
@@ -604,12 +613,12 @@ class ArchiveBuildsView(BuildRecordsView):
         return BuildStatus.NEEDSBUILD
 
 
-class BaseArchiveEditView(LaunchpadEditFormView):
+class BaseArchiveEditView(ArchiveViewBase, LaunchpadEditFormView):
 
     schema = IArchive
     field_names = []
 
-    @action(_("Save"), name="save")
+    @action(_("Save"), name="save", validator="validate_save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
@@ -618,6 +627,9 @@ class BaseArchiveEditView(LaunchpadEditFormView):
     def action_cancel(self, action, data):
         self.next_url = canonical_url(self.context)
 
+    def validate_save(self, action, data):
+        """Default save validation does nothing."""
+        pass
 
 class ArchiveEditView(BaseArchiveEditView):
 
@@ -629,9 +641,27 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'authorized_size', 'whiteboard']
+                   'buildd_secret', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)
+
+    def validate_save(self, action, data):
+        """Validate the save action on ArchiveAdminView.
+
+        buildd_secret can only be set, and must be set, when
+        this is a private archive.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        if data.get('buildd_secret') is None and data['private']:
+            self.setFieldError(
+                'buildd_secret',
+                'Required for private archives.')
+
+        if data.get('buildd_secret') is not None and not data['private']:
+            self.setFieldError(
+                'buildd_secret',
+                'Do not specify for non-private archives')
 
 
 def archive_to_structualheading(archive):

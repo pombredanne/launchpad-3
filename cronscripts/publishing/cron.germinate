@@ -100,7 +100,14 @@ for distro in ubuntu kubuntu edubuntu xubuntu gobuntu kubuntu-kde4; do
 	  continue
 	fi
       fi
-      egrep -v -- "^(-|Package| )" "$seed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+      if grep -iq '^Task-Seeds:' "$seed.seedtext"; then
+	scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
+      else
+	scanseeds="$seed"
+      fi
+      for scanseed in $scanseeds; do
+	egrep -v -- "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+      done
     done
 
     # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields

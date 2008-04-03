@@ -28,7 +28,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.helpers import filenameToContentType
@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
     pocketsuffix)
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -248,8 +249,18 @@ class Builder(SQLBase):
             # Although partner and PPA builds are always in the release
             # pocket, they depend on the same pockets as though they
             # were in the updates pocket.
-            ubuntu_pockets = self.pocket_dependencies[
-                PackagePublishingPocket.UPDATES]
+            #
+            # XXX Julian 2008-03-20
+            # Private PPAs, however, behave as though they are in the
+            # security pocket.  This is a hack to get the security
+            # PPA working as required until cprov lands his changes for
+            # configurable PPA pocket dependencies.
+            if target_archive.private:
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.SECURITY]
+            else:
+                ubuntu_pockets = self.pocket_dependencies[
+                    PackagePublishingPocket.UPDATES]
 
             # Partner and PPA may also depend on any component.
             ubuntu_components = 'main restricted universe multiverse'
@@ -260,9 +271,16 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                if archive.private:
+                    uri = URI(archive.archive_url)
+                    uri = uri.replace(
+                        userinfo="buildd:%s" % archive.buildd_secret)
+                    url = str(uri)
+                else:
+                    url = archive.archive_url
                 source_line = (
                     'deb %s %s %s'
-                    % (archive.archive_url, dist_name, ogre_components))
+                    % (url, dist_name, ogre_components))
                 ubuntu_source_lines.append(source_line)
         else:
             ubuntu_pockets = self.pocket_dependencies[
@@ -641,19 +659,28 @@ class BuilderSet(object):
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
 
-    def getBuildQueueDepthByArch(self):
+    def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
+        if virtualized:
+            archive_purposes = [ArchivePurpose.PPA]
+        else:
+            archive_purposes = [
+                ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]
+
         query = """
-            SELECT distroarchseries.architecturetag, COUNT(*) FROM
-                Build INNER JOIN DistroArchSeries
-                  ON Build.distroarchseries=DistroArchSeries.id
-            WHERE Build.buildstate=0
-            GROUP BY distroarchseries.architecturetag
-            ORDER BY distroarchseries.architecturetag
-            """
-        cur = cursor()
-        cur.execute(query)
-        return cur.fetchall()
+           BuildQueue.build = Build.id AND
+           Build.archive = Archive.id AND
+           Build.distroarchseries = DistroArchSeries.id AND
+           DistroArchSeries.processorfamily = Processor.family AND
+           Processor.id = %s AND
+           Build.buildstate = %s AND
+           Archive.purpose IN %s
+        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, archive_purposes)
+
+        clauseTables = [
+            'Build', 'DistroArchSeries', 'Processor', 'Archive']
+        queue = BuildQueue.select(query, clauseTables=clauseTables)
+        return queue.count()
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

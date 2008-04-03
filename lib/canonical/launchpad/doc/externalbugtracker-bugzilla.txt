@@ -169,9 +169,10 @@ Let's add a few more watches:
     ...     sync(bug_watch)
 
 
-Set the batch threshold very low:
+Set the batch threshold very low and remove the batch size limit:
 
     >>> external_bugzilla.batch_query_threshold = 0
+    >>> external_bugzilla.batch_size = None
 
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:

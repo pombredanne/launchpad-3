@@ -29,6 +29,7 @@ __all__ = [
     'validate_date_interval'
     ]
 
+from cgi import escape
 import re
 import string
 import urllib
@@ -54,9 +55,10 @@ def can_be_nominated_for_serieses(serieses):
             unnominatable_serieses.append(series.name.capitalize())
 
     if unnominatable_serieses:
+        series_str = ", ".join(unnominatable_serieses)
         raise LaunchpadValidationError(_(
-            "This bug has already been nominated for these series: %s" %
-                ", ".join(unnominatable_serieses)))
+            "This bug has already been nominated for these "
+            "series: %s"), series_str)
 
     return True
 
@@ -297,13 +299,13 @@ def valid_cve_sequence(value):
         return True
     else:
         raise LaunchpadValidationError(_(
-            "%s is not a valid CVE number" % value))
+            "%s is not a valid CVE number"), value)
 
 
 def _validate_email(email):
     if not valid_email(email):
         raise LaunchpadValidationError(_(dedent("""
-            %s isn't a valid email address.""" % email)))
+            %s isn't a valid email address.""" % escape(email))))
 
 
 def validate_new_team_email(email):
@@ -362,7 +364,7 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
             raise LaunchpadValidationError(_(
                     'This bug is already open on %s with no package '
                     'specified. You should fill in a package name for the '
-                    'existing bug.') % (distribution.displayname))
+                    'existing bug.'), distribution.displayname)
     else:
         # Prevent having a task on only the distribution if there's at
         # least one task already on the distribution, whether or not
@@ -375,8 +377,8 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
         if len(distribution_tasks_for_bug) > 0:
             raise LaunchpadValidationError(_(
                     'This bug is already on %s. Please specify an affected '
-                    'package in which the bug has not yet been reported.')
-                    % distribution.displayname)
+                    'package in which the bug has not yet been reported.'),
+                    distribution.displayname)
     validate_distrotask(bug, distribution, sourcepackagename)
 
 
@@ -391,20 +393,20 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         try:
             distribution.guessPackageNames(sourcepackagename.name)
         except NotFoundError, e:
-            raise LaunchpadValidationError(unicode(e))
+            raise LaunchpadValidationError(escape(unicode(e)))
     new_source_package = distribution.getSourcePackage(sourcepackagename)
     if sourcepackagename is not None and (
         bug.getBugTask(new_source_package) is not None):
         # Ensure this distribution/sourcepackage task is unique.
         raise LaunchpadValidationError(_(
-                'This bug has already been reported on %s (%s).') % (
-                sourcepackagename.name, distribution.name))
+                'This bug has already been reported on %s (%s).'),
+                sourcepackagename.name, distribution.name)
     elif (sourcepackagename is None and
           bug.getBugTask(distribution) is not None):
         # Don't allow two distribution tasks with no source package.
         raise LaunchpadValidationError(_(
-                'This bug has already been reported on %s.') % (
-                    distribution.name))
+                'This bug has already been reported on %s.'),
+                 distribution.name)
     else:
         # The bugtask is valid.
         pass
@@ -422,8 +424,8 @@ def valid_upstreamtask(bug, product):
     params = BugTaskSearchParams(user, bug=bug)
     if product.searchTasks(params):
         errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for %s' %
-            product.displayname)))
+            'A fix for this bug has already been requested for %s'),
+            product.displayname))
 
     if errors:
         raise WidgetsError(errors)
@@ -595,7 +597,7 @@ def validate_date_interval(start_date, end_date, error_msg=None):
         error_msg = _("This event can't start after it ends.")
     errors = []
     if start_date >= end_date:
-        errors.append(LaunchpadValidationError(error_msg))
+        errors.append(LaunchpadValidationError(escape(error_msg)))
     if errors:
         raise WidgetsError(errors)
 

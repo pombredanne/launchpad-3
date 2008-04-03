@@ -29,6 +29,7 @@ the "frog" builder.
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.private = True
+    >>> cprov.archive.buildd_secret = "secret"
     >>> cprov_builds = getUtility(
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
     >>> frog = getUtility(IBuilderSet)['frog']
@@ -47,6 +48,17 @@ can use him to see builds from a buildd-admin perspective.
     ...     TeamMembershipStatus)
     >>> buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
+
+Finally, we will remove any publications of the source behind our
+build of interest that are not in cprov's archive, so that we know
+we're dealing with a single private source publication.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> random_spr = cprov_builds[random_build].sourcepackagerelease
+    >>> non_cprov_publications = [
+    ...     pub for pub in random_spr.publishings if pub.archive != cprov]
+    >>> for pub in non_cprov_publications:
+    ...     discard = pub.supersede()
 
     >>> flush_database_updates()
     >>> logout()
@@ -266,41 +278,136 @@ An admin user can see builds even if they are private:
 
     >>> admin_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
-                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
 Launchpad Buildd admins can also see private builds.
 
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
-                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
 cprov can see his own private build:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
-                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
 Anonymous users cannot see the private build:
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture  Owner                    Status
-    bob Automatic  386           Launchpad Buildd Admins  Not available
-    frog Automatic 386 Virtual   Launchpad Buildd Admins  Not available
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   NOT OK: (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
+
+
+== Unembargoed builds ==
+
+When private packages are copied to a non-private archive, the build
+becomes unembargoed and is accessible by any user.
+
+Currently, browsing to the build page is forbidden for unauthorised
+users:
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> try:
+    ...     anon_browser.open(
+    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         random_build_id)
+    ... except Unauthorized:
+    ...     print "Got expected exception"
+    ... else:
+    ...     print "Did not get expected exception"
+    Got expected exception
+
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> try:
+    ...     browser.open(
+    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         random_build_id)
+    ... except Unauthorized:
+    ...     print "Got expected exception"
+    ... else:
+    ...     print "Did not get expected exception"
+    Got expected exception
+
+Let's make the iceweasel package available in Warty.  First log in as
+an admin to be able to manipulate the source publishing.
+
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> [source_pub] = cprov.archive.getPublishedSources(name="iceweasel")
+    >>> new_pub = source_pub.copyTo(
+    ...     warty, source_pub.pocket, ubuntu.main_archive)
+    >>> flush_database_updates()
+    >>> logout()
+
+Now the anonymous user can see the build:
+
+    >>> anon_browser = setupBrowser()
+    >>> anon_browser.open("http://launchpad.dev/+builds")
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Launchpad build machines
+    Building PPA packages
+    386                                            0 waiting
+    The frog builder     BUILDING i386 build of iceweasel 1.0 in ubuntu
+                         warty RELEASE [cprov] (AUTO)
+    Building other packages
+    386                                            1 waiting
+    Bob The Builder      NOT OK : None (AUTO)
+    Generated at ...
+
+Any other logged-in user will also see the build:
+
+    >>> browser.open("http://launchpad.dev/+builds")
+    >>> print extract_text(find_main_content(browser.contents))
+    Launchpad build machines
+    Building PPA packages
+    386                                            0 waiting
+    The frog builder    BUILDING i386 build of iceweasel 1.0 in ubuntu
+                        warty RELEASE [cprov] (AUTO)
+    Building other packages
+    386                                            1 waiting
+    Bob The Builder      NOT OK : None (AUTO)
+    Generated at ...
+
+Accessing the build page will now also work:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    >>> print anon_browser.title
+    Build details for i386 build of iceweasel...
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    >>> print browser.title
+    Build details for i386 build of iceweasel...

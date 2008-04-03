@@ -2,7 +2,13 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE Archive
     ALTER COLUMN distribution SET NOT NULL,
+    ADD COLUMN buildd_secret text,
     ADD COLUMN require_virtualized boolean NOT NULL DEFAULT TRUE;
+
+ALTER TABLE Archive
+    ADD CONSTRAINT valid_buildd_secret 
+        CHECK ((private = True AND buildd_secret IS NOT NULL) OR
+               (private = False));
 
 -- Only PPA is virtualized.
 UPDATE Archive

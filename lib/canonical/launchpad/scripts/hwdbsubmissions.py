@@ -76,7 +76,7 @@ class RelaxNGValidator:
         # of the tests is 38..40 seconds; if the validation input
         # is not passed via stdin but saved in a temporary file,
         # the tests need 28..30 seconds.
-        
+
         xml_file = NamedTemporaryFile()
         xml_file.write(xml)
         xml_file.flush()
@@ -104,6 +104,11 @@ class RelaxNGValidator:
 
     @property
     def error_log(self):
+        """A string with the errors detected by the validator.
+
+        Each line contains one error; if the validation was successful,
+        error_log is the empty string.
+        """
         return self._errors
 
 

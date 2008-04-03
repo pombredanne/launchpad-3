@@ -47,8 +47,10 @@ class ILaunchpadApplication(Interface):
     """
     title = Attribute('Title')
 
+
 class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
+
 
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
@@ -175,6 +177,9 @@ class ILink(ILinkData):
         "Boolean to say whether this link is enabled.  Can be read and set.")
 
     escapedtext = Attribute("Text string, escaped as necessary.")
+
+    icon_url = Attribute(
+        "The full URL for this link's associated icon, if it has one.")
 
     def render():
         """Return a HTML representation of the link."""

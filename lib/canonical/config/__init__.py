@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 '''
 Configuration information pulled from launchpad.conf.
 
@@ -11,6 +11,7 @@ __metaclass__ = type
 
 import os
 import logging
+import sys
 from urlparse import urlparse, urlunparse
 
 import zope.thread
@@ -24,14 +25,14 @@ from canonical.lazr.interfaces.config import ConfigErrors
 # of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
 # config's launchpad.conf to use. LPCONFIG_SECTION is really only used by
 # the test suite to select the testrunner specific section.
-CONFIG_ENVIRONMENT_VARIABLE = 'LPCONFIG'
-SECTION_ENVIRONMENT_VARIABLE = 'LPCONFIG_SECTION'
+LPCONFIG = 'LPCONFIG'
+LPCONFIG_SECTION = 'LPCONFIG_SECTION'
 
 DEFAULT_SECTION = 'default'
 DEFAULT_CONFIG = 'default'
 
 
-class CanonicalConfig(object):
+class CanonicalConfig:
     """
     Singleton configuration, accessed via the `config` module global.
 
@@ -41,25 +42,63 @@ class CanonicalConfig(object):
     """
     _config = None
     _cache = zope.thread.local()
-    _default_config_section = os.environ.get(
-            SECTION_ENVIRONMENT_VARIABLE, DEFAULT_SECTION
-            )
+    _instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
+    _process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
 
-    def setDefaultSection(self, section):
-        """Set the name of the config file section returned by getConfig.
 
-        This method is used by the test runner to switch on the test
-        configuration. It may be used in the future to store the production
-        configs in the one common file. It also sets the LPCONFIG_SECTION
-        environment variable so subprocesses keep the same default.
+    @property
+    def instance_name(self):
+        """Return the config's instance name.
+
+        This normally corresponds to the LPCONFIG environment
+        variable. It is also the name of the directory the conf file is
+        loaded from.
         """
-        self._default_config_section = section
-        os.environ[SECTION_ENVIRONMENT_VARIABLE] = section
+        return self._instance_name
 
-    def getConfig(self, section=None):
+    def setInstance(self, instance_name):
+        """Set the instance name where the conf files are stored.
+
+        This method is used to set the instance_name, which is the
+        directory where the conf file is stored. The test runner
+        uses this to switch on the test configuration. This
+        method also sets the LPCONFIG environment
+        variable so subprocesses keep the same default.
+        """
+        self._instance_name = instance_name
+        os.environ[LPCONFIG] = instance_name
+
+    @property
+    def process_name(self):
+        """Return or set the current process's name to select a conf.
+
+        CanonicalConfig loads the conf file named for the process. When
+        the conf file does not exist, it loads launchpad-lazr.conf instead.
+        """
+        return self._process_name
+
+    def setProcess(self, process_name):
+        """Set the name of the process to select a conf file.
+
+        This method is used to set the process_name is if should be
+        different from the name obtained from sys.argv[0]. CanonicalConfig
+        will try to load <process_name>-lazr.conf if it exists. Otherwise,
+        it will load launchpad-lazr.conf.
+        """
+        self._process_name = process_name
+
+    def getConfig(self):
         """Return the ZConfig configuration"""
-        if section is None:
-            section = self._default_config_section
+        if self._instance_name == 'testrunner':
+            # The instance name is usually the name of the config directory,
+            # and always the same in lazr.config's case. In ZConfig however,
+            # the testrunner is not a directory. it is a section in the
+            # default instance's launchpad.conf file.
+            config_dir = DEFAULT_CONFIG
+            section = self._instance_name
+        else:
+            config_dir = self._instance_name
+            section = DEFAULT_SECTION
 
         try:
             return getattr(self._cache, section)
@@ -69,10 +108,7 @@ class CanonicalConfig(object):
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs', os.environ.get(
-                    CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG),
-                'launchpad.conf'
-                )
+                'configs', config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root, handlers = ZConfig.loadConfig(schema, configfile)
         for branch in root.canonical:
@@ -91,16 +127,15 @@ class CanonicalConfig(object):
         if self._config is not None:
             return
 
-        if self._default_config_section != 'default':
-            environ_dir = self._default_config_section
-        else:
-            environ_dir = os.environ.get(
-                    CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
         here = os.path.dirname(__file__)
-        config_dir = os.path.join(
-            here, os.pardir, os.pardir, os.pardir, 'configs', environ_dir)
         schema_file = os.path.join(here, 'schema-lazr.conf')
-        config_file = os.path.join(config_dir, 'launchpad-lazr.conf')
+        config_dir = os.path.join(
+            here, os.pardir, os.pardir, os.pardir,
+            'configs', self.instance_name)
+        config_file = os.path.join(
+            config_dir, '%s-lazr.conf' % self.process_name)
+        if not os.path.isfile(config_file):
+            config_file = os.path.join(config_dir, 'launchpad-lazr.conf')
 
         # Monkey patch the Section class to store it's ZConfig counterpart.
         # The Section instance will failover to the ZConfig instance when
@@ -128,11 +163,6 @@ class CanonicalConfig(object):
             os.path.dirname(__file__), os.pardir, os.pardir, os.pardir
             ))
 
-        # Name of the current configuration, as per LPCONFIG environment
-        # variable
-        config.name = os.environ.get(
-                CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
-
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
         config.devmode = root_options.devmode
@@ -156,10 +186,6 @@ class CanonicalConfig(object):
     def __getitem__(self, key):
         self._getConfig()
         return self._config[key]
-
-    def default_section(self):
-        return self._default_config_section
-    default_section = property(default_section)
 
 
 # Transitionary functions and classes.

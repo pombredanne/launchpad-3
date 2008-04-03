@@ -126,7 +126,8 @@ class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
     implements(IExternalBugTracker)
-    batch_size = None
+
+    batch_size = 100
     batch_query_threshold = config.checkwatches.batch_query_threshold
     import_comments = config.checkwatches.import_comments
 

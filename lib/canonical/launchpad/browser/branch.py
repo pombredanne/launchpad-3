@@ -362,11 +362,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         return (self.context.branch_type != BranchType.REMOTE and
                 self.context.revision_count > 0)
 
-    def is_hosted_branch(self):
-        """Whether this is a user-provided hosted branch."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.context.url is None and self.context.owner != vcs_imports
-
     @cachedproperty
     def landing_targets(self):
         """Return a decorated filtered list of landing targets."""
@@ -656,13 +651,14 @@ class BranchDeletionView(LaunchpadFormView):
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the branch page."""
+        self.next_url = canonical_url(self.context)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
+                   'lifecycle_status', 'whiteboard', 'author']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -736,7 +732,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
-                   'summary', 'lifecycle_status', 'whiteboard', 'home_page',
+                   'summary', 'lifecycle_status', 'whiteboard',
                    'author']
 
     branch = None
@@ -771,7 +767,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 title=data['title'],
                 summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'],
-                home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
