@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import gc
 import os
 import thread
 from time import strftime
@@ -503,6 +504,7 @@ class LaunchpadBrowserPublication(
         Note that this only provides reliable results when only one thread is
         processing requests.
         """
+        gc.collect()
         current_rss = resident()
         # Convert type to string, because that's what we get when reading
         # the old scoreboard.
@@ -536,13 +538,17 @@ class LaunchpadBrowserPublication(
         """
         log = open(config.debug.references_leak_log, 'a')
         try:
+            pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+            # It can happen that the pageid is ''?!?
+            if pageid == '':
+                pageid = 'Unknown'
             leak_in_mb = mem_leak / (1024*1024)
             formatted_delta = "; ".join(
                 "%s=%d" % (ref_type, count)
                 for count, ref_type in delta_refs)
             print >>log, '%s %s %.2fMb %s' % (
                 strftime('%Y-%m-%d:%H:%M:%S'),
-                request._orig_env['launchpad.pageid'],
+                pageid,
                 leak_in_mb,
                 formatted_delta)
         finally:
