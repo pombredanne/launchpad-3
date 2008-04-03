@@ -21,14 +21,14 @@ from zope.component import getUtility
 from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
-from twisted.conch.ssh import keys
 from twisted.internet import defer
 from twisted.python.util import sibpath
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.daemons.sftp import SSHService
+from canonical.launchpad.daemons.sftp import (
+    getPrivateKeyObject, getPublicKeyString, SSHService)
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
@@ -202,12 +202,12 @@ class AuthserverWithKeysMixin:
 
     def getPrivateKey(self):
         """Return the private key object used by 'testuser' for auth."""
-        return keys.getPrivateKeyObject(
+        return getPrivateKeyObject(
             data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
 
     def getPublicKey(self):
         """Return the public key string used by 'testuser' for auth."""
-        return keys.getPublicKeyString(
+        return getPublicKeyString(
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
 
 
