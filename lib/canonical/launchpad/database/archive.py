@@ -519,7 +519,7 @@ class Archive(SQLBase):
         cache_contents = set()
         def add_cache_content(content):
             """Sanitise and add contents to the cache."""
-            content = clean_text.sub('', content)
+            content = clean_text.sub(' ', content)
             terms = [term.lower() for term in content.strip().split()]
             for term in terms:
                 cache_contents.add(term)
