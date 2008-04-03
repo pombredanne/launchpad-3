@@ -31,6 +31,7 @@ class IBuild(Interface):
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     archive = Attribute("The archive")
+    estimated_build_duration = Attribute("Estimated Build Duration Interval")
 
     # Properties
     current_component = Attribute(

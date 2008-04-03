@@ -276,10 +276,44 @@ class SourcePackageRelease(SQLBase):
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
-        # force the current timestamp instead of the default
+        # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+
+        # Always include the primary archive when looking for
+        # past build times (just in case that none can be found
+        # in a PPA).
+        archives = [archive.id]
+        if archive.purpose != ArchivePurpose.PRIMARY:
+            archives.append(distroarchseries.main_archive.id)
+
+        # Look for all sourcepackagerelease instances that match the name
+        matching_sprs = SourcePackageRelease.select("""
+            SourcePackageName.name = %s AND
+            SourcePackageRelease.sourcepackagename = SourcePackageName.id
+            """ % sqlvalues(self.name),
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+
+        # Get the most recent (successfully built) build record for this
+        # package.
+        completed_builds = Build.select("""
+            sourcepackagerelease IN %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            buildstate = %s
+            """ % sqlvalues([spr.id for spr in matching_sprs],
+                            distroarchseries, archives,
+                            BuildStatus.FULLYBUILT),
+            orderBy=['-datebuilt', '-id'])
+
+        if completed_builds:
+            most_recent_build = completed_builds[0]
+            estimated_build_duration = most_recent_build.buildduration
+        else:
+            # Assume a build duration of five minutes if no historical
+            # build data exists.
+            estimated_build_duration = datetime.timedelta(minutes=5)
 
         return Build(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
@@ -287,6 +321,7 @@ class SourcePackageRelease(SQLBase):
                      buildstate=status,
                      datecreated=datecreated,
                      pocket=pocket,
+                     estimated_build_duration=estimated_build_duration,
                      archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
