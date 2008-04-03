@@ -373,15 +373,14 @@ same queries work, pointing to Celso's PPA.
   >>> print ubuntu.searchPPAs(text='shortdesc')[0].title
   PPA for Celso Providelo
 
-The method which populates the archive caches also cleanup the texts
-to workaround the current FTI limitation (see bug #207969). It
+The method which populates the archive caches also cleans the texts up
+to work around the current FTI limitation (see bug #207969). It
 performs the following tasks:
 
  * Exclude punctuation ([,.;:!?])
  * Store only unique lower case words
 
-In order to test this mechanism we will remove all caches related to
-Celso's PPA.
+We remove all caches related to Celso's PPA.
 
   >>> celso_source_caches = DistributionSourcePackageCache.selectBy(
   ...    archive=cprov.archive)
@@ -415,9 +414,8 @@ information will be available, no packages information will be cached.
   >>> print cprov.archive.package_description_cache
   celso providelo cprov
 
-In order to probe the cleanup mechanisms, we will insert a new source
-cache with texts containing punctuation and duplicated words pointing
-to Celso's PPA.
+We insert a new source cache with texts containing punctuation and
+duplicated words pointing to Celso's PPA.
 
   >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
   >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
