@@ -129,7 +129,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         Bytes with bit 7 set must be detected as invalid.
         """
-        sample_data_ascii_encoded = self._setEncoding('ascii')
+        sample_data_ascii_encoded = self._setEncoding('US-ASCII')
         result, submission_id = self.runValidator(sample_data_ascii_encoded)
         self.assertNotEqual(result, None,
                             'Valid submission with ASCII encoding rejected')
