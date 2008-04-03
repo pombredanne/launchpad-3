@@ -12,7 +12,73 @@ from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure, log
 
 
-class ProcessMonitorProtocol(ProcessProtocol):
+
+class ProcessProtocolWithTwoStageKill(ProcessProtocol):
+    """Support for interrupting, then killing if necessary, processes.
+
+    :ivar _clock: A provider of Twisted's IReactorTime, to allow testing that
+        does not depend on an external clock.  If a clock is not explicitly
+        supplied the reactor is used.
+    :ivar _sigkill_delayed_call: When we are terminating a process, we send
+        SIGINT, wait a while and then send SIGKILL if required.  We stash the
+        DelayedCall here so that it can be cancelled if the SIGINT causes the
+        process to exit.
+    """
+
+    default_wait_before_kill = 5
+
+    def __init__(self, clock=None):
+        """Construct an instance.
+
+        :param clock: A provider of Twisted's IReactorTime.  This parameter
+            exists to allow testing that does not depend on an external clock.
+            If a clock is not passed in explicitly the reactor is used.
+        """
+        if clock is None:
+            clock = reactor
+        self._clock = clock
+        self._sigkill_delayed_call = None
+
+    def terminateProcess(self, timeout=None):
+        """Terminate the process by SIGINT initially, but SIGKILL if needed.
+
+        :param timeout: How many seconds to wait after the SIGINT before
+            sending the SIGKILL.  If None, use self.default_wait_before_kill
+            instead.
+        """
+        if timeout is None:
+            timeout = self.default_wait_before_kill
+        try:
+            self.transport.signalProcess('INT')
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+        else:
+            self._sigkill_delayed_call = self._clock.callLater(
+                timeout, self._sigkill)
+
+    def _sigkill(self):
+        """Forcefully kill the process."""
+        self._sigkill_delayed_call = None
+        try:
+            self.transport.signalProcess('KILL')
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+
+    def processEnded(self, reason):
+        """See `ProcessProtocol.processEnded`.
+
+        If the process dies and we're waiting to SIGKILL it, we can stop
+        waiting.
+        """
+        ProcessProtocol.processEnded(self, reason)
+        if self._sigkill_delayed_call is not None:
+            self._sigkill_delayed_call.cancel()
+            self._sigkill_delayed_call = None
+
+
+class ProcessMonitorProtocol(ProcessProtocolWithTwoStageKill):
     """Support for running a process and reporting on its progress.
 
     The idea is this: you want to run a child process.  Occasionally, you want
@@ -44,15 +110,8 @@ class ProcessMonitorProtocol(ProcessProtocol):
 
     :ivar _deferred: The deferred that will be fired when the child process
         exits.
-    :ivar _clock: A provider of Twisted's IReactorTime, to allow testing that
-        does not depend on an external clock.  If a clock is not explicitly
-        supplied the reactor is used.
     :ivar _notification_lock: A DeferredLock, used to serialize the
         notifications.
-    :ivar _sigkill_delayed_call: When we kill a process, we send SIGINT, wait
-        a while and then send SIGKILL if required.  We stash the DelayedCall
-        here so that it can be cancelled if the SIGINT causes the process to
-        exit.
     :ivar _termination_failure: When we kill the child process in response to
         some unexpected error, we report the reason we killed it to
         self._deferred, not that it exited because we killed it.
@@ -63,16 +122,10 @@ class ProcessMonitorProtocol(ProcessProtocol):
 
         :param deferred: A Deferred that will be fired when the subprocess has
             finished (either successfully or unsuccesfully).
-        :param clock: A provider of Twisted's IReactorTime.  This parameter
-            exists to allow testing that does not depend on an external clock.
-            If a clock is not passed in explicitly the reactor is used.
         """
+        ProcessProtocolWithTwoStageKill.__init__(self, clock)
         self._deferred = deferred
-        if clock is None:
-            clock = reactor
-        self._clock = clock
         self._notification_lock = defer.DeferredLock()
-        self._sigkill_delayed_call = None
         self._termination_failure = None
 
     def runNotification(self, func, *args):
@@ -94,8 +147,8 @@ class ProcessMonitorProtocol(ProcessProtocol):
     def unexpectedError(self, failure):
         """Something's gone wrong: kill the subprocess and report failure.
 
-        This method sends SIGINT to the subprocess and schedules a SIGKILL for
-        five seconds time in case the SIGINT doesn't kill the process.
+        Note that we depend on terminateProcess() killing the process: we
+        depend on the fact that processEnded will be called after calling it.
         """
         if self._termination_failure is not None:
             log.msg(
@@ -104,38 +157,15 @@ class ProcessMonitorProtocol(ProcessProtocol):
             log.err(failure)
             return
         self._termination_failure = failure
-        try:
-            self.transport.signalProcess('INT')
-        except error.ProcessExitedAlready:
-            # The process has already died. Fine.
-            pass
-        else:
-            self._sigkill_delayed_call = self._clock.callLater(
-                5, self._sigkill)
-
-    def _sigkill(self):
-        """Send SIGKILL to the child process.
-
-        We rely on this killing the process, i.e. we assume that
-        processEnded() will be called soon after this.
-        """
-        self._sigkill_delayed_call = None
-        try:
-            self.transport.signalProcess('KILL')
-        except error.ProcessExitedAlready:
-            # The process has already died. Fine.
-            pass
+        self.terminateProcess()
 
     def processEnded(self, reason):
         """See `ProcessProtocol.processEnded`.
 
-        Fires the termination deferred with reason or, if something more
-        exciting has already gone wrong, what that is.
+        We fire the termination deferred, after waiting for any in-progress
+        notifications to complete.
         """
-        ProcessProtocol.processEnded(self, reason)
-        if self._sigkill_delayed_call is not None:
-            self._sigkill_delayed_call.cancel()
-            self._sigkill_delayed_call = None
+        ProcessProtocolWithTwoStageKill.processEnded(self, reason)
 
         if not reason.check(error.ProcessDone):
             if self._termination_failure is None:
@@ -158,7 +188,8 @@ class ProcessMonitorProtocolWithTimeout(ProcessMonitorProtocol, TimeoutMixin):
     """Support for killing a monitored process after a period of inactivity.
 
     Note that this class does not define activity in any way: your subclass
-    should call resetTimeout() when it deems the subprocess has made progress.
+    should call the `resetTimeout()` from `TimeoutMixin` when it deems the
+    subprocess has made progress.
 
     :ivar _timeout: The subprocess will be killed after this many seconds of
         inactivity.

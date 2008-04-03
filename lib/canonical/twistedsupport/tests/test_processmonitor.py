@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 
+import StringIO
+import sys
 import unittest
 
 from twisted.internet import defer, error, task
@@ -14,7 +16,8 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.testing import TwistedLayer
 from canonical.twistedsupport.processmonitor import (
-    ProcessMonitorProtocol, ProcessMonitorProtocolWithTimeout)
+    ProcessMonitorProtocol, ProcessMonitorProtocolWithTimeout,
+    ProcessProtocolWithTwoStageKill)
 
 
 def makeFailure(exception_factory, *args, **kwargs):
@@ -28,10 +31,8 @@ def makeFailure(exception_factory, *args, **kwargs):
         return failure.Failure()
 
 
-class ProcessMonitorProtocolTestsMixin:
-    """Helpers to allow direct testing of ProcessMonitorProtocol.
-
-    Also useful for testing subclasses of ProcessMonitorProtocol.
+class ProcessTestsMixin:
+    """Helpers to allow direct testing of ProcessProtocol subclasses.
     """
 
     class StubTransport:
@@ -65,7 +66,7 @@ class ProcessMonitorProtocolTestsMixin:
                 self.protocol.processEnded(reason)
 
     def makeProtocol(self):
-        """Construct an instance of ProcessMonitorProtocol to be tested.
+        """Construct an `ProcessProtocol` instance to be tested.
 
         Override this in subclasses."""
         raise NotImplementedError
@@ -87,9 +88,57 @@ class ProcessMonitorProtocolTestsMixin:
             self.protocol, self.clock)
         self.protocol.connectionMade()
 
+class TestProcessProtocolWithTwoStageKill(
+    ProcessTestsMixin, TrialTestCase):
+
+    """Tests for `ProcessProtocolWithTwoStageKill`."""
+
+    layer = TwistedLayer
+
+    def makeProtocol(self):
+        """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
+        return ProcessProtocolWithTwoStageKill(self.clock)
+
+    def test_interrupt(self):
+        # When we call terminateProcess, we send SIGINT to the child
+        # process.
+        self.protocol.terminateProcess()
+        self.assertEqual(
+            [('signalProcess', 'INT')],
+            self.protocol.transport.calls)
+
+    def test_interruptThenKill(self):
+        # If SIGINT doesn't kill the process, we send SIGKILL after a delay.
+        self.protocol.transport.only_sigkill_kills = True
+
+        self.protocol.terminateProcess()
+
+        # When the error happens, we SIGINT the process.
+        self.assertEqual(
+            [('signalProcess', 'INT')],
+            self.protocol.transport.calls)
+
+        # After the expected time elapsed, we send SIGKILL.
+        self.clock.advance(self.protocol.default_wait_before_kill + 1)
+        self.assertEqual(
+            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
+            self.protocol.transport.calls)
+
+    def test_processExitClearsTimer(self):
+        # If SIGINT doesn't kill the process, we schedule a SIGKILL after a
+        # delay.  If the process exits before this delay elapses, we cancel
+        # the SIGKILL.
+        self.protocol.transport.only_sigkill_kills = True
+        self.protocol.terminateProcess()
+        saved_delayed_call = self.protocol._sigkill_delayed_call
+        self.failUnless(self.protocol._sigkill_delayed_call.active())
+        self.simulateProcessExit(clean=False)
+        self.failUnless(self.protocol._sigkill_delayed_call is None)
+        self.failIf(saved_delayed_call.active())
+
 
 class TestProcessMonitorProtocol(
-    ProcessMonitorProtocolTestsMixin, TrialTestCase):
+    ProcessTestsMixin, TrialTestCase):
     """Tests for `ProcessMonitorProtocol`."""
 
     layer = TwistedLayer
@@ -102,6 +151,7 @@ class TestProcessMonitorProtocol(
     def test_processTermination(self):
         # The protocol fires a Deferred when the child process terminates.
         self.simulateProcessExit()
+        # The only way this test can realistically fail is by hanging.
         return self.termination_deferred
 
     def test_terminatesWithError(self):
@@ -119,29 +169,6 @@ class TestProcessMonitorProtocol(
         self.assertEqual(
             [('signalProcess', 'INT')],
             self.protocol.transport.calls)
-        return self.assertFailure(
-            self.termination_deferred, RuntimeError)
-
-    def test_interruptThenKill(self):
-        # If SIGINT doesn't kill the process, we SIGKILL after 5 seconds.  The
-        # termination deferred is still fired with the original passed-in
-        # failure.
-        self.protocol.transport.only_sigkill_kills = True
-
-        self.protocol.unexpectedError(
-            makeFailure(RuntimeError, 'error message'))
-
-        # When the error happens, we SIGINT the process.
-        self.assertEqual(
-            [('signalProcess', 'INT')],
-            self.protocol.transport.calls)
-
-        # After 5 seconds, we send SIGKILL.
-        self.clock.advance(6)
-        self.assertEqual(
-            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
-            self.protocol.transport.calls)
-
         return self.assertFailure(
             self.termination_deferred, RuntimeError)
 
@@ -175,8 +202,10 @@ class TestProcessMonitorProtocol(
         self.assertEqual(calls, ['called'])
 
     def test_failingNotificationCancelsPendingNotifications(self):
-        # If a notification returns a deferred which subsequently errbacks,
-        # any pending notifications are not run.
+        # A failed notification prevents any further notifications from being
+        # run.  Specifically, if a notification returns a deferred which
+        # subsequently errbacks, any notifications which have been requested
+        # in the mean time are not run.
         deferred = defer.Deferred()
         calls = []
         self.protocol.runNotification(lambda : deferred)
@@ -188,9 +217,8 @@ class TestProcessMonitorProtocol(
             self.termination_deferred, RuntimeError)
 
     def test_waitForPendingNotification(self):
-        # If the process exits but a deferred returned from a notification has
-        # not fired, we wait until the deferred has fired before firing the
-        # termination deferred.
+        # Don't fire the termination deferred until all notifications are
+        # complete, even if the process has died.
         deferred = defer.Deferred()
         self.protocol.runNotification(lambda : deferred)
         self.simulateProcessExit()
@@ -209,7 +237,6 @@ class TestProcessMonitorProtocol(
         self.protocol.runNotification(lambda : deferred)
         self.simulateProcessExit()
         deferred.errback(makeFailure(RuntimeError))
-        print self.protocol._notification_lock.locked
         return self.assertFailure(
             self.termination_deferred, RuntimeError)
 
@@ -219,30 +246,55 @@ class TestProcessMonitorProtocol(
         # fails, the ProcessTerminated is still passed on to the
         # termination deferred.
         # XXX MichaelHudson 2008-04-02: The notification failure will be
-        # log.err()ed, which cannot be tested until we upgrade Twisted.
-        deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
-        self.simulateProcessExit(clean=False)
-        deferred.errback(makeFailure(RuntimeError))
-        return self.assertFailure(
-            self.termination_deferred, error.ProcessTerminated)
+        # log.err()ed, which spews to stderr, necessiating hacks.  This can be
+        # tested nicely when we upgrade Twisted.
+        stringio = StringIO.StringIO()
+        saved_stderr = sys.stderr
+        def set_stderr(result, stream):
+            sys.stderr = stream
+            return result
+
+        def test_body(ignored):
+            deferred = defer.Deferred()
+            self.protocol.runNotification(lambda : deferred)
+            self.simulateProcessExit(clean=False)
+            deferred.errback(makeFailure(RuntimeError))
+            return self.assertFailure(
+                self.termination_deferred, error.ProcessTerminated)
+
+        return defer.succeed(None).addCallback(
+            set_stderr, stringio).addCallback(
+            test_body).addBoth(
+            set_stderr, saved_stderr)
 
     def test_unexpectedErrorAndNotificationFailure(self):
         # If unexpectedError is called while a notification is pending and the
         # notification subsequently fails, the first failure "wins" and is
         # passed on to the termination deferred.
-        # XXX MichaelHudson 2008-04-02: The discarded failure will be
-        # log.err()ed, which cannot be tested until we upgrade Twisted.
-        deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
-        self.protocol.unexpectedError(makeFailure(TypeError))
-        deferred.errback(makeFailure(RuntimeError))
-        return self.assertFailure(
-            self.termination_deferred, TypeError)
+        # XXX MichaelHudson 2008-04-02: The notification failure will be
+        # log.err()ed, which spews to stderr, necessiating hacks.  This can be
+        # tested nicely when we upgrade Twisted.
+        stringio = StringIO.StringIO()
+        saved_stderr = sys.stderr
+        def set_stderr(result, stream):
+            sys.stderr = stream
+            return result
 
+        def test_body(ignored):
+            deferred = defer.Deferred()
+            self.protocol.runNotification(lambda : deferred)
+            self.protocol.unexpectedError(makeFailure(TypeError))
+            deferred.errback(makeFailure(RuntimeError))
+            return self.assertFailure(
+                self.termination_deferred, TypeError)
+
+        return defer.succeed(None).addCallback(
+            set_stderr, stringio).addCallback(
+            test_body).addBoth(
+            set_stderr, saved_stderr)
 
 class TestProcessMonitorProtocolWithTimeout(
-    ProcessMonitorProtocolTestsMixin, TrialTestCase):
+    ProcessTestsMixin, TrialTestCase):
     """Tests for `ProcessMonitorProtocolWithTimeout`."""
 
     layer = TwistedLayer

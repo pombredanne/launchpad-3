@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
-    makeFailure, ProcessMonitorProtocolTestsMixin)
+    makeFailure, ProcessTestsMixin)
 
 class FakeBranchStatusClient:
 
@@ -110,7 +110,7 @@ class TestJobScheduler(unittest.TestCase):
 
 
 class TestPullerMasterProtocol(
-    ProcessMonitorProtocolTestsMixin, TrialTestCase):
+    ProcessTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
 
     layer = TwistedLayer
@@ -137,7 +137,7 @@ class TestPullerMasterProtocol(
 
     def setUp(self):
         self.listener = self.StubPullerListener()
-        ProcessMonitorProtocolTestsMixin.setUp(self)
+        ProcessTestsMixin.setUp(self)
 
     def assertProtocolSuccess(self):
         """Assert that the protocol saw no unexpected errors."""
