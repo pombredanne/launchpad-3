@@ -32,9 +32,8 @@ the 'members_by_status' operation.
 
   >>> active_members = webservice.get(
   ...     "/~admins?ws_op=members_by_status&status=APPROVED").jsonBody()
-  >>> sorted([m['name'] for m in active_members])
-  [u'carlos', u'daf', u'debonzi', u'kinnison', u'lifeless', u'spiv',
-   u'stevea', u'stub']
+  >>> sorted([m['name'] for m in active_members['entries']])
+  [u'carlos', u'daf', u'debonzi', u'kinnison', u'spiv']
 
 Some entries support custom operations through POST. You can change a
 bug's status by invoking a custom operation.

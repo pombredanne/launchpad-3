@@ -762,6 +762,54 @@ parsed with standard tools.
     >>> import simplejson
     >>> representation = simplejson.loads(collection())
 
+=== Pagination ===
+
+Collections are paginated and served one page at a time. This
+particular collection is small enough to fit on one page; it's only
+got three entries.
+
+    >>> sorted(representation.keys())
+    [u'entries', u'start', u'total_size']
+    >>> len(representation['entries'])
+    3
+    >>> representation['total_size']
+    3
+
+But if we ask for a page size of two, we can see how pagination
+works. Here's page one, with two cookbooks on it.
+
+    >>> request = create_web_service_request(
+    ...     '/cookbooks', environ={'QUERY_STRING' : 'ws_size=2'})
+    >>> collection = request.traverse(app)
+    >>> representation = simplejson.loads(collection())
+
+    >>> sorted(representation.keys())
+    [u'entries', u'next_collection_link', u'start', u'total_size']
+    >>> representation['next_collection_link']
+    u'http://api.launchpad.dev/cookbooks?ws_start=2&ws_size=2'
+    >>> len(representation['entries'])
+    2
+    >>> representation['total_size']
+    3
+
+Follow the 'next_collection_link' and you'll end up at page two, which
+has the last cookbook on it.
+
+    >>> request = create_web_service_request(
+    ...     '/cookbooks', environ={'QUERY_STRING' : 'ws_start=2&ws_size=2'})
+    >>> collection = request.traverse(app)
+    >>> representation = simplejson.loads(collection())
+
+    >>> sorted(representation.keys())
+    [u'entries', u'prev_collection_link', u'start', u'total_size']
+    >>> representation['prev_collection_link']
+    u'http://api.launchpad.dev/cookbooks?ws_start=0&ws_size=2'
+    >>> len(representation['entries'])
+    1
+
+
+=== Custom operations ===
+
 A collection may also expose a number of custom operations through
 GET. The cookbook collection exposes a custom GET operation called
 'find_recipes', which searches for recipes with a given name across
@@ -773,7 +821,7 @@ cookbooks.
     ...             'ws_op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
-    >>> sorted([c['instructions'] for c in chicken_recipes])
+    >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
@@ -835,17 +883,21 @@ The collection resource is a list of entries. Each entry has some
 associated information (like 'name'), a 'self_link' (the URL to the
 entry's resource), and possibly links to associated resources.
 
-    >>> len(representation)
-    3
-    >>> representation[1]['name']
-    u'The Joy of Cooking'
-    >>> representation[1]['self_link']
-    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
+    >>> import operator
+    >>> request = create_web_service_request('/cookbooks')
+    >>> collection = request.traverse(app)
+    >>> representation = simplejson.loads(collection())
+    >>> entries = sorted(representation['entries'],
+    ...                  key=operator.itemgetter('name'))
+    >>> entries[0]['name']
+    u'Beard on Bread'
+    >>> entries[0]['self_link']
+    u'http://api.launchpad.dev/cookbooks/Beard%20on%20Bread'
 
 Each cookbook, for instance, has a link to its author.
 
-    >>> representation[1]['author_link']
-    u'http://api.launchpad.dev/authors/Irma%20S.%20Rombauer'
+    >>> entries[0]['author_link']
+    u'http://api.launchpad.dev/authors/James%20Beard'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -903,7 +955,7 @@ Another example traversing to a comment:
     >>> comments_resource = request.traverse(app)
 
     >>> comments = simplejson.loads(comments_resource())
-    >>> [c['text'] for c in comments]
+    >>> [c['text'] for c in comments['entries']]
     [u'Clear and concise.']
 
     >>> request = create_web_service_request(
@@ -925,7 +977,7 @@ across cookbooks.
     ...     environ={'QUERY_STRING' : 'ws_op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
-    >>> sorted([c['instructions'] for c in chicken_recipes])
+    >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']

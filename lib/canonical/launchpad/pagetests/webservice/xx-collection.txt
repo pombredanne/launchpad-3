@@ -1,17 +1,60 @@
 = Introduction =
 
-The Launchpad web service exposes a collection of people and teams,
-which responds to GET.
+All collections published by the Launchpad web service work pretty
+much the same way. This document illustrates the general features of
+entries, using Launchpad's collection of people and teams as an example.
+
+== Collections and pagination ===
+
+A collection responds to GET by serving one page of the objects in the
+collection.
 
   >>> people_collection = webservice.get("/people").jsonBody()
+  >>> people_collection['total_size']
+  62
+  >>> people_collection['next_collection_link']
+  u'http://api.launchpad.dev/people?ws_start=5&ws_size=5'
+  >>> people_collection.get('prev_collection_link') is None
+  True
 
-  >>> people_collection = sorted(people_collection)
-  >>> people_collection[0]['name']
-  u'skacel'
-  >>> people_collection[0]['self_link']
-  u'http://api.launchpad.dev/~skacel'
-  >>> people_collection[-1]['name']
-  u'rosetta-admins'
+  >>> people_entries = sorted(people_collection['entries'])
+  >>> len(people_entries)
+  5
+  >>> people_entries[0]['name']
+  u'spiv'
+  >>> people_entries[0]['self_link']
+  u'http://api.launchpad.dev/~spiv'
+  >>> people_entries[-1]['name']
+  u'bug-importer'
+
+You can get other pages of the collection by following links:
+
+  >>> second_batch = webservice.get("/people?ws_start=5&ws_size=5").jsonBody()
+  >>> second_batch['next_collection_link']
+  u'http://api.launchpad.dev/people?ws_start=10&ws_size=5'
+  >>> second_batch['prev_collection_link']
+  u'http://api.launchpad.dev/people?ws_start=0&ws_size=5'
+
+  >>> people_entries = sorted(second_batch['entries'])
+  >>> people_entries[0]['name']
+  u'valyag'
+
+You can also get a larger batch than the default:
+
+  >>> big_batch = webservice.get("/people?ws_size=50").jsonBody()
+  >>> len(big_batch['entries'])
+  50
+  >>> big_batch.get('next_collection_link')
+  u'http://api.launchpad.dev/people?ws_start=50&ws_size=50'
+
+  >>> bigger_batch = webservice.get("/people?ws_size=75").jsonBody()
+  >>> len(bigger_batch['entries'])
+  62
+  >>> bigger_batch.get('next_collection_link') is None
+  True
+
+
+== Element lookup ==
 
 The elements of a collection can be looked up by unique identifier:
 
@@ -31,10 +74,10 @@ The elements of a collection can be looked up by unique identifier:
 
 A collection may be scoped to an element:
 
-  >>> team_members = webservice.get("/~admins/members").jsonBody()
+  >>> team_members = webservice.get("/~admins/members").jsonBody()['entries']
   >>> team_members = sorted(team_members)
   >>> len(team_members)
-  11
+  5
   >>> team_members[0]['name']
   u'spiv'
   >>> team_members[-1]['name']
@@ -55,17 +98,36 @@ custom operation to be invoked is named in the query string's
 'ws_op' argument. Here's a custom operation on the collection of
 people, called 'people'.
 
-  >>> def search_people(text):
-  ...     return sorted(webservice.get(
-  ...         "/people?ws_op=people&text=" + text).jsonBody())
+  >>> def search_people(text, start=0):
+  ...     return webservice.get(
+  ...         "/people?ws_op=people&text=%s&ws_start=%s" %
+  ...             (text, start)).jsonBody()
 
+A custom operation that returns a list of objects is paginated, just
+like a collection.
 
-  >>> [p['name'] for p in search_people("admins")]
-  [u'admins', u'ubuntu-mirror-admins', u'rosetta-admins',
-   u'launchpad-buildd-admins', u'shipit-admins']
+  >>> s_people = search_people("s")
+  >>> s_people['total_size']
+  8
+  >>> s_people['next_collection_link']
+  u'http://api.launchpad.dev/people?ws_op=people&text=s&ws_start=5&ws_size=5'
+  >>> [p['name'] for p in sorted(s_people['entries'])]
+  [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
 
-  >>> [p['name'] for p in search_people("nosuchperson")]
+  >>> s_people_batch_2 = search_people("s", 5)
+  >>> [p['name'] for p in sorted(s_people_batch_2['entries'])]
+  [u'skacel', u'stub', u'ubuntu-team']
+
+Just as a collection may be empty, a custom operation may return an
+empty list of results:
+
+  >>> empty_list = search_people("nosuchperson")
+  >>> empty_list['total_size']
+  0
+  >>> [p['name'] for p in empty_list['entries']]
   []
+
+Custom operations may have custom error handling.
 
   >>> print webservice.get("/people?ws_op=people&text=")
   HTTP/1.1 400 Bad Request

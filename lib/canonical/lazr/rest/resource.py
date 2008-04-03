@@ -38,9 +38,10 @@ from canonical.config import config
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url code should be moved into lazr.
+# canonical_url and BatchNavigator code should be moved into lazr.
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
@@ -152,7 +153,54 @@ class HTTPResource:
         return len(adapters) > 0
 
 
-class CustomOperationResourceMixin:
+class WebServiceBatchNavigator(BatchNavigator):
+    """A batch navigator that speaks to web service clients.
+
+    This batch navigator differs from others in the names of the query
+    variables it expects. This class expects the starting point to be
+    contained in the query variable "ws_start" and the size of the
+    batch to be contained in the query variable ""ws_size". When this
+    navigator serves links, it includes query variables by those
+    names.
+    """
+
+    start_variable_name = "ws_start"
+    batch_variable_name = "ws_size"
+
+
+class BatchingResourceMixin:
+
+    """A mixin for resources that need to batch lists of entries."""
+
+    def batch(self, entries, request):
+        """Prepare a batch from a (possibly huge) list of entries.
+
+        :return: A hash:
+        'entries' contains a list of EntryResource objects for the
+          entries that actually made it into this batch
+        'total_size' contains the total size of the list.
+        'next_url', if present, contains a URL to get the next batch
+         in the list.
+        'prev_url', if present, contains a URL to get the previous batch
+         in the list.
+        'start' contains the starting index of this batch
+        """
+        navigator = WebServiceBatchNavigator(entries, request)
+        resources = [EntryResource(entry, request)
+                     for entry in navigator.batch]
+        batch = { 'entries' : resources,
+                  'total_size' : navigator.batch.listlength,
+                  'start' : navigator.batch.start }
+        next_url = navigator.nextBatchURL()
+        if next_url != "":
+            batch['next_collection_link'] = next_url
+        prev_url = navigator.prevBatchURL()
+        if prev_url != "":
+            batch['prev_collection_link'] = prev_url
+        return batch
+
+
+class CustomOperationResourceMixin(BatchingResourceMixin):
 
     """A mixin for resources that implement a collection-entry pattern."""
 
@@ -218,7 +266,9 @@ class CustomOperationResourceMixin:
         except TypeError:
             # Result is a single entry
             return EntryResource(result, self.request)
-        return [EntryResource(entry, self.request) for entry in iterator]
+
+        # Serve a single batch from the collection.
+        return self.batch(result, self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -565,7 +615,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
             entries = self.collection.find()
             if entries is None:
                 raise NotFound(self, self.collection_name)
-            result = [EntryResource(entry, self.request) for entry in entries]
+            result = self.batch(entries, self.request)
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
