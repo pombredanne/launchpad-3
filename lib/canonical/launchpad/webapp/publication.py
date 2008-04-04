@@ -528,7 +528,7 @@ class LaunchpadBrowserPublication(
         # Save the current scoreboard.
         scoreboard = open(scoreboard_path, 'w')
         try:
-            print >>scoreboard, current_rss
+            scoreboard.write("%.1f\n" % current_rss)
             printCounts(current_refs, scoreboard)
         finally:
             scoreboard.close()
@@ -546,11 +546,11 @@ class LaunchpadBrowserPublication(
             formatted_delta = "; ".join(
                 "%s=%d" % (ref_type, count)
                 for count, ref_type in delta_refs)
-            print >>log, '%s %s %.2fMb %s' % (
+            log.write('%s %s %.2fMb %s\n' % (
                 strftime('%Y-%m-%d:%H:%M:%S'),
                 pageid,
                 leak_in_mb,
-                formatted_delta)
+                formatted_delta))
         finally:
             log.close()
 

@@ -92,7 +92,7 @@ Example:
     >>> publication.endRequest(create_request(), None)
     >>> references_log = open(references_log_path, 'r')
     >>> references_log.read()
-    "... View:+template ...Mb... <type 'dict'>=...; ...\n"
+    "... View:+template ...Mb... <type 'list'>=...; ...\n"
 
 Of course when the tool is off, none of the above processing takes
 place:
