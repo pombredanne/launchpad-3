@@ -1904,7 +1904,7 @@ failure in an email.
 
 We send another email to the same bug, selecting the same bug task. The
 email has other two commands - 'security maybe', which is guaranteed to
-fail, and 'status traiged' which is OK. 'security' commands cause the
+fail, and 'status triaged' which is OK. 'security' commands cause the
 entire email to not to be processed, though.
 
     >>> commit()
@@ -1915,8 +1915,8 @@ entire email to not to be processed, though.
     ...
     ... Another bug in Firefox.
     ...  affects firefox
-    ...  security maybe
     ...  status triaged
+    ...  security maybe
     ... """ % ff_bug.id
     >>> process_email(submit_mail)
 
