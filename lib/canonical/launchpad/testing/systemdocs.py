@@ -177,7 +177,7 @@ def setUp(test):
     """Setup the common globals and login for testing system documentation."""
     setGlobs(test)
     # Set up an anonymous interaction.
-    login(ANONYMOUS, LaunchpadTestRequest())
+    login(ANONYMOUS)
 
 
 def tearDown(test):

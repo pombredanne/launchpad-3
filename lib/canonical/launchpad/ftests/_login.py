@@ -7,6 +7,7 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 __all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
 
@@ -35,7 +36,6 @@ def login(email, participation=None):
     _logged_in = True
     authutil = getUtility(IPlacelessAuthUtility)
 
-
     if email != ANONYMOUS:
         # Create an anonymous interaction first because this calls
         # IPersonSet.getByEmail() and since this is security wrapped, it needs
@@ -45,6 +45,9 @@ def login(email, participation=None):
         assert principal is not None, "Invalid login"
     else:
         principal = authutil.unauthenticatedPrincipal()
+
+    if participation is None:
+        participation = LaunchpadTestRequest()
 
     setupInteraction(principal, login=email, participation=participation)
 
