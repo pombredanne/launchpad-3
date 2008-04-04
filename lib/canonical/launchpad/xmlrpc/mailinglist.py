@@ -193,26 +193,14 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # These are messages that the team owner has approved, but Mailman
         # hasn't yet acted upon.  For each of these, set their state to final
         # approval.
-        approved_messages = message_set.getHeldMessagesWithStatus(
-            PostedMessageStatus.APPROVAL_PENDING)
-        for held_message in approved_messages:
-            held_message.acknowledge()
-            response[held_message.message_id] = (
-                held_message.mailing_list.team.name, 'accept')
-        # Similarly handle all held messages that have been rejected by the
-        # team administrator but not yet handled by Mailman.
-        rejected_messages = message_set.getHeldMessagesWithStatus(
-            PostedMessageStatus.REJECTION_PENDING)
-        for held_message in rejected_messages:
-            held_message.acknowledge()
-            response[held_message.message_id] = (
-                held_message.mailing_list.team.name, 'decline')
-        # Similarly handle all held messages that have been discarded by the
-        # team administrator but not yet handled by Mailman.
-        rejected_messages = message_set.getHeldMessagesWithStatus(
-            PostedMessageStatus.DISCARD_PENDING)
-        for held_message in rejected_messages:
-            held_message.acknowledge()
-            response[held_message.message_id] = (
-                held_message.mailing_list.team.name, 'discard')
+        status_dispositions = (
+            (PostedMessageStatus.APPROVAL_PENDING, 'accept'),
+            (PostedMessageStatus.REJECTION_PENDING, 'decline'),
+            (PostedMessageStatus.DISCARD_PENDING, 'discard'),
+            )
+        for status, disposition in status_dispositions:
+            for held_message in message_set.getHeldMessagesWithStatus(status):
+                held_message.acknowledge()
+                response[held_message.message_id] = (
+                    held_message.mailing_list.team.name, disposition)
         return response

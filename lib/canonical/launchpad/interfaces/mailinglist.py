@@ -605,9 +605,10 @@ class IMailingListAPIView(Interface):
         """Get all new message dispositions.
 
         This returns a dictionary mapping message ids to their disposition,
-        which will either be 'accept' or 'decline'.  This only returns
-        message-ids of disposed messages since the last time this method was
-        called.
+        which will either be 'accept', 'decline' or 'discard'.  This only
+        returns message-ids of disposed messages since the last time this
+        method was called.  Because this also acknowledges the pending states
+        of such messages, it changes the state on the Launchpad server.
 
         :return: A dictionary mapping message-ids to the disposition tuple.
             This tuple is of the form (team-name, action), where the action is
@@ -728,9 +729,10 @@ class IMessageApproval(Interface):
     def acknowledge():
         """Acknowledge the pending status of a message.
 
-        This changes APPROVAL_PENDING to APPROVED status and REJECTION_PENDING
-        to REJECTED status.  It is illegal to call this function when the
-        status is not one of those two.
+        This changes the statuses APPROVAL_PENDING to APPROVED,
+        REJECTION_PENDING to REJECTED and DISCARD_PENDING to DISCARD.  It is
+        illegal to call this function when the status is not one of these
+        states.
         """
 
 
