@@ -62,6 +62,9 @@ class MockSSHTransport(SSHServerTransport):
             return lambda: None
 
     def __init__(self, portal):
+        # In Twisted 8.0.1, Conch's transport starts referring to
+        # currentEncryptions where it didn't before. Provide a dummy value for
+        # it.
         self.currentEncryptions = SSHCiphers('none', 'none', 'none', 'none')
         self.packets = []
         self.factory = self.Factory()
