@@ -171,7 +171,7 @@ class MaloneHandler:
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
-                if command_string.startswith('done'):
+                if command_string == 'done':
                     # If the 'done' statement is encountered,
                     # stop reading any more commands.
                     break
