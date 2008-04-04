@@ -91,7 +91,9 @@ Example:
 Of course when the tool is off, none of the above processing takes
 place:
 
-    >>> ignored = config.pop('debug-references')
+    >>> config.push('turn-off-references-debug', dedent("""\
+    ...     [debug]
+    ...     references: False"""))
     >>> scoreboard.close()
     >>> references_log.close()
     >>> os.remove(scoreboard_path)
@@ -104,3 +106,6 @@ place:
     >>> os.path.exists(config.debug.references_leak_log)
     False
 
+(Clean up)
+
+    >>> ignored = config.pop('debug-references')
