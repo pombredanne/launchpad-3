@@ -167,15 +167,25 @@ class MaloneHandler:
             return []
         # First extract all commands from the email.
         command_names = emailcommands.names()
-        for line in content.splitlines():
+        done = False
+        content_lines = content.splitlines()
+        line_index = 0
+        while line_index < len(content_lines) and not done:
+            line = content_lines[line_index]
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
+                if command_string.startswith('done'):
+                    # If the 'done' statement is encountered,
+                    # stop reading any more commands.
+                    done = True
+                    continue
                 words = command_string.split(' ')
                 if words and words[0] in command_names:
                     command = emailcommands.get(
                         name=words[0], string_args=words[1:])
                     commands.append(command)
+            line_index += 1
         return commands
 
 

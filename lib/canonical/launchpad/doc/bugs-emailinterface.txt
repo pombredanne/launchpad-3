@@ -1902,6 +1902,43 @@ failure in an email.
     or send an email to help@launchpad.net
 
 
+== Terminating command input ==
+
+To make it possible to submit emails with lines that look like commands
+(but aren't), a 'done' statement is provided. When the email parser
+encounters a line with that statement, it stops reading any additional
+commands.
+
+We send an email with four commands: 'affects', to choose the target,
+'importance', to set the importance to high, 'done', to stop reading,
+and 'status', which will be ignored.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  importance high
+    ...  done
+    ...  status triaged
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The target (Firefox) is selected and the importance set, but the status
+hasn't changed, since the command to set it came after the 'done' statement.
+
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.importance.name
+    HIGH
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+
 == Requesting help ==
 
 It's possible to ask for the help document for the email interface via
