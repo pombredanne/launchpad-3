@@ -1843,7 +1843,7 @@ Launchpad username.
 
 When a user sends an email with multiple commands, some of them might
 fail (because of bad arguments, for example). Some commands, namely
-'affects', 'bug', 'security' and 'private' must succeed for the entire
+'affects', 'bug', 'security' and 'private', must succeed for the entire
 email to be processed, but others can fail without affecting the other
 commands.
 
@@ -1896,6 +1896,58 @@ failure in an email.
     Error message:
     <BLANKLINE>
     There's no such person with the specified name or email: nonexistentuser
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/BugTrackerEmailInterface
+    or send an email to help@launchpad.net
+
+We send another email to the same bug, selecting the same bug task. The
+email has other two commands - 'security maybe', which is guaranteed to
+fail, and 'status traiged' which is OK. 'security' commands cause the
+entire email to not to be processed, though.
+
+    >>> commit()
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  security maybe
+    ...  status triaged
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The status hasn't changed.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+And the sender receives an email to let them know about the failing
+'security' command.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        security maybe
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    The 'security' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        security yes
     <BLANKLINE>
     --
     For more information about using Malone by e-mail, see
