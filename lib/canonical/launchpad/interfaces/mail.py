@@ -118,7 +118,8 @@ class IEmailCommand(Interface):
         """
 
     def __str__():
-        "Return a textual representation of the command and its arguments."
+        """Return a textual representation of the command and its arguments.
+        """
 
 
 class IBugEmailCommand(IEmailCommand):
