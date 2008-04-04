@@ -510,8 +510,7 @@ class LaunchpadBrowserPublication(
         # the old scoreboard.
         current_refs = [
             (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
-        scoreboard_path = (
-            config.debug.references_scoreboard_file % thread.get_ident())
+        scoreboard_path = config.debug.references_scoreboard_file
 
         # Read in previous scoreboard if it exists.
         if os.path.exists(scoreboard_path):

@@ -19,15 +19,10 @@ differential diagnostic.)
 
     >>> import os
     >>> import tempfile
-    >>> import thread
     >>> from textwrap import dedent
 
-(The scoreboard filename needs a %d placeholder to interpolate the
-thread identifier.)
-
     >>> tempdir = tempfile.mkdtemp(prefix='memory-debug')
-    >>> scoreboard_path_template = os.path.join(tempdir, 'scoreboard-%d.txt')
-    >>> scoreboard_path = scoreboard_path_template % thread.get_ident()
+    >>> scoreboard_path = os.path.join(tempdir, 'scoreboard.txt')
     >>> references_log_path = os.path.join(tempdir, 'references-leak.log')
 
     >>> config.push('debug-references', dedent("""\
@@ -35,7 +30,7 @@ thread identifier.)
     ...     references: True
     ...     references_scoreboard_file: %s
     ...     references_leak_log: %s
-    ...     """ % (scoreboard_path_template, references_log_path)))
+    ...     """ % (scoreboard_path, references_log_path)))
 
 So the first time endRequest() is called, the references count is dumped
 to the scoreboard file.
@@ -100,8 +95,7 @@ place:
     >>> os.remove(references_log_path)
 
     >>> publication.endRequest(create_request(), None)
-    >>> os.path.exists(
-    ...     config.debug.references_scoreboard_file % thread.get_ident())
+    >>> os.path.exists(config.debug.references_scoreboard_file)
     False
     >>> os.path.exists(config.debug.references_leak_log)
     False
