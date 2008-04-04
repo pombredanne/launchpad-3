@@ -413,7 +413,7 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
                 'This bug has already been reported on ${source} '
                 '(${distribution}).',
                 mapping={'source': sourcepackagename.name,
-                         'distribution', distribution.name}))
+                         'distribution': distribution.name}))
     elif (sourcepackagename is None and
           bug.getBugTask(distribution) is not None):
         # Don't allow two distribution tasks with no source package.
