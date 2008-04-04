@@ -68,6 +68,13 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.Int
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.IntFieldDeserializer"
+        />
+
+    <adapter
         for="zope.schema.interfaces.IChoice
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IFieldDeserializer"

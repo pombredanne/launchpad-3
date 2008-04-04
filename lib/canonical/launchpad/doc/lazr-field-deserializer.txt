@@ -1,0 +1,80 @@
+= LAZR's field deserializer =
+
+LAZR defines an interface for taking a string value that came in on an
+HTTP request, and deserializing it into a value that's appropriate for
+a particular form fields. This is similar to the widget interface, but
+much smaller.
+
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from canonical.launchpad.webapp.servers import WebServicePublication
+    >>> def make_deserializer_test_request():
+    ...     request = WebServiceTestRequest(method='GET')
+    ...     request.setPublication(WebServicePublication(None))
+    ...     # Set the "current" request.
+    ...     login(ANONYMOUS, request)
+    ...     request.processInputs()
+    ...     return request
+    >>> request = make_deserializer_test_request()
+
+    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> root = WebServiceApplication()
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> getUtility(IOpenLaunchBag).add(root)
+
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.lazr.interfaces import IFieldDeserializer
+    >>> from zope.schema import TextLine
+    >>> field = TextLine()
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> deserializer.deserialize("foo")
+    'foo'
+    >>> deserializer.deserialize("4")
+    '4'
+    >>> deserializer.deserialize("") is None
+    True
+
+    >>> from zope.schema import Int
+    >>> field = Int()
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> deserializer.deserialize("4")
+    4
+    >>> deserializer.deserialize("foo")
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int(): foo
+
+    >>> from zope.schema import Choice
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> field = Choice(vocabulary=BugTaskStatus)
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> deserializer.deserialize("Triaged")
+    <DBItem BugTaskStatus.TRIAGED...>
+    >>> deserializer.deserialize("NoSuchStatus")
+    'NoSuchStatus'
+    >>> deserializer.deserialize("")
+    ''
+
+    >>> from canonical.launchpad.vocabularies import (
+    ...     ValidPersonOrTeamVocabulary)
+    >>> field = Choice(vocabulary=ValidPersonOrTeamVocabulary())
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+
+    >>> deserializer.deserialize("http://api.launchpad.dev/~salgado").name
+    u'salgado'
+
+    >>> deserializer.deserialize("http://api.launchpad.dev/~nobody")
+    Traceback (most recent call last):
+    ...
+    ValueError: No such object "http://api.launchpad.dev/~nobody".
+
+    >>> deserializer.deserialize("salgado")
+    Traceback (most recent call last):
+    ...
+    ValueError: No such object "salgado".
+
+    >>> deserializer.deserialize("nosuchperson")
+    Traceback (most recent call last):
+    ...
+    ValueError: No such object "nosuchperson".
+

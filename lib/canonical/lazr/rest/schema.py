@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'CollectionField',
+    'IntFieldDeserializer',
     'ObjectLookupFieldDeserializer',
     'SimpleFieldDeserializer',
     'SimpleVocabularyLookupFieldDeserializer',
@@ -23,6 +24,7 @@ from zope.publisher.interfaces import NotFound
 from zope.schema._field import AbstractCollection
 from zope.schema.interfaces import ValidationError
 from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 
@@ -117,6 +119,14 @@ class SimpleFieldDeserializer:
         return value
 
 
+class IntFieldDeserializer(SimpleFieldDeserializer):
+    """A deserializer that transforms its value into an integer."""
+
+    def deserialize(self, value):
+        """Try to convert the value into an integer."""
+        return int(value)
+
+
 def VocabularyLookupFieldDeserializer(field, request):
     """A deserializer that uses the underlying vocabulary.
 
@@ -155,9 +165,10 @@ class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
     def deserialize(self, value):
         """Look up the data model object by URL."""
         try:
-            return self.dereference_url(value)
+            object = self.dereference_url(value)
         except NotFound:
             # The URL doesn't correspond to any real object.
             raise ValueError('No such object "%s".' % value)
-
+        underlying_object = removeSecurityProxy(object)
+        return underlying_object.context
 
