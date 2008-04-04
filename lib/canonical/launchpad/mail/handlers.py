@@ -233,6 +233,7 @@ class MaloneHandler:
             bugtask = None
             bugtask_event = None
 
+            processing_errors = []
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
@@ -279,8 +280,18 @@ class MaloneHandler:
                             bugtask, bugtask_event)
 
                 except EmailProcessingError, error:
-                    raise IncomingEmailError(
-                        str(error), failing_command=command)
+                    processing_errors.append((error, command))
+                    if error.stop_processing:
+                        commands = []
+                        rollback()
+                    else:
+                        continue
+
+            if len(processing_errors) > 0:
+                raise IncomingEmailError(
+                    '\n'.join(str(error) for error, command
+                              in processing_errors),
+                    [command for error, command in processing_errors])
 
             if bug_event is not None:
                 try:
@@ -293,7 +304,6 @@ class MaloneHandler:
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
-            rollback()
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
