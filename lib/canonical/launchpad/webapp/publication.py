@@ -517,7 +517,7 @@ class LaunchpadBrowserPublication(
         if os.path.exists(scoreboard_path):
             scoreboard = open(scoreboard_path, 'r')
             try:
-                prev_rss = float(scoreboard.readline().strip())
+                prev_rss = int(scoreboard.readline().strip())
                 prev_refs = readCounts(scoreboard)
             finally:
                 scoreboard.close()
@@ -528,7 +528,7 @@ class LaunchpadBrowserPublication(
         # Save the current scoreboard.
         scoreboard = open(scoreboard_path, 'w')
         try:
-            scoreboard.write("%.1f\n" % current_rss)
+            scoreboard.write("%d\n" % current_rss)
             printCounts(current_refs, scoreboard)
         finally:
             scoreboard.close()
@@ -542,7 +542,7 @@ class LaunchpadBrowserPublication(
             # It can happen that the pageid is ''?!?
             if pageid == '':
                 pageid = 'Unknown'
-            leak_in_mb = mem_leak / (1024*1024)
+            leak_in_mb = float(mem_leak) / (1024*1024)
             formatted_delta = "; ".join(
                 "%s=%d" % (ref_type, count)
                 for count, ref_type in delta_refs)

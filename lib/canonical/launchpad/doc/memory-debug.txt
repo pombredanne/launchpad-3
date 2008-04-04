@@ -74,7 +74,7 @@ then a list of count and types.
     >>> import re
     >>> scoreboard = open(scoreboard_path, 'r')
     >>> lines = scoreboard.readlines()
-    >>> re.match('\d+\.0$', lines[0].strip()) is not None
+    >>> re.match('\d+$', lines[0].strip()) is not None
     True
     >>> re.match('\d+ <type.*>$', lines[1].strip()) is not None
     True
