@@ -32,6 +32,33 @@ differential diagnostic.)
     ...     references_leak_log: %s
     ...     """ % (scoreboard_path, references_log_path)))
 
+There is a debug_references_startup_check() that is called when the
+IProcessStartingEvent is fired. It raises an exception if the setting
+is on, but the number of threads is not 1.
+
+    >>> from canonical.launchpad.webapp.publication import (
+    ...     debug_references_startup_check)
+    >>> orig_threads = config.threads
+    >>> orig_threads > 1
+    True
+    >>> from zope.app.appsetup import ProcessStarting
+
+    # We don't use notify here, because we don't want to invoke the
+    # other subscribers.
+    >>> debug_references_startup_check(ProcessStarting())
+    Traceback (most recent call last):
+      ...
+    InvalidThreadsConfiguration: ...
+
+This handler also deletes any previous scoreboard file that might be
+present (left by a previous run.)
+
+    >>> config.threads = 1
+    >>> open(scoreboard_path, 'w').close()
+    >>> debug_references_startup_check(ProcessStarting())
+    >>> os.path.exists(scoreboard_path)
+    False
+
 So the first time endRequest() is called, the references count is dumped
 to the scoreboard file.
 
@@ -103,3 +130,4 @@ place:
 (Clean up)
 
     >>> ignored = config.pop('debug-references')
+    >>> config.threads = orig_threads

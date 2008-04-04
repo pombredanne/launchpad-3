@@ -553,3 +553,26 @@ class LaunchpadBrowserPublication(
         finally:
             log.close()
 
+
+class InvalidThreadsConfiguration(Exception):
+    """Exception thrown when the number of threads isn't set correctly."""
+
+
+def debug_references_startup_check(event):
+    """Event handler for IProcessStartingEvent.
+
+    If debug/references is set to True, we make sure that the number of
+    threads is configured to 1. We also delete any previous scoreboard file.
+    """
+    if not config.debug.references:
+        return
+
+    if config.threads != 1:
+        raise InvalidThreadsConfiguration(
+            "Number of threads should be one when debugging references.")
+
+    # Remove any previous scoreboard, the content is meaningless once
+    # the server is restarted.
+    if os.path.exists(config.debug.references_scoreboard_file):
+        os.remove(config.debug.references_scoreboard_file)
+
