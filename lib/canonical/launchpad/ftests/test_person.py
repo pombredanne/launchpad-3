@@ -134,8 +134,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as an'
-                ' announcement registrant.')
+                'This team cannot be made private since it is referenced by'
+                ' an announcement.')
 
     def test_visibility_validator_answer_contact(self):
         answer_contact = AnswerContact(
@@ -148,8 +148,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as an'
-                ' answer contact.')
+                'This team cannot be made private since it is referenced by'
+                ' an answercontact.')
 
     def test_visibility_validator_archive(self):
         archive = getUtility(IArchiveSet).new(
@@ -161,8 +161,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as a'
-                ' PPA owner.')
+                'This team cannot be made private since it is referenced by'
+                ' an archive.')
 
     def test_visibility_validator_branch(self):
         branch = getUtility(IBranchSet).new(
@@ -178,8 +178,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as a'
-                ' branch author, a branch owner and a branch registrant.')
+                'This team cannot be made private since it is referenced by a'
+                ' branch.')
 
     def test_visibility_validator_bug(self):
         bug_params = CreateBugParams(
@@ -190,14 +190,6 @@ class TestPerson(unittest.TestCase):
             datecreated=self.now)
         bug_params.setBugTarget(product=self.bzr)
         bug = getUtility(IBugSet).createBug(bug_params)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except InvalidField, info:
-            self.assertEqual(
-                info.msg,
-                'This team cannot be made private since it is used as a'
-                ' bug owner, a bug subscriber, a bugtask owner and a'
-                ' commenter.')
         bug.bugtasks[0].transitionToAssignee(self.otherteam)
         flush_database_updates()
         try:
@@ -205,9 +197,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as a'
-                ' bug assignee, a bug owner, a bug subscriber, a bugtask'
-                ' owner and a commenter.')
+                'This team cannot be made private since it is referenced by a'
+                ' bug, a bugsubscription, a bugtask and a message.')
 
     def test_visibility_validator_specification_subscriber(self):
         email = getUtility(IEmailAddressSet).new(
@@ -220,8 +211,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as a'
-                ' blueprint subscriber.')
+                'This team cannot be made private since it is referenced by a'
+                ' specificationsubscription.')
 
     def test_visibility_validator_team_member(self):
         self.guadamen.addMember(self.otherteam, self.guadamen)
@@ -230,8 +221,8 @@ class TestPerson(unittest.TestCase):
         except InvalidField, info:
             self.assertEqual(
                 info.msg,
-                'This team cannot be made private since it is used as a'
-                ' member of another team.')
+                'This team cannot be made private since it is referenced by a'
+                ' teammembership.')
 
 
 def test_suite():

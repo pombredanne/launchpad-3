@@ -7,11 +7,15 @@ can be connect to.
 """
 
 __metaclass__ = type
-__all__ = ['public_person_validator']
+__all__ = [
+    'public_person_validator',
+    'visibility_validator',
+    ]
 
 from sqlobject.include.validators import Validator, InvalidField
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.lazr.enum import DBItem
+from canonical.launchpad.interfaces import IPerson, PersonVisibility
 from canonical.launchpad.fields import is_valid_public_person_link
 
 class PersonValidatorBase(Validator):
@@ -52,3 +56,33 @@ class PublicPersonValidatorClass(PersonValidatorBase):
 
 
 public_person_validator = PublicPersonValidatorClass()
+
+
+class VisibilityValidator(Validator):
+    """Prevent teams with insecure connections from being made private."""
+
+    def _verify(self, value, state):
+        if isinstance(value, DBItem) and value in PersonVisibility:
+            # value does not need to be converted.
+            pass
+        elif value not in PersonVisibility.items.mapping:
+            # Can't convert value to PersonVisibility object.
+            raise InvalidField('Not in PersonVisibility', value, state)
+        else:
+            # Convert value.
+            value = PersonVisibility.items.mapping[value]
+        if value != PersonVisibility.PUBLIC:
+            person = state.soObject
+            warning = person.visibility_consistency_warning
+            if warning is not None:
+                raise InvalidField(warning, value, state)
+
+    def fromPython(self, value, state=None):
+        self._verify(value, state)
+        return value
+
+    def toPython(self, value, state=None):
+        self._verify(value, state)
+        return value
+
+visibility_validator = VisibilityValidator()

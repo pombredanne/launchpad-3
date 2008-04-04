@@ -87,24 +87,36 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
     def validate(self, data):
-        if ('visibility' in data
-            and data['visibility'] != PersonVisibility.PUBLIC):
-            if data['subscriptionpolicy'] != TeamSubscriptionPolicy.RESTRICTED:
+        if 'visibility' in data:
+            visibility = data['visibility']
+        else:
+            visibility = self.context.visibility
+        if visibility != PersonVisibility.PUBLIC:
+            if 'visibility' in data:
+                warning = self.context.visibility_consistency_warning
+                if warning is not None:
+                    self.setFieldError('visibility', warning)
+            if (data['subscriptionpolicy']
+                != TeamSubscriptionPolicy.RESTRICTED):
                 self.setFieldError(
                     'subscriptionpolicy',
                     'Private teams must have a Restricted subscription'
                     ' policy.')
-            warning = self.context.insecure_connection_warning
-            if warning is not None:
-                self.setFieldError('visibility', warning)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        Only Launchpad Admins get to see the visibility field.
+        """
+        super(TeamEditView, self).setUpFields()
+        if not check_permission('launchpad.Admin', self.context):
+            self.form_fields = self.form_fields.omit('visibility')
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
         When a team has a mailing list, renames are prohibited.
         """
-        if not check_permission('launchpad.Admin', self.context):
-            self.form_fields['visibility'].for_display = True
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
         if mailing_list is not None:
             # This makes the field's widget display (i.e. read) only.

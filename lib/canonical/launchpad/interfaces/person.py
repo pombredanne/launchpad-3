@@ -729,7 +729,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
 
-    insecure_connection_warning = Attribute(
+    visibility_consistency_warning = Attribute(
         "Warning that a private team may leak membership info.")
 
     @invariant
@@ -1283,6 +1283,8 @@ class IPersonAdminWriteRestricted(Interface):
 
     visibility = Choice(
         title=_("Visibility"),
+        description=_("""Public visibility is standard, and Private Membership
+            means that a team's members are hidden."""),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
 
