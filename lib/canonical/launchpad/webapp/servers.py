@@ -38,7 +38,7 @@ from canonical.config import config
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
     IScopedCollection)
-from canonical.lazr.rest import CollectionResource, EntryResource
+from canonical.lazr.rest.resource import CollectionResource, EntryResource
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (

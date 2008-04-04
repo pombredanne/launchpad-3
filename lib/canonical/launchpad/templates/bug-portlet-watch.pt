@@ -8,22 +8,17 @@
               url current_task/fmt:url">
   <h2>Remote bug watches</h2>
   <div class="portletBody portletContent">
-
-          <ul class="remote bug">
-            <li tal:repeat="watch context/watches">
-              <a tal:attributes="href watch/fmt:url"
-                ><img src="/@@/edit" alt="[Edit]"
-                      title="Change watch details" /></a>
-              <a tal:attributes="href watch/url">
-                  <span tal:replace="watch/bugtracker/name" />
-                  #<span tal:replace="watch/remotebug" />
-              </a>
-              <tal:block tal:condition="watch/remotestatus">
-                <br />[<span tal:content="watch/remotestatus" />]
-              </tal:block>
-            </li>
-          </ul>
-
+    <ul class="remote bug">
+      <li tal:repeat="watch context/watches">
+        <a tal:attributes="href watch/fmt:url"
+           ><img src="/@@/edit" alt="[Edit]"
+           title="Change watch details" /></a>
+        <a tal:replace="structure watch/fmt:external-link" />
+        <tal:block tal:condition="watch/remotestatus">
+          <br />[<span tal:content="watch/remotestatus" />]
+        </tal:block>
+      </li>
+    </ul>
     <p>Bug watches keep track of this bug in other bug trackers.</p>
   </div>
 </div>
