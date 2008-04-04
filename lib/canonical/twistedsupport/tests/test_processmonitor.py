@@ -246,7 +246,7 @@ class TestProcessMonitorProtocol(
         # fails, the ProcessTerminated is still passed on to the
         # termination deferred.
         # XXX MichaelHudson 2008-04-02: The notification failure will be
-        # log.err()ed, which spews to stderr, necessiating hacks.  This can be
+        # log.err()ed, which spews to stderr, forcing hacks.  This can be
         # tested nicely when we upgrade Twisted.
         stringio = StringIO.StringIO()
         saved_stderr = sys.stderr
@@ -272,7 +272,7 @@ class TestProcessMonitorProtocol(
         # notification subsequently fails, the first failure "wins" and is
         # passed on to the termination deferred.
         # XXX MichaelHudson 2008-04-02: The notification failure will be
-        # log.err()ed, which spews to stderr, necessiating hacks.  This can be
+        # log.err()ed, which spews to stderr, forcing hacks.  This can be
         # tested nicely when we upgrade Twisted.
         stringio = StringIO.StringIO()
         saved_stderr = sys.stderr
