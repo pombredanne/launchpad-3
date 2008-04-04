@@ -1062,13 +1062,19 @@ class SpecificationTreeImageTag(SpecificationTreeGraphView):
         except (ProblemRenderingGraph, OSError), error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead
-            # of rendering an image map, return an explaination that the
+            # of rendering an image map, return an explanation that the
             # image's links are broken.
             log_oops(error, self.request)
+            if isinstance(error, OSError):
+                # An OSError can be random. The image map may generate
+                # if the user reloads the page.
+                extra_help = u' Reload the page to link the image.'
+            else:
+                extra_help = u''
             image_map = (
                 u'<p class="error message">'
-                u'There was an error when linking the dependency tree. '
-                u'Reload the page to link the image.</p>')
+                u'There was an error linking the dependency tree to its '
+                u'specs.' + extra_help + u'</p>')
         return (u'<img src="deptree.png" usemap="#deptree" />\n' + image_map)
 
 

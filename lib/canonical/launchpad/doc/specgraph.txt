@@ -317,8 +317,8 @@ a message explaining that the image was not linked.
 
     >>> print graph_view.render()
     <img src="deptree.png" usemap="#deptree" />
-    <p class="error message">There was an error when linking the
-    dependency tree. Reload the page to link the image.</p>
+    <p class="error message">There was an error linking the dependency tree
+    to its specs.</p>
 
     >>> from zope.app.error.interfaces import IErrorReportingUtility
     >>> globalErrorUtility = getUtility(IErrorReportingUtility)
@@ -353,8 +353,8 @@ the page to link the image.
 
     >>> print graph_view.render()
     <img src="deptree.png" usemap="#deptree" />
-    <p class="error message">There was an error when linking the
-    dependency tree. Reload the page to link the image.</p>
+    <p class="error message">There was an error linking the dependency tree
+    to its specs. Reload the page to link the image.</p>
 
     >>> oops_report = globalErrorUtility.getLastOopsReport()
     >>> print oops_report.type, oops_report.value
