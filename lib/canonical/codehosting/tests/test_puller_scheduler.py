@@ -109,6 +109,106 @@ class TestJobScheduler(unittest.TestCase):
             os.unlink(self.masterlock)
 
 
+class TestPullerWireProtocol(TrialTestCase):
+    """Tests for the `PullerWireProtocol`.
+
+    Some of the docstrings and comments in this class refer to state numbers
+    -- see the docstring of `PullerWireProtocol` for what these mean.
+    """
+
+    layer = TwistedLayer
+
+    class StubPullerProtocol:
+
+        def __init__(self):
+            self.calls = []
+            self.failure = None
+
+        def do_method(self, *args):
+            self.calls.append(('method',) + args)
+
+        def do_raise(self):
+            return 1/0
+
+        def unexpectedError(self, failure):
+            self.failure = failure
+
+    def setUp(self):
+        self.pullerprotocol = self.StubPullerProtocol()
+        self.protocol = scheduler.PullerWireProtocol(self.pullerprotocol)
+
+    def convertToNetstring(self, string):
+        """Encode `string` as a netstring."""
+        return '%d:%s,' % (len(string), string)
+
+    def sendToProtocol(self, *arguments):
+        """Send each element of `arguments` to the protocol as a netstring."""
+        for argument in arguments:
+            self.protocol.dataReceived(self.convertToNetstring(str(argument)))
+
+    def assertUnexpectedErrorCalled(self, exception_type):
+        """Assert that the process protocol's unexpectedError has been called.
+
+        The failure is asserted to contain an exception of type
+        `exception_type`."""
+        self.failUnless(self.processprotocol.failure is not None)
+        self.failUnless(
+            self.processprotocol.failure.check(exception_type))
+
+    def assertProtocolInState0(self):
+        """Assert that the protocol is in state 0."""
+        return self.protocol._current_command is None
+
+    def test_methodDispatch(self):
+        # The wire protocol object calls the named method on the
+        # processprotocol.
+        self.sendToProtocol('method')
+        # The protocol is now in state [1]
+        self.assertEqual(self.pullerprotocol.calls, [])
+        self.sendToProtocol(0)
+        # As we say we are not passing any arguments, the protocol executes
+        # the command straight away.
+        self.assertEqual(self.pullerprotocol.calls, [('method',)])
+        self.assertProtocolInState0()
+
+    def test_methodDispatchWithArguments(self):
+        # The wire protocol waits for the given number of arguments before
+        # calling the method.
+        self.sendToProtocol('method', 1)
+        # The protocol is now in state [2]
+        self.assertEqual(self.pullerprotocol.calls, [])
+        self.sendToProtocol('arg')
+        # We've now passed in the declared number of arguments so the protocol
+        # executes the command.
+        self.assertEqual(self.pullerprotocol.calls, [('method', 'arg')])
+        self.assertProtocolInState0()
+
+    def test_commandRaisesException(self):
+        # If a command raises an exception, the listener's unexpectedError
+        # method is called with the corresponding failure.
+        self.sendToProtocol('raise', 0)
+        self.assertUnexpectedErrorCalled(ZeroDivisionError)
+        self.assertProtocolInState0()
+
+    def test_nonIntegerArgcount(self):
+        # Passing a non integer where there should be an argument count is an
+        # error.
+        self.sendToProtocol('method', 'not-an-int')
+        self.assertUnexpectedErrorCalled(ValueError)
+
+    def test_unrecognizedMessage(self):
+        # The protocol notifies the listener as soon as it receives an
+        # unrecognized command name.
+        self.sendToProtocol('foo')
+        self.assertUnexpectedErrorCalled(scheduler.BadMessage)
+
+    def test_invalidNetstring(self):
+        # The protocol terminates the session if it receives an unparsable
+        # netstring.
+        self.protocol.dataReceived('foo')
+        self.assertUnexpectedErrorCalled(NetstringParseError)
+
+
 class TestPullerMonitorProtocol(
     ProcessTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
@@ -143,51 +243,48 @@ class TestPullerMonitorProtocol(
         """Assert that the protocol saw no unexpected errors."""
         self.assertEqual(None, self.protocol._termination_failure)
 
-    def convertToNetstring(self, string):
-        return '%d:%s,' % (len(string), string)
-
-    def sendToProtocol(self, *arguments):
-        for argument in arguments:
-            self.protocol.outReceived(self.convertToNetstring(str(argument)))
-
     def test_startMirroring(self):
         """Receiving a startMirroring message notifies the listener."""
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.assertEqual(['startMirroring'], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.sendToProtocol('mirrorSucceeded', 1, 1234)
+        self.protocol.do_mirrorSucceeded('1234')
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
-        self.sendToProtocol('startMirroring', 0)
+        self.do_startMirroring(0)
         self.listener.calls = []
-        self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
+        self.protocol.do_mirrorFailed('Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
         self.assertProtocolSuccess()
 
-    def assertMessageResetsTimeout(self, *message):
+    def assertMessageResetsTimeout(self, callable, *args):
         """Assert that sending the message resets the protocol timeout."""
         self.assertTrue(2 < config.supermirror.worker_timeout)
+        # Advance until the timeout has nearly elapsed.
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.sendToProtocol(*message)
+        # Send the message.
+        callable(*args)
+        # Advance past the timeout.
         self.clock.advance(2)
+        # Check that we still succeeded.
         self.assertProtocolSuccess()
 
     def test_progressMadeResetsTimeout(self):
         """Receiving 'progressMade' resets the timeout."""
-        self.assertMessageResetsTimeout('progressMade', 0)
+        self.assertMessageResetsTimeout(self.protocol.do_progressMade)
 
     def test_startMirroringResetsTimeout(self):
         """Receiving 'startMirroring' resets the timeout."""
-        self.assertMessageResetsTimeout('startMirroring', 0)
+        self.assertMessageResetsTimeout(self.protocol.do_startMirroring)
 
     def test_mirrorSucceededDoesNotResetTimeout(self):
         """Receiving 'mirrorSucceeded' doesn't reset the timeout.
@@ -197,9 +294,9 @@ class TestPullerMonitorProtocol(
         happens, we want to kill it quickly so that we can continue mirroring
         other branches.
         """
-        self.sendToProtocol('startMirroring', 0)
+        self.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.sendToProtocol('mirrorSucceeded', 1, 'rev1')
+        self.do_mirrorSucceeded('rev1')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -210,9 +307,9 @@ class TestPullerMonitorProtocol(
         mirrorFailed doesn't reset the timeout for the same reasons as
         mirrorSucceeded.
         """
-        self.sendToProtocol('startMirroring', 0)
+        self.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.sendToProtocol('mirrorFailed', 2, 'error message', 'OOPS')
+        self.do_mirrorFailed('error message', 'OOPS')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -248,45 +345,10 @@ class TestPullerMonitorProtocol(
 
         return self.termination_deferred
 
-    def test_unrecognizedMessage(self):
-        """The protocol notifies the listener when it receives an unrecognized
-        message.
-        """
-        # XXX This could just check somehow that unexpectedError is called.
-        self.protocol.outReceived(self.convertToNetstring('foo'))
-
-        def check_failure(exception):
-            self.assertEqual(
-                [('signalProcess', 'INT')], self.protocol.transport.calls)
-            self.assertTrue('foo' in str(exception))
-
-        deferred = self.assertFailure(
-            self.termination_deferred, scheduler.BadMessage)
-
-        return deferred.addCallback(check_failure)
-
-    def test_invalidNetstring(self):
-        """The protocol terminates the session if it receives an unparsable
-        netstring.
-        """
-        # XXX This could just check somehow that unexpectedError is called.
-        self.protocol.outReceived('foo')
-
-        def check_failure(exception):
-            self.assertEqual(
-                ['loseConnection', ('signalProcess', 'INT')],
-                self.protocol.transport.calls)
-            self.assertTrue('foo' in str(exception))
-
-        deferred = self.assertFailure(
-            self.termination_deferred, NetstringParseError)
-
-        return deferred.addCallback(check_failure)
-
     def test_errorBeforeStatusReport(self):
         # If the subprocess exits before reporting success or failure, the
         # puller master should record failure.
-        self.sendToProtocol('startMirroring', 0)
+        self.do_startMirroring()
         self.protocol.errReceived('traceback')
         self.simulateProcessExit(clean=False)
         self.assertEqual(

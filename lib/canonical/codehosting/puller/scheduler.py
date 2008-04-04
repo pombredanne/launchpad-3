@@ -68,6 +68,95 @@ class BranchStatusClient:
             'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
+class PullerWireProtocol(NetstringReceiver):
+    """The wire protocol for receiving events from the puller worker.
+
+    The wire-level protocol is a series of netstrings.
+
+    At the next level up, the protocol consists of messages which each look
+    like this::
+
+            [method-name] [number-of-arguments] [arguments]+
+
+    Thus the instance is always in one of three states::
+
+        [0] Waiting for command name.
+        [1] Waiting for argument count.
+        [2] Waiting for an argument.
+
+    In state [0], we are waiting for a command name.  When we get one, we
+    store it in self._current_command and move into state [1].
+
+    In state [1], we are waiting for an argument count.  When we receive a
+    message, we try to convert it to an integer.  If we fail in this, we call
+    unexpectedError().  Otherwise, if it's greater than zero, we store the
+    number in self._expected_args and go into state [2] or if it's zero
+    execute the command (see below).
+
+    In state [2], we are waiting for an argument.  When we receive one, we
+    append it to self._current_args.  If len(self._current_args) ==
+    self._expected_args, execute the command.
+
+    "Executing the command" means looking for a method called do_<command
+    name> on self.listener and calling it with *self._current_args.  If this
+    raises, call self.listener.unexpectedError().
+
+    The method _resetState() forces us back into state [0].
+    """
+
+    def __init__(self, pullerprotocol):
+        self.pullerprotocol = pullerprotocol
+
+    def dataReceived(self, data):
+        """See `NetstringReceiver.dataReceived`."""
+        NetstringReceiver.dataReceived(self, data)
+        # XXX: JonathanLange 2007-10-16
+        # bug=http://twistedmatrix.com/trac/ticket/2851: There are no hooks in
+        # NetstringReceiver to catch a NetstringParseError. The best we can do
+        # is check the value of brokenPeer.
+        if self.brokenPeer:
+            self.pullerprotocol.unexpectedError(
+                failure.Failure(NetstringParseError(data)))
+
+    def stringReceived(self, line):
+        """See `NetstringReceiver.stringReceived`."""
+        if (self._current_command is not None
+            and self._expected_args is not None):
+            # state [2]
+            self._current_args.append(line)
+        elif self._current_command is not None:
+            # state [1]
+            try:
+                self._expected_args = int(line)
+            except ValueError:
+                self.pullerprotocol.unexpectedError(failure.Failure())
+        else:
+            # state [0]
+            if getattr(self.pullerprotocol, 'do_%s' % line, None) is None:
+                self.pullerprotocol.unexpectedError(
+                    failure.Failure(BadMessage(line)))
+            else:
+                self._current_command = line
+
+        if len(self._current_args) == self._expected_args:
+            # Execute the command.
+            method = getattr(
+                self.pullerprotocol, 'do_%s' % self._current_command)
+            try:
+                try:
+                    method(*self._current_args)
+                except:
+                    self.pullerprotocol.unexpectedError(failure.Failure())
+            finally:
+                self._resetState()
+
+    def _resetState(self):
+        """Force into the 'waiting for command' state."""
+        self._current_command = None
+        self._expected_args = None
+        self._current_args = []
+
+
 class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
                             NetstringReceiver):
     """The protocol for receiving events from the puller worker."""
@@ -87,11 +176,14 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
             self, deferred, config.supermirror.worker_timeout, clock)
         self.reported_mirror_finished = False
         self.listener = listener
-        self._resetState()
+        self.wireprotocol = PullerWireProtocol(self)
         self._stderr = StringIO()
         self._deferred.addCallbacks(
             self.checkReportingFinishedAndNoStderr,
             self.ensureReportingFinished)
+
+    def reportMirrorFinished(self, ignored):
+        self.reported_mirror_finished = True
 
     def checkReportingFinishedAndNoStderr(self, result):
         """Check that the worker process behaved properly on clean exit.
@@ -136,51 +228,11 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         else:
             return reason
 
-    def reportMirrorFinished(self, ignored):
-        self.reported_mirror_finished = True
+    def outReceived(self, data):
+        self.wireprotocol.dataReceived(data)
 
-    def dataReceived(self, data):
-        NetstringReceiver.dataReceived(self, data)
-        # XXX: JonathanLange 2007-10-16
-        # bug=http://twistedmatrix.com/trac/ticket/2851: There are no hooks in
-        # NetstringReceiver to catch a NetstringParseError. The best we can do
-        # is check the value of brokenPeer.
-        if self.brokenPeer:
-            self.unexpectedError(failure.Failure(NetstringParseError(data)))
-
-    def stringReceived(self, line):
-        """Process a netstring.
-
-        The wire-level protocol is a series of netstrings.
-
-        At the next level up, the protocol goes like this::
-
-            [method-name] [number-of-arguments] [arguments]+
-
-        XXX errors?
-        """
-        if (self._current_command is not None
-            and self._expected_args is not None):
-            self._current_args.append(line)
-        elif self._current_command is not None:
-            self._expected_args = int(line)
-        else:
-            if getattr(self, 'do_%s' % line, None) is None:
-                self.unexpectedError(failure.Failure(BadMessage(line)))
-            else:
-                self._current_command = line
-
-        if len(self._current_args) == self._expected_args:
-            method = getattr(self, 'do_%s' % self._current_command)
-            try:
-                method(*self._current_args)
-            finally:
-                self._resetState()
-
-    def _resetState(self):
-        self._current_command = None
-        self._expected_args = None
-        self._current_args = []
+    def errReceived(self, data):
+        self._stderr.write(data)
 
     def do_startMirroring(self):
         self.resetTimeout()
@@ -205,12 +257,6 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
     def do_progressMade(self):
         """Any progress resets the timout counter."""
         self.resetTimeout()
-
-    def outReceived(self, data):
-        self.dataReceived(data)
-
-    def errReceived(self, data):
-        self._stderr.write(data)
 
 
 class PullerMaster:
