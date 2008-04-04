@@ -34,7 +34,7 @@ thread identifier.)
     ...     suffix='log', prefix="references-leak-")
     >>> os.close(references_log)
 
-    # endRequest() doesn't expect that file to exists.
+    # endRequest() doesn't expect that file to exist.
     >>> os.remove(scoreboard_path)
     >>> config.push('debug-references', dedent("""\
     ...     [debug]
@@ -49,6 +49,12 @@ to the scoreboard file.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp.adapter import set_request_started
     >>> def create_request(pageid='View:+template'):
+    ...     """Returns a LaunchpadTestRequest with appropriate fixture.
+    ...
+    ...     Sets some attributes on the request expected by the
+    ...     publication, and that are usually set by previous publication
+    ...     steps.
+    ...     """
     ...     request = LaunchpadTestRequest()
     ...     # Adds some expected requests variables by endRequest().
     ...     request._orig_env['launchpad.pageid'] = pageid
@@ -75,7 +81,11 @@ then a list of count and types.
 
 On the second request, the scoreboard will be compared to the previous
 one and differences will be reported in the references leak log file.
-The format is date pageid increase_in_RSS type=increase type=increase...
+The format is date pageid increase_in_RSS type=increase; type=increase.
+Example:
+
+    2008-04-03:18:15:45 Question:+index 0.57Mb <type 'tuple'>=6419;
+        <type 'dict'>=2744; <type 'list'>=1942; <type 'weakref'>=544
 
     >>> os.stat(references_log_path).st_size
     0L

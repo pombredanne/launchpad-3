@@ -102,10 +102,10 @@ def dump_garbage():
 #
 
 def classesWithMostRefs(n=30):
-    """Return the n ClassType object with the most reference count.
+    """Return the n ClassType objects with the highest reference count.
 
     This gives an idea of the number of objects in the system by type,
-    since each instance will have one reference to the class.
+    since each instance will have at lest one reference to the class.
 
     :return: A list of tuple (count, type).
     """
@@ -119,10 +119,12 @@ def classesWithMostRefs(n=30):
 
 
 def mostRefs(n=30):
-    """Return the n types with the most reference count.
+    """Return the n types with the highest reference count.
 
-    This one uses a different algorithm than  classesWithMostRefs. It counts
-    the number of objects of given type in gc.get_objects().
+    This one uses a different algorithm than classesWithMostRefs. Instead of
+    retrieving the number of references to each ClassType, it counts the
+    number of objects returned by gc.get_objects() and aggregates the results
+    by type.
 
     :return: A list of tuple (count, type).
     """
@@ -171,7 +173,7 @@ def printCounts(counts, file=None):
             file.write("%s %s\n" % (c, obj))
 
 def readCounts(file):
-    """Reverse of printCounts()"""
+    """Reverse of printCounts()."""
     counts = []
     for line in file.readlines():
         count, ref_type = line.strip().split(' ', 1)
