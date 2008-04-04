@@ -147,13 +147,13 @@ class TestPullerWireProtocol(TrialTestCase):
             self.protocol.dataReceived(self.convertToNetstring(str(argument)))
 
     def assertUnexpectedErrorCalled(self, exception_type):
-        """Assert that the process protocol's unexpectedError has been called.
+        """Assert that the puller protocol's unexpectedError has been called.
 
         The failure is asserted to contain an exception of type
         `exception_type`."""
-        self.failUnless(self.processprotocol.failure is not None)
+        self.failUnless(self.pullerprotocol.failure is not None)
         self.failUnless(
-            self.processprotocol.failure.check(exception_type))
+            self.pullerprotocol.failure.check(exception_type))
 
     def assertProtocolInState0(self):
         """Assert that the protocol is in state 0."""
@@ -161,7 +161,7 @@ class TestPullerWireProtocol(TrialTestCase):
 
     def test_methodDispatch(self):
         # The wire protocol object calls the named method on the
-        # processprotocol.
+        # pullerprotocol.
         self.sendToProtocol('method')
         # The protocol is now in state [1]
         self.assertEqual(self.pullerprotocol.calls, [])
@@ -184,8 +184,8 @@ class TestPullerWireProtocol(TrialTestCase):
         self.assertProtocolInState0()
 
     def test_commandRaisesException(self):
-        # If a command raises an exception, the listener's unexpectedError
-        # method is called with the corresponding failure.
+        # If a command raises an exception, the pullerprotocol's
+        # unexpectedError method is called with the corresponding failure.
         self.sendToProtocol('raise', 0)
         self.assertUnexpectedErrorCalled(ZeroDivisionError)
         self.assertProtocolInState0()
@@ -259,7 +259,7 @@ class TestPullerMonitorProtocol(
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
-        self.do_startMirroring(0)
+        self.protocol.do_startMirroring()
         self.listener.calls = []
         self.protocol.do_mirrorFailed('Error Message', 'OOPS')
         self.assertEqual(
@@ -294,9 +294,9 @@ class TestPullerMonitorProtocol(
         happens, we want to kill it quickly so that we can continue mirroring
         other branches.
         """
-        self.do_startMirroring()
+        self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.do_mirrorSucceeded('rev1')
+        self.protocol.do_mirrorSucceeded('rev1')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -307,9 +307,9 @@ class TestPullerMonitorProtocol(
         mirrorFailed doesn't reset the timeout for the same reasons as
         mirrorSucceeded.
         """
-        self.do_startMirroring()
+        self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.do_mirrorFailed('error message', 'OOPS')
+        self.protocol.do_mirrorFailed('error message', 'OOPS')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -348,7 +348,7 @@ class TestPullerMonitorProtocol(
     def test_errorBeforeStatusReport(self):
         # If the subprocess exits before reporting success or failure, the
         # puller master should record failure.
-        self.do_startMirroring()
+        self.protocol.do_startMirroring()
         self.protocol.errReceived('traceback')
         self.simulateProcessExit(clean=False)
         self.assertEqual(

@@ -106,6 +106,7 @@ class PullerWireProtocol(NetstringReceiver):
 
     def __init__(self, pullerprotocol):
         self.pullerprotocol = pullerprotocol
+        self._resetState()
 
     def dataReceived(self, data):
         """See `NetstringReceiver.dataReceived`."""
