@@ -61,6 +61,36 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.IField
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.VocabularyLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.enum.IEnumeratedType
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IPersonSet
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IResourcePOSTOperation"
