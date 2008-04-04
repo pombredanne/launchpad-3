@@ -24,14 +24,30 @@ from canonical.lp import initZopeless
 if __name__ == '__main__':
     ztm = initZopeless(implicitBegin=False)
 
+    # Check self-participation.
+    query = """
+        SELECT id, name
+        FROM person WHERE id NOT IN (
+            SELECT person FROM teamparticipation WHERE person = team
+            ) AND merged IS NULL
+        """
     ztm.begin()
+    cur = cursor()
+    cur.execute(query)
+    non_self_participants = cur.fetchall()
+    if len(non_self_participants) > 0:
+        # XXX: salgado, 2008-04-04: This script should use a logger rather
+        # than printing stuff to stdout.
+        print ("Some people/teams are not members of themselves: %s" 
+               % non_self_participants)
+
+    # Check for discrepancies between TeamMemberships and TeamParticipations.
     query = """
         SELECT DISTINCT Person.id
         FROM Person, TeamParticipation
         WHERE Person.id = Teamparticipation.person
             AND TeamParticipation.team != Person.id
         """
-    cur = cursor()
     cur.execute(query)
     people_ids = cur.fetchall()
     ztm.abort()
@@ -43,13 +59,15 @@ if __name__ == '__main__':
             ztm.begin()
             person = Person.get(id)
             for team in person.teams_indirectly_participated_in:
+                # XXX: salgado, 2008-04-04: findPathToTeam() should be changed
+                # to raise something other than an AssertionError as catching
+                # AssertionErrors is against our policy.
                 try:
                     path = person.findPathToTeam(team)
                 except AssertionError, e:
-                    print ("Invalid teamParticipation entry for %s (%d) on %s "
-                           "(%d) -- there's no team membership leading to that"
-                           % (person.unique_displayname, person.id,
-                              team.unique_displayname, team.id))
+                    print ("Invalid TeamParticipation entry for %s (%d) on "
+                           "%s (%d)" % (person.unique_displayname, person.id,
+                                        team.unique_displayname, team.id))
             ztm.abort()
         batch = people_ids[:50]
         people_ids = people_ids[50:]
