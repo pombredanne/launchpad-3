@@ -1,0 +1,76 @@
+= Exchanging a request token for an access token =
+
+Once the user has logged into Launchpad and granted access to the
+consumer, the request token is eligible for being exchanged for an
+access token.
+
+    # First we create a new request token and review it.
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('salgado@ubuntu.com')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> logout()
+
+    >>> import time
+    >>> from urllib import urlencode
+    >>> data = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_version='1.0',
+    ...     oauth_token=token.key,
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature='&'.join([consumer.secret, token.secret]),
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/+access-token', data=urlencode(data))
+
+    >>> print anon_browser.contents
+    oauth_token=...&oauth_token_secret=...
+
+Any further attempt to exchange that request token for an access token
+will fail because request tokens can be used only once.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/+access-token', data=urlencode(data))
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 401: Unauthorized
+
+The consumer shall not attempt to exchange any given request token
+before it's been reviewed, though, or it'll get a 401 response.
+
+    >>> token = consumer.newRequestToken()
+    >>> data2 = data.copy()
+    >>> data2['oauth_token'] = token.key
+    >>> data2['oauth_signature'] = '&'.join([consumer.secret, token.secret])
+    >>> print http(r"""
+    ... GET /+access-token?%s HTTP/1.1
+    ... Host: launchpad.dev
+    ... """ % urlencode(data2))
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The same will happen if the signature is wrong or if the token's
+permission is UNAUTHORIZED.
+
+    >>> data2['oauth_signature'] = '&'.join(['foobar', token.secret])
+    >>> print http(r"""
+    ... GET /+access-token?%s HTTP/1.1
+    ... Host: launchpad.dev
+    ... """ % urlencode(data2))
+    HTTP/1.1 401 Unauthorized
+    ...
+
+    >>> token.review(salgado, OAuthPermission.UNAUTHORIZED)
+    >>> data2['oauth_signature'] = '&'.join([consumer.secret, token.secret])
+    >>> print http(r"""
+    ... GET /+access-token?%s HTTP/1.1
+    ... Host: launchpad.dev
+    ... """ % urlencode(data2))
+    HTTP/1.1 401 Unauthorized
+    ...

@@ -46,20 +46,33 @@ class TeamMembership(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         validator=public_person_validator, notNull=True)
-    reviewer = ForeignKey(
-        dbName='reviewer', foreignKey='Person',
+    last_changed_by = ForeignKey(
+        dbName='last_changed_by', foreignKey='Person',
+        validator=public_person_validator, default=None)
+    proposed_by = ForeignKey(
+        dbName='proposed_by', foreignKey='Person',
+        validator=public_person_validator, default=None)
+    acknowledged_by = ForeignKey(
+        dbName='acknowledged_by', foreignKey='Person',
+        validator=public_person_validator, default=None)
+    reviewed_by = ForeignKey(
+        dbName='reviewed_by', foreignKey='Person',
         validator=public_person_validator, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
-    datejoined = UtcDateTimeCol(
-        dbName='datejoined', default=UTC_NOW, notNull=True)
-    dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
-    reviewercomment = StringCol(dbName='reviewercomment', default=None)
-
-    @property
-    def statusname(self):
-        """See `ITeamMembership`."""
-        return self.status.title
+    # XXX: salgado, 2008-03-06: Need to rename datejoined and dateexpires to
+    # match their db names.
+    datejoined = UtcDateTimeCol(dbName='date_joined', default=None)
+    dateexpires = UtcDateTimeCol(dbName='date_expires', default=None)
+    date_created = UtcDateTimeCol(default=UTC_NOW)
+    date_proposed = UtcDateTimeCol(default=None)
+    date_acknowledged = UtcDateTimeCol(default=None)
+    date_reviewed = UtcDateTimeCol(default=None)
+    date_last_changed = UtcDateTimeCol(default=None)
+    last_change_comment = StringCol(default=None)
+    proponent_comment = StringCol(default=None)
+    acknowledger_comment = StringCol(default=None)
+    reviewer_comment = StringCol(default=None)
 
     def isExpired(self):
         """See `ITeamMembership`."""
@@ -159,12 +172,15 @@ class TeamMembership(SQLBase):
 
         assert self.canChangeExpirationDate(user), (
             "This user can't change this membership's expiration date.")
+        self._setExpirationDate(date, user)
+
+    def _setExpirationDate(self, date, user):
         UTC = pytz.timezone('UTC')
         assert date is None or date.date() >= datetime.now(UTC).date(), (
             "The given expiration date must be None or be in the future: %s"
             % date.strftime('%Y-%m-%d'))
         self.dateexpires = date
-        self.reviewer = user
+        self.last_changed_by = user
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
@@ -235,7 +251,7 @@ class TeamMembership(SQLBase):
             team.displayname, config.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
-    def setStatus(self, status, reviewer, reviewercomment=None):
+    def setStatus(self, status, user, comment=None):
         """See `ITeamMembership`."""
         if status == self.status:
             return
@@ -265,21 +281,42 @@ class TeamMembership(SQLBase):
         assert self.status in state_transition, (
             "Unknown status: %s" % self.status.name)
         assert status in state_transition[self.status], (
-            "Bad state trasition from %s to %s"
+            "Bad state transition from %s to %s"
             % (self.status.name, status.name))
 
         old_status = self.status
         self.status = status
-        self.reviewer = reviewer
-        self.reviewercomment = reviewercomment
 
-        if (old_status not in [admin, approved]
-            and status in [admin, approved]):
-            # Inactive member has become active; update datejoined
-            self.datejoined = datetime.now(pytz.timezone('UTC'))
+        active_states = [approved, admin]
+        now = datetime.now(pytz.timezone('UTC'))
+        if status in [proposed, invited]:
+            self.proposed_by = user
+            self.proponent_comment = comment
+            self.date_proposed = now
+        elif ((status in active_states and old_status not in active_states)
+              or status == declined):
+            self.reviewed_by = user
+            self.reviewer_comment = comment
+            self.date_reviewed = now
+            if self.datejoined is None and status in active_states:
+                # This is the first time this membership is made active.
+                self.datejoined = now
+        else:
+            # No need to set proponent or reviewer.
+            pass
 
+        if old_status == invited:
+            # This member has been invited by an admin and is now accepting or
+            # declining the invitation.
+            self.acknowledged_by = user
+            self.date_acknowledged = now
+            self.acknowledger_comment = comment
 
-        if status in [admin, approved]:
+        self.last_changed_by = user
+        self.last_change_comment = comment
+        self.date_last_changed = now
+
+        if status in active_states:
             _fillTeamParticipation(self.person, self.team)
         else:
             # Need to flush db updates because _cleanTeamParticipation() will
@@ -295,7 +332,7 @@ class TeamMembership(SQLBase):
         # When a member proposes himself, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's
         # why we don't send anything here.
-        if self.person == self.reviewer and self.status == proposed:
+        if self.person == self.last_changed_by and self.status == proposed:
             return
 
         self._sendStatusChangeNotification(old_status)
@@ -306,7 +343,7 @@ class TeamMembership(SQLBase):
         """
         team = self.team
         member = self.person
-        reviewer = self.reviewer
+        reviewer = self.last_changed_by
         from_addr = format_address(
             team.displayname, config.noreply_from_address)
         new_status = self.status
@@ -324,9 +361,9 @@ class TeamMembership(SQLBase):
             # The user himself changed his membership.
             reviewer_name = 'the user himself'
 
-        if self.reviewercomment:
-            comment = ("\n%s said:\n %s\n" %
-                       (reviewer.displayname, self.reviewercomment.strip()))
+        if self.last_change_comment:
+            comment = ("\n%s said:\n %s\n" % (
+                reviewer.displayname, self.last_change_comment.strip()))
         else:
             comment = ""
 
@@ -382,7 +419,7 @@ class TeamMembership(SQLBase):
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
-        if member_email and self.reviewer != member:
+        if member_email and reviewer != member:
             if member.isTeam():
                 template = '%s-bulk.txt' % template_name
             else:
@@ -403,8 +440,7 @@ class TeamMembershipSet:
 
     _defaultOrder = ['Person.displayname', 'Person.name']
 
-    def new(self, person, team, status, dateexpires=None, reviewer=None,
-            reviewercomment=None):
+    def new(self, person, team, status, user, dateexpires=None, comment=None):
         """See `ITeamMembershipSet`."""
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
@@ -415,10 +451,17 @@ class TeamMembershipSet:
         person.clearInTeamCache()
 
         tm = TeamMembership(
-            person=person, team=team, status=status, dateexpires=dateexpires,
-            reviewer=reviewer, reviewercomment=reviewercomment)
+            person=person, team=team, status=status, dateexpires=dateexpires)
 
-        if status in (approved, admin):
+        now = datetime.now(pytz.timezone('UTC'))
+        tm.proposed_by = user
+        tm.date_proposed = now
+        tm.proponent_comment = comment
+        if status in [approved, admin]:
+            tm.datejoined = now
+            tm.reviewed_by = user
+            tm.date_reviewed = now
+            tm.reviewer_comment = comment
             _fillTeamParticipation(person, team)
 
         return tm
@@ -449,7 +492,7 @@ class TeamMembershipSet:
         """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
-        query = ("dateexpires <= %s AND status IN (%s, %s)"
+        query = ("date_expires <= %s AND status IN (%s, %s)"
                  % sqlvalues(when, TeamMembershipStatus.ADMIN,
                              TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)
@@ -528,16 +571,15 @@ def _cleanTeamParticipation(member, team):
     # superteam of the given team, but only if there are no other paths from
     # the member to the team and if he's not a direct member of the team.
     superteams = list(team.getSuperTeams())
-    if len(superteams) > 0:
-        superteams_ids = ",".join(str(team.id) for team in superteams)
-        team_and_superteams_ids = ",".join(
-            str(team.id) for team in [team] + superteams)
-    else:
-        superteams_ids = '-1'
-        team_and_superteams_ids = team.id
+    if len(superteams) == 0:
+        return
+
+    superteams_ids = ",".join(str(team.id) for team in superteams)
+    team_and_member_and_superteams_ids = ",".join(
+        str(team.id) for team in [member, team] + superteams)
     replacements = dict(
         active_states=active_states, member_id=member.id,
-        team_and_superteams_ids=team_and_superteams_ids,
+        team_and_member_and_superteams_ids=team_and_member_and_superteams_ids,
         superteams_ids=superteams_ids)
     query = """
         DELETE FROM TeamParticipation
@@ -559,7 +601,8 @@ def _cleanTeamParticipation(member, team):
                     SELECT person
                     FROM TeamParticipation JOIN Person ON (person = Person.id)
                     WHERE team = %(superteam_id)s
-                        AND person NOT IN (%(team_and_superteams_ids)s) 
+                        AND person NOT IN (
+                            %(team_and_member_and_superteams_ids)s) 
                         AND teamowner IS NOT NULL)
 
                 UNION

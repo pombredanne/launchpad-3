@@ -21,6 +21,12 @@
     This project is currently inactive <a href="+review">(change this)</a>
   </p>
 
+  <p id="project-admin-whiteboard" class="whiteboard"
+   tal:condition="context/required:launchpad.Admin">
+    <span tal:content="context/reviewer_whiteboard" />
+    (<a href="+review">edit reviewer whiteboard</a>)
+  </p>
+
   <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of project</h1>
 
@@ -102,6 +108,10 @@
         <div
           class="section"
           tal:content="structure context/@@+portlet-latestannouncements"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-productfiles"
         />
         <div class="portlet">
           <h2>Timeline</h2>

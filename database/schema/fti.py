@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# This modules uses relative imports.
+# pylint: disable-msg=W0403
+
 """
 Add full text indexes to the launchpad database
 """
@@ -284,10 +287,11 @@ def setup(con, configuration=DEFAULT_CONFIG):
     except psycopg.ProgrammingError:
         con.rollback()
         log.debug('Installing tsearch2')
-        if config.dbhost:
-            cmd = 'psql -d %s -h %s -f -' % (config.dbname, config.dbhost)
+        if config.database.dbhost:
+            cmd = 'psql -d %s -h %s -f -' % (
+                config.database.dbname, config.database.dbhost)
         else:
-            cmd = 'psql -d %s -f -' % (config.dbname, )
+            cmd = 'psql -d %s -f -' % (config.database.dbname, )
         if options.dbuser:
             cmd += ' -U %s' % options.dbuser
         p = popen2.Popen4(cmd)

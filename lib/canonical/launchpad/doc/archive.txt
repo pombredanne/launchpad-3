@@ -26,6 +26,22 @@ records to disk, including configuration and indexes.
     u'It is not my fault.'
     >>> cprov_archive.private
     False
+    >>> cprov_archive.require_virtualized
+    True
+    >>> cprov_archive.sources_cached
+    3
+    >>> cprov_archive.binaries_cached
+    3
+
+The buildd_secret is used by the slave scanner when generating a
+sources.list entry for the builder to access a private archive.  It is
+essentially the password to the archive for the builder.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_archive.buildd_secret = "secret"
+    >>> login(ANONYMOUS)
+    >>> print cprov_archive.buildd_secret
+    secret
 
 Useful properties:
 
@@ -637,6 +653,21 @@ configuration file:
     >>> pubconfig.distroroot == config.personalpackagearchive.root
     True
 
+There is a separate location for private PPAs that is used if the
+archive is marked as private:
+
+    >>> (config.personalpackagearchive.private_root !=
+    ...  config.personalpackagearchive.root)
+    True
+
+    >>> naked_cprov_archive.private = True
+    >>> private_pubconfig = naked_cprov_archive.getPubConfig()
+    >>> (private_pubconfig.distroroot ==
+    ...  config.personalpackagearchive.private_root)
+    True
+
+    >>> naked_cprov_archive.private = False
+
 Then, the archive topology will follow:
 
 <PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
@@ -670,6 +701,13 @@ Usual methods from Publisher Configuration are preserved:
 
     >>> pubconfig.componentsForSeries('breezy-autotest')
     ['main', 'restricted', 'universe', 'multiverse']
+
+Let's restore Celso's PPA state, attaching it to ubuntu distribution
+again.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> naked_cprov_archive.distribution = ubuntu
+    >>> flush_database_updates()
 
 
 == Archive dependencies ==
@@ -779,6 +817,80 @@ allowing them.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
+Since the 'dependency' property only returns explicitly recorded
+archive dependencies and we usually need the expanded list when
+inspecting the build domain we have also implemented the
+'expanded_archive_dependencies' property. It returns implicit
+dependencies, including the archive itself and the PRIMARY archive
+dependency for PPAs.
+
+    >>> def print_expanded_archive_dependencies(archive):
+    ...     for dep in archive.expanded_archive_dependencies:
+    ...         print dep.title
+
+    >>> print_expanded_archive_dependencies(ubuntu.main_archive)
+    Primary Archive for Ubuntu Linux
+
+    >>> print_expanded_archive_dependencies(cprov.archive)
+    Primary Archive for Ubuntu Linux
+    PPA for Celso Providelo
+    PPA for Mark Shuttleworth
+
+
+== Find binary package dependency candidates ==
+
+Archive allows a lookup on a single binary package dependency
+candidate by its name, via the `PublishedPackage` table:
+
+    >>> warty_i386 = warty['i386']
+
+    >>> candidate = ubuntu.main_archive.findDepCandidateByName(
+    ...     warty_i386, "pmount")
+    >>> print candidate.binarypackagename
+    pmount
+
+    >>> candidate = cprov.archive.findDepCandidateByName(
+    ...     warty_i386, "pmount")
+    >>> print candidate.binarypackagename
+    pmount
+
+Since 'python2.4' isn't available in our sampledata (not even
+published), None is returned:
+
+    >>> print ubuntu.main_archive.findDepCandidateByName(
+    ...     warty_i386, "python2.4")
+    None
+
+    >>> print cprov.archive.findDepCandidateByName(
+    ...     warty_i386, "python2.4")
+    None
+
+This method is aware of the archive dependency tree. So, even when a
+package is not published on the context PPA but is available somewhere
+in the archive dependency domain it will be found.
+
+'at' binary package is not present in Celso's PPA.
+
+    >>> cprov_archive.getAllPublishedBinaries(name='at').count()
+    0
+
+But it is available in PRIMARY ubuntu archive.
+
+    >>> primary_candidate = ubuntu.main_archive.findDepCandidateByName(
+    ...     warty_i386, "at")
+    >>> primary_candidate is not None
+    True
+
+Then a lookup on Celso's PPA will find it.
+
+    >>> ppa_candidate = cprov.archive.findDepCandidateByName(
+    ...     warty_i386, "at")
+    >>> ppa_candidate is not None
+    True
+
+    >>> primary_candidate == ppa_candidate
+    True
+
 
 == IArchiveSet Utility ==
 
@@ -857,6 +969,16 @@ use to retrieve files from it.
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
     u'http://launchpad.dev/ubuntutest'
 
+If the archive is private, the url may be different as private PPAs
+are published to a secure location.
+
+    >>> naked_cprov_archive.archive_url
+    u'http://ppa.launchpad.dev/cprov/ubuntu'
+
+    >>> naked_cprov_archive.private = True
+    >>> naked_cprov_archive.archive_url
+    u'http://private.ppa.launchpad.dev/cprov/ubuntu'
+
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
 archive.
@@ -887,7 +1009,6 @@ distribution and a person name. This method is used in
 `PackageLocation` to provide a homogeneous way to refer to a Location
 (archive, distribution, distroseries, pocket).
 
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
     ...     ubuntu, 'cprov')
     True

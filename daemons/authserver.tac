@@ -4,14 +4,11 @@
 # See canonical.launchpad.daemons.authserver for more information.
 
 from twisted.application import service
+
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.daemons.tachandler import ReadyService
-
-from canonical.config import dbconfig
-
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
-dbconfig.setConfigSection('authserver')
 execute_zcml_for_scripts(use_web_security=True)
 
 application = service.Application("authserver")

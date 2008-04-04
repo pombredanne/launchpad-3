@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 import re
 from urlparse import urlunparse
 
@@ -17,9 +16,9 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
     IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet,
-    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
-    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
+    IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -353,7 +352,7 @@ class MaloneHandler:
 
             getUtility(IBugAttachmentSet).create(
                 bug=bug, filealias=blob, attach_type=attach_type,
-                title=blob.filename, message=message)
+                title=blob.filename, message=message, send_notifications=True)
 
 
 class AnswerTrackerHandler:

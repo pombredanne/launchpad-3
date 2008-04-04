@@ -38,6 +38,7 @@
       <div metal:use-macro="context/@@launchpad_form/form">
         <metal:heading fill-slot="heading">
           <metal:slot define-slot="heading">
+            <div tal:content="structure context/fmt:link" />
             <h1 tal:condition="view/label"
               tal:content="view/label">Heading from ZCML label="xxx"</h1>
           </metal:slot>

@@ -14,7 +14,7 @@ contact any external servers.
 
     >>> import subprocess
     >>> process = subprocess.Popen(
-    ...     'cronscripts/checkwatches.py', shell=True,
+    ...     ['cronscripts/checkwatches.py', '-v'],
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
@@ -25,15 +25,16 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    INFO    No watches to update on http://bugs.debian.org
+    DEBUG   No watches to update on http://bugs.debian.org
     WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
     WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
-    INFO    No watches to update on http://bugzilla.gnome.org/bugs
-    INFO    No watches to update on http://sourceforge.net/
-    INFO    No watches to update on https://bugzilla.mozilla.org/
-    INFO    Skipping updating Ubuntu Bugzilla watches.
+    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG   No watches to update on http://sourceforge.net/
+    DEBUG   No watches to update on https://bugzilla.mozilla.org/
+    DEBUG   Skipping updating Ubuntu Bugzilla watches.
     INFO    Time for this run: ... seconds.
+    DEBUG   Removing lock file:...
     <BLANKLINE>
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
@@ -71,7 +72,8 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
-The timeout will also produce an OOPS report.
+The timeout will also produce an OOPS report and the OOPS id will be
+included in the logged error message.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
     >>> oops_hook.install()
@@ -80,20 +82,23 @@ The timeout will also produce an OOPS report.
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
+    >>> transaction.commit()
     >>> def do_not_urlopen(url=None, data=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
-    ...     updater.updateBugTracker(example_bug_tracker)
+    ...     updater.updateBugTrackers(
+    ...         bug_tracker_names=[example_bug_tracker.name])
     ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
-    ERROR:root:Connection timed out when updating http://bugs.example.com
+    ERROR...Connection timed out when updating ... (OOPS-...)
     OOPS-...
     baseurl=u'http://bugs.example.com'
     bugtracker=u'example-bugs'
+    error-explanation=u'Connection timed out when updating...
 
     >>> oops_hook.uninstall()
 
@@ -122,23 +127,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...     raise externalbugtracker.UnknownBugTrackerTypeError(
     ...         bugtrackertype.name, bugtracker.name)
 
-We need to re-create the example bugtracker, bug and watch, since they
-were destroyed when the timeout error above caused the transaction to be
-reset.
-
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Roundup",
-    ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     baseurl="http://bugs.example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> example_bug = getUtility(IBugSet).get(10)
-    >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1235, sample_person)
-
+    >>> login(ANONYMOUS)
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
@@ -168,16 +157,19 @@ We need to add some bug watches again since
 BugWatchUpdate.updateBugTracker() automatically rolls back the
 transaction if something goes wrong.
 
+    >>> from canonical.launchpad.ftests import sync
     >>> login('test@canonical.com')
     >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
     ...         example_bug_tracker, bug_id, sample_person)
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     sync(bug_watch)
 
 Since we know how many bugwatches example_bug has we will be able to see
 when checkwatches only updates a subset of them.
 
     >>> example_bug.watches.count()
-    10
+    9
 
 Since our example bug tracker is a Roundup bug tracker we can
 monkey-patch the Roundup ExternalBugTrackerClass in order to set its
@@ -186,19 +178,20 @@ requests are actually made.
 
     >>> from canonical.launchpad.components import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> original_log = externalbugtracker.log
+    >>> updater = BugWatchUpdater(transaction)
+    >>> original_log = updater.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
+    >>> transaction.commit()
     >>> try:
-    ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
-    ...     externalbugtracker.log = FakeLogger()
-    ...     updater.updateBugTracker(example_bug_tracker)
+    ...     updater.log = FakeLogger()
+    ...     updater.updateBugTrackers([example_bug_tracker.name])
     ... finally:
-    ...     externalbugtracker.log = original_log
+    ...     updater.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com
-    ERROR:root:Connection timed out when updating http://bugs.example.com
+    ERROR Connection timed out when updating ... (OOPS-...)
 

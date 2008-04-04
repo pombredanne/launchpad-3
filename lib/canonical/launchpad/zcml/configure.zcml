@@ -45,6 +45,7 @@
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
+    <include file="codereviewmessage.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="cve.zcml" />
@@ -59,6 +60,7 @@
     <include file="distrocomponentuploader.zcml" />
     <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
+    <include file="distroseriespackagecache.zcml" />
     <include file="distroseriessourcepackagerelease.zcml" />
     <include file="distroserieslanguage.zcml" />
     <include file="distroarchseries.zcml" />
@@ -83,7 +85,6 @@
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
     <include file="mailinglist.zcml" />
-    <include file="mailinglist-events.zcml" />
     <include file="marketing.zcml" />
     <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
@@ -153,6 +154,7 @@
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
     <include file="webservice.zcml" />
+    <include file="packagediff.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

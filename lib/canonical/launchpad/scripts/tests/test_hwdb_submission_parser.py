@@ -7,14 +7,20 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
-from lxml import etree
-
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.scripts.hwdbsubmissions import SubmissionParser
+from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
+    ROOT_UDI)
 from canonical.testing import BaseLayer
 
 
@@ -139,7 +145,6 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(
             summary, expected_data,
             'SubmissionParser.parseSummary returned an unexpected result')
-        
 
     def _runPropertyTest(self, xml):
         parser = SubmissionParser(self.log)
@@ -175,17 +180,16 @@ class TestHWDBSubmissionParser(TestCase):
         """Different encodings are properly handled."""
         xml_template = '''<?xml version="1.0" encoding="%s"?>
                           <property type="str" name="foo">%s</property>'''
-        euro_symbol = u'\u20ac'
+        umlaut = u'\xe4'
         parser = SubmissionParser()
-        for encoding in ('utf-8', 'iso8859-15'):
-            xml = xml_template % (encoding, euro_symbol.encode(encoding))
+        for encoding in ('utf-8', 'iso-8859-1'):
+            xml = xml_template % (encoding, umlaut.encode(encoding))
             tree = etree.parse(StringIO(xml))
-            parser.docinfo = tree.docinfo
             node = tree.getroot()
             result = parser._parseProperty(node)
-            self.assertEqual(result, ('foo', (euro_symbol, 'str')),
+            self.assertEqual(result, ('foo', (umlaut, 'str')),
                 'Invalid parsing result for string encoding %s, '
-                'expected the Euro symbol (0x20AC), got %s'
+                'expected am umlaut (\xe4), got %s'
                     % (encoding, repr(result)))
 
     def testIntegerPropertyTypes(self):
@@ -224,8 +228,8 @@ class TestHWDBSubmissionParser(TestCase):
             xml = xml_template % property_type
             result = self._runPropertyTest(xml)
             self.assertEqual(result, ('floattest', (1.25, property_type)),
-                             'Invalid parsing result for float property type: '
-                             '%s' % property_type)
+                             'Invalid parsing result for float property'
+                             'type: %s' % property_type)
 
     def testListPropertyTypes(self):
         """List properties are converted into ('name', a_list).
@@ -355,7 +359,7 @@ class TestHWDBSubmissionParser(TestCase):
         result = parser._parseDevice(node)
         self.assertEqual(result,
                          {'id': 1,
-                          'udi': '/org/freedesktop/Hal/devices/computer',
+                          'udi': ROOT_UDI,
                           'parent': None,
                           'properties': 'parsed properties'},
                          'Invalid parsing result for <device> (1)')
@@ -523,7 +527,7 @@ class TestHWDBSubmissionParser(TestCase):
         """
         node = etree.fromstring("""
             <packages>
-                <package name="metacity">
+                <package name="metacity" id="1">
                     <property name="installed_size" type="int">
                         868352
                     </property>
@@ -552,25 +556,27 @@ class TestHWDBSubmissionParser(TestCase):
         result = parser._parsePackages(node)
         self.assertEqual(result,
                          {'metacity':
-                          {'installed_size': (868352, 'int'),
-                           'priority': ('optional', 'str'),
-                           'section': ('x11', 'str'),
-                           'size': (429128, 'int'),
-                           'source': ('metacity', 'str'),
-                           'summary':
-                               ('A lightweight GTK2 based Window Manager',
-                                'str'),
-                           'version': ('1:2.18.2-0ubuntu1.1', 'str')}},
+                          {'id': 1,
+                           'properties':
+                            {'installed_size': (868352, 'int'),
+                             'priority': ('optional', 'str'),
+                             'section': ('x11', 'str'),
+                             'size': (429128, 'int'),
+                             'source': ('metacity', 'str'),
+                             'summary':
+                                 ('A lightweight GTK2 based Window Manager',
+                                  'str'),
+                             'version': ('1:2.18.2-0ubuntu1.1', 'str')}}},
                          'Invalid parsing result for <packages>')
 
     def testDuplicatePackage(self):
         """Two <package> nodes with the same name are rejected."""
         node = etree.fromstring("""
             <packages>
-                <package name="foo">
+                <package name="foo" id="1">
                     <property name="size" type="int">10000</property>
                 </package>
-                <package name="foo">
+                <package name="foo" id="1">
                     <property name="size" type="int">10000</property>
                 </package>
             </packages>
@@ -694,7 +700,6 @@ class TestHWDBSubmissionParser(TestCase):
               'comment': 'The WLAN adapter drops the connection very '
                          'frequently.'}],
             'Invalid parsing result for multiple choice question')
-                         
 
     def testMeasurementQuestion(self):
         """The <questions> node is converted into a Python dictionary."""
@@ -722,7 +727,7 @@ class TestHWDBSubmissionParser(TestCase):
                            'id': 87}],
               'command': 'hdparm -t /dev/sda'}],
             'Invalid parsing result for measurement question')
-                         
+
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections
 
@@ -795,7 +800,7 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(result, None,
                          'Not-well-formed XML data accepted by '
                          'SubmissionParser.parseSubmission')
-        
+
         # ...or if RelaxNG validation fails...
         result = parser.parseSubmission(
             sample_data.replace('<summary', '<summary foo="bar"'),
@@ -819,8 +824,485 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(result, None,
                          'XML data that does pass the Relax NG validation '
                          'accepted by SubmissionParser.parseSubmission')
-        
-        
+
+    def testFindDuplicates(self):
+        """Test of SubmissionParser._findDuplicates."""
+        # If all_ids is empty before the call of _findDuplicates, all
+        # elements of test_ids is copied to all_ids. Since test_ids does
+        # not contains duplicates, the return value of _findDuplicates
+        # is empty.
+        all_ids = set()
+        test_ids = [1, 2, 3]
+        parser = SubmissionParser()
+        result = parser._findDuplicates(all_ids, test_ids)
+        self.assertEqual(result, set(),
+                         '_findDuplicates found duplicates where none exist')
+        self.assertEqual(all_ids, set((1, 2, 3)),
+                         '_findDuplicates did not update all_ids properly'
+                         'with unique elements (1, 2, 3)')
+
+        # An element that appears both in all_ids and test_ids is included
+        # in the return value.
+        test_ids = [3, 4]
+        result = parser._findDuplicates(all_ids, test_ids)
+        self.assertEqual(result, set((3,)),
+                         '_findDuplicates did not detect an element in '
+                         'test_ids which already existed in all_ids')
+        self.assertEqual(all_ids, set((1, 2, 3, 4)),
+                         '_findDuplicates did not update all_ids with '
+                         'test_ids (3, 4)')
+
+        # If an element exists twice in test_ids, it is detected as a
+        # duplicate.
+        test_ids = [5, 5]
+        result = parser._findDuplicates(all_ids, test_ids)
+        self.assertEqual(result, set((5,)),
+                         '_findDuplicates did not detect a element which '
+                         'exists twice in test_ids')
+        self.assertEqual(all_ids, set((1, 2, 3, 4, 5)),
+                         '_findDuplicates did not update all_ids with a '
+                         'duplicate element of test_ids')
+
+    def testFindDuplicateIDs(self):
+        """SubmissionParser.findDuplicateIDs lists duplicate IDS.
+
+        The IDs of HAL devices, processors and packages should be
+        unique.
+        """
+        devices = [{'id': 1},
+                   {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        packages = {'bzr': {'id': 5},
+                    'python-dev': {'id': 6}}
+        submission = {
+            'hardware': {
+                'hal': {'devices': devices},
+                'processors': processors},
+            'software': {'packages': packages}}
+
+        parser = SubmissionParser()
+        duplicates = parser.findDuplicateIDs(submission)
+        self.assertEqual(
+            duplicates, set(),
+            'Duplicate IDs detected, where no duplicates exist.')
+
+        for duplicate_entry in ({'id': 1},
+                                {'id': 3},
+                                {'id': 5}):
+            devices.append(duplicate_entry)
+            duplicates = parser.findDuplicateIDs(submission)
+            self.assertEqual(
+                duplicates, set((duplicate_entry['id'],)),
+                'Duplicate ID %i in HAL devices not detected.'
+                % duplicate_entry['id'])
+            devices.pop()
+
+            processors.append(duplicate_entry)
+            duplicates = parser.findDuplicateIDs(submission)
+            self.assertEqual(
+                duplicates, set((duplicate_entry['id'],)),
+                'Duplicate ID %i in processors not detected.'
+                % duplicate_entry['id'])
+            processors.pop()
+
+            packages['python-xml'] = duplicate_entry
+            duplicates = parser.findDuplicateIDs(submission)
+            self.assertEqual(
+                duplicates, set((duplicate_entry['id'],)),
+                'Duplicate ID %i in packages not detected.'
+                % duplicate_entry['id'])
+            del packages['python-xml']
+
+    def testIDMap(self):
+        """Test of SubmissionParser._getIDMap."""
+        devices = [{'id': 1},
+                   {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        packages = {'bzr': {'id': 5},
+                    'python-dev': {'id': 6}}
+        submission = {
+            'hardware': {
+                'hal': {'devices': devices},
+                'processors': processors},
+            'software': {'packages': packages}}
+
+        parser = SubmissionParser()
+        result = parser._getIDMap(submission)
+        self.assertEqual(result,
+                         {1: devices[0],
+                          2: devices[1],
+                          3: processors[0],
+                          4: processors[1],
+                          5: packages['bzr'],
+                          6: packages['python-dev']},
+                         'Invalid result of SubmissionParser._getIDMap')
+
+    def testInvalidIDReferences(self):
+        """Test of SubmissionParser.checkIDReferences."""
+        devices = [{'id': 1},
+                   {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        packages = {'bzr': {'id': 5},
+                    'python-dev': {'id': 6}}
+        processors = [{'id': 3},
+                      {'id': 4}]
+        questions = [{'targets': [{'id': 1}]},
+                     {'targets': [{'id': 2},
+                                  {'id': 3}]}]
+        submission = {
+            'hardware': {
+                'hal': {'devices': devices},
+                        'processors': processors},
+            'software': {'packages': packages},
+            'questions': questions}
+        parser = SubmissionParser()
+        invalid_ids = parser.findInvalidIDReferences(submission)
+        self.assertEqual(invalid_ids, set(),
+                         'Invalid ID references detected where none exist')
+
+        questions.append({'targets': [{'id': -1}]})
+        invalid_ids = parser.findInvalidIDReferences(submission)
+        self.assertEqual(invalid_ids, set([-1]),
+                         'Invalid ID reference not detected')
+
+    DEVICE_2_UDI = '/org/freedesktop/Hal/devices/acpi_AC'
+    DEVICE_3_UDI = '/org/freedesktop/Hal/devices/pci_8086_27c5'
+    DEVICE_4_UDI = '/org/freedesktop/Hal/devices/usb_device_0_0_0000_00_1d_7'
+    _udi_device_test_data = [
+        {'udi': ROOT_UDI,
+          'properties': {}},
+         {'udi': DEVICE_2_UDI,
+          'properties': {
+              'info.parent': (ROOT_UDI,
+                              'dbus.String')}
+         }]
+
+    def testUDIDeviceMap(self):
+        """Test the creation of the mapping UDI -> device."""
+        device1 = {'id': 1,
+                   'udi': ROOT_UDI}
+        device2 = {'id': 2,
+                   'udi': self.DEVICE_2_UDI}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        udi_devices = parser.getUDIDeviceMap(devices)
+        self.assertEqual(udi_devices,
+                         {ROOT_UDI: device1,
+                          self.DEVICE_2_UDI: device2},
+                         'Invalid result of SubmissionParser.getUDIDeviceMap')
+
+        # Duplicate UDIs raise a ValueError.
+        devices.append(device2)
+        self.assertRaises(ValueError, parser.getUDIDeviceMap, devices)
+
+    def testIDUDIMaps(self):
+        """Test of SubmissionParser._getIDUDIMaps."""
+        device1 = {'id': 1,
+                   'udi': ROOT_UDI}
+        device2 = {'id': 2,
+                   'udi': self.DEVICE_2_UDI}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        id_to_udi, udi_to_id = parser._getIDUDIMaps(devices)
+        self.assertEqual(id_to_udi,
+                         {1: ROOT_UDI,
+                          2: self.DEVICE_2_UDI},
+                         '_getIDUDIMaps returned invalid ID -> UDI map')
+        self.assertEqual(udi_to_id,
+                         {ROOT_UDI: 1,
+                          self.DEVICE_2_UDI: 2},
+                         '_getIDUDIMaps returned invalid UDI -> ID map')
+
+    def testUDIChildren(self):
+        """Test of SubmissionParser.getUDIChildren."""
+        device1 = {'id': 1,
+                   'udi': ROOT_UDI,
+                   'properties': {}}
+        device2 = {'id': 2,
+                   'udi': self.DEVICE_2_UDI,
+                   'properties':
+                       {'info.parent':
+                            (ROOT_UDI, 'str')}}
+        device3 = {'id': 3,
+                   'udi': self.DEVICE_3_UDI,
+                   'properties':
+                       {'info.parent':
+                            (ROOT_UDI, 'str')}}
+        device4 = {'id': 4,
+                   'udi': self.DEVICE_4_UDI,
+                   'properties':
+                       {'info.parent':
+                            (self.DEVICE_2_UDI,
+                             'str')}}
+        devices = [device1, device2, device3, device4]
+
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        udi_children = parser.getUDIChildren(udi_device_map)
+        expected_data = {ROOT_UDI: [device2, device3],
+                         self.DEVICE_2_UDI: [device4]}
+
+        # The order of the children lists returned by getUDIChildren
+        # depends on the order of dict.items(), hence sort the children
+        # lists before comparing them.
+        for children in udi_children.values():
+            children.sort()
+        for children in expected_data.values():
+            children.sort()
+
+        self.assertEqual(udi_children, expected_data,
+                         'Invalid result of SubmissionParser.getUDIChildren')
+
+    def testUDIDeviceMapInvalidRootNode(self):
+        """The root node of the devices must have a special UDI.
+
+        getUDIChildren ensures that the only device without an info.parent
+        property has the UDI /org/freedesktop/Hal/devices/computer (ROOT_UDI).
+        """
+        device1 = {'id': 1,
+                   'udi': 'invalid_root_node',
+                   'properties': {}}
+        device2 = {'id': 2,
+                   'udi': self.DEVICE_2_UDI,
+                   'properties':
+                       {'info.parent':
+                            ('invalid_root_node', 'str')}}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        self.assertRaises(ValueError, parser.getUDIChildren, udi_device_map)
+
+    def testUDIDeviceMapMissingRootNode(self):
+        """If no root node exists, getUDIChildren raises a ValueError."""
+        device1 = {'id': 1,
+                   'udi': self.DEVICE_2_UDI,
+                   'properties':
+                       {'info.parent':
+                            (self.DEVICE_3_UDI, 'str')}}
+        device2 = {'id': 2,
+                   'udi': self.DEVICE_3_UDI,
+                   'properties':
+                       {'info.parent':
+                            (self.DEVICE_2_UDI, 'str')}}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        self.assertRaises(ValueError, parser.getUDIChildren, udi_device_map)
+
+    CIRCULAR_UDI_1 = '/org/freedesktop/Hal/devices/nonsense_1'
+    CIRCULAR_UDI_2 = '/org/freedesktop/Hal/devices/nonsense_2'
+
+    def testParentChildInconsistency(self):
+        """Test of SubmissionParser.checkHALDevicesParentChildConsistency."""
+        device1 = {'id': 1,
+                   'udi': ROOT_UDI,
+                   'properties': {}}
+        device2 = {'id': 2,
+                   'udi': self.DEVICE_2_UDI,
+                   'properties':
+                       {'info.parent':
+                            (ROOT_UDI, 'str')}}
+        circular_device1 = {
+            'id': 3,
+            'udi': self.CIRCULAR_UDI_1,
+                   'properties':
+                       {'info.parent':
+                            (self.CIRCULAR_UDI_2, 'str')}}
+        circular_device2 = {
+            'id': 4,
+            'udi': self.CIRCULAR_UDI_2,
+                   'properties':
+                       {'info.parent':
+                            (self.CIRCULAR_UDI_1, 'str')}}
+        devices = [device1, device2, circular_device1,  circular_device2]
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        udi_children = parser.getUDIChildren(udi_device_map)
+        circular_udis = sorted(parser.checkHALDevicesParentChildConsistency(
+            udi_children))
+        self.assertEqual(circular_udis,
+                         [self.CIRCULAR_UDI_1, self.CIRCULAR_UDI_2],
+                         'Circular parent/child relationship in UDIs not '
+                         'detected')
+
+    def _setupConsistencyCheckParser(self):
+        """Prepare and return a SubmissionParser instance.
+
+        All "method substitutes" return a valid result.
+        """
+        test = self
+        def findDuplicateIDs(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set()
+
+        def findInvalidIDReferences(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set()
+
+        def getUDIDeviceMap(self, devices):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return {}
+
+        def getUDIChildren(self, udi_device_map):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return {}
+
+        def checkHALDevicesParentChildConsistency(self, devices):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return []
+
+        parser = SubmissionParser(self.log)
+        parser.findDuplicateIDs = (
+            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
+        parser.findInvalidIDReferences = (
+            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
+        parser.getUDIDeviceMap = (
+            lambda devices: getUDIDeviceMap(parser, devices))
+        parser.getUDIChildren = (
+            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
+        parser.checkHALDevicesParentChildConsistency = (
+            lambda udi_children: checkHALDevicesParentChildConsistency(
+                parser, udi_children))
+        return parser
+
+    def assertErrorMessage(self, submission_key, log_message):
+        """Search for message in the log entries for submission_key.
+
+        assertErrorMessage requires that
+        (a) a log message starts with "Parsing submisson <submission_key>:"
+        (b) the error message passed as the parameter message appears
+            in a log string that matches (a)
+        (c) result, which is supposed to contain an object representing
+            the result of parsing a submission, is None.
+
+        If all three criteria match, assertErrormessage does not raise any
+        exception.
+        """
+        expected_message = ('Parsing submission %s: %s'
+                            % (submission_key, log_message))
+        last_log_messages = []
+        for r in self.handler.records:
+            if r.levelno != logging.ERROR:
+                continue
+            candidate = r.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
+    def testConsistencyCheck(self):
+        """Test of SubmissionParser.checkConsistency."""
+        parser = self._setupConsistencyCheckParser()
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, True,
+                         'checkConsistency failed, but all partial checks '
+                         'succeeded')
+
+    def testConsistencyCheckWithDuplicateIDs(self):
+        """SubmissionParser.checkConsistency detects duplicate IDs."""
+        test = self
+        def findDuplicateIDs(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set([1])
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects duplicate IDs'
+        parser.findDuplicateIDs = (
+            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect duplicate IDs')
+        self.assertErrorMessage('Consistency check detects duplicate IDs',
+                                'Duplicate IDs found: set([1])')
+
+    def testConsistencyCheckWithInvalidIDReferences(self):
+        """SubmissionParser.checkConsistency detects invalid ID references."""
+        test = self
+        def findInvalidIDReferences(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set([1])
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects invalid ID refs'
+        parser.findInvalidIDReferences = (
+            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect invalid ID refs')
+        self.assertErrorMessage('Consistency check detects invalid ID refs',
+                                'Invalid ID references found: set([1])')
+
+    def testConsistencyCheckWithDuplicateUDI(self):
+        """SubmissionParser.checkConsistency detects duplicate UDIs."""
+        test = self
+        def getUDIDeviceMap(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            raise ValueError(
+                'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects invalid ID refs'
+        parser.getUDIDeviceMap = (
+            lambda devices: getUDIDeviceMap(parser, devices))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect duplicate UDIs')
+        self.assertErrorMessage(
+            'Consistency check detects invalid ID refs',
+            'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+
+    def testConsistencyCheckChildUDIWithoutParent(self):
+        """SubmissionParser.checkConsistency detects "orphaned" devices."""
+        test = self
+        def getUDIChildren(self, udi_device_map):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            raise ValueError('Unknown parent UDI /foo in <device id="3">')
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects invalid ID refs'
+        parser.getUDIChildren = (
+            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect orphaned devices')
+        self.assertErrorMessage(
+            'Consistency check detects invalid ID refs',
+            'Unknown parent UDI /foo in <device id="3">')
+
+    def testConsistencyCheckCircularParentChildRelation(self):
+        """SubmissionParser.checkConsistency detects "orphaned" devices."""
+        test = self
+        def checkHALDevicesParentChildConsistency(self, devices):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return ['/foo', '/bar']
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = ('Consistency check detects circular '
+                                 'parent-child relationships')
+        parser.checkHALDevicesParentChildConsistency = (
+            lambda devices: checkHALDevicesParentChildConsistency(
+                parser, devices))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect circular parent/'
+                             'child relationship')
+        self.assertErrorMessage(
+            'Consistency check detects circular parent-child relationships',
+            "Found HAL devices with circular parent/child "
+                "relationship: ['/foo', '/bar']")
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

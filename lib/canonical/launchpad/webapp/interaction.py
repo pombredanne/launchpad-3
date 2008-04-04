@@ -7,6 +7,7 @@ __metaclass__ = type
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import IPublicationRequest
 from zope.security.interfaces import IParticipation
 from zope.security.management import (
     endInteraction, newInteraction, queryInteraction)
@@ -51,7 +52,12 @@ def setupInteraction(principal, login=None, participation=None):
     else:
         launchbag.setLogin(login)
 
-    participation.principal = principal
+    if IPublicationRequest.providedBy(participation):
+        # principal is a read-only attribute on requests.
+        participation.setPrincipal(principal)
+    else:
+        # Try setting the attribute directly.
+        participation.principal = principal
 
 
 class Participation:

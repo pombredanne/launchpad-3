@@ -17,10 +17,10 @@ from canonical.launchpad import _
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
-    CannotDeleteBranch, CreateBugParams, IBranchSet, IBugSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
+    CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
+    IBranchSet, IBugSet, IPersonSet, IProductSet, ISpecificationSet,
     InvalidBranchMergeProposal, PersonCreationRationale,
-    RevisionControlSystems, SpecificationDefinitionStatus)
+    SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import BranchSet, BranchSubscription
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
@@ -88,22 +88,16 @@ class TestBranchDeletion(TestCase):
     def test_subscriptionDisablesDeletion(self):
         """A branch that has a subscription cannot be deleted."""
         self.branch.subscribe(
-            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+            self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that has a subscription is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_codeImportDisablesDeletion(self):
         """A branch that has an attached code import can't be deleted."""
-        # Branches for code imports must be owned by vcs imports.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = BranchSet().new(
-            BranchType.IMPORTED, 'firefox-import', vcs_imports, vcs_imports,
-            self.product, None, 'A firefox import branch')
-        code_import = CodeImportSet().new(
-            self.user, branch, RevisionControlSystems.SVN,
-            'svn://example.com/some/url')
-        syncUpdate(code_import)
+        code_import = LaunchpadObjectFactory().makeCodeImport()
+        branch = code_import.branch
         self.assertEqual(branch.canBeDeleted(), False,
                          "A branch that has a import is not deletable.")
         self.assertRaises(CannotDeleteBranch, branch.destroySelf)

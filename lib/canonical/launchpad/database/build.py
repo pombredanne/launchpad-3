@@ -115,9 +115,9 @@ class Build(SQLBase):
         return self.distroarchseries.distroseries.distribution
 
     @property
-    def is_trusted(self):
+    def is_virtualized(self):
         """See `IBuild`"""
-        return self.archive.purpose != ArchivePurpose.PPA
+        return self.archive.require_virtualized
 
     @property
     def title(self):
@@ -166,9 +166,8 @@ class Build(SQLBase):
     def can_be_retried(self):
         """See `IBuild`."""
         # First check that the slave scanner would pick up the build record
-        # if we reset it.  Untrusted and Partner builds are always ok.
-        if (self.is_trusted and
-            self.archive.purpose != ArchivePurpose.PARTNER and
+        # if we reset it.  PPA and Partner builds are always ok.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
             not self.distroseries.canUploadToPocket(self.pocket)):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
@@ -298,7 +297,9 @@ class Build(SQLBase):
         satisfied and if it is reachable in the build context.
         """
         name, version, relation = self._parseDependencyToken(token)
-        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        dep_candidate = self.archive.findDepCandidateByName(
+            self.distroarchseries, name)
 
         if not dep_candidate:
             return False
@@ -307,7 +308,14 @@ class Build(SQLBase):
             dep_candidate.binarypackageversion, version, relation):
             return False
 
-        if dep_candidate.component not in self.ogre_components:
+        # Only PRIMARY archive build dependencies should be restricted
+        # to the ogre_components. Both PARTNER and PPA can reach
+        # dependencies from all components in the PRIMARY archive.
+        # Moreover, PARTNER and PPA component domain is single, i.e,
+        # PARTNER only contains packages in 'partner' component and PPAs
+        # only contains packages in 'main' component.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            dep_candidate.component not in self.ogre_components):
             return False
 
         return True
@@ -410,7 +418,7 @@ class Build(SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
-        if self.is_trusted:
+        if self.archive.purpose != ArchivePurpose.PPA:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))

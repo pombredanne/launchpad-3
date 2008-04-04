@@ -47,8 +47,10 @@ class ILaunchpadApplication(Interface):
     """
     title = Attribute('Title')
 
+
 class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
+
 
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
@@ -175,6 +177,12 @@ class ILink(ILinkData):
         "Boolean to say whether this link is enabled.  Can be read and set.")
 
     escapedtext = Attribute("Text string, escaped as necessary.")
+
+    icon_url = Attribute(
+        "The full URL for this link's associated icon, if it has one.")
+
+    def render():
+        """Return a HTML representation of the link."""
 
 
 class IFacetLink(ILink):
@@ -518,13 +526,18 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
         """
 
     def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as, defaulting to the
-        default Launchpad user.
+        """Change the PostgreSQL user we are connected as.
 
         This involves closing the existing connection and reopening it;
         uncommitted changes will be lost. The new connection will also open
         in read/write mode so calls to readonly() will need to be made
         after switchUser.
+        """
+
+    def getUser(self):
+        """Return the current PostgreSQL user we are connected as.
+
+        The default user comes from config.launchpad.dbuser.
         """
 
 #

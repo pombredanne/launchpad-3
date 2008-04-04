@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch,
+    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, InvalidBranchMergeProposal,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
@@ -87,8 +87,6 @@ class Branch(SQLBase):
         validator=public_person_validator, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-
-    home_page = StringCol()
 
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
@@ -202,10 +200,12 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
-        return BranchMergeProposal(
+        bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
+        notify(SQLObjectCreatedEvent(bmp))
+        return bmp
 
     def getMergeQueue(self):
         """See `IBranch`."""
@@ -441,7 +441,8 @@ class Branch(SQLBase):
             """ % sqlvalues(self, self))
 
     # subscriptions
-    def subscribe(self, person, notification_level, max_diff_lines):
+    def subscribe(self, person, notification_level, max_diff_lines,
+                  review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -450,10 +451,11 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines)
+                max_diff_lines=max_diff_lines, review_level=review_level)
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
+            subscription.review_level = review_level
         return subscription
 
     def getSubscription(self, person):
@@ -718,6 +720,11 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
+    def getBranch(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        return Branch.selectOneBy(
+            owner=owner, product=product, name=branch_name)
+
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
 
@@ -844,10 +851,8 @@ class BranchSet:
     def new(self, branch_type, name, creator, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
-        if not home_page:
-            home_page = None
         if date_created is None:
             date_created = UTC_NOW
 
@@ -866,7 +871,7 @@ class BranchSet:
             registrant=creator,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard, private=private,
+            whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created)
 
@@ -877,7 +882,8 @@ class BranchSet:
             branch.subscribe(
                 implicit_subscription,
                 BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF)
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL)
 
         notify(SQLObjectCreatedEvent(branch))
         return branch

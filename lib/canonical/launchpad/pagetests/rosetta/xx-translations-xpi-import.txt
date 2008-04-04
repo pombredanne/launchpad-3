@@ -18,7 +18,7 @@ translations upload link.
 Get the XPI file we are going to upload.
 
   >>> from canonical.launchpad.translationformat.tests import test_xpi_import
-  >>> xpifile = test_xpi_import.get_en_US_xpi_file_to_import()
+  >>> xpifile = test_xpi_import.get_en_US_xpi_file_to_import('en-US')
 
 Now, lets upload this file.
 

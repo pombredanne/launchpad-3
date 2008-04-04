@@ -83,8 +83,8 @@ on other members' person pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
-    [u'My Team']
     [u'Other Team']
+    [u'My Team']
 
 
 == Teams with Icons ==

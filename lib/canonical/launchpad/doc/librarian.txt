@@ -86,7 +86,7 @@ https one, depending on a config value.
     ...     ) is not None
     True
 
-However, we can force the use of HTTP by setting the 'X-SCHEME'
+However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
 header in the request to 'http', even when 'use_https' is True.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -94,7 +94,7 @@ header in the request to 'http', even when 'use_https' is True.
     >>> from urlparse import urlparse
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET',
-    ...              'X-SCHEME' : 'http' })
+    ...              'HTTP_X_SCHEME' : 'http' })
     >>> view = getMultiAdapter((alias,request), name='+index')
     >>> view.initialize()
     >>> print urlparse(request.response.getHeader('Location'))[0]
@@ -105,7 +105,7 @@ unaffected.
 
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET',
-    ...              'X-SCHEME' : 'https' })
+    ...              'HTTP_X_SCHEME' : 'https' })
     >>> view = getMultiAdapter((alias,request), name='+index')
     >>> view.initialize()
     >>> print urlparse(request.response.getHeader('Location'))[0]

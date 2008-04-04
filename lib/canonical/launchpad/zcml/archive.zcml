@@ -14,7 +14,7 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="authorized_size distribution enabled private purpose"
+      set_attributes="authorized_size buildd_secret distribution enabled private purpose"
       />
   </content>
 
@@ -43,6 +43,14 @@
     for="canonical.launchpad.interfaces.IArchive"
     path_expression="string:+archive"
     attribute_to_parent="owner"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/archive-privacy-icon.pt"
+    name="+privacy-icon"
     />
 
   <browser:pages

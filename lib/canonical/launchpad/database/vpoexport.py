@@ -49,6 +49,8 @@ class VPOExportSet:
         'translation1',
         'translation2',
         'translation3',
+        'translation4',
+        'translation5',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -86,8 +88,15 @@ class VPOExportSet:
 
     def get_pofile_rows(self, pofile):
         """See IVPOExportSet."""
-        where = ('potemplate = %s AND language = %s' %
-            sqlvalues(pofile.potemplate, pofile.language))
+        # Only fetch rows that belong to this POFile and are "interesting":
+        # they must either be in the current template (sequence != 0, so not
+        # "obsolete") or be in the current imported version of the translation
+        # (is_imported), or both.
+        where = """
+            potemplate = %s AND
+            language = %s AND
+            (sequence <> 0 OR is_imported)
+            """ % sqlvalues(pofile.potemplate, pofile.language)
 
         if pofile.variant:
             where += ' AND variant = %s' % sqlvalues(
@@ -107,13 +116,14 @@ class VPOExportSet:
         """
         join = '''
             FROM POFile
-              JOIN POTemplate ON POTemplate.id = POFile.potemplate
-              JOIN DistroSeries ON
-                DistroSeries.id = POTemplate.distroseries'''
+                JOIN POTemplate ON POTemplate.id = POFile.potemplate
+                JOIN DistroSeries ON
+                    DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
-              DistroSeries.id = %s
+                DistroSeries.id = %s AND
+                POTemplate.iscurrent IS TRUE
               ''' % sqlvalues(series)
 
         if date is not None:
@@ -207,7 +217,9 @@ class VPOExport:
          self.translation0,
          self.translation1,
          self.translation2,
-         self.translation3) = args
+         self.translation3,
+         self.translation4,
+         self.translation5) = args
 
         self.potemplate = POTemplate.get(potemplate)
         self.potmsgset = POTMsgSet.get(potmsgset)

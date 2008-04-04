@@ -3,15 +3,10 @@
 
 __metaclass__ = type
 
-import psycopg
-from warnings import warn
-
-from zope.app import zapi
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from zope.app.rdb.interfaces import IZopeConnection, IZopeCursor
 
 from canonical.config import config
 from canonical.database.sqlbase import connect
+
 
 def confirmEncoding(*args, **kw):
     '''Raise an exception, explaining what went wrong, if the PostgreSQL
@@ -23,11 +18,11 @@ def confirmEncoding(*args, **kw):
     con = connect(config.launchpad.dbuser)
     try:
         cur = con.cursor()
-        dbname = config.dbname
+        dbname = config.database.dbname
         cur.execute(
-                'select encoding from pg_catalog.pg_database where datname=%s',
-                (dbname,)
-                )
+            'select encoding from pg_catalog.pg_database where datname=%s',
+            (dbname,)
+            )
         res = cur.fetchall()
         if len(res) != 1:
             raise RuntimeError('Database %r does not exist or is not unique'
@@ -52,7 +47,6 @@ def confirmNoAddMissingFrom(*args, **kw):
     '''
     con = connect(config.launchpad.dbuser)
     try:
-        dbname = config.dbname
         cur = con.cursor()
         cur.execute('show add_missing_from')
         res = cur.fetchall()

@@ -48,7 +48,6 @@ Now, in order to really submit the bug, this email would have to be PGP
 signed, so that the system can verify the sender. But to avoid having
 to sign each email, we'll create a class which fakes a signed email:
 
-    >>> import email
     >>> import email.Utils
     >>> class MockSignedMessage(email.Message.Message):
     ...     @property
@@ -129,8 +128,6 @@ A notification was added:
 
 We define a helper to pretty-print the notification recipients:
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     BugNotificationRecipients)
     >>> def getSubscribers(bug):
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
@@ -1541,8 +1538,6 @@ which bug task to edit:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database.packagebugcontact import (
-    ...     PackageBugContact)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -1981,6 +1976,23 @@ An email may contain more than one attachment; all of them are stored.
     debug text line 3
     LibraryFileAlias sample.html text/html UNSPECIFIED
     <html></html>
+
+A bugnotification is sent for each attached file.
+
+    >>> bug_notifications = BugNotification.select(orderBy='-id', limit=3)
+    >>> for bug_notification in bug_notifications:
+    ...     print '-------------------'
+    ...     print bug_notification.message.chunks[0].content
+    -------------------
+    Found a bug in Firefox. Nothing displayed. See attached files.
+    <BLANKLINE>
+     affects firefox
+    -------------------
+    ** Attachment added: "sample.html"
+       http://.../sample.html
+    -------------------
+    ** Attachment added: "firefox1.log"
+       http://.../firefox1.log
 
 If the content-disposition header of a message part begins with 
 "attachment" it is stored as a bug attachment, even if the 

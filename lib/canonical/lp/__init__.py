@@ -32,8 +32,8 @@ __all__ = [
 # if the host is empty it can be overridden by the standard PostgreSQL
 # environment variables, this feature currently required by Async's
 # office environment.
-dbname = os.environ.get('LP_DBNAME', config.dbname)
-dbhost = os.environ.get('LP_DBHOST', config.dbhost or '')
+dbname = os.environ.get('LP_DBNAME', config.database.dbname)
+dbhost = os.environ.get('LP_DBHOST', config.database.dbhost or '')
 dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
 
 
