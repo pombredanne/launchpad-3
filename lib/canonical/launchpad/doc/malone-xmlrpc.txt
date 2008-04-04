@@ -1,5 +1,4 @@
-XML-RPC Integration with Malone
-===============================
+= XML-RPC Integration with Malone =
 
 Malone provides an XML-RPC interface for filing bugs.
 
@@ -226,3 +225,24 @@ Invalid subscriber.
             "nosuch@subscriber.com" was found'>
 
     >>> on_created_listener.unregister()
+
+
+== Generating bugtracker authentication tokens ==
+
+Launchpad Bugs also provides an XML-RPC API for generating login tokens
+for authentication with external bug trackers.
+
+    >>> bugtracker_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
+    ...     transport=XMLRPCTestTransport())
+
+The API provides a single method, newToken(), which returns a new
+LoginToken as a string.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> token_id = bugtracker_api.newToken()
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token
+    <LoginToken at ...>
+
