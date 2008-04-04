@@ -22,6 +22,7 @@ from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
+from twisted.internet.protocol import connectionDone
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -463,7 +464,7 @@ class _TestBazaarFileTransferServer(BazaarFileTransferServer):
         if event is not None:
             event.set()
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason=connectionDone):
         event = self.getConnectionLostEvent()
         if event is not None:
             event.set()

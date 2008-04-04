@@ -85,7 +85,8 @@ class UserAuthServerMixin:
         return userauth.messages[message_type]
 
     def assertMessageOrder(self, message_types):
-        """Assert that the given message types were sent in the order given."""
+        """Assert that the given message types were sent in the order given.
+        """
         self.assertEqual(
             [userauth.messages[msg_type] for msg_type in message_types],
             [userauth.messages[packet_type]
@@ -109,11 +110,11 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 
     def test_sendBanner(self):
         # sendBanner should send an SSH 'packet' with type MSG_USERAUTH_BANNER
-        # and two fields. The first field is the message itself, and the second
-        # is the language tag.
+        # and two fields. The first field is the message itself, and the
+        # second is the language tag.
         #
-        # sendBanner automatically adds a trailing newline, because openssh and
-        # Twisted don't add one when displaying the banner.
+        # sendBanner automatically adds a trailing newline, because openssh
+        # and Twisted don't add one when displaying the banner.
         #
         # See RFC 4252, Section 5.4.
         message = u"test message"
@@ -141,7 +142,8 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
             return None
         def mock_eb_bad_auth(reason):
             reason.trap(ConchError)
-        tryAuth, self.user_auth.tryAuth = self.user_auth.tryAuth, mock_try_auth
+        tryAuth = self.user_auth.tryAuth
+        self.user_auth.tryAuth = mock_try_auth
         _ebBadAuth, self.user_auth._ebBadAuth = (self.user_auth._ebBadAuth,
                                                  mock_eb_bad_auth)
         self.user_auth.serviceStarted()
@@ -264,7 +266,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         return d.addCallback(check).addBoth(cleanup)
 
     def test_configuredBannerNotSentOnFailure(self):
-        # Failed authentication attempts do not get the configured banner sent.
+        # Failed authentication attempts do not get the configured banner
+        # sent.
         config.codehosting.banner = 'banner'
 
         d = self.requestFailedAuthentication()
@@ -294,8 +297,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     def test_unsupportedAuthMethodNotLogged(self):
         # Trying various authentication methods is a part of the normal
         # operation of the SSH authentication protocol. We should not spam the
-        # client with warnings about this, as whenever it becomes a problem, we
-        # can rely on the SSH client itself to report it to the user.
+        # client with warnings about this, as whenever it becomes a problem,
+        # we can rely on the SSH client itself to report it to the user.
         d = self.requestUnsupportedAuthentication()
         def check(ignored):
             # Check that we received only a FAILRE.
@@ -344,8 +347,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
 
     def test_successful(self):
         # We should be able to login with the correct public and private
-        # key-pair. This test exists primarily as a control to ensure our other
-        # tests are checking the right error conditions.
+        # key-pair. This test exists primarily as a control to ensure our
+        # other tests are checking the right error conditions.
         creds = SSHPrivateKey(self.valid_login, 'ssh-dss', self.public_key,
                               self.sigData, self.signature)
         d = self.checker.requestAvatarId(creds)
@@ -381,7 +384,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                               self.sigData, self.signature)
         return self.assertLoginError(
             creds,
-            "Launchpad user %r doesn't have a registered SSH key" % 'lifeless')
+            "Launchpad user %r doesn't have a registered SSH key"
+            % 'lifeless')
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you
