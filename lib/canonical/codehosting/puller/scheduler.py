@@ -6,7 +6,7 @@ __all__ = ['BadMessage',
            'JobScheduler',
            'LockError',
            'PullerMaster',
-           'PullerMasterProtocol',
+           'PullerMonitorProtocol',
            'TimeoutError',
            ]
 
@@ -18,7 +18,7 @@ import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
-from twisted.python import failure
+from twisted.python import failure, log
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
@@ -68,8 +68,8 @@ class BranchStatusClient:
             'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
-class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
-                           NetstringReceiver):
+class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
+                            NetstringReceiver):
     """The protocol for receiving events from the puller worker."""
 
     def __init__(self, deferred, listener, clock=None):
@@ -90,9 +90,15 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
         self._resetState()
         self._stderr = StringIO()
         self._deferred.addCallbacks(
-            self.checkReportingFinished, self.ensureReportingFinished)
+            self.checkReportingFinishedAndNoStderr,
+            self.ensureReportingFinished)
 
-    def checkReportingFinished(self, result):
+    def checkReportingFinishedAndNoStderr(self, result):
+        """Check that the worker process behaved properly on clean exit.
+
+        When the process exits cleanly, we expect it to have not printed
+        anything to stderr and to have reported success or failure.  If it has
+        failed to do either of these things, we should fail noisily."""
         stderr = self._stderr.getvalue()
         if stderr:
             fail = failure.Failure(Exception())
@@ -104,6 +110,12 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
         return result
 
     def ensureReportingFinished(self, reason):
+        """Clean up after the worker process exits uncleanly.
+
+        If the worker process exited uncleanly, it probably didn't report
+        success or failure, so we should report failure.  If there was output
+        on stderr, it's probably a traceback, so we use the last line of that
+        as a failure reason."""
         if not self.reported_mirror_finished:
             error = self._stderr.getvalue()
             reason.error = error
@@ -111,19 +123,21 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
                 errorline = error.splitlines()[-1]
             else:
                 errorline = str(reason.value)
-            d = defer.maybeDeferred(
+            # The general policy when multiple errors occur is to report the
+            # one that happens first and as an error has already happened here
+            # (the process exiting uncleanly) we can only log.err() any
+            # failure that comes from mirrorFailed failing.  In any case, we
+            # just pass along the failure.
+            report_failed_deferred = defer.maybeDeferred(
                 self.listener.mirrorFailed, errorline, None)
-            return d.addCallback(lambda result: reason)
+            report_failed_deferred.addErrback(log.err)
+            return report_failed_deferred.addCallback(
+                lambda result: reason)
         else:
             return reason
 
     def reportMirrorFinished(self, ignored):
         self.reported_mirror_finished = True
-
-    def _resetState(self):
-        self._current_command = None
-        self._expected_args = None
-        self._current_args = []
 
     def dataReceived(self, data):
         NetstringReceiver.dataReceived(self, data)
@@ -135,6 +149,16 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
             self.unexpectedError(failure.Failure(NetstringParseError(data)))
 
     def stringReceived(self, line):
+        """Process a netstring.
+
+        The wire-level protocol is a series of netstrings.
+
+        At the next level up, the protocol goes like this::
+
+            [method-name] [number-of-arguments] [arguments]+
+
+        XXX errors?
+        """
         if (self._current_command is not None
             and self._expected_args is not None):
             self._current_args.append(line)
@@ -152,6 +176,11 @@ class PullerMasterProtocol(ProcessMonitorProtocolWithTimeout,
                 method(*self._current_args)
             finally:
                 self._resetState()
+
+    def _resetState(self):
+        self._current_command = None
+        self._expected_args = None
+        self._current_args = []
 
     def do_startMirroring(self):
         self.resetTimeout()
@@ -195,7 +224,7 @@ class PullerMaster:
         os.path.dirname(
             os.path.dirname(os.path.dirname(canonical.__file__))),
         'scripts/mirror-branch.py')
-    master_protocol_class = PullerMasterProtocol
+    protocol_class = PullerMonitorProtocol
 
     def __init__(self, branch_id, source_url, unique_name, branch_type,
                  logger, client, available_oops_prefixes):
@@ -247,7 +276,7 @@ class PullerMaster:
     def mirror(self):
         """Spawn a worker process to mirror a branch."""
         deferred = defer.Deferred()
-        protocol = self.master_protocol_class(deferred, self)
+        protocol = self.protocol_class(deferred, self)
         command = [
             sys.executable, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,

@@ -109,7 +109,7 @@ class TestJobScheduler(unittest.TestCase):
             os.unlink(self.masterlock)
 
 
-class TestPullerMasterProtocol(
+class TestPullerMonitorProtocol(
     ProcessTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
 
@@ -132,7 +132,7 @@ class TestPullerMasterProtocol(
 
 
     def makeProtocol(self):
-        return scheduler.PullerMasterProtocol(
+        return scheduler.PullerMonitorProtocol(
             self.termination_deferred, self.listener, self.clock)
 
     def setUp(self):
@@ -227,8 +227,7 @@ class TestPullerMasterProtocol(
 
         self.termination_deferred.addErrback(check_failure)
 
-        self.protocol.errReceived('error ')
-        self.protocol.errReceived('message')
+        self.protocol.errReceived('error message')
         self.simulateProcessExit(clean=False)
 
         return self.assertFailure(
@@ -244,8 +243,7 @@ class TestPullerMasterProtocol(
 
         self.termination_deferred.addErrback(check_failure)
 
-        self.protocol.errReceived('error ')
-        self.protocol.errReceived('message')
+        self.protocol.errReceived('error message')
         self.simulateProcessExit()
 
         return self.termination_deferred
@@ -553,8 +551,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
     def test_lock_with_magic_id(self):
         # When the subprocess locks a branch, it is locked with the right ID.
-        class PullerMasterProtocolWithLockID(scheduler.PullerMasterProtocol):
-            """Subclass of PullerMasterProtocol that defines a lock_id method.
+        class PullerMonitorProtocolWithLockID(scheduler.PullerMonitorProtocol):
+            """Subclass of PullerMonitorProtocol that defines a lock_id method.
 
             This protocol defines a method that records on the listener the
             lock id reported by the subprocess.
@@ -569,7 +567,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             """A subclass of PullerMaster that allows recording of lock ids.
             """
 
-            master_protocol_class = PullerMasterProtocolWithLockID
+            protocol_class = PullerMonitorProtocolWithLockID
 
         check_lock_id_script = """
         branch.lock_write()
@@ -621,8 +619,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         # or erred back, we keep hold of the result and send a signal to kill
         # the first process and wait for it to die.
 
-        class LockingPullerMasterProtocol(scheduler.PullerMasterProtocol):
-            """Extend PullerMasterProtocol with a 'branchLocked' method."""
+        class LockingPullerMonitorProtocol(scheduler.PullerMonitorProtocol):
+            """Extend PullerMonitorProtocol with a 'branchLocked' method."""
 
             def do_branchLocked(self):
                 """Notify the listener that the branch is now locked."""
@@ -640,7 +638,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         class LockingPullerMaster(scheduler.PullerMaster):
             """Extend PullerMaster for the purposes of the test."""
 
-            master_protocol_class = LockingPullerMasterProtocol
+            protocol_class = LockingPullerMonitorProtocol
 
             # This is where the result of the deferred returned by 'func' will
             # be stored.  We need to store seen_final_result and final_result
