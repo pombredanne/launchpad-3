@@ -283,11 +283,11 @@ class MaloneHandler:
                     processing_errors.append((error, command))
                     if error.stop_processing:
                         commands = []
+                        rollback()
                     else:
                         continue
 
             if len(processing_errors) > 0:
-                # TODO
                 raise IncomingEmailError(
                     '\n'.join(str(error) for error, command
                               in processing_errors),
@@ -304,7 +304,6 @@ class MaloneHandler:
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
-            rollback()
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
