@@ -420,7 +420,7 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
 
 
 class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
-    permission = 'launchpad.Special'
+    permission = 'launchpad.Owner'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
