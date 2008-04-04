@@ -25,17 +25,11 @@ differential diagnostic.)
 (The scoreboard filename needs a %d placeholder to interpolate the
 thread identifier.)
 
-    >>> scoreboard, scoreboard_path = tempfile.mkstemp(
-    ...     suffix='.txt', prefix='scoreboard-%d-' % thread.get_ident())
-    >>> os.close(scoreboard)
-    >>> scoreboard_path_template = scoreboard_path.replace(
-    ...     '-%d-' % thread.get_ident(), '-%d-')
-    >>> references_log, references_log_path = tempfile.mkstemp(
-    ...     suffix='log', prefix="references-leak-")
-    >>> os.close(references_log)
+    >>> tempdir = tempfile.mkdtemp(prefix='memory-debug')
+    >>> scoreboard_path_template = os.path.join(tempdir, 'scoreboard-%d.txt')
+    >>> scoreboard_path = scoreboard_path_template % thread.get_ident()
+    >>> references_log_path = os.path.join(tempdir, 'references-leak.log')
 
-    # endRequest() doesn't expect that file to exist.
-    >>> os.remove(scoreboard_path)
     >>> config.push('debug-references', dedent("""\
     ...     [debug]
     ...     references: True
@@ -87,8 +81,8 @@ Example:
     2008-04-03:18:15:45 Question:+index 0.57Mb <type 'tuple'>=6419;
         <type 'dict'>=2744; <type 'list'>=1942; <type 'weakref'>=544
 
-    >>> os.stat(references_log_path).st_size
-    0L
+    >>> os.path.exists(references_log_path)
+    False
     >>> publication.endRequest(create_request(), None)
     >>> references_log = open(references_log_path, 'r')
     >>> references_log.read()
