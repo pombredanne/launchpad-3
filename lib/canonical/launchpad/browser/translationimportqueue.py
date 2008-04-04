@@ -247,7 +247,7 @@ class TranslationImportTargetVocabularyFactory:
     implements(IContextSourceBinder)
 
     def __init__(self, view):
-        """Create `TranslationImportTargetVocabularyFactory`.
+        """Create a `TranslationImportTargetVocabularyFactory`.
 
         :param view: The view that called this factory.  We access its
             filter_status widget later to see which status it filters for.
