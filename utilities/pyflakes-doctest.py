@@ -35,6 +35,7 @@ GLOBAL_NAMES = set([
     'first_tag_by_class',
     'get_feedback_messages',
     'http',
+    'mailinglist_api',
     'parse_relationship_section',
     'print_action_links',
     'print_batch_header',
