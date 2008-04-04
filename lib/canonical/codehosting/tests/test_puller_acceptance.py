@@ -11,7 +11,7 @@ import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
-from urlparse import urljoin, urlparse
+from urlparse import urlparse
 import xmlrpclib
 
 import transaction
@@ -211,7 +211,12 @@ class TestBranchPuller(BranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(branch.url, branch)
+        # XXX: The first argument used to be branch.url, but this triggered
+        # Bug #193253 where for some reason Branch.open via HTTP makes
+        # an incomplete request to the HttpServer leaving a dangling thread.
+        # Our test suite now fails tests leaving dangling threads.
+        # -- StuartBishop 20080312
+        self.assertMirrored(tree.basedir, branch)
 
     def _getImportMirrorPort(self):
         """Return the port used to serve imported branches, as specified in
@@ -236,12 +241,16 @@ class TestBranchPuller(BranchTestCase):
         branch_path = '%08x' % branch.id
         os.mkdir(branch_path)
         self.createTemporaryBazaarBranchAndTree(branch_path)
-        import_url = self.serveOverHTTP(self._getImportMirrorPort())
+        self.serveOverHTTP(self._getImportMirrorPort())
 
         # Run the puller.
         command, retcode, output, error = self.runPuller("import")
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(urljoin(import_url, branch_path), branch)
+
+        # XXX: Because of Bug #193253, check the branch is mirrored by going
+        # straight to the filesystem, rather than over HTTP. This is to
+        # avoid Bazaar opening an HTTP connection that never closes.
+        self.assertMirrored(branch_path, branch)
 
     def test_mirrorEmpty(self):
         """Run the puller on an empty pull queue."""
