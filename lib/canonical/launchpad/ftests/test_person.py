@@ -200,6 +200,16 @@ class TestPerson(unittest.TestCase):
                 'This team cannot be made private since it is referenced by a'
                 ' bug, a bugsubscription, a bugtask and a message.')
 
+    def test_visibility_validator_product_subscription(self):
+        self.bzr.addSubscription(self.otherteam, self.guadamen)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by'
+                ' a project subscriber.')
+
     def test_visibility_validator_specification_subscriber(self):
         email = getUtility(IEmailAddressSet).new(
             'otherteam@canonical.com', self.otherteam)
