@@ -230,7 +230,6 @@ superteam's mailing list.
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
-
 However, their mail-list settings for the super-team will remain via a
 MailingListSubscription object.
 
@@ -417,7 +416,7 @@ A list that is not active cannot be subscribed to.
     >>> list_one.subscribe(anne)
     Traceback (most recent call last):
     ...
-    CannotSubscribe: Mailing list is not active: Team One
+    CannotSubscribe: Mailing list is not usable: Team One
 
 
 == Persistence of preferences ==
@@ -560,3 +559,83 @@ subscriptions that use that address are automatically deleted as well.
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     []
+
+
+== Subscription states ==
+
+A user can subscribe to a mailing list only when the list is active (as show
+above), but for purposes of subscription, we also consider lists in the
+MODIFIED, UPDATING, and MOD_FAILED states to be active.  This is because the
+first two states are transitional states, while the latter state does not
+affect the usability of the mailing list.  Thus, if the mailing list is
+usable, then it can be subscribed to.  See above also for states in which the
+list /cannot/ be subscribed to, such as the DEACTIVATED state.
+
+    >>> team_eight, list_eight = new_team('team-8', with_list=True)
+    >>> teri = new_person('Teri')
+    >>> teri.join(team_seven)
+
+    # We don't need to test the ACTIVE state, as that's represented above.
+    # However, because 'status' is a protected attribute, we need to unwrap
+    # the security context in order to set it.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.MODIFIED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.UPDATING
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.MOD_FAILED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+But in other, non-usable states, the mailing list cannot be subscribed to.
+
+    # We don't need to test the INACTIVE state, as that's represented above.
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.REGISTERED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.APPROVED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.DECLINED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.CONSTRUCTING
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.FAILED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = (
+    ...     MailingListStatus.DEACTIVATING)
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7

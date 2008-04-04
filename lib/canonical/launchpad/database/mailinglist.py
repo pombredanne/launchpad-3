@@ -307,8 +307,8 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.status == MailingListStatus.ACTIVE:
-            raise CannotSubscribe('Mailing list is not active: %s' %
+        if not self.isUsable():
+            raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %

@@ -4,11 +4,16 @@ import __builtin__
 import atexit
 import itertools
 import types
+import warnings
 from operator import attrgetter
 
 original_import = __builtin__.__import__
 database_root = 'canonical.launchpad.database'
 naughty_imports = set()
+
+# Silence bogus warnings from Hardy's python-pkg-resources package.
+warnings.filterwarnings('ignore', category=UserWarning, append=True,
+                        message=r'Module .*? is being added to sys.path')
 
 
 def text_lines_to_set(text):
