@@ -224,11 +224,10 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
             self.sendBanner(config.codehosting.banner)
         return passed_through
 
-    # XXX Jonathan Lange 2007-03-19: Copied from
-    # twisted/conch/ssh/userauth.py, with modifications noted.
-    # In Twisted r19857 and earlier, this method does not return a Deferred,
-    # but should. See http://twistedmatrix.com/trac/ticket/2528 for progress.
     def ssh_USERAUTH_REQUEST(self, packet):
+        # This is copied and pasted from twisted/conch/ssh/userauth.py in
+        # Twisted 8.0.1. We do this so we can add _ebLogToBanner between
+        # two existing errbacks.
         user, nextService, method, rest = getNS(packet, 3)
         if user != self.user or nextService != self.nextService:
             self.authenticatedWith = [] # clear auth state
@@ -242,10 +241,9 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         d.addCallback(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
-        # The following line does not appear in the original Twisted source.
+        # This line does not appear in the original.
         d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
-        # Not in original Twisted method
         return d
 
     def _ebLogToBanner(self, reason):
