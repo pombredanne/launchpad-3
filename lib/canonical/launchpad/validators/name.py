@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import re
+from cgi import escape
 from textwrap import dedent
 
 from canonical.launchpad import _
@@ -58,7 +59,7 @@ def name_validator(name):
             Invalid name '${name}'. Names must start with a letter or
             number and be lowercase. The characters <samp>+</samp>,
             <samp>-</samp> and <samp>.</samp> are also allowed after the
-            first character."""), mapping={'name': name})
+            first character."""), mapping={'name': escape(name)})
 
         raise LaunchpadValidationError(structured(message))
     return True

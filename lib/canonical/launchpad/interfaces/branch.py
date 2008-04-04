@@ -31,6 +31,7 @@ __all__ = [
     'UnknownBranchTypeError'
     ]
 
+from cgi import escape
 from datetime import timedelta
 import re
 from zope.interface import Interface, Attribute
@@ -235,8 +236,8 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': launchpad_domain})
-            raise LaunchpadValidationError(message)
+                mapping={'domain': escape(launchpad_domain)})
+            raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
@@ -252,7 +253,7 @@ class BranchURIField(URIField):
                 'The bzr branch <a href="${url}">${branch}</a> is '
                 'already registered with this URL.',
                 mapping={'url': canonical_url(branch),
-                         'branch': branch.displayname})
+                         'branch': escape(branch.displayname)})
             raise LaunchpadValidationError(structured(message))
 
 

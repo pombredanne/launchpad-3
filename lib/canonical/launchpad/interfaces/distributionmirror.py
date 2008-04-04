@@ -17,6 +17,8 @@ __all__ = [
 'MirrorSpeed',
 'MirrorStatus']
 
+from cgi import escape
+
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.interface.exceptions import Invalid
@@ -253,7 +255,7 @@ class DistroMirrorURIField(URIField):
                 'The distribution mirror <a href="${url}">${mirror}</a> '
                 'is already registered with this URL.',
                 mapping={'url': canonical_url(mirror),
-                         'mirror': mirror.title})
+                         'mirror': escape(mirror.title)})
             raise LaunchpadValidationError(structured(message))
 
 

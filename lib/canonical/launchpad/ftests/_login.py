@@ -9,6 +9,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
+
 __all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
 
 

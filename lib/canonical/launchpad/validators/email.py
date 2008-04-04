@@ -7,7 +7,6 @@ import re
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp.menu import structured
 
 
 def valid_email(emailaddr):
