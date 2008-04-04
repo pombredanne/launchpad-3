@@ -36,8 +36,22 @@ DOCTEST_FLAGS = (doctest.ELLIPSIS |
                  doctest.REPORT_NDIFF)
 
 
-def integrationTestCleanUp(test):
+def integrationTestSetUp(testobj):
+    """Set up for all integration doctests."""
+    # We'll always need an smtp server.
+    smtpd = itest_helper.SMTPServer()
+    smtpd.start()
+    if testobj is not None:
+        testobj.globs['smtpd'] = smtpd
+
+
+def integrationTestCleanUp(testobj):
     """Common tear down for the integration tests."""
+    # Ensure the smtp server is stopped and cleared.
+    if testobj is not None:
+        smtpd = testobj.globs['smtpd']
+        smtpd.reset()
+        smtpd.stop()
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
@@ -133,6 +147,7 @@ def find_tests(match_regexps):
             continue
         test = doctest.DocFileSuite(
             filename,
+            setUp=integrationTestSetUp,
             tearDown=integrationTestCleanUp,
             optionflags=DOCTEST_FLAGS)
         suite.addTest(test)

@@ -21,15 +21,21 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
     index = 0
     for chunk in chunks:
         message_id = chunk.message.id
-        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-            bugtask.bug, chunk.message)
         bug_comment = comments.get(message_id)
         if bug_comment is None:
-            bug_comment = BugComment(index, chunk.message, bugtask,
-                bug_message.bugwatch)
+            bug_comment = BugComment(index, chunk.message, bugtask)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
+
+    # Set up the bug watch for all the imported comments. We do it
+    # outside the for loop to avoid issuing one db query per comment.
+    imported_bug_messages = getUtility(IBugMessageSet).getImportedBugMessages(
+        bugtask.bug)
+    for bug_message in imported_bug_messages:
+        message_id = bug_message.message.id
+        comments[message_id].bugwatch = bug_message.bugwatch
+
     for comment in comments.values():
         # Once we have all the chunks related to a comment set up,
         # we get the text set up for display.
@@ -50,10 +56,10 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, bugwatch=None):
+    def __init__(self, index, message, bugtask):
         self.index = index
         self.bugtask = bugtask
-        self.bugwatch = bugwatch
+        self.bugwatch = None
 
         self.title = message.title
         self.display_title = False

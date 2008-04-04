@@ -58,6 +58,13 @@ class IBugMessageSet(Interface):
         Return None if no such IBugMesssage exists.
         """
 
+    def getImportedBugMessages(bug):
+        """Return all the imported IBugMesssages for a bug.
+
+        An IBugMesssage is considered imported if it's linked to a bug
+        watch.
+        """
+
 
 class IBugMessageAddForm(Interface):
     """Schema used to build the add form for bug comment/attachment."""

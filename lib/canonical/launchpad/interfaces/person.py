@@ -9,6 +9,7 @@ __all__ = [
     'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'IHasStanding',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
@@ -28,6 +29,7 @@ __all__ = [
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
+    'PersonalStanding',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
@@ -57,8 +59,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.teammembership import (
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -95,6 +96,43 @@ class AccountStatus(DBEnumeratedType):
 
 INACTIVE_ACCOUNT_STATUSES = [
     AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
+
+
+class PersonalStanding(DBEnumeratedType):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = DBItem(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = DBItem(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = DBItem(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -345,6 +383,23 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
+# This has to be defined here to avoid circular import problems.
+class IHasStanding(Interface):
+    """An object that can have personal standing."""
+
+    personal_standing = Choice(
+        title=_('Personal standing'),
+        required=True,
+        vocabulary=PersonalStanding,
+        description=_('The standing of a person for non-member mailing list '
+                      'posting privileges.'))
+
+    personal_standing_reason = Text(
+        title=_('Reason for personal standing'),
+        required=False,
+        description=_("The reason the person's standing is what it is."))
+
+
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
     """Public attributes for a Person."""
@@ -475,6 +530,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute(
         'Bounties to which this person subscribes.')
+
+    oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
     sshkeys = Attribute(_('List of SSH keys'))
 
@@ -1092,6 +1149,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
+
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
@@ -1201,7 +1259,8 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
+class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
+              IHasStanding):
     """A Person."""
 
 

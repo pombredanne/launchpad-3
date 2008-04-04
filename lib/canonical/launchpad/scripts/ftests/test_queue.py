@@ -14,14 +14,12 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-
-
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
-from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
@@ -56,8 +54,7 @@ class TestQueueBase(TestCase):
         # to avoid SERIALIZATION exceptions with the Librarian.
         LaunchpadZopelessLayer.alterConnection(
                 dbuser=self.dbuser,
-                isolation=READ_COMMITTED_ISOLATION
-                )
+                isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -257,6 +254,29 @@ class TestQueueTool(TestQueueBase):
         self.assertEmail(['autotest_changes@ubuntu.com'])
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testAcceptingSourceCreateBuilds(self):
+        """Check if accepting a source package creates build records."""
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        upload_bar_source()
+        # Swallow email generated at the upload stage.
+        stub.test_emails.pop()
+        LaunchpadZopelessLayer.txn.commit()
+
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        queue_action = self.execute_command(
+            'accept bar', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(2, len(stub.test_emails))
+
+        [queue_item] = queue_action.items
+        [queue_source] = queue_item.sources
+        sourcepackagerelease = queue_source.sourcepackagerelease
+        [build] = sourcepackagerelease.builds
+        self.assertEqual(
+            'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
+            build.title)
+        self.assertEqual(build.buildqueue_record.lastscore, 255)
 
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""

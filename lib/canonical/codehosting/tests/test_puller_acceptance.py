@@ -81,8 +81,8 @@ class TestBranchPuller(BranchTestCase):
              'Error:',
              stderr])
         self.assertEqual(0, retcode, message)
-        self.assertEqual('', stdout)
-        self.assertEqual('', stderr)
+        self.assertEqualDiff('', stdout)
+        self.assertEqualDiff('', stderr)
 
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""

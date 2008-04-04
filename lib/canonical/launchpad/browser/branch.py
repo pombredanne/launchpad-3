@@ -14,6 +14,7 @@ __all__ = [
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchReassignmentView',
+    'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
     'BranchInPersonView',
@@ -178,9 +179,10 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
              'browse_revisions',
-             'reassign', 'subscription', 'addsubscriber', 'associations',
-             'registermerge', 'landingcandidates', 'linkbug',
-             'link_blueprint']
+             'reassign', 'subscription', 'add_subscriber', 'associations',
+             'register_merge', 'landing_candidates', 'merge_queue',
+             'link_bug', 'link_blueprint',
+             ]
 
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -232,7 +234,7 @@ class BranchContextMenu(ContextMenu):
         return Link(url, text, icon=icon)
 
     @enabled_with_permission('launchpad.AnyPerson')
-    def addsubscriber(self):
+    def add_subscriber(self):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
@@ -241,20 +243,27 @@ class BranchContextMenu(ContextMenu):
         return Link('+associations', text)
 
     @enabled_with_permission('launchpad.AnyPerson')
-    def registermerge(self):
+    def register_merge(self):
         text = 'Propose for merging'
         # It is not valid to propose a junk branch for merging.
         enabled = self.context.product is not None
         return Link('+register-merge', text, icon='edit', enabled=enabled)
 
-    def landingcandidates(self):
+    def landing_candidates(self):
         text = 'View landing candidates'
         enabled = self.context.landing_candidates.count() > 0
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
-    def linkbug(self):
+    def link_bug(self):
         text = 'Link to bug report'
         return Link('+linkbug', text, icon='edit')
+
+    def merge_queue(self):
+        text = 'View merge queue'
+        # Only enable this view if the branch is a target of some
+        # branch merge proposals.
+        enabled = self.context.landing_candidates.count() > 0
+        return Link('+merge-queue', text, enabled=enabled)
 
     def link_blueprint(self):
         text = 'Link to blueprint'
@@ -298,9 +307,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
-    def author_is_owner(self):
-        """Is the branch author set and equal to the registrant?"""
-        return self.context.author == self.context.owner
+    def owner_is_registrant(self):
+        """Is the branch owner the registrant?"""
+        return self.context.owner == self.context.registrant
 
     @property
     def codebrowse_url(self):
@@ -352,11 +361,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Whether the user can download this branch."""
         return (self.context.branch_type != BranchType.REMOTE and
                 self.context.revision_count > 0)
-
-    def is_hosted_branch(self):
-        """Whether this is a user-provided hosted branch."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.context.url is None and self.context.owner != vcs_imports
 
     @cachedproperty
     def landing_targets(self):
@@ -647,13 +651,14 @@ class BranchDeletionView(LaunchpadFormView):
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the branch page."""
+        self.next_url = canonical_url(self.context)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
+                   'lifecycle_status', 'whiteboard', 'author']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -727,7 +732,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
-                   'summary', 'lifecycle_status', 'whiteboard', 'home_page',
+                   'summary', 'lifecycle_status', 'whiteboard',
                    'author']
 
     branch = None
@@ -762,7 +767,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 title=data['title'],
                 summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'],
-                home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
@@ -931,9 +935,10 @@ class BranchSubscriptionsView(LaunchpadView):
         # is the same as the person of the subscription.
         if self.user is None or self.user == subscription.person:
             return False
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (self.user.inTeam(subscription.person) or
-                self.user.inTeam(admins))
+                self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.bazaar_experts))
 
     def subscriptions(self):
         """Return a decorated list of branch subscriptions."""
@@ -943,6 +948,25 @@ class BranchSubscriptionsView(LaunchpadView):
         return [DecoratedSubscription(
                     subscription, self.isEditable(subscription))
                 for subscription in sorted_subscriptions]
+
+
+class BranchMergeQueueView(LaunchpadView):
+    """The view used to render the merge queue for a branch."""
+
+    __used_for__ = IBranch
+
+    @cachedproperty
+    def merge_queue(self):
+        """Get the merge queue and check visibility."""
+        result = []
+        for proposal in self.context.getMergeQueue():
+            # If the logged in user cannot view the proposal then we
+            # show a "place holder" in the queue position.
+            if check_permission('launchpad.View', proposal):
+                result.append(proposal)
+            else:
+                result.append(None)
+        return result
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):

@@ -14,7 +14,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    IBranchSubscription)
+    CodeReviewNotificationLevel, IBranchSubscription)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -32,4 +32,6 @@ class BranchSubscription(SQLBase):
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
     max_diff_lines = EnumCol(enum=BranchSubscriptionDiffSize,
-                             notNull=True)
+                             notNull=False, default=DEFAULT)
+    review_level = EnumCol(enum=CodeReviewNotificationLevel,
+                                 notNull=True, default=DEFAULT)

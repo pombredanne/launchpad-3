@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
@@ -15,7 +15,7 @@ from zope.security.management import setSecurityPolicy
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
-    commit, flush_database_updates, READ_COMMITTED_ISOLATION)
+    commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.ftests.bug import (
@@ -68,7 +68,7 @@ def builddmasterSetUp(test):
     test_dbuser = config.builddmaster.dbuser
     test.globs['test_dbuser'] = test_dbuser
     LaunchpadZopelessLayer.alterConnection(
-        dbuser=test_dbuser, isolation=READ_COMMITTED_ISOLATION)
+        dbuser=test_dbuser, isolation=ISOLATION_LEVEL_READ_COMMITTED)
     setGlobs(test)
 
 def branchscannerSetUp(test):
@@ -203,6 +203,20 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.commit()
     uploadQueueSetUp(test)
     login(ANONYMOUS)
+
+def translationMessageDestroySetUp(test):
+    """Set up the TranslationMessage.destroySelf() test."""
+    LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
+    setUp(test)
+
+def translationMessageDestroyTearDown(test):
+    """Tear down the TranslationMessage.destroySelf() test."""
+    tearDown(test)
+
+def manageChrootSetup(test):
+    """Set up the manage-chroot.txt test."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser("fiera")
 
 
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
@@ -399,6 +413,11 @@ special = {
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
+            '../doc/distroarchseriesbinarypackage.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'script-monitoring.txt': LayeredDocFileSuite(
             '../doc/script-monitoring.txt',
             setUp=setUp, tearDown=tearDown,
@@ -489,6 +508,13 @@ special = {
     'checkwatches-cli-switches.txt':
             LayeredDocFileSuite(
                 '../doc/checkwatches-cli-switches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-bug-imports.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bug-imports.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
@@ -596,6 +622,18 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             ),
+    'message-holds-xmlrpc.txt': LayeredDocFileSuite(
+            '../doc/message-holds-xmlrpc.txt',
+            setUp=mailingListXMLRPCInternalSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
+            '../doc/message-holds-xmlrpc.txt',
+            setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer,
+            ),
     'codeimport-machine.txt': LayeredDocFileSuite(
             '../doc/codeimport-machine.txt',
             setUp=zopelessLaunchpadSecuritySetUp,
@@ -635,10 +673,21 @@ special = {
             ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
-	    setUp=test_notifications.setUp,
-	    tearDown=test_notifications.tearDown,
-            stdout_logging=False, layer=None,
-	    ),
+            setUp=test_notifications.setUp,
+            tearDown=test_notifications.tearDown,
+            stdout_logging=False, layer=None
+            ),
+    'translationmessage-destroy.txt': LayeredDocFileSuite(
+            '../doc/translationmessage-destroy.txt',
+            setUp=translationMessageDestroySetUp,
+            tearDown=translationMessageDestroyTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'manage-chroot.txt': LayeredDocFileSuite(
+            '../doc/manage-chroot.txt',
+            setUp=manageChrootSetup,
+            layer=LaunchpadZopelessLayer,
+            ),
     }
 
 

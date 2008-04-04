@@ -102,7 +102,7 @@ approved.  Note, though, that in the case of teams we need to pass a
 requester to the join() method.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login
     >>> login(ubuntu_team.teamowner.preferredemail.email)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
     >>> t3.subscriptionpolicy
@@ -141,16 +141,16 @@ to a team.
     ...     print "No exception raised"
     zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
 
-Log in as the team owner.
-
+    # Log in as the team owner.
     >>> login(t3.teamowner.preferredemail.email)
+
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
     >>> membership = membershipset.getByPersonAndTeam(salgado, t3)
-    >>> membership.reviewer == sabdfl
+    >>> membership.last_changed_by == sabdfl
     True
     >>> membership.status == TeamMembershipStatus.ADMIN
     True
@@ -163,6 +163,13 @@ Log in as the team owner.
     >>> flush_database_updates()
     >>> marilize in t3.activemembers
     False
+
+As expected, the membership object implements ITeamMembership.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import ITeamMembership
+    >>> verifyObject(ITeamMembership, membership)
+    True
 
 Note that, by default, the ITeam.addMember() API works slightly different
 when the added member is a team. In that case the team will actually be
@@ -380,21 +387,24 @@ good work, so we'll approve his membership.
     >>> membership = membershipset.getByPersonAndTeam(foobar, warty_team)
     >>> print membership.status.title
     Proposed
-    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    >>> print membership.date_created.strftime("%Y-%m-%d")
     2006-01-26
+    >>> print membership.datejoined
+    None
 
 When we approve his membership, the datejoined will contain the date that it
 was approved.
 
-    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, foobar)
     >>> print membership.status.title
     Approved
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> membership.datejoined.date() == utc_now.date()
     True 
 
-On the other hand, when we deactivate an active membership, the datejoined is
-not changed.
+Other status updates won't change datejoined, regardless of the status.
+That's because datejoined stores the date in which the membership was first
+made active.
 
     >>> buildd_admins = getUtility(IPersonSet).getByName(
     ...     'launchpad-buildd-admins')
@@ -402,25 +412,22 @@ not changed.
     ...     foobar, buildd_admins)
     >>> print foobar_on_buildd.status.title
     Administrator
-    >>> print foobar_on_buildd.datejoined.strftime("%Y-%m-%d")
-    2006-05-15
+    >>> foobar_on_buildd.datejoined <= utc_now
+    True
 
     >>> foobar_on_buildd.setStatus(
-    ...     TeamMembershipStatus.DEACTIVATED, reviewer=foobar)
+    ...     TeamMembershipStatus.DEACTIVATED, foobar)
     >>> print foobar_on_buildd.status.title
     Deactivated
-    >>> print foobar_on_buildd.datejoined.strftime("%Y-%m-%d")
-    2006-05-15
-
-Finally, if we reactivate his membership, the datejoined will once again be
-updated.
+    >>> foobar_on_buildd.datejoined <= utc_now
+    True
 
     >>> foobar_on_buildd.setStatus(
-    ...     TeamMembershipStatus.APPROVED, reviewer=foobar)
+    ...     TeamMembershipStatus.APPROVED, foobar)
     >>> print foobar_on_buildd.status.title
     Approved
-    >>> foobar_on_buildd.datejoined.date() == utc_now.date()
-    True 
+    >>> foobar_on_buildd.datejoined <= utc_now
+    True
 
 When changing the expiry date we need to provide a date in the future and,
 as mentioned above, the change can't be done by a team admin to his own
@@ -576,7 +583,7 @@ while the one that was inactive hasn't changed.
     ...     personset.getByName('name16'), personset.getByName('admins'))
     >>> foobar_on_admins.status.title
     'Expired'
-    >>> foobar_on_admins.reviewer.name
+    >>> foobar_on_admins.last_changed_by.name
     u'janitor'
 
     >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
@@ -700,10 +707,10 @@ We can also change the sort order of the results of getMembersByStatus.
     ...  for person in t3.getMembersByStatus(deactivated)]
     [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
-    >>> orderBy = '-TeamMembership.datejoined'
+    >>> orderBy = '-TeamMembership.date_joined'
     >>> [person.unique_displayname
     ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
-    [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
+    [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
 == Finding team administrators ==
 
@@ -813,8 +820,8 @@ call TeamMembership.setStatus, which is private).
 
 This cache is cleared when memberships are created:
 
-    >>> membership = TeamMembershipSet().new(no_priv, admins,
-    ...     status=TeamMembershipStatus.APPROVED)
+    >>> membership = TeamMembershipSet().new(
+    ...     no_priv, admins, TeamMembershipStatus.APPROVED, admins.teamowner)
     >>> no_priv._inTeam_cache
     {}
     >>> no_priv.inTeam(admins)
@@ -824,7 +831,7 @@ This cache is cleared when memberships are created:
 
 Or changed:
 
-    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=sabdfl)
+    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, sabdfl)
     >>> no_priv._inTeam_cache
     {}
     >>> no_priv.inTeam(admins)

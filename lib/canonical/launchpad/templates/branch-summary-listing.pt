@@ -4,10 +4,7 @@
         tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a>
     <tal:person-link condition="view/show_person_link">
       -
-      <a tal:condition="context/author"
-         tal:replace="structure context/author/fmt:link/+authoredbranches" />
-      <a tal:condition="not:context/author"
-         tal:replace="structure context/owner/fmt:link/+registeredbranches" />
+      <a tal:replace="structure context/owner/fmt:link/+ownedbranches" />
     </tal:person-link>
     <tal:product-link condition="view/show_product_link">
       - <img src="/@@/product" />

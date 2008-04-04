@@ -31,6 +31,7 @@
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
 
     <require
       permission="launchpad.View"
@@ -42,7 +43,7 @@
       />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPerson"
+      set_schema="canonical.launchpad.interfaces.IPersonPublic"
       />
     <require
       permission="launchpad.Special"
@@ -56,6 +57,10 @@
     <require
       permission="launchpad.Admin"
       attributes="deactivateAllMembers"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
   </content>
 
@@ -106,7 +111,8 @@
     for="canonical.launchpad.interfaces.IPerson"
     schema="canonical.launchpad.interfaces.IPerson"
     label="Review person"
-    fields="name displayname password"
+    fields="name displayname password
+            personal_standing personal_standing_reason"
     permission="launchpad.Admin"
     template="../templates/person-review.pt"
     >
@@ -495,10 +501,10 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonAuthoredBranchesView"
+    class="canonical.launchpad.browser.PersonOwnedBranchesView"
     permission="zope.Public"
     facet="branches"
-    name="+authoredbranches"
+    name="+ownedbranches"
     template="../templates/person-branches.pt"
     />
 
@@ -518,6 +524,14 @@
     facet="branches"
     name="+registeredbranches"
     template="../templates/person-branches.pt"
+    />
+
+  <browser:page
+    name="+oauth-tokens"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonOAuthTokensView"
+    permission="launchpad.Edit"
+    template="../templates/person-oauth-tokens.pt"
     />
 
   <browser:page

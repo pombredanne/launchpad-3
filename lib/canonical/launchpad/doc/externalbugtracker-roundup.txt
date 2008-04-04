@@ -16,11 +16,9 @@ implements IExternalBugTracker.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
     >>> verifyObject(
     ...     IExternalBugTracker,
-    ...     Roundup(txn, new_bugtracker(BugTrackerType.ROUNDUP)))
+    ...     Roundup('http://example.com'))
     True
 
 
@@ -28,7 +26,7 @@ implements IExternalBugTracker.
 
 The basic Roundup bug statuses (i.e. those available by default in new Roundup instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
 
-    >>> roundup = Roundup(txn, new_bugtracker(BugTrackerType.ROUNDUP))
+    >>> roundup = Roundup('http://example.com/')
     >>> roundup.convertRemoteStatus(1).title
     'New'
     >>> roundup.convertRemoteStatus(2).title
@@ -47,19 +45,12 @@ The basic Roundup bug statuses (i.e. those available by default in new Roundup i
     'Fix Released'
 
 If the status isn't something that our Roundup ExternalBugTracker can
-understand, Unknown will be returned and a warning logged.
+understand an UnknownRemoteStatusError will be raised.
 
     >>> roundup.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown remote status 'eggs'.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't succeed. For
-example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> roundup.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Initialization ==
@@ -74,8 +65,7 @@ working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRoundup, print_bugwatches)
-    >>> roundup = TestRoundup(txn, new_bugtracker(
-    ...     BugTrackerType.ROUNDUP, base_url=u'http://test.roundup/'))
+    >>> roundup = TestRoundup(u'http://test.roundup/')
     >>> roundup.initializeRemoteBugDB([1])
     >>> sorted(roundup.bugs.keys())
     [1]
@@ -129,8 +119,10 @@ Collect the Example.com watches:
 And have a Roundup instance process them:
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = BugWatchUpdater(txn)
-    >>> roundup = TestRoundup(txn, example_bug_tracker)
+    >>> roundup = TestRoundup(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     roundup, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where

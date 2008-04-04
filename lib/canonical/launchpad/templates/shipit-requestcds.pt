@@ -106,7 +106,8 @@
   <p tal:condition="view/should_show_custom_request">
     Delivery of special requests can take up to
     <strong>ten weeks</strong>. For quicker processing, choose a
-    <a href="/myrequest">standard option</a> instead.
+    <a tal:attributes="href view/standard_order_page">standard option</a>
+    instead.
   </p>
 
   <p tal:condition="view/is_edubuntu">
@@ -144,8 +145,9 @@
         your request altogether.
       </p>
       <p>
-        Requesting a smaller number of CDs or a <a href="/myrequest">standard
-        option</a> will increase your chances of having the request approved.
+        Requesting a smaller number of CDs or a
+        <a tal:attributes="href view/standard_order_page">standard option</a>
+        will increase your chances of having the request approved.
         Remember, you can reuse the CDs!
       </p>
     </div>
@@ -184,7 +186,8 @@
           </label>
         </div>
 
-        <p>You can make a <a href="/specialrequest">special request</a>
+        <p>You can make a <a tal:attributes="href view/custom_order_page">
+        special request</a>
         for different quantities, but note this will take longer to process
         and may not be approved at all.
         We will consider special requests if you are a teacher giving CDs to

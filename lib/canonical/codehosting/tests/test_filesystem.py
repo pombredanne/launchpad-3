@@ -178,13 +178,27 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     def test_bzr_backup_directory_inside_branch(self):
         # Bazaar sometimes needs to create .bzr.backup directories directly
         # underneath the branch directory. Thus, we allow the creation of
-        # .bzr.backup directories.
+        # .bzr.backup directories. The .bzr.backup directory is a deprecated
+        # name. Now Bazaar uses 'backup.bzr'.
         transport = self.getTransport()
         transport.mkdir('~testuser/firefox/banana')
         transport.mkdir('~testuser/firefox/banana/.bzr.backup')
         self.assertTrue(transport.has('~testuser/firefox/banana'))
         self.assertTrue(
             transport.has('~testuser/firefox/banana/.bzr.backup'))
+
+    @defer_to_thread
+    @wait_for_disconnect
+    def test_backup_bzr_directory_inside_branch(self):
+        # Bazaar sometimes needs to create backup.bzr directories directly
+        # underneath the branch directory. This is alternative name for the
+        # backup.bzr directory.
+        transport = self.getTransport()
+        transport.mkdir('~testuser/firefox/banana')
+        transport.mkdir('~testuser/firefox/banana/backup.bzr')
+        self.assertTrue(transport.has('~testuser/firefox/banana'))
+        self.assertTrue(
+            transport.has('~testuser/firefox/banana/backup.bzr'))
 
     @defer_to_thread
     def test_non_bzr_directory_inside_branch(self):

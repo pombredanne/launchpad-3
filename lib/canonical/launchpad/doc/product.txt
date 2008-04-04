@@ -249,6 +249,19 @@ This series is set as the development focus for the product:
 
 == Specification Listings ==
 
+We should be able to set whether or not a Product uses specifications
+officially.  It defaults to False.
+
+ >>> firefox = productset.getByName('firefox')
+ >>> firefox.official_blueprints
+ False
+
+We can change it to True.
+
+ >>> firefox.official_blueprints = True
+ >>> firefox.official_blueprints
+ True
+
 We should be able to get lists of specifications in different states
 related to a product.
 
@@ -321,6 +334,15 @@ To get all milestones of a given product we have the .all_milestones property.
 
 == Products With Branches ==
 
+Products can now specify whether they officially support Launchpad as a
+location for their branches.
+
+    >>> print firefox.official_codehosting
+    False
+    >>> firefox.official_codehosting = True
+    >>> print firefox.official_codehosting
+    True
+
 We can also find all the products that have branches.
 
     >>> productset.getProductsWithBranches().count()
@@ -371,6 +393,19 @@ the number of products returned.
     evolution
     firefox
     gnome-terminal
+
+Only active products are returned.
+
+    >>> firefox.active = False
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(firefox)
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    gnome-terminal
+    iso-codes
+    landscape
+
 
 == Primary translatable ==
 

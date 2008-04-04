@@ -11,20 +11,22 @@ scripts/mlist-sync.py.
 == Synchronization ==
 
 It's actually fairly difficult to recreate what happens during the staging
-sync, but we can get close.  Start off by creating a few mailing lists and
-sending some messages to them.
+sync, but we can get close.  Start off by creating a few mailing lists.  When
+the mailing lists are created, messages get sent to the members of the team
+informing them of their new list.  We can ignore these.
 
     >>> import itest_helper
-    >>> itest_helper.create_list('itest-one')
-    >>> itest_helper.create_list('itest-two')
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> list_two = itest_helper.create_list('itest-two')
+    >>> smtpd.reset()
+
     >>> itest_helper.subscribe('Anne', 'itest-one')
     >>> itest_helper.subscribe('Anne', 'itest-two')
     >>> itest_helper.subscribe('Bart', 'itest-one')
     >>> itest_helper.subscribe('Cris', 'itest-two')
 
-    >>> smtpd = itest_helper.SMTPServer()
-    >>> smtpd.start()
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -184,4 +186,3 @@ web_page_url attributes for these lists should not point to 'prod'.
     >>> import shutil
     >>> shutil.rmtree(source_dir)
     >>> runmailman.start_mailman(quiet=True)
-    >>> smtpd.stop()

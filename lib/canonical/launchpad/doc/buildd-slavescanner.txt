@@ -879,7 +879,7 @@ Similarly, PPA builds pass the 'archives' arguments:
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
     >>> removeSecurityProxy(a_build).archive = cprov_archive
-    >>> a_builder.trusted = False
+    >>> a_builder.virtualized = True
     >>> a_builder.vm_host = 'localhost.ppa'
     >>> commit()
     >>> a_builder.setSlaveForTesting(OkSlave())
@@ -902,10 +902,86 @@ Similarly, PPA builds pass the 'archives' arguments:
     Suite: hoary
     Archive Purpose: PPA
 
+If the build is for a private PPA, the slave scanner will pass a
+sources.list entry that contains a password to access the archive.
+
+Make cprov's archive private and set the buildd_secret (which is the
+password for the archive):
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> cprov_archive.private = True
+    >>> cprov_archive.buildd_secret = "secret"
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> login(ANONYMOUS)
+
+Dispatch the build again.  Cprov's sources.list entry now has the
+buildd:secret@ part in the URL.  Also note that because it's a private
+PPA, it's missing the dependency on the updates pocket.  This is mainly
+to accommodate the security build private PPA which must not depend
+on the updates pocket.  This will be replaced in the future by a
+proper solution that allows configurable pocket dependencies.
+
+    >>> a_builder.dispatchBuildCandidate(candidate)
+    ensurepresent called
+    ensurepresent called
+    OkSlave BUILDING
+    Archives:
+     deb http://buildd:secret@private.ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+    Suite: hoary
+    Archive Purpose: PPA
+
+    >>> candidate.destroySelf()
+
+A PPA can depend on another PPA. We can make Celso's PPA depend on
+Mark's PPA:
+
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+
+    >>> cprov_archive.private = False
+    >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
+    >>> unused_dep = cprov_archive.addArchiveDependency(sabdfl_archive)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> login(ANONYMOUS)
+
+Now we can see that a build from Celso's PPA will be able to install
+dependencies from Mark's PPA.
+
+    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.is_available
+    True
+
+    >>> candidate = a_build.createBuildQueueEntry()
+    >>> setupBuildQueue(candidate, a_builder)
+    >>> last_stub_mail_count = len(stub.test_emails)
+
+    >>> a_builder.dispatchBuildCandidate(candidate)
+    ensurepresent called
+    ensurepresent called
+    OkSlave BUILDING
+    Archives:
+     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
+     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+     deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
+    Suite: hoary
+    Archive Purpose: PPA
+
 Clean up before continuing:
 
     >>> candidate.destroySelf()
-    >>> a_builder.trusted = True
+    >>> a_builder.virtualized = False
     >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
     >>> commit()
 

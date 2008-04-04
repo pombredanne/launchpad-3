@@ -12,14 +12,17 @@ import StringIO
 import transaction
 import unittest
 
+from sqlobject.sqlbuilder import SQLConstant
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
 
+from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
@@ -59,6 +62,136 @@ class TestCodeImportJobSet(unittest.TestCase):
         # with the specified id.
         no_job = getUtility(ICodeImportJobSet).getById(-1)
         self.assertEqual(no_job, None)
+
+
+class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
+    """Tests for the CodeImportJobSet.getJobForMachine method.
+
+    For brevity, these test cases describe jobs using specs: a 2- or 3-tuple:
+
+       (<job state>, <date_due time delta>, <requesting user, if present>).
+
+    The time delta is measured in seconds relative to the present, so using a
+    value of -1 creates a job with a date_due of 1 second ago.  The instance
+    method makeJob() creates actual CodeImportJob objects from these specs.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Login so we can access the code import system, delete all jobs in
+        # the sample data and set up some objects.
+        login_for_code_imports()
+        for job in CodeImportJob.select():
+            job.destroySelf()
+        self.factory = LaunchpadObjectFactory()
+        self.machine = self.factory.makeCodeImportMachine()
+        self.machine.setOnline()
+
+    def makeJob(self, state, date_due_delta, requesting_user=None):
+        """Create a CodeImportJob object from a spec."""
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        if state == CodeImportJobState.RUNNING:
+            getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        naked_job = removeSecurityProxy(job)
+        naked_job.date_due = SQLConstant(
+            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
+            % date_due_delta)
+        naked_job.requesting_user = requesting_user
+        return job
+
+    def assertJobIsSelected(self, desired_job):
+        """Assert that the expected job is chosen by getJobForMachine."""
+        flush_database_updates()
+        observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        self.assert_(observed_job is not None, "No job was selected.")
+        self.assertEqual(desired_job, observed_job,
+                         "Expected job not selected.")
+
+    def assertNoJobSelected(self):
+        """Assert that no job is selected."""
+        flush_database_updates()
+        observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        self.assert_(observed_job is None, "Job unexpectedly selected.")
+
+    def test_nothingSelectedIfNothingCreated(self):
+        # There are no due jobs pending if we don't create any (this
+        # is mostly a test of setUp() above).
+        self.assertNoJobSelected()
+
+    def test_simple(self):
+        # The simplest case: there is one job, which is due.
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1))
+
+    def test_nothingDue(self):
+        # When there is a PENDING job but it is due in the future, no
+        # job should be returned.
+        self.makeJob(CodeImportJobState.PENDING, +1)
+        self.assertNoJobSelected()
+
+    def test_ignoreNonPendingJobs(self):
+        # Only PENDING jobs are returned -- it doesn't make sense to allocate
+        # a job that is already RUNNING to a machine.
+        self.makeJob(CodeImportJobState.RUNNING, -1)
+        self.assertNoJobSelected()
+
+    def test_mostOverdueJobsFirst(self):
+        # The job that was due longest ago should be selected, then the next
+        # longest, etc.
+        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
+
+    def test_requestedJobWins(self):
+        # A job that is requested by a user is selected over ones that
+        # are not, even over jobs that are more overdue.
+        person = self.factory.makePerson()
+        self.makeJob(CodeImportJobState.PENDING, -5)
+        self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1, person))
+
+    def test_mostOverdueRequestedJob(self):
+        # When multiple jobs are requested by users, we go back to the
+        # "most overdue wins" behaviour.
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        person_c = self.factory.makePerson()
+        five_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -5, person_b)
+        two_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -2, person_a)
+        ten_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -10, person_c)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
+
+    def test_independentOfCreationOrder(self):
+        # The order the jobs are created doesn't affect the outcome (the way
+        # the other tests are written, an implementation that returned the
+        # most recently created due job would pass).
+        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
+
+    def test_notReturnedTwice(self):
+        # Once a job has been selected by getJobForMachine, it should not be
+        # selected again (NB: without the flush_database_updates() chicken
+        # bones in the helper methods, this test would fail).
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1))
+        self.assertNoJobSelected()
 
 
 class AssertFailureMixin:

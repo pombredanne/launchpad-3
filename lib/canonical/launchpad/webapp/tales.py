@@ -63,6 +63,14 @@ from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
 
+def escape(text, quote=True):
+    """Escape text for insertion into HTML.
+
+    Wraps `cgi.escape` to make the default to escape double-quotes.
+    """
+    return cgi.escape(text, quote)
+
+
 class TraversalError(NotFoundError):
     """Remove this when we upgrade to a more recent Zope x3."""
     # XXX: Steve Alexander 2004-12-14:
@@ -635,6 +643,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         return " ".join(badges)
 
 
+class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IQuestion to a formatted string. Used for image:icon."""
+
+    def icon(self):
+        return '<img alt="" height="14" width="14" src="/@@/question" />'
+
+
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for ISpecification objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon
@@ -810,22 +825,26 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
 class CustomizableFormatter(ObjectFormatterExtendedAPI):
     """A ObjectFormatterExtendedAPI that is easy to customize.
 
-    This provides fmt:url and fmt:link support for the object it adapts.
+    This provides fmt:url and fmt:link support for the object it
+    adapts.
 
-    For most object types, only the _link_summary_template class variable and
-    _link_summary_values method need to be overridden.  This assumes that:
-    1. canonical_url produces appropriate urls for this type
-    2. the launchpad.View permission alone is required to view this object's
-       url
-    3. if there is an icon for this object type, image:icon is implemented
-       and appropriate.
+    For most object types, only the _link_summary_template class
+    variable and _link_summary_values method need to be overridden.
+    This assumes that:
 
-    For greater control over the summary, overrride _make_link_summary.
+      1. canonical_url produces appropriate urls for this type,
+      2. the launchpad.View permission alone is required to view this
+         object's url, and,
+      3. if there is an icon for this object type, image:icon is
+         implemented and appropriate.
 
-    If image:icon does not provide a suitable icon, override _get_icon.
+    For greater control over the summary, overrride
+    _make_link_summary.
 
-    If a different permission is required, override _link_permission.  If the
-    permission logic is more complicated than this, override _should_link.
+    If image:icon does not provide a suitable icon, override
+    _get_icon.
+
+    If a different permission is required, override _link_permission.
     """
 
     _link_permission = 'launchpad.View'
@@ -1021,6 +1040,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
     _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1043,10 +1063,22 @@ class ProductSeriesFormatterAPI(CustomizableFormatter):
                 'product': self._context.product.displayname}
 
 
+class QuestionFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for question objects."""
+
+    _link_summary_template = _('%(id)s: %(title)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'id': str(self._context.id), 'title': self._context.title}
+
+
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
     _link_summary_template = _('%(title)s')
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1065,6 +1097,119 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
         """Provide the icon of the linked spec"""
         formatter = SpecificationFormatterAPI(self._context.specification)
         return formatter._get_icon()
+
+
+class BugTrackerFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IBugTracker` objects to a formatted string."""
+
+    implements(ITraversable)
+
+    def external_link(self):
+        """Return an HTML link to the external bugtracker.
+
+        If the user is not logged-in, and the URL of the bugtracker
+        contains an email address, this returns the obfuscated URL as
+        text (i.e. no <a/> link).
+        """
+        url = self._context.baseurl
+        if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
+            return escape(u'mailto:<email address hidden>')
+        else:
+            href = escape(url)
+            return u'<a class="link-external" href="%s">%s</a>' % (href, href)
+
+    def aliases(self):
+        """Generate alias URLs, obfuscating where necessary.
+
+        If the user is not logged-in, email addresses should be
+        hidden.
+        """
+        anonymous = getUtility(ILaunchBag).user is None
+        for alias in self._context.aliases:
+            if anonymous and alias.startswith('mailto:'):
+                yield escape(u'mailto:<email address hidden>')
+            else:
+                yield alias
+
+    def traverse(self, name, furtherPath):
+        """See `ITraversable`.
+
+        Names supported:
+          url: As for `ObjectFormatterAPI`.
+          external-link: See `external_link`.
+          aliases: See `aliases`.
+        """
+        if name == 'url':
+            return self.url()
+        elif name == 'external-link':
+            return self.external_link()
+        elif name == 'aliases':
+            return self.aliases()
+        else:
+            raise TraversalError(name)
+
+
+class BugWatchFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IBugWatch` objects to a formatted string."""
+
+    implements(ITraversable)
+
+    def _make_external_link(self, summary=None):
+        """Return an external HTML link to the target of the bug watch.
+
+        If a summary is not specified or empty, an em-dash is used as
+        the content of the link.
+
+        If the user is not logged in and the URL of the bug watch is
+        an email address, only the summary is returned (i.e. no link).
+        """
+        if summary is None or len(summary) == 0:
+            summary = u'&mdash;'
+        else:
+            summary = escape(summary)
+        url = self._context.url
+        if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
+            return summary
+        else:
+            return u'<a class="link-external" href="%s">%s</a>' % (
+                escape(url), summary)
+
+    def external_link(self):
+        """Return an HTML link with a detailed link text.
+
+        The link text is formed from the bug tracker name and the
+        remote bug number.
+        """
+        summary = self._context.bugtracker.name
+        remotebug = self._context.remotebug
+        if remotebug is not None and len(remotebug) > 0:
+            summary = u'%s #%s' % (summary, remotebug)
+        return self._make_external_link(summary)
+
+    def external_link_short(self):
+        """Return an HTML link with a short link text.
+
+        The link text is formed from the bug tracker name and the
+        remote bug number.
+        """
+        return self._make_external_link(self._context.remotebug)
+
+    def traverse(self, name, furtherPath):
+        """See `ITraversable`.
+
+        Names supported:
+          url: As for `ObjectFormatterAPI`.
+          external-link: See `external_link`.
+          external-link-short: See `external_link_short`.
+        """
+        if name == 'url':
+            return self.url()
+        elif name == 'external-link':
+            return self.external_link()
+        elif name == 'external-link-short':
+            return self.external_link_short()
+        else:
+            raise TraversalError(name)
 
 
 class NumberFormatterAPI:
@@ -1204,8 +1349,23 @@ class DateTimeFormatterAPI:
 class DurationFormatterAPI:
     """Adapter from timedelta objects to a formatted string."""
 
+    implements(ITraversable)
+
     def __init__(self, duration):
         self._duration = duration
+
+    def traverse(self, name, furtherPath):
+        if name == 'exactduration':
+            return self.exactduration()
+        elif name == 'approximateduration':
+            use_words = True
+            if len(furtherPath) == 1:
+                if 'use-digits' == furtherPath[0]:
+                    furtherPath.pop()
+                    use_words = False
+            return self.approximateduration(use_words)
+        else:
+            raise TraversalError(name)
 
     def exactduration(self):
         """Format timedeltas as "v days, w hours, x minutes, y.z seconds"."""
@@ -1233,13 +1393,19 @@ class DurationFormatterAPI:
 
         return ', '.join(parts)
 
-    def approximateduration(self):
+    def approximateduration(self, use_words=True):
         """Return a nicely-formatted approximate duration.
 
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
         forth.
 
         See https://launchpad.canonical.com/PresentingLengthsOfTime.
+
+        :param use_words: Specificly determines whether or not to use
+            words for numbers less than or equal to ten.  Expanding
+            numbers to words makes sense when the number is used in
+            prose or a singualar item on a page, but when used in
+            a table, the words do not work as well.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
@@ -1259,7 +1425,7 @@ class DurationFormatterAPI:
         # list of (boundary, display value) tuples.  We want to show
         # the display value corresponding to the lowest boundary that
         # 'seconds' is less than, if one exists.
-        representation_in_seconds = (
+        representation_in_seconds = [
             (1.5, '1 second'),
             (2.5, '2 seconds'),
             (3.5, '3 seconds'),
@@ -1273,7 +1439,9 @@ class DurationFormatterAPI:
             (45, '40 seconds'),
             (55, '50 seconds'),
             (90, 'a minute'),
-        )
+        ]
+        if not use_words:
+            representation_in_seconds[-1] = (90, '1 minute')
 
         # Break representation_in_seconds into two pieces, to simplify
         # finding the correct display value, through the use of the
@@ -1296,10 +1464,13 @@ class DurationFormatterAPI:
         # verbal representation of "1", because we tend to special
         # case the number 1 for various approximations, and we usually
         # use a word like "an", instead of "one", e.g. "an hour")
-        number_name = {
-            2: 'two', 3: 'three', 4: 'four', 5: 'five',
-            6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
-            10: 'ten'}
+        if use_words:
+            number_name = {
+                2: 'two', 3: 'three', 4: 'four', 5: 'five',
+                6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+                10: 'ten'}
+        else:
+            number_name = dict((number, number) for number in range(2, 11))
 
         # Convert seconds into minutes, and round it.
         minutes, remaining_seconds = divmod(seconds, 60)
@@ -1307,12 +1478,14 @@ class DurationFormatterAPI:
         minutes = int(round(minutes))
 
         if minutes <= 59:
-            number_as_text = number_name.get(minutes, str(minutes))
-            return number_as_text + " minutes"
+            return "%s minutes" % number_name.get(minutes, str(minutes))
 
         # Is the duration less than an hour and 5 minutes?
         if seconds < (60 + 5) * 60:
-            return "an hour"
+            if use_words:
+                return "an hour"
+            else:
+                return "1 hour"
 
         # Next phase: try and calculate an approximate duration
         # greater than one hour, but fewer than ten hours, to a 10
@@ -1336,7 +1509,7 @@ class DurationFormatterAPI:
 
         # Is the duration less than ten and a half hours?
         if seconds < (10.5 * 3600):
-            return 'ten hours'
+            return '%s hours' % number_name[10]
 
         # Try to calculate the approximate number of hours, to a
         # maximum of 47.
@@ -1346,7 +1519,7 @@ class DurationFormatterAPI:
 
         # Is the duration fewer than two and a half days?
         if seconds < (2.5 * 24 * 3600):
-            return 'two days'
+            return '%s days' % number_name[2]
 
         # Try to approximate to day granularity, up to a maximum of 13
         # days.
@@ -1356,7 +1529,7 @@ class DurationFormatterAPI:
 
         # Is the duration fewer than two and a half weeks?
         if seconds < (2.5 * 7 * 24 * 3600):
-            return 'two weeks'
+            return '%s weeks' % number_name[2]
 
         # If we've made it this far, we'll calculate the duration to a
         # granularity of weeks, once and for all.

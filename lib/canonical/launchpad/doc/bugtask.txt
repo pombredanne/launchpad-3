@@ -717,7 +717,6 @@ listings) to explicit subscribers and Launchpad admins. Public bugs are visible
 to anyone.
 
     >>> from zope.event import notify
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
@@ -778,7 +777,6 @@ results:
 
     >>> from canonical.launchpad.searchbuilder import any
     >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> from canonical.launchpad.database import Product
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)
@@ -966,12 +964,18 @@ Of course, it's also computed and set when a bugtask is created.
 
     >>> import subprocess
     >>> process = subprocess.Popen(
-    ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
+    ...     'cronscripts/update-bugtask-targetnamecaches.py', shell=True,
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
-    >>> out, err
-    ('', '')
+
+    >>> print err
+    INFO creating lockfile
+    INFO Updating targetname cache of bugtasks.
+    INFO Updating 1 BugTasks (starting id: 2).
+    INFO Updating ...BugTasks...
+    INFO Finished updating targetname cache of bugtasks.
+
     >>> process.returncode
     0
 
@@ -985,6 +989,31 @@ Of course, it's also computed and set when a bugtask is created.
     >>> bugtaskset.get(upstream_task_id).bugtargetdisplayname
     u'Mozilla Thunderbird NG'
 
+The updating of targetnamecaches is usually done by the cronjob, however
+it can also be invoked directly.
+
+    >>> thunderbird.name = 'thunderbird'
+    >>> thunderbird.displayname = 'Mozilla Thunderbird'
+
+    >>> upstream_task.bugtargetdisplayname
+    u'Mozilla Thunderbird NG'
+
+    >>> from canonical.launchpad.scripts.bugtasktargetnamecaches import (
+    ...     BugTaskTargetNameCacheUpdater)
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> logger = FakeLogger()
+    >>> updater = BugTaskTargetNameCacheUpdater(transaction, logger)
+    >>> updater.run()
+    INFO Updating targetname cache of bugtasks.
+    INFO Updating 1 BugTasks (starting id: 2).
+    INFO Updating ...BugTasks...
+    INFO Finished updating targetname cache of bugtasks.
+
+    >>> flush_database_caches()
+    >>> transaction.commit()
+    >>> upstream_task.bugtargetdisplayname
+    u'Mozilla Thunderbird'
+
 
 == Target Uses Malone ==
 
@@ -997,7 +1026,7 @@ target uses Malone as its official bugtracker.
     Evolution                      True
     Mozilla Firefox                True
     Mozilla Firefox 1.0            True
-    Mozilla Thunderbird NG         False
+    Mozilla Thunderbird            False
     Ubuntu                         True
     mozilla-firefox (Ubuntu)       True
     Ubuntu Warty                   True

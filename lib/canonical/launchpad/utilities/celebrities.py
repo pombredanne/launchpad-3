@@ -86,7 +86,7 @@ class LaunchpadCelebrities:
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
     rosetta_experts = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
-    bazaar_experts = CelebrityDescriptor(IPersonSet, 'vcs-imports')
+    bazaar_experts = CelebrityDescriptor(IPersonSet, 'bazaar-experts')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')

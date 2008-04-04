@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -109,6 +109,8 @@ class ITranslationMessage(Interface):
             "The person who did the review and accepted current translations"
             ), readonly=False, required=False, schema=IPerson)
 
+    # Message references for up to TranslationConstants.MAX_PLURAL_FORMS
+    # plural forms.
     msgstr0 = Object(
         title=_("Translation for plural form 0 (if any)"),
         required=False, schema=IPOTranslation)
@@ -124,6 +126,21 @@ class ITranslationMessage(Interface):
     msgstr3 = Object(
         title=_("Translation for plural form 3 (if any)"),
         required=False, schema=IPOTranslation)
+
+    msgstr4 = Object(
+        title=_("Translation for plural form 4 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr5 = Object(
+        title=_("Translation for plural form 5 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    all_msgstrs = List(
+        title=_("All msgstr attributes"),
+        description=_("""
+            All translations [msgstr0, msgstr1, ...] for this message,
+            including any empty ones.
+            """), readonly=True, required=True)
 
     translations = List(
         title=_("Translations for this message"),

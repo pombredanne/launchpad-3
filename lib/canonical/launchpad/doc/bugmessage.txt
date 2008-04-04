@@ -21,11 +21,37 @@ IBugMessageSet.get:
     >>> bugmessage_four.message.subject
     u"Fantastic idea, I'd really like to see this"
 
+You can get all the imported comments for a bug using
+getImportedBugMessages. Imported comments are comments being linked to a
+bug watch.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_15 = getUtility(IBugSet).get(15)
+    >>> bug_15.messages.count()
+    7
+    >>> for message in bug_15.messages:
+    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...         bug_15, message)
+    ...     print bug_message.bugwatch
+    None
+    <security proxied canonical.launchpad.database.bugwatch.BugWatch ...>
+    ...
+
+    >>> imported_comments = getUtility(IBugMessageSet).getImportedBugMessages(
+    ...     bug_15)
+    >>> imported_comments.count()
+    6
+    >>> for bug_message in imported_comments:
+    ...     print bug_message.bugwatch
+    <security proxied canonical.launchpad.database.bugwatch.BugWatch ...>
+    ...
+
+
 == Creating bug messages ==
 
 To create a bug message, use IBugMessageSet.createMessage:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
+    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)

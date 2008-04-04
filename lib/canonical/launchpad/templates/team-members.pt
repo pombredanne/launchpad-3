@@ -76,7 +76,7 @@
                   2005-06-14
                 </span>
               </td>
-              <td tal:content="membership/statusname"></td>
+              <td tal:content="membership/status/title"></td>
               <td tal:condition="context/required:launchpad.Edit">
                 <a tal:attributes="href membership/fmt:url"
                   ><img src="/@@/edit"
@@ -126,10 +126,10 @@
                 </td>
                 <td>
                   <span class="sortkey"
-                    tal:content="membership/datejoined/fmt:datetime" />
+                    tal:content="membership/date_proposed/fmt:datetime" />
                   <span
-                    tal:attributes="title membership/datejoined/fmt:datetime"
-                    tal:content="membership/datejoined/fmt:approximatedate">
+                    tal:attributes="title membership/date_proposed/fmt:datetime"
+                    tal:content="membership/date_proposed/fmt:approximatedate">
                     2005-06-14
                   </span>
                 </td>
@@ -170,10 +170,10 @@
               </td>
                 <td>
                   <span class="sortkey"
-                    tal:content="membership/datejoined/fmt:datetime" />
+                    tal:content="membership/date_proposed/fmt:datetime" />
                   <span
-                    tal:attributes="title membership/datejoined/fmt:datetime"
-                    tal:content="membership/datejoined/fmt:approximatedate">
+                    tal:attributes="title membership/date_proposed/fmt:datetime"
+                    tal:content="membership/date_proposed/fmt:approximatedate">
                     2005-06-14
                   </span>
                 </td>
@@ -231,7 +231,7 @@
             </td>
             <td
               tal:condition="not: membership/isExpired"
-              tal:content="membership/statusname" />
+              tal:content="membership/status/title" />
             <td tal:condition="context/required:launchpad.Edit">
               <a tal:attributes="href membership/fmt:url"
                 ><img src="/@@/edit"

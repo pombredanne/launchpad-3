@@ -143,6 +143,56 @@ registered either.
     False
 
 
+== Standing tests ==
+
+Mailman may also occasionally ask whether a specific email address is a
+Launchpad member in good (or better) standing.  It does this when a non-member
+of a mailing list tries to post to the mailing list.  By default, an address
+not registered in Launchpad is not in good standing (even though the previous
+membership test should always take precedence).
+
+    >>> mailinglist_api.inGoodStanding('frederick@example.com')
+    False
+
+Since standing makes no sense for teams, an email address assigned to a team
+is also not in good standing.
+
+    >>> team_address = list(emailset.getByPerson(team_one))[0]
+    >>> mailinglist_api.inGoodStanding(team_address.email)
+    False
+
+By default, Launchpad members have an unknown, and thus not good, standing.
+
+    >>> anne.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    False
+
+Anne is a bad person and the Launchpad administrator assigns her a poor
+standing.
+
+    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> anne.personal_standing = PersonalStanding.POOR
+    >>> flush_database_updates()
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    False
+
+Anne makes amends and the Launchpad administrator improves her standing.
+
+    >>> anne.personal_standing = PersonalStanding.GOOD
+    >>> flush_database_updates()
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    True
+
+It turns out that Anne is a wonderful person!  Her standing is really
+excellent.
+
+    >>> anne.personal_standing = PersonalStanding.EXCELLENT
+    >>> flush_database_updates()
+    >>> mailinglist_api.inGoodStanding('anne.person@example.com')
+    True
+
+
 == The archive address ==
 
 We archive messages by sending them to The Mail Archive

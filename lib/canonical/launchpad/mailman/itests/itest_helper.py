@@ -98,8 +98,9 @@ class SMTPServer:
         # Import this here since sys.path won't be set up properly when this
         # module is imported.
         from canonical.config import config
+        from canonical.launchpad.mailman.config import configure_smtp
         s = socket.socket()
-        s.connect(config.mailman.smtp)
+        s.connect(configure_smtp(config.mailman.smtp))
         s.setblocking(0)
         s.send(command + '\r\n')
         s.close()
@@ -220,20 +221,6 @@ def review_list(list_name, status=None):
     return mailing_list
 
 
-def beta_program_enable(team_name):
-    """Helper for joining the mailing list beta program.
-
-    This is a pure convenience function, which can go away when mailing lists
-    go public.
-    """
-    # These imports are at file scope because the paths are not yet set up
-    # correctly when this module is imported.
-    from canonical.database.sqlbase import commit
-    from canonical.launchpad.ftests import mailinglists_helper
-    mailinglists_helper.beta_program_enable(team_name)
-    commit()
-
-
 def collect_archive_message_ids(team_name):
     """Collect all the X-Message-Id values in the team's archived messages."""
     # pylint: disable-msg=F0401
@@ -303,15 +290,14 @@ def create_list(team_name):
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.
-    beta_program_enable(team_name)
-    browser.reload()
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
-    review_list(team_name)
+    mailing_list = review_list(team_name)
     # pylint: disable-msg=F0401
     from Mailman.Utils import list_names
     assert team_name in list_names(), (
         'Mailing list was not created: %s' % list_names())
+    return mailing_list
 
 
 def subscribe(first_name, team_name):
@@ -399,7 +385,7 @@ def prepare_for_sync():
     # then copy our current Mailman stuff to it, lock, stock, and barrel.
     tempdir = tempfile.mkdtemp()
     source_dir = os.path.join(tempdir, 'production')
-    shutil.copytree(config.mailman.build.var_dir, source_dir, symlinks=True)
+    shutil.copytree(config.mailman.build_var_dir, source_dir, symlinks=True)
     # Now, we have to mess up the production database by tweaking the email
     # addresses of all the mailing lists.
     login('foo.bar@canonical.com')

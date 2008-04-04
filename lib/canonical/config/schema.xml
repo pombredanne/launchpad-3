@@ -1174,15 +1174,14 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="mailman-build"
-                 prefix="canonical.launchpad.mailman.config">
+    <sectiontype name="mailman-build">
         <key name="build"           datatype="boolean"      default="false" />
-        <key name="prefix"          datatype=".prefix"      default=""      />
+        <key name="prefix"          datatype="string"      default=""      />
         <key name="var_dir"         datatype="string"
              default="/var/mailman"  />
-        <key name="user_group"      datatype=".usergroup"   default="" />
-        <key name="site_list_owner" datatype=".siteowner"   default="" />
-        <key name="host_name"       datatype=".hostname"    default="" />
+        <key name="user_group"      datatype="string"   default="" />
+        <key name="site_list_owner" datatype="string"   default="" />
+        <key name="host_name"       datatype="string"    default="" />
     </sectiontype>
 
     <sectiontype name="mailman" prefix="canonical.mailman.config">

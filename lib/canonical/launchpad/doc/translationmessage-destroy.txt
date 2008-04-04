@@ -1,0 +1,25 @@
+== destroySelf ==
+
+(Note: this test runs as rosettaadmin to obtain the necessary
+privileges)
+
+With this method, we allow to remove a submission, it comes from SQLObject,
+but we test it here to be sure it appears in our public interface.
+
+We will need extra permissions to use this method.
+
+    >>> from canonical.launchpad.database.translationmessage import (
+    ...     TranslationMessage)
+
+Select an existing ITranslationMessage and try to remove it.
+
+    >>> translationmessage = TranslationMessage.get(1)
+    >>> translationmessage.destroySelf()
+
+It should not exist now.
+
+    >>> translationmessage = TranslationMessage.get(1)
+    Traceback (most recent call last):
+    ...
+    SQLObjectNotFound:...
+

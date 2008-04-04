@@ -7,7 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'ICodeImportMachine',
+    'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
+    'ICodeImportMachineSetPublic',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
@@ -84,18 +86,9 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
 class ICodeImportMachine(Interface):
     """A machine that can perform imports."""
 
-    id = Int(readonly=True, required=True)
-
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    hostname = TextLine(
-        title=_('Host name'), required=True,
-        description=_('The hostname of the machine.'))
-    state = Choice(
-        title=_('State'), required=True, vocabulary=CodeImportMachineState,
-        default=CodeImportMachineState.OFFLINE,
-        description=_("The state of the controller daemon on this machine."))
     heartbeat = Datetime(
         title=_("Heartbeat"),
         description=_("When the controller deamon last recorded it was"
@@ -125,21 +118,52 @@ class ICodeImportMachine(Interface):
         """
 
 
+class ICodeImportMachinePublic(Interface):
+    """Parts of the CodeImportMachine interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated."""
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
+
+    id = Int(readonly=True, required=True)
+
+    state = Choice(
+        title=_('State'), required=True, vocabulary=CodeImportMachineState,
+        default=CodeImportMachineState.OFFLINE,
+        description=_("The state of the controller daemon on this machine."))
+
+    hostname = TextLine(
+        title=_('Host name'), required=True,
+        description=_('The hostname of the machine.'))
+
+
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""
 
     def getAll():
         """Return an iterable of all code machines."""
 
+    def new(hostname):
+        """Create a new CodeImportMachine.
+
+        The machine will initially be in the 'OFFLINE' state.
+        """
+
+
+class ICodeImportMachineSetPublic(Interface):
+    """Parts of the CodeImportMachineSet interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated."""
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
+
     def getByHostname(hostname):
         """Retrieve the code import machine for a hostname.
 
         Returns a `ICodeImportMachine` provider or ``None`` if no such machine
         is present.
-        """
-
-    def new(hostname):
-        """Create a new CodeImportMachine.
-
-        The machine will initially be in the 'OFFLINE' state.
         """

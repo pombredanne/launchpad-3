@@ -70,6 +70,9 @@ class LaunchpadBrowserPublication(
     This subclass undoes the ZODB-specific things in ZopePublication, a
     superclass of z.a.publication.BrowserPublication.
     """
+    # This class does not __init__ its parent or specify exception types
+    # so that it can replace its parent class.
+    # pylint: disable-msg=W0231,W0702
 
     root_object_interface = ILaunchpadRoot
 
@@ -106,7 +109,7 @@ class LaunchpadBrowserPublication(
                 root_object = bag.site
             return root_object
 
-    # the below ovverrides to zopepublication (callTraversalHooks,
+    # The below overrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
     # assumption that there will never be a ZODB "local"
     # authentication service (such as the "pluggable auth service").
@@ -125,8 +128,9 @@ class LaunchpadBrowserPublication(
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
-        if cache.has_key(key):
-            del cache[key]
+        connection = cache.pop(key, None)
+        if connection is not None:
+            connection._makeObsolete()
         # SQLOS Connection objects also only register themselves for
         # the transaction in which they are instantiated - this is
         # no longer a problem as we are nuking the connection cache,
@@ -235,7 +239,7 @@ class LaunchpadBrowserPublication(
 
         If a non-restricted URL can not be determined, None is returned.
         """
-        base_host = config.launchpad.vhosts.mainsite.hostname
+        base_host = config.vhost.mainsite.hostname
         production_host = config.launchpad.non_restricted_hostname
         # If we don't have a production hostname, or it is the same as
         # this instance, then we can't provide a nonRestricted URL.
@@ -335,7 +339,8 @@ class LaunchpadBrowserPublication(
     def afterCall(self, request, ob):
         """See `zope.publisher.interfaces.IPublication`.
 
-        Our implementation aborts() the transaction on read-only requests.
+        Our implementation calls self.finishReadOnlyRequest(), which by
+        default aborts the transaction, for read-only requests.
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
@@ -353,7 +358,7 @@ class LaunchpadBrowserPublication(
 
         # Abort the transaction on a read-only request.
         if request.method in ['GET', 'HEAD']:
-            txn.abort()
+            self.finishReadOnlyRequest(txn)
         else:
             txn.commit()
 
@@ -361,6 +366,14 @@ class LaunchpadBrowserPublication(
         # by zope.app.publication.browser.BrowserPublication
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def finishReadOnlyRequest(self, txn):
+        """Hook called at the end of a read-only request.
+
+        By default it abort()s the transaction, but subclasses may need to
+        commit it instead, so they must overwrite this.
+        """
+        txn.abort()
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does

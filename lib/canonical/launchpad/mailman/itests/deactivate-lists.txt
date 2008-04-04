@@ -4,32 +4,12 @@ A team administrator can also deactivate a mailing list.  Mailman handles this
 by archiving and deleting the mailing list data, which allows for easy
 reconstitution later.
 
-First, No Privileges Person creates a new team through the web.  Then he
-requests a mailing list for that team, which a mailing list expert approves.
+First, create the mailing list, which will send notification messages
+to all the members of the mailing list.  We can ignore these messages.
 
     >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
-
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
-    >>> list_one = itest_helper.review_list('itest-one')
-    >>> from Mailman.Utils import list_names
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> smtpd.reset()
 
 Because the mailing list is active, there is no archived backup file.
 
@@ -43,6 +23,7 @@ Because the mailing list is active, there is no archived backup file.
 The team administrator can deactivate the list through the web.
 
     >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> browser = itest_helper.make_browser()
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> serial_watcher.wait()
@@ -50,6 +31,7 @@ The team administrator can deactivate the list through the web.
 As far as Mailman is concerned, the mailing list no longer exists.
 
     >>> import time; time.sleep(2)
+    >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
 

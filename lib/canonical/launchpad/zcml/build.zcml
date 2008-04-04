@@ -6,7 +6,9 @@
 
     <!-- Build -->
     <content class="canonical.launchpad.database.Build">
-       <allow interface="canonical.launchpad.interfaces.IBuild"/>
+       <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IBuild"/>
        <!-- XXX cprov 2005-10-27 bug=3580: We need a autobuild celebrity. -->
        <require
             permission="zope.Public"
@@ -24,7 +26,13 @@
 
     <browser:menus
         module="canonical.launchpad.browser.build"
-        classes="BuildFacets BuildOverviewMenu" />
+        classes="BuildContextMenu" />
+
+    <adapter
+       for="canonical.launchpad.interfaces.IBuild"
+       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+       factory="canonical.launchpad.browser.build_to_structuralheading"
+       />
 
     <browser:navigation
         module="canonical.launchpad.browser.build"
@@ -34,7 +42,7 @@
     <browser:pages
       for="canonical.launchpad.interfaces.IBuild"
       class="canonical.launchpad.browser.BuildView"
-      permission="zope.Public">
+      permission="launchpad.View">
       <browser:page
         name="+index"
         facet="overview"

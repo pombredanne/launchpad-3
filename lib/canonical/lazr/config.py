@@ -69,6 +69,14 @@ class SectionSchema:
         """See `ISectionSchema`"""
         return self._options[key]
 
+    @property
+    def category_and_section_names(self):
+        """See `ISectionSchema`."""
+        if '.' in self.name:
+            return tuple(self.name.split('.'))
+        else:
+            return (None, self.name)
+
 
 class Section:
     """See `ISection`."""
@@ -94,6 +102,11 @@ class Section:
         else:
             raise AttributeError(
                 "No section key named %s." % name)
+
+    @property
+    def category_and_section_names(self):
+        """See `ISection`."""
+        return self.schema.category_and_section_names
 
     def update(self, items):
         """Update the keys with new values.
@@ -217,16 +230,22 @@ class ConfigSchema:
         """Set the SectionSchemas and category_names from the config."""
         category_names = set()
         templates = {}
+        # Retrieve all the templates first because section() does not
+        # follow the order of the conf file.
         for name in parser.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
+            if is_template:
+                templates[category_name] = dict(parser.items(name))
+        for name in parser.sections():
+            (section_name, category_name,
+             is_template, is_optional) = self._parseSectionName(name)
+            if is_template:
+                continue
             options = dict(templates.get(category_name, {}))
             options.update(parser.items(name))
-            if is_template:
-                templates[category_name] = options
-            else:
-                self._section_schemas[section_name] = SectionSchema(
-                    section_name, options, is_optional)
+            self._section_schemas[section_name] = SectionSchema(
+                section_name, options, is_optional)
             if category_name is not None:
                 category_names.add(category_name)
         self._category_names = list(category_names)
@@ -296,12 +315,14 @@ class ConfigSchema:
 
     def getByCategory(self, name):
         """See `IConfigSchema`."""
+        if name not in self.category_names:
+            raise NoCategoryError(name)
         section_schemas = []
         for key in self._section_schemas:
-            if key.startswith(name):
-                section_schemas.append(self._section_schemas[key])
-        if len(section_schemas) == 0:
-            raise NoCategoryError(name)
+            section = self._section_schemas[key]
+            category, dummy = section.category_and_section_names
+            if name == category:
+                section_schemas.append(section)
         return section_schemas
 
     def _getRequiredSections(self):
@@ -365,8 +386,10 @@ class ConfigData:
         """Return a tuple of category names that the `Section`s belong to."""
         category_names = set()
         for section_name in self._sections:
-            if '.' in section_name:
-                category_names.add(section_name.split('.')[0])
+            section = self._sections[section_name]
+            category, dummy = section.category_and_section_names
+            if category is not None:
+                category_names.add(category)
         return tuple(category_names)
 
     @property
@@ -391,12 +414,14 @@ class ConfigData:
 
     def getByCategory(self, name):
         """See `IConfigData`."""
+        if name not in self.category_names:
+            raise NoCategoryError(name)
         sections = []
         for key in self._sections:
-            if key.startswith(name):
-                sections.append(self._sections[key])
-        if len(sections) == 0:
-            raise NoCategoryError(name)
+            section = self._sections[key]
+            category, dummy = section.category_and_section_names
+            if name == category:
+                sections.append(section)
         return sections
 
 

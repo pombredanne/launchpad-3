@@ -4,13 +4,12 @@
 
 __metaclass__ = type
 
-import unittest
+import os.path
 
-from zope.testing import doctest
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
 
-import os.path
 
 this_directory = os.path.dirname(__file__)
 
@@ -23,12 +22,6 @@ def tearDown(test):
     logout()
 
 def test_suite():
-    suite = doctest.DocFileSuite(
-            'pofiletranslator.txt', setUp=setUp, tearDown=tearDown,
-            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-            )
-    suite.layer = LaunchpadFunctionalLayer
-    return suite
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
+    return LayeredDocFileSuite(
+        'pofiletranslator.txt', layer=LaunchpadFunctionalLayer,
+        setUp=setUp, tearDown=tearDown)

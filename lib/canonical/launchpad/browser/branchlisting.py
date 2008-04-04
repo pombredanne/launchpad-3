@@ -53,20 +53,19 @@ class BranchListingItem(BranchBadges):
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, now, role, show_bug_badge,
+    def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
-        self.role = role
         self._now = now
         self.is_development_focus = is_dev_focus
 
     @property
-    def elapsed_time(self):
-        """How long since the branch's last commit."""
-        return self.revision_date and (self._now - self.revision_date)
+    def since_updated(self):
+        """How long since the branch was last updated."""
+        return self._now - self.branch.date_last_modified
 
     @property
     def since_created(self):
@@ -160,7 +159,6 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
-        role = self.view.roleForBranch(branch)
         # XXX thumper 2007-11-14
         # We can't do equality checks here due to BranchWithSortKeys
         # being constructed from the BranchSet queries, and the development
@@ -171,7 +169,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             is_dev_focus = (
                 branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
-            branch, last_commit, self._now, role, show_bug_badge,
+            branch, last_commit, self._now, show_bug_badge,
             show_blueprint_badge, is_dev_focus)
 
     def branches(self):
@@ -287,11 +285,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             frame is specified in config.launchpad.branch_dormant_days.
         """
         raise NotImplementedError("Derived classes must implement _branches.")
-
-    def roleForBranch(self, branch):
-        """Overridden by derived classes to display something in
-        the role column if the role column is visible."""
-        return None
 
     @property
     def no_branch_message(self):

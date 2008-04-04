@@ -133,6 +133,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     custom_widget('description', TextWidget, width=62)
 
     def normalizeFilename(self, filename):
+        # Replace slashes in the filename with less problematic dashes.
         return filename.replace('/', '-')
 
     @action('Upload', name='add')
@@ -144,7 +145,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
         # widget.
         if file_upload and data['description']:
-            # Replace slashes in the filename with less problematic dashes.
             contentType, encoding = mimetypes.guess_type(file_upload.filename)
 
             if contentType is None:

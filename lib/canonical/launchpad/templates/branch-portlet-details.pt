@@ -11,23 +11,10 @@
           <th>Type:</th>
           <td><tal:branch-type replace="context/branch_type/title" /></td>
         </tr>
-        <tr tal:condition="context/home_page">
-          <th>External links:</th>
-          <td>
-            <a tal:attributes="href context/home_page"
-               class="link">Home page</a>
-          </td>
-        </tr>
-        <tr tal:condition="context/author">
-          <th>Author:</th>
-          <td>
-            <tal:author replace="structure context/author/fmt:link"/>
-          </td>
-        </tr>
-        <tr tal:condition="not:view/author_is_owner">
+        <tr tal:condition="not:view/owner_is_registrant">
           <th>Registrant:</th>
           <td>
-            <tal:registrant replace="structure context/owner/fmt:link"/>
+            <tal:registrant replace="structure context/registrant/fmt:link"/>
           </td>
         </tr>
         <tr tal:condition="context/product">

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -31,14 +31,15 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
-    DummyTranslationMessage, TranslationMessage)
+    DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
     OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
-    TranslationPermission, TranslationValidationStatus)
+    TranslationConstants, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError, TranslationPermission,
+    TranslationValidationStatus)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
@@ -450,9 +451,8 @@ class POFile(SQLBase, POFileMixIn):
                 POTMsgSet.potemplate = %s AND
                 (TranslationMessage.id IS NULL OR
                  (NOT TranslationMessage.is_fuzzy AND (%s))))
-            """ % tuple(
-                sqlvalues(self, self.potemplate) +
-                (' OR '.join(incomplete_check),))
+            """ % (quote(self), quote(self.potemplate),
+                   ' OR '.join(incomplete_check))
         return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
@@ -491,6 +491,9 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
+
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -507,11 +510,8 @@ class POFile(SQLBase, POFileMixIn):
             WHERE
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))
-            ''' % sqlvalues(self, self.potemplate),
+                (%s))
+            ''' % (quote(self), quote(self.potemplate), not_nulls),
             orderBy='POTmsgSet.sequence')
 
         return results
@@ -628,6 +628,8 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
@@ -636,10 +638,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
                 NOT imported.was_fuzzy_in_last_import AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))''')
+                (%s))''' % not_nulls)
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -764,6 +763,7 @@ class POFile(SQLBase, POFileMixIn):
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'language_code': self.language.code,
+            'max_plural_forms': TranslationConstants.MAX_PLURAL_FORMS,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }
@@ -1258,23 +1258,20 @@ class POFileToTranslationFileDataAdapter:
 
         for row in rows:
             assert row.pofile == pofile, 'Got a row for a different IPOFile.'
-
-            # Skip messages which are neither in the PO template nor in the PO
-            # file. (Messages which are in the PO template but not in the PO
-            # file are untranslated, and messages which are not in the PO
-            # template but in the PO file are obsolete.)
-            if row.sequence == 0 and not row.is_imported:
-                continue
+            assert row.sequence != 0 or row.is_imported, (
+                "Got uninteresting row.")
 
             # Create new message set
             msgset = TranslationMessageData()
             msgset.is_obsolete = (row.sequence == 0)
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
 
-            forms = [
-                (0, row.translation0), (1, row.translation1),
-                (2, row.translation2), (3, row.translation3)]
+            forms = list(enumerate([
+                getattr(row, "translation%d" % form)
+                for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]))
             max_forms = pofile.plural_forms
             for (pluralform, translation) in forms[:max_forms]:
                 if translation is not None:

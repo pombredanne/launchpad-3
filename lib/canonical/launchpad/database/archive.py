@@ -8,8 +8,10 @@ __metaclass__ = type
 __all__ = ['Archive', 'ArchiveSet']
 
 import os
+import re
 
-from sqlobject import StringCol, ForeignKey, BoolCol, IntCol
+from sqlobject import  (
+    BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 from zope.interface import implements
@@ -20,12 +22,20 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.database.archivedependency import (
+    ArchiveDependency)
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
+from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
+    IHasOwner, IHasBuildRecords, IBuildSet, ILaunchpadCelebrities,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -51,16 +61,33 @@ class Archive(SQLBase):
 
     private = BoolCol(dbName='private', notNull=True, default=False)
 
+    require_virtualized = BoolCol(
+        dbName='require_virtualized', notNull=True, default=True)
+
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
+    sources_cached = IntCol(
+        dbName='sources_cached', notNull=False, default=0)
+
+    binaries_cached = IntCol(
+        dbName='binaries_cached', notNull=False, default=0)
+
+    package_description_cache = StringCol(
+        dbName='package_description_cache', notNull=False, default=None)
+
+    buildd_secret = StringCol(dbName='buildd_secret', default=None)
+
     @property
     def title(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PPA:
-            return 'PPA for %s' % self.owner.displayname
+            title = 'PPA for %s' % self.owner.displayname
+            if self.private:
+                title = "Private %s" % title
+            return title
         return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
@@ -76,6 +103,30 @@ class Archive(SQLBase):
                 published_series_ids]
 
     @property
+    def dependencies(self):
+        query = """
+            ArchiveDependency.dependency = Archive.id AND
+            Archive.owner = Person.id AND
+            ArchiveDependency.archive = %s
+        """ % sqlvalues(self)
+        clauseTables = ["Archive", "Person"]
+        orderBy = ['Person.displayname']
+        dependencies = ArchiveDependency.select(
+            query, clauseTables=clauseTables, orderBy=orderBy)
+        return dependencies
+
+    @property
+    def expanded_archive_dependencies(self):
+        """See `IArchive`."""
+        archives = []
+        if self.purpose == ArchivePurpose.PPA:
+            archives.append(self.distribution.main_archive)
+        archives.append(self)
+        archives.extend(
+            [archive_dep.dependency for archive_dep in self.dependencies])
+        return archives
+
+    @property
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
@@ -84,9 +135,12 @@ class Archive(SQLBase):
         }
 
         if self.purpose == ArchivePurpose.PPA:
+            if self.private:
+                url = config.personalpackagearchive.private_base_url
+            else:
+                url = config.personalpackagearchive.base_url
             return urlappend(
-                config.personalpackagearchive.base_url,
-                self.owner.name + '/' + self.distribution.name)
+                url, self.owner.name + '/' + self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
@@ -99,11 +153,15 @@ class Archive(SQLBase):
     def getPubConfig(self):
         """See `IArchive`."""
         pubconf = PubConfig(self.distribution)
+        ppa_config = config.personalpackagearchive
 
         if self.purpose == ArchivePurpose.PRIMARY:
             pass
         elif self.purpose == ArchivePurpose.PPA:
-            pubconf.distroroot = config.personalpackagearchive.root
+            if self.private:
+                pubconf.distroroot = ppa_config.private_root
+            else:
+                pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
                 pubconf.distroroot, self.owner.name, self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
@@ -459,6 +517,93 @@ class Archive(SQLBase):
             permission = False
 
         return permission
+
+    def updateArchiveCache(self):
+        """See `IArchive`."""
+        # Compiled regexp to remove puntication.
+        clean_text = re.compile('(,|;|:|\.|\?|!)')
+
+        # XXX cprov 20080402: The set() is only used because we have
+        # a limitation in our FTI setup, it only indexes the first 2500
+        # chars of the target columns. See bug 207969. When such limitation
+        # gets fixed we should probably change it to a normal list and
+        # benefit of the FTI rank for ordering.
+        cache_contents = set()
+        def add_cache_content(content):
+            """Sanitise and add contents to the cache."""
+            content = clean_text.sub(' ', content)
+            terms = [term.lower() for term in content.strip().split()]
+            for term in terms:
+                cache_contents.add(term)
+
+        # Cache owner name and displayname.
+        add_cache_content(self.owner.name)
+        add_cache_content(self.owner.displayname)
+
+        # Cache source package name and its binaries information, binary
+        # names and summaries.
+        sources_cached = DistributionSourcePackageCache.select(
+            "archive = %s" % sqlvalues(self), prejoins=["distribution"])
+        for cache in sources_cached:
+            add_cache_content(cache.distribution.name)
+            add_cache_content(cache.name)
+            add_cache_content(cache.binpkgnames)
+            add_cache_content(cache.binpkgsummaries)
+
+        # Cache distroseries names with binaries.
+        binaries_cached = DistroSeriesPackageCache.select(
+            "archive = %s" % sqlvalues(self), prejoins=["distroseries"])
+        for cache in binaries_cached:
+            add_cache_content(cache.distroseries.name)
+
+        # Collapse all relevant terms in 'package_description_cache' and
+        # update the package counters.
+        self.package_description_cache = " ".join(cache_contents)
+        self.sources_cached = sources_cached.count()
+        self.binaries_cached = binaries_cached.count()
+
+    def findDepCandidateByName(self, distroarchseries, name):
+        """See `IArchive`."""
+        archives = [
+            archive.id for archive in self.expanded_archive_dependencies]
+
+        query = """
+            binarypackagename = %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            packagepublishingstatus = %s
+        """ % sqlvalues(name, distroarchseries, archives,
+                        PackagePublishingStatus.PUBLISHED)
+
+        return PublishedPackage.selectFirst(query, orderBy=['-id'])
+
+    def getArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        return ArchiveDependency.selectOneBy(
+            archive=self, dependency=dependency)
+
+    def removeArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        dependency = self.getArchiveDependency(dependency)
+        if dependency is None:
+            raise AssertionError("This dependency does not exist.")
+        dependency.destroySelf()
+
+    def addArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        if dependency == self:
+            raise ArchiveDependencyError(
+                "An archive should not depend on itself.")
+
+        if dependency.purpose != ArchivePurpose.PPA:
+            raise ArchiveDependencyError(
+                "Archive dependencies only applies to PPAs.")
+
+        if self.getArchiveDependency(dependency):
+            raise ArchiveDependencyError(
+                "This dependency is already recorded.")
+
+        return ArchiveDependency(archive=self, dependency=dependency)
 
 
 class ArchiveSet:

@@ -18,6 +18,10 @@
     <div metal:fill-slot="main"
          tal:define="ppa_active view/is_active">
 
+      <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
+
+      <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
+
       <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url">url</a></h2>
 
@@ -38,6 +42,26 @@
       <h2>apt sources.list entries</h2>
 
       <tal:entries replace="structure view/sources_list_entries" />
+
+      <div id="ppa-dependencies" tal:condition="context/dependencies">
+
+        <h3>PPA dependencies</h3>
+
+        <p class="warning message">When installing packages from
+          this PPA you may need to enable one or more of the following
+          PPAs, which have been considered for building packages in
+          this context.</p>
+
+        <ul>
+           <li tal:repeat="dependency context/dependencies">
+             <a tal:attributes="href dependency/dependency/fmt:url"
+                tal:content="dependency/dependency/title" />
+             (included <span
+               tal:replace="dependency/date_created/fmt:displaydate" />)
+           </li>
+        </ul>
+
+      </div> <!-- ppa-dependencies -->
 
       <h2>Packages</h2>
 
@@ -91,6 +115,7 @@
             <th>Status</th>
             <th>Series</th>
             <th>Section</th>
+            <th>Built</th>
           </tr>
         </thead>
         <tbody>

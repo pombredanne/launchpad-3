@@ -11,7 +11,7 @@
     <div id="locationbar"></div>
       <div id="nonhelp">
         <!--id="mainarea"-->
-          <div>
+          <div id="maincontent">
           <h1 class="exception">Oops!</h1>
           <p>
             Sorry, something just went wrong in Launchpad.
@@ -24,7 +24,7 @@
             <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
             >launchpad-users mailing list</a> (requires subscription).
             Include the error <abbr>ID</abbr>
-            <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+            <tal:oops replace="structure view/oops_id_text" />
             in your message.
           </p>
           <tal:traceback replace="structure view/maybeShowTraceback" />

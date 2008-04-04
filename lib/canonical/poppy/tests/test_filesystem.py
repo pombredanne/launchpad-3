@@ -3,8 +3,8 @@
 __metaclass__ = type
 
 import os
-import unittest
-from zope.testing.doctest import DocFileSuite, DocTestSuite
+
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 
 # The setUp() and tearDown() functions ensure that this doctest is not umask
@@ -18,10 +18,6 @@ def tearDown(testobj):
 
 
 def test_suite():
-    suite = unittest.TestSuite([DocFileSuite("filesystem.txt",
-                                             setUp=setUp, tearDown=tearDown)])
-    return suite
-
-
-if __name__ == "__main__":
-    unittest.main(defaultTest = "test_suite")
+    return LayeredDocFileSuite(
+        "filesystem.txt",
+        setUp=setUp, tearDown=tearDown, stdout_logging=False)

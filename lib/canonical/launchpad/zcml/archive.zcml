@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -15,7 +14,7 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="authorized_size distribution enabled private purpose"
+      set_attributes="authorized_size buildd_secret distribution enabled private purpose"
       />
   </content>
 
@@ -44,6 +43,14 @@
     for="canonical.launchpad.interfaces.IArchive"
     path_expression="string:+archive"
     attribute_to_parent="owner"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/archive-privacy-icon.pt"
+    name="+privacy-icon"
     />
 
   <browser:pages
@@ -105,6 +112,18 @@
       name="+delete-packages"
       />
   </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.ArchiveEditDependenciesView">
+    <browser:page
+      template="../templates/archive-edit-dependencies.pt"
+      facet="overview"
+      name="+edit-dependencies"
+      />
+  </browser:pages>
+
 
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">

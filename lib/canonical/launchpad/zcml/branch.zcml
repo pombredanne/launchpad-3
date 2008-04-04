@@ -13,7 +13,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="name title summary url mirror_status_message
-                        private owner author product home_page lifecycle_status
+                        private owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
@@ -101,6 +101,14 @@
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+merge-queue"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchMergeQueueView"
+    facet="branches"
+    permission="zope.Public"
+    template="../templates/branch-merge-queue.pt" />
 
   <browser:page
     name="+portlet-subscribers"
@@ -291,6 +299,6 @@
   <subscriber
       for="canonical.launchpad.interfaces.IBranch
            canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.send_branch_modified_notifications" />
+      handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications" />
 
 </configure>

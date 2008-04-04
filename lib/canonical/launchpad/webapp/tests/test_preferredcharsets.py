@@ -4,17 +4,10 @@
 
 __metaclass__ = type
 
-import unittest
-
-from zope.testing.doctest import (
-    DocFileSuite, REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS)
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():
-    suite = unittest.TestSuite([
-        DocFileSuite(
-            'test_preferredcharsets.txt',
-            optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
-        ])
-    return suite
+    return LayeredDocFileSuite(
+        'test_preferredcharsets.txt')
 

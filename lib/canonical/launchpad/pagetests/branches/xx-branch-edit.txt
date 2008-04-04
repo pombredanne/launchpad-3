@@ -13,36 +13,56 @@ that link to load the +edit form for the branch.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
+The link to edit the branch details is only available to the branch owner,
+Launchpad administrators or members of the Bazaar Experts team.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> link = admin_browser.getLink('Change branch details')
+
+    >>> bazaar_expert_browser = setupBrowser(
+    ...     auth='Basic tim@canonical.com:test')
+    >>> bazaar_expert_browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> link = bazaar_expert_browser.getLink('Change branch details')
+
+    >>> nopriv_browser = setupBrowser(
+    ...     auth='Basic nopriv@canonical.com:test')
+    >>> nopriv_browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> link = nopriv_browser.getLink('Change branch details')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev'
-    ...     '/~name12/+branch/gnome-terminal/klingon')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
     >>> browser.getLink('Change branch details').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+edit'
 
 The form should have been filled with sample data values.
 
-    >>> browser.getControl('Title').value
-    'Klingon support in GNOME Terminal'
-    >>> browser.getControl('Branch URL').value
-    'http://trekkies.example.com/gnome-terminal/klingon'
-    >>> browser.getControl('Author').value
-    'name12'
-    >>> browser.getControl('Summary').value
-    'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
+    >>> print browser.getControl('Title').value
+    Klingon support in GNOME Terminal
+    >>> print browser.getControl('Branch URL').value
+    http://trekkies.example.com/gnome-terminal/klingon
+    >>> print browser.getControl('Summary').value
+    Experimental feature branch for developping and testing Klingon
+    support in GNOME Terminal.
+    Home page: http://trekkies.example.com/k12n
 
-Then, post the changes to the author and summary. Also add a trailing
+Then, post the changes to the summary. Also add a trailing
 slash to the URL.
 
-    >>> browser.getControl('Author').value = 'name18'
     >>> browser.getControl('Summary').value = (
-    ...     'Warriors\' branch for developping and testing Klingon support'
-    ...     ' in GNOME Terminal.')
+    ...     "Warriors' branch for developping and testing Klingon support"
+    ...     " in GNOME Terminal.")
     >>> browser.getControl('Branch URL').value += '/'
     >>> browser.getControl('Change Branch').click()
 
 We should be redirected to the branch page, check that our changes were taken
-into account. The trailing slash added to the URL must have been ignored.
+into account. The trailing slash added to the URL has been ignored.
 
 Since the details have been changed, emails should have been sent out.
 Emails go out to the all the subscribers.  Now there
@@ -51,25 +71,18 @@ are no subscribers so there whould be no emails.
     >>> len(stub.test_emails)
     0
 
-    >>> browser.url
-    'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
-    >>> div = find_tag_by_id(browser.contents, 'maincontent')
-    >>> print div.renderContents()
-    <div...
-    ...http://trekkies.example.com/gnome-terminal/klingon...
-    ...Warriors' branch for developping and testing Klingon support in GNOME Terminal...
-    ...Other branches authored by Ubuntu Gnome Team...
+    >>> print browser.url
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon
 
-Finally, set the author and summary back to their previous values.
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-details-table').tbody)
+    Project: GNOME Terminal
+    Location: http://trekkies.example.com/gnome-terminal/klingon
+    Last mirrored: ...
 
-    >>> browser.open('http://launchpad.dev/~name12/+branch'
-    ...     '/gnome-terminal/klingon/+edit')
-    >>> browser.getControl('Summary').value = ('Experimental feature branch'
-    ...     ' for developping and testing Klingon support in GNOME Terminal.')
-    >>> browser.getControl('Author').value = 'test@canonical.com'
-    >>> browser.getControl('Change Branch').click()
-    >>> browser.url
-    'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'branch-summary'))
+    Warriors' branch for developping and testing Klingon support
+    in GNOME Terminal.
 
 
 == Editing the Lifecycle Status ==

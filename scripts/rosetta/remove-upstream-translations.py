@@ -119,7 +119,7 @@ def main(argv):
     logger_object = logger(options, logger_name)
 
     execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
+    ztm = initZopeless(dbuser=config.rosettaadmin.dbuser)
 
     product = None
     series = None

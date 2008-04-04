@@ -76,7 +76,7 @@ class TranslationExporterTestCase(unittest.TestCase):
             exporter_formats.append(exporter.format)
 
         self.assertEqual(
-            exporter_formats, [TranslationFileFormat.PO],
+            exporter_formats, [TranslationFileFormat.XPIPO],
             'XPI source file should be exported as PO format')
 
 

@@ -16,6 +16,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
@@ -49,7 +50,8 @@ def getTxnManager():
     # FIXME: That uses a protected attribute in ZopelessTransactionManager
     # -- David Allouche 2005-02-16
     if ZopelessTransactionManager._installed is None:
-        return initZopeless(implicitBegin=False)
+        return initZopeless(
+            implicitBegin=False, dbuser=config.authserver.dbuser)
     else:
         return ZopelessTransactionManager._installed
 

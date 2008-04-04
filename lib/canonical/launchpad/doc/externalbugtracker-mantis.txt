@@ -14,9 +14,7 @@ export from.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-    >>> alsa_mantis = Mantis(txn, new_bugtracker(BugTrackerType.MANTIS))
+    >>> alsa_mantis = Mantis('http://example.com/')
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -33,20 +31,12 @@ in the form "status: resolution" as follows:
     >>> alsa_mantis.convertRemoteStatus('closed: fixed').title
     'Fix Released'
 
-If the status can't be converted, Unknown is returned, and a warning
-is logged.
+If the status can't be converted an UnknownRemoteStatusError is raised.
 
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
-    WARNING:...:Unknown status/resolution foo/bar.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
-warning. This handles the case where we've tried to probe for a bug
-but didn't succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> alsa_mantis.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Updating Bug Watches ==
@@ -70,7 +60,7 @@ Tracker:
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here:
 
-    >>> example_ext_bug_tracker = TestMantis(txn, example_bug_tracker)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
 
 Collect the Example.com watches:
 
@@ -81,6 +71,8 @@ Collect the Example.com watches:
 And have our special Mantis instance process them:
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
@@ -191,6 +183,7 @@ updated:
     >>> bug_watch = sorted(example_bug_tracker.watches, key=getid)[0]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> bug_watch.lastchecked = bug_watch.lastchanged
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, [bug_watch])

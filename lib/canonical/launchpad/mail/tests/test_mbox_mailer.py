@@ -8,6 +8,8 @@ import tempfile
 
 from zope.testing.cleanup import cleanUp
 
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+
 
 def setup(testobj):
     """Set up for doc test"""
@@ -26,7 +28,7 @@ def teardown(testobj):
 
 
 def test_suite():
-    return doctest.DocFileSuite(
+    return LayeredDocFileSuite(
         'mbox_mailer.txt',
         setUp=setup, tearDown=teardown,
-        optionflags=doctest.ELLIPSIS)
+        optionflags=doctest.ELLIPSIS, stdout_logging=False)

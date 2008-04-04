@@ -20,14 +20,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState,
-    ICodeImportEventSet)
+    CodeImportMachineState, ICodeImportEventSet, ICodeImportMachine,
+    ICodeImportMachinePublic, ICodeImportMachineSet,
+    ICodeImportMachineSetPublic)
 
 
 class CodeImportMachine(SQLBase):
     """See `ICodeImportMachine`."""
 
-    implements(ICodeImportMachine)
+    implements(ICodeImportMachine, ICodeImportMachinePublic)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
@@ -68,7 +69,7 @@ class CodeImportMachine(SQLBase):
 class CodeImportMachineSet(object):
     """See `ICodeImportMachineSet`."""
 
-    implements(ICodeImportMachineSet)
+    implements(ICodeImportMachineSet, ICodeImportMachineSetPublic)
 
     def getAll(self):
         """See `ICodeImportMachineSet`."""

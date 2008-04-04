@@ -7,11 +7,12 @@ Launchpad users.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IEmailAddressSet, IHasTranslationImports)
+    ...     IPersonSet, IPerson, IEmailAddressSet, IHasStanding,
+    ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
 
-Any Person object (either a person or a team) implements IPerson.
+Any Person object (either a person or a team) implements IPerson...
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
@@ -25,7 +26,7 @@ Any Person object (either a person or a team) implements IPerson.
     >>> verifyObject(IPerson, ubuntu_team)
     True
 
-and IHasTranslationImports:
+...and IHasTranslationImports...
 
     >>> IHasTranslationImports.providedBy(foobar)
     True
@@ -35,6 +36,15 @@ and IHasTranslationImports:
     True
     >>> verifyObject(IHasTranslationImports, ubuntu_team)
     True
+
+...and IHasStanding.  Teams can technically also have standing, but it's
+meaningless because teams cannot post to mailing lists.
+
+    >>> IHasStanding.providedBy(foobar)
+    True
+    >>> verifyObject(IHasStanding, foobar)
+    True
+
 
 == The IPersonSet utility ==
 
@@ -137,6 +147,60 @@ And now with the same name of a existing account
     >>> lifeless.teamowner is None
     True
 
+
+=== Personal standing ===
+
+People have a property called 'personal standing', which affects for
+example their ability to post to mailing lists they are not members of.
+It's a form of automatic moderation.  Most people have unknown standing,
+which is the default.
+
+    >>> login('foo.bar@canonical.com')
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...
+
+A person also has a reason for why their standing is what it is.  The
+default value of None means that no reason for the personal_standing
+value is available.
+
+    >>> print lifeless.personal_standing_reason
+    None
+
+A Launchpad administrator may change a person's standing, and may give a
+reason for the change.
+
+    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> lifeless.personal_standing = PersonalStanding.GOOD
+    >>> lifeless.personal_standing_reason = 'Such a cool guy!'
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(lifeless)
+
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.GOOD...
+    >>> print lifeless.personal_standing_reason
+    Such a cool guy!
+
+Non-administrators may not change a person's standing.
+
+    >>> login('test@canonical.com')
+    >>> lifeless.personal_standing = PersonalStanding.POOR
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+    >>> lifeless.personal_standing_reason = 'Such a cool guy!'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.GOOD...
+    >>> print lifeless.personal_standing_reason
+    Such a cool guy!
+    >>> login(ANONYMOUS)
+
+
 === Ubunteros ===
 
 Anybody who signed the last version of Ubuntu's Code of Conduct is considered
@@ -150,7 +214,8 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     >>> foobar.is_ubuntero
     True
 
-=== Looking Up Users by OpenID Identifer ===
+
+=== Looking Up Users by OpenID Identifier ===
 
 Each Launchpad user is assigned an unchanging OpenID identity URL.
 The last component of this URL is specific to the user, and can be
@@ -186,6 +251,7 @@ Accounts that have not been validated are not returned either:
     >>> print personset.getByOpenIdIdentifier('matsubara_oid')
     None
 
+
 == Teams ==
 
 As we said above, the Person class is overloaded to represent teams so
@@ -213,6 +279,7 @@ account_status will always be NOACCOUNT.
 
     >>> landscape_devs.account_status
     <DBItem AccountStatus.NOACCOUNT...
+
 
 === Turning people into teams ===
 
@@ -279,6 +346,7 @@ account_status is NOACCOUNT, though.
     Traceback (most recent call last):
     ...
     AssertionError: Can't convert a team to a team.
+
 
 === Team members ===
 
@@ -442,8 +510,7 @@ will reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IPersonSet, TeamMembershipStatus)
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> from canonical.launchpad.database import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
@@ -463,6 +530,23 @@ BugSubscription.subscribed_by attributes.
     InvalidField: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
+== Latest Team Memberships ==
+
+The key concept in displaying the latest team memberships is that the team
+list is actually sorted by date joined.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> foobar = personset.getByName('name16')
+    >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
+    >>> for membership in membership_list:
+    ...     print membership.datejoined
+    2007-01-17 14:13:39.692693+00:00
+    2006-05-15 22:23:29.062603+00:00
+    2005-10-13 13:03:41.668724+00:00
+    2005-07-12 14:36:09.587753+00:00
+    2005-04-14 00:00:00+00:00
 
 == Deactivating user accounts ==
 
@@ -604,6 +688,7 @@ are now owned/driven by the registry admins team.
     >>> foobar.name = 'name16'
     >>> flush_database_updates()
 
+
 == Searching ==
 
 You can search based on a person's name or displayname, or any of the email
@@ -616,9 +701,10 @@ trying to match the text only against the beginning of an email address:
     >>> emailset = getUtility(IEmailAddressSet)
     >>> def print_people(results):
     ...     for person in results:
-    ...         emails = [email.email for email in emailset.getByPerson(person)]
-    ...         print (
-    ...             "%s (%s): %s" % (person.displayname, person.name, emails))
+    ...         emails = [email.email
+    ...                   for email in emailset.getByPerson(person)]
+    ...         print "%s (%s): %s" % (
+    ...             person.displayname, person.name, emails)
 
     >>> print_people(personset.find('ubuntu'))
     Mirror Administrators (ubuntu-mirror-admins): []
@@ -668,6 +754,7 @@ Searching only for Teams based on their names or email addresses:
 
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []
+
 
 == Packages related to a person ==
 
@@ -874,12 +961,11 @@ and ILanguage.
 We can get the list of translators that did some translation in Launchpad and
 expressed their interest for a concrete language.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IKarmaCacheManager)
+    >>> from canonical.launchpad.interfaces import ILanguageSet
  
-    # Sample data is not complete for this test, so we need to note that another
-    # Spanish translator expressed its interest on doing Spanish translations.
-    # That other person is Foo Bar (name16).
+    # Sample data is not complete for this test, so we need to note that
+    # another Spanish translator expressed its interest on doing Spanish
+    # translations.  That other person is Foo Bar (name16).
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByName('name16')
     >>> print foo_bar.displayname

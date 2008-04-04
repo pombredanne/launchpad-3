@@ -48,7 +48,7 @@
   <table id="packaging" class="listing">
     <thead>
       <tr>
-        <th colspan="4">
+        <th colspan="5">
           <span tal:replace="context/distribution/displayname" /> version
         </th>
         <th>Upstream version</th>
@@ -60,6 +60,8 @@
                   tal:content="row/series/name">hoary</span></td>
         <td><span tal:condition="row/series"
                   tal:content="row/series/status/name/fmt:lower" /></td>
+        <td><span tal:condition="row/package"
+                  tal:content="row/package/component/name/fmt:lower" /></td>
         <td tal:content="row/pocket">release</td>
         <td><a tal:content="row/package/version"
                tal:attributes="href row/package/fmt:url">2.2.1-1</a>

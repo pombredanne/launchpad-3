@@ -180,23 +180,33 @@ viewable branches.
     >>> print_person_code_listing(anon_browser)
     Total of 10 branches listed
     No landscape branches
-    >>> print_person_code_listing(anon_browser, '/+authoredbranches')
-    Total of 3 branches listed
+    >>> print_person_code_listing(anon_browser, '/+ownedbranches')
+    Total of 9 branches listed
+    No landscape branches
+    >>> print_person_code_listing(anon_browser, '/+registeredbranches')
+    Total of 9 branches listed
     No landscape branches
 
     >>> print_person_code_listing(no_priv_browser)
     Total of 10 branches listed
     No landscape branches
-    >>> print_person_code_listing(no_priv_browser, '/+authoredbranches')
-    Total of 3 branches listed
+    >>> print_person_code_listing(no_priv_browser, '/+ownedbranches')
+    Total of 9 branches listed
+    No landscape branches
+    >>> print_person_code_listing(no_priv_browser, '/+registeredbranches')
+    Total of 9 branches listed
     No landscape branches
 
     >>> print_person_code_listing(landscape_dev_browser)
     Total of 12 branches listed
     ~name12/landscape/feature-x            New   landscape ...
     ~landscape-developers/landscape/trunk  New   landscape ...
-    >>> print_person_code_listing(landscape_dev_browser, '/+authoredbranches')
-    Total of 5 branches listed
+    >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
+    Total of 11 branches listed
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
+    >>> print_person_code_listing(landscape_dev_browser, '/+registeredbranches')
+    Total of 11 branches listed
     ~name12/landscape/feature-x            New   landscape ...
     ~landscape-developers/landscape/trunk  New   landscape ...
 
@@ -204,8 +214,12 @@ viewable branches.
     Total of 12 branches listed
     ~name12/landscape/feature-x            New   landscape ...
     ~landscape-developers/landscape/trunk  New   landscape ...
-    >>> print_person_code_listing(admin_browser, '/+authoredbranches')
-    Total of 5 branches listed
+    >>> print_person_code_listing(admin_browser, '/+ownedbranches')
+    Total of 11 branches listed
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
+    >>> print_person_code_listing(admin_browser, '/+registeredbranches')
+    Total of 11 branches listed
     ~name12/landscape/feature-x            New   landscape ...
     ~landscape-developers/landscape/trunk  New   landscape ...
 
@@ -295,14 +309,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    Landscape trunk - Sample Person
+    Landscape trunk - Landscape Developers
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    Landscape trunk - Sample Person
+    Landscape trunk - Landscape Developers
 
 But normal people can't.
 
