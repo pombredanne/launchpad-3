@@ -268,16 +268,16 @@ tag when the render() method is called.
     <img src="deptree.png" usemap="#deptree" />
     <map id="deptree" name="deptree"> ...
 
-The render() method called renderGraphvizGraph('cmapx') on the parent
-class, SpecificationTreeGraphView, to convert the graph data into image
-map data. The renderGraphvizGraph() method also makes PNG images when it
-is passed 'png' as its argument.
+The real work of converting the graph data into an image map is done by
+the renderGraphvizGraph() method from the view's parent class. The
+method will make an image map when 'cmapx' is passed as an argument; It
+also makes PNG images when it is passed 'png' as an argument.
 
     >>> graph_view.renderGraphvizGraph('cmapx')
     '<map id="deptree" name="deptree">...'
 
 The SpecificationTreeImageTag view is indirectly called when the spec's
-+index template is calls render().
++index template calls render().
 
     >>> login('no-priv@canonical.com', request)
     >>> page_view = getMultiAdapter((svg_support, request), name="+index")
@@ -311,7 +311,7 @@ data sent to the command is bad:
      ...
     ProblemRenderingGraph: ("<stdin>:1: syntax error in line 1 near 'bad'...)
 
-The SpecificationTreeImageTag views render() method captures the raised
+The SpecificationTreeImageTag.render() method captures the raised
 error and directly converts it into an oops report. The markup contains
 a message explaining that the image was not linked.
 
@@ -360,8 +360,9 @@ the page to link the image.
     >>> print oops_report.type, oops_report.value
     OSError [Errno 12] Cannot allocate memory
 
-If an error occurs during the render of the PNG image, a redirect
-is issued to a failover image. The image explains that there was
+If an error occurs during the render of the PNG image, the fail
+over image (icing/blueprints-deptree-error.png) is returned. It's size
+is 3092 bytes.
 
     >>> graph_view = getMultiAdapter(
     ...     (svg_support, request), name="deptree.png")
@@ -372,13 +373,12 @@ is issued to a failover image. The image explains that there was
     OSError: [Errno 12] Cannot allocate memory
 
     >>> image = graph_view.render()
-    >>> print image
-    None
+    >>> image.startswith('\x89PNG')
+    True
 
-    >>> graph_view.request.response.getStatus()
-    302
-    >>> graph_view.request.response.getHeader('Location')
-    '/+icing/blueprints-deptree-error.png'
+    >>> fail_over_image_length = len(image)
+    >>> fail_over_image_length
+    3092
 
 The dependency graph image is rendered correctly when Popen is
 restored.
@@ -393,3 +393,5 @@ restored.
     >>> image.startswith('\x89PNG')
     True
 
+    >>> len(image) != fail_over_image_length
+    True
