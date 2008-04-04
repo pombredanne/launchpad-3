@@ -216,7 +216,7 @@ class TestBranchPuller(BranchTestCase):
         # an incomplete request to the HttpServer leaving a dangling thread.
         # Our test suite now fails tests leaving dangling threads.
         # -- StuartBishop 20080312
-        self.assertMirrored(os.getcwd(), branch)
+        self.assertMirrored(tree.basedir, branch)
 
     def _getImportMirrorPort(self):
         """Return the port used to serve imported branches, as specified in
