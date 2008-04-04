@@ -85,7 +85,7 @@ class EmailProcessingError(Exception):
         """Initialize
 
         :args: The standard exception extra arguments.
-        "stop_processing: Should processing email stop?
+        "stop_processing: Should the processing of the email be stopped?
         """
         Exception.__init__(self, args)
         self.stop_processing = stop_processing
@@ -118,7 +118,8 @@ class IEmailCommand(Interface):
         """
 
     def __str__():
-        "Return a textual representation of the command and its arguments."
+        """Return a textual representation of the command and its arguments.
+        """
 
 
 class IBugEmailCommand(IEmailCommand):
