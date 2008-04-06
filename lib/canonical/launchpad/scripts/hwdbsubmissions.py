@@ -15,12 +15,20 @@ from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
+from tempfile import NamedTemporaryFile
 
-from lxml import etree
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
+
 import pytz
 
 from canonical.config import config
-
+from canonical.launchpad.helpers import simple_popen2
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -37,6 +45,73 @@ _time_regex = re.compile(r"""
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 
+
+class RelaxNGValidator:
+    """A validator for Relax NG schemas."""
+
+    def __init__(self, relax_ng_filename):
+        """Create a validator instance.
+
+        :param relax_ng_filename: The name of a file containing the schema.
+        """
+        self.relax_ng_filename = relax_ng_filename
+        self._errors = ''
+
+    def validate(self, xml):
+        """Validate the string xml
+
+        :return: True, if xml is valid, else False.
+        """
+        # XXX Abel Deuring, 2008-03-20
+        # The original implementation of the validation used the lxml
+        # package. Unfortunately, running lxml's Relax NG validator
+        # caused segfaults during PQM test runs, hence this class uses
+        # an external validator.
+
+        # Performance penalty of the external validator:
+        # Using the lxml validator, the tests in this module need ca.
+        # 3 seconds on a 2GHz Core2Duo laptop.
+        # If the xml data to be validated is passed to xmllint via
+        # canonical.launchpad.helpers.simple_popen2, the run time
+        # of the tests is 38..40 seconds; if the validation input
+        # is not passed via stdin but saved in a temporary file,
+        # the tests need 28..30 seconds.
+
+        xml_file = NamedTemporaryFile()
+        xml_file.write(xml)
+        xml_file.flush()
+        command = 'xmllint -noout -relaxng %s %s'% (self.relax_ng_filename,
+                                                    xml_file.name)
+        result = simple_popen2(command, '').strip()
+
+        # The output consists of lines describing possible errors; the
+        # last line is either "(file) fails to validate" or
+        # "(file) validates".
+        parts = result.rsplit('\n', 1)
+        if len(parts) > 1:
+            self._errors = parts[0]
+            status = parts[1]
+        else:
+            self._errors = ''
+            status = parts[0]
+        if status == xml_file.name + ' fails to validate':
+            return False
+        elif status == xml_file.name + ' validates':
+            return True
+        else:
+            raise AssertionError(
+                'Unexpected result of running xmllint: %s' % result)
+
+    @property
+    def error_log(self):
+        """A string with the errors detected by the validator.
+
+        Each line contains one error; if the validation was successful,
+        error_log is the empty string.
+        """
+        return self._errors
+
+
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
 
@@ -44,15 +119,14 @@ class SubmissionParser:
         if logger is None:
             logger = getLogger()
         self.logger = logger
-        self.doc_parser = etree.XMLParser(remove_comments=True)
+        self.doc_parser = etree.XMLParser()
 
         self.validator = {}
         directory = os.path.join(config.root, 'lib', 'canonical',
                                  'launchpad', 'scripts')
         for version, relax_ng_filename in _relax_ng_files.items():
             path = os.path.join(directory, relax_ng_filename)
-            relax_ng_doc = etree.parse(path)
-            self.validator[version] = etree.RelaxNG(relax_ng_doc)
+            self.validator[version] = RelaxNGValidator(path)
         self._setMainSectionParsers()
         self._setHardwareSectionParsers()
         self._setSoftwareSectionParsers()
@@ -69,10 +143,9 @@ class SubmissionParser:
         """
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
-        except etree.XMLSyntaxError, error_value:
+        except SyntaxError, error_value:
             self._logError(error_value, submission_key)
             return None
-        self.docinfo = tree.docinfo
 
         submission_doc = tree.getroot()
         if submission_doc.tag != 'system':
@@ -87,7 +160,7 @@ class SubmissionParser:
         self.submission_format_version = version
 
         validator = self.validator[version]
-        if not validator(tree):
+        if not validator.validate(submission):
             self._logError(
                 'Relax NG validation failed.\n%s' % validator.error_log,
                 submission_key)
@@ -287,6 +360,8 @@ class SubmissionParser:
                  dictionary with the properties of the device (see
                  _parseProperties for details).
         """
+        # The Relax NG validation ensures that the attributes "id" and
+        # "udi" exist; it also ensures that "id" contains an integer.
         device_data = {'id': int(device_node.get('id')),
                        'udi': device_node.get('udi')}
         parent = device_node.get('parent', None)
@@ -333,6 +408,8 @@ class SubmissionParser:
                 'Parsing submission %s: Unexpected tag <%s> in <processors>'
                    % (self.submission_key, processors_node.tag))
             processor = {}
+            # The RelaxNG validation ensures that the attribute "id" exists
+            # and that it contains an integer.
             processor['id'] = int(processor_node.get('id'))
             processor['name'] = processor_node.get('name')
             processor['properties'] = self._parseProperties(processor_node)
@@ -356,6 +433,8 @@ class SubmissionParser:
             assert alias_node.tag == 'alias', (
                 'Parsing submission %s: Unexpected tag <%s> in <aliases>'
                     % (self.submission_key, alias_node.tag))
+            # The RelaxNG validation ensures that the attribute "target"
+            # exists and that it contains an integer.
             alias = {'target': int(alias_node.get('target'))}
             for sub_node in alias_node.getchildren():
                 # The Relax NG svalidation ensures that we have exactly
@@ -418,7 +497,11 @@ class SubmissionParser:
                 raise ValueError(
                     '<package name="%s"> appears more than once in <packages>'
                     % package_name)
-            packages[package_name] = self._parseProperties(package_node)
+            # The RelaxNG validation ensures that the attribute "id" exists
+            # and that it contains an integer.
+            package_data = {'id': int(package_node.get('id'))}
+            package_data['properties'] = self._parseProperties(package_node)
+            packages[package_name] = package_data
         return packages
 
     def _parseXOrg(self, xorg_node):
@@ -644,8 +727,9 @@ class SubmissionParser:
     def findDuplicateIDs(self, parsed_data):
         """Return the set of duplicate IDs.
 
-        The IDs of devices and processors should be unique; this
-        method returns a list of duplicate IDs found in a submission.
+        The IDs of devices, processors and software packages should be
+        unique; this method returns a list of duplicate IDs found in a
+        submission.
         """
         all_ids = set()
         duplicates = self._findDuplicates(
@@ -656,28 +740,35 @@ class SubmissionParser:
             all_ids,
             [processor['id']
              for processor in parsed_data['hardware']['processors']]))
+        duplicates.update(self._findDuplicates(
+            all_ids,
+            [package['id']
+             for package in parsed_data['software']['packages'].values()]))
         return duplicates
 
     def _getIDMap(self, parsed_data):
-        """Return a dictionary mapping IDs to devices and processors."""
-        id_device_map = {}
+        """Return a dictionary ID -> devices, processors and packages."""
+        id_map = {}
         hal_devices = parsed_data['hardware']['hal']['devices']
         for device in hal_devices:
-            id_device_map[device['id']] = device
+            id_map[device['id']] = device
 
         for processor in parsed_data['hardware']['processors']:
-            id_device_map[processor['id']] = processor
+            id_map[processor['id']] = processor
 
-        return id_device_map
+        for package in parsed_data['software']['packages'].values():
+            id_map[package['id']] = package
+
+        return id_map
 
     def findInvalidIDReferences(self, parsed_data):
         """Return the set of invalid references to IDs.
 
-        The sub-tag <target> of <question> references a device or processor
-        node by its ID; the submission must contain a <device> or <processor>
-        tag with this ID. This method returns a set of those IDs mentioned
-        in <target> nodes that have no corresponding device or processor
-        node.
+        The sub-tag <target> of <question> references a device, processor
+        of package node by its ID; the submission must contain a <device>,
+        <processor> or <software> tag with this ID. This method returns a
+        set of those IDs mentioned in <target> nodes that have no
+        corresponding device or processor node.
         """
         id_device_map = self._getIDMap(parsed_data)
         known_ids = set(id_device_map.keys())
