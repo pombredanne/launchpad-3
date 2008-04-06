@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
-    makeFailure, ProcessTestsMixin)
+    makeFailure, suppress_stderr, ProcessTestsMixin)
 
 class FakeBranchStatusClient:
 
@@ -362,6 +362,7 @@ class TestPullerMonitorProtocol(
         return self.assertFailure(
             self.termination_deferred, error.ProcessTerminated)
 
+    @suppress_stderr
     def test_errorBeforeStatusReportAndFailingMirrorFailed(self):
         # If the subprocess exits before reporting success or failure, *and*
         # the attempt to record failure fails, there's not much we can do but
@@ -369,6 +370,9 @@ class TestPullerMonitorProtocol(
         # fire the termination deferred with the first thing to go wrong --
         # the prcess termination in this case -- and log.err() the failed
         # attempt to call mirrorFailed().
+        # XXX MichaelHudson 2008-04-02: The notification failure will
+        # be log.err()ed, which spews to stderr which we just hide.
+        # This can be tested nicely when we upgrade Twisted.
 
         class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
             def mirrorFailed(self, message, oops):

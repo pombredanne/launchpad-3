@@ -31,6 +31,21 @@ def makeFailure(exception_factory, *args, **kwargs):
         return failure.Failure()
 
 
+def suppress_stderr(test_method):
+    """Deferred friendly way of suppressing stderr output from a test."""
+    def set_stderr(result, stream):
+        sys.stderr = stream
+        return result
+    def wrapper(self):
+        saved_stderr = sys.stderr
+        ignored_stream = StringIO.StringIO()
+        return defer.succeed(None).addCallback(
+            set_stderr, ignored_stream).addCallback(
+            lambda ignored: defer.maybeDeferred(test_method, self)).addBoth(
+            set_stderr, saved_stderr)
+    return wrapper
+
+
 class ProcessTestsMixin:
     """Helpers to allow direct testing of ProcessProtocol subclasses.
     """
@@ -87,6 +102,7 @@ class ProcessTestsMixin:
         self.protocol.transport = self.StubTransport(
             self.protocol, self.clock)
         self.protocol.connectionMade()
+
 
 class TestProcessProtocolWithTwoStageKill(
     ProcessTestsMixin, TrialTestCase):
@@ -240,58 +256,36 @@ class TestProcessMonitorProtocol(
         return self.assertFailure(
             self.termination_deferred, RuntimeError)
 
+    @suppress_stderr
     def test_uncleanExitAndPendingNotificationFails(self):
         # If the process exits with a non-zero exit code while a
         # notification is pending and the notification subsequently
         # fails, the ProcessTerminated is still passed on to the
         # termination deferred.
-        # XXX MichaelHudson 2008-04-02: The notification failure will be
-        # log.err()ed, which spews to stderr, forcing hacks.  This can be
-        # tested nicely when we upgrade Twisted.
-        stringio = StringIO.StringIO()
-        saved_stderr = sys.stderr
-        def set_stderr(result, stream):
-            sys.stderr = stream
-            return result
+        # XXX MichaelHudson 2008-04-02: The notification failure will
+        # be log.err()ed, which spews to stderr which we just hide.
+        # This can be tested nicely when we upgrade Twisted.
+        deferred = defer.Deferred()
+        self.protocol.runNotification(lambda : deferred)
+        self.simulateProcessExit(clean=False)
+        deferred.errback(makeFailure(RuntimeError))
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
 
-        def test_body(ignored):
-            deferred = defer.Deferred()
-            self.protocol.runNotification(lambda : deferred)
-            self.simulateProcessExit(clean=False)
-            deferred.errback(makeFailure(RuntimeError))
-            return self.assertFailure(
-                self.termination_deferred, error.ProcessTerminated)
-
-        return defer.succeed(None).addCallback(
-            set_stderr, stringio).addCallback(
-            test_body).addBoth(
-            set_stderr, saved_stderr)
-
+    @suppress_stderr
     def test_unexpectedErrorAndNotificationFailure(self):
         # If unexpectedError is called while a notification is pending and the
         # notification subsequently fails, the first failure "wins" and is
         # passed on to the termination deferred.
-        # XXX MichaelHudson 2008-04-02: The notification failure will be
-        # log.err()ed, which spews to stderr, forcing hacks.  This can be
-        # tested nicely when we upgrade Twisted.
-        stringio = StringIO.StringIO()
-        saved_stderr = sys.stderr
-        def set_stderr(result, stream):
-            sys.stderr = stream
-            return result
-
-        def test_body(ignored):
-            deferred = defer.Deferred()
-            self.protocol.runNotification(lambda : deferred)
-            self.protocol.unexpectedError(makeFailure(TypeError))
-            deferred.errback(makeFailure(RuntimeError))
-            return self.assertFailure(
-                self.termination_deferred, TypeError)
-
-        return defer.succeed(None).addCallback(
-            set_stderr, stringio).addCallback(
-            test_body).addBoth(
-            set_stderr, saved_stderr)
+        # XXX MichaelHudson 2008-04-02: The notification failure will
+        # be log.err()ed, which spews to stderr which we just hide.
+        # This can be tested nicely when we upgrade Twisted.
+        deferred = defer.Deferred()
+        self.protocol.runNotification(lambda : deferred)
+        self.protocol.unexpectedError(makeFailure(TypeError))
+        deferred.errback(makeFailure(RuntimeError))
+        return self.assertFailure(
+            self.termination_deferred, TypeError)
 
 class TestProcessMonitorProtocolWithTimeout(
     ProcessTestsMixin, TrialTestCase):
