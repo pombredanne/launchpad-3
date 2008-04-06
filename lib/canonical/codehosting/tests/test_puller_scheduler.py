@@ -118,6 +118,10 @@ class TestPullerWireProtocol(TrialTestCase):
 
     layer = TwistedLayer
 
+    class StubTransport:
+        def loseConnection(self):
+            pass
+
     class StubPullerProtocol:
 
         def __init__(self):
@@ -136,6 +140,7 @@ class TestPullerWireProtocol(TrialTestCase):
     def setUp(self):
         self.pullerprotocol = self.StubPullerProtocol()
         self.protocol = scheduler.PullerWireProtocol(self.pullerprotocol)
+        self.protocol.makeConnection(self.StubTransport())
 
     def convertToNetstring(self, string):
         """Encode `string` as a netstring."""
@@ -360,7 +365,10 @@ class TestPullerMonitorProtocol(
     def test_errorBeforeStatusReportAndFailingMirrorFailed(self):
         # If the subprocess exits before reporting success or failure, *and*
         # the attempt to record failure fails, there's not much we can do but
-        # we should still not hang.
+        # we should still not hang.  In keeping with the general policy, we
+        # fire the termination deferred with the first thing to go wrong --
+        # the prcess termination in this case -- and log.err() the failed
+        # attempt to call mirrorFailed().
 
         class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
             def mirrorFailed(self, message, oops):
@@ -369,8 +377,9 @@ class TestPullerMonitorProtocol(
             FailingMirrorFailedStubPullerListener()
         self.protocol.errReceived('traceback')
         self.simulateProcessExit(clean=False)
+        # Assert stuff about log.err() here.
         return self.assertFailure(
-            self.termination_deferred, RuntimeError)
+            self.termination_deferred, error.ProcessTerminated)
 
 
 class TestPullerMaster(TrialTestCase):
