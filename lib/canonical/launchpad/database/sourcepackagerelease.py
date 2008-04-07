@@ -296,8 +296,6 @@ class SourcePackageRelease(SQLBase):
         if package_size and package_size[0]:
             result = float(package_size[0])
 
-        print "package_size: '%s'" % package_size
-
         return result
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
