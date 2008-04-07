@@ -24,16 +24,8 @@ class CheckWatches(LaunchpadCronScript):
                 "one bugtracker using this option will check all the "
                 "bugtrackers specified.")
 
-
     def main(self):
         start_time = time.time()
-
-        # Append the prefix 'CW' to the default prefix.
-        config.error_reports.oops_prefix += 'CW'
-        # Don't copy OOPSes to the zlog; we will do that
-        # explicitly. See `externalbugtracker.report_oops` and
-        # `report_warning`.
-        config.error_reports.copy_to_zlog = False
 
         updater = BugWatchUpdater(self.txn, self.logger)
         updater.updateBugTrackers(self.options.bug_trackers)

@@ -76,7 +76,6 @@ if __name__ == '__main__':
     branch_type = BranchType.items[branch_type_name]
     config.setProcess(
         'mirror-branch-%s-lazr.conf' % branch_type_map[branch_type])
-    globalErrorUtility.appendToOopsPrefix(oops_prefix)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
