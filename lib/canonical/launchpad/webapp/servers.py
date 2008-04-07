@@ -38,7 +38,7 @@ from canonical.config import config
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
     IScopedCollection)
-from canonical.lazr.rest import CollectionResource, EntryResource
+from canonical.lazr.rest.resource import CollectionResource, EntryResource
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
@@ -658,6 +658,10 @@ class LaunchpadTestRequest(TestRequest):
     def getNearest(self, *some_interfaces):
         """See IBasicLaunchpadRequest."""
         return None, None
+
+    def setInWSGIEnvironment(self, key, value):
+        """See IBasicLaunchpadRequest."""
+        self._orig_env[key] = value
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
