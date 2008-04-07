@@ -944,10 +944,12 @@ Create oldest build instance.
     >>> oldest_build.datebuilt = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
 
 Check that the oldest build instance's 'estimated_build_duration'
-is set to the default value (5 minutes)
+is initialized based on its package size. Since the latter is very
+small (less than a KB) the 'estimated_build_duration' will be a
+minute.
 
     >>> oldest_build.estimated_build_duration
-    datetime.timedelta(0, 300)
+    datetime.timedelta(0, 60)
 
 Create intermediate SourcePackageRelease instance.
 
