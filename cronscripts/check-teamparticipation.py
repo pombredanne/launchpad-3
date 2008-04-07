@@ -27,8 +27,8 @@ if __name__ == '__main__':
     # Check self-participation.
     query = """
         SELECT id, name
-        FROM person WHERE id NOT IN (
-            SELECT person FROM teamparticipation WHERE person = team
+        FROM Person WHERE id NOT IN (
+            SELECT person FROM Teamparticipation WHERE person = team
             ) AND merged IS NULL
         """
     ztm.begin()
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     if len(non_self_participants) > 0:
         # XXX: salgado, 2008-04-04: This script should use a logger rather
         # than printing stuff to stdout.
-        print ("Some people/teams are not members of themselves: %s" 
+        print ("Some people/teams are not members of themselves: %s"
                % non_self_participants)
 
     # Check for discrepancies between TeamMemberships and TeamParticipations.

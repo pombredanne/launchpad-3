@@ -139,14 +139,14 @@ class TestTeamMembership(unittest.TestCase):
         direct member is kicked.
 
         Create a team hierarchy with 5 teams and one person (no-priv) as
-        member of the last team in the chain. 
+        member of the last team in the chain.
             team1
                team2
                   team3
                      team4
                         team5
                            no-priv
-        
+
         Then kick the latest team (team5) from team4 and check that neither
         no-priv nor team5 are indirect members of any other teams.
         """
@@ -351,7 +351,7 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
                 Person (id, name, displayname, openid_identifier,
                         creation_rationale)
                 VALUES (9999, 'zzzzz', 'zzzzzz', 'zzzzzzzzzzz', 1);
-            UPDATE TeamParticipation 
+            UPDATE TeamParticipation
                 SET team = (
                     SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
                 WHERE person = 9999;
