@@ -108,6 +108,33 @@ def _download(transport, relpath, local_path):
         local_file.close()
 
 
+class CodeImportDetails:
+    """XXX."""
+
+    def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
+                 cvs_module=None):
+        # XXX add asserts here.
+        self.branch_id = branch_id
+        self.rcstype = rcstype
+        self.svn_branch_url = svn_branch_url
+        self.cvs_root = cvs_root
+        self.cvs_module = cvs_module
+
+    @classmethod
+    def fromArguments(cls, arguments):
+        branch_id = int(arguments[0])
+        rcstype = arguments[1]
+        if rcstype == 'svn':
+            [svn_branch_url] = arguments[2:]
+            cvs_root = cvs_module = None
+        elif rcstype == 'cvs':
+            svn_branch_url = None
+            [cvs_root, cvs_module] = arguments[2:]
+        else:
+            raise AssertionError("Unknown rcstype %r" % rcstype)
+        return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+
+
 class ForeignTreeStore:
     """Manages retrieving and storing foreign working trees.
 
@@ -128,27 +155,26 @@ class ForeignTreeStore:
         """
         self.transport = transport
 
-    def _getForeignTree(self, code_import, target_path):
+    def _getForeignTree(self, source_details, target_path):
         """Return a foreign tree object for `code_import`."""
-        if code_import.rcs_type == RevisionControlSystems.SVN:
+        if source_details.rcstype == 'svn':
             return SubversionWorkingTree(
-                str(code_import.svn_branch_url), str(target_path))
-        elif code_import.rcs_type == RevisionControlSystems.CVS:
+                source_details.svn_branch_url, str(target_path))
+        elif source_details.rcstype == 'cvs':
             return CVSWorkingTree(
-                str(code_import.cvs_root), str(code_import.cvs_module),
+                source_details.cvs_root, source_details.cvs_module,
                 target_path)
         else:
             raise AssertionError(
-                "%r has an unknown RCS type: %r" %
-                (code_import, code_import.rcs_type))
+                "unknown RCS type: %r" % source_details.rcstype)
 
-    def _getTarballName(self, code_import):
+    def _getTarballName(self, branch_id):
         """Return the name of the tarball for the code import."""
-        return '%08x.tar.gz' % code_import.branch.id
+        return '%08x.tar.gz' % branch_id
 
-    def archive(self, code_import, foreign_tree):
+    def archive(self, source_details, foreign_tree):
         """Archive the foreign tree."""
-        tarball_name = self._getTarballName(code_import)
+        tarball_name = self._getTarballName(source_details.branch_id)
         create_tarball(foreign_tree.local_path, tarball_name)
         tarball = open(tarball_name, 'rb')
         ensure_base(self.transport)
@@ -157,7 +183,7 @@ class ForeignTreeStore:
         finally:
             tarball.close()
 
-    def fetch(self, code_import, target_path):
+    def fetch(self, source_details, target_path):
         """Fetch the foreign branch for `code_import` to `target_path`.
 
         If there is no tarball archived for `code_import`, then try to
@@ -165,24 +191,24 @@ class ForeignTreeStore:
         generally on a third party server.
         """
         try:
-            return self.fetchFromArchive(code_import, target_path)
+            return self.fetchFromArchive(source_details, target_path)
         except NoSuchFile:
-            return self.fetchFromSource(code_import, target_path)
+            return self.fetchFromSource(source_details, target_path)
 
-    def fetchFromSource(self, code_import, target_path):
+    def fetchFromSource(self, source_details, target_path):
         """Fetch the foreign tree for `code_import` to `target_path`."""
-        branch = self._getForeignTree(code_import, target_path)
+        branch = self._getForeignTree(source_details, target_path)
         branch.checkout()
         return branch
 
-    def fetchFromArchive(self, code_import, target_path):
+    def fetchFromArchive(self, source_details, target_path):
         """Fetch the foreign tree for `code_import` from the archive."""
-        tarball_name = self._getTarballName(code_import)
+        tarball_name = self._getTarballName(source_details.branch_id)
         if not self.transport.has(tarball_name):
             raise NoSuchFile(tarball_name)
         _download(self.transport, tarball_name, tarball_name)
         extract_tarball(tarball_name, target_path)
-        tree = self._getForeignTree(code_import, target_path)
+        tree = self._getForeignTree(source_details, target_path)
         tree.update()
         return tree
 
