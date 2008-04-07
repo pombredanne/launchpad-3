@@ -36,6 +36,19 @@ contact any external servers.
     INFO    Time for this run: ... seconds.
     <BLANKLINE>
 
+Opps reported by the checkwatches process are raised using the
+CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix and
+their type is 'BugWatchUpdateWarning'.
+
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     CheckWatchesErrorUtility)
+    >>> error_utility = CheckWatchesErrorUtility()
+    >>> report = error_utility.getLastOopsReport()
+    >>> report.id
+    'OOPS-...TCW...'
+    >>> report.type
+    'BugWatchUpdateWarning'
+
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
 timeout and call the checkwatches cronscript machinery directly.
@@ -93,7 +106,7 @@ The timeout will also produce an OOPS report.
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR:root:Connection timed out when updating http://bugs.example.com
-    OOPS-...
+    OOPS-...TCW...
     baseurl=u'http://bugs.example.com'
     bugtracker=u'example-bugs'
     error-explanation=u'Connection timed out when updating...

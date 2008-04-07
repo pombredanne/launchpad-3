@@ -168,6 +168,22 @@ class TestErrorReportingUtility(unittest.TestCase):
         config.launchpad.errorreports.errordir = self.saved_errordir
         reset_logging()
 
+    def test_appendToOopsPrefix(self):
+        """Test ErrorReportingUtility.appendToOopsPrefix()."""
+        utility = ErrorReportingUtility()
+        default_prefix = config.launchpad.errorreports.oops_prefix
+        self.assertEqual('T', default_prefix)
+        self.assertEqual('T', utility.prefix)
+
+        # Some scripts will append a string token to the prefix.
+        utility.appendToOopsPrefix('CW')
+        self.assertEqual('TCW', utility.prefix)
+
+        # Some scripts run multiple processes and append a string number
+        # to the prefix.
+        utility.appendToOopsPrefix('1')
+        self.assertEqual('T1', utility.prefix)
+
     def test_newOopsId(self):
         """Test ErrorReportingUtility.newOopsId()"""
         utility = ErrorReportingUtility()
@@ -204,7 +220,12 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(
             utility.lasterrordir, os.path.join(errordir, '2006-04-02'))
 
-        # another oops with a naiive datetime
+        # The oops_prefix honours appendToOopsPrefix().
+        utility.appendToOopsPrefix('XXX')
+        oopsid, filename = utility.newOopsId(now)
+        self.assertEqual(oopsid, 'OOPS-92TXXX2')
+
+        # Another oops with a native datetime.
         now = datetime.datetime(2006, 04, 02, 00, 30, 00)
         self.assertRaises(ValueError, utility.newOopsId, now)
 
