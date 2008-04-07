@@ -138,8 +138,8 @@ class TestPullerWireProtocol(TrialTestCase):
             self.failure = failure
 
     def setUp(self):
-        self.pullerprotocol = self.StubPullerProtocol()
-        self.protocol = scheduler.PullerWireProtocol(self.pullerprotocol)
+        self.puller_protocol = self.StubPullerProtocol()
+        self.protocol = scheduler.PullerWireProtocol(self.puller_protocol)
         self.protocol.makeConnection(self.StubTransport())
 
     def convertToNetstring(self, string):
@@ -156,9 +156,9 @@ class TestPullerWireProtocol(TrialTestCase):
 
         The failure is asserted to contain an exception of type
         `exception_type`."""
-        self.failUnless(self.pullerprotocol.failure is not None)
+        self.failUnless(self.puller_protocol.failure is not None)
         self.failUnless(
-            self.pullerprotocol.failure.check(exception_type))
+            self.puller_protocol.failure.check(exception_type))
 
     def assertProtocolInState0(self):
         """Assert that the protocol is in state 0."""
@@ -166,14 +166,14 @@ class TestPullerWireProtocol(TrialTestCase):
 
     def test_methodDispatch(self):
         # The wire protocol object calls the named method on the
-        # pullerprotocol.
+        # puller_protocol.
         self.sendToProtocol('method')
         # The protocol is now in state [1]
-        self.assertEqual(self.pullerprotocol.calls, [])
+        self.assertEqual(self.puller_protocol.calls, [])
         self.sendToProtocol(0)
         # As we say we are not passing any arguments, the protocol executes
         # the command straight away.
-        self.assertEqual(self.pullerprotocol.calls, [('method',)])
+        self.assertEqual(self.puller_protocol.calls, [('method',)])
         self.assertProtocolInState0()
 
     def test_methodDispatchWithArguments(self):
@@ -181,15 +181,15 @@ class TestPullerWireProtocol(TrialTestCase):
         # calling the method.
         self.sendToProtocol('method', 1)
         # The protocol is now in state [2]
-        self.assertEqual(self.pullerprotocol.calls, [])
+        self.assertEqual(self.puller_protocol.calls, [])
         self.sendToProtocol('arg')
         # We've now passed in the declared number of arguments so the protocol
         # executes the command.
-        self.assertEqual(self.pullerprotocol.calls, [('method', 'arg')])
+        self.assertEqual(self.puller_protocol.calls, [('method', 'arg')])
         self.assertProtocolInState0()
 
     def test_commandRaisesException(self):
-        # If a command raises an exception, the pullerprotocol's
+        # If a command raises an exception, the puller_protocol's
         # unexpectedError method is called with the corresponding failure.
         self.sendToProtocol('raise', 0)
         self.assertUnexpectedErrorCalled(ZeroDivisionError)
@@ -368,7 +368,7 @@ class TestPullerMonitorProtocol(
         # the attempt to record failure fails, there's not much we can do but
         # we should still not hang.  In keeping with the general policy, we
         # fire the termination deferred with the first thing to go wrong --
-        # the prcess termination in this case -- and log.err() the failed
+        # the process termination in this case -- and log.err() the failed
         # attempt to call mirrorFailed().
         # XXX MichaelHudson 2008-04-02: The notification failure will
         # be log.err()ed, which spews to stderr which we just hide.
@@ -377,8 +377,8 @@ class TestPullerMonitorProtocol(
         class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
             def mirrorFailed(self, message, oops):
                 raise RuntimeError()
-        self.listener = self.protocol.listener = \
-            FailingMirrorFailedStubPullerListener()
+        self.protocol.listener = FailingMirrorFailedStubPullerListener()
+        self.listener = self.protocol.listener
         self.protocol.errReceived('traceback')
         self.simulateProcessExit(clean=False)
         # Assert stuff about log.err() here.

@@ -97,15 +97,16 @@ class PullerWireProtocol(NetstringReceiver):
     append it to self._current_args.  If len(self._current_args) ==
     self._expected_args, execute the command.
 
-    "Executing the command" means looking for a method called do_<command
-    name> on self.listener and calling it with *self._current_args.  If this
-    raises, call self.listener.unexpectedError().
+    "Executing the command" means looking for a method called
+    do_<command name> on self.puller_protocol and calling it with
+    *self._current_args.  If this raises, call
+    self.puller_protocol.unexpectedError().
 
     The method _resetState() forces us back into state [0].
     """
 
-    def __init__(self, pullerprotocol):
-        self.pullerprotocol = pullerprotocol
+    def __init__(self, puller_protocol):
+        self.puller_protocol = puller_protocol
         self._resetState()
 
     def dataReceived(self, data):
@@ -116,7 +117,7 @@ class PullerWireProtocol(NetstringReceiver):
         # NetstringReceiver to catch a NetstringParseError. The best we can do
         # is check the value of brokenPeer.
         if self.brokenPeer:
-            self.pullerprotocol.unexpectedError(
+            self.puller_protocol.unexpectedError(
                 failure.Failure(NetstringParseError(data)))
 
     def stringReceived(self, line):
@@ -130,11 +131,11 @@ class PullerWireProtocol(NetstringReceiver):
             try:
                 self._expected_args = int(line)
             except ValueError:
-                self.pullerprotocol.unexpectedError(failure.Failure())
+                self.puller_protocol.unexpectedError(failure.Failure())
         else:
             # state [0]
-            if getattr(self.pullerprotocol, 'do_%s' % line, None) is None:
-                self.pullerprotocol.unexpectedError(
+            if getattr(self.puller_protocol, 'do_%s' % line, None) is None:
+                self.puller_protocol.unexpectedError(
                     failure.Failure(BadMessage(line)))
             else:
                 self._current_command = line
@@ -142,12 +143,12 @@ class PullerWireProtocol(NetstringReceiver):
         if len(self._current_args) == self._expected_args:
             # Execute the command.
             method = getattr(
-                self.pullerprotocol, 'do_%s' % self._current_command)
+                self.puller_protocol, 'do_%s' % self._current_command)
             try:
                 try:
                     method(*self._current_args)
                 except:
-                    self.pullerprotocol.unexpectedError(failure.Failure())
+                    self.puller_protocol.unexpectedError(failure.Failure())
             finally:
                 self._resetState()
 
@@ -177,7 +178,7 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
             self, deferred, config.supermirror.worker_timeout, clock)
         self.reported_mirror_finished = False
         self.listener = listener
-        self.wireprotocol = PullerWireProtocol(self)
+        self.wire_protocol = PullerWireProtocol(self)
         self._stderr = StringIO()
         self._deferred.addCallbacks(
             self.checkReportingFinishedAndNoStderr,
@@ -230,7 +231,7 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
             return reason
 
     def outReceived(self, data):
-        self.wireprotocol.dataReceived(data)
+        self.wire_protocol.dataReceived(data)
 
     def errReceived(self, data):
         self._stderr.write(data)

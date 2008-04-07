@@ -32,16 +32,16 @@ def makeFailure(exception_factory, *args, **kwargs):
 
 
 def suppress_stderr(test_method):
-    """Deferred friendly way of suppressing stderr output from a test."""
+    """Deferred friendly decorator that suppresses output from a test method.
+    """
     def set_stderr(result, stream):
         sys.stderr = stream
         return result
     def wrapper(self):
         saved_stderr = sys.stderr
         ignored_stream = StringIO.StringIO()
-        return defer.succeed(None).addCallback(
-            set_stderr, ignored_stream).addCallback(
-            lambda ignored: defer.maybeDeferred(test_method, self)).addBoth(
+        sys.stderr = ignored_stream
+        return defer.maybeDeferred(test_method, self).addBoth(
             set_stderr, saved_stderr)
     return wrapper
 
