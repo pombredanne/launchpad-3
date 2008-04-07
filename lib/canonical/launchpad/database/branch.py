@@ -357,9 +357,8 @@ class Branch(SQLBase):
         for merge_proposal in self.landing_targets:
             deletions[merge_proposal] = _(
                 'This branch is the source branch of this merge proposal.')
-            def delete_merge_proposal():
-                merge_proposal.destroySelf()
-            deletion_operations.append(delete_merge_proposal)
+            deletion_operations.append(
+                DeletionOperation(merge_proposal.destroySelf).doOperation)
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
@@ -371,10 +370,11 @@ class Branch(SQLBase):
             dependent_branch=self):
             alterations[merge_proposal] = _(
                 'This branch is the dependent branch of this merge proposal.')
-            def break_reference():
+            def break_reference(merge_proposal):
                 merge_proposal.dependent_branch = None
                 merge_proposal.syncUpdate()
-            alteration_operations.append(break_reference)
+            alteration_operations.append(
+                DeletionOperation(break_reference, merge_proposal).doOperation)
         for subscription in self.subscriptions:
             deletions[subscription] = _(
                 'This is a subscription to this branch.')
@@ -388,13 +388,14 @@ class Branch(SQLBase):
             deletion_operations.append(spec_link.destroySelf)
         for series in self.associatedProductSeries():
             alterations[series] = _('This series is linked to this branch.')
-            def clear_user_branch():
+            def clear_user_branch(series):
                 if series.user_branch == self:
                     series.user_branch = None
                 if series.import_branch == self:
                     series.import_branch = None
                 series.syncUpdate()
-            alteration_operations.append(clear_user_branch)
+            alteration_operations.append(
+                DeletionOperation(clear_user_branch, series).doOperation)
         if self.code_import is not None:
             deletions[self.code_import] = _(
                 'This is the import data for this branch.')
@@ -684,6 +685,18 @@ LISTING_SORT_TO_COLUMN = {
 
 DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
+
+
+class DeletionOperation:
+    """Represent an operation to perform as part of branch deletion."""
+
+    def __init__(self, func, *args, **kwargs):
+        self.func = func
+        self.func_args = args
+        self.func_kwargs = kwargs
+
+    def doOperation(self):
+        self.func(*self.func_args, **self.func_kwargs)
 
 
 class BranchSet:

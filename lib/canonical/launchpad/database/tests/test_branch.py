@@ -18,8 +18,8 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
     CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
-    IBranchSet, IBugSet, IPersonSet, IProductSet, ISpecificationSet,
-    InvalidBranchMergeProposal, PersonCreationRationale,
+    IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import BranchSet, BranchSubscription
 from canonical.launchpad.database.branchmergeproposal import (
@@ -216,14 +216,20 @@ class TestBranchDeletionConsequences(TestCase):
         """Ensure that a fresh branch has no deletion requirements."""
         self.assertEqual({}, self.branch.deletionRequirements())
 
-    def makeMergeProposal(self):
+    def makeMergeProposals(self):
         """Produce a merge proposal for testing purposes."""
         target_branch = self.factory.makeBranch(product=self.branch.product)
         dependent_branch = self.factory.makeBranch(
             product=self.branch.product)
-        merge_proposal = self.branch.addLandingTarget(
+        merge_proposal1 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, dependent_branch)
-        return merge_proposal
+        # Disable this merge proposal, to allow creating a new identical one
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        merge_proposal1.rejectBranch(lp_admins, 'null:')
+        syncUpdate(merge_proposal1)
+        merge_proposal2 = self.branch.addLandingTarget(
+            self.branch.owner, target_branch, dependent_branch)
+        return merge_proposal1, merge_proposal2
 
     def test_branchWithMergeProposal(self):
         """Ensure that deletion requirements with a merge proposal are right.
@@ -231,44 +237,59 @@ class TestBranchDeletionConsequences(TestCase):
         Each branch related to the merge proposal is tested to ensure it
         produces a unique, correct result.
         """
-        merge_proposal = self.makeMergeProposal()
-        self.assertEqual({merge_proposal:
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        self.assertEqual({
+            merge_proposal1:
             ('delete', _('This branch is the source branch of this merge'
-             ' proposal.'))},
+             ' proposal.')),
+            merge_proposal2:
+            ('delete', _('This branch is the source branch of this merge'
+             ' proposal.'))
+             },
                          self.branch.deletionRequirements())
-        self.assertEqual({merge_proposal:
+        self.assertEqual({
+            merge_proposal1:
             ('delete', _('This branch is the target branch of this merge'
-             ' proposal.'))},
-             merge_proposal.target_branch.deletionRequirements())
-        self.assertEqual({merge_proposal:
+             ' proposal.')),
+            merge_proposal2:
+            ('delete', _('This branch is the target branch of this merge'
+             ' proposal.'))
+            },
+            merge_proposal1.target_branch.deletionRequirements())
+        self.assertEqual({
+            merge_proposal1:
             ('alter', _('This branch is the dependent branch of this merge'
-             ' proposal.'))},
-             merge_proposal.dependent_branch.deletionRequirements())
+             ' proposal.')),
+            merge_proposal2:
+            ('alter', _('This branch is the dependent branch of this merge'
+             ' proposal.'))
+            },
+            merge_proposal1.dependent_branch.deletionRequirements())
 
     def test_deleteMergeProposalSource(self):
         """Merge proposal source branches can be deleted with break_links."""
-        merge_proposal = self.makeMergeProposal()
-        merge_proposal_id = merge_proposal.id
-        BranchMergeProposal.get(merge_proposal_id)
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        BranchMergeProposal.get(merge_proposal1_id)
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound,
-            BranchMergeProposal.get, merge_proposal_id)
+            BranchMergeProposal.get, merge_proposal1_id)
 
     def test_deleteMergeProposalTarget(self):
         """Merge proposal target branches can be deleted with break_links."""
-        merge_proposal = self.makeMergeProposal()
-        merge_proposal_id = merge_proposal.id
-        BranchMergeProposal.get(merge_proposal_id)
-        merge_proposal.target_branch.destroySelf(break_references=True)
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        BranchMergeProposal.get(merge_proposal1_id)
+        merge_proposal1.target_branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound,
-            BranchMergeProposal.get, merge_proposal_id)
+            BranchMergeProposal.get, merge_proposal1_id)
 
     def test_deleteMergeProposalDependent(self):
         """break_links enables deleting merge proposal dependant branches."""
-        merge_proposal = self.makeMergeProposal()
-        merge_proposal_id = merge_proposal.id
-        merge_proposal.dependent_branch.destroySelf(break_references=True)
-        self.assertEqual(None, merge_proposal.dependent_branch)
+        merge_proposal1, merge_proposal2 = self.makeMergeProposals()
+        merge_proposal1_id = merge_proposal1.id
+        merge_proposal1.dependent_branch.destroySelf(break_references=True)
+        self.assertEqual(None, merge_proposal1.dependent_branch)
 
     def test_branchWithSubscriptionReqirements(self):
         """Deletion requirements for a branch with subscription are right."""
@@ -279,11 +300,12 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSubscriptionDeletion(self):
         """break_links allows deleting a branch with subscription."""
-        subscription = self.factory.makeBranchSubscription()
-        subscription_id = subscription.id
-        subscription.branch.destroySelf(break_references=True)
+        subscription1 = self.factory.makeBranchSubscription()
+        subscription2 = self.factory.makeBranchSubscription()
+        subscription1_id = subscription1.id
+        subscription1.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound,
-            BranchSubscription.get, subscription_id)
+            BranchSubscription.get, subscription1_id)
 
     def test_branchWithBugRequirements(self):
         """Deletion requirements for a branch with a bug are right."""
@@ -295,12 +317,13 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithBugDeletion(self):
         """break_links allows deleting a branch with a bug."""
-        bug = self.factory.makeBug()
-        bug.addBranch(self.branch, self.branch.owner)
-        bug_branch = bug.bug_branches[0]
-        bug_branch_id = bug_branch.id
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        bug1.addBranch(self.branch, self.branch.owner)
+        bug_branch1 = bug1.bug_branches[0]
+        bug_branch1_id = bug_branch1.id
         self.branch.destroySelf(break_references=True)
-        self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch_id)
+        self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch1_id)
 
     def test_branchWithSpecRequirements(self):
         """Deletion requirements for a branch with a spec are right."""
@@ -313,12 +336,17 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSpecDeletion(self):
         """break_links allows deleting a branch with a spec."""
-        spec = self.factory.makeSpecification()
-        spec.linkBranch(self.branch, self.branch.owner)
-        spec_branch_id = self.branch.spec_links[0].id
+        spec1 = self.factory.makeSpecification()
+        spec1.linkBranch(self.branch, self.branch.owner)
+        spec1_branch_id = self.branch.spec_links[0].id
+        spec2 = self.factory.makeSpecification()
+        spec2.linkBranch(self.branch, self.branch.owner)
+        spec2_branch_id = self.branch.spec_links[1].id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec_branch_id)
+                          spec1_branch_id)
+        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
+                          spec2_branch_id)
 
     def test_branchWithSeriesUserRequirements(self):
         """Deletion requirements for a series' user_branch are right."""
@@ -338,15 +366,15 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSeriesUserDeletion(self):
         """break_links allows deleting a series' user_branch."""
-        series = self.factory.makeSeries(self.branch)
-        series_id = series.id
+        series1 = self.factory.makeSeries(self.branch)
+        series2 = self.factory.makeSeries(self.branch)
         self.branch.destroySelf(break_references=True)
-        self.assertEqual(None, series.user_branch)
+        self.assertEqual(None, series1.user_branch)
+        self.assertEqual(None, series2.user_branch)
 
     def test_branchWithSeriesImportDeletion(self):
         """break_links allows deleting a series' import_branch."""
         series = self.factory.makeSeries(import_branch=self.branch)
-        series_id = series.id
         self.branch.destroySelf(break_references=True)
         self.assertEqual(None, series.user_branch)
 
