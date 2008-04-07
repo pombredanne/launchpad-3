@@ -690,13 +690,12 @@ class DeletionOperation:
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
 
-    def __init__(self, affected_object, rationale, func, args=()):
+    def __init__(self, affected_object, rationale, func):
         DeletionOperation.__init__(self, affected_object, rationale)
         self.func = func
-        self.func_args = args
 
     def doOperation(self):
-        self.func(*self.func_args)
+        self.func()
 
 
 class ClearDependentBranch(DeletionOperation):

@@ -21,7 +21,9 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
     ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
-from canonical.launchpad.database.branch import BranchSet, BranchSubscription
+from canonical.launchpad.database.branch import (BranchSet,
+    BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
+    DeletionCallable,)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
     )
@@ -393,6 +395,35 @@ class TestBranchDeletionConsequences(TestCase):
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+    def test_ClearDependentBranch(self):
+        """ClearDependent.doOperation must clear the dependent branch."""
+        merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
+        ClearDependentBranch(merge_proposal).doOperation()
+        self.assertEqual(None, merge_proposal.dependent_branch)
+
+    def test_ClearSeriesUserBranch(self):
+        """ClearSeriesBranch.doOperation must clear the user branch."""
+        series = removeSecurityProxy(self.factory.makeSeries(self.branch))
+        ClearSeriesBranch(series, self.branch).doOperation()
+        self.assertEqual(None, series.user_branch)
+
+    def test_ClearSeriesImportBranch(self):
+        """ClearSeriesBranch.doOperation must clear the import branch."""
+        series = removeSecurityProxy(
+            self.factory.makeSeries(import_branch=self.branch))
+        ClearSeriesBranch(series, self.branch).doOperation()
+        self.assertEqual(None, series.import_branch)
+
+    def test_DeletionCallable(self):
+        """DeletionCallable must invoke the callable."""
+        spec = self.factory.makeSpecification()
+        spec_link = spec.linkBranch(self.branch, self.branch.owner)
+        spec_link_id = spec_link.id
+        DeletionCallable(spec, 'blah', spec_link.destroySelf).doOperation()
+        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
+                          spec_link_id)
+
 
 
 class BranchAddLandingTarget(TestCase):
