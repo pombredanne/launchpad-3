@@ -327,13 +327,16 @@ reset, reflecting that nothing is cached in the database yet.
   0
 
 The sampledata contains no package caches, so attempts to find
-'pmount' (a source) or 'firefox' (a binary name term) fail.
+'pmount' (a source), 'firefox' (a binary name term) or 'shortdesc' (a
+term used in the pmount binary summary) fail.
 
   >>> ubuntu.searchPPAs(text='pmount').count()
   0
   >>> ubuntu.searchPPAs(text='firefox').count()
   0
   >>> ubuntu.searchPPAs(text='warty').count()
+  0
+  >>> ubuntu.searchPPAs(text='shortdesc').count()
   0
 
 If we populate the package caches and update the archive caches, the
@@ -353,6 +356,12 @@ same queries work, pointing to Celso's PPA.
   >>> transaction.commit()
   >>> flush_database_updates()
 
+  >>> print cprov.archive.sources_cached
+  3
+
+  >>> print cprov.archive.binaries_cached
+  2
+
   >>> print ubuntu.searchPPAs(text='cprov')[0].title
   PPA for Celso Providelo
   >>> print ubuntu.searchPPAs(text='pmount')[0].title
@@ -361,6 +370,92 @@ same queries work, pointing to Celso's PPA.
   PPA for Celso Providelo
   >>> print ubuntu.searchPPAs(text='warty')[0].title
   PPA for Celso Providelo
+  >>> print ubuntu.searchPPAs(text='shortdesc')[0].title
+  PPA for Celso Providelo
+
+The method which populates the archive caches also cleans the texts up
+to work around the current FTI limitation (see bug #207969). It
+performs the following tasks:
+
+ * Exclude punctuation ([,.;:!?])
+ * Store only unique lower case words
+
+We remove all caches related to Celso's PPA.
+
+  >>> celso_source_caches = DistributionSourcePackageCache.selectBy(
+  ...    archive=cprov.archive)
+
+  >>> celso_binary_caches = DistroSeriesPackageCache.selectBy(
+  ...    archive=cprov.archive)
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> def purge_caches(caches):
+  ...     for cache in caches:
+  ...         naked_cache = removeSecurityProxy(cache)
+  ...         naked_cache.destroySelf()
+
+
+  >>> purge_caches(celso_source_caches)
+  >>> purge_caches(celso_binary_caches)
+  >>> transaction.commit()
+
+Now, when we update the caches for Celso's PPA, only the owner
+information will be available, no packages information will be cached.
+
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
+
+  >>> print cprov.archive.sources_cached
+  0
+
+  >>> print cprov.archive.binaries_cached
+  0
+
+  >>> print cprov.archive.package_description_cache
+  celso providelo cprov
+
+We insert a new source cache with texts containing punctuation and
+duplicated words pointing to Celso's PPA.
+
+  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
+
+  >>> unclean_cache = DistributionSourcePackageCache(
+  ...    archive=cprov.archive,
+  ...    distribution=ubuntu,
+  ...    sourcepackagename=cdrkit_name,
+  ...    name=cdrkit_name.name,
+  ...    binpkgnames='cdrkit-bin cdrkit-extra',
+  ...    binpkgsummaries='Ding! Dong? Ding,Dong. Ding; DONG: ding dong')
+
+Note that 'binpkgdescription' and 'changelog' are not considered yet,
+and we have no binary cache.
+
+Let's update the archive cache and see how it goes.
+
+  >>> transaction.commit()
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
+
+Only one source cached and the 'package_description_cache' only
+contains unique and lowercase words free of any punctuation.
+
+  >>> print cprov.archive.sources_cached
+  1
+
+  >>> print cprov.archive.binaries_cached
+  0
+
+  >>> print cprov.archive.package_description_cache
+  ding providelo celso cdrkit cdrkit-bin dong ubuntu cdrkit-extra cprov
+
+Let's remove the unclean cache and update Celso's PPA cache, so
+everything will be back to normal.
+
+  >>> removeSecurityProxy(unclean_cache).destroySelf()
+  >>> transaction.commit()
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
 
 
 == Package Counters ==
