@@ -559,6 +559,12 @@
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
         />
 
+    <!-- Make sure that the config is sane for references debugging. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
