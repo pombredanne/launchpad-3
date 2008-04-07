@@ -13,6 +13,9 @@ __all__ = [
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
+    'IResourceOperation',
+    'IResourceGETOperation',
+    'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource'
     ]
@@ -22,7 +25,8 @@ from zope.interface import Attribute, Interface
 # the import fascist complains because they are not in __all__ there.
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
-from zope.schema.interfaces import IObject
+from zope.schema import List, Object
+from zope.schema.interfaces import IObject, IField
 
 
 class ICollectionField(IObject):
@@ -54,7 +58,7 @@ class IServiceRootResource(IHTTPResource):
 
 
 class IEntryResource(IHTTPResource):
-    """A resource that represents an individual Launchpad object."""
+    """A resource that represents an individual object."""
 
     def do_GET():
         """Retrieve this entry.
@@ -73,6 +77,9 @@ class IEntryResource(IHTTPResource):
             HTTP status code should be set appropriately.
         """
 
+    def getContext():
+        """Return the underlying entry for this resource."""
+
 
 class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
@@ -82,6 +89,35 @@ class ICollectionResource(IHTTPResource):
 
         :return: A string representation.
         """
+
+class IResourceOperation(Interface):
+    """A one-off operation invokable on a resource."""
+
+    params = List(value_type=Object(schema=IField))
+
+    def __call__(**kwargs):
+        """Invoke the operation and create the HTTP response.
+
+        :param kwargs: Arguments validated based on `params`.
+
+        :returns: If the result is a string, it's assumed that the
+        Content-Type was set appropriately, and the result is returned
+        as is. Otherwise, the result is serialized to JSON and served
+        as application/json.
+        """
+
+class IResourceGETOperation(IResourceOperation):
+    """A one-off operation invoked through GET.
+
+    This might be a search or lookup operation.
+    """
+
+
+class IResourcePOSTOperation(IResourceOperation):
+    """A one-off operation invoked through POST.
+
+    This should be an operation that modifies the data set.
+    """
 
 
 class IEntry(Interface):
