@@ -227,7 +227,7 @@ watch hasn't altered:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> trac.trace_calls = False
-    >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
-    INFO:...:Updating 12 watches on http://bugs.some.where
+    >>> bug_watch_updater.updateBugWatches(trac, [bug_watch])
+    INFO:...:Updating 1 watches on http://bugs.some.where
     >>> bug_watch.lastchanged == old_last_changed
     True

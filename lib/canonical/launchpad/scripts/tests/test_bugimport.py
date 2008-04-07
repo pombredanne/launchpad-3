@@ -697,8 +697,11 @@ class BugImportScriptTestCase(unittest.TestCase):
 class TestBugWatch:
     """A mock bug watch object for testing `ExternalBugTracker.updateWatches`.
 
-    This bug watch is guaranteed to trigger a DB failure when `updaateStatus`
+    This bug watch is guaranteed to trigger a DB failure when `updateStatus`
     is called if its `failing` attribute is True."""
+
+    lastchecked = None
+
     def __init__(self, id, bug, failing):
         """Initialize the object."""
         self.id = id

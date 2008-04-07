@@ -56,6 +56,11 @@ class IArchive(IHasOwner):
         title=_("Private"), required=False,
         description=_("Whether the PPA is private to the owner or not."))
 
+    require_virtualized = Bool(
+        title=_("Require Virtualized Builder"), required=False,
+        description=_("Whether this archive requires its packages to be "
+                      "built on a virtual builder."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
         max=(20 * 1024),
@@ -69,6 +74,20 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    buildd_secret = TextLine(
+        title=_("Buildd Secret"), required=False,
+        description=_("The password used by the builder to access the "
+                      "archive.")
+        )
+
+    sources_cached = Int(
+        title=_("Number of sources cached"), required=False,
+        description=_("Number of source packages cached in this PPA."))
+
+    binaries_cached = Int(
+        title=_("Number of binaries cached"), required=False,
+        description=_("Number of binary packages cached in this PPA."))
+
     package_description_cache = Attribute(
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
@@ -79,6 +98,10 @@ class IArchive(IHasOwner):
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
+
+    expanded_archive_dependencies = Attribute(
+        "The expanded list of archive dependencies. It includes the implicit "
+        "PRIMARY archive dependency for PPAs.")
 
     archive_url = Attribute("External archive URL.")
 
@@ -182,11 +205,20 @@ class IArchive(IHasOwner):
         """Concentrate cached information about the archive contents.
 
         Group the relevant package information (source name, binary names,
-        binary summaries) strings in the IArchive.package_description_cache
-        search indexes (fti).
+        binary summaries and distroseries with binaries) strings in the
+        IArchive.package_description_cache search indexes (fti).
+
+        Updates 'sources_cached' and 'binaries_cached' counters.
 
         Also include owner 'name' and 'displayname' to avoid inpecting the
         Person table indexes while searching.
+        """
+
+    def findDepCandidateByName(distroarchseries, name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
         """
 
     def getArchiveDependency(dependency):

@@ -43,8 +43,8 @@ Let's check the complex properties of a build object.
     >>> firefox_build.calculated_buildstart
     datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
-    >>> firefox_build.is_trusted
-    True
+    >>> firefox_build.is_virtualized
+    False
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -507,8 +507,9 @@ Log in as admin to avoid security on IBuild for the moment.
 Let's make cprov's archive private (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> removeSecurityProxy(cprov).archive.private = True
+    >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
+    >>> cprov.archive.private = True
+    >>> cprov.archive.buildd_secret = "secret"
     >>> flush_database_updates()
 
 Now define a helper function to print out build details:
@@ -794,6 +795,37 @@ dependency list.
     >>> print depwait_build.dependencies
     mozilla-firefox
 
+'pmount' dependency is also satisfied in the Celso's PPA context,
+even when it is published in a component not allowed in its current
+component domain ('ogre_components'). That's because PPAs implicitly
+depend on all components of its distribution PRIMARY archive.
+
+    >>> depwait_build.dependencies = 'biscuit, pmount'
+
+    >>> login('foo.bar@canonical.com')
+    >>> universe_component = getUtility(IComponentSet)['universe']
+    >>> pmount_pub.secure_record.component = universe_component
+    >>> removeSecurityProxy(depwait_build).archive = cprov.archive
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
+
+    >>> print depwait_build.ogre_components
+    ['main']
+
+    >>> print pmount_pub.component.name
+    universe
+
+    >>> depwait_build.updateDependencies()
+    >>> print depwait_build.dependencies
+    biscuit
+
+Restore depwait_build previous state.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pmount_pub.secure_record.component = main_component
+    >>> removeSecurityProxy(depwait_build).archive = hoary.main_archive
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
 
 === Retrying DEPWAIT builds ===
 
@@ -875,4 +907,5 @@ when accessing the builds:
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected

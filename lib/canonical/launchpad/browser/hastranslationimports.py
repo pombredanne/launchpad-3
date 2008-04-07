@@ -125,7 +125,16 @@ class HasTranslationImportsView(LaunchpadFormView):
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
-        LaunchpadFormView.setUpWidgets(self)
+        # The filter_target widget needs to know the selection made in the
+        # filter_status widget.  Set up the widgets in two phases to make this
+        # possible.
+        self.widgets = form.setUpWidgets(
+            self.form_fields.select('filter_status'), self.prefix,
+            self.context, self.request, data=self.initial_values,
+            ignore_request=False)
+        self.widgets += form.setUpWidgets(
+            self.form_fields.omit('filter_status'), self.prefix, self.context,
+            self.request, data=self.initial_values, ignore_request=False)
 
         if not self.filter_action.submitted():
             self.setUpEntriesWidgets()

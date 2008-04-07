@@ -121,6 +121,9 @@ Let's add a handful of watches:
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
     ...         'RESOLVED', 'FIXED')
     ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
+    >>> from canonical.launchpad.ftests import sync
+    >>> for bug_watch in gnome_bugzilla.watches:
+    ...     sync(bug_watch)
 
 Set the batch threshold higher than the number of bug watches.
 
@@ -162,10 +165,14 @@ Let's add a few more watches:
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
     ...         'ASSIGNED', '')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+    >>> for bug_watch in gnome_bugzilla.watches:
+    ...     sync(bug_watch)
 
-Set the batch threshold very low:
+
+Set the batch threshold very low and remove the batch size limit:
 
     >>> external_bugzilla.batch_query_threshold = 0
+    >>> external_bugzilla.batch_size = None
 
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:

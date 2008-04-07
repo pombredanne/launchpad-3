@@ -16,17 +16,17 @@ from canonical.launchpad.interfaces import (
     ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
-    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
-    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
-    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISourcePackageRelease, ISpecification,
-    ISpecificationBranch, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
+    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISourcePackageRelease, ISpecification, ISpecificationBranch,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -62,6 +62,15 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditOAuthAccessToken(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthAccessToken
+
+    def checkAuthenticated(self, user):
+        return (self.obj.person == user
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -1124,11 +1133,25 @@ class ViewBuildRecord(EditBuildRecord):
             # Anyone can see non-private archives.
             return True
 
+        # If the permission check on the sourcepackagerelease for this
+        # build passes then it means the build can be released from
+        # privacy since the source package is published publicly.
+        # This happens when copy-package is used to re-publish a private
+        # package in the primary archive.
+        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        if auth_spr.checkAuthenticated(user):
+            return True
+
         return EditBuildRecord.checkAuthenticated(self, user)
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
-        return not self.obj.archive.private
+        if not self.obj.archive.private:
+            return True
+
+        # See comment above.
+        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        return auth_spr.checkUnauthenticated()
 
 
 class AdminQuestion(AdminByAdminsTeam):

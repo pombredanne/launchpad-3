@@ -1,131 +1,59 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """Twisted TestCase that doesn't interfere with existing signal handlers."""
 
 __metaclass__ = type
 
-__all__ = ['TwistedTestCase']
-
-import signal
 import thread
-from unittest import TestCase, TestLoader, TestResult
+from unittest import TestLoader
 
 from canonical.testing import TwistedLayer
 from canonical.twistedsupport import MethodDeferrer
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from zope.interface import Interface
+from zope.interface import implements, Interface
 
 
-class TwistedTestCase(TrialTestCase):
+class IFoo(Interface):
+    """Simple interface used in TestMethodDeferrer."""
 
-    def run(self, result):
-        # Record the signal handlers that Twisted will override (see
-        # _handleSignals in twisted/internet/posixreactorbase.py).
-        sigint = signal.getsignal(signal.SIGINT)
-        sigterm = signal.getsignal(signal.SIGTERM)
-        sigchld = signal.getsignal(signal.SIGCHLD)
-        try:
-            # TrialTestCase will start a reactor, which will install some signal
-            # handlers.
-            return TrialTestCase.run(self, result)
-        finally:
-            # Restore the original signal handlers
-            signal.signal(signal.SIGINT, sigint)
-            signal.signal(signal.SIGTERM, sigterm)
-            signal.signal(signal.SIGCHLD, sigchld)
+    def simpleMethod(x):
+        """Returns `x`."""
+
+    def checkThreadID(self, main_thread_id):
+        """Raise an error if the current thread is the main thread."""
 
 
-class TestCaseThatChangesSignals(TwistedTestCase):
+class Foo:
+    """Implements `IFoo` for TestMethodDeferrer."""
 
-    def clobber(self):
-        # clobber SIGINT, SIGTERM and SIGCHLD, because other Twisted test cases
-        # may have already run, so this sets a unique test handler that cannot
-        # exist elsewhere.
-        def dummy_handler(signal, frame):
-            pass
-        signal.signal(signal.SIGINT, dummy_handler)
-        signal.signal(signal.SIGTERM, dummy_handler)
-        signal.signal(signal.SIGCHLD, dummy_handler)
+    implements(IFoo)
 
-    # our "test" methods don't have test_ prefixes so that test runners don't
-    # accidentally discover them.
-    def a_test_that_passes(self):
-        self.clobber()
+    def __init__(self):
+        self.log = []
 
-    def a_test_that_fails(self):
-        self.clobber()
-        self.fail()
+    def checkThreadID(self, main_thread_id):
+        if thread.get_ident() == main_thread_id:
+            raise AssertionError("Not running in thread")
 
-    def a_test_that_errors(self):
-        self.clobber()
-        1/0
+    def simpleMethod(self, x):
+        self.log.append(('foo', x))
+        return x
+
+    def notInInterface(self, x):
+        self.log.append(('bar', x))
+        return x
 
 
-class SignalRestorationTestCase(TestCase):
-
-    def test_signals(self):
-        # Grab the current SIGINT, SIGTERM, SIGCHLD handlers.
-        sigint = signal.getsignal(signal.SIGINT)
-        sigterm = signal.getsignal(signal.SIGTERM)
-        sigchld = signal.getsignal(signal.SIGCHLD)
-
-        # Construct the test cases.
-        passing_test_case = TestCaseThatChangesSignals('a_test_that_passes')
-        fails_test_case = TestCaseThatChangesSignals('a_test_that_fails')
-        error_test_case = TestCaseThatChangesSignals('a_test_that_errors')
-
-        result = TestResult()
-        # Constructing the test case shouldn't change the signal handlers
-        self.assertSignalsUnchanged(sigint, sigterm, sigchld)
-
-        for testcase in [passing_test_case, fails_test_case, error_test_case]:
-            # Run the test case
-            testcase(result)
-
-            # The signals should be restored, even though the test case clobbered
-            # them.
-            self.assertSignalsUnchanged(sigint, sigterm, sigchld)
-
-    def assertSignalsUnchanged(self, sigint, sigterm, sigchld):
-        self.assertEqual(sigint, signal.getsignal(signal.SIGINT))
-        self.assertEqual(sigterm, signal.getsignal(signal.SIGTERM))
-        self.assertEqual(sigchld, signal.getsignal(signal.SIGCHLD))
-
-
-class TestMethodDeferrer(TwistedTestCase):
+class TestMethodDeferrer(TrialTestCase):
 
     layer = TwistedLayer
 
-    class IFoo(Interface):
-        def foo(x):
-            """Returns `x`."""
-
-        def checkThreadID(self, main_thread_id):
-            """Raise an error if the current thread is the main thread."""
-
-    class Foo:
-
-        def __init__(self):
-            self.log = []
-
-        def checkThreadID(self, main_thread_id):
-            if thread.get_ident() == main_thread_id:
-                raise AssertionError("Not running in thread")
-
-        def foo(self, x):
-            self.log.append(('foo', x))
-            return x
-
-        def bar(self, x):
-            self.log.append(('bar', x))
-            return x
-
-
     def setUp(self):
-        self.original = self.Foo()
-        self.wrapped = MethodDeferrer(self.original, self.IFoo)
+        self.original = Foo()
+        self.wrapped = MethodDeferrer(self.original, IFoo)
 
     def checkLog(self, pass_through, expected_log):
         self.assertEqual(self.original.log, expected_log)
@@ -134,7 +62,7 @@ class TestMethodDeferrer(TwistedTestCase):
     def test_callsUnderlying(self):
         # Calling a published method on an object wrapped with a
         # MethodDeferrer calls the underlying method.
-        deferred = self.wrapped.foo(42)
+        deferred = self.wrapped.simpleMethod(42)
         deferred.addCallback(self.assertEqual, 42)
         deferred.addCallback(self.checkLog, [('foo', 42)])
         return deferred
@@ -142,7 +70,8 @@ class TestMethodDeferrer(TwistedTestCase):
     def test_onlyAllowsPublishedMethods(self):
         # If you try to call a method that isn't advertised on an interface
         # provided to MethodDeferrer, you will get an AttributeError.
-        self.assertRaises(AttributeError, lambda: self.wrapped.bar(42))
+        self.assertRaises(
+            AttributeError, lambda: self.wrapped.notInInterface(42))
 
     def test_checkRunningInThread(self):
         # Of course, the wrapped methods actually do run in separate threads.

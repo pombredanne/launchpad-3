@@ -248,6 +248,7 @@ are as we expect.
     enabled: True
     escapedtext: Foo
     icon: None
+    icon_url: None
     linked: True
     name: foo
     render: <bound method FacetLink.render ...>
@@ -262,6 +263,7 @@ are as we expect.
     enabled: True
     escapedtext: Bar
     icon: None
+    icon_url: None
     linked: True
     name: bar
     render: <bound method FacetLink.render ...>
@@ -410,7 +412,7 @@ Next, we return the link as HTML.
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
     <span class="action">
-        <img alt="" src="icon" />
+        <img alt="" src="/@@/icon" />
         <a class="menu-link-None" title="summary">text--&gt;</a>
     </span>
 
@@ -710,6 +712,7 @@ are as we expect.
     enabled: True
     escapedtext: First menu
     icon: None
+    icon_url: None
     linked: True
     name: first
     render: <bound method MenuLink.render ...>
@@ -773,6 +776,7 @@ are as we expect.
     enabled: True
     escapedtext: First context menu item
     icon: None
+    icon_url: None
     linked: True
     name: first
     render: <bound method MenuLink.render ...>

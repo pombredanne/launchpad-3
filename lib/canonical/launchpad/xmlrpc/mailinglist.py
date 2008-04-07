@@ -147,7 +147,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # specifically that the isRegisteredInLaunchpad() test below
             # should always fail for it.  That way, the address can never be
             # used to forge spam onto a list.
-            if config.mailman is not None and config.mailman.archive_address:
+            if config.mailman.archive_address:
                 members[config.mailman.archive_address] = ('', flags, ENABLED)
             # The response must be a list of tuples.
             response[team_name] = [
@@ -158,8 +158,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""
-        if (config.mailman is not None and
-            config.mailman.archive_address and
+        if (config.mailman.archive_address and
             address == config.mailman.archive_address):
             # Hard code that the archive address is never registered in
             # Launchpad, so forged messages from that sender will always be

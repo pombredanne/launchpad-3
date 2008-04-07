@@ -76,8 +76,11 @@ class BranchFeedBase(FeedBase):
                 for branch in self._getRawItems()
                 if not branch.private]
 
-    def getItems(self):
-        """See `IFeed`."""
+    def _getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         items = self.getPublicRawItems()
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
@@ -121,8 +124,8 @@ class BranchListingFeed(BranchFeedBase):
         delegate_view.initialize()
         branches_batch = delegate_view.branches()
         batch = branches_batch.batch
-        branches = list(batch.list)
-        return branches[:self.quantity]
+        branches = list(batch.list[:self.quantity])
+        return branches
 
 
 class ProductBranchFeed(BranchListingFeed):
@@ -196,8 +199,11 @@ class BranchFeed(BranchFeedBase):
         branch = self.context
         return branch.latest_revisions(quantity=self.quantity)
 
-    def getItems(self):
-        """See `IFeed`."""
+    def _getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
         items = self._getRawItems()
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]

@@ -1468,15 +1468,19 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
+
+    @cachedproperty
+    def bug_id_mapping(self):
         # Now load the bug-branch links for this batch
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
             self.currentBatch())
         # Create a map from the bug id to the branches.
-        self.bug_id_mapping = {}
+        bug_id_mapping = {}
         for bugbranch in bugbranches:
             if check_permission('launchpad.View', bugbranch.branch):
-                self.bug_id_mapping.setdefault(
+                bug_id_mapping.setdefault(
                     bugbranch.bug.id, []).append(bugbranch)
+        return bug_id_mapping
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""

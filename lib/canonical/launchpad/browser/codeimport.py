@@ -24,7 +24,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    branch_name_validator, CodeImportReviewStatus, IBranchSet, ICodeImport,
+    branch_name_validator, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, IBranchSet, ICodeImport,
     ICodeImportSet, ILaunchpadCelebrities, RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -231,7 +232,8 @@ class CodeImportNewView(CodeImportBaseView):
         code_import.branch.subscribe(
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.NODIFF)
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
 
         self.next_url = canonical_url(code_import.branch)
 

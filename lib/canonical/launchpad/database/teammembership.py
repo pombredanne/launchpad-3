@@ -458,6 +458,7 @@ class TeamMembershipSet:
         tm.date_proposed = now
         tm.proponent_comment = comment
         if status in [approved, admin]:
+            tm.datejoined = now
             tm.reviewed_by = user
             tm.date_reviewed = now
             tm.reviewer_comment = comment
@@ -570,16 +571,15 @@ def _cleanTeamParticipation(member, team):
     # superteam of the given team, but only if there are no other paths from
     # the member to the team and if he's not a direct member of the team.
     superteams = list(team.getSuperTeams())
-    if len(superteams) > 0:
-        superteams_ids = ",".join(str(team.id) for team in superteams)
-        team_and_superteams_ids = ",".join(
-            str(team.id) for team in [team] + superteams)
-    else:
-        superteams_ids = '-1'
-        team_and_superteams_ids = team.id
+    if len(superteams) == 0:
+        return
+
+    superteams_ids = ",".join(str(team.id) for team in superteams)
+    team_and_member_and_superteams_ids = ",".join(
+        str(team.id) for team in [member, team] + superteams)
     replacements = dict(
         active_states=active_states, member_id=member.id,
-        team_and_superteams_ids=team_and_superteams_ids,
+        team_and_member_and_superteams_ids=team_and_member_and_superteams_ids,
         superteams_ids=superteams_ids)
     query = """
         DELETE FROM TeamParticipation
@@ -601,7 +601,8 @@ def _cleanTeamParticipation(member, team):
                     SELECT person
                     FROM TeamParticipation JOIN Person ON (person = Person.id)
                     WHERE team = %(superteam_id)s
-                        AND person NOT IN (%(team_and_superteams_ids)s) 
+                        AND person NOT IN (
+                            %(team_and_member_and_superteams_ids)s) 
                         AND teamowner IS NOT NULL)
 
                 UNION

@@ -457,6 +457,28 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=preJoins)
 
+    def getBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        clause = """
+            Build.distroarchseries = DistroArchSeries.id AND
+            Build.sourcepackagerelease = %s AND
+            Build.archive = %s
+        """ % sqlvalues(self.sourcepackagerelease, self.archive)
+
+        orderBy = ['DistroArchSeries.architecturetag']
+
+        clauseTables = ['DistroArchSeries']
+
+        prejoins = ['distroarchseries',
+                    'sourcepackagerelease']
+
+        # Import Build locally to avoid circular imports.
+        from canonical.launchpad.database.build import Build
+
+        return Build.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables,
+            prejoins=prejoins)
+
     @property
     def secure_record(self):
         """See `IPublishing`."""
