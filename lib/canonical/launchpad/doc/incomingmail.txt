@@ -143,6 +143,26 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
     >>> stub.test_emails = []
 
 
+== Mail from Persons with with an inactive Launchpad account ==
+
+If a Person who's account is inactive sends an email, it will be
+silently rejected.
+
+    >>> import email
+    >>> msg = email.message_from_string(
+    ... """From: Julian Edwards <launchpad@julian-edwards.com>
+    ... To: 123@foo.com
+    ... X-Original-To: 123@foo.com
+    ... Subject: doesn't matter
+    ...
+    ... doesn't matter
+    ... """)
+    >>> msgid = sendmail(msg, ['edit@malone-domain'])
+    >>> handleMail(zopeless_transaction)
+    >>> msgid not in foo_handler.handledMails
+    True
+
+
 == X-Original-To ==
 
 If available, the X-Original-To header is used to determine to which
@@ -182,7 +202,6 @@ attempting to process incoming mail.
 
 And submit an email to the handler.
 
-    >>> import email
     >>> msg = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: launchpad@oops.com
