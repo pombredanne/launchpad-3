@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# Copyright 2005-2008 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -138,6 +138,16 @@ class ExportResult:
         self.failure = exception.read()
 
 
+def generate_translationfiledata(file_list):
+    """Generate `TranslationFileData` objects for POFiles/templates in list.
+
+    This builds each `TranslationFileData` in memory only when it's needed, so
+    the memory usage for an export doesn't accumulate.
+    """
+    for file in file_list:
+        yield ITranslationFileData(file)
+
+
 def process_request(person, objects, format, logger):
     """Process a request for an export of Launchpad translation files.
 
@@ -151,9 +161,9 @@ def process_request(person, objects, format, logger):
         translation_exporter.getExporterProducingTargetFileFormat(format))
 
     result = ExportResult(person.name)
-    translation_file_list = []
+    translation_file_list = list(objects)
     last_template_name = None
-    for obj in objects:
+    for obj in translation_file_list:
         if IPOTemplate.providedBy(obj):
             template_name = obj.displayname
             object_name = template_name
@@ -166,11 +176,10 @@ def process_request(person, objects, format, logger):
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
             last_template_name = template_name
-        translation_file_list.append(ITranslationFileData(obj))
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(
-            translation_file_list)
+            generate_translationfiledata(translation_file_list))
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
@@ -202,6 +211,7 @@ def process_request(person, objects, format, logger):
             file=exported_file,
             contentType=exported_file.content_type)
         result.url = alias.http_url
+        logger.info("Stored file at %s" % result.url)
 
     result.notify(person)
 

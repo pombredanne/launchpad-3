@@ -353,7 +353,7 @@ class PullerMaster:
         protocol = self.master_protocol_class(deferred, self)
         command = [
             sys.executable, self.path_to_script, self.source_url,
-            self.destination_url, str(self.branch_id), self.unique_name,
+            self.destination_url, str(self.branch_id), str(self.unique_name),
             self.branch_type.name, self.oops_prefix]
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)

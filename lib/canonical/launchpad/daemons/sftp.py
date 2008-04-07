@@ -21,6 +21,22 @@ from canonical.codehosting import sshserver
 from canonical.codehosting.transport import set_up_logging
 
 
+def getPublicKeyString(data):
+    """Compatibility wrapper to get a public key string."""
+    Key = getattr(keys, 'Key', None)
+    if Key is None:
+        return keys.getPublicKeyString(data=data)
+    return Key.fromString(data)
+
+
+def getPrivateKeyObject(data):
+    """Compatibility wrapper to get a private key object."""
+    Key = getattr(keys, 'Key', None)
+    if Key is None:
+        return keys.getPrivateKeyObject(data=data)
+    return Key.fromString(data)
+
+
 class SSHService(service.Service):
     """A Twisted service for the supermirror SFTP server."""
 
@@ -60,10 +76,10 @@ class SSHService(service.Service):
         :return: (hostPublicKey, hostPrivateKey)
         """
         keydir = config.codehosting.host_key_pair_path
-        hostPublicKey = keys.getPublicKeyString(
+        hostPublicKey = getPublicKeyString(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa.pub'), 'rb').read())
-        hostPrivateKey = keys.getPrivateKeyObject(
+        hostPrivateKey = getPrivateKeyObject(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa'), 'rb').read())
         return hostPublicKey, hostPrivateKey
