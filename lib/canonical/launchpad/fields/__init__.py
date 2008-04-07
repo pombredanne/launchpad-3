@@ -521,7 +521,7 @@ class URIField(TextLine):
                 'A username may not be specified in the URI.')
 
         if not self.allow_port and uri.port is not None:
-            raise launchpadvalidationerror(
+            raise LaunchpadValidationError(
                 'Non-default ports are not allowed.')
 
         if not self.allow_query and uri.query is not None:
@@ -608,7 +608,7 @@ class BaseImageUpload(Bytes):
         else:
             if width > required_width or height > required_height:
                 raise LaunchpadValidationError(_(dedent("""
-                    This image is larger than %${width}x%${height}
+                    This image is larger than ${width}x${height}
                     pixels in size."""),
                     mapping={'width': required_width,
                              'height': required_height}))
