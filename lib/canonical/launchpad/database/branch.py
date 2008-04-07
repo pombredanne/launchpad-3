@@ -354,7 +354,7 @@ class Branch(SQLBase):
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
             deletion_operations.append(
-                DeletionOperation(merge_proposal,
+                DeletionCallable(merge_proposal,
                     _('This branch is the source branch of this merge'
                     ' proposal.'), merge_proposal.destroySelf))
         # Cannot use self.landing_candidates, because it ignores merged
@@ -362,50 +362,35 @@ class Branch(SQLBase):
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
             deletion_operations.append(
-                DeletionOperation(merge_proposal,
+                DeletionCallable(merge_proposal,
                     _('This branch is the target branch of this merge'
                     ' proposal.'), merge_proposal.destroySelf))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
-            def break_reference(merge_proposal):
-                merge_proposal.dependent_branch = None
-                merge_proposal.syncUpdate()
-            alteration_operations.append(
-                DeletionOperation(
-                    merge_proposal,
-                    _('This branch is the dependent branch of this merge'
-                    ' proposal.'), break_reference, (merge_proposal,)))
+            alteration_operations.append(ClearDependentBranch(merge_proposal))
+
         for subscription in self.subscriptions:
             deletion_operations.append(
-                DeletionOperation(subscription,
+                DeletionCallable(subscription,
                     _('This is a subscription to this branch.'),
                     subscription.destroySelf))
         for bugbranch in self.bug_branches:
             deletion_operations.append(
-                DeletionOperation(bugbranch,
+                DeletionCallable(bugbranch,
                 _('This bug is linked to this branch.'),
                 bugbranch.destroySelf))
         for spec_link in self.spec_links:
             deletion_operations.append(
-                DeletionOperation(spec_link,
+                DeletionCallable(spec_link,
                     _('This blueprint is linked to this branch.'),
                     spec_link.destroySelf))
         for series in self.associatedProductSeries():
-            def clear_user_branch(series):
-                if series.user_branch == self:
-                    series.user_branch = None
-                if series.import_branch == self:
-                    series.import_branch = None
-                series.syncUpdate()
-            alteration_operations.append(
-                DeletionOperation(
-                    series, _('This series is linked to this branch.'),
-                    clear_user_branch, (series,)))
+            alteration_operations.append(ClearSeriesBranch(series, self))
         if self.code_import is not None:
             def delete_code_import():
                 CodeImportSet().delete(self.code_import)
             deletion_operations.append(
-                DeletionOperation(self.code_import,
+                DeletionCallable(self.code_import,
                     _( 'This is the import data for this branch.'),
                     delete_code_import))
         return (alteration_operations, deletion_operations)
@@ -697,14 +682,45 @@ DEFAULT_BRANCH_LISTING_SORT = [
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
-    def __init__(self, affected_object, rationale, func, args=()):
+    def __init__(self, affected_object, rationale):
         self.affected_object = affected_object
         self.rationale = rationale
+
+
+class DeletionCallable(DeletionOperation):
+    def __init__(self, affected_object, rationale, func, args=()):
+        DeletionOperation.__init__(self, affected_object, rationale)
         self.func = func
         self.func_args = args
 
     def doOperation(self):
         self.func(*self.func_args)
+
+
+class ClearDependentBranch(DeletionOperation):
+
+    def __init__(self, merge_proposal):
+        DeletionOperation.__init__(self, merge_proposal,
+            _('This branch is the dependent branch of this merge proposal.'))
+
+    def doOperation(self):
+        self.affected_object.dependent_branch = None
+        self.affected_object.syncUpdate()
+
+
+class ClearSeriesBranch(DeletionOperation):
+
+    def __init__(self, series, branch):
+        DeletionOperation.__init__(
+            self, series, _('This series is linked to this branch.'))
+        self.branch = branch
+
+    def doOperation(self):
+        if self.affected_object.user_branch == self.branch:
+            self.affected_object.user_branch = None
+        if self.affected_object.import_branch == self.branch:
+            self.affected_object.import_branch = None
+        self.affected_object.syncUpdate()
 
 
 class BranchSet:
