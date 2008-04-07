@@ -337,7 +337,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return h, None
 
     def do_GET(self):
-        """Render the entry as JSON."""
+        """Render an appropriate representation of the entry."""
         # Handle a custom operation, probably a search.
         operation_name = self.request.form.pop('ws_op', None)
         if operation_name is not None:
@@ -347,6 +347,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # just needs this string served to the client.
                 return result
         else:
+            import pdb; pdb.set_trace()
             # No custom operation was specified. Implement a standard GET,
             # which serves a JSON representation of the entry.
             result = self

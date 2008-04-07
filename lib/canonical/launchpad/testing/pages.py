@@ -101,7 +101,7 @@ class WebServiceCaller:
         response = self.http_caller(request_string)
         return WebServiceResponseWrapper(response)
 
-    def get(self, path, headers=None):
+    def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
         return self(path, 'GET', headers=headers)
 
