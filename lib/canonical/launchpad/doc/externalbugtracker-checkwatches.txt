@@ -18,7 +18,7 @@ get_external_bugtracker is used to get an ExternalBugTracker suitable
 for a particular bugtracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     get_external_bugtracker, UnknownBugTrackerTypeError)
+    ...     get_external_bugtracker)
     >>> from canonical.launchpad.scripts import log
     >>> from canonical.launchpad.interfaces import BugTrackerType
 
@@ -49,8 +49,8 @@ get_external_bugtracker supports five external bug tracker types:
     ...         external_bugtracker)
     Bugzilla --> <canonical...bugzilla.Bugzilla ...>
     Debbugs --> <canonical...debbugs.DebBugs ...>
-    Mantis --> <canonical...base.Mantis object at ...>
-    Roundup --> <canonical...base.Roundup ...>
-    Request Tracker (RT) --> <canonical...base.RequestTracker ...>
-    SourceForge --> <canonical...base.SourceForge ...>
-    Trac --> <canonical...base.Trac ...>
+    Mantis --> <canonical...mantis.Mantis object at ...>
+    Roundup --> <canonical...roundup.Roundup ...>
+    Request Tracker (RT) --> <canonical...rt.RequestTracker ...>
+    SourceForge --> <canonical...sourceforge.SourceForge ...>
+    Trac --> <canonical...trac.Trac ...>

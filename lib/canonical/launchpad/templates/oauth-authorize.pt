@@ -1,0 +1,78 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad"
+>
+<body>
+  <metal:portlets fill-slot="portlets" />
+
+  <div metal:fill-slot="main" id="maincontent" tal:define="token view/token">
+    <tal:no-token condition="not:token">
+      <h1>Unable to identify application</h1>
+      <p>
+        The information provided by the remote application was incorrect or
+        incomplete. Because of that we were unable to identify the
+        application which would access Launchpad on your behalf.
+      </p>
+    </tal:no-token>
+
+    <tal:has-token condition="token">
+      <tal:token-not-reviewed condition="not:token/is_reviewed">
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <div metal:fill-slot="extra_top">
+            <p>The application identified as
+              <strong tal:content="token/consumer/key">consumer</strong>
+            wants to access Launchpad on your behalf. What level of access
+            do you want to grant?</p>
+
+            <table>
+              <tr tal:repeat="action view/actions">
+                <td style="text-align: right">
+                  <tal:action replace="structure action/render" />
+                </td>
+                <td>
+                  <span class="lesser"
+                    tal:content="action/permission/description" />
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div metal:fill-slot="extra_bottom">
+            <input type="hidden" name="oauth_token"
+                   tal:condition="request/form/oauth_token|nothing"
+                   tal:attributes="value request/form/oauth_token" />
+            <input type="hidden" name="oauth_callback"
+                   tal:condition="request/form/oauth_callback|nothing"
+                   tal:attributes="value request/form/oauth_callback" />
+          </div>
+
+          <div metal:fill-slot="buttons" />
+        </div>
+      </tal:token-not-reviewed>
+
+      <tal:token-reviewed condition="token/is_reviewed">
+        <h1>Request already reviewed</h1>
+        <p>
+          This request for accessing Launchpad on your behalf has been
+          reviewed <tal:date-reviewed 
+                      content="token/date_reviewed/fmt:approximatedate" />.
+        </p>
+      </tal:token-reviewed>
+    </tal:has-token>
+
+    <p>
+      See all <a tal:attributes="href string:${view/user/fmt:url}/+oauth-tokens"
+        >applications authorized</a> to access Launchpad on your behalf.
+    </p>
+  </div>
+
+</body>
+</html>
+

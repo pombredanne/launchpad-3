@@ -17,7 +17,7 @@
     <div metal:fill-slot="main">
       <p>
         <tal:person content="context/displayname">Sample Person</tal:person>
-        is a bug contact for these packages.
+        is subscribed to these packages.
       </p>
     <table class="listing">
       <thead>

@@ -5,12 +5,11 @@ __metaclass__ = type
 
 __all__ = ['MessageAddView']
 
-from zope.event import notify
-from zope.interface import providedBy
+from zope.interface import providedBy, implements
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -40,3 +39,19 @@ class MessageAddView(SQLObjectAddView):
         return self._nextURL
 
 
+class BugMessageCanonicalUrlData:
+    """Bug messages have a canonical_url within the primary bugtask."""
+    implements(ICanonicalUrlData)
+    rootsite = 'bugs'
+
+    def __init__(self, bug, message):
+        self.inside = bug.bugtasks[0]
+        self.path = "comments/%d" % list(bug.messages).index(message)
+
+
+def message_to_canonical_url_data(message):
+    """This factory creates `ICanonicalUrlData` for BugMessage."""
+    if message.bugs.count() == 0:
+        # Will result in a ComponentLookupError
+        return None
+    return BugMessageCanonicalUrlData(message.bugs[0], message)

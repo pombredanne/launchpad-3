@@ -129,8 +129,6 @@ An ISourcePackage.
 
 An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.distributionsourcepackage import (
-    ...     IDistributionSourcePackage)
     >>> from canonical.launchpad.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
@@ -179,10 +177,7 @@ An IProductRelease.
 
 == Bugs and bugtasks ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroSeriesBugTask, IBugWatchSet)
-    >>> from canonical.launchpad.database import BugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugTaskSet
 
 The IBugSet.
 
@@ -198,6 +193,18 @@ An IUpstreamBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
     u'http://bugs.launchpad.dev/firefox/+bug/1'
+
+An IMessage on a bug.
+
+    >>> canonical_url(getUtility(IBugSet).get(1).messages[0])
+    u'http://bugs.launchpad.dev/firefox/+bug/1/comments/0'
+
+(But messages not related to bug, don't have such a URL.)
+
+    >>> canonical_url(getUtility(IQuestionSet).get(6).messages[0])
+    Traceback (most recent call last):
+      ...
+    NoCanonicalUrl: ...
 
 An IDistroBugTask.
 

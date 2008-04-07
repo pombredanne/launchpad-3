@@ -2,8 +2,8 @@
 
 __metaclass__ = type
 
-import os, os.path, shutil
-from signal import SIGTERM
+import os
+import shutil
 
 import canonical
 from canonical.config import config
@@ -67,7 +67,7 @@ class LibrarianTestSetup(TacTestSetup):
 
     @property
     def root(self):
-        return config.librarian.server.root
+        return config.librarian_server.root
 
     @property
     def tacfile(self):
@@ -88,7 +88,7 @@ class LibrarianTestSetup(TacTestSetup):
 def fillLibrarianFile(fileid, content='Fake Content'):
     """Write contents in disk for a librarian sampledata."""
     filepath = os.path.join(
-        config.librarian.server.root, _relFileLocation(fileid))
+        config.librarian_server.root, _relFileLocation(fileid))
 
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
@@ -100,6 +100,6 @@ def fillLibrarianFile(fileid, content='Fake Content'):
 def cleanupLibrarianFiles():
     """Remove all librarian files present in disk."""
     # Make this smarter if our tests create huge numbers of files
-    root = config.librarian.server.root
+    root = config.librarian_server.root
     if os.path.isdir(os.path.join(root, '00')):
         shutil.rmtree(os.path.join(root, '00'))

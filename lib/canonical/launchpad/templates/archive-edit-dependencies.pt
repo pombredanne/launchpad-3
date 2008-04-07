@@ -17,6 +17,8 @@
 
 <div metal:fill-slot="main">
 
+  <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
+
   <h1>Edit dependencies for <tal:title replace="context/title" /></h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">

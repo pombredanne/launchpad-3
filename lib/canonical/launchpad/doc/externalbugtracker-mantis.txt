@@ -183,6 +183,7 @@ updated:
     >>> bug_watch = sorted(example_bug_tracker.watches, key=getid)[0]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> bug_watch.lastchecked = bug_watch.lastchanged
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, [bug_watch])

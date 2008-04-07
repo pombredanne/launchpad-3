@@ -3,12 +3,9 @@
 Notifications about changes to a mailing list's status are sent out
 via email.
 
-    >>> import email
     >>> from canonical.launchpad.mail import stub
-
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
-
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
@@ -19,31 +16,12 @@ via email.
     # person/team we want.
     >>> login('foo.bar@canonical.com')
 
-
-    # XXX mars 2008-02-21:
-    # Remove this when the mailing list beta is over.
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> beta_testers = getUtility(
-    ... 		ILaunchpadCelebrities).launchpad_beta_testers
-
-    >>> def beta_tester(name):
-    ...     """Create a new person who is also a beta tester."""
-    ...     person = new_person(name)
-    ...     beta_testers.addMember(person, reviewer=salgado)
-    ...     return person
-
-
 When a new email list becomes active, an email notification is sent to
-all active team members who are launchpad beta testers.
+all active team members.
 
-    # XXX mars 2008-02-21:
-    # Change this  of tests when the mailing list beta is over.
     >>> team_one = new_team('team-one', with_list=False)
-    >>> anne = beta_tester('Anne')
-    >>> not_beta = new_person('Nobeta')
-
+    >>> anne = new_person('Anne')
     >>> anne.join(team_one)
-    >>> not_beta.join(team_one)
 
     # Clear out the team-membership status emails.
     >>> pop_notifications()
@@ -56,8 +34,13 @@ all active team members who are launchpad beta testers.
     'ACTIVE'
 
     >>> transaction.commit()	# Send the emails.
+
+Both Anne and No Privileges Person receive the notifications, Anne as a
+newly subscribed member and No Privileges Person as the owner of the
+team.
+
     >>> len(stub.test_emails)
-    1
+    2
     >>> print_emails(include_reply_to=True)
     From: Team One <noreply@launchpad.net>
     To: anne.person@example.com
@@ -77,7 +60,24 @@ all active team members who are launchpad beta testers.
     Regards,
     The Launchpad team
     ----------------------------------------
-
+    From: Team One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Reply-To: Team One <noreply@launchpad.net>
+    Subject: New Mailing List for Team One
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Team One has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~no-priv/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 That notification is also sent to the individual members of all
 sub-teams.  If a sub-team has a primary contact email address, that
@@ -91,12 +91,12 @@ individual team members.
     >>> sub_team = new_team('sub-team', with_list=False)
     >>> super_team.addMember(sub_team, salgado, force_team_add=True)
     >>> anne.join(super_team)
-    >>> lars = beta_tester('Lars')
+    >>> lars = new_person('Lars')
     >>> lars.join(sub_team)
 
     # Cris should receive a single email, even though she is a member
     # of both teams.
-    >>> cris = beta_tester('Cris')
+    >>> cris = new_person('Cris')
     >>> cris.join(super_team)
     >>> cris.join(sub_team)
 
@@ -121,7 +121,7 @@ individual team members.
 
     >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
-    3
+    4
     >>> print_emails(include_reply_to=True)
     From: Super Team <noreply@launchpad.net>
     To: anne.person@example.com
@@ -173,6 +173,24 @@ individual team members.
       To subscribe:
     <BLANKLINE>
           http://launchpad.dev/~lars/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Super Team has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~no-priv/+editemails
     <BLANKLINE>
     Regards,
     The Launchpad team

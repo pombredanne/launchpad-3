@@ -243,6 +243,7 @@ class TestPublishDistro(TestNativePublishingBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         cprov_ppa = removeSecurityProxy(cprov.archive)
         cprov_ppa.private = True
+        cprov_ppa.buildd_secret = "secret"
         cprov_ppa.distribution = self.ubuntutest
 
         # Publish something to cprov's PPA:

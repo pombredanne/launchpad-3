@@ -13,9 +13,15 @@
           <li tal:condition="context/reviewed">Reviewed</li>
           <li tal:condition="context/active">Active</li>
           <li tal:condition="not: context/active">Disabled</li>
+          <li tal:condition="context/official_codehosting">Uses Code</li>
+          <li tal:condition="not: context/official_codehosting"
+          >Doesn&rsquo;t use Code</li>
           <li tal:condition="context/official_malone">Uses Bugs</li>
           <li tal:condition="not: context/official_malone"
           >Doesn&rsquo;t use Bugs</li>
+          <li tal:condition="context/official_blueprints">Uses Blueprints</li>
+          <li tal:condition="not: context/official_blueprints"
+          >Doesn&rsquo;t use Blueprints</li>
           <li tal:condition="context/official_rosetta"
           >Uses Translations</li>
           <li tal:condition="not: context/official_rosetta"
