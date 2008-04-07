@@ -381,8 +381,6 @@ class CodeImportEditView(CodeImportBaseView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        # A simple else clause is sufficient here as the initialize would
-        # have barfed if there was a different type (other than CVS or SVN).
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
             self._validateCVS(
                 data.get('cvs_root'), data.get('cvs_module'),

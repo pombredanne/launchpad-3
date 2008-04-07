@@ -223,12 +223,13 @@ class BaseLayer:
         # Objects with __del__ methods cannot participate in refence cycles.
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.
-        gc.collect()
         if gc.garbage:
-            BaseLayer.flagTestIsolationFailure(
-                    "Test left uncollectable garbage\n"
-                    "%s (referenced from %s)"
-                    % (gc.garbage, gc.get_referrers(*gc.garbage)))
+            gc.collect() # Expensive, so only do if there might be garbage.
+            if gc.garbage:
+                BaseLayer.flagTestIsolationFailure(
+                        "Test left uncollectable garbage\n"
+                        "%s (referenced from %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
 
     @classmethod
     @profiled
