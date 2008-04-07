@@ -148,6 +148,13 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 If a Person who's account is inactive sends an email, it will be
 silently rejected.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> bigjools = getUtility(IPersonSet).getByEmail(
+    ...     'launchpad@julian-edwards.com')
+    >>> print bigjools.account_status.name
+    NOACCOUNT
+
     >>> import email
     >>> msg = email.message_from_string(
     ... """From: Julian Edwards <launchpad@julian-edwards.com>
