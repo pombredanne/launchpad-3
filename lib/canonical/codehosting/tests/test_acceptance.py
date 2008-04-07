@@ -58,7 +58,6 @@ class SSHTestCase(ServerTestCase):
         tree.commit('Added foo', rev_id='rev1')
 
     def tearDown(self):
-        import pdb; pdb.set_trace()
         TestCaseWithTransport.tearDown(self)
         return ServerTestCase.tearDown(self)
 
