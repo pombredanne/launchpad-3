@@ -358,7 +358,7 @@ class Branch(SQLBase):
             deletions[merge_proposal] = _(
                 'This branch is the source branch of this merge proposal.')
             deletion_operations.append(
-                DeletionOperation(merge_proposal.destroySelf).doOperation)
+                DeletionOperation(merge_proposal.destroySelf))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
@@ -366,7 +366,7 @@ class Branch(SQLBase):
             deletions[merge_proposal] = _(
                 'This branch is the target branch of this merge proposal.')
             deletion_operations.append(
-                DeletionOperation(merge_proposal.destroySelf).doOperation)
+                DeletionOperation(merge_proposal.destroySelf))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alterations[merge_proposal] = _(
@@ -375,21 +375,21 @@ class Branch(SQLBase):
                 merge_proposal.dependent_branch = None
                 merge_proposal.syncUpdate()
             alteration_operations.append(
-                DeletionOperation(break_reference, merge_proposal).doOperation)
+                DeletionOperation(break_reference, merge_proposal))
         for subscription in self.subscriptions:
             deletions[subscription] = _(
                 'This is a subscription to this branch.')
             deletion_operations.append(
-                DeletionOperation(subscription.destroySelf).doOperation)
+                DeletionOperation(subscription.destroySelf))
         for bugbranch in self.bug_branches:
             deletions[bugbranch] = _('This bug is linked to this branch.')
             deletion_operations.append(
-                DeletionOperation(bugbranch.destroySelf).doOperation)
+                DeletionOperation(bugbranch.destroySelf))
         for spec_link in self.spec_links:
             deletions[spec_link] = _(
                 'This blueprint is linked to this branch.')
             deletion_operations.append(
-                DeletionOperation(spec_link.destroySelf).doOperation)
+                DeletionOperation(spec_link.destroySelf))
         for series in self.associatedProductSeries():
             alterations[series] = _('This series is linked to this branch.')
             def clear_user_branch(series):
@@ -399,14 +399,14 @@ class Branch(SQLBase):
                     series.import_branch = None
                 series.syncUpdate()
             alteration_operations.append(
-                DeletionOperation(clear_user_branch, series).doOperation)
+                DeletionOperation(clear_user_branch, series))
         if self.code_import is not None:
             deletions[self.code_import] = _(
                 'This is the import data for this branch.')
             def delete_code_import():
                 CodeImportSet().delete(self.code_import)
             deletion_operations.append(
-                DeletionOperation(delete_code_import).doOperation)
+                DeletionOperation(delete_code_import))
         return (alterations, deletions, alteration_operations,
             deletion_operations)
 
@@ -433,9 +433,9 @@ class Branch(SQLBase):
         (_alterations, _deletions, alteration_operations,
             deletion_operations) = self._deletionRequirements()
         for operation in alteration_operations:
-            operation()
+            operation.doOperation()
         for operation in deletion_operations:
-            operation()
+            operation.doOperation()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
