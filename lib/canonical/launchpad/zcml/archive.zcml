@@ -46,6 +46,13 @@
     />
 
   <browser:page
+   for="*"
+   name="+form-macros"
+   permission="zope.Public"
+   template="../templates/archive-form-macros.pt"
+   />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IArchive"
     permission="zope.Public"
     facet="overview"

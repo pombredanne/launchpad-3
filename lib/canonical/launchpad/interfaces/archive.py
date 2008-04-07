@@ -9,7 +9,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchivePurpose',
     'IArchive',
-    'IArchiveEditDependenciesForm',
+    'IArchiveSourceSelectionForm',
     'IArchivePackageDeletionForm',
     'IArchiveEditDependenciesForm',
     'IArchiveSet',
@@ -261,13 +261,17 @@ class IPPAActivateForm(Interface):
         required=True, default=False)
 
 
-class IArchivePackageDeletionForm(Interface):
-    """Schema used to delete packages within a archive."""
+class IArchiveSourceSelectionForm(Interface):
+    """Schema used to select sources within an archive."""
 
     name_filter = TextLine(
         title=_("Package name"), required=False, default=None,
         description=_("Display packages only with name matching the given "
                       "filter."))
+
+
+class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
+    """Schema used to delete packages within an archive."""
 
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,

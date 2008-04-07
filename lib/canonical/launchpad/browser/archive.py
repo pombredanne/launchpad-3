@@ -33,9 +33,9 @@ from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageDeletionForm, IArchiveSet, IBuildSet, IHasBuildRecords,
-    ILaunchpadCelebrities, IPPAActivateForm, IStructuralHeaderPresentation,
-    NotFoundError, PackagePublishingStatus)
+    IArchivePackageDeletionForm, IArchiveSourceSelectionForm, IArchiveSet,
+    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
+    IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -224,19 +224,14 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         self.search_results = self.batchnav.currentBatch()
 
 
-class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
-    """Archive package deletion view class.
+class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
+    """Base class to implement source selection widget for PPAs."""
 
-    This view presents a package selection slot in a POST form implementing
-    deletion action that could be performed upon a set of selected packages.
-    """
-
-    schema = IArchivePackageDeletionForm
+    schema = IArchiveSourceSelectionForm
 
     # Maximum number of 'sources' presented.
     max_sources_presented = 50
 
-    custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
@@ -271,7 +266,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
         Ensure focus is only set if there are sources actually presented.
         """
-        if not self.has_sources_for_deletion:
+        if not self.has_sources:
             return ''
         return LaunchpadFormView.focusedElementScript(self)
 
@@ -320,14 +315,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             name_filter = self.widgets['name_filter'].getInputValue()
         else:
             name_filter = None
-
-        return self.context.getSourcesForDeletion(name=name_filter)
+        return self.getSources(name=name_filter)
 
     @cachedproperty
-    def has_sources_for_deletion(self):
+    def has_sources(self):
         """Whether or not the PPA has published source packages."""
-        undeleted_sources = self.context.getSourcesForDeletion()
-        return bool(undeleted_sources)
+        available_sources = self.getSources()
+        return bool(available_sources)
 
     @property
     def available_sources_size(self):
@@ -338,6 +332,21 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     def has_undisplayed_sources(self):
         """Whether of not some sources are not displayed in the widget."""
         return self.available_sources_size > self.max_sources_presented
+
+
+class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
+    """Archive package deletion view class.
+
+    This view presents a package selection slot in a POST form implementing
+    deletion action that could be performed upon a set of selected packages.
+    """
+
+    schema = IArchivePackageDeletionForm
+
+    custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
+
+    def getSources(self, name=None):
+        return self.context.getSourcesForDeletion(name=name)
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
