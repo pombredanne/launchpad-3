@@ -59,7 +59,7 @@ public_person_validator = PublicPersonValidatorClass()
 
 
 class VisibilityValidator(Validator):
-    """Prevent teams with insecure connections from being made private."""
+    """Prevent teams with inconsistent connections from being made private."""
 
     def _verify(self, value, state):
         if isinstance(value, DBItem) and value in PersonVisibility:

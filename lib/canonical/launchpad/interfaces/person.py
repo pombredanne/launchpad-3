@@ -1283,8 +1283,9 @@ class IPersonAdminWriteRestricted(Interface):
 
     visibility = Choice(
         title=_("Visibility"),
-        description=_("""Public visibility is standard, and Private Membership
-            means that a team's members are hidden."""),
+        description=_(
+            "Public visibility is standard, and Private Membership"
+            "means that a team's members are hidden."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
 
