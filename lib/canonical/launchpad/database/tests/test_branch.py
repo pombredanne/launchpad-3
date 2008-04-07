@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import (BranchSet,
     BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
-    DeletionCallable,)
+    DeletionCallable, DeleteCodeImport)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
     )
@@ -424,6 +424,14 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
                           spec_link_id)
 
+    def test_DeleteCodeImport(self):
+        """DeleteCodeImport.doOperation must delete the CodeImport."""
+        code_import = self.factory.makeCodeImport()
+        code_import_id = code_import.id
+        self.factory.makeCodeImportJob(code_import)
+        DeleteCodeImport(code_import).doOperation()
+        self.assertRaises(
+            SQLObjectNotFound, CodeImport.get, code_import_id)
 
 
 class BranchAddLandingTarget(TestCase):

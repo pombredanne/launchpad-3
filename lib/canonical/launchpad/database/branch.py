@@ -348,7 +348,6 @@ class Branch(SQLBase):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
-        from canonical.launchpad.database.codeimport import CodeImportSet
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
@@ -387,12 +386,7 @@ class Branch(SQLBase):
         for series in self.associatedProductSeries():
             alteration_operations.append(ClearSeriesBranch(series, self))
         if self.code_import is not None:
-            def delete_code_import():
-                CodeImportSet().delete(self.code_import)
-            deletion_operations.append(
-                DeletionCallable(self.code_import,
-                    _( 'This is the import data for this branch.'),
-                    delete_code_import))
+            deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -724,6 +718,18 @@ class ClearSeriesBranch(DeletionOperation):
         if self.affected_object.import_branch == self.branch:
             self.affected_object.import_branch = None
         self.affected_object.syncUpdate()
+
+
+class DeleteCodeImport(DeletionOperation):
+    """Deletion operation that deletes a branch's import."""
+
+    def __init__(self, code_import):
+        DeletionOperation.__init__(
+            self, code_import, _( 'This is the import data for this branch.'))
+
+    def doOperation(self):
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        CodeImportSet().delete(self.affected_object)
 
 
 class BranchSet:
