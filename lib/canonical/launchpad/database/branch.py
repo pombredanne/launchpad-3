@@ -374,7 +374,7 @@ class Branch(SQLBase):
                 DeletionOperation(
                     merge_proposal,
                     _('This branch is the dependent branch of this merge'
-                    ' proposal.'), break_reference, merge_proposal))
+                    ' proposal.'), break_reference, (merge_proposal,)))
         for subscription in self.subscriptions:
             deletion_operations.append(
                 DeletionOperation(subscription,
@@ -400,7 +400,7 @@ class Branch(SQLBase):
             alteration_operations.append(
                 DeletionOperation(
                     series, _('This series is linked to this branch.'),
-                    clear_user_branch, series))
+                    clear_user_branch, (series,)))
         if self.code_import is not None:
             def delete_code_import():
                 CodeImportSet().delete(self.code_import)
@@ -697,15 +697,14 @@ DEFAULT_BRANCH_LISTING_SORT = [
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
-    def __init__(self, affected_object, rationale, func, *args, **kwargs):
+    def __init__(self, affected_object, rationale, func, args=()):
         self.affected_object = affected_object
         self.rationale = rationale
         self.func = func
         self.func_args = args
-        self.func_kwargs = kwargs
 
     def doOperation(self):
-        self.func(*self.func_args, **self.func_kwargs)
+        self.func(*self.func_args)
 
 
 class BranchSet:
