@@ -15,8 +15,6 @@ import os
 import shutil
 import tempfile
 
-from zope.component import getUtility
-
 from bzrlib.branch import Branch
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.bzrdir import BzrDir
@@ -30,8 +28,6 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, ICodeImportJobSet, RevisionControlSystems)
 
 from cscvs.cmds import totla
 import cscvs
@@ -131,8 +127,19 @@ class CodeImportDetails:
             svn_branch_url = None
             [cvs_root, cvs_module] = arguments[2:]
         else:
-            raise AssertionError("Unknown rcstype %r" % rcstype)
+            raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+
+    def asArguments(self):
+        result = [str(self.branch_id), self.rcstype]
+        if self.rcstype == 'svn':
+            result.append(self.svn_branch_url)
+        elif self.rcstype == 'cvs':
+            result.append(self.cvs_root)
+            result.append(self.cvs_module)
+        else:
+            raise AssertionError("Unknown rcstype %r." % self.rcstype)
+        return result
 
 
 class ForeignTreeStore:
@@ -228,11 +235,11 @@ class ImportWorker:
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
-    def __init__(self, job_id, foreign_tree_store, bazaar_branch_store,
-                 logger):
+    def __init__(self, source_details, foreign_tree_store,
+                 bazaar_branch_store, logger):
         """Construct an `ImportWorker`.
 
-        :param job_id: The database ID of the `CodeImportJob` to run.
+        :param source_details: XXX.
         :param foreign_tree_store: A `ForeignTreeStore`. The import worker
             uses this to fetch and store foreign branches.
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
@@ -240,7 +247,7 @@ class ImportWorker:
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         """
-        self.job = getUtility(ICodeImportJobSet).getById(job_id)
+        self.source_details = source_details
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
         self.working_directory = tempfile.mkdtemp()
@@ -256,7 +263,7 @@ class ImportWorker:
         if os.path.isdir(self._bazaar_working_tree_path):
             shutil.rmtree(self._bazaar_working_tree_path)
         return self.bazaar_branch_store.pull(
-            self.job.code_import.branch, self._bazaar_working_tree_path)
+            self.source_details.branch_id, self._bazaar_working_tree_path)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
@@ -267,7 +274,7 @@ class ImportWorker:
             shutil.rmtree(self._foreign_working_tree_path)
         os.mkdir(self._foreign_working_tree_path)
         return self.foreign_tree_store.fetch(
-            self.job.code_import, self._foreign_working_tree_path)
+            self.source_details, self._foreign_working_tree_path)
 
     def importToBazaar(self, foreign_tree, bazaar_tree):
         """Actually import `foreign_tree` into `bazaar_tree`.
@@ -332,8 +339,8 @@ class ImportWorker:
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
         self.bazaar_branch_store.push(
-            self.job.code_import.branch, bazaar_tree)
+            self.source_details.branch_id, bazaar_tree)
         self.foreign_tree_store.archive(
-            self.job.code_import, foreign_tree)
+            self.source_details, foreign_tree)
         shutil.rmtree(bazaar_tree.basedir)
         shutil.rmtree(foreign_tree.local_path)

@@ -15,23 +15,31 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from optparse import OptionParser
+
 from canonical.codehosting.codeimport.worker import (
-    ImportWorker, get_default_bazaar_branch_store,
+    CodeImportDetails, ImportWorker, get_default_bazaar_branch_store,
     get_default_foreign_tree_store)
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad import scripts
 
 
-class CodeImportWorker(LaunchpadScript):
+
+class CodeImportWorker:
+
+    def __init__(self):
+        parser = OptionParser()
+        scripts.logger_options(parser)
+        options, self.args = parser.parse_args()
+        self.logger = scripts.logger(options, 'code-import-worker')
+
     def main(self):
-        [job_id] = self.args
-        job_id = int(job_id)
+        source_details = CodeImportDetails.fromArguments(self.args)
         import_worker = ImportWorker(
-            job_id, get_default_foreign_tree_store(),
+            source_details, get_default_foreign_tree_store(),
             get_default_bazaar_branch_store(), self.logger)
         import_worker.run()
 
 
 if __name__ == '__main__':
-    script = CodeImportWorker(
-        'code-import-worker', dbuser='importd')
-    script.lock_and_run()
+    script = CodeImportWorker()
+    script.main()
