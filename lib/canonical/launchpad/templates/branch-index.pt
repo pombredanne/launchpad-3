@@ -210,7 +210,7 @@
         <tal:last-successful condition="code_import/date_last_successful">
           <p>
             Last successful import was
-            <tal:last-successful replace="job/date_last_successful/fmt:displaydate">
+            <tal:last-successful replace="code_import/date_last_successful/fmt:displaydate">
               2 hours ago
             </tal:last-successful>.
           </p>
