@@ -27,7 +27,7 @@ from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
-    notify_errors_list, send_process_error_notification)
+    send_process_error_notification)
 from canonical.librarian.interfaces import UploadFailed
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
@@ -110,6 +110,12 @@ class MailErrorUtility(ErrorReportingUtility):
 
     _ignored_exceptions = set()
 
+    def __init__(self):
+        super(MailErrorUtility, self).__init__()
+        # All errors reported for incoming email will have 'EMAIL'
+        # appended to the configured oops_prefix.
+        self.appendToOopsPrefix('EMAIL')
+
 
 def report_oops(file_alias_url=None, error_msg=None):
     """Record an OOPS for the current exception and return the OOPS ID."""
@@ -131,6 +137,7 @@ def report_oops(file_alias_url=None, error_msg=None):
 def handleMail(trans=transaction):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
+    # pylint: disable-msg=W0631
     def _handle_error(error_msg, file_alias_url, notify=True):
         """Handles error occuring in handleMail's for-loop.
 

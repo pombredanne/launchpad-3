@@ -1,5 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# This script uses relative imports.
+# pylint: disable-msg=W0403
 
 """Script run by cronscripts/supermirror-pull.py to mirror single branches.
 
@@ -83,4 +85,4 @@ if __name__ == '__main__':
     install_worker_ui_factory(protocol)
     PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
-        protocol).mirror()
+        protocol, oops_prefix).mirror()

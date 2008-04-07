@@ -16,14 +16,11 @@ def get_lock_id_for_branch_id(branch_id):
     """
     return 'worker-for-branch-%s@supermirror' % (branch_id,)
 
-
 from canonical.codehosting.puller.scheduler import LockError
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 
-
 UTC = pytz.timezone('UTC')
-
 
 
 def mirror(logger, manager):
