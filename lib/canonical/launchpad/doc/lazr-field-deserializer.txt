@@ -2,10 +2,11 @@
 
 LAZR defines an interface for taking a string value that came in on an
 HTTP request, and deserializing it into a value that's appropriate for
-a particular schema field. This is similar to the widget interface,
+a particular schema field. This is similar to Zope's widget interface,
 but much smaller.
 
-To test this we create a dummy request and application root.
+To test the various deserializers we create a dummy request and
+application root.
 
     >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from canonical.launchpad.webapp.servers import WebServicePublication
@@ -76,15 +77,17 @@ enumerated value results in a helpful ValueError.
 
 Here's a Choice whose vocabulary is a filter on a database table that
 can be very large. Futhermore, every item in the vocabulary is
-published as a resource in Launchpad's web service. Here, the client
-is expected to designate a vocabulary item by its published URL. If
-the given string is a URL corresponding to a vocabulary item, the
-deserializer returns that item. Otherwise it raises a ValueError.
+published as a resource in Launchpad's web service.
 
     >>> from canonical.launchpad.vocabularies import (
     ...     ValidPersonOrTeamVocabulary)
     >>> field = Choice(vocabulary=ValidPersonOrTeamVocabulary())
     >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+
+Here, the client is expected to designate a vocabulary item by its
+published URL. If the given string is a URL corresponding to a
+vocabulary item, the deserializer returns that item. Otherwise it
+raises a ValueError.
 
     >>> deserializer.deserialize("http://api.launchpad.dev/~salgado").name
     u'salgado'
@@ -98,9 +101,3 @@ deserializer returns that item. Otherwise it raises a ValueError.
     Traceback (most recent call last):
     ...
     ValueError: No such object "salgado".
-
-    >>> deserializer.deserialize("nosuchperson")
-    Traceback (most recent call last):
-    ...
-    ValueError: No such object "nosuchperson".
-
