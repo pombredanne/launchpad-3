@@ -688,6 +688,8 @@ class DeletionOperation:
 
 
 class DeletionCallable(DeletionOperation):
+    """Deletion operation that invokes a callable."""
+
     def __init__(self, affected_object, rationale, func, args=()):
         DeletionOperation.__init__(self, affected_object, rationale)
         self.func = func
@@ -698,6 +700,7 @@ class DeletionCallable(DeletionOperation):
 
 
 class ClearDependentBranch(DeletionOperation):
+    """Deletion operation that clears a merge proposal's dependent branch."""
 
     def __init__(self, merge_proposal):
         DeletionOperation.__init__(self, merge_proposal,
@@ -709,6 +712,7 @@ class ClearDependentBranch(DeletionOperation):
 
 
 class ClearSeriesBranch(DeletionOperation):
+    """Deletion operation that clears a series' branch."""
 
     def __init__(self, series, branch):
         DeletionOperation.__init__(
