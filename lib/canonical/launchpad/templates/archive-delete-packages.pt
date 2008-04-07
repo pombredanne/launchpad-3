@@ -30,7 +30,8 @@
     <div class="form" metal:fill-slot="widgets"
          tal:condition="view/has_sources">
 
-      <div metal:use-macro="context/@@+form-macros/selectable-sources" />
+      <metal:selectable-sources
+        use-macro="context/@@+form-macros/selectable-sources" />
 
       <tal:actions condition="view/available_sources_size"
                    define="widget nocall:view/widgets/deletion_comment;

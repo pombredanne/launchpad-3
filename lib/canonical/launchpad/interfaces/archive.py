@@ -9,10 +9,10 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchivePurpose',
     'IArchive',
-    'IArchiveSourceSelectionForm',
-    'IArchivePackageDeletionForm',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageDeletionForm',
     'IArchiveSet',
+    'IArchiveSourceSelectionForm',
     'IPPAActivateForm',
     ]
 

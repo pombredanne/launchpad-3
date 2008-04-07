@@ -225,7 +225,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
 
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
-    """Base class to implement source selection widget for PPAs."""
+    """Base class to implement a source selection widget for PPAs."""
 
     schema = IArchiveSourceSelectionForm
 
@@ -305,6 +305,11 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
             self.form_fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
+    def getSources(self, name=None):
+        """Source lookup method, should be implemented by callsites."""
+        raise NotImplementedError(
+            'Source lookup should be implemented by callsites')
+
     @property
     def sources(self):
         """Query undeleted source publishing records.
@@ -330,7 +335,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
 
     @property
     def has_undisplayed_sources(self):
-        """Whether of not some sources are not displayed in the widget."""
+        """Whether or not some sources are not displayed in the widget."""
         return self.available_sources_size > self.max_sources_presented
 
 
@@ -338,7 +343,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """Archive package deletion view class.
 
     This view presents a package selection slot in a POST form implementing
-    deletion action that could be performed upon a set of selected packages.
+    a deletion action that can be performed upon a set of selected packages.
     """
 
     schema = IArchivePackageDeletionForm

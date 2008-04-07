@@ -6,16 +6,17 @@
 <metal:selectable_sources define-macro="selectable-sources">
 
   <tal:comment replace="nothing">
-   Presents a table with selectable sources for an
-   IArchiveSelectableSourceView.
+    Presents a table with selectable sources for an
+    IArchiveSelectableSourceView.
   </tal:comment>
 
   <tal:search define="name_widget nocall:view/widgets/name_filter">
-     <label tal:attributes="for name_widget/name"
-     >Show only sources with name matching:</label>
+     <label tal:attributes="for name_widget/name">
+       Show only sources with name matching:
+     </label>
      <input tal:replace="structure name_widget"/>
      <input
-         tal:replace="structure view/actions/field.actions.update/render" />
+       tal:replace="structure view/actions/field.actions.update/render" />
   </tal:search>
 
   <tal:no_sources tal:condition="not:view/available_sources_size">
