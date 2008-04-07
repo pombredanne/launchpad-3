@@ -349,49 +349,48 @@ class Branch(SQLBase):
         that may be called to perform the alterations and deletions needed.
         """
         from canonical.launchpad.database.codeimport import CodeImportSet
-        alterations = {}
-        deletions = {}
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
-            deletions[merge_proposal] = _(
-                'This branch is the source branch of this merge proposal.')
             deletion_operations.append(
-                DeletionOperation(merge_proposal.destroySelf))
+                DeletionOperation(merge_proposal,
+                    _('This branch is the source branch of this merge'
+                    ' proposal.'), merge_proposal.destroySelf))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
-            deletions[merge_proposal] = _(
-                'This branch is the target branch of this merge proposal.')
             deletion_operations.append(
-                DeletionOperation(merge_proposal.destroySelf))
+                DeletionOperation(merge_proposal,
+                    _('This branch is the target branch of this merge'
+                    ' proposal.'), merge_proposal.destroySelf))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
-            alterations[merge_proposal] = _(
-                'This branch is the dependent branch of this merge proposal.')
             def break_reference(merge_proposal):
                 merge_proposal.dependent_branch = None
                 merge_proposal.syncUpdate()
             alteration_operations.append(
-                DeletionOperation(break_reference, merge_proposal))
+                DeletionOperation(
+                    merge_proposal,
+                    _('This branch is the dependent branch of this merge'
+                    ' proposal.'), break_reference, merge_proposal))
         for subscription in self.subscriptions:
-            deletions[subscription] = _(
-                'This is a subscription to this branch.')
             deletion_operations.append(
-                DeletionOperation(subscription.destroySelf))
+                DeletionOperation(subscription,
+                    _('This is a subscription to this branch.'),
+                    subscription.destroySelf))
         for bugbranch in self.bug_branches:
-            deletions[bugbranch] = _('This bug is linked to this branch.')
             deletion_operations.append(
-                DeletionOperation(bugbranch.destroySelf))
+                DeletionOperation(bugbranch,
+                _('This bug is linked to this branch.'),
+                bugbranch.destroySelf))
         for spec_link in self.spec_links:
-            deletions[spec_link] = _(
-                'This blueprint is linked to this branch.')
             deletion_operations.append(
-                DeletionOperation(spec_link.destroySelf))
+                DeletionOperation(spec_link,
+                    _('This blueprint is linked to this branch.'),
+                    spec_link.destroySelf))
         for series in self.associatedProductSeries():
-            alterations[series] = _('This series is linked to this branch.')
             def clear_user_branch(series):
                 if series.user_branch == self:
                     series.user_branch = None
@@ -399,26 +398,29 @@ class Branch(SQLBase):
                     series.import_branch = None
                 series.syncUpdate()
             alteration_operations.append(
-                DeletionOperation(clear_user_branch, series))
+                DeletionOperation(
+                    series, _('This series is linked to this branch.'),
+                    clear_user_branch, series))
         if self.code_import is not None:
-            deletions[self.code_import] = _(
-                'This is the import data for this branch.')
             def delete_code_import():
                 CodeImportSet().delete(self.code_import)
             deletion_operations.append(
-                DeletionOperation(delete_code_import))
-        return (alterations, deletions, alteration_operations,
-            deletion_operations)
+                DeletionOperation(self.code_import,
+                    _( 'This is the import data for this branch.'),
+                    delete_code_import))
+        return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
         """See `IBranch`."""
-        alterations, deletions, _ignored, _i = (
+        alteration_operations, deletion_operations, = (
             self._deletionRequirements())
-        result = dict((associated_object, ('alter', reason)) for
-            associated_object, reason in alterations.iteritems())
+        result = dict(
+            (operation.affected_object, ('alter', operation.rationale)) for
+            operation in alteration_operations)
         # Deletion entries should overwrite alteration entries.
-        result.update((associated_object, ('delete', reason)) for
-            associated_object, reason in deletions.iteritems())
+        result.update(
+            (operation.affected_object, ('delete', operation.rationale)) for
+            operation in deletion_operations)
         return result
 
     def _breakReferences(self):
@@ -430,7 +432,7 @@ class Branch(SQLBase):
         This function is guaranteed to perform the operations predicted by
         deletionRequirements, because it uses the same backing function.
         """
-        (_alterations, _deletions, alteration_operations,
+        (alteration_operations,
             deletion_operations) = self._deletionRequirements()
         for operation in alteration_operations:
             operation.doOperation()
@@ -695,7 +697,9 @@ DEFAULT_BRANCH_LISTING_SORT = [
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
-    def __init__(self, func, *args, **kwargs):
+    def __init__(self, affected_object, rationale, func, *args, **kwargs):
+        self.affected_object = affected_object
+        self.rationale = rationale
         self.func = func
         self.func_args = args
         self.func_kwargs = kwargs
