@@ -150,8 +150,8 @@ silently rejected.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> bigjools = getUtility(IPersonSet).getByEmail(
-    ...     'launchpad@julian-edwards.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> bigjools = person_set.getByEmail('launchpad@julian-edwards.com')
     >>> print bigjools.account_status.name
     NOACCOUNT
 
