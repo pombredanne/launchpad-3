@@ -626,8 +626,9 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
     def test_lock_with_magic_id(self):
         # When the subprocess locks a branch, it is locked with the right ID.
-        class PullerMonitorProtocolWithLockID(scheduler.PullerMonitorProtocol):
-            """Subclass of PullerMonitorProtocol that defines a lock_id method.
+        class PullerMonitorProtocolWithLockID(
+            scheduler.PullerMonitorProtocol):
+            """Subclass of PullerMonitorProtocol with a lock_id method.
 
             This protocol defines a method that records on the listener the
             lock id reported by the subprocess.
