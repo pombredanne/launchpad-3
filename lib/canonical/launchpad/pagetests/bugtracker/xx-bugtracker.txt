@@ -40,7 +40,7 @@ aren't allowed.
   >>> user_browser.getControl('Summary').value = (
   ...     'This is a test MANTIS tracker.')
   >>> url = 'http://mantis.testing.org/'
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Location').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
 
@@ -54,11 +54,11 @@ aren't allowed.
   - and . are also allowed after the
   first character.
 
-If a bug tracker is already registered with the same URL, the user is
-informed about it.
+If a bug tracker is already registered with the same location, the
+user is informed about it.
 
   >>> user_browser.getControl('Name').value = 'testmantis'
-  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
+  >>> user_browser.getControl('Location').value = 'http://bugzilla.mozilla.org/'
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -80,7 +80,7 @@ for now we'll dig directly to the database.
   >>> gnome_bugzilla.aliases = ['http://alias.example.com/']
   >>> logout()
 
-  >>> user_browser.getControl('Base URL').value = 'http://alias.example.com/'
+  >>> user_browser.getControl('Location').value = 'http://alias.example.com/'
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -93,7 +93,7 @@ for now we'll dig directly to the database.
 After successfully registering the bug tracker, the user is redirected
 to the bug tracker page.
 
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Location').value = url
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -107,6 +107,22 @@ to the bug tracker page.
   >>> 'This is a test MANTIS tracker.' in user_browser.contents
   True
 
+For Email Address bug trackers, we show the upstream email address as
+the location of the bug tracker, but obfuscate it for anonymous users:
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> user_bugtracker_url_list = find_tag_by_id(
+  ...     user_browser.contents, 'bugtracker-urls')
+  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> anon_bugtracker_url_list = find_tag_by_id(
+  ...     anon_browser.contents, 'bugtracker-urls')
+
+  >>> print extract_text(user_bugtracker_url_list)
+  mailto:bugs@example.com
+
+  >>> print extract_text(anon_bugtracker_url_list)
+  mailto:&lt;email address hidden&gt;
+
 The `Summary` and `Contact Details` fields are optional - creating a
 bugtracker without them is acceptable.
 
@@ -114,7 +130,7 @@ bugtracker without them is acceptable.
   >>> user_browser.getControl('Name').value = 'test-bugzilla'
   >>> user_browser.getControl('Title').value = 'Test Bugzilla'
   >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
-  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.example.org/'
+  >>> user_browser.getControl('Location').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
@@ -137,7 +153,7 @@ a nice error message.
   >>> user_browser.getControl('Title').value = 'Test Mantis Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
   >>> url = 'http://trac.example.org/tickets'
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Location').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
 
@@ -165,7 +181,7 @@ We can edit the details of the newly added bugtracker.
 It's not possible to change the base URL to something that another bug
 tracker uses.
 
-  >>> user_browser.getControl('Base URL', index=0).value = (
+  >>> user_browser.getControl('Location', index=0).value = (
   ...     'http://bugzilla.mozilla.org/')
   >>> user_browser.getControl('Change').click()
 
@@ -180,7 +196,7 @@ After successfully editing the bug tracker information, the user is
 redirected to the bug tracker page. Note that the change we made to
 the bugtracker name is reflected in the url.
 
-  >>> user_browser.getControl('Base URL', index=0).value = url
+  >>> user_browser.getControl('Location', index=0).value = url
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
@@ -203,24 +219,25 @@ And now the test tracker should have been updated:
 
 == Aliases ==
 
-We can associate multiple URLs with a bug tracker. An alias can
-represent another valid URL for a bug tracker, or just a commonly seen
-typo. Aliases are used to catch user mistakes; only the Base URL is
-used to access the remote bug tracker.
+We can associate multiple URLs or email addresses with a bug
+tracker. An alias can represent another valid location for a bug
+tracker, or just a commonly seen typo. Aliases are used to catch user
+mistakes; only the primary Location is used to access the remote bug
+tracker.
 
 They're added on the normal Change Details page.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testbugzilla')
   >>> user_browser.getLink('Change details').click()
 
-  >>> user_browser.getControl('Base URL aliases').value = (
+  >>> user_browser.getControl('Location aliases').value = (
   ...     'http://pseudonym.example.com/')
   >>> user_browser.getControl('Change').click()
 
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets (Base URL)
+  http://trac.example.org/tickets
   http://pseudonym.example.com/ (Alias)
 
 It's not possible to add an alias that already refers to another
@@ -228,7 +245,7 @@ bugtracker.
 
   >>> user_browser.open(
   ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla/+edit')
-  >>> user_browser.getControl('Base URL aliases').value = (
+  >>> user_browser.getControl('Location aliases').value = (
   ...     'http://bugzilla.mozilla.org/')
   >>> user_browser.getControl('Change').click()
 
@@ -239,7 +256,7 @@ bugtracker.
 
 Multiple aliases can be entered by separating URLs with whitespace.
 
-  >>> user_browser.getControl('Base URL aliases').value = (
+  >>> user_browser.getControl('Location aliases').value = (
   ...     '    http://wolverhampton.example.com/    '
   ...     '  http://toadhall.example.com/      \n'
   ...     ' https://wibble.example.com/   \n\n\n')
@@ -248,7 +265,7 @@ Multiple aliases can be entered by separating URLs with whitespace.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets (Base URL)
+  http://trac.example.org/tickets
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)
@@ -256,10 +273,22 @@ Multiple aliases can be entered by separating URLs with whitespace.
 
 == Deleting a bug tracker ==
 
-Bug trackers can be deleted by anyone. The Delete button is in the
-Change Details page:
+The Delete button is in the Change Details page. But first we need an
+example bug tracker:
 
-  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
+  >>> user_browser.getControl('Name').value = 'freddy'
+  >>> user_browser.getControl('Title').value = "Freddy's Bugs"
+  >>> user_browser.getControl('Location').value = 'http://freddy.example.com/'
+  >>> user_browser.getControl('Add').click()
+
+Being brand-new and pristine, there will be nothing to prevent its
+deletion yet:
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/freddy'
+
   >>> user_browser.getLink('Change details').click()
   >>> user_browser.getControl('Delete').click()
 
@@ -268,9 +297,9 @@ Change Details page:
 
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
-  Email bugtracker has been deleted.
+  Freddy's Bugs has been deleted.
 
-However, there are several restrictions:
+Bug trackers can be deleted by anyone, subject to a few restrictions:
 
 - Firstly, deletion will be denied if bug tracker is set as the
   official bug tracker for a product or product group.
@@ -364,6 +393,7 @@ displayed:
   #1:  Firefox does not support SVG  304014
   #7:  A test bug                    280883
 
+
 === Private bugs ===
 
 If the user is not permitted to view one of the watches only very
@@ -406,6 +436,51 @@ Launchpad reports and what it does, which again could lead them to
 think that Launchpad is broken or lying.
 
 
+=== Anonymous users ===
+
+Email addresses in remote watch URLs are obfuscated when viewed by
+anonymous users.
+
+First we must create a new bug watch on an Email Address bug tracker:
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev'
+  ...     '/jokosher/+bug/12/+choose-affected-product')
+  >>> user_browser.getControl('Project').value = 'gnome-terminal'
+  >>> user_browser.getControl('Continue').click()
+  >>> user_browser.getControl(
+  ...     name='field.link_upstream_how').value = ['EMAIL_UPSTREAM_DONE']
+  >>> user_browser.getControl(
+  ...     name='field.upstream_email_address_done').value = 'bugs@example.com'
+  >>> user_browser.getControl('Add to Bug Report').click()
+
+Then we can see how logged-in users and anonymous users see the page:
+
+  >>> def print_watches(browser):
+  ...     watches = find_tag_by_id(
+  ...         browser.contents, 'latestwatches').tbody.findAll('tr')
+  ...     for watch in watches:
+  ...         bug, remote_bug, status = watch.findAll('td')
+  ...         print extract_text(bug)
+  ...         print '  --> %s: %s' % (
+  ...             extract_text(remote_bug),
+  ...             (remote_bug.a and remote_bug.a.get('href')))
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print_watches(user_browser)
+  #12:
+  Copy, Cut and Delete operations should work on selections
+    --> &mdash;: mailto:bugs@example.com
+
+  >>> anon_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print_watches(anon_browser)
+  #12:
+  Copy, Cut and Delete operations should work on selections
+    --> &mdash;: None
+
+
 == Related projects portlet ==
 
 Related projects and project groups are shown in a portlet on the bug
@@ -438,3 +513,34 @@ projects portlet on the bug tracker page:
     Launchpad:
       The Mozilla Project
       Jokosher Audio Editor
+
+
+== Info portlet ==
+
+Some information about the bug tracker is displayed in a portlet on
+the bug tracker page.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print extract_text(find_portlet(
+  ...     user_browser.contents, 'Email bugtracker'))
+  Email bugtracker
+  Location:
+  mailto:bugs@example.com
+  Tracker Type:
+  Email Address
+  Number of watches:
+  1
+  Contact Details:
+  Creator:
+  Foo Bar
+
+If the user is not logged in, email addresses in the Location field
+above are obfuscated:
+
+  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
+  >>> print extract_text(find_portlet(
+  ...     anon_browser.contents, 'Email bugtracker'))
+  Email bugtracker
+  Location:
+  mailto:&lt;email address hidden&gt;
+  ...

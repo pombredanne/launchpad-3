@@ -170,6 +170,9 @@ class CanonicalConfig:
         # The defined servers.
         config.servers = root_options.servers
 
+        # The number of configured threads.
+        config.threads = root_options.threads
+
     def __getattr__(self, name):
         self._getConfig()
         try:
