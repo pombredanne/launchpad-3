@@ -10,7 +10,7 @@ __all__ = [
     'CodeImportMachineSet',
     ]
 
-from sqlobject import StringCol
+from sqlobject import SQLMultipleJoin, StringCol
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces import (
 class CodeImportMachine(SQLBase):
     """See `ICodeImportMachine`."""
 
+    _defaultOrder = ['hostname']
+
     implements(ICodeImportMachine, ICodeImportMachinePublic)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -36,6 +38,9 @@ class CodeImportMachine(SQLBase):
     state = EnumCol(enum=CodeImportMachineState, notNull=True,
         default=CodeImportMachineState.OFFLINE)
     heartbeat = UtcDateTimeCol(notNull=False)
+
+    current_jobs = SQLMultipleJoin(
+        'CodeImportJob', joinColumn='machine', orderBy='date_started')
 
     def setOnline(self):
         """See `ICodeImportMachine`."""

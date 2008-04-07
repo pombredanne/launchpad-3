@@ -14,7 +14,7 @@ __all__ = [
     'CodeImportMachineState',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
@@ -137,6 +137,9 @@ class ICodeImportMachinePublic(Interface):
     hostname = TextLine(
         title=_('Host name'), required=True,
         description=_('The hostname of the machine.'))
+
+    current_jobs = Attribute(
+        'The current jobs that the machine is processing.')
 
 
 class ICodeImportMachineSet(Interface):
