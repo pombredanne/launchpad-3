@@ -21,7 +21,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -90,182 +90,213 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    files = SQLMultipleJoin('SourcePackageReleaseFile',
-        joinColumn='sourcepackagerelease', orderBy="libraryfile")
-    publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
-        joinColumn='sourcepackagerelease', orderBy="-datecreated")
-    package_diffs = SQLMultipleJoin(
-        'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
+        files = SQLMultipleJoin('SourcePackageReleaseFile',
+            joinColumn='sourcepackagerelease', orderBy="libraryfile")
+        publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
+            joinColumn='sourcepackagerelease', orderBy="-datecreated")
+        package_diffs = SQLMultipleJoin(
+            'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
 
 
-    @property
-    def builds(self):
-        """See `ISourcePackageRelease`."""
-        # Excluding PPA builds may seem like a strange thing to do but
-        # when copy-package works for copying packages across archives,
-        # a build may well have a different archive to the corresponding
-        # sourcepackagerelease.
-        return Build.select("""
-            sourcepackagerelease = %s AND
-            archive.id = build.archive AND
-            archive.purpose != %s
-            """ % sqlvalues(self.id, ArchivePurpose.PPA),
-            orderBy=['-datecreated', 'id'],
-            clauseTables=['Archive'])
+        @property
+        def builds(self):
+            """See `ISourcePackageRelease`."""
+            # Excluding PPA builds may seem like a strange thing to do but
+            # when copy-package works for copying packages across archives,
+            # a build may well have a different archive to the corresponding
+            # sourcepackagerelease.
+            return Build.select("""
+                sourcepackagerelease = %s AND
+                archive.id = build.archive AND
+                archive.purpose != %s
+                """ % sqlvalues(self.id, ArchivePurpose.PPA),
+                orderBy=['-datecreated', 'id'],
+                clauseTables=['Archive'])
 
-    @property
-    def age(self):
-        """See ISourcePackageRelease."""
-        now = datetime.datetime.now(pytz.timezone('UTC'))
-        return now - self.dateuploaded
+        @property
+        def age(self):
+            """See ISourcePackageRelease."""
+            now = datetime.datetime.now(pytz.timezone('UTC'))
+            return now - self.dateuploaded
 
-    @property
-    def latest_build(self):
-        builds = self._cached_builds
-        if len(builds) > 0:
-            return builds[0]
-        return None
-
-    def failed_builds(self):
-        return [build for build in self._cached_builds
-                if build.buildstate == BuildStatus.FAILEDTOBUILD]
-
-    @property
-    def needs_building(self):
-        for build in self._cached_builds:
-            if build.buildstate in [BuildStatus.NEEDSBUILD,
-                                    BuildStatus.MANUALDEPWAIT,
-                                    BuildStatus.CHROOTWAIT]:
-                return True
-        return False
-
-    @cachedproperty
-    def _cached_builds(self):
-        # The reason we have this as a cachedproperty is that all the
-        # *build* methods here need access to it; better not to
-        # recalculate it multiple times.
-        return list(self.builds)
-
-    @property
-    def name(self):
-        return self.sourcepackagename.name
-
-    @property
-    def sourcepackage(self):
-        """See ISourcePackageRelease."""
-        # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
-        series = self.upload_distroseries
-        return series.getSourcePackage(self.sourcepackagename)
-
-    @property
-    def distrosourcepackage(self):
-        """See ISourcePackageRelease."""
-        # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
-        distribution = self.upload_distroseries.distribution
-        return distribution.getSourcePackage(self.sourcepackagename)
-
-    @property
-    def title(self):
-        return '%s - %s' % (self.sourcepackagename.name, self.version)
-
-    @property
-    def productrelease(self):
-        """See ISourcePackageRelease."""
-        series = None
-
-        # Use any published source package to find the product series.
-        # We can do this because if we ever find out that a source package
-        # release in two product series, we've almost certainly got a data
-        # problem there.
-        publishings = SourcePackagePublishingHistory.select(
-            """
-            sourcepackagerelease = %s AND
-            status = %s
-            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED))
-
-        for publishing in publishings:
-            # imports us, so avoid circular import
-            from canonical.launchpad.database.sourcepackage import \
-                 SourcePackage
-            # Only process main archives to skip PPA publishings.
-            if publishing.archive.purpose == ArchivePurpose.PPA:
-                continue
-            sp = SourcePackage(self.sourcepackagename,
-                               publishing.distroseries)
-            sp_series = sp.productseries
-            if sp_series is not None:
-                if series is None:
-                    series = sp_series
-                elif series != sp_series:
-                    # XXX: keybuk 2005-06-22: We could warn about this.
-                    pass
-
-        # No series -- no release
-        if series is None:
+        @property
+        def latest_build(self):
+            builds = self._cached_builds
+            if len(builds) > 0:
+                return builds[0]
             return None
 
-        # XXX: keybuk 2005-06-22:
-        # Find any release with the exact same version, or which
-        # we begin with and after a dash.  We could be more intelligent
-        # about this, but for now this will work for most.
-        for release in series.releases:
-            if release.version == self.version:
-                return release
-            elif self.version.startswith("%s-" % release.version):
-                return release
-        else:
-            return None
+        def failed_builds(self):
+            return [build for build in self._cached_builds
+                    if build.buildstate == BuildStatus.FAILEDTOBUILD]
 
-    def countOpenBugsInUploadedDistro(self, user):
-        """See ISourcePackageRelease."""
-        upload_distro = self.upload_distroseries.distribution
-        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
-            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # XXX: kiko 2006-03-07:
-        # We need to omit duplicates here or else our bugcounts are
-        # inconsistent. This is a wart, and we need to stop spreading
-        # these things over the code.
-        params.omit_dupes = True
-        return upload_distro.searchTasks(params).count()
+        @property
+        def needs_building(self):
+            for build in self._cached_builds:
+                if build.buildstate in [BuildStatus.NEEDSBUILD,
+                                        BuildStatus.MANUALDEPWAIT,
+                                        BuildStatus.CHROOTWAIT]:
+                    return True
+            return False
 
-    @property
-    def current_publishings(self):
-        """See ISourcePackageRelease."""
-        from canonical.launchpad.database.distroseriessourcepackagerelease \
-            import DistroSeriesSourcePackageRelease
-        return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
-                for pub in self.publishings]
+        @cachedproperty
+        def _cached_builds(self):
+            # The reason we have this as a cachedproperty is that all the
+            # *build* methods here need access to it; better not to
+            # recalculate it multiple times.
+            return list(self.builds)
 
-    @property
-    def published_archives(self):
-        """See `ISourcePacakgeRelease`."""
-        archives = set()
-        publishings = self.publishings.prejoin(['archive'])
-        live_states = (PackagePublishingStatus.PENDING,
-                       PackagePublishingStatus.PUBLISHED)
-        for pub in publishings:
-            if pub.status in live_states:
-                archives.add(pub.archive)
+        @property
+        def name(self):
+            return self.sourcepackagename.name
 
-        return sorted(archives, key=operator.attrgetter('id'))
+        @property
+        def sourcepackage(self):
+            """See ISourcePackageRelease."""
+            # By supplying the sourcepackagename instead of its string name,
+            # we avoid doing an extra query doing getSourcepackage
+            series = self.upload_distroseries
+            return series.getSourcePackage(self.sourcepackagename)
 
-    def addFile(self, file):
-        """See ISourcePackageRelease."""
-        determined_filetype = None
-        if file.filename.endswith(".dsc"):
-            determined_filetype = SourcePackageFileType.DSC
-        elif file.filename.endswith(".orig.tar.gz"):
-            determined_filetype = SourcePackageFileType.ORIG
-        elif file.filename.endswith(".diff.gz"):
-            determined_filetype = SourcePackageFileType.DIFF
-        elif file.filename.endswith(".tar.gz"):
-            determined_filetype = SourcePackageFileType.TARBALL
+        @property
+        def distrosourcepackage(self):
+            """See ISourcePackageRelease."""
+            # By supplying the sourcepackagename instead of its string name,
+            # we avoid doing an extra query doing getSourcepackage
+            distribution = self.upload_distroseries.distribution
+            return distribution.getSourcePackage(self.sourcepackagename)
 
-        return SourcePackageReleaseFile(sourcepackagerelease=self,
-                                        filetype=determined_filetype,
-                                        libraryfile=file)
+        @property
+        def title(self):
+            return '%s - %s' % (self.sourcepackagename.name, self.version)
+
+        @property
+        def productrelease(self):
+            """See ISourcePackageRelease."""
+            series = None
+
+            # Use any published source package to find the product series.
+            # We can do this because if we ever find out that a source package
+            # release in two product series, we've almost certainly got a data
+            # problem there.
+            publishings = SourcePackagePublishingHistory.select(
+                """
+                sourcepackagerelease = %s AND
+                status = %s
+                """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED))
+
+            for publishing in publishings:
+                # imports us, so avoid circular import
+                from canonical.launchpad.database.sourcepackage import \
+                     SourcePackage
+                # Only process main archives to skip PPA publishings.
+                if publishing.archive.purpose == ArchivePurpose.PPA:
+                    continue
+                sp = SourcePackage(self.sourcepackagename,
+                                   publishing.distroseries)
+                sp_series = sp.productseries
+                if sp_series is not None:
+                    if series is None:
+                        series = sp_series
+                    elif series != sp_series:
+                        # XXX: keybuk 2005-06-22: We could warn about this.
+                        pass
+
+            # No series -- no release
+            if series is None:
+                return None
+
+            # XXX: keybuk 2005-06-22:
+            # Find any release with the exact same version, or which
+            # we begin with and after a dash.  We could be more intelligent
+            # about this, but for now this will work for most.
+            for release in series.releases:
+                if release.version == self.version:
+                    return release
+                elif self.version.startswith("%s-" % release.version):
+                    return release
+            else:
+                return None
+
+        def countOpenBugsInUploadedDistro(self, user):
+            """See ISourcePackageRelease."""
+            upload_distro = self.upload_distroseries.distribution
+            params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
+                user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+            # XXX: kiko 2006-03-07:
+            # We need to omit duplicates here or else our bugcounts are
+            # inconsistent. This is a wart, and we need to stop spreading
+            # these things over the code.
+            params.omit_dupes = True
+            return upload_distro.searchTasks(params).count()
+
+        @property
+        def current_publishings(self):
+            """See ISourcePackageRelease."""
+            from canonical.launchpad.database.distroseriessourcepackagerelease \
+                import DistroSeriesSourcePackageRelease
+            return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
+                    for pub in self.publishings]
+
+        @property
+        def published_archives(self):
+            """See `ISourcePacakgeRelease`."""
+            archives = set()
+            publishings = self.publishings.prejoin(['archive'])
+            live_states = (PackagePublishingStatus.PENDING,
+                           PackagePublishingStatus.PUBLISHED)
+            for pub in publishings:
+                if pub.status in live_states:
+                    archives.add(pub.archive)
+
+            return sorted(archives, key=operator.attrgetter('id'))
+
+        def addFile(self, file):
+            """See ISourcePackageRelease."""
+            determined_filetype = None
+            if file.filename.endswith(".dsc"):
+                determined_filetype = SourcePackageFileType.DSC
+            elif file.filename.endswith(".orig.tar.gz"):
+                determined_filetype = SourcePackageFileType.ORIG
+            elif file.filename.endswith(".diff.gz"):
+                determined_filetype = SourcePackageFileType.DIFF
+            elif file.filename.endswith(".tar.gz"):
+                determined_filetype = SourcePackageFileType.TARBALL
+
+            return SourcePackageReleaseFile(sourcepackagerelease=self,
+                                            filetype=determined_filetype,
+                                            libraryfile=file)
+
+    def getPackageSize(self):
+        """Get the size total (in KB) of files comprising this package."""
+        size_query = """
+            SELECT
+                SUM(LibraryFileContent.filesize)/1024.0
+            FROM
+                SourcePackagereLease
+                JOIN SourcePackageReleaseFile ON
+                    SourcePackageReleaseFile.sourcepackagerelease =
+                    SourcePackageRelease.id
+                JOIN LibraryFileAlias ON
+                    SourcePackageReleaseFile.libraryfile = 
+                    LibraryFileAlias.id
+                JOIN LibraryFileContent ON
+                    LibraryFileAlias.content = LibraryFileContent.id
+            WHERE
+                SourcePackageRelease.id = %s
+            """ % sqlvalues(self)
+        # return zero if the package size cannot be obtained
+        result = 0
+        cur = cursor()
+
+        cur.execute(size_query)
+        package_size = cur.fetchone()
+
+        if package_size and package_size[0]:
+            result = float(package_size[0])
+
+        return result
+
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
@@ -307,12 +338,26 @@ class SourcePackageRelease(SQLBase):
             orderBy=['-datebuilt', '-id'])
 
         if completed_builds:
+            # Historic build data exists, use the most recent value.
             most_recent_build = completed_builds[0]
             estimated_build_duration = most_recent_build.buildduration
         else:
-            # Assume a build duration of five minutes if no historical
-            # build data exists.
-            estimated_build_duration = datetime.timedelta(minutes=5)
+            # Estimate the build duration based on package size if no
+            # historic build data exists.
+
+            # Get the package size in KB.
+            package_size = self.getPackageSize()
+
+            if package_size > 0:
+                # Analysis of previous build data shows that a build rate
+                # of 6 KB/second is realistic. Furthermore we have to add
+                # another minute for generic build overhead.
+                estimate = int(package_size/6.0/60 + 1)
+            else:
+                # No historic build times and no package size available,
+                # assume a build time of 5 minutes.
+                estimate = 5
+            estimated_build_duration = datetime.timedelta(minutes=estimate)
 
         return Build(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
