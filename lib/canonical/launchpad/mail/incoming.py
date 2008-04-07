@@ -1,6 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """Functions dealing with mails coming into Launchpad."""
 
+# pylint: disable-msg=W0631
+
 __metaclass__ = type
 
 from logging import getLogger
