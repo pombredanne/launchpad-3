@@ -29,9 +29,8 @@ from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces import BranchType, BranchTypeError
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer, BaseLayer
 
 import pysvn
 
@@ -70,11 +69,14 @@ class WorkerTest(TestCaseWithTransport):
 class TestBazaarBranchStore(WorkerTest):
     """Tests for `BazaarBranchStore`."""
 
+    # weeeeeellll....
+    layer = BaseLayer
+
     def setUp(self):
         super(TestBazaarBranchStore, self).setUp()
-        code_import = self.factory.makeCodeImport()
+        #code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
-        self.branch = code_import.branch
+        self.arbitrary_branch_id = 10
 
     def makeBranchStore(self):
         return BazaarBranchStore(self.get_transport())
@@ -90,7 +92,7 @@ class TestBazaarBranchStore(WorkerTest):
         # If there's no Bazaar branch for the code import object, then pull
         # creates a new Bazaar working tree.
         store = self.makeBranchStore()
-        bzr_working_tree = store.pull(self.branch, self.temp_dir)
+        bzr_working_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
         self.assertEqual([], bzr_working_tree.branch.revision_history())
 
     def test_pushBranchThenPull(self):
@@ -98,8 +100,8 @@ class TestBazaarBranchStore(WorkerTest):
         # from the store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.branch, tree)
-        new_tree = store.pull(self.branch, self.temp_dir)
+        store.push(self.arbitrary_branch_id, tree)
+        new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
@@ -108,26 +110,11 @@ class TestBazaarBranchStore(WorkerTest):
         # store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.branch, tree)
-        store.push(self.branch, tree)
-        new_tree = store.pull(self.branch, self.temp_dir)
+        store.push(self.arbitrary_branch_id, tree)
+        store.push(self.arbitrary_branch_id, tree)
+        new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
-
-    def test_pushNonImportBranch(self):
-        # push() raises a BranchTypeError if you try to push a non-imported
-        # branch.
-        store = self.makeBranchStore()
-        tree = create_branch_with_one_revision('original')
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        self.assertRaises(BranchTypeError, store.push, db_branch, tree)
-
-    def test_pullNonImportBranch(self):
-        # pull() raises a BranchTypeError if you try to pull a non-imported
-        # branch.
-        store = self.makeBranchStore()
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        self.assertRaises(BranchTypeError, store.pull, db_branch, 'tree')
 
     def fetchBranch(self, from_url, target_path):
         """Pull a branch from `from_url` to `target_path`.
@@ -146,7 +133,7 @@ class TestBazaarBranchStore(WorkerTest):
         # doesn't already exist.
         store = BazaarBranchStore(self.get_transport('doesntexist'))
         tree = create_branch_with_one_revision('original')
-        store.push(self.branch, tree)
+        store.push(self.arbitrary_branch_id, tree)
         self.assertIsDirectory('doesntexist', self.get_transport())
 
     def test_storedLocation(self):
@@ -154,9 +141,9 @@ class TestBazaarBranchStore(WorkerTest):
         # the BazaarBranchStore's transport.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.branch, tree)
+        store.push(self.arbitrary_branch_id, tree)
         new_tree = self.fetchBranch(
-            urljoin(store.transport.base, '%08x' % self.branch.id),
+            urljoin(store.transport.base, '%08x' % self.arbitrary_branch_id),
             'new_tree')
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
@@ -168,8 +155,8 @@ class TestBazaarBranchStore(WorkerTest):
         sftp_prefix = 'sftp://example/base/'
         store = BazaarBranchStore(get_transport(sftp_prefix))
         self.assertEqual(
-            store._getMirrorURL(self.branch),
-            sftp_prefix + '%08x' % self.branch.id)
+            store._getMirrorURL(self.arbitrary_branch_id),
+            sftp_prefix + '%08x' % self.arbitrary_branch_id)
 
     def test_sftpPrefixNoSlash(self):
         # If the prefix has no trailing slash, one should be added. It's very
@@ -177,8 +164,8 @@ class TestBazaarBranchStore(WorkerTest):
         sftp_prefix_noslash = 'sftp://example/base'
         store = BazaarBranchStore(get_transport(sftp_prefix_noslash))
         self.assertEqual(
-            store._getMirrorURL(self.branch),
-            sftp_prefix_noslash + '/' + '%08x' % self.branch.id)
+            store._getMirrorURL(self.arbitrary_branch_id),
+            sftp_prefix_noslash + '/' + '%08x' % self.arbitrary_branch_id)
 
 
 class MockForeignWorkingTree:
