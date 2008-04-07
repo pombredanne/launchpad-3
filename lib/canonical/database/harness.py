@@ -18,7 +18,7 @@ sys.path.insert(0, '../..')
 if len(sys.argv) > 1:
     dbuser = sys.argv[1]
 else:
-    dbuser = 'launchpad'
+    dbuser = None
 
 from zope.component import getUtility
 from canonical.launchpad.scripts import execute_zcml_for_scripts
