@@ -252,7 +252,8 @@ class TestForeignTreeStore(WorkerTest):
             self.source_details, self.temp_dir)
         store.archive(self.source_details, foreign_tree)
         self.assertTrue(
-            store.transport.has('%08x.tar.gz' % self.source_details.branch_id),
+            store.transport.has(
+                '%08x.tar.gz' % self.source_details.branch_id),
             "Couldn't find '%08x.tar.gz'" % self.source_details.branch_id)
 
     def test_makeDirectories(self):
