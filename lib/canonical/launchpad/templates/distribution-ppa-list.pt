@@ -24,7 +24,7 @@
     <table width="100%">
       <tr>
         <td align="left">
-          <div>
+          <div id="ppa_statistics">
             <h2>Statistics</h2>
             <ul>
               <li><tal:ppa_registered replace="view/number_of_registered_ppas"
@@ -39,7 +39,8 @@
           </div>
         </td>
         <td align="left">
-          <div tal:content="structure context/@@+portlet-ppa-architectures" />
+          <div id="ppa_supported_archs"
+               tal:content="structure context/@@+portlet-ppa-architectures" />
         </td>
       </tr>
     </table>
