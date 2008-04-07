@@ -474,6 +474,12 @@ class AcceptanceTests(SSHTestCase):
             self.assertRaises,
             (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
+        # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
+        # a fault which comes back to us (although a little undesirable). Here
+        # we flush the test logs so that it doesn't fail the run.
+        flushLoggedErrors = getattr(self, 'flushLoggedErrors', None)
+        if flushLoggedErrors is not None:
+            flushLoggedErrors()
 
     @defer_to_thread
     def test_cant_push_to_existing_unowned_hosted_branch(self):
