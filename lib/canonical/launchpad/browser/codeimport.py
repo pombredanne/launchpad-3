@@ -110,8 +110,8 @@ class CodeImportBaseView(LaunchpadFormView):
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for rcs locations."""
-        # No field in this view needs an optional marker, so we can be
-        # simple here.
+        # No field in either the new or edit view needs an optional marker,
+        # so we can be simple here.
         return False
 
     def setSecondaryFieldError(self, field, error):
@@ -122,7 +122,7 @@ class CodeImportBaseView(LaunchpadFormView):
         else:
             self.setFieldError(field, error)
 
-    def _validateCVS(self, cvs_root, cvs_module):
+    def _validateCVS(self, cvs_root, cvs_module, existing_import=None):
         """If the user has specified cvs, then we need to make
         sure that there isn't already an import with those values."""
         if cvs_root is None:
@@ -135,15 +135,15 @@ class CodeImportBaseView(LaunchpadFormView):
         if cvs_root and cvs_module:
             code_import = getUtility(ICodeImportSet).getByCVSDetails(
                 cvs_root, cvs_module)
-
-            if code_import is not None:
+            if (code_import is not None and
+                code_import != existing_import):
                 self.addError(structured("""
                     Those CVS details are already specified for
                     the imported branch <a href="%s">%s</a>.""",
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
-    def _validateSVN(self, svn_branch_url):
+    def _validateSVN(self, svn_branch_url, existing_import=None):
         """If the user has specified a subversion url, we need
         to make sure that there isn't already an import with
         that url."""
@@ -153,7 +153,8 @@ class CodeImportBaseView(LaunchpadFormView):
         else:
             code_import = getUtility(ICodeImportSet).getBySVNDetails(
                 svn_branch_url)
-            if code_import is not None:
+            if (code_import is not None and
+                code_import != existing_import):
                 self.setFieldError(
                     'svn_branch_url',
                     structured("""
@@ -303,7 +304,7 @@ class CodeImportEditView(CodeImportBaseView):
     internals to do the associated mappings.
     """
 
-    # Need this to render the context to peopulate the form fields.
+    # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
     field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
@@ -319,7 +320,7 @@ class CodeImportEditView(CodeImportBaseView):
 
     @property
     def adapters(self):
-        """See `LaunchpadFormView`"""
+        """See `LaunchpadFormView`."""
         return {ICodeImport: self.code_import}
 
     def setUpFields(self):
@@ -362,7 +363,7 @@ class CodeImportEditView(CodeImportBaseView):
         self.request.response.addNotification(
             'The code import has been approved.')
 
-    @action(_('Set Invalid'), name='invalidate', condition=_showInvalidate)
+    @action(_('Mark Invalid'), name='invalidate', condition=_showInvalidate)
     def invalidate_action(self, action, data):
         """Invalidate the import."""
         self.code_import.invalidate(data, self.user)
@@ -381,9 +382,14 @@ class CodeImportEditView(CodeImportBaseView):
         # A simple else clause is sufficient here as the initialize would
         # have barfed if there was a different type (other than CVS or SVN).
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
-            self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
+            self._validateCVS(
+                data.get('cvs_root'), data.get('cvs_module'),
+                self.code_import)
+        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
+            self._validateSVN(
+                data.get('svn_branch_url'), self.code_import)
         else:
-            self._validateSVN(data.get('svn_branch_url'))
+            raise AssertionError('Unknown rcs_type for code import.')
 
 
 class CodeImportMachineView(LaunchpadView):

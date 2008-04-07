@@ -5,6 +5,7 @@
 import unittest
 
 from sqlobject import SQLObjectNotFound
+from zope.component import getUtility
 
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
@@ -13,7 +14,7 @@ from canonical.launchpad.database.codeimportjob import (
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
-    RevisionControlSystems)
+    IPersonSet, RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
@@ -158,10 +159,9 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         login('david.allouche@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.code_import = self.factory.makeCodeImport()
-        # By setting a password for the makePerson it says we want a person
-        # with a validated email for logging in.
-        self.import_operator = self.factory.makePerson(password="test")
-        # Remove existing pending jobs.
+        self.import_operator = getUtility(IPersonSet).getByEmail(
+            'david.allouche@canonical.com')
+        # Remove existing jobs.
         for job in CodeImportJob.select():
             job.destroySelf()
 
@@ -212,10 +212,6 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         self.assertEqual(
             CodeImportReviewStatus.SUSPENDED,
             self.code_import.review_status)
-        # When the machine is finished with the job, another is not created.
-        CodeImportJobWorkflow().finishJob(
-            job, CodeImportResultStatus.SUCCESS, None)
-        self.assertTrue(self.code_import.import_job is None)
 
     def test_invalidate_no_job(self):
         """Invalidating a new import has no impact on jobs."""
@@ -253,10 +249,6 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         self.assertEqual(
             CodeImportReviewStatus.INVALID,
             self.code_import.review_status)
-        # When the machine is finished with the job, another is not created.
-        CodeImportJobWorkflow().finishJob(
-            job, CodeImportResultStatus.SUCCESS, None)
-        self.assertTrue(self.code_import.import_job is None)
 
 
 def test_suite():

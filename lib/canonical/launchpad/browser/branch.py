@@ -393,15 +393,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
 
-    @property
-    def user_can_edit_import(self):
-        """A memeber of VCS Improts, or admin can edit import details."""
-        if self.user is None:
-            return False
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self.user.inTeam(celebs.admin) or
-                self.user.inTeam(celebs.vcs_imports))
-
 
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.

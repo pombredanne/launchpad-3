@@ -191,7 +191,7 @@
             An import is currently running, and was started
             <tal:date-started replace="job/date_started/fmt:displaydate">
               2 hours ago
-            </tal:date-started>
+            </tal:date-started>.
           </tal:is-running>
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
             The next import is scheduled to run
@@ -210,17 +210,17 @@
         <tal:last-successful condition="code_import/date_last_successful">
           <p>
             Last successful import was
-            <tal:last-successful replace="job/date_last_successful/fmt:displaydate">
+            <tal:last-successful replace="code_import/date_last_successful/fmt:displaydate">
               2 hours ago
             </tal:last-successful>.
           </p>
         </tal:last-successful>
 
-        <tal:import-operator condition="view/user_can_edit_import">
+        <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>
             <a href="+edit-import">Edit import source or review import</a>.
           </p>
-        </tal:import-operator>
+        </tal:can-edit>
       </tal:has-codeimport>
     </div>
   </tal:imported-branch>

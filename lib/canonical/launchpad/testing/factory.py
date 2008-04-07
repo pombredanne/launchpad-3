@@ -333,7 +333,9 @@ class LaunchpadObjectFactory:
 
         product = self.makeProduct()
         branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        # The registrant gets emailed, so needs a preferred email.
+        registrant = self.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:

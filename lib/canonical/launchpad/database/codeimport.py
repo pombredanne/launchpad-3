@@ -112,16 +112,22 @@ class CodeImport(SQLBase):
 
     def approve(self, data, user):
         """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.REVIEWED:
+            raise AssertionError('Review status is already reviewed.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
         CodeImportJobWorkflow().newJob(self)
 
     def suspend(self, data, user):
         """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.SUSPENDED:
+            raise AssertionError('Review status is already suspended.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
         self._removeJob()
 
     def invalidate(self, data, user):
         """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.INVALID:
+            raise AssertionError('Review status is already invalid.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
         self._removeJob()
 
@@ -138,6 +144,9 @@ class CodeImport(SQLBase):
         for name, value in data.items():
             setattr(self, name, value)
         event_set.newModify(self, user, token)
+
+    def __repr__(self):
+        return "<CodeImport for %s>" % self.branch.unique_name
 
 
 class CodeImportSet:
