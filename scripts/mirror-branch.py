@@ -33,7 +33,7 @@ from canonical.codehosting.puller.worker import (
     install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.Launchpad.webapp.errorlog import globalErrorUtility
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 branch_type_map = {
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     branch_type = BranchType.items[branch_type_name]
     config.setProcess(
-        'mirror-branch-%s-lazr.conf' %s branch_type_map[branch_type])
+        'mirror-branch-%s-lazr.conf' % branch_type_map[branch_type])
     globalErrorUtility.appendToOopsPrefix(oops_prefix)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
