@@ -14,6 +14,7 @@ from zope.configuration.fields import (
     MessageID, GlobalObject, PythonIdentifier, Path, Tokens)
 
 from zope.security.checker import CheckerPublic, Checker, defineChecker
+from zope.security.interfaces import IPermission
 from zope.security.proxy import ProxyFactory
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest)
@@ -30,8 +31,9 @@ import zope.app.form.browser.metaconfigure
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.app.publisher.browser.viewmeta import (
-    pages as original_pages,
-    page as original_page)
+    pages as original_pages, page as original_page)
+from zope.app.security.permission import Permission
+from zope.app.security.metadirectives import IDefinePermissionDirective
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (
@@ -798,3 +800,32 @@ class SchemaDisplayDirective(
 
         zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
             self)
+
+
+class IDefineLaunchpadPermissionDirective(IDefinePermissionDirective):
+
+    access_level = TextLine(
+        title=u"Access level", required=False,
+        description=u"Either read or write")
+
+
+class ILaunchpadPermission(IPermission):
+
+    access_level = IDefineLaunchpadPermissionDirective['access_level']
+
+
+class LaunchpadPermission(Permission):
+    implements(ILaunchpadPermission)
+
+    def __init__(self, id, title, access_level, description):
+        assert access_level in ["read", "write"], (
+            "Unknown access level (%s). Must be either read or write."
+            % access_level)
+        super(LaunchpadPermission, self).__init__(id, title, description)
+        self.access_level = access_level
+
+
+def definePermission(_context, id, title, access_level="write",
+                     description=''):
+    permission = LaunchpadPermission(id, title, access_level, description)
+    utility(_context, ILaunchpadPermission, permission, name=id)

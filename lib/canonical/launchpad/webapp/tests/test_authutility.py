@@ -22,8 +22,7 @@ from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.interfaces import (
-        IPasswordEncryptor, IPersonSet, IPerson,
-        )
+    IPasswordEncryptor, IPersonSet, IPerson)
 
 Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')
 

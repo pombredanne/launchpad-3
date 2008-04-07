@@ -1005,6 +1005,7 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
+    >>> from canonical.launchpad.webapp.interfaces import AccessLevel
     >>> from canonical.launchpad.interfaces import (
     ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
@@ -1133,8 +1134,9 @@ The feeds implementation always returns the anonymous user.
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 
-The webservice implementation returns the user associated with the
-access token specified in the request.
+The webservice implementation returns the principal for the person
+associated with the access token specified in the request.  The
+principal's access_level will be the one specified in the token.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
@@ -1153,11 +1155,14 @@ access token specified in the request.
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
     >>> test_request.processInputs()
-    >>> print publication.getPrincipal(test_request).title
+    >>> principal = publication.getPrincipal(test_request)
+    >>> print principal.title
     Guilherme Salgado
+    >>> principal.access_level
+    <DBItem AccessLevel.WRITE_PUBLIC...
 
-If the token is expired, unauthorized, or doesn't exist, an Unauthorized
-exception is raised, though.
+If the token is expired or doesn't exist, an Unauthorized exception is
+raised, though.
 
     # Must login in order to edit the token.
     >>> login('salgado@ubuntu.com')
@@ -1171,18 +1176,9 @@ exception is raised, though.
     Traceback (most recent call last):
     ...
     Unauthorized: Expired token...
-
     >>> access_token.date_expires = now + timedelta(days=1)
-    >>> access_token.permission = OAuthPermission.UNAUTHORIZED
     >>> syncUpdate(access_token)
-    >>> test_request = LaunchpadTestRequest(form=form)
-    >>> print publication.getPrincipal(test_request).title
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Unauthorized token...
 
-    >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
-    >>> syncUpdate(access_token)
     >>> form2 = form.copy()
     >>> form2['oauth_token'] += 'z'
     >>> test_request = LaunchpadTestRequest(form=form2)
