@@ -176,7 +176,7 @@ class BugWatchUpdater(object):
                     #      to identify all bug trackers like this so
                     #      that hard-coding like this can be genericised
                     #      (Bug 138949).
-                    self.log.info(
+                    self.log.debug(
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
                     self.updateBugTracker(bug_tracker)
@@ -271,7 +271,7 @@ class BugWatchUpdater(object):
             if bug_watches_to_update.count() > 0:
                 self.updateBugWatches(remotesystem, bug_watches_to_update)
             else:
-                self.log.info(
+                self.log.debug(
                     "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
