@@ -24,7 +24,7 @@ class UpperBatchNavigationView(LaunchpadView):
 
 
 class LowerBatchNavigationView(LaunchpadView):
-    """Render the bottom navigation links only if there are multiple batches."""
+    """Only render bottom navigation links if there are multiple batches."""
 
     def render(self):
         if (self.context.currentBatch() and
@@ -37,6 +37,9 @@ class LowerBatchNavigationView(LaunchpadView):
 class BatchNavigator:
 
     implements(IBatchNavigator)
+
+    start_variable_name = 'start'
+    batch_variable_name = 'batch'
 
     def __init__(self, results, request, start=0, size=None, callback=None):
         """Constructs a BatchNavigator instance.
@@ -60,7 +63,7 @@ class BatchNavigator:
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
         # could raise UnexpectedFormData, but is there a good reason?
-        request_start = request.get('start', None)
+        request_start = request.get(self.start_variable_name, None)
         if request_start is None:
             self.start = start
         else:
@@ -71,7 +74,7 @@ class BatchNavigator:
 
         self.default_size = size
 
-        request_size = request.get('batch', None)
+        request_size = request.get(self.batch_variable_name, None)
         if request_size:
             try:
                 size = int(request_size)
@@ -92,7 +95,8 @@ class BatchNavigator:
                                     strict_parsing=False)
         return urllib.urlencode(
             [(key, value) for (key, value) in query_parts
-             if key not in ['start', 'batch']])
+             if key not in [self.start_variable_name,
+                            self.batch_variable_name]])
 
     def generateBatchURL(self, batch):
         url = ""
@@ -107,11 +111,11 @@ class BatchNavigator:
         start = batch.startNumber() - 1
         size = batch.size
         base_url = str(self.request.URL)
-        url = "%s?%sstart=%d" % (base_url, qs, start)
+        url = "%s?%s%s=%d" % (base_url, qs, self.start_variable_name, start)
         if size != self.default_size:
             # The default batch size should only be part of the URL if it's
             # different from the default value.
-            url = "%s&batch=%d" % (url, size)
+            url = "%s&%s=%d" % (url, self.batch_variable_name, size)
         return url
 
     def getBatches(self):
