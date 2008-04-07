@@ -205,11 +205,13 @@ created if done through the web UI, so we'll add nopriv here.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize,
-    ...     BranchSubscriptionNotificationLevel)
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
     >>> subscription = code_import.branch.subscribe(
     ...     nopriv,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.NODIFF)
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.FULL)
 
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
@@ -392,7 +394,7 @@ on those objects.
     >>> svn_import.svn_branch_url = 'svn://svn.example.com/branch/1.0'
     Traceback (most recent call last):
       ...
-    ForbiddenAttribute: ('svn_branch_url', <CodeImport at 0x...>)
+    ForbiddenAttribute: ('svn_branch_url', <CodeImport ...>)
 
 Modifications can be done using the CodeImport.updateFromData method. If
 any change were made, this method creates a CodeImportEvent describing
@@ -415,4 +417,4 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     >>> svn_import.updateFromData({}, nopriv)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<CodeImport at ...>, 'updateFromData', 'launchpad.Edit')
+    Unauthorized: (<CodeImport ...>, 'updateFromData', 'launchpad.Edit')
