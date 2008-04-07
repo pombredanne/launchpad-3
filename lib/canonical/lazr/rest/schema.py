@@ -22,8 +22,6 @@ from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.schema._field import AbstractCollection
-from zope.schema.interfaces import ValidationError
-from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
