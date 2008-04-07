@@ -56,13 +56,13 @@ Custom operations may have error handling.
   ...     "/~admins?ws_op=members_by_status&status=NoSuchStatus")
   HTTP/1.1 400 Bad Request
   ...
-  status: Constraint not satisfied: NoSuchStatus.
+  status: Invalid value "NoSuchStatus". Acceptable values are: ...
 
   >>> print webservice.named_post(
   ...     bugtask_path, 'change_status', {}, status='NoSuchStatus')
   HTTP/1.1 400 Bad Request
   ...
-  status: Constraint not satisfied: NoSuchStatus.
+  status: Invalid value "NoSuchStatus". Acceptable values are: ...
 
   >>> print webservice.named_post(
   ...     bugtask_path, 'change_status', {}, status='Triaged')

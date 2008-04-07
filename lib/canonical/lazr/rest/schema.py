@@ -153,9 +153,10 @@ class SimpleVocabularyLookupFieldDeserializer(SimpleFieldDeserializer):
         for item in self.field.vocabulary.items:
             if item.title == value:
                 return item
-        # This will certainly cause a ConstaintNotSatisfied error.
-        # Instead of this we could raise a more helpful ValueError here.
-        return value
+        valid_titles = [item.title for item in self.field.vocabulary.items]
+        raise ValueError(('Invalid value "%s". ' % value) +
+                         'Acceptable values are: "' +
+                         '", "'.join(valid_titles) + '"' + '.')
 
 
 class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
