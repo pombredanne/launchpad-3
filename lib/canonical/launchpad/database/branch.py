@@ -365,7 +365,8 @@ class Branch(SQLBase):
             target_branch=self):
             deletions[merge_proposal] = _(
                 'This branch is the target branch of this merge proposal.')
-            deletion_operations.append(merge_proposal.destroySelf)
+            deletion_operations.append(
+                DeletionOperation(merge_proposal.destroySelf).doOperation)
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alterations[merge_proposal] = _(
@@ -378,14 +379,17 @@ class Branch(SQLBase):
         for subscription in self.subscriptions:
             deletions[subscription] = _(
                 'This is a subscription to this branch.')
-            deletion_operations.append(subscription.destroySelf)
+            deletion_operations.append(
+                DeletionOperation(subscription.destroySelf).doOperation)
         for bugbranch in self.bug_branches:
             deletions[bugbranch] = _('This bug is linked to this branch.')
-            deletion_operations.append(bugbranch.destroySelf)
+            deletion_operations.append(
+                DeletionOperation(bugbranch.destroySelf).doOperation)
         for spec_link in self.spec_links:
             deletions[spec_link] = _(
                 'This blueprint is linked to this branch.')
-            deletion_operations.append(spec_link.destroySelf)
+            deletion_operations.append(
+                DeletionOperation(spec_link.destroySelf).doOperation)
         for series in self.associatedProductSeries():
             alterations[series] = _('This series is linked to this branch.')
             def clear_user_branch(series):
@@ -401,7 +405,8 @@ class Branch(SQLBase):
                 'This is the import data for this branch.')
             def delete_code_import():
                 CodeImportSet().delete(self.code_import)
-            deletion_operations.append(delete_code_import)
+            deletion_operations.append(
+                DeletionOperation(delete_code_import).doOperation)
         return (alterations, deletions, alteration_operations,
             deletion_operations)
 
