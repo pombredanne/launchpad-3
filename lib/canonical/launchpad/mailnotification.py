@@ -21,6 +21,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
@@ -263,6 +264,7 @@ def _send_bug_details_to_new_bugcontacts(
         sendmail(msg)
 
 
+@block_implicit_flushes
 def update_security_contact_subscriptions(modified_bugtask, event):
     """Subscribe the new security contact when a bugtask's product changes.
 
@@ -712,6 +714,7 @@ def get_bug_delta(old_bug, new_bug, user):
         return None
 
 
+@block_implicit_flushes
 def notify_bug_added(bug, event):
     """Send an email notification that a bug was added.
 
@@ -721,6 +724,7 @@ def notify_bug_added(bug, event):
     bug.addCommentNotification(bug.initial_message)
 
 
+@block_implicit_flushes
 def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified.
 
@@ -743,6 +747,7 @@ def add_bug_change_notifications(bug_delta):
             text_change, person=bug_delta.user)
 
 
+@block_implicit_flushes
 def notify_bugtask_added(bugtask, event):
     """Notify CC'd list that this bug has been marked as needing fixing
     somewhere else.
@@ -761,6 +766,7 @@ def notify_bugtask_added(bugtask, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bugtask_edited(modified_bugtask, event):
     """Notify CC'd subscribers of this bug that something has changed
     on this task.
@@ -784,6 +790,7 @@ def notify_bugtask_edited(modified_bugtask, event):
     update_security_contact_subscriptions(modified_bugtask, event)
 
 
+@block_implicit_flushes
 def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
@@ -795,6 +802,7 @@ def notify_bug_comment_added(bugmessage, event):
     bug.addCommentNotification(bugmessage.message)
 
 
+@block_implicit_flushes
 def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
 
@@ -810,6 +818,7 @@ def notify_bug_watch_added(watch, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_watch_modified(modified_bug_watch, event):
     """Notify CC'd bug subscribers that a bug watch was edited.
 
@@ -831,6 +840,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_cve_added(bugcve, event):
     """Notify CC'd list that a new cve ref has been added to this bug.
 
@@ -844,6 +854,7 @@ def notify_bug_cve_added(bugcve, event):
 
     add_bug_change_notifications(bug_delta)
 
+@block_implicit_flushes
 def notify_bug_cve_deleted(bugcve, event):
     """Notify CC'd list that a cve ref has been removed from this bug.
 
@@ -858,6 +869,7 @@ def notify_bug_cve_deleted(bugcve, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_became_question(event):
     """Notify CC'd list that a bug was made into a question.
 
@@ -872,6 +884,7 @@ def notify_bug_became_question(event):
     bug.addChangeNotification(change_info, person=event.user)
 
 
+@block_implicit_flushes
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
@@ -888,6 +901,7 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_attachment_removed(bugattachment, event):
     """Notify that an attachment has been removed."""
     bug = bugattachment.bug
@@ -899,6 +913,7 @@ def notify_bug_attachment_removed(bugattachment, event):
     bug.addChangeNotification(change_info, person=event.user)
 
 
+@block_implicit_flushes
 def notify_invitation_to_join_team(event):
     """Notify team admins that the team has been invited to join another team.
 
@@ -936,6 +951,7 @@ def notify_invitation_to_join_team(event):
         simple_sendmail(from_addr, address, subject, msg)
 
 
+@block_implicit_flushes
 def notify_team_join(event):
     """Notify team admins that a new person choose to join the team.
 
@@ -1020,6 +1036,7 @@ def notify_team_join(event):
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
+@block_implicit_flushes
 def dispatch_linked_question_notifications(bugtask, event):
     """Send notifications to linked question subscribers when the bugtask
     status change.
@@ -1036,6 +1053,7 @@ class QuestionNotification:
     QuestionNotification can be registered as event subscribers.
     """
 
+    @block_implicit_flushes
     def __init__(self, question, event):
         """Base constructor.
 
@@ -1506,6 +1524,7 @@ def specification_notification_subject(spec):
     """Format the email subject line for a specification."""
     return '[Blueprint %s] %s' % (spec.name, spec.title)
 
+@block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     spec_delta = spec.getDelta(event.object_before_modification, event.user)
@@ -1570,6 +1589,7 @@ def notify_specification_modified(spec, event):
 
 
 
+@block_implicit_flushes
 def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
     user = event.user
@@ -1587,6 +1607,7 @@ def notify_specification_subscription_created(specsub, event):
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
+@block_implicit_flushes
 def notify_specification_subscription_modified(specsub, event):
     """Notify a subscriber to a blueprint that their
     subscription has changed.
@@ -1616,6 +1637,7 @@ def notify_specification_subscription_modified(specsub, event):
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
+@block_implicit_flushes
 def notify_mailinglist_activated(mailinglist, event):
     """Notify the active members of a team and its subteams that a mailing
     list is available.

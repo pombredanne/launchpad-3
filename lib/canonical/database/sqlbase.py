@@ -25,6 +25,7 @@ from canonical.database.interfaces import ISQLBase
 __all__ = [
     'alreadyInstalledMsg',
     'begin',
+    'block_implicit_flushes',
     'clear_current_connection_cache',
     'commit',
     'ConflictingTransactionManagerError',
@@ -608,13 +609,7 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    # XXX 2007-03-07 jamesh: short circuit this, since Storm should
-    # handle cache flushes automatically.
-    return
-    # XXX: Andrew Bennetts 2005-02-16 bug=452:
-    # Turn that bug into a doctest
-    for object in list(SQLBase._connection._dm.objects):
-        object.syncUpdate()
+    getUtility(IZStorm).get('main').flush()
 
 def flush_database_caches():
     """Flush all cached values from the database for the current connection.
@@ -629,6 +624,20 @@ def flush_database_caches():
     ensures that they all reflect the values in the database.
     """
     getUtility(IZStorm).get('main').invalidate()
+
+
+def block_implicit_flushes(func):
+    """A decorator that blocks implicit flushes on the main store."""
+    def wrapped(*args, **kwargs):
+        store = getUtility(IZStorm).get("main")
+        store.block_implicit_flushes()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            store.unblock_implicit_flushes()
+    wrapped.__name__ = func.__name__
+    wrapped.__doc__ = func.__doc__
+    return wrapped
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

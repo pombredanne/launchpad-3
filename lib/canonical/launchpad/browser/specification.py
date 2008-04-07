@@ -456,7 +456,7 @@ class SpecificationView(SpecificationSimpleView):
             sub = request.form.get('subscribe')
             upd = request.form.get('update')
             unsub = request.form.get('unsubscribe')
-            essential = request.form.get('essential', False)
+            essential = request.form.get('essential') == 'yes'
             if sub is not None:
                 self.context.subscribe(self.user, self.user, essential)
                 self.notices.append("You have subscribed to this spec.")

@@ -13,15 +13,13 @@ from zope.component import getUtility
 import zope.security.management
 import zope.thread
 
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadApplication)
-
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
         IPerson, IProject, IProduct, IDistribution,
         IDistroSeries, ISourcePackage, IBug, IDistroArchSeries,
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
-    ILoggedInEvent, IOpenLaunchBag, ILaunchBag)
+    ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
 
@@ -64,6 +62,7 @@ class LaunchBag:
         return getattr(self._store, 'developer', False)
 
     @property
+    @block_implicit_flushes
     def user(self):
         interaction = zope.security.management.queryInteraction()
         if interaction is None:

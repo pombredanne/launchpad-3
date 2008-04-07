@@ -4,8 +4,10 @@ __metaclass__ = type
 
 import warnings
 
+from storm.zope.interfaces import IZStorm
+
 from zope.interface import classProvides
-from zope.component import queryAdapter
+from zope.component import getUtility, queryAdapter
 from zope.component.interfaces import IView
 
 from zope.security.interfaces import ISecurityPolicy
@@ -17,14 +19,17 @@ from zope.security.management import (
 from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadPrincipal, IAuthorization)
 
 steveIsFixingThis = False
 
+
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
 
+    @block_implicit_flushes
     def checkPermission(self, permission, object):
         """Check the permission, object, user against the launchpad
         authorization policy.

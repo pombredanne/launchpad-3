@@ -400,22 +400,22 @@ class Specification(SQLBase, BugLinkTargetMixin):
         """See ISpecification."""
         newstatus = None
         if self.is_started:
-            if self.starter is None:
+            if self.starterID is None:
                 newstatus = SpecificationLifecycleStatus.STARTED
                 self.date_started = UTC_NOW
                 self.starter = user
         else:
-            if self.starter is not None:
+            if self.starterID is not None:
                 newstatus = SpecificationLifecycleStatus.NOTSTARTED
                 self.date_started = None
                 self.starter = None
         if self.is_complete:
-            if self.completer is None:
+            if self.completerID is None:
                 newstatus = SpecificationLifecycleStatus.COMPLETE
                 self.date_completed = UTC_NOW
                 self.completer = user
         else:
-            if self.completer is not None:
+            if self.completerID is not None:
                 self.date_completed = None
                 self.completer = None
                 if self.is_started:

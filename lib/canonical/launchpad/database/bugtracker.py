@@ -20,7 +20,7 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, CONTAINSSTRING
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -260,12 +260,12 @@ class BugTrackerSet:
                          for url in permutations)))),
             # Search for a substring match in BugTracker.
             BugTracker.select(
-                BugTracker.q.baseurl.contains(baseurl),
+                CONTAINSSTRING(BugTracker.q.baseurl, baseurl),
                 limit=1),
             # Search for a substring match in BugTrackerAlias.
             (alias.bugtracker for alias in
              BugTrackerAlias.select(
-                    BugTrackerAlias.q.base_url.contains(baseurl),
+                    CONTAINSSTRING(BugTrackerAlias.q.base_url, baseurl),
                     limit=1)))
         # Return the first match.
         for bugtracker in matching_bugtrackers:
