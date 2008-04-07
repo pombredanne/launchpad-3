@@ -56,7 +56,8 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
         ztapi.provideUtility(IPlacelessLoginSource,
                              DummyPlacelessLoginSource())
         ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
-        ztapi.provideAdapter(IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
+        ztapi.provideAdapter(
+            IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
         ztapi.provideUtility(IPersonSet, DummyPersonSet())
 
     def tearDown(self):
@@ -104,11 +105,6 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
         self.assertEqual(authsvc.getPrincipalByLogin('bruce'), Bruce)
 
 
-
 def test_suite():
     t = unittest.makeSuite(TestPlacelessAuth)
     return unittest.TestSuite((t,))
-
-
-if __name__=='__main__':
-    main(defaultTest='test_suite')

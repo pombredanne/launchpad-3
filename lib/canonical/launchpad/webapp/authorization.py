@@ -131,7 +131,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
             if steveIsFixingThis:
-                warnings.warn('zope.Public being used raw on object %r' % object)
+                warnings.warn(
+                    'zope.Public being used raw on object %r' % object)
             return True
         if permission is CheckerPublic:
             return True

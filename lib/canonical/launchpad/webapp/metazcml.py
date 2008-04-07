@@ -26,7 +26,6 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.viewmeta import page
 import zope.app.form.browser.metaconfigure
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -96,7 +95,8 @@ class PermissionCollectingContext:
                 elif discriminator_name == 'protectSetAttribute':
                     self.set_permissions[name] = permission
                 else:
-                    raise RuntimeError("unrecognised discriminator name", name)
+                    raise RuntimeError(
+                        "unrecognised discriminator name", name)
 
 class SecuredUtilityDirective:
 
@@ -541,9 +541,9 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
     _context.action(
         discriminator = ('view', for_, name, IBrowserRequest, layer),
         callable = handler,
-        args = ('provideAdapter',
-                (for_, layer), Interface, name, renamed_factory, _context.info),
-        )
+        args = (
+            'provideAdapter',
+            (for_, layer), Interface, name, renamed_factory, _context.info))
 
 
 class ITourPageDirective(Interface):
@@ -716,13 +716,6 @@ class GeneralFormDirective(
     arguments = None
     keyword_arguments = None
 
-    def _handle_menu(self):
-        if self.menu or self.title:
-            menuItemDirective(
-                self._context, self.menu, self.for_, '@@' + self.name,
-                self.title, permission=self.permission,
-                description=self.description)
-
     def _handle_arguments(self, leftover=None):
         schema = self.schema
         fields = self.fields
@@ -735,8 +728,8 @@ class GeneralFormDirective(
         if arguments:
             missing = [n for n in arguments if n not in fields]
             if missing:
-                raise ValueError("Some arguments are not included in the form",
-                                 missing)
+                raise ValueError(
+                    "Some arguments are not included in the form", missing)
             optional = [n for n in arguments if not schema[n].required]
             if optional:
                 raise ValueError("Some arguments are optional, use"
@@ -759,7 +752,6 @@ class GeneralFormDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
         self._processWidgets()
-        #self._handle_menu()
         self._handle_arguments()
         self._context.action(
             discriminator=self._discriminator(),
