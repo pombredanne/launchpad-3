@@ -104,12 +104,26 @@ def _download(transport, relpath, local_path):
         local_file.close()
 
 
-class CodeImportDetails:
-    """XXX."""
+class CodeImportSourceDetails:
+    """The information needed to process an import.
+
+    As the worker doesn't talk to the database, we don't use
+    `CodeImport` objects for this.
+
+    The 'fromArguments' and 'asArguments' methods convert to and from a form
+    of the information suitable for passing around on executables' command
+    lines.
+
+    :ivar branch_id: The id of the branch associated to this code import, used
+        for locating the existing import and the foreign tree.
+    :ivar rcstype: 'svn' or 'cvs' as appropriate.
+    :ivar svn_branch_url: The branch URL if rcstype == 'svn', None otherwise.
+    :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
+    :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
+    """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
                  cvs_module=None):
-        # XXX add asserts here.
         self.branch_id = branch_id
         self.rcstype = rcstype
         self.svn_branch_url = svn_branch_url
@@ -118,6 +132,7 @@ class CodeImportDetails:
 
     @classmethod
     def fromArguments(cls, arguments):
+        """Convert command line-style arguments to an instance."""
         branch_id = int(arguments[0])
         rcstype = arguments[1]
         if rcstype == 'svn':
@@ -131,6 +146,8 @@ class CodeImportDetails:
         return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     def asArguments(self):
+        """Return a list of arguments suitable for passing to a child process.
+        """
         result = [str(self.branch_id), self.rcstype]
         if self.rcstype == 'svn':
             result.append(self.svn_branch_url)
@@ -147,10 +164,11 @@ class ForeignTreeStore:
 
     The code import system stores tarballs of CVS and SVN working trees on
     another system. The tarballs are kept in predictable locations based on
-    the ID of their `CodeImport`.
+    the ID of the branch associated to the `CodeImport`.
 
     The tarballs are all kept in one directory. The filename of a tarball is
-    XXXXXXXX.tar.gz, where 'XXXXXXXX' is the ID of the `CodeImport` in hex.
+    XXXXXXXX.tar.gz, where 'XXXXXXXX' is the ID of the `CodeImport`'s branch
+    in hex.
     """
 
     def __init__(self, transport):
@@ -163,7 +181,7 @@ class ForeignTreeStore:
         self.transport = transport
 
     def _getForeignTree(self, source_details, target_path):
-        """Return a foreign tree object for `code_import`."""
+        """Return a foreign tree object for `source_details`."""
         if source_details.rcstype == 'svn':
             return SubversionWorkingTree(
                 source_details.svn_branch_url, str(target_path))
@@ -191,9 +209,9 @@ class ForeignTreeStore:
             tarball.close()
 
     def fetch(self, source_details, target_path):
-        """Fetch the foreign branch for `code_import` to `target_path`.
+        """Fetch the foreign branch for `source_details` to `target_path`.
 
-        If there is no tarball archived for `code_import`, then try to
+        If there is no tarball archived for `source_details`, then try to
         download (i.e. checkout) the foreign tree from its source repository,
         generally on a third party server.
         """
@@ -203,13 +221,13 @@ class ForeignTreeStore:
             return self.fetchFromSource(source_details, target_path)
 
     def fetchFromSource(self, source_details, target_path):
-        """Fetch the foreign tree for `code_import` to `target_path`."""
+        """Fetch the foreign tree for `source_details` to `target_path`."""
         branch = self._getForeignTree(source_details, target_path)
         branch.checkout()
         return branch
 
     def fetchFromArchive(self, source_details, target_path):
-        """Fetch the foreign tree for `code_import` from the archive."""
+        """Fetch the foreign tree for `source_details` from the archive."""
         tarball_name = self._getTarballName(source_details.branch_id)
         if not self.transport.has(tarball_name):
             raise NoSuchFile(tarball_name)
@@ -239,7 +257,7 @@ class ImportWorker:
                  bazaar_branch_store, logger):
         """Construct an `ImportWorker`.
 
-        :param source_details: XXX.
+        :param source_details: A `CodeImportSourceDetails` object.
         :param foreign_tree_store: A `ForeignTreeStore`. The import worker
             uses this to fetch and store foreign branches.
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker

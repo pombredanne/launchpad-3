@@ -21,8 +21,9 @@ from bzrlib.urlutils import join as urljoin
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, CodeImportDetails, ForeignTreeStore, ImportWorker,
-    get_default_bazaar_branch_store, get_default_foreign_tree_store)
+    BazaarBranchStore, CodeImportSourceDetails, ForeignTreeStore,
+    ImportWorker, get_default_bazaar_branch_store,
+    get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
@@ -84,8 +85,8 @@ class TestBazaarBranchStore(WorkerTest):
             config.codeimport.bazaar_branch_store.rstrip('/'))
 
     def test_getNewBranch(self):
-        # If there's no Bazaar branch for the code import object, then pull
-        # creates a new Bazaar working tree.
+        # If there's no Bazaar branch of this id, then pull creates a new
+        # Bazaar working tree.
         store = self.makeBranchStore()
         bzr_working_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
         self.assertEqual([], bzr_working_tree.branch.revision_history())
@@ -189,7 +190,7 @@ class TestForeignTreeStore(WorkerTest):
     def setUp(self):
         """Set up a code import for an SVN working tree."""
         super(TestForeignTreeStore, self).setUp()
-        self.source_details = CodeImportDetails.fromArguments(
+        self.source_details = CodeImportSourceDetails.fromArguments(
             ['123', 'svn', self.factory.getUniqueURL()])
         self.temp_dir = self.makeTemporaryDirectory()
 
@@ -211,7 +212,7 @@ class TestForeignTreeStore(WorkerTest):
         # code imports.
         store = ForeignTreeStore(None)
         svn_branch_url = self.factory.getUniqueURL()
-        source_details = CodeImportDetails.fromArguments(
+        source_details = CodeImportSourceDetails.fromArguments(
             ['123', 'svn', self.factory.getUniqueURL()])
         working_tree = store._getForeignTree(source_details, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
@@ -221,7 +222,7 @@ class TestForeignTreeStore(WorkerTest):
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
         store = ForeignTreeStore(None)
-        source_details = CodeImportDetails.fromArguments(
+        source_details = CodeImportSourceDetails.fromArguments(
             ['123', 'cvs', 'root', 'module'])
         working_tree = store._getForeignTree(source_details, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
@@ -312,7 +313,7 @@ class TestWorkerCore(WorkerTest):
 
     def setUp(self):
         WorkerTest.setUp(self)
-        self.source_details = CodeImportDetails.fromArguments(
+        self.source_details = CodeImportSourceDetails.fromArguments(
             ['123', 'svn', self.factory.getUniqueURL()])
 
     def makeBazaarBranchStore(self):
@@ -327,10 +328,9 @@ class TestWorkerCore(WorkerTest):
             logging.getLogger("silent"))
 
     def test_construct(self):
-        # When we construct an ImportWorker, it has a CodeImportJob and a
-        # working directory.
+        # When we construct an ImportWorker, it has a CodeImportSourceDetails
+        # object and a working directory.
         worker = self.makeImportWorker()
-        # XXX err
         self.assertEqual(self.source_details, worker.source_details)
         self.assertEqual(True, os.path.isdir(worker.working_directory))
 
@@ -342,8 +342,8 @@ class TestWorkerCore(WorkerTest):
         self.assertEqual([], bzr_working_tree.branch.revision_history())
 
     def test_bazaarWorkingTreeLocation(self):
-        # getBazaarWorkingTree makes the working tree under the job's working
-        # directory.
+        # getBazaarWorkingTree makes the working tree under the worker's
+        # working directory.
         worker = self.makeImportWorker()
         bzr_working_tree = worker.getBazaarWorkingTree()
         self.assertIsSameRealPath(
@@ -391,7 +391,7 @@ class TestActualImportMixin:
             "Override this with a VCS-specific implementation.")
 
     def makeSourceDetails(self, repository_path, module_name, files):
-        """Make a `CodeImportDetails` that points to a real repository.
+        """Make a `CodeImportSourceDetails` that points to a real repository.
 
         Override this in your subclass.
         """
@@ -506,7 +506,7 @@ class TestCVSImport(WorkerTest, TestActualImportMixin):
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
 
-        return CodeImportDetails.fromArguments(
+        return CodeImportSourceDetails.fromArguments(
             ['123', 'cvs', cvs_server.getRoot(), 'trunk'])
 
 
@@ -536,7 +536,7 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
         self.addCleanup(svn_server.tearDown)
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
-        return CodeImportDetails.fromArguments(
+        return CodeImportSourceDetails.fromArguments(
             ['123', 'svn', svn_branch_url])
 
     def test_bazaarBranchStored(self):
