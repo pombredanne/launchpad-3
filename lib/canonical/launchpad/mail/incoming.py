@@ -27,7 +27,7 @@ from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
-    notify_errors_list, send_process_error_notification)
+    send_process_error_notification)
 from canonical.librarian.interfaces import UploadFailed
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
