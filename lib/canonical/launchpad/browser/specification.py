@@ -30,10 +30,12 @@ __all__ = [
     'SpecificationSHP',
     ]
 
-from subprocess import Popen, PIPE
 from operator import attrgetter
+import os
+from subprocess import Popen, PIPE
 
 from zope.component import getUtility
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
@@ -999,6 +1001,11 @@ class SpecificationTreeGraphView(LaunchpadView):
         """
         assert format in ('png', 'cmapx')
         input = self.getDotFileText().encode('UTF-8')
+        # XXX sinzui 2008-04-03 bug=211568:
+        # This use of subprocess.Popen is far from ideal. There is extra
+        # risk of getting an OSError, or an command line issue that we
+        # represent as a ProblemRenderingGraph. We need python bindings
+        # to make the PNG/cmapx.
         cmd = 'unflatten -l 2 | dot -T%s' % format
         process = Popen(
             cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
@@ -1012,20 +1019,63 @@ class SpecificationTreeGraphView(LaunchpadView):
         return output
 
 
+def log_oops(error, request):
+    """Log an oops report without raising an error."""
+    info = (error.__class__, error, None)
+    globalErrorUtility = getUtility(IErrorReportingUtility)
+    globalErrorUtility.raising(info, request)
+
+
+here = os.path.dirname(__file__)
+
+
 class SpecificationTreePNGView(SpecificationTreeGraphView):
+
+    fail_over_image_path = os.path.join(
+        here, os.pardir, 'icing', 'blueprints-deptree-error.png')
 
     def render(self):
         """Render a PNG displaying the specification dependency graph."""
-        self.request.response.setHeader('Content-type', 'image/png')
-        return self.renderGraphvizGraph('png')
+        try:
+            image = self.renderGraphvizGraph('png')
+            self.request.response.setHeader('Content-type', 'image/png')
+        except (ProblemRenderingGraph, OSError), error:
+            # The subprocess or command can raise errors that might not
+            # occur if we used a Python bindings for GraphViz. Instead of
+            # sending the generated image, return the fail-over image
+            # that explains there was a problem.
+            log_oops(error, self.request)
+            try:
+                fail_over_image = open(self.fail_over_image_path, 'rb')
+                image = fail_over_image.read()
+            finally:
+                fail_over_image.close()
+        return image
 
 
 class SpecificationTreeImageTag(SpecificationTreeGraphView):
 
     def render(self):
         """Render the image and image map tags for this dependency graph."""
-        return (u'<img src="deptree.png" usemap="#deptree" />\n' +
-                self.renderGraphvizGraph('cmapx').decode('UTF-8'))
+        try:
+            image_map = self.renderGraphvizGraph('cmapx').decode('UTF-8')
+        except (ProblemRenderingGraph, OSError), error:
+            # The subprocess or command can raise errors that might not
+            # occur if we used a Python bindings for GraphViz. Instead
+            # of rendering an image map, return an explanation that the
+            # image's links are broken.
+            log_oops(error, self.request)
+            if isinstance(error, OSError):
+                # An OSError can be random. The image map may generate
+                # if the user reloads the page.
+                extra_help = u' Reload the page to link the image.'
+            else:
+                extra_help = u''
+            image_map = (
+                u'<p class="error message">'
+                u'There was an error linking the dependency tree to its '
+                u'specs.' + extra_help + u'</p>')
+        return (u'<img src="deptree.png" usemap="#deptree" />\n' + image_map)
 
 
 class SpecificationTreeDotOutput(SpecificationTreeGraphView):
