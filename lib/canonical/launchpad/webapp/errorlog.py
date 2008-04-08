@@ -205,7 +205,7 @@ class ErrorReportingUtility:
 
     def __init__(self):
         self.lastid_lock = threading.Lock()
-        self.prefix = config.launchpad.errorreports.oops_prefix
+        self.prefix = config.error_reports.oops_prefix
 
     def appendToOopsPrefix(self, token):
         """Append a string to the oops prefix.
@@ -215,7 +215,7 @@ class ErrorReportingUtility:
             the oops_prefix to create a unqiue identifier for each
             process.
         """
-        self.prefix = config.launchpad.errorreports.oops_prefix + token
+        self.prefix = config.error_reports.oops_prefix + token
 
     def _findLastOopsIdFilename(self, directory):
         """Find details of the last OOPS reported in the given directory.

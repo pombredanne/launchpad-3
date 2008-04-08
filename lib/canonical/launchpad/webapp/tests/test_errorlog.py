@@ -167,7 +167,7 @@ class TestErrorReportingUtility(unittest.TestCase):
     def test_appendToOopsPrefix(self):
         """Test ErrorReportingUtility.appendToOopsPrefix()."""
         utility = ErrorReportingUtility()
-        default_prefix = config.launchpad.errorreports.oops_prefix
+        default_prefix = config.error_reports.oops_prefix
         self.assertEqual('T', default_prefix)
         self.assertEqual('T', utility.prefix)
 
