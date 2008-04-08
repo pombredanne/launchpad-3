@@ -1261,7 +1261,7 @@ class IPersonEditRestricted(Interface):
         to APPROVED.
         """
 
-    def declineInvitationToBeMemberOf(self, team, comment):
+    def declineInvitationToBeMemberOf(team, comment):
         """Decline an invitation to become a member of the given team.
 
         There must be a TeamMembership for this person and the given team with
@@ -1269,7 +1269,7 @@ class IPersonEditRestricted(Interface):
         to INVITATION_DECLINED.
         """
 
-    def renewTeamMembership(self, team):
+    def renewTeamMembership(team):
         """Renew the TeamMembership for this person on the given team.
 
         The given team's renewal policy must be ONDEMAND and the membership
