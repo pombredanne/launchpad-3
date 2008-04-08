@@ -23,12 +23,15 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportReviewStatus, IBranchSet,
+    BranchCreationException, BranchType, CodeImportReviewStatus,
+    CodeImportJobState, IBranchSet,
     ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
+from canonical.launchpad.mailout.codeimport import code_import_status_updated
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -92,6 +95,48 @@ class CodeImport(SQLBase):
 
     import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
 
+    def _removeJob(self):
+        """If there is a pending job, remove it."""
+        job = self.import_job
+        if job is not None:
+            if job.state == CodeImportJobState.PENDING:
+                CodeImportJobWorkflow().deletePendingJob(self)
+            else:
+                # XXX thumper 2008-03-19
+                # When we have job killing, we might want to kill a running
+                # job.
+                pass
+        else:
+            # No job, so nothing to do.
+            pass
+
+    def approve(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.REVIEWED:
+            raise AssertionError('Review status is already reviewed.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
+        CodeImportJobWorkflow().newJob(self)
+
+    def suspend(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.SUSPENDED:
+            raise AssertionError('Review status is already suspended.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
+        self._removeJob()
+
+    def invalidate(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.INVALID:
+            raise AssertionError('Review status is already invalid.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
+        self._removeJob()
+
+    def _setStatusAndEmail(self, data, user, status):
+        """Update the review_status and email interested parties."""
+        data['review_status'] = status
+        self.updateFromData(data, user)
+        code_import_status_updated(self, user)
+
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
         event_set = getUtility(ICodeImportEventSet)
@@ -99,6 +144,9 @@ class CodeImport(SQLBase):
         for name, value in data.items():
             setattr(self, name, value)
         event_set.newModify(self, user, token)
+
+    def __repr__(self):
+        return "<CodeImport for %s>" % self.branch.unique_name
 
 
 class CodeImportSet:
@@ -142,6 +190,11 @@ class CodeImportSet:
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(SQLObjectCreatedEvent(code_import))
+
+        # If created in the reviewd state, create a job.
+        if review_status == CodeImportReviewStatus.REVIEWED:
+            CodeImportJobWorkflow().newJob(code_import)
+
         return code_import
 
     def delete(self, code_import):
