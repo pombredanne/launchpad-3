@@ -292,9 +292,14 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueDepthByArch():
-        """Return a list of architectures and the number of Builds that are
-        in the NEEDSBUILD state for each of them.
+    def getBuildQueueSizeForProcessor(processor, virtualized=False):
+        """Return the number of pending builds for a given processor.
+
+        :param processor: IProcessor;
+        :param virtualized: boolean, controls which queue to check,
+            'virtualized' means PPA.
+
+        :return the size of the queue, integer.
         """
 
     def pollBuilders(logger, txn):

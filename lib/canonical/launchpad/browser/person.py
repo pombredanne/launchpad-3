@@ -11,6 +11,7 @@ __all__ = [
     'FOAFSearchView',
     'PeopleListView',
     'PersonAddView',
+    'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBranchesMenu',
@@ -30,22 +31,13 @@ __all__ = [
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
-    'PersonEditJabberIDsView',
-    'PersonEditIRCNicknamesView',
-    'PersonEditSSHKeysView',
-    'PersonEditHomePageView',
-    'PersonAnswerContactForView',
-    'PersonAssignedBugTaskSearchListingView',
-    'ReportedBugTaskSearchListingView',
-    'BugContactPackageBugsSearchListingView',
-    'SubscribedBugTaskSearchListingView',
-    'PersonRdfView',
-    'PersonTranslationView',
     'PersonFacets',
     'PersonGPGView',
+    'PersonIndexView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
+    'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
     'PersonRdfView',
@@ -65,7 +57,6 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
-    'PersonIndexView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
@@ -96,7 +87,7 @@ import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
+from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
@@ -120,14 +111,15 @@ from canonical.launchpad.interfaces import (
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
     ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IOpenLaunchBag,
-    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
-    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
-    QuestionParticipation, SSHKeyType, SpecificationFilter,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
+    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, PersonVisibility, QuestionParticipation,
+    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -160,6 +152,7 @@ from canonical.launchpad.webapp import (
     custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
+
 
 class RestrictedMembershipsPersonView(LaunchpadView):
     """Secure access to team membership information for a person.
@@ -2899,7 +2892,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
             text = '<a href="%s">%s</a>' % (
                 canonical_url(team), team.displayname)
             terms.append(SimpleTerm(team, team.name, text))
-        self.form_fields = form.Fields(
+        self.form_fields = FormFields(
             List(__name__='teams',
                  title=_(''),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
@@ -3002,8 +2995,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         super(PersonEditEmailsView, self).setUpFields()
         self.form_fields = (self._validated_emails_field() +
                             self._unvalidated_emails_field() +
-                            form.fields(TextLine(__name__='newemail',
-                                                 title=u'Add a new address'))
+                            FormFields(TextLine(__name__='newemail',
+                                                title=u'Add a new address'))
                             + self._mailing_list_fields())
 
     @property
@@ -3038,7 +3031,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         if preferred:
             terms.insert(0, SimpleTerm(preferred, preferred.email))
 
-        return form.Fields(
+        return FormFields(
             Choice(__name__='VALIDATED_SELECTED',
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
@@ -3062,7 +3055,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         else:
             title = _('These addresses may be yours')
 
-        return form.Fields(
+        return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
@@ -3105,7 +3098,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                                title=team.name,
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
-        return form.FormFields(*fields)
+        return FormFields(*fields)
 
     @property
     def mailing_list_widgets(self):
@@ -3742,3 +3735,32 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0 and team != self.context]
+
+
+class PersonOAuthTokensView(LaunchpadView):
+    """Where users can see/revoke their non-expired access tokens."""
+
+    def initialize(self):
+        # Store the (sorted) list of access tokens that are going to be
+        # used in the template.
+        self.tokens = sorted(
+            self.context.oauth_access_tokens,
+            key=lambda token: token.consumer.key)
+        if self.request.method == 'POST':
+            self.expireToken()
+
+    def expireToken(self):
+        """Expire the token with the key contained in the request's form."""
+        form = self.request.form
+        consumer = getUtility(IOAuthConsumerSet).getByKey(
+            form.get('consumer_key'))
+        token = consumer.getAccessToken(form.get('token_key'))
+        if token is not None:
+            token.date_expires = datetime.now(pytz.timezone('UTC'))
+            self.request.response.addInfoNotification(
+                "Authorization revoked successfully.")
+            self.request.response.redirect(canonical_url(self.user))
+        else:
+            self.request.response.addInfoNotification(
+                "Couldn't find authorization given to %s. Maybe it has been "
+                "revoked already?" % consumer.key)

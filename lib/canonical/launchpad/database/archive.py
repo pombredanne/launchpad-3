@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = ['Archive', 'ArchiveSet']
 
 import os
+import re
 
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
@@ -28,6 +29,7 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
@@ -112,6 +114,17 @@ class Archive(SQLBase):
         dependencies = ArchiveDependency.select(
             query, clauseTables=clauseTables, orderBy=orderBy)
         return dependencies
+
+    @property
+    def expanded_archive_dependencies(self):
+        """See `IArchive`."""
+        archives = []
+        if self.purpose == ArchivePurpose.PPA:
+            archives.append(self.distribution.main_archive)
+        archives.append(self)
+        archives.extend(
+            [archive_dep.dependency for archive_dep in self.dependencies])
+        return archives
 
     @property
     def archive_url(self):
@@ -507,33 +520,62 @@ class Archive(SQLBase):
 
     def updateArchiveCache(self):
         """See `IArchive`."""
+        # Compiled regexp to remove puntication.
+        clean_text = re.compile('(,|;|:|\.|\?|!)')
+
+        # XXX cprov 20080402: The set() is only used because we have
+        # a limitation in our FTI setup, it only indexes the first 2500
+        # chars of the target columns. See bug 207969. When such limitation
+        # gets fixed we should probably change it to a normal list and
+        # benefit of the FTI rank for ordering.
         cache_contents = set()
+        def add_cache_content(content):
+            """Sanitise and add contents to the cache."""
+            content = clean_text.sub(' ', content)
+            terms = [term.lower() for term in content.strip().split()]
+            for term in terms:
+                cache_contents.add(term)
 
         # Cache owner name and displayname.
-        cache_contents.add(self.owner.name)
-        cache_contents.add(self.owner.displayname)
+        add_cache_content(self.owner.name)
+        add_cache_content(self.owner.displayname)
 
         # Cache source package name and its binaries information, binary
         # names and summaries.
         sources_cached = DistributionSourcePackageCache.select(
             "archive = %s" % sqlvalues(self), prejoins=["distribution"])
         for cache in sources_cached:
-            cache_contents.add(cache.distribution.name)
-            cache_contents.add(cache.name)
-            cache_contents.add(cache.binpkgnames)
-            cache_contents.add(cache.binpkgsummaries)
+            add_cache_content(cache.distribution.name)
+            add_cache_content(cache.name)
+            add_cache_content(cache.binpkgnames)
+            add_cache_content(cache.binpkgsummaries)
 
         # Cache distroseries names with binaries.
         binaries_cached = DistroSeriesPackageCache.select(
             "archive = %s" % sqlvalues(self), prejoins=["distroseries"])
         for cache in binaries_cached:
-            cache_contents.add(cache.distroseries.name)
+            add_cache_content(cache.distroseries.name)
 
         # Collapse all relevant terms in 'package_description_cache' and
         # update the package counters.
         self.package_description_cache = " ".join(cache_contents)
         self.sources_cached = sources_cached.count()
         self.binaries_cached = binaries_cached.count()
+
+    def findDepCandidateByName(self, distroarchseries, name):
+        """See `IArchive`."""
+        archives = [
+            archive.id for archive in self.expanded_archive_dependencies]
+
+        query = """
+            binarypackagename = %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            packagepublishingstatus = %s
+        """ % sqlvalues(name, distroarchseries, archives,
+                        PackagePublishingStatus.PUBLISHED)
+
+        return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""

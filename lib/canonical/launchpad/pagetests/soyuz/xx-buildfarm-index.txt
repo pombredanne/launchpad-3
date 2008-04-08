@@ -11,22 +11,54 @@ ordered by architecture and a short summary about what they are
 processing.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Build machines for Launchpad
-    Builder        Architecture Owner                   Status
-    bob Automatic  386          Launchpad Buildd Admins Not available
-    frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   NOT OK : None (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
     Generated at ...
 
-This page also presents a portlet exposing the number of builds waiting
-in queue for each supported architecture.
+As we can see, this page also presents the number of builds waiting
+in queue for each supported architecture on each separated build-farm
+we have, 'ppa' and 'other' (PRIMARY and PARTNER).
 
-    >>> def print_depth(contents, queue_name):
-    ...     portlet = find_portlet(contents, queue_name)
-    ...     for td in portlet.fetch('td'):
-    ...         print extract_text(td)
+    >>> def print_depth(contents):
+    ...     depths = find_tags_by_class(contents, 'category')
+    ...     for depth in depths:
+    ...         print extract_text(depth)
 
-    >>> print_depth(anon_browser.contents, 'Build queue depth')
-    i386     1
+    >>> print_depth(anon_browser.contents)
+    386     0 waiting
+    386     1 waiting
+
+In order to test the 'ppa' build queue depth portlet we will retry
+a failed build in Celso's PPA.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     BuildStatus, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> failed_build = cprov.archive.getBuildRecords(
+    ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+    >>> unused = failed_build.retry()
+
+    >>> flush_database_updates()
+    >>> logout()
+
+Now we can see the populated section for the ppa build-farm,
+exposing one pending build record. The 'other' is still present.
+
+    >>> anon_browser.reload()
+    >>> print_depth(anon_browser.contents)
+    386     1 waiting
+    386     1 waiting
 
 From this page, users with the appropriate permission can register new
 builders.

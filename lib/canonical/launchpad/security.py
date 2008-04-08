@@ -11,22 +11,22 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, IArchive, IBazaarApplication, IBranch,
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
-    ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
-    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
-    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
-    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISourcePackageRelease, ISpecification,
-    ISpecificationBranch, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
+    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISourcePackageRelease, ISpecification, ISpecificationBranch,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -62,6 +62,15 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditOAuthAccessToken(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthAccessToken
+
+    def checkAuthenticated(self, user):
+        return (self.obj.person == user
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -879,16 +888,6 @@ class EditCodeImport(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImport
-
-
-class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportJob.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportJob
 
 
 class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
