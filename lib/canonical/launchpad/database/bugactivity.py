@@ -20,7 +20,7 @@ class BugActivity(SQLBase):
     implements(IBugActivity)
 
     _table = 'BugActivity'
-    bug = ForeignKey(foreignKey='BugActivity', dbName='bug', notNull=True)
+    bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
     datechanged = UtcDateTimeCol(notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',

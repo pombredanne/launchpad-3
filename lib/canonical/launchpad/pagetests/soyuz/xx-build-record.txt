@@ -291,12 +291,16 @@ lp-buildd-admins) have access for retrying PPA build.
     >>> admin_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(admin_browser.contents)
+    View PPA: http://launchpad.dev/~no-priv/+archive
+    View build records: http://launchpad.dev/~no-priv/+archive/+builds
     Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
     Rescore build (disabled)
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(user_browser.contents)
+    View PPA: http://launchpad.dev/~no-priv/+archive
+    View build records: http://launchpad.dev/~no-priv/+archive/+builds
     Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
     Rescore build (disabled)
 
@@ -304,7 +308,7 @@ PPA build pages also have some text telling the viewer that they can retry
 the build if that action is possible:
 
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Build details
+    Build details for i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     You can retry this build if you think
     the failure was transient. Be aware that the previous
     build log and timestamps will be purged.

@@ -31,7 +31,7 @@ class CodeImportReviewStatus(DBEnumeratedType):
 
     NEW = DBItem(1, """Pending Review
 
-        This code import request has recently been filed an has not
+        This code import request has recently been filed and has not
         been reviewed yet.
         """)
 
@@ -100,7 +100,7 @@ class ICodeImport(Interface):
             "The version control system to import from. "
             "Can be CVS or Subversion."))
 
-    svn_branch_url = URIField(title=_("Branch"), required=False,
+    svn_branch_url = URIField(title=_("Branch URL"), required=False,
         description=_(
             "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
@@ -143,6 +143,42 @@ class ICodeImport(Interface):
         description=_(
             "The current job for this import, either pending or running."))
 
+    def approve(data, user):
+        """Approve the import.
+
+        Additional attributes can also be updated.
+        A code import job will be created for the import.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
+    def suspend(data, user):
+        """Suspend the import.
+
+        Additional attributes can also be updated.
+        If there was a pending job, it will be removed.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
+    def invalidate(data, user):
+        """Invalidate the import.
+
+        Additional attributes can also be updated.
+        If there was a pending job, it will be removed.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
@@ -158,8 +194,8 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
 
     def getAll():
@@ -173,6 +209,12 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+    def getByCVSDetails(cvs_root, cvs_module):
+        """Get the CodeImport with the specified CVS details."""
+
+    def getBySVNDetails(svn_branch_url):
+        """Get the CodeImport with the specified SVN details."""
 
     def delete(id):
         """Delete a CodeImport given its id."""

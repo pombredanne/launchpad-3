@@ -1,5 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213,W0611
+# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
 
 """Interfaces pertaining to the launchpad application.
 
@@ -8,7 +9,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -59,7 +60,6 @@ __all__ = [
     'IPasswordResets',
     'IPrivateApplication',
     'IReadZODBAnnotation',
-    'IRegistryApplication',
     'IRosettaApplication',
     'IShipItApplication',
     'IStructuralHeaderPresentation',
@@ -176,10 +176,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-
-class IRegistryApplication(ILaunchpadApplication):
-    """Registry application root."""
 
 
 class IShipItApplication(ILaunchpadApplication):
@@ -528,12 +524,20 @@ class ILaunchpadUsage(Interface):
     official_answers = Bool(
         title=_('People can ask questions in Launchpad Answers'),
         required=True)
+    official_blueprints = Bool(
+        title=_('This project uses blueprints'), required=True)
+    official_codehosting = Bool(
+        title=_('Code for this project is published in Bazaar branches on'
+                ' Launchpad'),
+        required=True)
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
         required=True)
     official_rosetta = Bool(
         title=_('Translations for this project are done in Launchpad'),
         required=True)
+    official_anything = Bool (
+        title=_('Uses Launchpad for something'),)
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)

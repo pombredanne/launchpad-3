@@ -112,11 +112,12 @@ check: search_path
 
 search_path:
 	@psql -d template1 -q -A -t -c 'show search_path'
-	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ]; then \
+	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ] && [ `psql -d template1 -q -A -t -c 'show search_path'` != '"$$user",public,ts2' ]; then \
 		echo "* It appears your search path is unconfigured."; \
 		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
-		echo "* Add the following to /etc/postgresql/8.1/main/postgresql.conf:"; \
+		echo "* Add the following to /etc/postgresql/X.X/main/postgresql.conf"; \
+		echo " (where X.X is the version of the PostgreSQL DB you're connecting to):"; \
 		echo "    search_path='\$$user,public,ts2'"; \
 		echo "* Then reload PostgreSQL:";  \
 		echo "    sudo /etc/init.d/postgresql reload";  \
@@ -137,7 +138,7 @@ diagram:
 newsampledata:
 	$(PYTHON) fti.py --null -d launchpad_dev -q
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|secret\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\)" \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
 	$(PYTHON) fti.py --force -d launchpad_dev -q

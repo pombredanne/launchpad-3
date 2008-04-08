@@ -26,6 +26,11 @@ case $(dpkg --print-installation-architecture) in
   hppa|powerpc|sparc) SBUILD="linux32 $SBUILD" ;;
 esac
 
+export NR_PROCESSORS=$(grep ^processor /proc/cpuinfo | wc -l)
+if [ $NR_PROCESSORS -lt 2 ]; then
+	unset NR_PROCESSORS
+fi
+
 LANG=C LC_ALL=C $SBUILD "$@"
 RET=$?
 

@@ -329,7 +329,8 @@
             &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
-              | Version 1.2.3 | build
+              | <a href="https://help.launchpad.net/LaunchpadReleases">
+              Version 1.2.4</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>

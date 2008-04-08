@@ -35,6 +35,8 @@ class TranslationMessageData:
     def __init__(self):
         self.msgid_singular = None
         self.msgid_plural = None
+        self.singular_text = None
+        self.plural_text = None
         self.context = None
         self._translations = []
         self.comment = u''

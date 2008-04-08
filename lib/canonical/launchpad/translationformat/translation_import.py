@@ -356,6 +356,8 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
+            self.potemplate.source_file = (
+                translation_import_queue_entry.content)
             if importer.uses_source_string_msgids:
                 # We use the special 'en' language as the way to store the
                 # English strings to show instead of the msgids.
@@ -407,16 +409,11 @@ class TranslationImporter:
 
         count = 0
 
-        if self.pofile is not None or english_pofile is not None:
-            if self.pofile is None:
-                last_translator = translation_import_queue_entry.importer
-                pofile_in_db = ExistingPOFileInDatabase(
-                    english_pofile,
-                    is_imported=translation_import_queue_entry.is_published)
-            else:
-                pofile_in_db = ExistingPOFileInDatabase(
-                    self.pofile,
-                    is_imported=translation_import_queue_entry.is_published)
+        pofile_in_db = None
+        if self.pofile is not None:
+            pofile_in_db = ExistingPOFileInDatabase(
+                self.pofile,
+                is_imported=translation_import_queue_entry.is_published)
         errors = []
         use_pofile = self.pofile
         for message in translation_file.messages:
@@ -425,11 +422,17 @@ class TranslationImporter:
                 # message.
                 continue
 
-            if self.pofile is not None or english_pofile is not None:
+            if self.pofile is not None:
                 # Mark this message as seen in the import
                 pofile_in_db.markMessageAsSeen(message)
-                if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
-                    pofile_in_db.isAlreadyImportedTheSame(message)):
+                if translation_import_queue_entry.is_published:
+                    same_translation = pofile_in_db.isAlreadyImportedTheSame(
+                        message)
+                else:
+                    same_translation = (
+                        pofile_in_db.isAlreadyTranslatedTheSame(message))
+
+                if same_translation:
                     count += 1
                     continue
 
@@ -555,6 +558,9 @@ class TranslationImporter:
                 }
 
                 errors.append(error)
+                if logger is not None:
+                    logger.info(
+                        "Conflicting updates on message %d." % potmsgset.id)
                 continue
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but
@@ -587,7 +593,7 @@ class TranslationImporter:
 
 
         # Finally, retire messages that we have not seen in the new upload.
-        if use_pofile is not None:
+        if pofile_in_db is not None:
             unseen = pofile_in_db.getUnseenMessages()
             for unseen_message in unseen:
                 (msgid, context) = unseen_message

@@ -33,16 +33,12 @@ and BugWatch instances with which to work.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 The ISupportsCommentImport interface defines the methods that external
-bug trackers which support comment imports must provide. In fact, the
-ISupportsCommentImport interface only defines one method,
-importBugComments(). This method is implemented in the
-ExternalBugTracker base class and in turn requires that bug trackers
-supporting comment imports provide the methods getCommentIds(),
-getPosterForComment() and getMessageForComment().
+bug trackers which support comment imports must provide. This interface
+defines three methods: getCommentIds(), getPosterForComment() and
+getMessageForComment().
 
 In order to test the importing of comments we will create a new
-ExternalBugTracker class which implements the three methods listed
-above.
+ExternalBugTracker class which implements these three methods.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     ExternalBugTracker)
@@ -56,12 +52,14 @@ above.
     ...         '2': "Example comment the second",
     ...         '3': "Example comment the third"}
     ...
+    ...     poster_tuple = ("Joe Bloggs", "joe.bloggs@example.com")
+    ...
     ...     def getCommentIds(self, bug_watch):
     ...         return sorted(self.comment_dict.keys())
     ...
     ...     def getPosterForComment(self, bug_watch, comment_id):
     ...         """Return a tuple of (displayname, email)."""
-    ...         return "Joe Bloggs", "joe.bloggs@example.com"
+    ...         return self.poster_tuple
     ...
     ...     def getMessageForComment(self, bug_watch, comment_id, poster):
     ...         """Return a Message object for a comment."""
@@ -72,13 +70,17 @@ above.
     ...         return message
 
     >>> external_bugtracker = CommentImportingExternalBugTracker(
-    ...     None, new_bugtracker(BugTrackerType.BUGZILLA))
+    ...     'http://example.com/')
 
-Calling importBugComments() on our new comment-importing
-ExternalBugTracker instance will result in the three comments in the
-comment_dict being imported into Launchpad.
+The BugWatchUpdater method importBugComments() is responsible for
+calling the three methods of ISupportsCommentImport in turn to import
+comments. Calling importBugComments() and passing it our new
+comment-importing ExternalBugTracker instance will result in the three
+comments in the comment_dict being imported into Launchpad.
 
-    >>> external_bugtracker.importBugComments(bug_watch)
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 3 comments for remote bug 123456 on ...
 
 These three comments will be linked to the bug watch from which they
@@ -101,7 +103,7 @@ If another comment is added on the remote tracker and the comment import
 process is run again only the new comment will be imported.
 
     >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
-    >>> external_bugtracker.importBugComments(bug_watch)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456 on ...
 
 Once again, the newly-imported comment will be linked to the bug watch
@@ -225,3 +227,55 @@ examining the BugMessages which link the messages to the bug.
 
     >>> bug_message_two.bugwatch == bug_watch
     True
+
+
+== Importing comments with CVE references ==
+
+If a comment contains a CVE reference, that CVE reference will be
+imported and linked to the bug.  However, the user who authored the
+comment containing the CVE reference doesn't get any karma from this
+since they aren't a valid Launchpad user, having been created during the
+import process.
+
+We'll add a listener to check for Karma events.
+
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> karma_helper = KarmaAssignedEventListener()
+    >>> karma_helper.register_listener()
+
+Importing a comment with a CVE reference will produce a CVE link in
+Launchpad but will result in no Karma records being created.
+
+    >>> external_bugtracker.comment_dict['5'] = (
+    ...     "A comment containing a CVE entry: CVE-1991-9911.")
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456...
+
+    >>> for cve in bug.cves:
+    ...     print cve.displayname
+    CVE-1991-9911
+
+Karma is only awarded for actions that occur within Launchpad. If an
+imported comment was authored by a valid Launchpad user, that user will
+receive no karma. We'll demonstrate this by making an comment which
+includes a CVE reference appear to come from a valid Launchpad user.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> external_bugtracker.poster_tuple = (
+    ...     foo_bar.displayname, foo_bar.preferredemail.email)
+    >>> external_bugtracker.comment_dict['6'] = (
+    ...     "Another comment, another CVE: CVE-1999-0593.")
+
+Once again, CVE links are created but no karma is assigned.
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 2 comments for remote bug 123456...
+
+    >>> for cve in sorted([cve.displayname for cve in bug.cves]):
+    ...     print cve
+    CVE-1991-9911
+    CVE-1999-0593
+
+    >>> karma_helper.unregister_listener()

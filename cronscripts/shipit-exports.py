@@ -9,7 +9,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
@@ -36,7 +36,7 @@ class ShipitExports(LaunchpadCronScript):
             )
 
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         self.logger.info('Exporting %s priority ShipIt orders'
             % self.options.priority)
 

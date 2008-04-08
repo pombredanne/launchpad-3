@@ -1,15 +1,32 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
-__all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
-           'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
-           'IShipment', 'IShippingRun', 'IShipItCountry', 'IShippingRunSet',
-           'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
-           'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
-           'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
-           'ShipItDistroSeries', 'ShipItArchitecture', 'ShipItFlavour',
-           'ShippingService', 'ShippingRequestStatus', 'ShippingRequestType']
+__all__ = [
+    'IRequestedCDs',
+    'IShipItCountry',
+    'IShipItReport',
+    'IShipItReportSet',
+    'IShipment',
+    'IShipmentSet',
+    'IShippingRequest',
+    'IShippingRequestAdmin',
+    'IShippingRequestEdit',
+    'IShippingRequestSet',
+    'IShippingRequestUser',
+    'IShippingRun',
+    'IShippingRunSet',
+    'IStandardShipItRequest',
+    'IStandardShipItRequestSet',
+    'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
+    'ShipItArchitecture',
+    'ShipItConstants',
+    'ShipItDistroSeries',
+    'ShipItFlavour',
+    'ShippingRequestPriority',
+    'ShippingRequestStatus',
+    'ShippingRequestType',
+    'ShippingService',
+    'SOFT_MAX_SHIPPINGRUN_SIZE']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -123,7 +140,7 @@ class ShipItFlavour(DBEnumeratedType):
         """)
 
     SERVER = DBItem(4, """
-        Server
+        Ubuntu Server Edition
 
         The Ubuntu Server Edition.
         """)
@@ -307,8 +324,8 @@ class IShippingRequest(Interface):
     city = ShipItCity(
             title=_('City/Town/etc'), required=True, readonly=False,
             constraint=validate_shipit_city,
-            description=_('The City/Town/Village/etc to where the CDs will be '
-                          'shipped.')
+            description=_(
+                'The City/Town/Village/etc to where the CDs will be shipped.')
             )
     province = ShipItProvince(
             title=_('State/Province'), required=False, readonly=False,
@@ -600,7 +617,7 @@ class IShippingRequestSet(Interface):
         """
 
     def generateRequestDistributionReport():
-        """Generate a csv file with the distribution of requests and shipments.
+        """Generate a csv file with distribution of requests and shipments.
 
         For the current series, there will be 4 columns displaying the number
         of requests/shipments and the number of users which had that exact
@@ -612,7 +629,8 @@ class IShippingRequestSet(Interface):
 
 class IRequestedCDs(Interface):
 
-    request = Int(title=_('The ShippingRequest'), required=True, readonly=True)
+    request = Int(
+        title=_('The ShippingRequest'), required=True, readonly=True)
     distroseries = Int(title=_('Series'), required=True, readonly=True)
     flavour = Choice(title=_('Distro Flavour'), required=True, readonly=True,
                      vocabulary=ShipItFlavour)
@@ -734,7 +752,8 @@ class IShipment(Interface):
 class IShipmentSet(Interface):
     """The set of Shipment objects."""
 
-    def new(shippingservice, shippingrun, trackingcode=None, dateshipped=None):
+    def new(shippingservice, shippingrun, trackingcode=None,
+            dateshipped=None):
         """Create a new Shipment object with the given arguments."""
 
     def getByToken(token):
@@ -759,7 +778,8 @@ class IShippingRun(Interface):
         title=_('Was this ShippingRun sent for shipping?'),
         required=False, readonly=False)
 
-    requests = Attribute(_('All requests that are part of this shipping run.'))
+    requests = Attribute(
+        _('All requests that are part of this shipping run.'))
 
     requests_count = Int(
         title=_('A cache of the number of requests'), readonly=False,
@@ -829,7 +849,8 @@ class IShippingRequestQuantities(Interface):
         title=_('PC'), description=_('Quantity of Ubuntu PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityamd64 = ShipItQuantity(
-        title=_('64-bit PC'), description=_('Quantity of Ubuntu 64-bit PC CDs'),
+        title=_('64-bit PC'),
+        description=_('Quantity of Ubuntu 64-bit PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 
     kubuntu_quantityx86 = ShipItQuantity(

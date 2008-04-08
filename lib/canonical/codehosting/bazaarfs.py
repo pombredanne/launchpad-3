@@ -22,7 +22,7 @@ from twisted.vfs.ivfs import NotFoundError, PermissionError
 
 # The directories allowed directly beneath a branch directory. These are the
 # directories that Bazaar creates as part of regular operation.
-ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
+ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 

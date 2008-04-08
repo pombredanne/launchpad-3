@@ -13,9 +13,10 @@ __all__ = [
     'FakeLogger',
     ]
 
-import os
-import threading
 import atexit
+import os
+from textwrap import dedent
+import threading
 
 import zope.app.appsetup
 import zope.app.mail.delivery
@@ -70,7 +71,8 @@ class CustomMachine(ConfigurationMachine):
         #      processed, though. SteveA said he will fix it better when
         #      he lands the navigation stuff.
         ns, simplename = name
-        if ns == u'http://namespaces.zope.org/browser' and simplename != 'url':
+        if (ns == u'http://namespaces.zope.org/browser'
+            and simplename != 'url'):
             return NullFactory
         else:
             f = ConfigurationMachine.factory(self, context, name)
@@ -109,7 +111,8 @@ def execute_zcml_for_scripts(use_web_security=False):
     # Load server-independent site config
     context = CustomMachine()
     xmlconfig.registerCommonDirectives(context)
-    context = xmlconfig.file(scriptzcmlfilename, execute=True, context=context)
+    context = xmlconfig.file(
+        scriptzcmlfilename, execute=True, context=context)
 
     if use_web_security:
         setSecurityPolicy(LaunchpadSecurityPolicy)
@@ -124,11 +127,13 @@ def execute_zcml_for_scripts(use_web_security=False):
 
     def kill_queue_processor_threads():
         for thread in threading.enumerate():
-            if isinstance(thread, zope.app.mail.delivery.QueueProcessorThread):
+            if isinstance(
+                thread, zope.app.mail.delivery.QueueProcessorThread):
                 thread.stop()
                 thread.join(30)
                 if thread.isAlive():
-                    raise RuntimeError("QueueProcessorThread did not shut down")
+                    raise RuntimeError(
+                        "QueueProcessorThread did not shut down")
     atexit.register(kill_queue_processor_threads)
 
     # This is a convenient hack to set up a zope interaction, before we get
@@ -150,10 +155,10 @@ def db_options(parser):
     connection details from launchpad.config.config. The database setup and
     maintenance tools cannot do this however.
 
-    dbname and dbhost are also propagated to config.dbname and config.dbhost.
-    dbname, dbhost and dbuser are also propagated to lp.dbname, lp.dbhost
-    and lp.dbuser. This ensures that all systems will be using the requested
-    connection details.
+    dbname and dbhost are also propagated to config.database.dbname and
+    config.database.dbhost. dbname, dbhost and dbuser are also propagated to
+    lp.dbname, lp.dbhost and lp.dbuser. This ensures that all systems will
+    be using the requested connection details.
 
     To test, we first need to store the current values so we can reset them
     later.
@@ -166,9 +171,9 @@ def db_options(parser):
     >>> db_options(parser)
     >>> options, args = parser.parse_args(
     ...     ['--dbname=foo', '--host=bar', '--user=baz'])
-    >>> options.dbname, lp.dbname, config.dbname
+    >>> options.dbname, lp.dbname, config.database.dbname
     ('foo', 'foo', 'foo')
-    >>> (options.dbhost, lp.dbhost, config.dbhost)
+    >>> (options.dbhost, lp.dbhost, config.database.dbhost)
     ('bar', 'bar', 'bar')
     >>> (options.dbuser, lp.dbuser)
     ('baz', 'baz')
@@ -187,7 +192,11 @@ def db_options(parser):
     """
     def dbname_callback(option, opt_str, value, parser):
         parser.values.dbname = value
-        config.dbname = value
+        config_data = dedent("""
+            [database]
+            dbname: %s
+            """ % value)
+        config.push('dbname_callback', config_data)
         lp.dbname = value
 
     parser.add_option(
@@ -198,7 +207,11 @@ def db_options(parser):
 
     def dbhost_callback(options, opt_str, value, parser):
         parser.values.dbhost = value
-        config.dbhost = value
+        config_data = dedent("""
+            [database]
+            dbhost: %s
+            """ % value)
+        config.push('dbhost_callback', config_data)
         lp.dbhost = value
 
     parser.add_option(

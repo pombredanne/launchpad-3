@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
@@ -228,7 +229,7 @@ class BranchURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.codehosting.supermirror_root)
-        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
@@ -373,15 +374,6 @@ class IBranch(IHasOwner):
     sort_key = Attribute(
         "Key for sorting branches for display.")
 
-
-    # Home page attributes
-    home_page = URIField(
-        title=_('Web Page'), required=False,
-        allowed_schemes=['http', 'https', 'ftp'],
-        allow_userinfo=False,
-        description=_("The URL of a web page describing the branch, "
-                      "if there is such a page."))
-
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary=BranchLifecycleStatus,
@@ -515,7 +507,7 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
-    # Don't use Object-- that would cause an import loop with ICodeImport
+    # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
     def getBzrUploadURL(person=None):
@@ -561,9 +553,17 @@ class IBranch(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person, notification_level, max_diff_lines):
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level):
         """Subscribe this person to the branch.
 
+        :param person: The `Person` to subscribe.
+        :param notification_level: The kinds of branch changes that cause
+            notification.
+        :param max_diff_lines: The maximum number of lines of diff that may
+            appear in a notification.
+        :param code_review_level: The kinds of code review activity that cause
+            notification.
         :return: new or existing BranchSubscription."""
 
     def getSubscription(person):
@@ -691,9 +691,12 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
+    def getBranch(owner, product, branch_name):
+        """Return the branch identified by owner/product/branch_name."""
+
     def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed

@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [ 'copy_active_translations' ]
 
-from psycopg import ProgrammingError
+from psycopg import DatabaseError
 from zope.interface import implements
 
 from canonical.database.multitablecopy import MultiTableCopy
@@ -554,7 +554,7 @@ def _copy_active_translations_as_update(child, transaction, logger):
         try:
             cur.execute("LOCK TABLE %s IN SHARE UPDATE EXCLUSIVE MODE NOWAIT"
                 % holding_table)
-        except ProgrammingError, message:
+        except DatabaseError, message:
             logger.info(message)
             transaction.abort()
         else:

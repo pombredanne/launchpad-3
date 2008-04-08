@@ -17,6 +17,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
+from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.translations import TranslationConstants
 
 
@@ -24,7 +25,7 @@ class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
 
     def get_pofile_rows(pofile):
-        """Return all rows which belong to the given PO file."""
+        """Return exportable rows belonging to the given PO file."""
 
     def get_distroseries_pofiles(series, date=None, component=None,
         languagepack=None):
@@ -85,6 +86,10 @@ class IVPOExport(Interface):
         description=u"Same as IPOFile.fuzzyheader.",
         required=True, readonly=True)
 
+    potmsgset = Object(
+        title=u"See `IPOTMsgSet`.",
+        required=True, readonly=True, schema=IPOTMsgSet)
+
     sequence = Int(
         title=u"Message sequence number",
         description=u"As in IPOTMsgSet.",
@@ -142,6 +147,7 @@ class IVPOExport(Interface):
     assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
+
     translation0 = Text(
         title=u"Translation in plural form 0",
         description=u"As in ITranslationMessage.",

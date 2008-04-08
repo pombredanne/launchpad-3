@@ -7,7 +7,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
@@ -33,7 +33,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         # COMMIT all the time. However, if we interrupt this script mid-run
         # it will need to be re-run as the data will be inconsistent (only
         # part of the caches will have been recalculated).
-        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.cur = self.txn.conn().cursor()
         self.karmacachemanager = getUtility(IKarmaCacheManager)

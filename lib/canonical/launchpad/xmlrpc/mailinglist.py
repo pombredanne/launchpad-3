@@ -14,7 +14,8 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, IPersonSet, MailingListStatus, PersonalStanding)
+    IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
+    MailingListStatus, PersonalStanding, PostedMessageStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -146,7 +147,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # specifically that the isRegisteredInLaunchpad() test below
             # should always fail for it.  That way, the address can never be
             # used to forge spam onto a list.
-            if config.mailman is not None and config.mailman.archive_address:
+            if config.mailman.archive_address:
                 members[config.mailman.archive_address] = ('', flags, ENABLED)
             # The response must be a list of tuples.
             response[team_name] = [
@@ -157,8 +158,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""
-        if (config.mailman is not None and
-            config.mailman.archive_address and
+        if (config.mailman.archive_address and
             address == config.mailman.archive_address):
             # Hard code that the archive address is never registered in
             # Launchpad, so forged messages from that sender will always be
@@ -176,3 +176,35 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             return False
         return person.personal_standing in (PersonalStanding.GOOD,
                                             PersonalStanding.EXCELLENT)
+
+    def holdMessage(self, team_name, text):
+        """See `IMailingListAPIView`."""
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        message = getUtility(IMessageSet).fromEmail(text)
+        mailing_list.holdMessage(message)
+        return True
+
+    def getMessageDispositions(self):
+        """See `IMailingListAPIView`."""
+        message_set = getUtility(IMessageApprovalSet)
+        # A mapping from message ids to statuses.
+        response = {}
+        # Start by iterating over all held messages that are pending approval.
+        # These are messages that the team owner has approved, but Mailman
+        # hasn't yet acted upon.  For each of these, set their state to final
+        # approval.
+        approved_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.APPROVAL_PENDING)
+        for held_message in approved_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'accept')
+        # Similarly handle all held messages that have been rejected by the
+        # team administrator but not yet handled by Mailman.
+        rejected_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.REJECTION_PENDING)
+        for held_message in rejected_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'decline')
+        return response

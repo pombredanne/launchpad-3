@@ -15,6 +15,7 @@ from datetime import timedelta
 from sqlobject import (
     ForeignKey, IntervalCol, SingleJoin, StringCol, SQLObjectNotFound)
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from canonical.config import config
@@ -22,10 +23,15 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    CodeImportReviewStatus, ICodeImport, ICodeImportEventSet, ICodeImportSet,
+    BranchCreationException, BranchType, CodeImportReviewStatus,
+    CodeImportJobState, IBranchSet,
+    ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
+from canonical.launchpad.mailout.codeimport import code_import_status_updated
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -34,6 +40,7 @@ class CodeImport(SQLBase):
 
     implements(ICodeImport)
     _table = 'CodeImport'
+    _defaultOrder = ['id']
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
@@ -88,6 +95,48 @@ class CodeImport(SQLBase):
 
     import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
 
+    def _removeJob(self):
+        """If there is a pending job, remove it."""
+        job = self.import_job
+        if job is not None:
+            if job.state == CodeImportJobState.PENDING:
+                CodeImportJobWorkflow().deletePendingJob(self)
+            else:
+                # XXX thumper 2008-03-19
+                # When we have job killing, we might want to kill a running
+                # job.
+                pass
+        else:
+            # No job, so nothing to do.
+            pass
+
+    def approve(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.REVIEWED:
+            raise AssertionError('Review status is already reviewed.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
+        CodeImportJobWorkflow().newJob(self)
+
+    def suspend(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.SUSPENDED:
+            raise AssertionError('Review status is already suspended.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
+        self._removeJob()
+
+    def invalidate(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.INVALID:
+            raise AssertionError('Review status is already invalid.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
+        self._removeJob()
+
+    def _setStatusAndEmail(self, data, user, status):
+        """Update the review_status and email interested parties."""
+        data['review_status'] = status
+        self.updateFromData(data, user)
+        code_import_status_updated(self, user)
+
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
         event_set = getUtility(ICodeImportEventSet)
@@ -96,16 +145,19 @@ class CodeImport(SQLBase):
             setattr(self, name, value)
         event_set.newModify(self, user, token)
 
+    def __repr__(self):
+        return "<CodeImport for %s>" % self.branch.unique_name
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
 
     implements(ICodeImportSet)
 
-    def new(self, registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def new(self, registrant, product, branch_name, rcs_type,
+            svn_branch_url=None, cvs_root=None, cvs_module=None,
+            review_status=None):
         """See `ICodeImportSet`."""
-        assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
             assert svn_branch_url is None
@@ -116,11 +168,33 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
+        if review_status is None:
+            review_status = CodeImportReviewStatus.NEW
+        # Create the branch for the CodeImport.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch_set = getUtility(IBranchSet)
+        if branch_set.getBranch(vcs_imports, product, branch_name):
+            raise BranchCreationException(
+                "A branch already exists for the %s project owned by "
+                "vcs-imports with the name %s" % (product.name, branch_name))
+        import_branch = branch_set.new(
+            branch_type=BranchType.IMPORTED, name=branch_name,
+            creator=vcs_imports, owner=vcs_imports,
+            product=product, url=None)
+
         code_import = CodeImport(
-            registrant=registrant, owner=registrant, branch=branch,
+            registrant=registrant, owner=registrant, branch=import_branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
-            cvs_root=cvs_root, cvs_module=cvs_module)
+            cvs_root=cvs_root, cvs_module=cvs_module,
+            review_status=review_status)
+
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
+        notify(SQLObjectCreatedEvent(code_import))
+
+        # If created in the reviewd state, create a job.
+        if review_status == CodeImportReviewStatus.REVIEWED:
+            CodeImportJobWorkflow().newJob(code_import)
+
         return code_import
 
     def delete(self, code_import):
@@ -140,6 +214,15 @@ class CodeImportSet:
             return CodeImport.get(id)
         except SQLObjectNotFound:
             raise NotFoundError(id)
+
+    def getByCVSDetails(self, cvs_root, cvs_module):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectOneBy(
+            cvs_root=cvs_root, cvs_module=cvs_module)
+
+    def getBySVNDetails(self, svn_branch_url):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectOneBy(svn_branch_url=svn_branch_url)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""

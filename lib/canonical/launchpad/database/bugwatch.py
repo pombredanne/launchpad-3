@@ -35,8 +35,20 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 
+BUG_TRACKER_URL_FORMATS = {
+    BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
+    BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
+    BugTrackerType.MANTIS:      'view.php?id=%s',
+    BugTrackerType.ROUNDUP:     'issue%s',
+    BugTrackerType.RT:          'Ticket/Display.html?id=%s',
+    BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+    BugTrackerType.TRAC:        'ticket/%s',
+    BugTrackerType.SAVANNAH:    'bugs/?%s',
+    }
+
+
 class BugWatch(SQLBase):
-    """See canonical.launchpad.interfaces.IBugWatch."""
+    """See `IBugWatch`."""
     implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -59,31 +71,28 @@ class BugWatch(SQLBase):
 
     @property
     def title(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         return "%s #%s" % (self.bugtracker.title, self.remotebug)
 
     @property
     def url(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
-        url_formats = {
-            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC: 'ticket/%s',
-            BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP: 'issue%s',
-            BugTrackerType.RT: 'Ticket/Display.html?id=%s',
-            BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
-            BugTrackerType.MANTIS: 'view.php?id=%s',
-            BugTrackerType.SAVANNAH: 'bugs/?%s',
-        }
-        bt = self.bugtracker.bugtrackertype
-        if not url_formats.has_key(bt):
-            raise AssertionError('Unknown bug tracker type %s' % bt)
-        return urlappend(self.bugtracker.baseurl,
-                         url_formats[bt] % self.remotebug)
+        """See `IBugWatch`."""
+        bugtracker = self.bugtracker
+        bugtrackertype = self.bugtracker.bugtrackertype
+
+        if bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return bugtracker.baseurl
+        elif bugtrackertype in BUG_TRACKER_URL_FORMATS:
+            url_format = BUG_TRACKER_URL_FORMATS[bugtrackertype]
+            return urlappend(bugtracker.baseurl,
+                             url_format % self.remotebug)
+        else:
+            raise AssertionError(
+                'Unknown bug tracker type %s' % bugtrackertype)
 
     @property
     def needscheck(self):
-        """See canonical.launchpad.interfaces.IBugWatch."""
+        """See `IBugWatch`."""
         return True
 
     def updateImportance(self, remote_importance, malone_importance):
@@ -139,7 +148,7 @@ class BugWatch(SQLBase):
                 notify(event)
 
     def destroySelf(self):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
 
@@ -203,7 +212,15 @@ class BugWatch(SQLBase):
         assert not self.hasComment(comment_id), ("Comment with ID %s has "
             "already been imported for %s." % (comment_id, self.title))
 
-        bug_message = self.bug.linkMessage(message, bugwatch=self)
+        # When linking the message we force the owner being used to the
+        # Bug Watch Updater celebrity. This allows us to avoid trying to
+        # assign karma to the authors of imported comments, since karma
+        # should only be assigned for actions that occur within
+        # Launchpad. See bug 185413 for more details.
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
+        bug_message = self.bug.linkMessage(
+            message, bugwatch=self, user=bug_watch_updater)
 
 
 class BugWatchSet(BugSetBase):
@@ -228,7 +245,7 @@ class BugWatchSet(BugSetBase):
         }
 
     def get(self, watch_id):
-        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        """See `IBugWatch`Set."""
         try:
             return BugWatch.get(watch_id)
         except SQLObjectNotFound:
@@ -278,7 +295,7 @@ class BugWatchSet(BugSetBase):
         return newwatches
 
     def fromMessage(self, message, bug):
-        """See IBugWatchSet."""
+        """See `IBugWatchSet`."""
         watches = set()
         for messagechunk in message:
             if messagechunk.blob is not None:
@@ -294,7 +311,7 @@ class BugWatchSet(BugSetBase):
         return sorted(watches, key=lambda a: a.remotebug)
 
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
-        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        """See `IBugWatchSet`."""
         return BugWatch(
             bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
@@ -460,7 +477,7 @@ class BugWatchSet(BugSetBase):
         return '%s:%s' % (scheme, path), ''
 
     def extractBugTrackerAndBug(self, url):
-        """See IBugWatchSet."""
+        """See `IBugWatchSet`."""
         for trackertype, parse_func in (
             self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)

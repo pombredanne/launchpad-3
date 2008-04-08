@@ -16,13 +16,12 @@ import sys
 
 from zope.component import getUtility
 
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.interfaces import (
     BuildStatus, IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp import initZopeless
 
 
 def main():
@@ -62,7 +61,8 @@ def main():
     log = logger(options, "build-mass-retry")
 
     log.debug("Intitialising connection.")
-    ztm = initZopeless(dbuser="fiera", isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser="fiera",
+                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
     execute_zcml_for_scripts()
 
     try:

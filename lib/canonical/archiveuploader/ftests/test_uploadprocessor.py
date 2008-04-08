@@ -520,13 +520,25 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check the upload is in the DONE queue since pure source uploads
+        # Check the upload is in the DONE queue since single source uploads
         # with ancestry (previously uploaded) will skip the ACCEPTED state.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.DONE,
             version="1.0-2",
             name="foocomm")
         self.assertEqual(queue_items.count(), 1)
+
+        # Single source uploads also get their corrsponding builds created
+        # at upload-time. 'foocomm' only builds in 'i386', thus only one
+        # build gets created.
+        [foocomm_source] = partner_archive.getPublishedSources(
+            name='foocomm', version='1.0-2')
+        [build] = foocomm_source.sourcepackagerelease.builds
+        self.assertEqual(
+            build.title,
+            'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
+        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.buildqueue_record.lastscore, 1255)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")

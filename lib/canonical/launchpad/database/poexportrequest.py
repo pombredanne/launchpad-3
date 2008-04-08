@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2008 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -9,7 +9,7 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
@@ -24,26 +24,6 @@ class POExportRequestSet:
     def entry_count(self):
         """See `IPOExportRequestSet`."""
         return POExportRequest.select().count()
-
-    def _addRequestEntry(
-        self, person, potemplate, pofile, format, existing_requests):
-        """Add a request entry to the queue.
-
-        Requests that are already in existing_requests are silently ignored.
-
-        :param existing_requests: a dict mapping templates to sets of
-            previously requested `POFile`s translating those templates.  A
-            `POFile` of None represents the template itself.
-        """
-        earlier_pofiles = existing_requests.get(potemplate)
-        if earlier_pofiles is not None and pofile in earlier_pofiles:
-            return
-
-        request = POExportRequest(
-            person=person,
-            potemplate=potemplate,
-            pofile=pofile,
-            format=format)
 
     def addRequest(self, person, potemplates=None, pofiles=None,
             format=TranslationFileFormat.PO):
@@ -60,36 +40,56 @@ class POExportRequestSet:
             raise AssertionError(
                 "Can't add a request with no PO templates and no PO files.")
 
-        all_templates = set(potemplates)
-        all_templates.update([pofile.potemplate for pofile in pofiles])
         potemplate_ids = ", ".join(
-            [quote(template) for template in all_templates])
+            [quote(template) for template in potemplates])
         # A null pofile stands for the template itself.  We represent it in
         # SQL as -1, because that's how it's indexed in the request table.
         pofile_ids = ", ".join([quote(pofile) for pofile in pofiles] + ["-1"])
-        pofile_clause = "COALESCE(pofile, -1) IN (%s)" % pofile_ids
 
-        persons_existing_requests = POExportRequest.select("""
-            person = %s AND
-            potemplate in (%s) AND
-            %s AND
-            format = %s
-            """ % (
-                quote(person), potemplate_ids, pofile_clause, quote(format)))
+        query_params = {
+            'person': quote(person),
+            'format': quote(format),
+            'templates': potemplate_ids,
+            'pofiles': pofile_ids,
+            }
 
-        existing_requests = {}
-        for request in persons_existing_requests:
-            if request.potemplate not in existing_requests:
-                existing_requests[request.potemplate] = set()
-            existing_requests[request.potemplate].add(request.pofile)
+        cur = cursor()
 
-        for potemplate in potemplates:
-            self._addRequestEntry(
-                person, potemplate, None, format, existing_requests)
+        if potemplates:
+            # Create requests for all these templates, insofar as the same
+            # user doesn't already have requests pending for them in the same
+            # format.
+            cur.execute("""
+                INSERT INTO POExportRequest(person, potemplate, format)
+                SELECT %(person)s, template.id, %(format)s
+                FROM POTemplate AS template
+                LEFT JOIN POExportRequest AS existing ON
+                    existing.person = %(person)s AND
+                    existing.potemplate = template.id AND
+                    existing.pofile IS NULL AND
+                    existing.format = %(format)s
+                WHERE
+                    template.id IN (%(templates)s) AND
+                    existing.id IS NULL
+            """ % query_params)
 
-        for pofile in pofiles:
-            self._addRequestEntry(
-                person, pofile.potemplate, pofile, format, existing_requests)
+        if pofiles:
+            # Create requests for all these translations, insofar as the same
+            # user doesn't already have identical requests pending.
+            cur.execute("""
+                INSERT INTO POExportRequest(
+                    person, potemplate, pofile, format)
+                SELECT %(person)s, template.id, pofile.id, %(format)s
+                FROM POFile
+                JOIN POTemplate AS template ON template.id = POFile.potemplate
+                LEFT JOIN POExportRequest AS existing ON
+                    existing.person = %(person)s AND
+                    existing.pofile = POFile.id AND
+                    existing.format = %(format)s
+                WHERE
+                    POFile.id IN (%(pofiles)s) AND
+                    existing.id IS NULL
+                """ % query_params)
 
     def popRequest(self):
         """See `IPOExportRequestSet`."""

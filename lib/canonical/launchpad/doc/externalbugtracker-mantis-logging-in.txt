@@ -35,29 +35,20 @@ successfully, Mantis will redirect us to the page this specifies.
     ...     '?return=%2Fview.php%3Fid%3D3301')
     '.../login.php?username=guest&password=guest&return=...'
 
-If Mantis does not specify a "return" query parameter, we log a
-warning and record an OOPS.
+If Mantis does not specify a "return" query parameter an error will be
+raised.
 
 Apart from the fact that we rely on Mantis to return us to the page we
 originally requested, this can also mean that we failed to log in:
 when Mantis redirects back to the login page with an error it forgets
 the "return" parameter.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
-    >>> oops_hook.install()
-
     >>> handler.rewrite_url(
     ...     'http://mantis.example.com/login_page.php')
-    WARNING:root:Mantis redirected us to the login page but did not
-                 set a return path.
-    'http://mantis.example.com/login.php?username=guest&password=guest'
-
-    >>> print oops_hook.formatted_oops_info
-    OOPS-...
-    error-explanation='Mantis redirected us to the login page but did not
-                       set a return path.'
-
-    >>> oops_hook.uninstall()
+    Traceback (most recent call last):
+      ...
+    BugWatchUpdateWarning: Mantis redirected us to the login page but
+    did not set a return path.
 
 In all likelihood, this warning will be followed in the log by an
 error.

@@ -14,7 +14,7 @@ from twisted.internet import reactor
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
@@ -94,7 +94,7 @@ class DistroMirrorProber(LaunchpadCronScript):
 
         mirror_set = getUtility(IDistributionMirrorSet)
 
-        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
@@ -162,10 +162,10 @@ class DistroMirrorProber(LaunchpadCronScript):
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
         # XXX: salgado 2007-04-03:
-        # This should be done in LaunchpadScript.lock_and_run() when the
-        # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
-        # this with a flush_database_updates() doesn't have the same effect,
-        # it seems.
+        # This should be done in LaunchpadScript.lock_and_run() when
+        # the isolation used is ISOLATION_LEVEL_AUTOCOMMIT. Also note
+        # that replacing this with a flush_database_updates() doesn't
+        # have the same effect, it seems.
         self.txn.commit()
 
         self.logger.info('Done.')

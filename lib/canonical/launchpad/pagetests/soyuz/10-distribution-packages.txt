@@ -58,7 +58,7 @@ Now run a search for mozilla-firefox and check that it is found:
   '...mozilla-firefox...0.9...'
   >>> binaries=find_tag_by_id(browser.contents, 'binaries')
   >>> extract_text(binaries).strip()
-  u'mozilla-firefox\nmozilla-firefox\nmozilla-firefox-data'
+  u'mozilla-firefox\nmozilla-firefox-data'
 
 Follow the link to the binaries page and make sure it's the right binary.
 
@@ -103,6 +103,18 @@ is not mentioned in anything else that is indexed.
 
 
 == Distribution package change summary ==
+
+A /$DISTRO/+source/$PACKAGE page shows for a given source package all
+the distro releases in which it was published (see table at the top of
+the page). The information presented in each row is as follows: the
+distro series name and status as well as the package component, pocket
+and version.
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+source/netapplet/")
+  >>> print extract_text(find_tag_by_id(browser.contents, 'packaging'))
+          Test Distro version                  Upstream version
+  hoary development main release 1.0-1      NetApplet Series: trunk
+  warty current     main release 0.99.6-1   NetApplet Series: trunk
 
 /$DISTRO/+source/$PACKAGE pages contain a version history that lists
 each published version of a package with its changelog entry for that

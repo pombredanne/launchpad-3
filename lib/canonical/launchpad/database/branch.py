@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch,
+    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, InvalidBranchMergeProposal,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
@@ -66,7 +66,7 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
@@ -87,8 +87,6 @@ class Branch(SQLBase):
         validator=public_person_validator, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-
-    home_page = StringCol()
 
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
@@ -202,10 +200,12 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
-        return BranchMergeProposal(
+        bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
+        notify(SQLObjectCreatedEvent(bmp))
+        return bmp
 
     def getMergeQueue(self):
         """See `IBranch`."""
@@ -348,71 +348,58 @@ class Branch(SQLBase):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
-        from canonical.launchpad.database.codeimport import CodeImportSet
-        alterations = {}
-        deletions = {}
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
-            deletions[merge_proposal] = _(
-                'This branch is the source branch of this merge proposal.')
-            def delete_merge_proposal():
-                merge_proposal.destroySelf()
-            deletion_operations.append(delete_merge_proposal)
+            deletion_operations.append(
+                DeletionCallable(merge_proposal,
+                    _('This branch is the source branch of this merge'
+                    ' proposal.'), merge_proposal.destroySelf))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
-            deletions[merge_proposal] = _(
-                'This branch is the target branch of this merge proposal.')
-            deletion_operations.append(merge_proposal.destroySelf)
+            deletion_operations.append(
+                DeletionCallable(merge_proposal,
+                    _('This branch is the target branch of this merge'
+                    ' proposal.'), merge_proposal.destroySelf))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
-            alterations[merge_proposal] = _(
-                'This branch is the dependent branch of this merge proposal.')
-            def break_reference():
-                merge_proposal.dependent_branch = None
-                merge_proposal.syncUpdate()
-            alteration_operations.append(break_reference)
+            alteration_operations.append(ClearDependentBranch(merge_proposal))
+
         for subscription in self.subscriptions:
-            deletions[subscription] = _(
-                'This is a subscription to this branch.')
-            deletion_operations.append(subscription.destroySelf)
+            deletion_operations.append(
+                DeletionCallable(subscription,
+                    _('This is a subscription to this branch.'),
+                    subscription.destroySelf))
         for bugbranch in self.bug_branches:
-            deletions[bugbranch] = _('This bug is linked to this branch.')
-            deletion_operations.append(bugbranch.destroySelf)
+            deletion_operations.append(
+                DeletionCallable(bugbranch,
+                _('This bug is linked to this branch.'),
+                bugbranch.destroySelf))
         for spec_link in self.spec_links:
-            deletions[spec_link] = _(
-                'This blueprint is linked to this branch.')
-            deletion_operations.append(spec_link.destroySelf)
+            deletion_operations.append(
+                DeletionCallable(spec_link,
+                    _('This blueprint is linked to this branch.'),
+                    spec_link.destroySelf))
         for series in self.associatedProductSeries():
-            alterations[series] = _('This series is linked to this branch.')
-            def clear_user_branch():
-                if series.user_branch == self:
-                    series.user_branch = None
-                if series.import_branch == self:
-                    series.import_branch = None
-                series.syncUpdate()
-            alteration_operations.append(clear_user_branch)
+            alteration_operations.append(ClearSeriesBranch(series, self))
         if self.code_import is not None:
-            deletions[self.code_import] = _(
-                'This is the import data for this branch.')
-            def delete_code_import():
-                CodeImportSet().delete(self.code_import)
-            deletion_operations.append(delete_code_import)
-        return (alterations, deletions, alteration_operations,
-            deletion_operations)
+            deletion_operations.append(DeleteCodeImport(self.code_import))
+        return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
         """See `IBranch`."""
-        alterations, deletions, _ignored, _i = (
+        alteration_operations, deletion_operations, = (
             self._deletionRequirements())
-        result = dict((associated_object, ('alter', reason)) for
-            associated_object, reason in alterations.iteritems())
+        result = dict(
+            (operation.affected_object, ('alter', operation.rationale)) for
+            operation in alteration_operations)
         # Deletion entries should overwrite alteration entries.
-        result.update((associated_object, ('delete', reason)) for
-            associated_object, reason in deletions.iteritems())
+        result.update(
+            (operation.affected_object, ('delete', operation.rationale)) for
+            operation in deletion_operations)
         return result
 
     def _breakReferences(self):
@@ -424,7 +411,7 @@ class Branch(SQLBase):
         This function is guaranteed to perform the operations predicted by
         deletionRequirements, because it uses the same backing function.
         """
-        (_alterations, _deletions, alteration_operations,
+        (alteration_operations,
             deletion_operations) = self._deletionRequirements()
         for operation in alteration_operations:
             operation()
@@ -441,7 +428,8 @@ class Branch(SQLBase):
             """ % sqlvalues(self, self))
 
     # subscriptions
-    def subscribe(self, person, notification_level, max_diff_lines):
+    def subscribe(self, person, notification_level, max_diff_lines,
+                  review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -450,10 +438,11 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines)
+                max_diff_lines=max_diff_lines, review_level=review_level)
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
+            subscription.review_level = review_level
         return subscription
 
     def getSubscription(self, person):
@@ -684,6 +673,69 @@ DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
 
 
+class DeletionOperation:
+    """Represent an operation to perform as part of branch deletion."""
+
+    def __init__(self, affected_object, rationale):
+        self.affected_object = affected_object
+        self.rationale = rationale
+
+    def __call__(self):
+        """Perform the deletion operation."""
+        raise NotImplementedError(DeletionOperation.__call__)
+
+
+class DeletionCallable(DeletionOperation):
+    """Deletion operation that invokes a callable."""
+
+    def __init__(self, affected_object, rationale, func):
+        DeletionOperation.__init__(self, affected_object, rationale)
+        self.func = func
+
+    def __call__(self):
+        self.func()
+
+
+class ClearDependentBranch(DeletionOperation):
+    """Deletion operation that clears a merge proposal's dependent branch."""
+
+    def __init__(self, merge_proposal):
+        DeletionOperation.__init__(self, merge_proposal,
+            _('This branch is the dependent branch of this merge proposal.'))
+
+    def __call__(self):
+        self.affected_object.dependent_branch = None
+        self.affected_object.syncUpdate()
+
+
+class ClearSeriesBranch(DeletionOperation):
+    """Deletion operation that clears a series' branch."""
+
+    def __init__(self, series, branch):
+        DeletionOperation.__init__(
+            self, series, _('This series is linked to this branch.'))
+        self.branch = branch
+
+    def __call__(self):
+        if self.affected_object.user_branch == self.branch:
+            self.affected_object.user_branch = None
+        if self.affected_object.import_branch == self.branch:
+            self.affected_object.import_branch = None
+        self.affected_object.syncUpdate()
+
+
+class DeleteCodeImport(DeletionOperation):
+    """Deletion operation that deletes a branch's import."""
+
+    def __init__(self, code_import):
+        DeletionOperation.__init__(
+            self, code_import, _( 'This is the import data for this branch.'))
+
+    def __call__(self):
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        CodeImportSet().delete(self.affected_object)
+
+
 class BranchSet:
     """The set of all branches."""
 
@@ -717,6 +769,11 @@ class BranchSet:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
+
+    def getBranch(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        return Branch.selectOneBy(
+            owner=owner, product=product, name=branch_name)
 
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
@@ -844,10 +901,8 @@ class BranchSet:
     def new(self, branch_type, name, creator, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
-        if not home_page:
-            home_page = None
         if date_created is None:
             date_created = UTC_NOW
 
@@ -866,7 +921,7 @@ class BranchSet:
             registrant=creator,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard, private=private,
+            whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created)
 
@@ -877,7 +932,8 @@ class BranchSet:
             branch.subscribe(
                 implicit_subscription,
                 BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF)
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL)
 
         notify(SQLObjectCreatedEvent(branch))
         return branch

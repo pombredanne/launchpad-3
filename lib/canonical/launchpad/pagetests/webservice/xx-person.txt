@@ -1,61 +1,55 @@
 = People =
 
 Basic operations on people are described in xx-collections.txt. This
-document shows some of a person's associated collections and entries.
+document shows some of the other features of a person.
 
 
 == Team memberships ==
 
 A person is linked to their team memberships.
 
-  >>> salgado = webservice(r"""
-  ... GET /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> salgado = webservice.get("/~salgado").jsonBody()
+
   >>> salgado['team_memberships_collection_link']
-  u'http://api.launchpad.dev/people/salgado/team_memberships'
+  u'http://api.launchpad.dev/~salgado/team_memberships'
 
 Similarly, a team is linked to the team memberships of its members.
 
-  >>> landscape_developers = webservice(r"""
-  ... GET /people/landscape-developers HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> landscape_developers = webservice.get(
+  ...     "/~landscape-developers").jsonBody()
   >>> landscape_developers['member_memberships_collection_link']
-  u'http://api.launchpad.dev/people/landscape-developers/member_memberships'
+  u'http://api.launchpad.dev/~landscape-developers/member_memberships'
 
 Team memberships are first-class objects with their own URLs.
 
-  >>> salgado_memberships = webservice(r"""
-  ... GET /people/salgado/team_memberships HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
-  >>> [m['self_link'] for m in sorted(salgado_memberships)]
-  [u'http://api.launchpad.dev/people/salgado/team_memberships/admins',
-   u'http://api.launchpad.dev/people/salgado/team_memberships/landscape-developers']
+  >>> salgado_memberships = sorted(webservice.get(
+  ...     "/~salgado/team_memberships").jsonBody()['entries'])
+  >>> [m['self_link'] for m in salgado_memberships]
+  [u'http://api.launchpad.dev/~admins/+member/salgado',
+   u'http://api.launchpad.dev/~landscape-developers/+member/salgado']
 
 Team memberships also have data fields.
 
-  >>> salgado_landscape = sorted(salgado_memberships)[1]
+  >>> salgado_landscape = salgado_memberships[1]
   >>> sorted(salgado_landscape)
-  [u'date_expires', u'date_joined', u'member_link',
-   u'reviewer_comment', u'reviewer_link', u'self_link', u'status',
-   u'team_link']
+  [u'date_expires', u'date_joined',
+   u'last_change_comment', u'last_changed_by_link', u'member_link',
+   u'self_link', u'status', u'team_link']
 
 Each team membership links to the person who approved the link.
 
-  >>> salgado_landscape['reviewer_link']
-  u'http://api.launchpad.dev/people/name16'
+  >>> salgado_landscape['last_changed_by_link']
+  u'http://api.launchpad.dev/~name16'
 
 Also to the person whose membership it is.
 
   >>> salgado_landscape['member_link']
-  u'http://api.launchpad.dev/people/salgado'
+  u'http://api.launchpad.dev/~salgado'
 
 Also to the team in which the membership is valid.
 
   >>> salgado_landscape['team_link']
-  u'http://api.launchpad.dev/people/landscape-developers'
+  u'http://api.launchpad.dev/~landscape-developers'
 
 A TeamMembership relates a person to a team, and the relationship
 works both ways. You've already seen how the representation of a
@@ -63,24 +57,20 @@ person includes a link to that person's team memberships. But it's
 possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
-  >>> landscape_memberships = webservice(r"""
-  ... GET /people/landscape-developers/member_memberships HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> landscape_memberships = webservice.get(
+  ...     "/~landscape-developers/member_memberships").jsonBody()['entries']
 
   >>> [m['self_link'] for m in sorted(landscape_memberships)]
-  [u'http://api.launchpad.dev/people/name12/team_memberships/landscape-developers',
-   u'http://api.launchpad.dev/people/salgado/team_memberships/landscape-developers']
+  [u'http://api.launchpad.dev/~landscape-developers/+member/name12',
+   u'http://api.launchpad.dev/~landscape-developers/+member/salgado']
 
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are TeamMemberships. You've
 seen the memberships for the 'landscape-developers' team above; here
 are the members.
 
-  >>> landscape_members = webservice(r"""
-  ... GET /people/landscape-developers/members HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> landscape_members = webservice.get(
+  ...     "/~landscape-developers/members").jsonBody()['entries']
   >>> [m['self_link'] for m in sorted(landscape_members)]
-  [u'http://api.launchpad.dev/people/name12',
-   u'http://api.launchpad.dev/people/salgado']
+  [u'http://api.launchpad.dev/~salgado',
+   u'http://api.launchpad.dev/~name12']

@@ -5,7 +5,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.lp import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.po_import import ImportProcess
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
@@ -17,7 +17,7 @@ SECONDS_TO_RUN = 8 * 60
 
 class RosettaPOImporter(LaunchpadCronScript):
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         process = ImportProcess(self.txn, self.logger, SECONDS_TO_RUN)
         self.logger.debug('Starting the import process')
         process.run()
@@ -26,7 +26,7 @@ class RosettaPOImporter(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = RosettaPOImporter('rosetta-poimport',
-        dbuser=config.rosetta.poimport.dbuser)
+        dbuser=config.poimport.dbuser)
     script.lock_or_quit()
     try:
         script.run()
