@@ -464,6 +464,11 @@ class TestMergeProposalNotification(TestCase):
         self.assertNotNotifies(
             self.assertRaises, ValueError, raiseError, merge_proposal)
 
+    def test_setAsWorkInProgressNotifies(self):
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.setAsWorkInProgress)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
