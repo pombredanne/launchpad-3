@@ -380,6 +380,18 @@ class IBug(IMessageTarget, ICanBeMentored):
     def getQuestionCreatedFromBug():
         """Return the question created from this Bug, or None."""
 
+    def linkMessage(message, bugwatch=None, user=None,
+                    remote_comment_id=None):
+        """Add a comment to this bug.
+
+            :param message: The IMessage to be used as a comment.
+            :param bugwatch: The IBugWatch of the bug this comment was
+                imported from, if it's an imported comment.
+            :param user: The IPerson adding the comment.
+            :param remote_comment_id: The id this comment has in the
+                remote bug tracker, if it's an imported comment.
+        """
+
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
