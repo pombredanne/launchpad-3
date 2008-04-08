@@ -229,9 +229,9 @@ First list the packages in the PPA.
 
 Then delete the 'iceweasel' package.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/+delete-packages")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+delete-packages")
     >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['28']
+    ...    name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl(
     ...     "Deletion comment").value = "Bug 184490"
     >>> admin_browser.getControl("Request Deletion").click()
@@ -240,9 +240,8 @@ Then delete the 'iceweasel' package.
     >>> for msg in messages:
     ...     print msg
     Source and binaries deleted by Foo Bar request:
-    iceweasel 1.0 in warty
+    iceweasel 1.0 in breezy-autotest
     Deletion comment: Bug 184490
-    Read the page help to understand how removals work.
 
     >>> def print_ppa_packages(contents):
     ...     packages = find_tags_by_class(contents, 'ppa_package_row')
@@ -252,11 +251,6 @@ Then delete the 'iceweasel' package.
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors  i386
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
-    >>> import transaction
-    >>> transaction.commit()
 
 Now re-list the PPA's packages, 'iceweasel' was deleted above and should
 not show again.

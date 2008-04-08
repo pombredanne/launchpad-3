@@ -1909,6 +1909,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                     securesourcepackagepublishinghistory sspph
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
+                    sspph.archive = archive.id AND
                     sspph.status = %s AND
                     %s
                 ORDER BY upload_distroseries, sourcepackagename,
@@ -1921,9 +1922,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
-        for spr in rset:
-            print "%s\t:\t%s\t:\t%s\n" % (spr.sourcepackagename.name,
-            spr.maintainer.name, spr.upload_archive.title)
+
         return rset
 
     def isUploader(self, distribution):
