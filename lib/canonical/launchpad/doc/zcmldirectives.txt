@@ -689,16 +689,16 @@ an IPermission.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns="http://namespaces.zope.org/zope"
-    ...     xmlns:i18n="http://namespaces.zope.org/i18n"
     ...     i18n_domain="canonical">
     ...   <include file="lib/canonical/launchpad/webapp/meta-overrides.zcml" />
     ...   <permission id="foo.bar" title="Foo Bar" access_level="read" />
     ... </configure>
     ... """) 
     >>> from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> permission = getUtility(ILaunchpadPermission, 'foo.bar')
-    >>> permission
-    <canonical.launchpad.webapp.metazcml.LaunchpadPermission...
+    >>> verifyObject(ILaunchpadPermission, permission)
+    True
     >>> permission.access_level
     u'read'
 
