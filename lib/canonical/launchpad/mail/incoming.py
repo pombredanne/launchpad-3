@@ -114,7 +114,7 @@ class MailErrorUtility(ErrorReportingUtility):
         super(MailErrorUtility, self).__init__()
         # All errors reported for incoming email will have 'EMAIL'
         # appended to the configured oops_prefix.
-        self.appendToOopsPrefix('EMAIL')
+        self.setOopsToken('EMAIL')
 
 
 def report_oops(file_alias_url=None, error_msg=None):

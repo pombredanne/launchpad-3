@@ -168,20 +168,20 @@ class TestErrorReportingUtility(unittest.TestCase):
         config.launchpad.errorreports.errordir = self.saved_errordir
         reset_logging()
 
-    def test_appendToOopsPrefix(self):
-        """Test ErrorReportingUtility.appendToOopsPrefix()."""
+    def test_setOopsToken(self):
+        """Test ErrorReportingUtility.setOopsToken()."""
         utility = ErrorReportingUtility()
         default_prefix = config.launchpad.errorreports.oops_prefix
         self.assertEqual('T', default_prefix)
         self.assertEqual('T', utility.prefix)
 
         # Some scripts will append a string token to the prefix.
-        utility.appendToOopsPrefix('CW')
+        utility.setOopsToken('CW')
         self.assertEqual('TCW', utility.prefix)
 
         # Some scripts run multiple processes and append a string number
         # to the prefix.
-        utility.appendToOopsPrefix('1')
+        utility.setOopsToken('1')
         self.assertEqual('T1', utility.prefix)
 
     def test_newOopsId(self):
@@ -220,8 +220,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(
             utility.lasterrordir, os.path.join(errordir, '2006-04-02'))
 
-        # The oops_prefix honours appendToOopsPrefix().
-        utility.appendToOopsPrefix('XXX')
+        # The oops_prefix honours setOopsToken().
+        utility.setOopsToken('XXX')
         oopsid, filename = utility.newOopsId(now)
         self.assertEqual(oopsid, 'OOPS-92TXXX2')
 

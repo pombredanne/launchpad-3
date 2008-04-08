@@ -154,7 +154,7 @@ class PullerWorker:
         if protocol is not None:
             self.protocol.branch_id = branch_id
         if opps_prefix is not None:
-            errorlog.globalErrorUtility.appendToOopsPrefix(opps_prefix)
+            errorlog.globalErrorUtility.setOopsToken(opps_prefix)
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.

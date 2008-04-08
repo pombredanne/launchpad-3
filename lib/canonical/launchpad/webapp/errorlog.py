@@ -207,12 +207,12 @@ class ErrorReportingUtility:
         self.lastid_lock = threading.Lock()
         self.prefix = config.launchpad.errorreports.oops_prefix
 
-    def appendToOopsPrefix(self, token):
+    def setOopsToken(self, token):
         """Append a string to the oops prefix.
 
-        :param token: a string to append to a opps_prefix.
+        :param token: a string to append to a oops_prefix.
             Scripts that run multiple processes can append a string to
-            the oops_prefix to create a unqiue identifier for each
+            the oops_prefix to create a unique identifier for each
             process.
         """
         self.prefix = config.launchpad.errorreports.oops_prefix + token
