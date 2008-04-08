@@ -339,7 +339,6 @@ class BuildDSlave(object):
         """Cease building because the builder has a problem."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to BUILDERFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.BUILDERFAIL
 
     def chrootFail(self):
@@ -350,21 +349,24 @@ class BuildDSlave(object):
         """
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to CHROOTFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.CHROOTFAIL
 
     def buildFail(self):
         """Cease building because the package failed to build."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to PACKAGEFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.PACKAGEFAIL
+
+    def buildOK(self):
+        """Having passed all possible failure states, mark a build as OK."""
+        if self.builderstatus != BuilderStatus.BUILDING:
+            raise ValueError("Slave is not BUILDING when set to OK")
+        self.buildstatus = BuildStatus.OK
 
     def depFail(self, dependencies):
         """Cease building due to a dependency issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to DEPFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.DEPFAIL
         self.builddependencies = dependencies
 
@@ -372,7 +374,6 @@ class BuildDSlave(object):
         """Give-back package due to a transient buildd/archive issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to GIVENBACK")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.GIVENBACK
 
     def buildComplete(self):
@@ -383,7 +384,6 @@ class BuildDSlave(object):
             raise ValueError("Slave is not BUILDING when told build is "
                              "complete")
         self.builderstatus = BuilderStatus.WAITING
-        self.buildstatus = BuildStatus.OK
 
 
 class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
