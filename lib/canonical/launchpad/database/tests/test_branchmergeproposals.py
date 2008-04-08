@@ -500,6 +500,29 @@ class TestMergeProposalNotification(TestCase):
             SQLObjectModifiedEvent, merge_proposal.rejectBranch,
             self.lp_admins, 'null:')
 
+    def test_enqueueNotifies(self):
+        """enqueue should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.approveBranch(self.lp_admins, 'null:')
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.enqueue,
+            self.lp_admins, 'null:')
+
+    def test_dequeueNotifies(self):
+        """dequeue should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.approveBranch(self.lp_admins, 'null:')
+        merge_proposal.enqueue(self.lp_admins, 'null:')
+        self.assertNotifies(SQLObjectModifiedEvent, merge_proposal.dequeue)
+
+    def test_moveToFrontOfQueueNotifies(self):
+        """moveToFrontOfQueue should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.approveBranch(self.lp_admins, 'null:')
+        merge_proposal.enqueue(self.lp_admins, 'null:')
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.moveToFrontOfQueue)
+
     def test_mergeFailedNotifies(self):
         """markFailed should notify that the proposal changed."""
         merge_proposal = self.factory.makeBranchMergeProposal()

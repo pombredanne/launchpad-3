@@ -258,6 +258,7 @@ class BranchMergeProposal(SQLBase):
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
 
+    @notifyModification
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
         if self.queue_status != BranchMergeProposalStatus.CODE_APPROVED:
@@ -287,6 +288,7 @@ class BranchMergeProposal(SQLBase):
         self.date_queued = UTC_NOW
         self.syncUpdate()
 
+    @notifyModification
     def dequeue(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status != BranchMergeProposalStatus.QUEUED:
@@ -302,6 +304,7 @@ class BranchMergeProposal(SQLBase):
         # Remove from the queue.
         self.queue_position = None
 
+    @notifyModification
     def moveToFrontOfQueue(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status != BranchMergeProposalStatus.QUEUED:
