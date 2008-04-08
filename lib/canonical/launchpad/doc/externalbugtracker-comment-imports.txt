@@ -137,7 +137,7 @@ linking it to the bug watch this method will, of course, return False.
     >>> message = getUtility(IMessageSet).fromText(
     ...     "Example Message", "With example content for you to read.")
 
-    >>> comment_id = message.rfc822msgid
+    >>> comment_id = 'a-comment'
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
 

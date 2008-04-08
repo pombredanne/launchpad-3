@@ -197,7 +197,7 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         query = """
             BugMessage.message = Message.id
-            AND Message.rfc822msgid = %s
+            AND BugMessage.remote_comment_id = %s
             AND BugMessage.bugwatch = %s
         """ % sqlvalues(comment_id, self)
 
