@@ -9,7 +9,6 @@ __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
-    'ICodeImportMachineSetPublic',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
@@ -153,16 +152,6 @@ class ICodeImportMachineSet(Interface):
 
         The machine will initially be in the 'OFFLINE' state.
         """
-
-
-class ICodeImportMachineSetPublic(Interface):
-    """Parts of the CodeImportMachineSet interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated."""
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
 
     def getByHostname(hostname):
         """Retrieve the code import machine for a hostname.

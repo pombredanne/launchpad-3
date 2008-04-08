@@ -21,8 +21,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportMachineState, ICodeImportEventSet, ICodeImportMachine,
-    ICodeImportMachinePublic, ICodeImportMachineSet,
-    ICodeImportMachineSetPublic)
+    ICodeImportMachinePublic, ICodeImportMachineSet)
 
 
 class CodeImportMachine(SQLBase):
@@ -74,7 +73,7 @@ class CodeImportMachine(SQLBase):
 class CodeImportMachineSet(object):
     """See `ICodeImportMachineSet`."""
 
-    implements(ICodeImportMachineSet, ICodeImportMachineSetPublic)
+    implements(ICodeImportMachineSet)
 
     def getAll(self):
         """See `ICodeImportMachineSet`."""
