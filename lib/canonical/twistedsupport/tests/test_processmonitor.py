@@ -262,13 +262,13 @@ class TestProcessMonitorProtocol(
         # notification is pending and the notification subsequently
         # fails, the ProcessTerminated is still passed on to the
         # termination deferred.
-        # XXX MichaelHudson 2008-04-02: The notification failure will
-        # be log.err()ed, which spews to stderr which we just hide.
-        # This can be tested nicely when we upgrade Twisted.
         deferred = defer.Deferred()
         self.protocol.runNotification(lambda : deferred)
         self.simulateProcessExit(clean=False)
-        deferred.errback(makeFailure(RuntimeError))
+        runtime_error_failure = makeFailure(RuntimeError)
+        deferred.errback(runtime_error_failure)
+        self.assertEqual(
+            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
         return self.assertFailure(
             self.termination_deferred, error.ProcessTerminated)
 
@@ -277,13 +277,13 @@ class TestProcessMonitorProtocol(
         # If unexpectedError is called while a notification is pending and the
         # notification subsequently fails, the first failure "wins" and is
         # passed on to the termination deferred.
-        # XXX MichaelHudson 2008-04-02: The notification failure will
-        # be log.err()ed, which spews to stderr which we just hide.
-        # This can be tested nicely when we upgrade Twisted.
         deferred = defer.Deferred()
         self.protocol.runNotification(lambda : deferred)
         self.protocol.unexpectedError(makeFailure(TypeError))
-        deferred.errback(makeFailure(RuntimeError))
+        runtime_error_failure = makeFailure(RuntimeError)
+        deferred.errback(runtime_error_failure)
+        self.assertEqual(
+            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
         return self.assertFailure(
             self.termination_deferred, TypeError)
 

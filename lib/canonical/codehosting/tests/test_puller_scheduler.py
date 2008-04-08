@@ -370,18 +370,17 @@ class TestPullerMonitorProtocol(
         # fire the termination deferred with the first thing to go wrong --
         # the process termination in this case -- and log.err() the failed
         # attempt to call mirrorFailed().
-        # XXX MichaelHudson 2008-04-02: The notification failure will
-        # be log.err()ed, which spews to stderr which we just hide.
-        # This can be tested nicely when we upgrade Twisted.
 
+        runtime_error_failure = makeFailure(RuntimeError)
         class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
             def mirrorFailed(self, message, oops):
-                raise RuntimeError()
+                return runtime_error_failure
         self.protocol.listener = FailingMirrorFailedStubPullerListener()
         self.listener = self.protocol.listener
         self.protocol.errReceived('traceback')
         self.simulateProcessExit(clean=False)
-        # Assert stuff about log.err() here.
+        self.assertEqual(
+            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
         return self.assertFailure(
             self.termination_deferred, error.ProcessTerminated)
 
