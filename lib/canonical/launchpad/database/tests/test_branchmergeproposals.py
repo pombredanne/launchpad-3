@@ -331,7 +331,7 @@ class TestMergeProposalNotification(TestCase):
             result = callable_obj(*args, **kwargs)
         finally:
             zope.event.subscribers[:] = old_subscribers
-        return result, events
+        return result
 
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
