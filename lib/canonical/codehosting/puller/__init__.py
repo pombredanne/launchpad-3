@@ -16,22 +16,18 @@ def get_lock_id_for_branch_id(branch_id):
     """
     return 'worker-for-branch-%s@supermirror' % (branch_id,)
 
-
 from canonical.codehosting.puller.scheduler import LockError
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 
-
 UTC = pytz.timezone('UTC')
 
 
-def configure_oops_reporting(branch_type, oops_prefix=None):
+def configure_oops_reporting(branch_type, oops_prefix=True):
     """Set up OOPS reporting for this scripts.
 
     :param branch_type: The type of branch that is being mirrored.
-    :param oops_prefix: The OOPS prefix to use. If None, use the configured
-        OOPS prefix. This is used particularly by mirror-branch.py to prevent
-        clashing OOPS reports between workers.
+    :param oops_prefix: Boolean, should the oops_prefix be configured?.
     """
 
     # XXX: JonathanLange 2007-10-04: The config schema uses old-fashioned
@@ -48,12 +44,10 @@ def configure_oops_reporting(branch_type, oops_prefix=None):
         '%s_errorreports' % (old_school_branch_type_name,))
 
     # Customize the oops reporting config.
-    if oops_prefix is None:
-        oops_prefix = errorreports.oops_prefix
-    config.launchpad.errorreports.oops_prefix = oops_prefix
+    if oops_prefix:
+        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
     config.launchpad.errorreports.errordir = errorreports.errordir
     config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
-
 
 def mirror(logger, manager):
     """Mirror all current branches that need to be mirrored."""

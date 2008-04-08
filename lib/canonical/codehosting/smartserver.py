@@ -67,7 +67,7 @@ class ExecOnlySession:
         except ForbiddenCommand, e:
             protocol.write(str(e) + '\r\n')
             protocol.loseConnection()
-            raise
+            return
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
@@ -86,7 +86,8 @@ class ExecOnlySession:
 
     def getPty(self, term, windowSize, modes):
         """See ISession."""
-        raise NotImplementedError()
+        # Do nothing, as we don't provide shell access. openShell will get
+        # called and handle this error message and disconnect.
 
     def openShell(self, protocol):
         """See ISession."""
