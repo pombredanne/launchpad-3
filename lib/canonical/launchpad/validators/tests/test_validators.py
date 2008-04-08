@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-from unittest import main, TestSuite
+from unittest import TestSuite
 from doctest import DocTestSuite
 from canonical.launchpad.testing.systemdocs import setUp, tearDown
 from canonical.testing import LaunchpadFunctionalLayer
@@ -37,5 +37,5 @@ def suitefor(module):
 
 if __name__ == '__main__':
     DEFAULT = test_suite()
+    import unittest
     unittest.main('DEFAULT')
-

@@ -2,19 +2,15 @@
 
 __metaclass__ = type
 
-import re
-
 from zope.app.form import CustomWidgetFactory, InputWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, MissingInputError,
-    WidgetInputError)
+    ConversionError, IInputWidget, InputErrors, MissingInputError)
 from zope.app.form.utility import setUpWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
-from zope.schema.interfaces import ConstraintNotSatisfied
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities, IProduct,

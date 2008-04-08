@@ -61,7 +61,6 @@ __all__ = [
     'Whiteboard',
     ]
 
-import cgi
 
 from StringIO import StringIO
 from textwrap import dedent

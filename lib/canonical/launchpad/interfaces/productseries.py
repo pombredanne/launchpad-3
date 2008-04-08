@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 import re
-import cgi
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
