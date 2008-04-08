@@ -32,8 +32,10 @@ that the empty string is deserialized as None.
     'foo'
     >>> deserializer.deserialize("4")
     '4'
-    >>> deserializer.deserialize("") is None
-    True
+    >>> deserializer.deserialize(u"unicode\u2122")
+    u'unicode\u2122'
+    >>> print deserializer.deserialize("")
+    None
 
 The deserializer for an Int field tries to convert the given string
 into an int.
@@ -43,10 +45,23 @@ into an int.
     >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
     >>> deserializer.deserialize("4")
     4
+    >>> deserializer.deserialize(u"4")
+    4
+
     >>> deserializer.deserialize("foo")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): foo
+
+    >>> deserializer.deserialize("4.62")
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int(): 4.62
+
+    >>> deserializer.deserialize("")
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int():
 
 The deserializer for a Choice is chosen based on the Choice's
 vocabulary. First, let's look at a Choice whose vocabulary is a
@@ -89,7 +104,11 @@ published URL. If the given string is a URL corresponding to a
 vocabulary item, the deserializer returns that item. Otherwise it
 raises a ValueError.
 
-    >>> deserializer.deserialize("http://api.launchpad.dev/~salgado").name
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> person = deserializer.deserialize("http://api.launchpad.dev/~salgado")
+    >>> IPerson.providedBy(person)
+    True
+    >>> person.name
     u'salgado'
 
     >>> deserializer.deserialize("http://api.launchpad.dev/~nosuchperson")
