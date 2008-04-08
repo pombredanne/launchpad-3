@@ -335,9 +335,10 @@ the import run in the librarian.
 
 Also, in the successful case, finishJob calls requestMirror() on the
 import branch so that the newly imported revisions can be pulled into
-the code hosting area.  In this example, the import branch has never
-been marked as needing mirroring, so the 'next_mirror_time' field is
-empty:
+the code hosting area.
+
+In this example, the import branch has never been marked as needing
+mirroring, so the 'next_mirror_time' field is empty:
 
     >>> print_date_attribute(code_import.branch, 'next_mirror_time')
     None
