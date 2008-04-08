@@ -240,7 +240,6 @@ import process.
 
 We'll add a listener to check for Karma events.
 
-    >>> from zope.event import notify
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
