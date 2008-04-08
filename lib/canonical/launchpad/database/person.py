@@ -66,10 +66,11 @@ from canonical.launchpad.interfaces import (
     IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
     ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
     ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, PersonVisibility,
-    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    LoginTokenType, PackagePublishingStatus, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH,
+    SSHKeyType, ShipItConstants, ShippingRequestStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -1903,19 +1904,27 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
-                       sourcepackagerelease.id
-                  FROM sourcepackagerelease, archive
-                 WHERE %s
-              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
-                       dateuploaded DESC
+                    sourcepackagerelease.id
+                FROM sourcepackagerelease, archive,
+                    securesourcepackagepublishinghistory sspph
+                WHERE
+                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
+                    sspph.status = %s AND
+                    %s
+                ORDER BY upload_distroseries, sourcepackagename,
+                    upload_archive, dateuploaded DESC
               )
-              """ % (query_clause)
+              """ % (quote(PackagePublishingStatus.PUBLISHED), query_clause)
 
-        return SourcePackageRelease.select(
+        rset = SourcePackageRelease.select(
             query,
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+        for spr in rset:
+            print "%s\t:\t%s\t:\t%s\n" % (spr.sourcepackagename.name,
+            spr.maintainer.name, spr.upload_archive.title)
+        return rset
 
     def isUploader(self, distribution):
         """See `IPerson`."""
