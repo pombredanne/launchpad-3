@@ -87,11 +87,13 @@ These three comments will be linked to the bug watch from which they
 were imported.
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
-    >>> for message in bug.messages[1:]:
-    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-    ...         bug, message)
-    ...     bug_message.bugwatch == bug_watch
-    ...     print bug_message.message.text_contents
+    >>> def print_bug_messages(bug, bug_watch):
+    ...     for message in bug.messages[1:]:
+    ...         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...             bug, message)
+    ...         print bug_message.bugwatch == bug_watch
+    ...         print bug_message.message.text_contents
+    >>> print_bug_messages(bug, bug_watch)
     True
     Example comment the first
     True
@@ -109,11 +111,7 @@ process is run again only the new comment will be imported.
 Once again, the newly-imported comment will be linked to the bug watch
 form which it was imported.
 
-    >>> for message in bug.messages[1:]:
-    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-    ...         bug, message)
-    ...     bug_message.bugwatch == bug_watch
-    ...     print bug_message.message.text_contents
+    >>> print_bug_messages(bug, bug_watch)
     True
     Example comment the first
     True
@@ -122,6 +120,7 @@ form which it was imported.
     Example comment the third
     True
     Yet another comment.
+
 
 == BugWatch comment importing functionality ==
 
