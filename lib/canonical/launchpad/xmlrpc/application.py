@@ -43,7 +43,7 @@ class PrivateApplication:
         return getUtility(ICodeImportSchedulerApplication)
 
     @property
-    def bugtrackertokens(self):
+    def bugs(self):
         """See `IPrivateApplication`."""
         return getUtility(IPrivateMaloneApplication)
 

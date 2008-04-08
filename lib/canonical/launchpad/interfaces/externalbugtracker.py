@@ -28,7 +28,7 @@ UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 class IExternalBugTrackerTokenAPI(Interface):
     """A class used to generate external bugtracker `LoginToken`s."""
 
-    def newToken():
+    def newBugTrackerToken():
         """Create a new bugtracker `LoginToken` and return its ID."""
 
 

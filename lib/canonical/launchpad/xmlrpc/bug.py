@@ -113,7 +113,7 @@ class ExternalBugTrackerTokenAPI(LaunchpadXMLRPCView):
 
     implements(IExternalBugTrackerTokenAPI)
 
-    def newToken(self):
+    def newBugTrackerToken(self):
         """Generate a new `LoginToken` for a bug tracker and return it.
 
         The `LoginToken` will be of `LoginTokenType` BUGTRACKER.

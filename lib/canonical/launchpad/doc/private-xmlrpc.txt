@@ -45,7 +45,8 @@ the external port.
     ...     product='firefox', summary='the summary', comment='the comment'))
     'http://bugs.launchpad.dev/bugs/16'
 
-But it is not available on the internal port.
+There is an interal bugs api, too, but that doesn't share the same
+methods as those exposed publicly.
 
     >>> internal_api = xmlrpclib.ServerProxy(
     ...     private_root + 'bugs/',
@@ -56,3 +57,11 @@ But it is not available on the internal port.
     ...
     ProtocolError: <ProtocolError for xmlrpc-private.launchpad.dev:8087/bugs/:
     404 404 Not Found>
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> token_id = internal_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token
+    <LoginToken at ...>
+

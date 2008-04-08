@@ -239,11 +239,11 @@ for authentication with external bug trackers.
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(IPrivateMaloneApplication,
-    ...     private_root.bugtrackertokens)
+    ...     private_root.bugs)
     True
 
-The API provides a single method, newToken(), which returns the ID of
-the new LoginToken
+The API provides a single method, newBugTrackerToken(), which returns
+the ID of the new LoginToken.
 
     >>> from zope.publisher.xmlrpc import TestRequest
     >>> from canonical.launchpad.interfaces import (
@@ -252,12 +252,12 @@ the new LoginToken
     ...     ExternalBugTrackerTokenAPI)
 
     >>> bugtracker_token_api = ExternalBugTrackerTokenAPI(
-    ...     private_root.bugtrackertokens, TestRequest())
+    ...     private_root.bugs, TestRequest())
 
     >>> verifyObject(IExternalBugTrackerTokenAPI, bugtracker_token_api)
     True
 
-    >>> token_id = bugtracker_token_api.newToken()
+    >>> token_id = bugtracker_token_api.newBugTrackerToken()
     >>> token = getUtility(ILoginTokenSet).get(token_id)
     >>> token
     <LoginToken at ...>
@@ -270,10 +270,10 @@ The LoginToken generated will be of the LoginTokenType BUGTRACKER.
 These requests are all handled by the private xml-rpc server.
 
     >>> bugtracker_api = xmlrpclib.ServerProxy(
-    ...     'http://xmlrpc-private.launchpad.dev:8087/bugtrackertokens',
+    ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
     ...     transport=XMLRPCTestTransport())
 
-    >>> token_id = bugtracker_api.newToken()
+    >>> token_id = bugtracker_api.newBugTrackerToken()
     >>> token = getUtility(ILoginTokenSet).get(token_id)
     >>> token
     <LoginToken at ...>
