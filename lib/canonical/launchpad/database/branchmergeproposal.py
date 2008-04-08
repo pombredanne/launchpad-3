@@ -11,6 +11,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -20,9 +21,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -60,6 +63,23 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
+
+
+def notifyModification(func):
+    """Decorator to notify on successful modification.
+
+    If the operation raises an exception, no notification is emitted.
+    Otherwise, a notification is emitted.
+    """
+    def decorator(self):
+        snapshot = BranchMergeProposalDelta.snapshot(self)
+        try:
+            result = func(self)
+        except:
+            raise
+        notify(SQLObjectModifiedEvent(self, snapshot, None))
+        return result
+    return decorator
 
 
 class BranchMergeProposal(SQLBase):

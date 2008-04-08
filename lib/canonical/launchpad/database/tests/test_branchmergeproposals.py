@@ -7,7 +7,11 @@ __metaclass__ = type
 from unittest import TestCase, TestLoader
 import zope.event
 
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.database.branchmergeproposal import(
+    notifyModification)
+from canonical.launchpad.event import (SQLObjectCreatedEvent,
+    SQLObjectModifiedEvent)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
@@ -312,6 +316,23 @@ class TestMergeProposalNotification(TestCase):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
+    def captureNotifications(self, events, callable_obj, *args, **kwargs):
+        """Capture the notifications produced by invoking a callable.
+
+        :param events: The list to add events to (it is not a return value) so
+            that it can be updated even when the callable raises an exception.
+        :return: result
+        """
+        def on_notify(event):
+            events.append(event)
+        old_subscribers = zope.event.subscribers[:]
+        zope.event.subscribers[:] = [on_notify]
+        try:
+            result = callable_obj(*args, **kwargs)
+        finally:
+            zope.event.subscribers[:] = old_subscribers
+        return result, events
+
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
 
@@ -324,23 +345,29 @@ class TestMergeProposalNotification(TestCase):
             callable, and event is the event emitted by the callable.
         """
         events = []
-        def on_notify(event):
-            events.append(event)
-        old_subscribers = zope.event.subscribers[:]
-        try:
-            zope.event.subscribers[:] = [on_notify]
-            result = callable_obj(*args, **kwargs)
-            if len(events) == 0:
-                raise AssertionError('No notification was performed.')
-            elif len(events) > 1:
-                raise AssertionError('Too many (%d) notifications performed.'
-                    % len(events))
-            elif not isinstance(events[0], event_type):
-                raise AssertionError('Wrong event type: %r (expected %r).' %
-                    (events[0], event_type))
-        finally:
-            zope.event.subscribers[:] = old_subscribers
+        result = self.captureNotifications(
+            events, callable_obj, *args, **kwargs)
+        if len(events) == 0:
+            raise AssertionError('No notification was performed.')
+        elif len(events) > 1:
+            raise AssertionError('Too many (%d) notifications performed.'
+                % len(events))
+        elif not isinstance(events[0], event_type):
+            raise AssertionError('Wrong event type: %r (expected %r).' %
+                (events[0], event_type))
         return result, events[0]
+
+    def assertNotNotifies(self, callable_obj, *args, **kwargs):
+        """Assert that a callable performs no notification.
+
+        :param callable_obj: The callable to call.
+        :param *args: The arguments to pass to the callable.
+        :param **kwargs: The keyword arguments to pass to the callable.
+        """
+        events = []
+        self.captureNotifications(events, callable_obj, *args, **kwargs)
+        if len(events) != 0:
+            raise AssertionError('Notifications were performed.')
 
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
@@ -414,6 +441,28 @@ class TestMergeProposalNotification(TestCase):
         self.assertEqual(
             set([source_subscriber, target_subscriber, dependent_subscriber]),
             set(recipients.keys()))
+
+    def test_notifyModificationSuccess(self):
+        """On success, a notification should be performed."""
+        @notifyModification
+        def doNothing(self):
+            return 'hello'
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        snapshot = BranchMergeProposalDelta.snapshot(merge_proposal)
+        result, event = self.assertNotifies(
+            SQLObjectModifiedEvent, doNothing, merge_proposal)
+        self.assertEqual('hello', result)
+        self.assertEqual(merge_proposal, event.object)
+        self.assertEqual(snapshot, event.object_before_modification)
+
+    def test_notifyModificationFailure(self):
+        """On failure, no notification should be performed."""
+        @notifyModification
+        def raiseError(self):
+            raise ValueError
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotNotifies(
+            self.assertRaises, ValueError, raiseError, merge_proposal)
 
 
 def test_suite():
