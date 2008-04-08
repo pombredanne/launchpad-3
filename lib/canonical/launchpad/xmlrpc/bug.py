@@ -3,14 +3,16 @@
 """XML-RPC APIs for Malone."""
 
 __metaclass__ = type
-__all__ = ["FileBugAPI"]
+__all__ = ["FileBugAPI", "ExternalBugTrackerTokenAPI"]
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IProductSet, IPersonSet, IDistributionSet, CreateBugParams,
+    IExternalBugTrackerTokenAPI, ILoginTokenSet, IProductSet,
+    IPersonSet, IDistributionSet, LoginTokenType, CreateBugParams,
     NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
@@ -106,11 +108,18 @@ class FileBugAPI(LaunchpadXMLRPCView):
         return canonical_url(bug)
 
 
-class BugTrackerTokenAPI(LaunchpadXMLRPCView):
+class ExternalBugTrackerTokenAPI(LaunchpadXMLRPCView):
     """The private XML-RPC API for generating bug tracker login tokens."""
+
+    implements(IExternalBugTrackerTokenAPI)
 
     def newToken(self):
         """Generate a new `LoginToken` for a bug tracker and return it.
 
         The `LoginToken` will be of `LoginTokenType` BUGTRACKER.
         """
+        login_token = getUtility(ILoginTokenSet).new(
+            None, None, 'externalbugtrackers@launchpad.net',
+            LoginTokenType.BUGTRACKER)
+
+        return login_token.id

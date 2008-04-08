@@ -199,6 +199,8 @@ class IPrivateApplication(ILaunchpadApplication):
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
+    malone = Attribute("""Malone XML-RPC end point.""")
+
 
 class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""

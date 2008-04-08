@@ -240,21 +240,32 @@ for authentication with external bug trackers.
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(IMaloneApplication,
     ...     private_root.malone)
+    True
 
-The API provides a single method, newToken(), which returns a new
-LoginToken as a string.
+The API provides a single method, newToken(), which returns the ID of
+the new LoginToken
 
     >>> from zope.publisher.xmlrpc import TestRequest
-    >>> from canonical.launchpad.interfaces import ILoginTokenSet
-    >>> from canonical.launchpad.xmlrpc.bug import BugTrackerTokenAPI
+    >>> from canonical.launchpad.interfaces import (
+    ...     IExternalBugTrackerTokenAPI, ILoginTokenSet)
+    >>> from canonical.launchpad.xmlrpc.bug import (
+    ...     ExternalBugTrackerTokenAPI)
 
-    >>> malonetoken_api = BugTrackerTokenAPI(
+    >>> bugtracker_token_api = ExternalBugTrackerTokenAPI(
     ...     private_root.malone, TestRequest())
 
-    >>> token_id = malonetoken_api.newToken()
+    >>> verifyObject(IExternalBugTrackerTokenAPI, bugtracker_token_api)
+    True
+
+    >>> token_id = bugtracker_token_api.newToken()
     >>> token = getUtility(ILoginTokenSet).get(token_id)
     >>> token
     <LoginToken at ...>
+
+The LoginToken generated will be of the LoginTokenType BUGTRACKER.
+
+    >>> print token.tokentype.title
+    Launchpad is authenticating itself with a remote bug tracker.
 
 These requests are all handled by the private xml-rpc server.
 
@@ -267,3 +278,5 @@ These requests are all handled by the private xml-rpc server.
     >>> token
     <LoginToken at ...>
 
+    >>> print token.tokentype.title
+    Launchpad is authenticating itself with a remote bug tracker.
