@@ -431,8 +431,7 @@ class JobScheduler:
         by `PullerMaster` objects.
         """
         return set(
-            [config.launchpad.errorreports.oops_prefix + str(i)
-             for i in range(config.supermirror.maximum_workers)])
+            [str(i) for i in range(config.supermirror.maximum_workers)])
 
     def _run(self, puller_masters):
         """Run all branches_to_mirror registered with the JobScheduler."""
