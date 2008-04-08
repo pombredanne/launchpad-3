@@ -29,7 +29,10 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are created."""
     if event.user is None:
         return
-    BMPMailer.forModification(merge_proposal, event.user).sendAll()
+    mailer = BMPMailer.forModification(
+        event.object_before_modification, merge_proposal, event.user)
+    if mailer is not None:
+        mailer.sendAll()
 
 
 class BMPMailer:
@@ -81,7 +84,8 @@ class BMPMailer:
             from_user.displayname, from_user.preferredemail.email)
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
-        assert delta is not None
+        if delta is None:
+            return None
         return BMPMailer('Proposed merge of %(source_branch)s into'
                          ' %(target_branch)s updated',
                          'branch-merge-proposal-updated.txt', recipients,
