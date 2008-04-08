@@ -1030,3 +1030,37 @@ including the *main_archives*:
     ...         ppas += 1
     >>> main_archives, ppas
     (9, 5)
+
+'getPPAsForUser' returns all the PPAs a given user participates in. It
+uses TeamParticipation` relationships to calculate all the PPAs the
+user is allowed to upload or copy packages to.
+
+In the sampledata, 'cprov' only participates in his own PPA.
+
+    >>> for ppa in archive_set.getPPAsForUser(cprov):
+    ...     print ppa.title
+    Private PPA for Celso Providelo
+
+However 'cprov' is also a member of 'launchpad-buildd-admins' team,
+which doesn't have a PPA yet.
+
+    >>> lp_buildd_team = getUtility(IPersonSet).getByName(
+    ...     'launchpad-buildd-admins')
+
+    >>> cprov.inTeam(lp_buildd_team)
+    True
+
+    >>> lp_buildd_team.archive is None
+    True
+
+When the 'launchpad-buildd-admins' PPA gets created, 'getPPAsForUser'
+immediately recognises 'cprov' rights on it.
+
+    >>> buildd_archive = archive_set.ensure(
+    ...     owner=lp_buildd_team, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, description='Yo !')
+
+    >>> for ppa in archive_set.getPPAsForUser(cprov):
+    ...     print ppa.title
+    Private PPA for Celso Providelo
+    PPA for Launchpad Buildd Admins
