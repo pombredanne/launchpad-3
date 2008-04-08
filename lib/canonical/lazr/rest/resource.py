@@ -25,6 +25,7 @@ from zope.app.datetimeutils import (
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFields
@@ -347,10 +348,18 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # just needs this string served to the client.
                 return result
         else:
-            import pdb; pdb.set_trace()
-            # No custom operation was specified. Implement a standard GET,
-            # which serves a JSON representation of the entry.
-            result = self
+            # No custom operation was specified. Implement a standard
+            # GET, which serves a JSON or WADL representation of the
+            # entry.
+
+            #TODO: parse the Accept header.
+            content_type = self.request['HTTP_ACCEPT']
+            wadl_type = 'application/vd.sun.wadl+xml'
+            if content_type == wadl_type:
+                result = self.toWADL()
+                self.request.response.getHeader('Content-Type', wadl_type)
+            else:
+                result = self
 
         # Serialize the result to JSON.
         self.request.response.setHeader('Content-type', 'application/json')
@@ -398,6 +407,16 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         if error is not None:
             return error
         return self._applyChanges(changeset)
+
+    def toWADL(self):
+        """Represent this resource as a WADL application.
+
+        The WADL document describes the capabilities of this resource.
+        """
+        template = PageTemplateFile('../templates/wadl-entry.pt')
+        namespace = template.pt_getContext()
+        namespace['context'] = self
+        return template.pt_render(namespace)
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.

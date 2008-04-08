@@ -103,7 +103,10 @@ class WebServiceCaller:
 
     def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
-        return self(path, 'GET', headers=headers)
+        full_headers = {'Accept' : media_type}
+        if headers is not None:
+            full_headers.update(headers)
+        return self(path, 'GET', headers=full_headers)
 
     def head(self, path, headers=None):
         """Make a HEAD request."""
