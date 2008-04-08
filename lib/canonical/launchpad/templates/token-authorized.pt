@@ -1,0 +1,39 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad"
+>
+<body>
+  <metal:portlets fill-slot="portlets" />
+
+  <div metal:fill-slot="main" id="maincontent">
+    <tal:unauthorized condition="view/token/permission/enumvalue:UNAUTHORIZED">
+      <h1>Access not granted to application</h1>
+      <p>
+        The application identified as
+        <strong tal:content="view/token/consumer/key">key</strong> has not
+        been given access to your protected resources on Launchpad.
+      </p>
+    </tal:unauthorized>
+
+    <tal:authorized condition="not:view/token/permission/enumvalue:UNAUTHORIZED">
+      <h1>Almost finished ...</h1>
+      <p>
+        To finish authorizing the application identified as
+        <strong tal:content="view/token/consumer/key">key</strong> to access
+        Launchpad on your behalf you should go back to the application window
+        in which you started the process and inform it that you have done your
+        part of the process.
+      </p>
+    </tal:authorized>
+  </div>
+
+</body>
+</html>
+
