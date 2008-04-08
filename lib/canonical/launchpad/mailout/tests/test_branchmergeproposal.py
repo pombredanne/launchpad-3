@@ -99,24 +99,43 @@ Baz Qux has proposed merging foo into bar.
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
 
     def makeMergeProposalMailerModification(self):
-        merge_proposal, person = self.makeProposalWithSubscriber()
+        """Fixture method providing a mailer for a modified merge proposal"""
+        merge_proposal, subscriber = self.makeProposalWithSubscriber()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
         merge_proposal.commit_message = 'new commit message'
-        return BMPMailer.forModification(
+        mailer = BMPMailer.forModification(
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
+        return mailer, subscriber
 
     def test_forModificationWithModificationDelta(self):
         """Ensure the right delta is filled out if there is a change."""
-        mailer = self.makeMergeProposalMailerModification()
+        mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual({'old': None, 'new': 'new commit message'},
             mailer.delta.commit_message)
 
     def test_forModificationWithModificationDeltaLines(self):
         """Ensure the right delta is filled out if there is a change."""
-        mailer = self.makeMergeProposalMailerModification()
+        mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual(
             ['    Commit Message: (not set) => new commit message'],
             mailer.deltaLines())
+
+    def test_generateEmail(self):
+        """Ensure that contents of modification mails are right."""
+        mailer, subscriber = self.makeMergeProposalMailerModification()
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual('Proposed merge of foo into bar updated', subject)
+        url = canonical_url(mailer.merge_proposal)
+        reason = mailer.getReason(subscriber)
+        self.assertEqual("""\
+The proposal to merge foo into bar has been updated.
+
+    Commit Message: (not set) => new commit message
+--
+%s
+
+%s
+""" % (url, reason), body)
 
 
 def test_suite():

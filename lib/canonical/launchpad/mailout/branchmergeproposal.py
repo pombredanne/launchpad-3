@@ -35,7 +35,10 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
 class BMPMailer:
     """Send mailings related to BranchMergeProposal events"""
 
-    def __init__(self, recipients, merge_proposal, from_address, delta=None):
+    def __init__(self, subject, template_name, recipients, merge_proposal,
+                 from_address, delta=None):
+        self._subject_template = subject
+        self._template_name = template_name
         self._recipients = NotificationRecipientSet()
         for recipient, (subscription, rationale) in recipients.iteritems():
             self._recipients.add(recipient, subscription, rationale)
@@ -57,7 +60,10 @@ class BMPMailer:
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
-        return BMPMailer(recipients, merge_proposal, from_address)
+        return BMPMailer(
+            'Merge of %(source_branch)s into %(target_branch)s proposed',
+            'branch-merge-proposal-created.txt', recipients, merge_proposal,
+            from_address)
 
     @staticmethod
     def forModification(old_merge_proposal, merge_proposal, from_user):
@@ -76,8 +82,10 @@ class BMPMailer:
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         assert delta is not None
-        return BMPMailer(recipients, merge_proposal, from_address,
-                         delta)
+        return BMPMailer('Proposed merge of %(source_branch)s into'
+                         ' %(target_branch)s updated',
+                         'branch-merge-proposal-updated.txt', recipients,
+                         merge_proposal, from_address, delta)
 
     def deltaLines(self):
         return deltaLines(self.delta, self.delta.delta_values,
@@ -106,10 +114,7 @@ class BMPMailer:
             recipient.preferredemail.email)
         headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
                    'X-Launchpad-Message-Rationale': rationale}
-        subject = 'Merge of %s into %s proposed' % (
-            self.merge_proposal.source_branch.displayname,
-            self.merge_proposal.target_branch.displayname,)
-        template = get_email_template('branch-merge-proposal-created.txt')
+        template = get_email_template(self._template_name)
         reason = self.getReason(recipient)
         params = {
             'proposal_registrant': self.merge_proposal.registrant.displayname,
@@ -117,8 +122,11 @@ class BMPMailer:
             'target_branch': self.merge_proposal.target_branch.displayname,
             'reason': self.getReason(recipient),
             'proposal_url': canonical_url(self.merge_proposal),
-            'edit_subscription': ''
+            'edit_subscription': '',
             }
+        if self.delta is not None:
+            params['delta'] = '\n'.join(self.deltaLines())
+        subject = self._subject_template % params
         body = template % params
         return (headers, subject, body)
 
