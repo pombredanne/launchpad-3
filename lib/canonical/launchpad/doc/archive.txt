@@ -1032,7 +1032,7 @@ including the *main_archives*:
     (9, 5)
 
 'getPPAsForUser' returns all the PPAs a given user participates in. It
-uses TeamParticipation` relationships to calculate all the PPAs the
+uses `TeamParticipation` relationships to calculate all the PPAs the
 user is allowed to upload or copy packages to.
 
 In the sampledata, 'cprov' only participates in his own PPA.
@@ -1064,3 +1064,14 @@ immediately recognises 'cprov' rights on it.
     ...     print ppa.title
     Private PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
+
+When there is no active PPA for the team a user participates the
+method returns a empty SelectResults.
+
+    >>> jblack = getUtility(IPersonSet).getByName('jblack')
+
+    >>> jblack_ppas = archive_set.getPPAsForUser(jblack)
+
+    >>> jblack_ppas.count()
+    0
+
