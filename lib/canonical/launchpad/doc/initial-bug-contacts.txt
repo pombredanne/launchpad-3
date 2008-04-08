@@ -305,17 +305,17 @@ the subscriptions remain unchanged:
      u'Ubuntu Team']
 
 
-== Product Bug Contacts and Bug Tasks ==
+== Product Bug Supervisors and Bug Tasks ==
 
 Like reassigning a bug task to another package, reassigning a bug task
-to another product will subscribe any new product bug contacts to the
+to another product will subscribe any new product bug supervisors to the
 bug that aren't already subscribed.
 
     >>> from canonical.launchpad.interfaces import IProductSet
 
     >>> mozilla_firefox = getUtility(IProductSet).get(4)
 
-Let's make Foo Bar a bug contact for upstream firefox:
+Let's make Foo Bar a bug supervisor for upstream firefox:
 
     >>> mozilla_firefox.setBugContact(foobar, foobar)
 
@@ -357,7 +357,7 @@ With the product changed, we can see that Foo Bar is now subscribed:
 
 And Foo Bar gets an email containing complete information about the bug
 report. It states that he received the email because he is the bug
-contact for Mozilla Firefox.
+supervisor for Mozilla Firefox.
 
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
@@ -385,9 +385,9 @@ contact for Mozilla Firefox.
     are subscribed to Mozilla Firefox.
 
 
-== Teams as bug contacts ==
+== Teams as bug supervisors ==
 
-The list of teams that a user may add to a package as a bug contact will
+The list of teams that a user may add to a package as a bug supervisor will
 only contain those teams of which the user is an administrator.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
@@ -409,7 +409,7 @@ Sample person is a member of two teams:
     [u'Landscape Developers: ADMIN', u'Warty Security Team: APPROVED']
 
 But is only an administrator of Landscape Developers, so that is the only
-team that will be listed when the user is changing a package bug contact:
+team that will be listed when the user is changing a package bug supervisor:
 
     >>> for team in view.user.getAdministratedTeams():
     ...     print team.displayname

@@ -28,7 +28,7 @@ class BugContactEditView(LaunchpadEditFormView):
 
         if bugcontact is not None:
             self.request.response.addNotification(structured(
-                'Successfully changed the bug contact to '
+                'Successfully changed the bug supervisor to '
                 '<a href="%(contacturl)s">%(displayname)s</a>.'
                 '<br />'
                 '<a href="%(contacturl)s">%(displayname)s</a> has also been '
@@ -44,8 +44,8 @@ class BugContactEditView(LaunchpadEditFormView):
                 targeturl=canonical_url(self.context)))
         else:
             self.request.response.addNotification(
-                "Successfully cleared the bug contact. "
-                "You can set the bug contact again at any time.")
+                "Successfully cleared the bug supervisor. "
+                "You can set the bug supervisor again at any time.")
 
         self.request.response.redirect(canonical_url(target))
 
@@ -70,7 +70,7 @@ class BugContactEditView(LaunchpadEditFormView):
         if not data.has_key('bugcontact'):
             self.setFieldError(
                 'bugcontact',
-                'You must choose a valid person or team to be the bug contact'
+                'You must choose a valid person or team to be the bug supervisor'
                 ' for %s.' %
                 self.context.displayname)
 
@@ -84,7 +84,7 @@ class BugContactEditView(LaunchpadEditFormView):
                 "You cannot set %(team)s as the bug contact for "
                 "%(target)s because you are not an administrator of that "
                 "team.<br />If you believe that %(team)s should be the bug"
-                " contact for %(target)s, please notify one of the "
+                " supervisor for %(target)s, please notify one of the "
                 "<a href=\"%(url)s\">%(team)s administrators</a>.",
                 team=contact.displayname,
                 target=self.context.displayname,

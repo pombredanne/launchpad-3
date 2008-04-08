@@ -31,13 +31,13 @@ Then there are three kinds of users that are indirectly subscribed to
 a bug:
 
     * assignees
-    * bug contacts
+    * structural subscribers (subscribers to the bug's target)
     * direct subscribers from dupes
 
-Bugs may get reassigned, bug contacts may come and go, and dupes may
+Bugs may get reassigned, bug subscribers may come and go, and dupes may
 be unduped or reduped to other bugs. Indirect subscriptions are looked
 up at mail sending time, so the mail is automatically sent to new bug
-contacts or assignees, stops being sent to subscribers from dupes when
+subscribers or assignees, stops being sent to subscribers from dupes when
 a bug is unduped, and so forth.
 
 Let's create a new bug to demonstrate how direct and indirect
@@ -138,7 +138,7 @@ Here are some examples of the three types of indirect subscribers:
     Sample Person
     Ubuntu Team
 
-2. Bug contacts
+2. Structural subscribers
 
     >>> mr_no_privs = personset.getByName("no-priv")
 
@@ -175,7 +175,7 @@ Here are some examples of the three types of indirect subscribers:
     Sample Person
     Ubuntu Team
 
-(Adding a product bugtask to demonstrate that the upstream bug contact
+(Adding a product bugtask to demonstrate that the upstream bug supervisor
 is also an indirect subscriber.)
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
@@ -201,7 +201,7 @@ is also an indirect subscriber.)
     Sample Person
     Ubuntu Team
 
-If there were no upstream product bug contact, the product owner would
+If there were no upstream product subscribers, the product owner would
 be used instead.
 
     >>> firefox.setBugContact(None, None)
@@ -519,8 +519,8 @@ But still, only Foo Bar is explicitly subscribed.
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
-When an upstream does *not* have a specific bug contact set, the
-product.owner is used instead. So, if Firefox's bugcontact is unset,
+When an upstream does *not* have a specific bug supervisor set, the
+product.owner is used instead. So, if Firefox's bug supervisor is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
 
     >>> firefox.setBugContact(None, None)

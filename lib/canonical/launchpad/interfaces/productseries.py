@@ -244,7 +244,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
     bugcontact = Attribute(
-        'Currently just a reference to the Product bug contact.')
+        'Currently just a reference to the Product bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Product security contact.')
 

@@ -1,8 +1,8 @@
 = IHasBugContact =
 
-Bug contacts are people or teams who are responsible for dealing with
-bugs pertaining to a target. All objects with a bug contact are also
-structural subscription targets. When the bug contact for such an object
+Bug supervisor are people or teams who are responsible for dealing with
+bugs pertaining to a target. All objects with a bug supervisor are also
+structural subscription targets. When the bug supervisor for such an object
 is set, a new bug subscription is created as well.
 
     >>> target.bug_subscriptions
@@ -18,23 +18,23 @@ is set, a new bug subscription is created as well.
 
     >>> login("foo.bar@canonical.com")
 
-We set no_priv as the bug contact for the target.
+We set no_priv as the bug supervisor for the target.
 
     >>> target.setBugContact(no_priv, foo_bar)
 
-The bug contact can be retrieved using the `bugcontact` property.
+The bug supervisor can be retrieved using the `bugcontact` property.
 
     >>> print target.bugcontact.preferredemail.email
     no-priv@canonical.com
 
-But we can't use it to set the bug contact.
+But we can't use it to set the bug supervisor.
 
     >>> target.bugcontact = None
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('bugcontact', <...>)
 
-After setting no_priv as the bug contact, a bug subscription is created
+After setting no_priv as the bug supervisor, a bug subscription is created
 for the target.
 
     >>> for bug_subscription in target.bug_subscriptions:
@@ -48,7 +48,7 @@ the target.
     >>> no_priv in bug.getIndirectSubscribers()
     True
 
-If no_priv unsubscribes, he is still set as the bug contact.
+If no_priv unsubscribes, he is still set as the bug supervisor.
 
     >>> target.removeBugSubscription(no_priv)
     >>> print target.bugcontact.preferredemail.email
@@ -56,11 +56,11 @@ If no_priv unsubscribes, he is still set as the bug contact.
     >>> no_priv in bug.getIndirectSubscribers()
     False
 
-But we can remove the bug contact by setting it to None.
+But we can remove the bug supervisor by setting it to None.
 
     >>> target.setBugContact(None, None)
     >>> print target.bugcontact
     None
 
-Note that removing a person as a bug contact does not remove their
+Note that removing a person as a bug contact supervisor not remove their
 subscription to the target, if it exists.

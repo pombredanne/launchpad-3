@@ -1,12 +1,12 @@
-To set a bug contact for a distribution, we need to go to the Bug page
+To set a bug supervisor for a distribution, we need to go to the Bug page
 of that distribution:
 
   >>> browser.open('http://launchpad.dev/ubuntu/+bugs')
 
 But the link is not available if you are not logged in with permission
-to change the bug contact.
+to change the bug supervisor.
 
-  >>> browser.getLink("Change bug contact")
+  >>> browser.getLink("Change bug supervisor")
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -20,23 +20,23 @@ Now we login as Mark...
 
 ...and we can see that the link is there.
 
-  >>> bugcontact_link = browser.getLink("Change bug contact")
+  >>> bugcontact_link = browser.getLink("Change bug supervisor")
   >>> bugcontact_link.url
   'http://launchpad.dev/ubuntu/+bugcontact'
 
 Anyone with launchpad.Edit permission can edit the distribution bug
-contact. In this example, we're using mark@hbd.com to set the
-distribution bug contact.
+supervisor. In this example, we're using mark@hbd.com to set the
+distribution bug supervisor.
 
   >>> bugcontact_link.click()
   >>> browser.url
   'http://launchpad.dev/ubuntu/+bugcontact'
 
-The bug contact page takes just one simple value: the bug contact email
+The bug supervisor page takes just one simple value: the bug contact email
 or nickname. Let's set carlos@canonical.com as the bug contact for
 Ubuntu.
 
-  >>> browser.getControl("Bug Contact").value = 'carlos@canonical.com'
+  >>> browser.getControl("Bug Supervisor").value = 'carlos@canonical.com'
   >>> browser.getControl("Change").click()
 
 And then we're redirected to the distribution page.
@@ -46,22 +46,22 @@ And then we're redirected to the distribution page.
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...     print tag
-  <div...Successfully changed the bug contact to ...Carlos Perelló Marín...
+  <div...Successfully changed the bug supervisor to ...Carlos Perelló Marín...
 
-Now that the bug contact is set, there's a link to him on the
+Now that the bug supervisor is set, there's a link to him on the
 distribution page.
 
   >>> browser.getLink(
   ...   url='/~carlos').url
   'http://launchpad.dev/~carlos'
 
-When the bug contact doesn't have an email address, the displayname is
+When the bug supervisor doesn't have an email address, the displayname is
 shown instead in the feedback message.
 
   >>> browser.open("http://launchpad.dev/ubuntu/+bugcontact")
-  >>> browser.getControl("Bug Contact").value = 'ubuntu-team'
+  >>> browser.getControl("Bug Supervisor").value = 'ubuntu-team'
   >>> browser.getControl("Change").click()
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...     print tag
-  <div...Successfully changed the bug contact to ...Ubuntu Team...
+  <div...Successfully changed the bug supervisor to ...Ubuntu Team...

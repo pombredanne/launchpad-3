@@ -1231,7 +1231,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             # The source package was changed, so tell the user that we've
             # subscribed the new bug contacts.
             self.request.response.addNotification(
-                "The bug contacts for %s have been subscribed to this bug."
+                "The bug supervisor for %s has been subscribed to this bug."
                  % (bugtask.bugtargetdisplayname))
 
     @action('Save Changes', name='save')

@@ -18,12 +18,12 @@ method accepts a single parameter; an BugTaskSearchParams instance.
     True
 
 
-== Searching by bug contact ==
+== Searching by bug supervisor ==
 
 The 'bug_contact' parameter allows you to search bugtasks that a certain
-person is responsible for. A person can be a bug contact for a product,
+person is responsible for. A person can be a bug supervisor for a product,
 a distribution, or a distribution source package. No Privileges Person
-isn't a bug contact, so no bugs are found for him:
+isn't a bug supervisor, so no bugs are found for him:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -80,7 +80,7 @@ and also series-targeted bugs:
     >>> sans_targeted.count() < ubuntu_bugs
     True
 
-=== Product bug contact ===
+=== Product bug supervisor ===
 
 If No Privileges is specified as Firefox' bug contact, searching for his
 bugs return all of Firefox' bugs.
@@ -101,9 +101,9 @@ bugs return all of Firefox' bugs.
     Mozilla Firefox
 
 
-=== Distribution bug contact ===
+=== Distribution bug supervisor ===
 
-If someone is bug contact for Firefox, Firefox in Ubuntu, and Ubuntu,
+If someone is bug supervisor for Firefox, Firefox in Ubuntu, and Ubuntu,
 all bugs in Firefox and Ubuntu are returned. Bugs in the Ubuntu Firefox
 package are included in the Ubuntu bugs, so they won't be returned
 twice.

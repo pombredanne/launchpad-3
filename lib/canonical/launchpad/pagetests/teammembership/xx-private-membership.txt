@@ -242,10 +242,10 @@ no user can set that team as the maintainer of a product.
     >>> get_feedback_messages(admin_browser.contents)
     [...The person/team named 'myteam' is not a valid owner for...
 
-== Restrict Product Bug Contact ==
+== Restrict Product Bug Supervisor ==
 
 To prevent leaking information about a team's private membership,
-no user can set that team as the bug contact of a product.
+no user can set that team as the bug supervisor of a product.
 
     >>> admin_browser.open('http://launchpad.dev/jokosher/+bugcontact')
     >>> admin_browser.getControl(name='field.bugcontact').value = 'myteam'
@@ -253,7 +253,7 @@ no user can set that team as the bug contact of a product.
     >>> admin_browser.url
     'http://launchpad.dev/jokosher/+bugcontact'
     >>> get_feedback_messages(admin_browser.contents)
-    [...You must choose a valid person or team to be the bug contact for...
+    [...You must choose a valid person or team to be the bug supervisor for...
 
 == Restrict Distro Registrant ==
 
@@ -268,10 +268,10 @@ no user can set that team as the registrant of a distribution.
     >>> get_feedback_messages(admin_browser.contents)
     [...The person/team named 'myteam' is not a valid owner for...
 
-== Restrict Distro Bug Contact ==
+== Restrict Distro Bug Supervisor ==
 
 To prevent leaking information about a team's private membership,
-no user can set that team as the bug contact of a distribution.
+no user can set that team as the bug supervisor of a distribution.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+bugcontact')
     >>> admin_browser.getControl(name='field.bugcontact').value = 'myteam'
@@ -279,4 +279,4 @@ no user can set that team as the bug contact of a distribution.
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+bugcontact'
     >>> get_feedback_messages(admin_browser.contents)
-    [...You must choose a valid person or team to be the bug contact...
+    [...You must choose a valid person or team to be the bug supervisor...
