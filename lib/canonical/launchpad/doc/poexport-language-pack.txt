@@ -424,8 +424,9 @@ should get only files that where updated after 2000-01-02.
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
 
-Now, there is only one file exported for the test domain, the one that had
-the modification date after the last generated language pack.
+Now, there is only one file exported for the 'test' domain, the one that had
+the modification date after the last generated language pack. We ignore the
+xpi entries because those are outside the scope of this test.
 
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
