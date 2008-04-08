@@ -57,23 +57,28 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # In addition, all approved mailing lists that are being
             # constructed by Mailman need to have their status changed.
             mailing_list.startConstructing()
-        if creates:
+        if len(creates) > 0:
             response['create'] = creates
         # Next do mailing lists that are to be deactivated.
         deactivated = [mailing_list.team.name
                        for mailing_list in list_set.deactivated_lists]
-        if deactivated:
+        if len(deactivated) > 0:
             response['deactivate'] = deactivated
-        # Finally, do modified lists.  Currently, the only value that can be
-        # modified is the welcome message.
+        # Do modified lists.  Currently, the only value that can be modified
+        # is the welcome message.
         modified = []
         for mailing_list in list_set.modified_lists:
             changes = (mailing_list.team.name,
                        dict(welcome_message=mailing_list.welcome_message))
             modified.append(changes)
             mailing_list.startUpdating()
-        if modified:
+        if len(modified) > 0:
             response['modify'] = modified
+        # Handle unsynchronized lists.
+        unsynchronized = [mailing_list.team.name
+                          for mailing_list in list_set.unsynchronized_lists]
+        if len(unsynchronized) > 0:
+            response['unsynchronized'] = unsynchronized
         return response
 
     def reportStatus(self, statuses):
