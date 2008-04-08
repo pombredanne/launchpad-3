@@ -1,6 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """Functions dealing with mails coming into Launchpad."""
 
+# pylint: disable-msg=W0631
+
 __metaclass__ = type
 
 from logging import getLogger
@@ -16,8 +18,8 @@ from zope.interface import directlyProvides, directlyProvidedBy
 
 from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, ILibraryFileAliasSet, IMailBox,
-    IPerson, IWeaklyAuthenticatedPrincipal)
+    AccountStatus, GPGVerificationError, IGPGHandler, ILibraryFileAliasSet,
+    IMailBox, IPerson, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interaction import get_current_principal
@@ -27,7 +29,7 @@ from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
-    notify_errors_list, send_process_error_notification)
+    send_process_error_notification)
 from canonical.librarian.interfaces import UploadFailed
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
@@ -56,6 +58,10 @@ class InvalidSignature(Exception):
     """The signature failed to validate."""
 
 
+class InactiveAccount(Exception):
+    """The account for the person sending this email is inactive."""
+
+
 def authenticateEmail(mail):
     """Authenticates an email by verifying the PGP signature.
 
@@ -82,6 +88,10 @@ def authenticateEmail(mail):
         return principal
 
     person = IPerson(principal)
+
+    if person.account_status != AccountStatus.ACTIVE:
+        raise InactiveAccount("Mail from a user with an inactive account.")
+
     gpghandler = getUtility(IGPGHandler)
     try:
         sig = gpghandler.getVerifiedSignature(
@@ -226,6 +236,11 @@ def handleMail(trans=transaction):
                         "Invalid signature for %s:\n    %s" % (mail['From'],
                                                                str(error)),
                         file_alias_url)
+                    continue
+                except InactiveAccount:
+                    _handle_error(
+                        "Inactive account found for %s" % mail['From'],
+                        file_alias_url, notify=False)
                     continue
 
                 # Extract the domain the mail was sent to. Mails sent to

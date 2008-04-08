@@ -183,6 +183,95 @@ This CodeImport is associated to the evolution/main ProductSeries
     >>> from_existing_import.series.name
     u'trunk'
 
+
+== Updating code import review status ==
+
+Members of the VCS Imports team (import operators), or Launchpad
+administrators can update the review status of code imports.  This is
+done using the code import methods: approve; suspend; and invalidate.
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> code_import = factory.makeCodeImport()
+    >>> print code_import.review_status.title
+    Pending Review
+
+When an import operator updates the status of the code import, emails
+are sent out to the branch subscribers, and to the members of VCS
+Imports.
+
+The logged in user is normally subscribed to the new import as it is
+created if done through the web UI, so we'll add nopriv here.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionDiffSize,
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
+    >>> subscription = code_import.branch.subscribe(
+    ...     nopriv,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.FULL)
+
+    >>> from canonical.launchpad.tests.mail_helpers import (
+    ...     pop_notifications, print_emails)
+    >>> ignore_old_emails = pop_notifications()
+    >>> code_import.approve({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, foo.bar@canonical.com,
+        robertc@robertcollins.net
+    Subject: Code import product.../name... status: Reviewed
+    <BLANKLINE>
+    The import has been approved and an import will start shortly.
+    --
+    http://code.launchpad.dev/~vcs-imports/product.../name...
+    You are getting this email because you are a member of the vcs-imports team.
+    ----------------------------------------
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Reviewed
+    <BLANKLINE>
+    The import has been approved and an import will start shortly.
+    --
+    http://code.launchpad.dev/~vcs-imports/product.../name...
+    You are receiving this email as you are subscribed to the branch.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~vcs-import=
+    s/product.../name.../+edit-subscription.
+    ----------------------------------------
+
+Similarly, an email is sent out when the import is suspended or
+invalidated.
+
+    >>> code_import.suspend({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, foo.bar@canonical.com,
+        robertc@robertcollins.net
+    Subject: Code import product.../name... status: Suspended
+    <BLANKLINE>
+    The import has been suspended.
+    ...
+    ----------------------------------------
+    ...
+    To: no-priv@canonical.com
+    ...
+
+    >>> code_import.invalidate({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, foo.bar@canonical.com,
+        robertc@robertcollins.net
+    Subject: Code import product-name6/name11 status: Invalid
+    <BLANKLINE>
+    The import has been marked as invalid.
+    ...
+    ----------------------------------------
+    ...
+    To: no-priv@canonical.com
+    ...
+
+
 == Update intervals ==
 
 After an import is initially completed, it must be updated regularly. Each
@@ -305,7 +394,7 @@ on those objects.
     >>> svn_import.svn_branch_url = 'svn://svn.example.com/branch/1.0'
     Traceback (most recent call last):
       ...
-    ForbiddenAttribute: ('svn_branch_url', <CodeImport at 0x...>)
+    ForbiddenAttribute: ('svn_branch_url', <CodeImport ...>)
 
 Modifications can be done using the CodeImport.updateFromData method. If
 any change were made, this method creates a CodeImportEvent describing
@@ -328,4 +417,4 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     >>> svn_import.updateFromData({}, nopriv)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<CodeImport at ...>, 'updateFromData', 'launchpad.Edit')
+    Unauthorized: (<CodeImport ...>, 'updateFromData', 'launchpad.Edit')

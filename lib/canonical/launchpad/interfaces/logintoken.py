@@ -101,6 +101,13 @@ class LoginTokenType(DBEnumeratedType):
         to turn it into a team.
         """)
 
+    BUGTRACKER = DBItem(11, """
+        Launchpad is authenticating itself with a remote bug tracker.
+
+        The remote bug tracker will use the LoginToken to authenticate
+        Launchpad.
+        """)
+
 
 class ILoginToken(Interface):
     """The object that stores one time tokens used for validating email
@@ -276,7 +283,7 @@ class ILoginTokenSet(Interface):
                         also be None in case of a new account
 
         email: the email address that this request will be sent to.
-        It should be previosly validated by valid_email()
+        It should be previously validated by valid_email()
 
         tokentype: the type of the request, according to LoginTokenType.
 

@@ -36,6 +36,13 @@
     permission="zope.Public"
     />
 
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.IMaloneApplication"
+    interface="canonical.launchpad.interfaces.IExternalBugTrackerTokenAPI"
+    class="canonical.launchpad.xmlrpc.ExternalBugTrackerTokenAPI"
+    permission="zope.Public"
+    />
+
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
     <require like_class="xmlrpclib.Fault" />
   </class>
