@@ -267,7 +267,8 @@ class CustomUploadFile(NascentUploadFile):
         libraryfile = self.librarian.create(
             self.filename, self.size,
             open(self.filepath, "rb"),
-            self.content_type)
+            self.content_type,
+            restricted=self.policy.archive.private)
         return libraryfile
 
 
@@ -909,7 +910,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,
-             self.size, open(self.filepath, "rb"), self.content_type)
+             self.size, open(self.filepath, "rb"), self.content_type,
+             restricted=self.policy.archive.private)
         binary.addFile(library_file)
         return binary
 

@@ -112,7 +112,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
 
-    def queueUpload(self, upload_name, relative_path=""):
+    def queueUpload(self, upload_name, relative_path="", test_files_dir=None):
         """Queue one of our test uploads.
 
         upload_name is the name of the test upload directory. It is also
@@ -124,7 +124,9 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         target_path = os.path.join(
             self.queue_folder, "incoming", upload_name, relative_path)
-        upload_dir = os.path.join(self.test_files_dir, upload_name)
+        if test_files_dir is None:
+            test_files_dir = self.test_files_dir
+        upload_dir = os.path.join(test_files_dir, upload_name)
         if relative_path:
             os.makedirs(os.path.dirname(target_path))
         shutil.copytree(upload_dir, target_path)
