@@ -104,3 +104,13 @@ class FileBugAPI(LaunchpadXMLRPCView):
         notify(SQLObjectCreatedEvent(bug))
 
         return canonical_url(bug)
+
+
+class BugTrackerTokenAPI(LaunchpadXMLRPCView):
+    """The private XML-RPC API for generating bug tracker login tokens."""
+
+    def newToken(self):
+        """Generate a new `LoginToken` for a bug tracker and return it.
+
+        The `LoginToken` will be of `LoginTokenType` BUGTRACKER.
+        """
