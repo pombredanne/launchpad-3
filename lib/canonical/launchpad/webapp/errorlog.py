@@ -205,6 +205,17 @@ class ErrorReportingUtility:
 
     def __init__(self):
         self.lastid_lock = threading.Lock()
+        self.prefix = config.launchpad.errorreports.oops_prefix
+
+    def setOopsToken(self, token):
+        """Append a string to the oops prefix.
+
+        :param token: a string to append to a oops_prefix.
+            Scripts that run multiple processes can append a string to
+            the oops_prefix to create a unique identifier for each
+            process.
+        """
+        self.prefix = config.launchpad.errorreports.oops_prefix + token
 
     def _findLastOopsIdFilename(self, directory):
         """Find details of the last OOPS reported in the given directory.
@@ -215,7 +226,7 @@ class ErrorReportingUtility:
         :return: a tuple (oops_id, oops_filename), which will be (0,
             None) if no OOPS is found.
         """
-        prefix = config.launchpad.errorreports.oops_prefix
+        prefix = self.prefix
         lastid = 0
         lastfilename = None
         for filename in os.listdir(directory):
@@ -304,7 +315,7 @@ class ErrorReportingUtility:
 
     def getOopsFilename(self, oops_id, time):
         """Get the filename for a given OOPS id and time."""
-        oops_prefix = config.launchpad.errorreports.oops_prefix
+        oops_prefix = self.prefix
         error_dir = self.errordir(time)
         second_in_day = time.hour * 3600 + time.minute * 60 + time.second
         return os.path.join(
@@ -335,7 +346,7 @@ class ErrorReportingUtility:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
-        oops_prefix = config.launchpad.errorreports.oops_prefix
+        oops_prefix = self.prefix
         day_number = (now - epoch).days + 1
         oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
         filename = self.getOopsFilename(newid, now)
