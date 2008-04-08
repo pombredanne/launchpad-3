@@ -378,27 +378,27 @@ class TestMergeProposalNotification(TestCase):
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, event.object)
 
-    def test_getCreationNotificationRecipients(self):
+    def test_getNotificationRecipients(self):
         """Ensure that recipients can be added/removed with subscribe"""
         bmp = self.factory.makeBranchMergeProposal()
         self.assertEqual({},
-            bmp.getCreationNotificationRecipients(
+            bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
-        recipients = bmp.getCreationNotificationRecipients(
+        recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         self.assertEqual([source_subscriber], recipients.keys())
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
-        recipients = bmp.getCreationNotificationRecipients(
+        recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         self.assertEqual([], recipients.keys())
 
-    def test_getCreationNotificationRecipientLevels(self):
+    def test_getNotificationRecipientLevels(self):
         """Ensure that only recipients with the right level are returned"""
         bmp = self.factory.makeBranchMergeProposal()
         full_subscriber = self.factory.makePerson()
@@ -409,20 +409,20 @@ class TestMergeProposalNotification(TestCase):
         bmp.source_branch.subscribe(status_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.STATUS)
-        recipients = bmp.getCreationNotificationRecipients(
+        recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         self.assertEqual(set([full_subscriber, status_subscriber]),
             set(recipients.keys()))
-        recipients = bmp.getCreationNotificationRecipients(
+        recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertEqual([full_subscriber], recipients.keys())
 
-    def test_getCreationNotificationRecipientsAnyBranch(self):
+    def test_getNotificationRecipientsAnyBranch(self):
         dependent_branch = self.factory.makeBranch()
         bmp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
         self.assertEqual({},
-        bmp.getCreationNotificationRecipients(
+        bmp.getNotificationRecipients(
             BranchSubscriptionNotificationLevel.NOEMAIL))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
@@ -436,7 +436,7 @@ class TestMergeProposalNotification(TestCase):
         bmp.dependent_branch.subscribe(dependent_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
-        recipients = bmp.getCreationNotificationRecipients(
+        recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertEqual(
             set([source_subscriber, target_subscriber, dependent_subscriber]),
