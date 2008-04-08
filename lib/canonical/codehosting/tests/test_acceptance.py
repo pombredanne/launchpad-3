@@ -8,7 +8,6 @@ __metaclass__ = type
 from StringIO import StringIO
 import os
 import sys
-from textwrap import dedent
 import thread
 import unittest
 
