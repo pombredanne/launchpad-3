@@ -59,6 +59,7 @@ __all__ = [
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
+    'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
     'IShipItApplication',
@@ -142,6 +143,10 @@ class IMaloneApplication(ILaunchpadApplication):
     bugtracker_count = Attribute("The number of bug trackers in Launchpad")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
+
+
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""
 
 
 class IRosettaApplication(ILaunchpadApplication):

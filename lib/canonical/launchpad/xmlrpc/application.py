@@ -19,8 +19,8 @@ from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
     IAuthServerApplication, ICodeImportSchedulerApplication, ILaunchBag,
-    IMailingListApplication, IExternalBugTrackerTokenApplication,
-    IPrivateApplication)
+    IMailingListApplication, IPrivateApplication,
+    IPrivateMaloneApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -45,7 +45,7 @@ class PrivateApplication:
     @property
     def bugtrackertokens(self):
         """See `IPrivateApplication`."""
-        return getUtility(IExternalBugTrackerTokenApplication)
+        return getUtility(IPrivateMaloneApplication)
 
 
 class ISelfTest(Interface):

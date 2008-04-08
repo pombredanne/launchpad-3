@@ -234,11 +234,11 @@ for authentication with external bug trackers.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IExternalBugTrackerTokenApplication, IPrivateApplication)
+    ...     IPrivateMaloneApplication, IPrivateApplication)
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
-    >>> verifyObject(IExternalBugTrackerTokenApplication,
+    >>> verifyObject(IPrivateMaloneApplication,
     ...     private_root.bugtrackertokens)
     True
 

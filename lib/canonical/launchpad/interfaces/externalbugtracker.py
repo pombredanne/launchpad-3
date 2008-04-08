@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'IExternalBugTracker',
     'IExternalBugTrackerTokenAPI',
-    'IExternalBugTrackerTokenApplication',
     'ISupportsCommentImport',
     'ISupportsBugImport',
     'UNKNOWN_REMOTE_IMPORTANCE',
@@ -26,10 +25,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 #      would allow us to get rid of these text constants.
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
-
-
-class IExternalBugTrackerTokenApplication(ILaunchpadApplication):
-    """ExternalBugTracker token application root."""
 
 
 class IExternalBugTrackerTokenAPI(Interface):
