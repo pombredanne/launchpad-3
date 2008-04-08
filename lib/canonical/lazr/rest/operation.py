@@ -4,8 +4,7 @@
 
 from zope.component import getMultiAdapter
 from zope.interface import implements
-from zope.schema.interfaces import (
-    ConstraintNotSatisfied, RequiredMissing, ValidationError)
+from zope.schema.interfaces import RequiredMissing, ValidationError
 
 from canonical.lazr.interfaces import (
     IFieldDeserializer, IResourceGETOperation, IResourcePOSTOperation)
