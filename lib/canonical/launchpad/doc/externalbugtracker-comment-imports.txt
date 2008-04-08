@@ -84,7 +84,7 @@ comments in the comment_dict being imported into Launchpad.
     INFO:...:Imported 3 comments for remote bug 123456 on ...
 
 These three comments will be linked to the bug watch from which they
-were imported.
+were imported. They also have the remote_comment_id attribute set.
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> def print_bug_messages(bug, bug_watch):
@@ -92,19 +92,21 @@ were imported.
     ...         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...             bug, message)
     ...         print bug_message.bugwatch == bug_watch
-    ...         print bug_message.message.text_contents
+    ...         print "%s: %s" % (
+    ...             bug_message.remote_comment_id,
+    ...             bug_message.message.text_contents)
     >>> print_bug_messages(bug, bug_watch)
     True
-    Example comment the first
+    1: Example comment the first
     True
-    Example comment the second
+    2: Example comment the second
     True
-    Example comment the third
+    3: Example comment the third
 
 If another comment is added on the remote tracker and the comment import
 process is run again only the new comment will be imported.
 
-    >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
+    >>> external_bugtracker.comment_dict['four'] = "Yet another comment."
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456 on ...
 
@@ -113,13 +115,13 @@ form which it was imported.
 
     >>> print_bug_messages(bug, bug_watch)
     True
-    Example comment the first
+    1: Example comment the first
     True
-    Example comment the second
+    2: Example comment the second
     True
-    Example comment the third
+    3: Example comment the third
     True
-    Yet another comment.
+    four: Yet another comment.
 
 
 == BugWatch comment importing functionality ==

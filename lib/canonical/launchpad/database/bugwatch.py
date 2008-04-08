@@ -220,7 +220,8 @@ class BugWatch(SQLBase):
         bug_watch_updater = getUtility(
             ILaunchpadCelebrities).bug_watch_updater
         bug_message = self.bug.linkMessage(
-            message, bugwatch=self, user=bug_watch_updater)
+            message, bugwatch=self, user=bug_watch_updater,
+            remote_comment_id=comment_id)
 
 
 class BugWatchSet(BugSetBase):

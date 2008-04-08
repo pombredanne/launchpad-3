@@ -557,14 +557,15 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message, bugwatch=None, user=None):
+    def linkMessage(self, message, bugwatch=None, user=None,
+                    remote_comment_id=None):
         """See `IBug`."""
         if message not in self.messages:
             if user is None:
                 user = message.owner
 
             result = BugMessage(bug=self, message=message,
-                bugwatch=bugwatch)
+                bugwatch=bugwatch, remote_comment_id=remote_comment_id)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
