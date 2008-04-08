@@ -341,6 +341,7 @@ class BranchMergeProposal(SQLBase):
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
+    @notifyModification
     def resubmit(self, registrant):
         """See `IBranchMergeProposal`."""
         # You can transition from REJECTED to SUPERSEDED, but

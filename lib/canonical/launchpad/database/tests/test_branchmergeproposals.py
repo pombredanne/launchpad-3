@@ -513,6 +513,17 @@ class TestMergeProposalNotification(TestCase):
         self.assertNotifies(
             SQLObjectModifiedEvent, merge_proposal.markAsMerged)
 
+    def test_resubmitNotifies(self):
+        """resubmit should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        events = []
+        self.captureNotifications(
+            events, merge_proposal.resubmit, self.lp_admins)
+        # resubmit causes a creation notification and a status notification
+        self.assertEqual(2, len(events))
+        assert isinstance(events[1], SQLObjectModifiedEvent), ('There should'
+            ' be a modification event as well as the creation one.')
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
