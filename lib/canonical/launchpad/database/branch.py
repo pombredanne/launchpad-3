@@ -684,6 +684,7 @@ class DeletionOperation:
         """Perform the deletion operation."""
         raise NotImplementedError(DeletionOperation.__call__)
 
+
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
 
