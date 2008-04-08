@@ -563,13 +563,14 @@ subscriptions that use that address are automatically deleted as well.
 
 == Subscription states ==
 
-A user can subscribe to a mailing list only when the list is active (as show
-above), but for purposes of subscription, we also consider lists in the
-MODIFIED, UPDATING, and MOD_FAILED states to be active.  This is because the
-first two states are transitional states, while the latter state does not
-affect the usability of the mailing list.  Thus, if the mailing list is
-usable, then it can be subscribed to.  See above also for states in which the
-list /cannot/ be subscribed to, such as the DEACTIVATED state.
+A user can subscribe to a mailing list only when the list is active (as
+show above), but for purposes of subscription, we also consider lists in
+the MODIFIED, UPDATING, and MOD_FAILED states to be active.  This is
+because the first two states are transitional states, while the latter
+state does not affect the usability of the mailing list.  Thus, if the
+mailing list is usable, then it can be subscribed to.  See above also
+for states in which the list /cannot/ be subscribed to, such as the
+DEACTIVATED state.
 
     >>> team_eight, list_eight = new_team('team-8', with_list=True)
     >>> teri = new_person('Teri')
@@ -594,7 +595,8 @@ list /cannot/ be subscribed to, such as the DEACTIVATED state.
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
-But in other, non-usable states, the mailing list cannot be subscribed to.
+But in other, non-usable states, the mailing list cannot be subscribed
+to.
 
     # We don't need to test the INACTIVE state, as that's represented above.
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.REGISTERED

@@ -447,7 +447,7 @@ class XMLRPCRunner(Runner):
         'success' or 'failure'.
         """
         syslog('xmlrpc', 'resynchronizing: %s', COMMASPACE.join(team_names))
-        for team_name in team_names:            
+        for team_name in team_names:
             # There's no way to really know whether the original action
             # succeeded or not, however, it's unlikely that an action would
             # fail leaving the mailing list in a usable state.  Therefore, if

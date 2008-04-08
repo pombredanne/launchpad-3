@@ -2,12 +2,14 @@
 
 Under various conditions, reporting status from Mailman to Launchpad can
 fail.  For example, if during construction, the reportStatus() call has
-connectivity problems, the successful creation of the mailing list will never
-be reported, and Launchpad will not know that the list should be active.
+connectivity problems, the successful creation of the mailing list will
+never be reported, and Launchpad will not know that the list should be
+active.
 
-Another case is where the list is modified, say to give it a welcome message,
-but again the reportStatus() call fails.  In both these cases, Mailman and
-Launchpad should eventually resynchronize their state automatically.
+Another case is where the list is modified, say to give it a welcome
+message, but again the reportStatus() call fails.  In both these cases,
+Mailman and Launchpad should eventually resynchronize their state
+automatically.
 
     >>> import itest_helper
     >>> browser = itest_helper.make_browser()
@@ -27,8 +29,9 @@ Launchpad should eventually resynchronize their state automatically.
 == Lost construction ==
 
 The mailing list is now active, but let's say that the status reporting
-failed.  The mailing list would be in the CONSTRUCTING state.  We simulate
-that here by manually tweaking the list back to that transitory state.
+failed.  The mailing list would be in the CONSTRUCTING state.  We
+simulate that here by manually tweaking the list back to that transitory
+state.
 
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
@@ -53,8 +56,8 @@ Now we just wait for Mailman to resynchronize its state with Launchpad.
 
 == Lost updates ==
 
-Another situation can occur if the team owner updates the mailing list, say by
-giving it a welcome message.
+Another situation can occur if the team owner updates the mailing list,
+say by giving it a welcome message.
 
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
     >>> itest_one.status
