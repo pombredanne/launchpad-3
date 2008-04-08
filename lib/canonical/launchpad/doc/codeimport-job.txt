@@ -333,6 +333,15 @@ The method takes a running job, a status code indicating whether the
 job completed successfully or not and an optional link to the log of
 the import run in the librarian.
 
+Also, in the successful case, finishJob calls requestMirror() on the
+import branch so that the newly imported revisions can be pulled into
+the code hosting area.  In this example, the import branch has never
+been marked as needing mirroring, so the 'next_mirror_time' field is
+empty:
+
+    >>> print_date_attribute(code_import.branch, 'next_mirror_time')
+    None
+
 We just document the successful case here, when a log is not recorded.
 The details are tested in unit tests in ../tests/test_codeimportjob.py.
 
@@ -378,6 +387,12 @@ the import started and finished and the final status of the run.
     UTC_NOW
     >>> print result.status.name
     SUCCESS
+
+And because we're pretending that this was as successful run, the
+branch is now due to be mirrored by branch puller:
+
+    >>> print_date_attribute(code_import.branch, 'next_mirror_time')
+    UTC_NOW
 
 Other details of the result object are checked in the unit tests.
 
