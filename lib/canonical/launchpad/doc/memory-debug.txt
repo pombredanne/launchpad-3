@@ -1,0 +1,133 @@
+= Memory debugging =
+
+Application server can leak references, and this is hard to track down.
+The LaunchpadBrowserPublication contains special purpose memory
+debugging helper to help diagnose such problems.
+
+The memory leaking diagnosis is invoked at endRequest() only when the
+debug.references variable is true. It is turned off by default.
+
+    >>> from canonical.config import config
+    >>> config.debug.references
+    False
+
+Setting it to true, will save in endRequest() a dump of the current
+memory usage and counts in the file specified in
+config.debug.references_scoreboard_file. (We also set the
+config.debug.references_leak_log file which will contain the
+differential diagnostic.)
+
+    >>> import os
+    >>> import tempfile
+    >>> from textwrap import dedent
+
+    >>> tempdir = tempfile.mkdtemp(prefix='memory-debug')
+    >>> scoreboard_path = os.path.join(tempdir, 'scoreboard.txt')
+    >>> references_log_path = os.path.join(tempdir, 'references-leak.log')
+
+    >>> config.push('debug-references', dedent("""\
+    ...     [debug]
+    ...     references: True
+    ...     references_scoreboard_file: %s
+    ...     references_leak_log: %s
+    ...     """ % (scoreboard_path, references_log_path)))
+
+There is a debug_references_startup_check() that is called when the
+IProcessStartingEvent is fired. It raises an exception if the setting
+is on, but the number of threads is not 1.
+
+    >>> from canonical.launchpad.webapp.publication import (
+    ...     debug_references_startup_check)
+    >>> orig_threads = config.threads
+    >>> orig_threads > 1
+    True
+    >>> from zope.app.appsetup import ProcessStarting
+
+    # We don't use notify here, because we don't want to invoke the
+    # other subscribers.
+    >>> debug_references_startup_check(ProcessStarting())
+    Traceback (most recent call last):
+      ...
+    InvalidThreadsConfiguration: ...
+
+This handler also deletes any previous scoreboard file that might be
+present (left by a previous run.)
+
+    >>> config.threads = 1
+    >>> open(scoreboard_path, 'w').close()
+    >>> debug_references_startup_check(ProcessStarting())
+    >>> os.path.exists(scoreboard_path)
+    False
+
+So the first time endRequest() is called, the references count is dumped
+to the scoreboard file.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.adapter import set_request_started
+    >>> def create_request(pageid='View:+template'):
+    ...     """Returns a LaunchpadTestRequest with appropriate fixture.
+    ...
+    ...     Sets some attributes on the request expected by the
+    ...     publication, and that are usually set by previous publication
+    ...     steps.
+    ...     """
+    ...     request = LaunchpadTestRequest()
+    ...     # Adds some expected requests variables by endRequest().
+    ...     request._orig_env['launchpad.pageid'] = pageid
+    ...     request.oopsid = None
+    ...     # Prevents warnings when endRequest() is called.
+    ...     set_request_started()
+    ...     return request
+
+    >>> from canonical.launchpad.webapp.publication import (
+    ...     LaunchpadBrowserPublication)
+    >>> publication = LaunchpadBrowserPublication(None)
+    >>> publication.endRequest(create_request(), None)
+
+The first line of the scoreboard is the number of bytes of RSS used and
+then a list of count and types.
+
+    >>> import re
+    >>> scoreboard = open(scoreboard_path, 'r')
+    >>> lines = scoreboard.readlines()
+    >>> re.match('\d+$', lines[0].strip()) is not None
+    True
+    >>> re.match('\d+ <type.*>$', lines[1].strip()) is not None
+    True
+
+On the second request, the scoreboard will be compared to the previous
+one and differences will be reported in the references leak log file.
+The format is date pageid increase_in_RSS type=increase; type=increase.
+Example:
+
+    2008-04-03:18:15:45 Question:+index 0.57Mb <type 'tuple'>=6419;
+        <type 'dict'>=2744; <type 'list'>=1942; <type 'weakref'>=544
+
+    >>> os.path.exists(references_log_path)
+    False
+    >>> publication.endRequest(create_request(), None)
+    >>> references_log = open(references_log_path, 'r')
+    >>> references_log.read()
+    "... View:+template ...Mb... <type 'list'>=...; ...\n"
+
+Of course when the tool is off, none of the above processing takes
+place:
+
+    >>> config.push('turn-off-references-debug', dedent("""\
+    ...     [debug]
+    ...     references: False"""))
+    >>> scoreboard.close()
+    >>> references_log.close()
+    >>> os.remove(scoreboard_path)
+    >>> os.remove(references_log_path)
+
+    >>> publication.endRequest(create_request(), None)
+    >>> os.path.exists(config.debug.references_scoreboard_file)
+    False
+    >>> os.path.exists(config.debug.references_leak_log)
+    False
+
+(Clean up)
+
+    >>> ignored = config.pop('debug-references')
+    >>> config.threads = orig_threads

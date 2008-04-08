@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import re
 import subprocess
 import unittest
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import (
     flush_database_caches, flush_database_updates, cursor)
-from canonical.launchpad.database import TeamMembership, TeamParticipation
+from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IPersonSet, ITeamMembershipSet, TeamMembershipStatus)
@@ -138,14 +139,14 @@ class TestTeamMembership(unittest.TestCase):
         direct member is kicked.
 
         Create a team hierarchy with 5 teams and one person (no-priv) as
-        member of the last team in the chain. 
+        member of the last team in the chain.
             team1
                team2
                   team3
                      team4
                         team5
                            no-priv
-        
+
         Then kick the latest team (team5) from team4 and check that neither
         no-priv nor team5 are indirect members of any other teams.
         """
@@ -337,25 +338,35 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         self.assertEqual((out, err), ('', ''))
 
     def test_report_invalid_teamparticipation_entries(self):
+        """The script reports invalid TeamParticipation entries.
+
+        As well as missing self-participation.
+        """
         cur = cursor()
+        # Create a new entry in the Person table and update its
+        # TeamParticipation so that the person is a participant in a team
+        # (without being a member) and the person is not a member of itself.
         cur.execute("""
-            SELECT p.id, t.id
-            FROM person AS p, person AS t
-            WHERE (p.id, t.id) NOT IN (
-                SELECT person, team FROM teamparticipation)
-                AND p.id != t.id
-                AND p.teamowner IS NULL
-                AND t.teamowner IS NOT NULL
-                LIMIT 1
+            INSERT INTO
+                Person (id, name, displayname, openid_identifier,
+                        creation_rationale)
+                VALUES (9999, 'zzzzz', 'zzzzzz', 'zzzzzzzzzzz', 1);
+            UPDATE TeamParticipation
+                SET team = (
+                    SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
+                WHERE person = 9999;
             """)
-        [person, team] = cur.fetchone()
-        tp = TeamParticipation(person=person, team=team)
         import transaction
         transaction.commit()
+
         out, err = self._runScript()
         self.assertEqual(err, '', (out, err))
         self.failUnless(
-            'Invalid teamParticipation entry for' in out, (out, err))
+            re.search('Invalid TeamParticipation entry for zzzzz', out),
+            (out, err))
+        self.failUnless(
+            re.search('not members of themselves:.*zzzzz.*', out),
+            (out, err))
 
 
 def test_suite():

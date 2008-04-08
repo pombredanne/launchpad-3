@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'CodeImportJobState',
     'ICodeImportJob',
-    'ICodeImportJobPublic',
     'ICodeImportJobSet',
     'ICodeImportJobSetPublic',
     'ICodeImportJobWorkflow',
@@ -62,6 +61,8 @@ class ICodeImportJob(Interface):
     # Some of these attributes are not conceptually read-only but are
     # set to be read-only here to force client code to use methods
     # that update the audit trail appropriately.
+
+    id = Int(readonly=True, required=True)
 
     date_created = Datetime(required=True, readonly=True)
 
@@ -116,19 +117,6 @@ class ICodeImportJob(Interface):
         system clock. It does the correct thing, which is to compare date_due
         to the time of the current transaction.
         """
-
-
-class ICodeImportJobPublic(Interface):
-    """Parts of the CodeImportJob interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated.
-    """
-    # XXX MichaelHudson 2008-02-18 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
-
-    id = Int(readonly=True, required=True)
 
 
 class ICodeImportJobSet(Interface):

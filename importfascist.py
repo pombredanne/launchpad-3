@@ -12,6 +12,7 @@ database_root = 'canonical.launchpad.database'
 naughty_imports = set()
 
 # Silence bogus warnings from Hardy's python-pkg-resources package.
+import warnings
 warnings.filterwarnings('ignore', category=UserWarning, append=True,
                         message=r'Module .*? is being added to sys.path')
 
