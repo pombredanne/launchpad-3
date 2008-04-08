@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IExternalBugTracker',
     'IExternalBugTrackerTokenAPI',
+    'IExternalBugTrackerTokenApplication',
     'ISupportsCommentImport',
     'ISupportsBugImport',
     'UNKNOWN_REMOTE_IMPORTANCE',
@@ -16,6 +17,8 @@ __all__ = [
 
 from zope.interface import Interface
 
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+
 # This is a text string which indicates that the remote status is
 # unknown for some reason.
 # XXX: Bjorn Tillenius 2006-04-06:
@@ -23,6 +26,10 @@ from zope.interface import Interface
 #      would allow us to get rid of these text constants.
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
+
+
+class IExternalBugTrackerTokenApplication(ILaunchpadApplication):
+    """ExternalBugTracker token application root."""
 
 
 class IExternalBugTrackerTokenAPI(Interface):

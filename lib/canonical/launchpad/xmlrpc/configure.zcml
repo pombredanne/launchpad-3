@@ -36,8 +36,14 @@
     permission="zope.Public"
     />
 
+  <securedutility
+    class="canonical.launchpad.systemhomes.ExternalBugTrackerTokenApplication"
+    provides="canonical.launchpad.interfaces.IExternalBugTrackerTokenApplication">
+    <allow interface="canonical.launchpad.interfaces.IExternalBugTrackerTokenApplication"/>
+  </securedutility>
+
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.IMaloneApplication"
+    for="canonical.launchpad.interfaces.IExternalBugTrackerTokenApplication"
     interface="canonical.launchpad.interfaces.IExternalBugTrackerTokenAPI"
     class="canonical.launchpad.xmlrpc.ExternalBugTrackerTokenAPI"
     permission="zope.Public"

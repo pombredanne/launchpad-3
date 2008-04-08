@@ -21,10 +21,11 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    ICodeImportSchedulerApplication, IDistroSeriesSet,
+    IExternalBugTrackerTokenApplication, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IProductSet, IRosettaApplication, IShipItApplication,
+    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
+    IProductSet, IRosettaApplication, IShipItApplication,
     ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
@@ -40,6 +41,13 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
+
+
+class ExternalBugTrackerTokenApplication:
+    """ExternalBugTracker authentication token end-point."""
+    implements(IExternalBugTrackerTokenApplication)
+
+    title = "ExternalBugTracker Token Generator>"
 
 
 class ShipItApplication:

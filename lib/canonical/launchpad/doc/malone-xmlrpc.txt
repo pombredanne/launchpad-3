@@ -234,12 +234,12 @@ for authentication with external bug trackers.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IMaloneApplication, IPrivateApplication)
+    ...     IExternalBugTrackerTokenApplication, IPrivateApplication)
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
-    >>> verifyObject(IMaloneApplication,
-    ...     private_root.malone)
+    >>> verifyObject(IExternalBugTrackerTokenApplication,
+    ...     private_root.bugtrackertokens)
     True
 
 The API provides a single method, newToken(), which returns the ID of
@@ -252,7 +252,7 @@ the new LoginToken
     ...     ExternalBugTrackerTokenAPI)
 
     >>> bugtracker_token_api = ExternalBugTrackerTokenAPI(
-    ...     private_root.malone, TestRequest())
+    ...     private_root.bugtrackertokens, TestRequest())
 
     >>> verifyObject(IExternalBugTrackerTokenAPI, bugtracker_token_api)
     True
@@ -270,7 +270,7 @@ The LoginToken generated will be of the LoginTokenType BUGTRACKER.
 These requests are all handled by the private xml-rpc server.
 
     >>> bugtracker_api = xmlrpclib.ServerProxy(
-    ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
+    ...     'http://xmlrpc-private.launchpad.dev:8087/bugtrackertokens',
     ...     transport=XMLRPCTestTransport())
 
     >>> token_id = bugtracker_api.newToken()
