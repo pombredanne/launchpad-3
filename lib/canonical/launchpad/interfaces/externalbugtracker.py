@@ -16,8 +16,6 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
 # This is a text string which indicates that the remote status is
 # unknown for some reason.
 # XXX: Bjorn Tillenius 2006-04-06:

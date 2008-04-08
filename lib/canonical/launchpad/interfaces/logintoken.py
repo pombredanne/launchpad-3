@@ -130,8 +130,8 @@ class ILoginToken(Interface):
         required=False,
         )
     redirection_url = Text(
-        title=_('The URL to where we should redirect the user after processing '
-                'his request'),
+        title=_('The URL to where we should redirect the user after '
+                'processing his request'),
         required=False,
         )
     created = Datetime(
@@ -147,7 +147,8 @@ class ILoginToken(Interface):
         required=True,
         )
     fingerprint = Text(
-        title=_('OpenPGP key fingerprint used to retrive key information when necessary.'),
+        title=_('OpenPGP key fingerprint used to retrive key information '
+                'when necessary.'),
         required=False,
         )
     date_consumed = Datetime(
@@ -296,12 +297,6 @@ class ILoginTokenSet(Interface):
         """Returns the LoginToken with the given id.
 
         Raises KeyError if there is no such LoginToken.
-        """
-
-    def get(id, default=None):
-        """Returns the LoginToken with the given id.
-
-        Returns the default value if there is no such LoginToken.
         """
 
 
