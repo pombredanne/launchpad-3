@@ -4,7 +4,6 @@ import __builtin__
 import atexit
 import itertools
 import types
-import warnings
 from operator import attrgetter
 
 original_import = __builtin__.__import__
