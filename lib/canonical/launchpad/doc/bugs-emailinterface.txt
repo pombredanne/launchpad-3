@@ -2532,10 +2532,10 @@ Base64 encoded attachments are decoded before being stored.
     this is not a real JPG file
 
 Some mail clients append a filename to the content type of attachments.
-This does not affect the processing. Note though that, if both the
-content-disposition header and the content-type header specify a 
-filename, the filename used for the Librarian file is taken from the
-content-type header.
+This does not affect the processing. Note though that the filename from
+the content-type header is ignored, even if the content-disposition 
+header does not provide a filename. The content type of the PGP signature
+is properly detected and thus no bug attchement created.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
