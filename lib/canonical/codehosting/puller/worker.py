@@ -139,7 +139,7 @@ class PullerWorker:
     """
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 protocol, opps_prefix=None):
+                 protocol, oops_prefix=None):
         self.source = src
         self.dest = dest
         self.branch_id = branch_id
@@ -153,8 +153,8 @@ class PullerWorker:
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
-        if opps_prefix is not None:
-            errorlog.globalErrorUtility.setOopsToken(opps_prefix)
+        if oops_prefix is not None:
+            errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
