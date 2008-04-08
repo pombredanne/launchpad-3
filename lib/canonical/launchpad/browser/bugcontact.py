@@ -70,8 +70,8 @@ class BugContactEditView(LaunchpadEditFormView):
         if not data.has_key('bugcontact'):
             self.setFieldError(
                 'bugcontact',
-                'You must choose a valid person or team to be the bug supervisor'
-                ' for %s.' %
+                'You must choose a valid person or team to be the'
+                ' bug supervisor for %s.' %
                 self.context.displayname)
 
             return

@@ -48,8 +48,7 @@ Firefox has a few bugs:
 
 Ubuntu does too:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> all_public = BugTaskSearchParams(user=None)
     >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
@@ -561,7 +560,6 @@ Searching for bugs with any of the tags returns both of them.
 
 Searching for bugs with any of the tags returns only test bug a.
 
-    >>> from canonical.launchpad.searchbuilder import all, any
     >>> from sets import Set
     >>> all_params = BugTaskSearchParams(
     ...     tag=all('test-tag-1', 'test-tag-2'), user=None)
