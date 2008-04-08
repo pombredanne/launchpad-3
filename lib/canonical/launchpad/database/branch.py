@@ -414,9 +414,9 @@ class Branch(SQLBase):
         (alteration_operations,
             deletion_operations) = self._deletionRequirements()
         for operation in alteration_operations:
-            operation.doOperation()
+            operation()
         for operation in deletion_operations:
-            operation.doOperation()
+            operation()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -680,6 +680,9 @@ class DeletionOperation:
         self.affected_object = affected_object
         self.rationale = rationale
 
+    def __call__(self):
+        """Perform the deletion operation."""
+        raise NotImplementedError(DeletionOperation.__call__)
 
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
@@ -688,7 +691,7 @@ class DeletionCallable(DeletionOperation):
         DeletionOperation.__init__(self, affected_object, rationale)
         self.func = func
 
-    def doOperation(self):
+    def __call__(self):
         self.func()
 
 
@@ -699,7 +702,7 @@ class ClearDependentBranch(DeletionOperation):
         DeletionOperation.__init__(self, merge_proposal,
             _('This branch is the dependent branch of this merge proposal.'))
 
-    def doOperation(self):
+    def __call__(self):
         self.affected_object.dependent_branch = None
         self.affected_object.syncUpdate()
 
@@ -712,7 +715,7 @@ class ClearSeriesBranch(DeletionOperation):
             self, series, _('This series is linked to this branch.'))
         self.branch = branch
 
-    def doOperation(self):
+    def __call__(self):
         if self.affected_object.user_branch == self.branch:
             self.affected_object.user_branch = None
         if self.affected_object.import_branch == self.branch:
@@ -727,7 +730,7 @@ class DeleteCodeImport(DeletionOperation):
         DeletionOperation.__init__(
             self, code_import, _( 'This is the import data for this branch.'))
 
-    def doOperation(self):
+    def __call__(self):
         from canonical.launchpad.database.codeimport import CodeImportSet
         CodeImportSet().delete(self.affected_object)
 

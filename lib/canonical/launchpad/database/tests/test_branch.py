@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import (BranchSet,
     BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
-    DeletionCallable, DeleteCodeImport)
+     DeleteCodeImport, DeletionCallable, DeletionOperation)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
     )
@@ -397,39 +397,43 @@ class TestBranchDeletionConsequences(TestCase):
             SQLObjectNotFound, CodeImport.get, code_import_id)
 
     def test_ClearDependentBranch(self):
-        """ClearDependent.doOperation must clear the dependent branch."""
+        """ClearDependent.__call__ must clear the dependent branch."""
         merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
-        ClearDependentBranch(merge_proposal).doOperation()
+        ClearDependentBranch(merge_proposal)()
         self.assertEqual(None, merge_proposal.dependent_branch)
 
     def test_ClearSeriesUserBranch(self):
-        """ClearSeriesBranch.doOperation must clear the user branch."""
+        """ClearSeriesBranch.__call__ must clear the user branch."""
         series = removeSecurityProxy(self.factory.makeSeries(self.branch))
-        ClearSeriesBranch(series, self.branch).doOperation()
+        ClearSeriesBranch(series, self.branch)()
         self.assertEqual(None, series.user_branch)
 
     def test_ClearSeriesImportBranch(self):
-        """ClearSeriesBranch.doOperation must clear the import branch."""
+        """ClearSeriesBranch.__call__ must clear the import branch."""
         series = removeSecurityProxy(
             self.factory.makeSeries(import_branch=self.branch))
-        ClearSeriesBranch(series, self.branch).doOperation()
+        ClearSeriesBranch(series, self.branch)()
         self.assertEqual(None, series.import_branch)
+
+    def test_DeletionOperation(self):
+        """DeletionOperation.__call__ is not implemented."""
+        self.assertRaises(NotImplementedError, DeletionOperation('a', 'b'))
 
     def test_DeletionCallable(self):
         """DeletionCallable must invoke the callable."""
         spec = self.factory.makeSpecification()
         spec_link = spec.linkBranch(self.branch, self.branch.owner)
         spec_link_id = spec_link.id
-        DeletionCallable(spec, 'blah', spec_link.destroySelf).doOperation()
+        DeletionCallable(spec, 'blah', spec_link.destroySelf)()
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
                           spec_link_id)
 
     def test_DeleteCodeImport(self):
-        """DeleteCodeImport.doOperation must delete the CodeImport."""
+        """DeleteCodeImport.__call__ must delete the CodeImport."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
         self.factory.makeCodeImportJob(code_import)
-        DeleteCodeImport(code_import).doOperation()
+        DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
 
