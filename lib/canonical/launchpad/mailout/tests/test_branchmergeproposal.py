@@ -10,7 +10,7 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus, IBranchMergeProposal)
+    EmailAddressStatus)
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing import LaunchpadObjectFactory
