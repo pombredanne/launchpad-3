@@ -845,7 +845,6 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             else:
                 self.assertTrue(code_import.date_last_successful is None)
 
-
     def test_successfulResultCallsRequestMirror(self):
         # finishJob() calls requestMirror() on the import branch if and only
         # if the status was success.
