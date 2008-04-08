@@ -8,8 +8,8 @@ Malone provides an XML-RPC interface for filing bugs.
     ...     'http://test@canonical.com:test@xmlrpc.launchpad.dev/bugs/',
     ...     transport=XMLRPCTestTransport())
 
-The filebug API
----------------
+
+== The filebug API ==
 
 The filebug API is:
 
@@ -39,8 +39,8 @@ The return value is the bug URL, in short form, e.g.:
 
 Support for attachments will be added in the near future.
 
-Examples
---------
+
+== Examples ==
 
 First, let's define a simple event listener to show that the
 ISQLObjectCreatedEvent is being published when a bug is reported through
@@ -148,8 +148,8 @@ Reporting a package bug.
     >>> print evolution_bug.sourcepackagename.name
     evolution
 
-Error Handling
---------------
+
+== Error Handling ==
 
 Malone's xmlrpc interface provides extensive error handling. The various
 error conditions it recognizes are:
