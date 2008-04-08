@@ -25,7 +25,7 @@ from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.interfaces import Unauthorized, IParticipation
+from zope.security.interfaces import Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -624,12 +624,7 @@ class LaunchpadTestRequest(TestRequest):
     False
     """
     implements(INotificationRequest, IBasicLaunchpadRequest,
-               canonical.launchpad.layers.LaunchpadLayer,
-               IParticipation)
-
-    # For IParticipation.
-    interaction = None
-    principal = None
+               canonical.launchpad.layers.LaunchpadLayer)
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
