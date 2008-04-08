@@ -5,6 +5,9 @@
 __metaclass__ = type
 
 from unittest import TestCase, TestLoader
+
+from canonical.testing import LaunchpadFunctionalLayer
+from zope.component import getUtility
 import zope.event
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
@@ -16,10 +19,8 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus)
+    EmailAddressStatus, ILaunchpadCelebrities)
 from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
-
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBranchMergeProposalTransitions(TestCase):
@@ -315,6 +316,7 @@ class TestMergeProposalNotification(TestCase):
         TestCase.setUp(self)
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
+        self.lp_admins = getUtility(ILaunchpadCelebrities).admin
 
     def captureNotifications(self, events, callable_obj, *args, **kwargs):
         """Capture the notifications produced by invoking a callable.
@@ -464,10 +466,52 @@ class TestMergeProposalNotification(TestCase):
         self.assertNotNotifies(
             self.assertRaises, ValueError, raiseError, merge_proposal)
 
+    def test_notifyModificationPreservesSignature(self):
+        """On success, a notification should be performed."""
+        @notifyModification
+        def doNothing(self, arg1, arg2):
+            return 'hello'
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        doNothing(merge_proposal, 'arg1', arg2='arg2')
+
     def test_setAsWorkInProgressNotifies(self):
+        """setAsWorkInProgress should notify that the proposal changed."""
         merge_proposal = self.factory.makeBranchMergeProposal()
         self.assertNotifies(
             SQLObjectModifiedEvent, merge_proposal.setAsWorkInProgress)
+
+    def test_requestReviewNotifies(self):
+        """requestReview should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.requestReview)
+
+    def test_approveBranchNotifies(self):
+        """approveBranch should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.approveBranch,
+            self.lp_admins, 'null:')
+
+    def test_rejectBranchNotifies(self):
+        """rejectBranch should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.rejectBranch,
+            self.lp_admins, 'null:')
+
+    def test_mergeFailedNotifies(self):
+        """markFailed should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.mergeFailed,
+            self.lp_admins)
+
+    def test_markAsMergedNotifies(self):
+        """markAsMerged should notify that the proposal changed."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotifies(
+            SQLObjectModifiedEvent, merge_proposal.markAsMerged)
 
 
 def test_suite():

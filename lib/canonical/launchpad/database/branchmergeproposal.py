@@ -71,10 +71,10 @@ def notifyModification(func):
     If the operation raises an exception, no notification is emitted.
     Otherwise, a notification is emitted.
     """
-    def decorator(self):
+    def decorator(self, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(self)
         try:
-            result = func(self)
+            result = func(self, *args, **kwargs)
         except:
             raise
         notify(SQLObjectModifiedEvent(self, snapshot, None))
@@ -211,6 +211,7 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
 
+    @notifyModification
     def requestReview(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
@@ -245,11 +246,13 @@ class BranchMergeProposal(SQLBase):
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
 
+    @notifyModification
     def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
 
+    @notifyModification
     def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
@@ -312,12 +315,14 @@ class BranchMergeProposal(SQLBase):
         self.queue_position = first_entry.queue_position - 1
         self.syncUpdate()
 
+    @notifyModification
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
         self._transitionToState(
             BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
 
+    @notifyModification
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
