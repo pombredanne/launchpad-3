@@ -19,7 +19,7 @@ from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
     IAuthServerApplication, ICodeImportSchedulerApplication, ILaunchBag,
-    IMailingListApplication, IPrivateApplication)
+    IMailingListApplication, IMaloneApplication, IPrivateApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -40,6 +40,11 @@ class PrivateApplication:
     def codeimportscheduler(self):
         """See `IPrivateApplication`."""
         return getUtility(ICodeImportSchedulerApplication)
+
+    @property
+    def malone(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IMaloneApplication)
 
 
 class ISelfTest(Interface):
