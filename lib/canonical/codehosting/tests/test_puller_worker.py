@@ -99,7 +99,7 @@ class PullerWorkerMixin:
         shutil.rmtree(self.test_dir)
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
-                         protocol=None, opps_prefix=None):
+                         protocol=None, oops_prefix=None):
         """Anonymous creation method for PullerWorker."""
         if src_dir is None:
             src_dir = os.path.join(self.test_dir, 'source_dir')
@@ -107,12 +107,12 @@ class PullerWorkerMixin:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
-        if opps_prefix is None:
-            opps_prefix = ''
+        if oops_prefix is None:
+            oops_prefix = ''
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type, protocol=protocol,
-            opps_prefix=opps_prefix)
+            oops_prefix=oops_prefix)
 
 
 class ErrorHandlingTestCase(unittest.TestCase):
@@ -133,7 +133,7 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.branch = StubbedPullerWorker(
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=None,
-            protocol=self.protocol, opps_prefix='TOKEN')
+            protocol=self.protocol, oops_prefix='TOKEN')
         self.open_call_count = 0
         self.branch.testcase = self
 

@@ -425,6 +425,8 @@ def codeimport(context, view):
     """Return the view's title."""
     return view.title
 
+codeimport_edit = 'Edit import details'
+
 codeimport_list = 'Code Imports'
 
 codeimport_new = ViewLabel()

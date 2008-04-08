@@ -66,7 +66,7 @@ class CheckWatchesErrorUtility(ErrorReportingUtility):
 
     def __init__(self):
         super(CheckWatchesErrorUtility, self).__init__()
-        self.appendToOopsPrefix('CW')
+        self.setOopsToken('CW')
 
 
 def report_oops(message=None, properties=None, info=None):
