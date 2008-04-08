@@ -24,6 +24,7 @@ GLOBAL_NAMES = set([
     # for system documentation
     'ANONYMOUS',
     'ILaunchBag',
+    'commit',
     'create_view',
     'flush_database_updates',
     'getUtility',
@@ -43,6 +44,7 @@ GLOBAL_NAMES = set([
     'first_tag_by_class',
     'get_feedback_messages',
     'http',
+    'mailinglist_api',
     'parse_relationship_section',
     'print_action_links',
     'print_batch_header',
