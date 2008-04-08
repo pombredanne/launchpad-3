@@ -91,10 +91,10 @@ class BuildManager(object):
             self._subprocess, command, args, env=os.environ,
             path=os.environ["HOME"], childFDs=childfds)
 
-    def _unpackChroot(self, chroottarfile):
-        """Unpack the buld chroot."""
+    def doUnpack(self):
+        """Unpack the build chroot."""
         self.runSubProcess(self._unpackpath,
-                           ["unpack-chroot", self._buildid, chroottarfile])
+                           ["unpack-chroot", self._buildid, self._chroottarfile])
 
     def doCleanup(self):
         """Remove the build tree etc."""
@@ -118,7 +118,8 @@ class BuildManager(object):
             os.symlink( self._slave.cachePath(files[f]),
                         "%s/build-%s/%s" % (os.environ["HOME"],
                                             self._buildid, f))
-        self._unpackChroot(self._slave.cachePath(chroot))
+        self._chroottarfile = self._slave.cachePath(chroot)
+        self.runSubProcess("/bin/echo", ["echo", "Forking build subprocess..."])
 
     def iterate(self, success):
         """Perform an iteration of the slave.
