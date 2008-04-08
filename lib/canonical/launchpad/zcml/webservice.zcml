@@ -12,6 +12,14 @@
         <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
     </securedutility>
 
+    <!-- TALES ws: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WebServiceAPI"
+        name="ws"
+        />
+
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
         for="canonical.launchpad.interfaces.IWebServiceApplication"

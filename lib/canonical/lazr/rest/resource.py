@@ -22,6 +22,7 @@ import simplejson
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
+from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
@@ -45,6 +46,9 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
 from canonical.lazr.rest.schema import URLDereferencingMixin
 
+
+class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
+    pass
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
     """A JSON encoder for JSON-exposable resources like entry resources.
@@ -356,13 +360,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             content_type = self.request['HTTP_ACCEPT']
             wadl_type = 'application/vd.sun.wadl+xml'
             if content_type == wadl_type:
-                result = self.toWADL()
-                self.request.response.getHeader('Content-Type', wadl_type)
+                result = self.toWADL().encode("utf-8")
+                self.request.response.setHeader('Content-Type', wadl_type)
+                return result
             else:
                 result = self
 
         # Serialize the result to JSON.
-        self.request.response.setHeader('Content-type', 'application/json')
+        self.request.response.setHeader('Content-Type', 'application/json')
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
     def do_PUT(self, media_type, representation):
@@ -413,9 +418,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         The WADL document describes the capabilities of this resource.
         """
-        template = PageTemplateFile('../templates/wadl-entry.pt')
+        template = LazrPageTemplateFile('../templates/wadl-entry.pt')
         namespace = template.pt_getContext()
-        namespace['context'] = self
+        namespace['context'] = self.context
         return template.pt_render(namespace)
 
     def _applyChanges(self, changeset):
