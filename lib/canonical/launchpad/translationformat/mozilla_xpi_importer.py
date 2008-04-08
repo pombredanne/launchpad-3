@@ -299,7 +299,7 @@ class PropertyFile:
 
             line_num += 1
             if not is_multi_line_comment:
-                # Remove any white space before the usefule data, like
+                # Remove any white space before the useful data, like
                 # ' # foo'.
                 line = line.lstrip()
                 if line.startswith(u'#'):

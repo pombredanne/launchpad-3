@@ -39,7 +39,7 @@ This is handy for examining the tar files that are generated.
 
     >>> def examine_tarfile(tarfile):
     ...     for member in tarfile.getmembers():
-    ...         if member.isreg():
+    ...         if member.isreg() and not member.name.endswith('.xpi'):
     ...             lines = len(tarfile.extractfile(member).readlines())
     ...         else:
     ...             lines = 0
@@ -213,7 +213,7 @@ the translations in .po file format.
     |     0 | rosetta-grumpy/xpi/firefox/
     |    82 | rosetta-grumpy/xpi/firefox/es.po
     |    74 | rosetta-grumpy/xpi/firefox/en.po
-    |   ... | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
 
@@ -329,10 +329,6 @@ Check that the log looks ok.
 
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
-
-
-    WARNING:root:PO file header entry has no content-type field
-    WARNING:root:PO file header entry has no content-type field
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/xpi/
@@ -345,7 +341,7 @@ Check that the log looks ok.
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-    |   ... | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
     |     2 | rosetta-grumpy/mapping.txt
 
@@ -440,7 +436,7 @@ the modification date after the last generated language pack.
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-    |   ... | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
     |     2 | rosetta-grumpy/mapping.txt
 
@@ -488,7 +484,7 @@ template has.  That's why we get both translations:
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-    |   ... | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
     |     2 | rosetta-grumpy/mapping.txt
 
