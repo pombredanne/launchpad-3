@@ -107,7 +107,7 @@ heartbeat for some time.
 
 The setQuiescing method sets the machine's state to QUIESCING and
 records the corresponding event.  A user is passed into the method
-to be recoreded in the event, and will in almost all cases be a
+to be recorded in the event, and will in almost all cases be a
 member of vcs-imports.
 
     >>> login('david.allouche@canonical.com')
