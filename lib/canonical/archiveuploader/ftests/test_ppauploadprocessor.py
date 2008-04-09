@@ -757,7 +757,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(queue_items.count(), 1)
 
         # All the files associated with this binary upload must be in the
-        # non-restricted librarian as the PPA is not private.
+        # restricted librarian as the PPA is private.
         [queue_item] = queue_items
         self.checkFilesRestrictedInLibrarian(queue_item, True)
 
