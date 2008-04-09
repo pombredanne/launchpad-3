@@ -13,6 +13,14 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
         />
+        <!-- IStructuralSubscriptionTarget -->
+        <allow attributes="bug_subscriptions getSubscriptions
+                           getSubscription getBugNotificationsRecipients
+                           parent_subscription_target" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="addSubscription addBugSubscription
+                        removeBugSubscription" />
     </content>
 
     <browser:navigation

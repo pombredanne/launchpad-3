@@ -349,7 +349,9 @@ class LaunchpadObjectFactory:
 
         product = self.makeProduct()
         branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        # The registrant gets emailed, so needs a preferred email.
+        registrant = self.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -381,12 +383,16 @@ class LaunchpadObjectFactory:
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
 
-    def makeCodeImportMachine(self):
+    def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
 
         The machine will be in the OFFLINE state."""
-        hostname = self.getUniqueString('machine-')
-        return getUtility(ICodeImportMachineSet).new(hostname)
+        if hostname is None:
+            hostname = self.getUniqueString('machine-')
+        machine = getUtility(ICodeImportMachineSet).new(hostname)
+        if set_online:
+            machine.setOnline()
+        return machine
 
     def makeCodeImportResult(self):
         """Create and return a new CodeImportResult."""

@@ -425,7 +425,11 @@ def codeimport(context, view):
     """Return the view's title."""
     return view.title
 
+codeimport_edit = 'Edit import details'
+
 codeimport_list = 'Code Imports'
+
+codeimport_machines = ViewLabel()
 
 codeimport_new = ViewLabel()
 
@@ -807,6 +811,8 @@ announcements_all = 'Announcements from all projects hosted in Launchpad'
 
 notification_test = 'Notification test'
 
+oauth_authorize = 'Authorize application to access Launchpad on your behalf'
+
 object_branding = ContextDisplayName('Change the images used to represent '
     '%s in Launchpad')
 
@@ -919,6 +925,8 @@ def person_index(context, view):
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
+
+person_oauth_tokens = "Applications you authorized to access Launchpad"
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
@@ -1415,6 +1423,8 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
+
+token_authorized = 'Almost finished ...'
 
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))

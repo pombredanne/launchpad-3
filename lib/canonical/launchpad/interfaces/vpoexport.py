@@ -25,7 +25,7 @@ class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
 
     def get_pofile_rows(pofile):
-        """Return all rows which belong to the given PO file."""
+        """Return exportable rows belonging to the given PO file."""
 
     def get_distroseries_pofiles(series, date=None, component=None,
         languagepack=None):

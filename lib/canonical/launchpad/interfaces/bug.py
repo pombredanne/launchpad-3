@@ -278,7 +278,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
-    def getBugNotificationRecipients(duplicateof=None):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -289,10 +289,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         details of this implementation.
         """
 
-    def addChangeNotification(text, person):
+    def addChangeNotification(text, person, recipients=None, when=None):
         """Add a bug change notification."""
 
-    def addCommentNotification(message):
+    def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
     def expireNotifications():
@@ -466,6 +466,7 @@ class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
 
     bug = Attribute("The IBug, after it's been edited.")
+    bug_before_modification = Attribute("The IBug, before it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
 

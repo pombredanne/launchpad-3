@@ -149,15 +149,16 @@ class IBugTracker(Interface):
             'A brief introduction or overview of this bug tracker instance.'),
         required=False)
     baseurl = BugTrackerBaseURL(
-        title=_('Base URL'),
+        title=_('Location'),
         description=_(
-            'The top-level URL for the bug tracker. This must be accurate '
-            'so that Launchpad can link to external bug reports.'))
+            'The top-level URL for the bug tracker, or an upstream email '
+            'address. This must be accurate so that Launchpad can link to '
+            'external bug reports.'))
     aliases = List(
-        title=_('Base URL aliases'),
+        title=_('Location aliases'),
         description=_(
-            'A list of URLs that all lead to the same bug tracker, '
-            'or commonly seen typos.'),
+            'A list of URLs or email addresses that all lead to the same '
+            'bug tracker, or commonly seen typos, separated by whitespace.'),
         value_type=URIField(), required=False)
     owner = Int(title=_('Owner'))
     contactdetails = Text(
@@ -258,8 +259,8 @@ class IBugTrackerAlias(Interface):
         title=_('The bugtracker for which this is an alias.'),
         schema=IBugTracker)
     base_url = BugTrackerBaseURL(
-        title=_('Base URL'),
-        description=_('Another top-level URL for the bug tracker.'))
+        title=_('Location'),
+        description=_('Another URL or email address for the bug tracker.'))
 
 
 class IBugTrackerAliasSet(Interface):

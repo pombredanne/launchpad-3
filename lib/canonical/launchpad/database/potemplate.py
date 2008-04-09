@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """`SQLObject` implementation of `IPOTemplate` interface."""
@@ -455,6 +455,19 @@ class POTemplate(SQLBase, RosettaStats):
 
         return file_content
 
+    def _generateTranslationFileDatas(self):
+        """Yield `ITranslationFileData` objects for translations and self.
+
+        This lets us construct the in-memory representations of the template
+        and its translations one by one before exporting them, rather than
+        building them all beforehand and keeping them in memory at the same
+        time.
+        """
+        for translation_file in self.pofiles:
+            yield ITranslationFileData(translation_file)
+
+        yield ITranslationFileData(self)
+
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
         translation_exporter = getUtility(ITranslationExporter)
@@ -462,13 +475,8 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        translation_files = [
-            ITranslationFileData(pofile)
-            for pofile in self.pofiles
-            ]
-        translation_files.append(ITranslationFileData(self))
         return translation_format_exporter.exportTranslationFiles(
-            translation_files)
+            self._generateTranslationFileDatas())
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
