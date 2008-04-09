@@ -183,6 +183,11 @@ class LaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
+
+        # Cache for authserver responses to getBranchInformation(). This maps
+        # from (user, product, branch) tuples to whatever
+        # getBranchInformation() returns. To clear an individual tuple, set
+        # its value in the cache to None, or delete it from the cache.
         self._branch_info_cache = {}
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
@@ -373,7 +378,7 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        self._branch_info_cache = {}
+        self._branch_info_cache.clear()
         unregister_transport(self.scheme, self._factory)
 
 
