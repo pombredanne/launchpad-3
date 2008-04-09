@@ -315,8 +315,8 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.status == MailingListStatus.ACTIVE:
-            raise CannotSubscribe('Mailing list is not active: %s' %
+        if not self.isUsable():
+            raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
@@ -495,6 +495,12 @@ class MailingListSet:
     def deactivated_lists(self):
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
+
+    @property
+    def unsynchronized_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.select('status IN %s' % sqlvalues(
+            (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
 
 
 class MailingListSubscription(SQLBase):

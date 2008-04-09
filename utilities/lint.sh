@@ -153,7 +153,9 @@ if [ -z "$pyfiles" ]; then
 fi
 
 
-sed_deletes="/detect undefined names/d; /'_pythonpath' .* unused/d;"
+sed_deletes="/detect undefined names/d; /'_pythonpath' .* unused/d; "
+sed_deletes="$sed_deletes /BYUSER/d; "
+sed_deletes="$sed_deletes /ENABLED/d; "
 pyflakes_notices=`pyflakes $pyfiles 2>&1 | sed "$sed_deletes"`
 if [ ! -z "$pyflakes_notices" ]; then
     echo ""

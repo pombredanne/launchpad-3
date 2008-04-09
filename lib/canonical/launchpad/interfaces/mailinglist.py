@@ -511,6 +511,15 @@ class IMailingListSet(Interface):
         value_type=Object(schema=IMailingList),
         readonly=True)
 
+    unsynchronized_lists = Set(
+        title=_('Unsynchronized lists'),
+        description=_(
+            'All mailing lists with unsynchronized state, e.g. '
+            '`MailingListStatus.CONSTRUCTING` and '
+            '`MailingListStatus.UPDATING`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
+
 
 class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""

@@ -21,7 +21,6 @@ To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.
 
     >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 

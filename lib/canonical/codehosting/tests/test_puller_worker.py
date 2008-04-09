@@ -99,7 +99,7 @@ class PullerWorkerMixin:
         shutil.rmtree(self.test_dir)
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
-                         protocol=None):
+                         protocol=None, oops_prefix=None):
         """Anonymous creation method for PullerWorker."""
         if src_dir is None:
             src_dir = os.path.join(self.test_dir, 'source_dir')
@@ -107,9 +107,12 @@ class PullerWorkerMixin:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
+        if oops_prefix is None:
+            oops_prefix = ''
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
-            branch_type=branch_type, protocol=protocol)
+            branch_type=branch_type, protocol=protocol,
+            oops_prefix=oops_prefix)
 
 
 class ErrorHandlingTestCase(unittest.TestCase):
@@ -130,7 +133,7 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.branch = StubbedPullerWorker(
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=None,
-            protocol=self.protocol)
+            protocol=self.protocol, oops_prefix='TOKEN')
         self.open_call_count = 0
         self.branch.testcase = self
 
@@ -146,6 +149,7 @@ class ErrorHandlingTestCase(unittest.TestCase):
         startMirroring, mirrorFailed = self.protocol.calls
         self.assertEqual(('startMirroring', self.branch), startMirroring)
         self.assertEqual(('mirrorFailed', self.branch), mirrorFailed[:2])
+        self.assert_('TOKEN' in mirrorFailed[3])
         self.protocol.calls = []
         return str(mirrorFailed[2])
 
