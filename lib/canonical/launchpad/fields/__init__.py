@@ -662,11 +662,10 @@ class ProductNameField(PillarNameField):
 def is_valid_public_person_link(person, other):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     assert IPerson.providedBy(person)
-    if person.visibility in (PersonVisibility.PRIVATE,
-                             PersonVisibility.PRIVATE_MEMBERSHIP):
-        return False
-    else:
+    if person.visibility == PersonVisibility.PUBLIC:
         return True
+    else:
+        return False
 
 
 class PublicPersonChoice(Choice):

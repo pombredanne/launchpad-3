@@ -57,23 +57,28 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # In addition, all approved mailing lists that are being
             # constructed by Mailman need to have their status changed.
             mailing_list.startConstructing()
-        if creates:
+        if len(creates) > 0:
             response['create'] = creates
         # Next do mailing lists that are to be deactivated.
         deactivated = [mailing_list.team.name
                        for mailing_list in list_set.deactivated_lists]
-        if deactivated:
+        if len(deactivated) > 0:
             response['deactivate'] = deactivated
-        # Finally, do modified lists.  Currently, the only value that can be
-        # modified is the welcome message.
+        # Do modified lists.  Currently, the only value that can be modified
+        # is the welcome message.
         modified = []
         for mailing_list in list_set.modified_lists:
             changes = (mailing_list.team.name,
                        dict(welcome_message=mailing_list.welcome_message))
             modified.append(changes)
             mailing_list.startUpdating()
-        if modified:
+        if len(modified) > 0:
             response['modify'] = modified
+        # Handle unsynchronized lists.
+        unsynchronized = [mailing_list.team.name
+                          for mailing_list in list_set.unsynchronized_lists]
+        if len(unsynchronized) > 0:
+            response['unsynchronized'] = unsynchronized
         return response
 
     def reportStatus(self, statuses):
@@ -193,26 +198,14 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # These are messages that the team owner has approved, but Mailman
         # hasn't yet acted upon.  For each of these, set their state to final
         # approval.
-        approved_messages = message_set.getHeldMessagesWithStatus(
-            PostedMessageStatus.APPROVAL_PENDING)
-        for held_message in approved_messages:
-            held_message.acknowledge()
-            response[held_message.message_id] = (
-                held_message.mailing_list.team.name, 'accept')
-        # Similarly handle all held messages that have been rejected by the
-        # team administrator but not yet handled by Mailman.
-        rejected_messages = message_set.getHeldMessagesWithStatus(
-            PostedMessageStatus.REJECTION_PENDING)
-        for held_message in rejected_messages:
-            held_message.acknowledge()
-            response[held_message.message_id] = (
-                held_message.mailing_list.team.name, 'decline')
-        # Similarly handle all held messages that have been discarded by the
-        # team administrator but not yet handled by Mailman.
-        rejected_messages = message_set.getHeldMessagesWithStatus(
-            PostedMessageStatus.DISCARD_PENDING)
-        for held_message in rejected_messages:
-            held_message.acknowledge()
-            response[held_message.message_id] = (
-                held_message.mailing_list.team.name, 'discard')
+        status_dispositions = (
+            (PostedMessageStatus.APPROVAL_PENDING, 'accept'),
+            (PostedMessageStatus.REJECTION_PENDING, 'decline'),
+            (PostedMessageStatus.DISCARD_PENDING, 'discard'),
+            )
+        for status, disposition in status_dispositions:
+            for held_message in message_set.getHeldMessagesWithStatus(status):
+                held_message.acknowledge()
+                response[held_message.message_id] = (
+                    held_message.mailing_list.team.name, disposition)
         return response

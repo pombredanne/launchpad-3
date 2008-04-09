@@ -3,4 +3,5 @@
 
 """Code for publishing RESTful web services."""
 
+from canonical.lazr.rest.operation import *
 from canonical.lazr.rest.resource import *

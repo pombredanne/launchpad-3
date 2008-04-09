@@ -366,6 +366,18 @@
         name="fmt"
         />
     <adapter
+        for="canonical.launchpad.interfaces.IBugTracker"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IBugWatch"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugWatchFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
@@ -545,6 +557,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
+        />
+
+    <!-- Make sure that the config is sane for references debugging. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <subscriber
