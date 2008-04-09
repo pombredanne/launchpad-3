@@ -312,6 +312,13 @@ class IArchiveSet(Interface):
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
 
+    def getPPAsForUser(user):
+        """Return all PPAs the given user can participate.
+
+        The result is ordered by PPA owner's displayname.
+        """
+
+
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.
 

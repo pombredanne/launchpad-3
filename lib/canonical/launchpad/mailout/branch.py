@@ -10,7 +10,7 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.mailout import deltaLines
+from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -122,17 +122,16 @@ def send_branch_modified_notifications(branch, event):
             # The subscription is None if we added the branch owner above.
             to_addresses.add(email_address)
 
-    info_lines = deltaLines(
+    contents = text_delta(
         branch_delta, ('name', 'title', 'url', 'lifecycle_status'),
         ('summary', 'whiteboard'), IBranch)
 
-    if not info_lines:
+    if not contents:
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
 
     from_address = format_address(
         event.user.displayname, event.user.preferredemail.email)
-    contents = '\n'.join(info_lines)
     email_branch_modified_notifications(
         branch, to_addresses, from_address, contents, recipients)
