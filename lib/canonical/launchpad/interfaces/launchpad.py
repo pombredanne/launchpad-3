@@ -204,7 +204,7 @@ class IPrivateApplication(ILaunchpadApplication):
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
-    bugs = Attribute("""Bug tracker tokens XML-RPC end point.""")
+    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):

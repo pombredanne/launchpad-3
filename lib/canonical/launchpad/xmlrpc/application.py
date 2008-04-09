@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd., all rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """XML-RPC API to the application roots."""
 

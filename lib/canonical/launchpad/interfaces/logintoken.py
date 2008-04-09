@@ -147,7 +147,7 @@ class ILoginToken(Interface):
         required=True,
         )
     fingerprint = Text(
-        title=_('OpenPGP key fingerprint used to retrive key information '
+        title=_('OpenPGP key fingerprint used to retrieve key information '
                 'when necessary.'),
         required=False,
         )

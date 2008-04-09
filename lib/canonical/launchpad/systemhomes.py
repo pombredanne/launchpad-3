@@ -48,7 +48,7 @@ class PrivateMaloneApplication:
     """ExternalBugTracker authentication token end-point."""
     implements(IPrivateMaloneApplication)
 
-    title = "ExternalBugTracker Token Generator>"
+    title = "Launchpad Bugs."
 
 
 class ShipItApplication:
