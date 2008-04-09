@@ -37,6 +37,53 @@ And in this case we don't say anything special in the UI. If the description
 was updated, the UI includes a note on this matter and a link to the original
 comment.
 
+The first comment may have bug attachments. While it is not possible to
+add an attachment via the web interface to the first comment, bugs
+submitted via the email interface can have file attachments, which
+are stored as bug attchments of the first comment. Similary, the first
+comment of bugs imported from other bug trackers may have attachments.
+We display these attachments in the "comment section" of the Web UI,
+hence getBugCommentsForDisplay returns the first comment, if it has
+attachments.
+
+Currently, the first comment of bug 11 has no attachments, hence
+BugTaskView.getCommentForDisplay does not return the first comment.
+
+    >>> bug_11 =  getUtility(IBugSet).get(11)
+    >>> bug_11_bugtask = bug_11.bugtasks[0]
+    >>> bug_11_view = getView(bug_11_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_11_view.initialize()
+    >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
+    >>> [bug_comment.index for bug_comment in rendered_comments]
+    [1, 2, 3, 4, 5, 6]
+
+If we add an attachment to the first comment, this comment is included
+in getBugCommentsForDisplay...
+
+    >>> import StringIO
+    >>> login("test@canonical.com")
+    >>> attachment = bug_11.addAttachment(
+    ...     owner=None, file_=StringIO.StringIO('whatever'),
+    ...     comment=bug_11.initial_message, filename='test.txt',
+    ...     is_patch=False, content_type='text/plain',
+    ...     description='sample data')
+    >>> bug_11_view = getView(bug_11_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_11_view.initialize()
+    >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
+    >>> [bug_comment.index for bug_comment in rendered_comments]
+    [0, 1, 2, 3, 4, 5, 6]
+    >>> 
+
+...but the attribute text_for_display of the first comment is empty.
+This allows us to display the attachments of the initial message
+as the first comment, without repeating the text of the bug report.
+
+   >>> rendered_comments[0].text_for_display
+   ''
+   >>> print rendered_comments[0].text_contents
+   I've had problems when switching from Jokosher...
+
+
 Comment truncation
 ------------------
 
