@@ -419,13 +419,12 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         return user.inTeam(admins)
 
 
-class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
-    permission = 'launchpad.Admin'
+class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Owner'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """Only the team owner and Launchpad admins have launchpad.Admin on a
-        team.
+        """Only the team owner and Launchpad admins need this.
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
