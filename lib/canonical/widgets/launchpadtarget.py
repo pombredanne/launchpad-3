@@ -30,7 +30,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     default_option = "package"
 
     def __init__(self, field, request):
-        # Shut off the pylint warning about not calling the __init__()
+        # Shut off the pylint warning about not calling __init__()
         # on a Mixin class.
         # pylint: disable-msg=W0231
         BrowserWidget.__init__(self, field, request)
