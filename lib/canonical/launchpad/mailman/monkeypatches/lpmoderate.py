@@ -32,7 +32,7 @@ def process(mlist, msg, msgdata):
         if mlist.isMember(sender):
             return
     # From here on out, we're dealing with senders who are not members of the
-    # mailing list.  The are also not Launchpad members in good standing or
+    # mailing list.  They are also not Launchpad members in good standing or
     # we'd have already approved the message.  So now the message must be held
     # in Launchpad for approval via the LP u/i.
     sender = msg.get_sender()
