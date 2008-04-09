@@ -284,9 +284,11 @@ The commit is needed to see the new entries
 
 And the queue should have a new entry.
 
-   >>> translation_import_queue.getAllEntries(
-   ...     target=spr_test.sourcepackage).count()
-   1
+   >>> for entry in translation_import_queue.getAllEntries(
+   ...     target=spr_test.sourcepackage):
+   ...     print entry.path
+   something/en-US.xpi
+   po/es.po
 
 Now, we need to do the final import. It's done as a two steps procedure.
 

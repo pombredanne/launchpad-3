@@ -553,9 +553,17 @@ class IBranch(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person, notification_level, max_diff_lines):
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level):
         """Subscribe this person to the branch.
 
+        :param person: The `Person` to subscribe.
+        :param notification_level: The kinds of branch changes that cause
+            notification.
+        :param max_diff_lines: The maximum number of lines of diff that may
+            appear in a notification.
+        :param code_review_level: The kinds of code review activity that cause
+            notification.
         :return: new or existing BranchSubscription."""
 
     def getSubscription(person):

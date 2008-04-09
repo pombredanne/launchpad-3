@@ -75,11 +75,11 @@ class TestExecOnlySession(AvatarTestCase):
         self.reactor = MockReactor()
         self.session = smartserver.ExecOnlySession(self.avatar, self.reactor)
 
-    def test_getPtyNotImplemented(self):
-        # getPTY raises a NotImplementedError. It doesn't matter what we pass
-        # it.
-        self.assertRaises(NotImplementedError,
-                          self.session.getPty, None, None, None)
+    def test_getPtyIsANoOp(self):
+        # getPty is called on the way to establishing a shell. Since we don't
+        # give out shells, it should be a no-op. Raising an exception would
+        # log an OOPS, so we won't do that.
+        self.assertEqual(None, self.session.getPty(None, None, None))
 
     def test_openShellNotImplemented(self):
         # openShell closes the connection.
@@ -244,11 +244,11 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # the constructor and closes the connection.
 
         # Note that Conch doesn't have a well-defined way of rejecting
-        # commands: raising any exception from execCommand will do. Here we
-        # use an exception type defined in smartserver.py.
+        # commands. Disconnecting in execCommand will do. We don't raise
+        # an exception to avoid logging an OOPS.
         protocol = MockProcessTransport('cat')
-        self.assertRaises(smartserver.ForbiddenCommand,
-                          self.session.execCommand, protocol, 'cat')
+        self.assertEqual(
+            None, self.session.execCommand(protocol, 'cat'))
         self.assertEqual(protocol.log[-1], ('loseConnection',))
 
     def test_getCommandToRunReturnsTemplateCommand(self):
