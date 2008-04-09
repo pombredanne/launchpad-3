@@ -9,19 +9,19 @@ We'll start by adding some attachments to the bug:
 
     >>> import StringIO
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests.ppa import publishToPPA
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.database import Bug, Person
     >>> login("foo.bar@canonical.com")
     >>> mark = Person.selectOneBy(name="sabdfl")
     >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
     >>> bug = Bug.get(1)
     >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
-    >>> a1 = bug.addAttachment(mark, content, "comment for file a", "file_a.txt",
-    ...     content_type="text/html")
+    >>> a1 = bug.addAttachment(mark, content, "comment for file a", 
+    ...     "file_a.txt", content_type="text/html")
     >>> content = StringIO.StringIO("do we need to")
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
-    ...     "file with space.txt", content_type="text/plain")
+    ...     "file with space.txt",
+    ...     content_type='text/plain;\n  name="file with space.txt"')
 
 Next, we'll cycle through all statuses so the dates are present:
 
@@ -64,7 +64,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     duplicates: 
     attachments:
         http://.../file_a.txt text/html
-        http://.../file%20with%20space.txt text/plain
+        http://.../file%20with%20space.txt text/plain; name="file with space.txt"
     tags: 
     subscribers: 
         Steve Alexander (stevea)
@@ -128,6 +128,19 @@ all tasks related to that bug, presented in an easy-to-digest format:
     <BLANKLINE>
     comment for file with space
     --...
+
+The multiple white spaces in the mime type of the second attachment
+are replaced by ' '.
+
+    >>> attachments_text = text_bug[text_bug.find('attachments:'):]
+    >>> attachment_2 = attachments_text.split('\n')[2]
+    >>> attachment_2
+    ' http://localhost:58000/91/file%20with%20space.txt text/plain; 
+    name="file with space.txt"'
+    >>> print attachment_2 == (' http://localhost:58000/91/'
+    ...                        'file%20with%20space.txt text/plain; '
+    ...                        'name="file with space.txt"')
+    True
 
 
 == Text Pages from a Bug Task Context ==
