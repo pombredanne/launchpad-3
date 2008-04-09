@@ -535,7 +535,7 @@ class DeprecatedAssignedBugsView:
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
 
-_normalize_mime_type = re.compile(r'\s+')
+normalize_mime_type = re.compile(r'\s+')
 
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
@@ -623,7 +623,7 @@ class BugTextView(LaunchpadView):
 
     def attachment_text(self, attachment):
         """Return a text representation of a bug attachment."""
-        mime_type = _normalize_mime_type.sub(
+        mime_type = normalize_mime_type.sub(
             ' ', attachment.libraryfile.mimetype)
         return "%s %s" % (attachment.libraryfile.http_url, mime_type)
 
