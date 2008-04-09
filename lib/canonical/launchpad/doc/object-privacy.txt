@@ -7,8 +7,9 @@ people.
 To tell whether or not an object is private we adapt it into an
 IObjectPrivacy and check its is_private attribute.
 
+    >>> from canonical.lazr.interfaces import IObjectPrivacy
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IObjectPrivacy, IPersonSet, IQuestionSet)
+    ...     IBugSet, IPersonSet, IQuestionSet)
     >>> bug = getUtility(IBugSet).get(1)
     >>> bug.private
     False

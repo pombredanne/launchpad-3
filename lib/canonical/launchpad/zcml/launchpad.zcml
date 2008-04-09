@@ -349,7 +349,7 @@
 </facet>
 
 <adapter
-  provides="canonical.launchpad.interfaces.IObjectPrivacy"
+  provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
   factory="canonical.launchpad.components.privacy.ObjectPrivacy"
   permission="zope.Public"
