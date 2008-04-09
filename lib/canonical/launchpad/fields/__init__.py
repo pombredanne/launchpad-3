@@ -298,7 +298,8 @@ class DuplicateBug(BugField):
         elif dup_target.duplicateof is not None:
             raise LaunchpadValidationError(_(dedent("""
                 Bug %i is already a duplicate of bug %i. You can only
-                duplicate to bugs that are not duplicates themselves.
+                mark a bug report as duplicate of one that isn't a
+                duplicate itself.
                 """% (dup_target.id, dup_target.duplicateof.id))))
         elif current_bug_has_dup_refs:
             raise LaunchpadValidationError(_(dedent("""
