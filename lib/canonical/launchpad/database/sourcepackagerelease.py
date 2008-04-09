@@ -295,8 +295,8 @@ class SourcePackageRelease(SQLBase):
         cur.execute(size_query)
         results = cur.fetchone()
 
-        assert len(results) == 1 and results[0] is not None, \
-        "All files in this package are empty or the package has no files."
+        assert len(results) == 1 and results[0] is not None, (
+        "All files in this package are empty or the package has no files.")
 
         return float(results[0])
 
