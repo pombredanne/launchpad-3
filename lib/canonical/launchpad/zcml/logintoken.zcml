@@ -104,7 +104,7 @@
     <browser:page
         name="+bugtracker-handshake"
         for="canonical.launchpad.interfaces.ILoginToken"
-        class="canonical.launchpad.browser.NewAccountView"
+        class="canonical.launchpad.browser.BugTrackerHandshakeView"
         permission="zope.Public"
         />
 

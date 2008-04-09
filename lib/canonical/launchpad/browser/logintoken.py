@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTrackerHandshakeView',
     'ClaimProfileView',
     'ClaimTeamView',
     'LoginTokenSetNavigation',
@@ -840,4 +841,15 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # account's stuff to the user account.
         getUtility(IPersonSet).merge(self.dupe, requester)
         self.mergeCompleted = True
+
+
+class BugTrackerHandshakeView(BaseLoginTokenView):
+    """A view for authentication BugTracker handshake tokens."""
+
+    def __call__(self):
+        # The token is valid, so we consume it and return an HTTP 200.
+        self.context.consume()
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-type', 'text/plain')
+        return "Handshake token validated."
 

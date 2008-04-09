@@ -36,17 +36,21 @@ uses the token's canonical URL to consume that token.
 Visiting the token's +bugtracker-handshake URL will result in an HTTP
 200 response if the token is valid.
 
+    >>> from zope.component import getView
     >>> view = getView(token, '+bugtracker-handshake', test_request)
     >>> view()
-    SOMETHING HAPPEN
+    'Handshake token validated.'
 
-#The token will now be consumed. If we try to access the
+    >>> print test_request.response.getStatus()
+    200
+
+#The token has now been consumed. If we try to access the
 #+bugtracker-handshake URL again, we will receive an HTTP 401
 #(Unauthorized) response.
 #
 #    >>> view = getView(token, '+bugtracker-handshake', test_request)
 #    >>> view()
-#    SOMETHING ELSE HAPPEN
+#    'Token has already been used or is invalid.'
 #
 #Only POST requests are valid when accessing a +bugtracker-handshake URL.
 #If we attempt another request method, such as a GET, we will receive an
