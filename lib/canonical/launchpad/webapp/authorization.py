@@ -36,8 +36,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         the principal's access_level is not sufficient for that permission,
         returns False.
         """
-        # XXX: salgado, 2008-04-04: This doesn't work as a global import and
-        # it doesn't seem to be the consequence of circular dependencies:
+        # This doesn't work as a global import and it doesn't seem to be the
+        # consequence of circular dependencies:
         # https://pastebin.canonical.com/3921/
         from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
         lp_permission = getUtility(ILaunchpadPermission, permission)
