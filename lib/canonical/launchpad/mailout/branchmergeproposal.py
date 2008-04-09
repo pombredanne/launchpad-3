@@ -11,7 +11,7 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import IBranchMergeProposal
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.mailout import deltaLines
+from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
@@ -26,7 +26,7 @@ def send_merge_proposal_created_notifications(merge_proposal, event):
 
 
 def send_merge_proposal_modified_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are created."""
+    """Notify branch subscribers when merge proposals are updated."""
     if event.user is None:
         return
     mailer = BMPMailer.forModification(
@@ -91,8 +91,9 @@ class BMPMailer:
                          'branch-merge-proposal-updated.txt', recipients,
                          merge_proposal, from_address, delta)
 
-    def deltaLines(self):
-        return deltaLines(self.delta, self.delta.delta_values,
+    def textDelta(self):
+        """Return a textual version of the class delta."""
+        return text_delta(self.delta, self.delta.delta_values,
             self.delta.new_values, IBranchMergeProposal)
 
     def getReason(self, recipient):
@@ -129,7 +130,7 @@ class BMPMailer:
             'edit_subscription': '',
             }
         if self.delta is not None:
-            params['delta'] = '\n'.join(self.deltaLines())
+            params['delta'] = self.textDelta()
         subject = self._subject_template % params
         body = template % params
         return (headers, subject, body)

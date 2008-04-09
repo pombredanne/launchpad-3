@@ -7,13 +7,13 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.event import (SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus)
-from canonical.launchpad.mailout.branchmergeproposal import (BMPMailer,
-    send_merge_proposal_modified_notifications)
+from canonical.launchpad.mailout.branchmergeproposal import (
+    BMPMailer, send_merge_proposal_modified_notifications)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -116,12 +116,12 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual({'old': None, 'new': 'new commit message'},
             mailer.delta.commit_message)
 
-    def test_forModificationWithModificationDeltaLines(self):
+    def test_forModificationWithModificationTextDelta(self):
         """Ensure the right delta is filled out if there is a change."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual(
-            ['    Commit Message: (not set) => new commit message'],
-            mailer.deltaLines())
+            '    Commit Message: (not set) => new commit message',
+            mailer.textDelta())
 
     def test_generateEmail(self):
         """Ensure that contents of modification mails are right."""
@@ -136,7 +136,6 @@ The proposal to merge foo into bar has been updated.
     Commit Message: (not set) => new commit message
 --
 %s
-
 %s
 """ % (url, reason), body)
 

@@ -54,6 +54,7 @@ class BranchDelta:
 
 
 class BranchMergeProposalDelta:
+    """Represent changes made to a BranchMergeProposal."""
 
     delta_values = (
         'registrant', 'source_branch', 'target_branch', 'dependent_branch',
@@ -65,6 +66,12 @@ class BranchMergeProposalDelta:
 
     @classmethod
     def construct(klass, old_merge_proposal, new_merge_proposal):
+        """Return a new instance representing the differences.
+
+        :param old_merge_proposal: A snapshot representing the merge
+            proposal's previous state.
+        :param new_merge_proposal: The merge proposal (not a snapshot).
+        """
         delta = ObjectDelta(old_merge_proposal, new_merge_proposal)
         delta.recordNewValues(klass.new_values)
         delta.recordNewAndOld(klass.delta_values)
@@ -74,5 +81,9 @@ class BranchMergeProposalDelta:
 
     @classmethod
     def snapshot(klass, merge_proposal):
+        """Return a snapshot suitable for use with construct.
+
+        :param merge_proposal: The merge proposal to take a snapshot of.
+        """
         names = klass.new_values + klass.delta_values
         return snapshot.Snapshot(merge_proposal, names=names)
