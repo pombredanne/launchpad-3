@@ -8,6 +8,7 @@ __metaclass__ = type
 import os
 import re
 import urlparse
+import xmlrpclib
 
 from zope.component import getUtility
 
@@ -408,6 +409,30 @@ class TestTrac(Trac):
             print "CALLED urlopen(%r)" % (url,)
 
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+
+
+class TestTracXMLRPCTransport:
+    """An XML-RPC transport to be used when testing Trac."""
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        args, method_name = xmlrpclib.loads(request)
+        prefix = 'launchpad.'
+        assert method_name.startswith(prefix), (
+            'All methods should be in the launchpad namespace')
+
+        method_name = method_name[len(prefix):]
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def bugtracker_version(self):
+        """Return the bug tracker version information."""
+        return ['0.11.0', '1.0', False]
 
 
 class TestRoundup(Roundup):
