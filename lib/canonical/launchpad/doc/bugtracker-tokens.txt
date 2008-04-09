@@ -1,0 +1,33 @@
+= Using BugTracker Login Tokens =
+
+Launchpad offers an XML-RPC interface for generating bug tracker tokens.
+
+    >>> import xmlrpclib
+    >>> from zope.component import getUtility
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> bugtracker_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
+    ...     transport=XMLRPCTestTransport())
+
+    >>> token_id = bugtracker_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token
+    <LoginToken at ...>
+
+    >>> print token.tokentype.title
+    Launchpad is authenticating itself with a remote bug tracker.
+
+These LoginTokens are used by Launchpad to authenticate with external
+bug trackers. We pass the token to the bug tracker and it in turn then
+uses the token's canonical URL to consume that token.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.server import (
+    ...     LaunchpadTestRequest)
+    >>> test_request = LaunchpadTestRequest(method="POST")
+    >>> token_url = canonical_url(
+    ...     token, request=test_request, view="+bugtrackertoken")
+
+    >>> print token_url
+    http://launchpad.dev/token/.../+bugtrackertoken
