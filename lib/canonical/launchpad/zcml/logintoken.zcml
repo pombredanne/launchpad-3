@@ -101,6 +101,13 @@
         template="../templates/logintoken-newaccount.pt"
         />
 
+    <browser:page
+        name="+bugtracker-handshake"
+        for="canonical.launchpad.interfaces.ILoginToken"
+        class="canonical.launchpad.browser.NewAccountView"
+        permission="zope.Public"
+        />
+
     <!-- LoginTokenSet -->
     <content class="canonical.launchpad.database.LoginTokenSet">
         <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />

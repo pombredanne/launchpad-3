@@ -77,6 +77,7 @@ class LoginTokenView(LaunchpadView):
              LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
              LoginTokenType.PROFILECLAIM: '+claimprofile',
              LoginTokenType.TEAMCLAIM: '+claimteam',
+             LoginTokenType.BUGTRACKER: '+bugtracker-handshake',
              }
 
     def render(self):

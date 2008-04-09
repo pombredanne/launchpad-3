@@ -23,11 +23,12 @@ bug trackers. We pass the token to the bug tracker and it in turn then
 uses the token's canonical URL to consume that token.
 
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.server import (
+    >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)
     >>> test_request = LaunchpadTestRequest(method='POST')
     >>> token_url = canonical_url(
-    ...     token, request=test_request, view='+bugtracker-handshake')
+    ...     token, request=test_request, rootsite='mainsite',
+    ...     view_name='+bugtracker-handshake')
 
     >>> print token_url
     http://launchpad.dev/token/.../+bugtracker-handshake
@@ -39,22 +40,29 @@ Visiting the token's +bugtracker-handshake URL will result in an HTTP
     >>> view()
     SOMETHING HAPPEN
 
-The token will now be consumed. If we try to access the
-+bugtracker-handshake URL again, we will receive an HTTP 401
-(Unauthorized) response.
-
-    >>> view = getView(token, '+bugtracker-handshake', test_request)
-    >>> view()
-    SOMETHING ELSE HAPPEN
-
-Only POST requests are valid when accessing a +bugtracker-handshake URL.
-If we attempt another request method, such as a GET, we will receive an
-HTTP 405 (Method Not Allowed) response.
-
-    >>> token_id = bugtracker_api.newBugTrackerToken()
-    >>> token = getUtility(ILoginTokenSet).get(token_id)
-    >>> test_request = LaunchpadTestRequest(method='GET')
-
-    >>> view = getView(token, '+bugtracker-handshake', test_request)
-    >>> view()
-    OH NOES, NOW SOMETHING ELSE HAPPEN
+#The token will now be consumed. If we try to access the
+#+bugtracker-handshake URL again, we will receive an HTTP 401
+#(Unauthorized) response.
+#
+#    >>> view = getView(token, '+bugtracker-handshake', test_request)
+#    >>> view()
+#    SOMETHING ELSE HAPPEN
+#
+#Only POST requests are valid when accessing a +bugtracker-handshake URL.
+#If we attempt another request method, such as a GET, we will receive an
+#HTTP 405 (Method Not Allowed) response.
+#
+#    >>> token_id = bugtracker_api.newBugTrackerToken()
+#    >>> token = getUtility(ILoginTokenSet).get(token_id)
+#    >>> test_request = LaunchpadTestRequest(method='GET')
+#
+#    >>> view = getView(token, '+bugtracker-handshake', test_request)
+#    >>> view()
+#    OH NOES, NOW SOMETHING ELSE HAPPEN
+#
+#However, since the request was invalid the token will not have been
+#consumed.
+#
+#    >>> token = getUtility(ILoginTokenSet).get(token_id)
+#    >>> print token.date_consumed
+#    False
