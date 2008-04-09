@@ -845,9 +845,27 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
 
 class BugTrackerHandshakeView(BaseLoginTokenView):
     """A view for authentication BugTracker handshake tokens."""
+    expected_token_types = (LoginTokenType.BUGTRACKER,)
 
     def __call__(self):
-        # The token is valid, so we consume it and return an HTTP 200.
+        # We don't render any templates from this view as it's a
+        # machine-only one, so we set the response to be plaintext.
+        self.request.response.setHeader('Content-type', 'text/plain')
+
+        # Reject the request if it is not a POST - but do not consume
+        # the token.
+        if self.request.method != 'POST':
+            self.request.response.setStatus(405)
+            return ("Only POST requests are accepted for bugtracker "
+                    "handshakes.")
+
+        # If the token has been used already or is invalid, return an
+        # HTTP 401.
+        if self.redirectIfInvalidOrConsumedToken():
+            self.request.response.setStatus(401)
+            return "Token has already been used or is invalid."
+
+        # The token is valid, so consume it and return an HTTP 200.
         self.context.consume()
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-type', 'text/plain')

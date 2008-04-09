@@ -12,15 +12,10 @@ Launchpad offers an XML-RPC interface for generating bug tracker tokens.
 
     >>> token_id = bugtracker_api.newBugTrackerToken()
     >>> token = getUtility(ILoginTokenSet).get(token_id)
-    >>> token
-    <LoginToken at ...>
-
-    >>> print token.tokentype.title
-    Launchpad is authenticating itself with a remote bug tracker.
 
 These LoginTokens are used by Launchpad to authenticate with external
-bug trackers. We pass the token to the bug tracker and it in turn then
-uses the token's canonical URL to consume that token.
+bug trackers. We pass the token to the bug tracker and it then uses the
+token's canonical URL to validate the token.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.webapp.servers import (
@@ -44,29 +39,32 @@ Visiting the token's +bugtracker-handshake URL will result in an HTTP
     >>> print test_request.response.getStatus()
     200
 
-#The token has now been consumed. If we try to access the
-#+bugtracker-handshake URL again, we will receive an HTTP 401
-#(Unauthorized) response.
-#
-#    >>> view = getView(token, '+bugtracker-handshake', test_request)
-#    >>> view()
-#    'Token has already been used or is invalid.'
-#
-#Only POST requests are valid when accessing a +bugtracker-handshake URL.
-#If we attempt another request method, such as a GET, we will receive an
-#HTTP 405 (Method Not Allowed) response.
-#
-#    >>> token_id = bugtracker_api.newBugTrackerToken()
-#    >>> token = getUtility(ILoginTokenSet).get(token_id)
-#    >>> test_request = LaunchpadTestRequest(method='GET')
-#
-#    >>> view = getView(token, '+bugtracker-handshake', test_request)
-#    >>> view()
-#    OH NOES, NOW SOMETHING ELSE HAPPEN
-#
-#However, since the request was invalid the token will not have been
-#consumed.
-#
-#    >>> token = getUtility(ILoginTokenSet).get(token_id)
-#    >>> print token.date_consumed
-#    False
+The token has now been consumed. If we try to access the
++bugtracker-handshake URL again, we will receive an HTTP 401
+(Unauthorized) response.
+
+    >>> view = getView(token, '+bugtracker-handshake', test_request)
+    >>> view()
+    'Token has already been used or is invalid.'
+
+Only POST requests are valid when accessing a +bugtracker-handshake URL.
+If we attempt another request method, such as a GET, we will receive an
+HTTP 405 (Method Not Allowed) response.
+
+    >>> token_id = bugtracker_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> test_request = LaunchpadTestRequest(method='GET')
+
+    >>> view = getView(token, '+bugtracker-handshake', test_request)
+    >>> view()
+    'Only POST requests are accepted for bugtracker handshakes.'
+
+    >>> print test_request.response.getStatus()
+    405
+
+However, since the request was invalid the token will not have been
+consumed.
+
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> print token.date_consumed
+    None
