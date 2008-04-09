@@ -420,7 +420,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         """
         template = LazrPageTemplateFile('../templates/wadl-entry.pt')
         namespace = template.pt_getContext()
-        namespace['context'] = self.context
+        namespace['context'] = self
         return template.pt_render(namespace)
 
     def _applyChanges(self, changeset):

@@ -5,6 +5,51 @@
  xmlns:tal="http://xml.zope.org/namespaces/tal"
  xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
- <resources tal:attributes="href context/ws:url">
+ <representation mediaType="application/json"
+  tal:attributes="id string:${context/wadl_entry:singular_type}-full">
+   <param tal:repeat="field context/wadl_entry:all_fields"
+    tal:attributes="name field/__name__">
+   </param>
+ </representation>
+
+ <representation mediaType="application/json"
+  tal:attributes="id string:${context/wadl_entry:singular_type}-patch">
+   <!--representation containing only read-only fields, all
+       listed as optional-->
+ </representation>
+
+ <!--Add custom methods-->
+
+ <resource_type tal:attributes="id context/wadl_entry:singular_type">
+  <method name="GET"
+   tal:attributes="id string:get-${context/wadl_entry:singular_type}">
+   <response>
+    <representation
+     tal:attributes="href context/wadl_entry:full_representation_link" />
+    <representation mediaType="application/vd.sun.wadl+xml"
+     tal:attributes="id string:${context/wadl_entry:singular_type}-wadl" />
+   </response>
+  </method>
+
+  <method name="PUT"
+   tal:attributes="id string:put-${context/wadl_entry:singular_type}">
+   <request>
+    <representation
+     tal:attributes="href context/wadl_entry:full_representation_link" />
+   </request>
+  </method>
+
+  <method name="PATCH"
+   tal:attributes="id string:patch-${context/wadl_entry:singular_type}">
+   <request>
+    <representation
+     tal:attributes="href context/wadl_entry:patch_representation_link" />
+   </request>
+  </method>
+
+ </resource_type>
+
+ <resources tal:attributes="href context/wadl:url">
+  <resource path="" tal:attributes="type context/wadl_entry:type_link" />
  </resources>
 </application>
