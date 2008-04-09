@@ -272,8 +272,8 @@ class SourcePackageRelease(SQLBase):
         """Get the size total (in KB) of files comprising this package.
         
         Please note: packages with no associated files or packages with
-        files that are all zero sized are considered faulty. In that
-        case the package size returned will be zero.
+        files that are all zero sized are considered faulty and rejected
+        by the system.
         """
         size_query = """
             SELECT
@@ -294,14 +294,12 @@ class SourcePackageRelease(SQLBase):
 
         cur = cursor()
         cur.execute(size_query)
-        package_size = cur.fetchone()
+        results = cur.fetchone()
 
-        # The single value returned may be a None (if the database
-        # returned NULL), hence the truth check on it.
-        if len(package_size) > 0 and package_size[0]:
-            return float(package_size[0])
-        else:
-            return 0.0
+        assert len(results) == 1 and results[0] is not None, \
+        "All files in this package are empty or the package has no files."
+
+        return float(results[0])
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
