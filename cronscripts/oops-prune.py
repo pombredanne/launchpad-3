@@ -34,13 +34,15 @@ class OOPSPruner(LaunchpadCronScript):
         oops_directories = []
         for oops_dir in self.args:
             if not os.path.isdir(oops_dir):
-                raise LaunchpadScriptFailure("%s is not a directory" % oops_dir)
+                raise LaunchpadScriptFailure(
+                    "%s is not a directory" % oops_dir)
 
             oops_directories.append(oops_dir)
 
         self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         for oops_directory in oops_directories:
-            for oops_path in unwanted_oops_files(oops_directory, 40, self.logger):
+            for oops_path in unwanted_oops_files(oops_directory,
+                                                 40, self.logger):
                 self.logger.info("Removing %s", oops_path)
                 if not self.options.dry_run:
                     os.unlink(oops_path)

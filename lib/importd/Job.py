@@ -19,7 +19,7 @@ from importd.bzrmanager import BzrManager
 # TYPE=import
 # RCS=svn|cvs
 # repository=string  i.e. http://example.com/tarball-of-cvs-module.tar.bz2
-#                         :pserver:user:password@anoncvs.example.com/server/cvs
+#                        :pserver:user:password@anoncvs.example.com/server/cvs
 # module=NULL (for svn) | string
 # category=string
 # archivename=string
@@ -41,16 +41,17 @@ class Job:
     I am passed to a jobStrategy to do the work on slaves."""
 
     def __cmp__(self, other):
-        if other is None: return 1
+        if other is None:
+            return 1
         return cmp(self.__dict__, other.__dict__)
 
     def __init__(self):
         self.TYPE = ""
-        self.RCS=""
-        self.repository=""
-        self.module=""
-        self.branchfrom="MAIN"
-        self.frequency=None
+        self.RCS = ""
+        self.repository = ""
+        self.module = ""
+        self.branchfrom = "MAIN"
+        self.frequency = None
         self.__jobTrigger = None
         self.logger = None
 
@@ -74,22 +75,20 @@ class Job:
         self.distroseries = distroseries
         self.RCS = 'package'
         self.TYPE = 'sourcerer'
-        self.product_id = sp.product.id
-        # XXX sabdfl 2005-04-12: these are commented out until the Packaging
-        # table has been fixed to support series-level granularity
-        #assert sp.productseries is not None, ("Attempt to import %s %s %s "
-        #        "which is not mapped to an upstream "
-        #        "product series" %
-        #        (distroseries.distribution.name,
-        #         distroseries.name,
-        #         sourcepackagerelease.name))
-        #self.series_id = sp.productseries.id
-        #self.series_branch = sp.productseries.branch
-        #assert self.series_branch is not None, ("Attempt to import %s %s %s"
-        #    " which has no upstream branch" %
-        #        (distroseries.distribution.name,
-        #         distroseries.name,
-        #         sourcepackagerelease.name))
+        self.product_id = sp.productseries.product.id
+        assert sp.productseries is not None, ("Attempt to import %s %s %s "
+                "which is not mapped to an upstream "
+                "product series" %
+                (distroseries.distribution.name,
+                 distroseries.name,
+                 sourcepackagerelease.name))
+        self.series_id = sp.productseries.id
+        self.series_branch = sp.productseries.series_branch
+        assert self.series_branch is not None, ("Attempt to import %s %s %s"
+            " which has no upstream branch" %
+                (distroseries.distribution.name,
+                 distroseries.name,
+                 sourcepackagerelease.name))
         return self
 
     def from_series(self, series):
@@ -105,7 +104,7 @@ class Job:
                                      ImportStatus.TESTFAILED,
                                      ImportStatus.PROCESSING]:
             self.TYPE = 'import'
-            self.frequency=0
+            self.frequency = 0
         elif series.importstatus == ImportStatus.SYNCING:
             self.TYPE = 'sync'
             self.frequency = _interval_to_seconds(series.syncinterval)
@@ -156,7 +155,7 @@ class Job:
             return True
 
     def __str__(self):
-        result=StringIO()
+        result = StringIO()
         self.output(result.write, " ")
         return result.getvalue()
 
@@ -173,8 +172,8 @@ class Job:
         """Pickle the job and create the working directory."""
         self.getWorkingDir(dir)
         if not os.path.isdir(dir):
-             os.makedirs(dir)
-        aFile = open(os.path.join(dir,fileName),'w')
+            os.makedirs(dir)
+        aFile = open(os.path.join(dir, fileName), 'w')
         trigger, self.__jobTrigger = self.__jobTrigger, None
         pickle.dump(self, aFile)
         self.__jobTrigger = None
@@ -184,7 +183,7 @@ class Job:
         self.working_root = dir
         self.logger = logger
         if not os.path.isdir(dir):
-             os.makedirs(dir)
+            os.makedirs(dir)
         strategy = JobStrategy.get(self.RCS, self.TYPE)
         strategy(self, dir, logger)
 
@@ -251,7 +250,8 @@ class Job:
         return False
 
     def repositoryIsTar(self):
-        return self.endswithOneOf(self.repository,["tar.gz", "tgz", "tar.bz2"])
+        return self.endswithOneOf(
+            self.repository, ["tar.gz", "tgz", "tar.bz2"])
 
     def repositoryIsRsync(self):
         return self.repository.startswith("rsync://")

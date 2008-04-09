@@ -12,7 +12,6 @@ __all__ = [
 from datetime import date, timedelta, datetime
 import re
 import os
-import os.path
 
 from pytz import utc
 
