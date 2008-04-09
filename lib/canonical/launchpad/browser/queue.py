@@ -7,11 +7,14 @@ __metaclass__ = type
 __all__ = [
     'QueueItemsView',
     ]
+
+import operator
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IHasQueueItems, IPackageUploadSet, QueueInconsistentStateError,
-    UnexpectedFormData, PackageUploadStatus)
+    IHasQueueItems, IPackageUploadSet, PackagePublishingPriority,
+    QueueInconsistentStateError, UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
@@ -147,3 +150,15 @@ class QueueItemsView(LaunchpadView):
         report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report
 
+    def sortedSections(self):
+        """Possible sections for the context distroseries.
+
+        Return an iterable of possible sections for the context distroseries
+        sorted by their name.
+        """
+        return sorted(
+            self.context.sections, key=operator.attrgetter('name'))
+
+    def priorities(self):
+        """An iterable of priorities from PackagePublishingPriority."""
+        return (priority for priority in PackagePublishingPriority)
