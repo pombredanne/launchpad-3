@@ -4,18 +4,20 @@ an import branch displays a link to the branch's page.
 Since the URL of that page is usable with "bzr branch", we do not display the
 Supermirror URL of the branch anymore.
 
->>> anon_browser.open('http://launchpad.dev/evolution/trunk')
->>> content = anon_browser.contents
->>> print find_tag_by_id(content, 'import-branch-link')
-<a id="import-branch-link" href="http://code.launchpad.dev/~vcs-imports/evolution/main">~vcs-imports/evolution/main</a>
+    >>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+    >>> content = anon_browser.contents
+    >>> print find_tag_by_id(content, 'import-branch-link')
+    <a id="import-branch-link" href="http://code.launchpad.dev/~vcs-imports/evolution/main">~vcs-imports/evolution/main</a>
 
 We are not able to link a branch to a series with an import branch.
 
->>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
->>> browser.open('http://code.launchpad.dev/evolution/trunk/'
-...     '+linkbranchtoseries')
->>> browser.getControl('Update').click()
-Traceback (most recent call last):
-LookupError: label 'Update'
->>> assert ("Cannot change link because this series is linked to an import."
-...     in browser.contents)
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://code.launchpad.dev/evolution/trunk/'
+    ...     '+linkbranchtoseries')
+    >>> browser.getControl('Update').click()
+    Traceback (most recent call last):
+    LookupError: label 'Update'
+    >>> print find_tag_by_id(browser.contents, 'cannot-link-explanation')
+    <strong id="cannot-link-explanation">
+        Cannot change link because this series is linked to an import.
+      </strong>

@@ -582,8 +582,7 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     def not_import(self, action=None):
         return self.context.import_branch is None
 
-    @action(_('Update'), name='update',
-            condition=not_import)
+    @action(_('Update'), name='update', condition=not_import)
     def update_action(self, action, data):
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(

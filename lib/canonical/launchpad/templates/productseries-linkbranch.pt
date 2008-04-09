@@ -25,7 +25,7 @@
     <h1 metal:fill-slot="heading">Link an existing branch to this series</h1>
 
   </div>
-  <strong tal:condition="not:view/not_import">
+  <strong id="cannot-link-explanation" tal:condition="not:view/not_import">
     Cannot change link because this series is linked to an import.
   </strong>
 
