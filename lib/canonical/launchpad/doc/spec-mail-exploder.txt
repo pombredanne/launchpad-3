@@ -165,7 +165,7 @@ except for setting the Sender header to our bounce address:
     >>> sent_msg['Subject'] == moin_change['Subject']
     True
 
-    >>> sent_msg['Sender'] == config.bounce_address
+    >>> sent_msg['Sender'] == config.canonical.bounce_address
     True
 
 If we get a change notification about a spec which doesn't exist in
@@ -212,7 +212,7 @@ Launchpad:
 
     >>> del sent_msg['X-Loop']
     >>> del sent_msg['Sender']
-    >>> sent_msg['Sender'] = config.bounce_address
+    >>> sent_msg['Sender'] = config.canonical.bounce_address
     >>> log._log.setLevel(10)
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',

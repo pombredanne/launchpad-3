@@ -194,7 +194,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     if references is not None:
         msg['References'] = ' '.join(references)
-    msg['Sender'] = config.bounce_address
+    msg['Sender'] = config.canonical.bounce_address
     msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
@@ -978,7 +978,8 @@ def notify_invitation_to_join_team(event):
 
     reviewer = membership.proposed_by
     admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address(team.displayname, config.noreply_from_address)
+    from_addr = format_address(
+        team.displayname, config.canonical.noreply_from_address)
     subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
@@ -1012,7 +1013,8 @@ def notify_team_join(event):
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN,
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
-    from_addr = format_address(team.displayname, config.noreply_from_address)
+    from_addr = format_address(
+        team.displayname, config.canonical.noreply_from_address)
 
     reviewer = membership.proposed_by
     if reviewer != person and membership.status in [approved, admin]:
@@ -1695,7 +1697,7 @@ def notify_mailinglist_activated(mailinglist, event):
 
     team = mailinglist.team
     from_address = format_address(
-        team.displayname, config.noreply_from_address)
+        team.displayname, config.canonical.noreply_from_address)
     headers = {}
     subject = "New Mailing List for %s" % team.displayname
     template = get_email_template('new-mailing-list.txt')

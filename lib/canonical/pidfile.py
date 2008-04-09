@@ -16,7 +16,7 @@ def pidfile_path(service_name):
     >>> pidfile_path('nuts') == '/tmp/%s-nuts.pid' % config.instance_name
     True
     """
-    return os.path.join(config.pid_dir, '%s-%s.pid' % (
+    return os.path.join(config.canonical.pid_dir, '%s-%s.pid' % (
         config.instance_name, service_name
         ))
 

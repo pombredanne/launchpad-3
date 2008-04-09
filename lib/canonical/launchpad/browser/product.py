@@ -192,8 +192,8 @@ class ProductLicenseMixin:
             user = getUtility(ILaunchBag).user
             subject = "Project License Submitted for %s by %s" % (
                     self.product.name, user.name)
-            fromaddress = format_address("Launchpad",
-                                         config.noreply_from_address)
+            fromaddress = format_address(
+                "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
             def indent(text):
