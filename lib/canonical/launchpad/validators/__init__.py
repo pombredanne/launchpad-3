@@ -63,7 +63,9 @@ class LaunchpadValidationError(ValidationError):
         return self.args[0]
 
     def doc(self):
-        """Some code expect the error message being rendered by this method."""
+        """Some code expect the error message being rendered by this
+        method.
+        """
         return self.snippet()
 
 

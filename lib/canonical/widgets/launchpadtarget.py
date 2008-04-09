@@ -13,8 +13,8 @@ from zope.interface import implements
 from zope.schema import Choice
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities, IProduct,
-    NotFoundError, UnexpectedFormData)
+    IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities,
+    IProduct, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
@@ -30,6 +30,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     default_option = "package"
 
     def __init__(self, field, request):
+        # Shut off the pylint warning about not calling the __init__()
+        # on a Mixin class.
+        # pylint: disable-msg=W0231
         BrowserWidget.__init__(self, field, request)
         fields = [
             Choice(
@@ -43,7 +46,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 __name__='package', title=u"Package",
                 required=False, vocabulary='BinaryAndSourcePackageName'),
             ]
-        self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        self.distribution_widget = CustomWidgetFactory(
+            LaunchpadDropdownWidget)
         for field in fields:
             setUpWidget(
                 self, field.__name__, field, IInputWidget, prefix=self.name)
