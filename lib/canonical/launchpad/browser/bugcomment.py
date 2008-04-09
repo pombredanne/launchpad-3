@@ -89,12 +89,9 @@ class BugComment:
         """
         comment_limit = config.malone.max_comment_size
 
-        # MessageChunks can contain either text (in MessageChunk.content)
-        # or arbitrary content (in MessageChunk.blob). The unused attribute
-        # of a MessageChunk is None. To build the text content, we want
-        # only the chunks that contain text.
         bits = [unicode(chunk.content)
-                for chunk in self.chunks if chunk.content]
+                for chunk in self.chunks
+                if chunk.content is not None and len(chunk.content) > 0]
         text = self.text_contents = '\n\n'.join(bits)
 
         if truncate and comment_limit and len(text) > comment_limit:
