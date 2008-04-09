@@ -135,7 +135,7 @@ displayed.
 
 Entering an existing person shows all bugs for packages or products that the
 person is a bug supervisor for. Since we're in the ubuntu context, only bugs
-for Ubuntu packages will be returned. In Ubuntu Foo Bar is a bug supervisor
+for Ubuntu packages will be returned. In Ubuntu, Foo Bar is a bug supervisor
 for mozilla-firefox and pmount, but there aren't any bugs open for pmount.
 
     >>> anon_browser.getControl('Bug supervisor').value = 'foo.bar@canonical.com'

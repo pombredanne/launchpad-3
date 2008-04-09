@@ -1,6 +1,6 @@
 = IHasBugContact =
 
-Bug supervisor are people or teams who are responsible for dealing with
+Bug supervisors are people or teams who are responsible for dealing with
 bugs pertaining to a target. All objects with a bug supervisor are also
 structural subscription targets. When the bug supervisor for such an object
 is set, a new bug subscription is created as well.
