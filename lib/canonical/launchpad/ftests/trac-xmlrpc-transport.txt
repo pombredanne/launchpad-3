@@ -16,7 +16,9 @@ installed implement.
 == launchpad.bugtracker_version() ==
 
 bugtracker_version() returns a list of
-[Trac version, plugin version, dupe knowledge].
+[Trac version, plugin version, dupe knowledge]. The version numbers are
+returned as strings. `dupe_knowledge` indicates whether the Trac
+instance knows how to track duplicate bugs.
 
     >>> server.launchpad.bugtracker_version()
     ['0.11.0', '1.0', False]
@@ -24,8 +26,15 @@ bugtracker_version() returns a list of
 
 == launchpad.time_snapshot() ==
 
+time_snapshot returns information about what the Trac instance thinks
+the current time is. It returns the local time zone, the local time, and
+the UTC time. The times are returned as seconds since epoch.
+
     >>> server.launchpad.time_snapshot()
     ['UTC', ..., ...]
+
+It's possible to set which values will be returned, if the current time
+isn't suitable.
 
     >>> trac_transport.seconds_since_epoch = 1206328061
     >>> trac_transport.local_timezone = 'US/Eastern'

@@ -419,7 +419,6 @@ class TestTracXMLRPCTransport:
     local_timezone = 'UTC'
     utc_offset = 0
 
-
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
