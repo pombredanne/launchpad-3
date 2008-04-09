@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Bazaar transport for the Launchpad code hosting file system."""
 
