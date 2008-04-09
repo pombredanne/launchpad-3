@@ -355,7 +355,9 @@ class MaloneHandler:
             blob = chunk.blob
             if blob is None:
                 continue
-            content_type = blob.mimetype
+            # Mutt (other mail clients too?) appends the filename to the
+            # content type.
+            content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
                 continue
 
