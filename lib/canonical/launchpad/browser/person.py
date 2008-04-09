@@ -990,7 +990,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change branding'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Owner')
     def reassign(self):
         target = '+reassign'
         text = 'Change owner'
@@ -3676,7 +3676,6 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3693,7 +3692,6 @@ class PersonBranchesView(BranchListingView):
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
@@ -3706,7 +3704,6 @@ class PersonRegisteredBranchesView(BranchListingView):
 class PersonOwnedBranchesView(BranchListingView):
     """View for branch listing for a person's owned branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
@@ -3719,7 +3716,6 @@ class PersonOwnedBranchesView(BranchListingView):
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):

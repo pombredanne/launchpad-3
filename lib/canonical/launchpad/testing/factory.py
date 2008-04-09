@@ -383,11 +383,12 @@ class LaunchpadObjectFactory:
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
 
-    def makeCodeImportMachine(self, set_online=False):
+    def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
 
         The machine will be in the OFFLINE state."""
-        hostname = self.getUniqueString('machine-')
+        if hostname is None:
+            hostname = self.getUniqueString('machine-')
         machine = getUtility(ICodeImportMachineSet).new(hostname)
         if set_online:
             machine.setOnline()
