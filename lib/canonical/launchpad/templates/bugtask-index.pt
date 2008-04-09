@@ -50,15 +50,6 @@
              tal:condition="context/bug/mentoring_offers/count" />
         <img src="/@@/branch-large" title="(Branch available)"
              tal:condition="context/bug/bug_branches/count" />
-        <tal:privatebadge condition="context/bug/private"
-                          define="date_made_private context/bug/date_made_private;
-                                  who_made_private context/bug/who_made_private">
-          <img tal:condition="date_made_private"
-               tal:attributes="title string:This bug report was made private by ${who_made_private/displayname} ${date_made_private/fmt:displaydate}"
-               alt="(Private)" id="privatebadge" src="/@@/private-large" />
-          <img tal:condition="not:date_made_private" title="This bug report is private"
-               alt="(Private)" id="privatebadge" src="/@@/private-large" />
-        </tal:privatebadge>
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 

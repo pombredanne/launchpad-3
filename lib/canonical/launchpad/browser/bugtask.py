@@ -22,6 +22,7 @@ __all__ = [
     'BugTaskRemoveQuestionView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
+    'BugTaskPrivacyAdapter',
     'BugTaskSOP',
     'BugTaskStatusView',
     'BugTaskTableRowView',
@@ -64,6 +65,7 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
@@ -73,8 +75,9 @@ from canonical.launchpad.interfaces import (
     ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
+    INominationsReviewTableBatchNavigator, INullBugTask, IObjectPrivacy,
+    IPerson, IPersonBugTaskSearch, IProduct,
+    IProductSeries, IProductSeriesBugTask,
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
     IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
@@ -2520,6 +2523,32 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+
+class BugTaskPrivacyAdapter:
+    """Provides `IObjectPrivacy` for `IBugTask`."""
+
+    implements(IObjectPrivacy)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_private(self):
+        """Return True if the bug is private, otherwise False."""
+        return self.context.bug.private
+
+    @property
+    def privacy_info(self):
+        """Return info useful for a tooltip."""
+        if self.context.bug.date_made_private is None:
+            return "This bug report is private"
+        else:
+            date_formatter = DateTimeFormatterAPI(
+                self.context.bug.date_made_private)
+            return "This bug report was made private by %s %s" % (
+                self.context.bug.who_made_private.displayname,
+                date_formatter.displaydate())
 
 
 class BugTaskSOP(StructuralObjectPresentation):

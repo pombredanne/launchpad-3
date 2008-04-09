@@ -9,7 +9,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, TextLine, Text
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -548,3 +548,4 @@ class IObjectPrivacy(Interface):
     """Privacy-related information about an object."""
 
     is_private = Bool(title=_("Whether access to the object is restricted."))
+    privacy_info = Text(title=_("Who and when the object was privatized."))

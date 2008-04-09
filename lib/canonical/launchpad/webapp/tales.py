@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IObjectPrivacy,
     IPerson,
     IPersonSet,
     IProduct,
@@ -2432,10 +2433,10 @@ class GotoStructuralObject:
         return headercontext
 
     @property
-    def immediate_object_is_private(self):
+    def context_privacy(self):
         try:
             headercontext, adapter = nearest_context_with_adapter(
-                self.use_context, IStructuralHeaderPresentation)
+                self.use_context, IObjectPrivacy)
         except NoCanonicalUrl:
             return False
-        return adapter.isPrivate()
+        return adapter

@@ -8,9 +8,10 @@ __all__ = [
     'TeamAddView',
     'TeamBrandingView',
     'TeamContactAddressView',
-    'TeamMailingListConfigurationView',
     'TeamEditView',
+    'TeamMailingListConfigurationView',
     'TeamMemberAddView',
+    'TeamPrivacyAdapter',
     ]
 
 from zope.event import notify
@@ -18,7 +19,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -36,10 +37,31 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus,
+    IMailingList, IMailingListSet, IObjectPrivacy,
+    IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
     TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+
+
+class TeamPrivacyAdapter:
+    """Provides `IObjectPrivacy` for `IBugTask`."""
+
+    implements(IObjectPrivacy)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_private(self):
+        """Return True if the bug is private, otherwise False."""
+        return self.context.visibility != PersonVisibility.PUBLIC
+
+    @property
+    def privacy_info(self):
+        """Return info useful for a tooltip."""
+        return "This is a %s team" % self.context.visibility.title
+
 
 class HasRenewalPolicyMixin:
     """Mixin to be used on forms which contain ITeam.renewal_policy.

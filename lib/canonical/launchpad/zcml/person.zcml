@@ -28,6 +28,13 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IObjectPrivacy"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+    permission="zope.Public"
+    />
+
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
