@@ -271,9 +271,8 @@ class SourcePackageRelease(SQLBase):
     def _getPackageSize(self):
         """Get the size total (in KB) of files comprising this package.
         
-        Please note: packages with no associated files or packages with
-        files that are all zero sized are considered faulty and rejected
-        by the system.
+        Please note: do not use this method for packages with no files
+        or packages with files that are all zero sized.
         """
         size_query = """
             SELECT
