@@ -13,6 +13,8 @@ like a bug, a person, an article, etc. Collections are a set of
 resources of the same types, think something like the set of bugs,
 persons, teams, articles, etc.
 
+== Exporting entries ==
+
 Only entries are exported as data. You can mark that one of your content
 interface is exported on the web service as an entry, by using the
 export_entry declaration.
@@ -90,9 +92,112 @@ In the same vein, export_entry() can only be used on Interface.
     TypeError: export_entry() can only be used on an interface.
 
 And from within a class declaration.
+
     >>> export_entry()
     Traceback (most recent call last):
       ...
     TypeError: export_entry() can only be used from within an interface
     definition.
 
+
+=== Exporting a collection ===
+
+Collection scoped to an entry are exported simply by using export_field() on
+the CollectionField containing the scoped collection items:
+
+    >>> class ISimpleComment(Interface):
+    ...     """A simple comment."""
+    ...     comment = TextLine(title=u'Comment')
+
+    >>> from zope.schema import Object
+    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> class IBookWithComments(IBook):
+    ...     """A book with some comments."""
+    ...     comments = CollectionField(
+    ...         value_type=Object(schema=ISimpleComment))
+    ...     export_field(comments)
+
+Top-level collections are different though, they are exported by using the
+export_collection() in the *Set class. The set method that returns all
+of the collection items must be tagged with @collection_default_content
+decorator.
+
+    >>> from canonical.lazr.rest.declarations import (
+    ...     export_collection, collection_default_content)
+    >>> class IBookSet(Interface):
+    ...     """Set of all the books in the system."""
+    ...     export_collection()
+    ...
+    ...     @collection_default_content
+    ...     def getAllBooks():
+    ...         """Return an iterator over all the books."""
+
+Like for entries, this adds tagged value in the 'lazr.webservice'
+namespace.
+
+    >>> print_dict_tag(IBookSet, 'lazr.webservice.exported')
+    collection_default_content: 'getAllBooks'
+    type: 'collection'
+
+It's an error to try to export a collection without marking a method as
+exporting the default content.
+
+    >>> class MissingDefaultContent(Interface):
+    ...     export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() is missing a method tagged with
+    @collection_default_content.
+
+As it is an error, to mark more than one methods:
+
+    >>> class TwoDefaultContent(Interface):
+    ...     export_collection()
+    ...     @collection_default_content
+    ...     def getAll1():
+    ...         """A first getAll()."""
+    ...     @collection_default_content
+    ...     def getAll2():
+    ...         """Another getAll()."""
+    Traceback (most recent call last):
+      ...
+    TypeError: only one method should be marked with 
+    @collection_default_content.
+
+export_collection() can only be used on Interface.
+
+    >>> class NotAnInterface(object):
+    ...     export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() can only be used on an interface.
+
+And from within a class declaration.
+
+    >>> export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() can only be used from within an interface
+    definition.
+
+collection_default_content() can only be used from within an Interface
+declaration:
+
+    >>> @collection_default_content
+    ... def a_function(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: @collection_default_content can only be used from within
+    an interface definition.
+
+And the interface must have been exported as a collection:
+
+    >>> class NotExported(Interface):
+    ...     export_entry()
+    ...     @collection_default_content
+    ...     def a_function(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: @collection_default_content can only be used from within an 
+    interface exported as a collection.
+    
