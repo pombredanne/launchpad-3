@@ -268,8 +268,13 @@ class SourcePackageRelease(SQLBase):
                                         libraryfile=file)
 
 
-    def getPackageSize(self):
-        """Get the size total (in KB) of files comprising this package."""
+    def _getPackageSize(self):
+        """Get the size total (in KB) of files comprising this package.
+        
+        Please note: packages with no associated files or packages with
+        files that are all zero sized are considered faulty. In that
+        case the package size returned will be zero.
+        """
         size_query = """
             SELECT
                 SUM(LibraryFileContent.filesize)/1024.0
@@ -286,17 +291,17 @@ class SourcePackageRelease(SQLBase):
             WHERE
                 SourcePackageRelease.id = %s
             """ % sqlvalues(self)
-        # return zero if the package size cannot be obtained
-        result = 0
-        cur = cursor()
 
+        cur = cursor()
         cur.execute(size_query)
         package_size = cur.fetchone()
 
-        if package_size and package_size[0]:
-            result = float(package_size[0])
-
-        return result
+        # The single value returned may be a None (if the database
+        # returned NULL), hence the truth check on it.
+        if len(package_size) > 0 and package_size[0]:
+            return float(package_size[0])
+        else:
+            return 0.0
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
@@ -346,7 +351,7 @@ class SourcePackageRelease(SQLBase):
             # historic build data exists.
 
             # Get the package size in KB.
-            package_size = self.getPackageSize()
+            package_size = self._getPackageSize()
 
             if package_size > 0:
                 # Analysis of previous build data shows that a build rate

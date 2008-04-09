@@ -318,3 +318,14 @@ The second one, executes the import.
     INFO    creating lockfile
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     ...
+
+Test the private SourcePackageRelease method that calculates the package
+size.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> spr = SourcePackageRelease.get(14)
+    >>> spr.name
+    u'mozilla-firefox'
+    >>> naked_ff = removeSecurityProxy(spr)
+    >>> naked_ff._getPackageSize()
+    9690.0
