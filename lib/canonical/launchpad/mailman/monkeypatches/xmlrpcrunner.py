@@ -127,6 +127,9 @@ class XMLRPCRunner(Runner):
         if 'deactivate' in actions:
             self._deactivate(actions['deactivate'], statuses)
             del actions['deactivate']
+        if 'unsynchronized' in actions:
+            self._resynchronize(actions['unsynchronized'], statuses)
+            del actions['unsynchronized']
         # Any other keys should be ignored because they specify actions that
         # we know nothing about.  We'll log them to Mailman's log files
         # though.
@@ -434,6 +437,29 @@ class XMLRPCRunner(Runner):
             else:
                 syslog('xmlrpc', 'Successfully deleted list: %s', team_name)
                 statuses[team_name] = 'success'
+
+    def _resynchronize(self, team_names, statuses):
+        """Process resynchronization actions.
+
+        team_names is a sequence of team names to resynchronize.
+
+        statuses is a dictionary mapping team names to one of the strings
+        'success' or 'failure'.
+        """
+        syslog('xmlrpc', 'resynchronizing: %s', COMMASPACE.join(team_names))
+        for team_name in team_names:
+            # There's no way to really know whether the original action
+            # succeeded or not, however, it's unlikely that an action would
+            # fail leaving the mailing list in a usable state.  Therefore, if
+            # the list is loadable and lockable, we'll say it succeeded.
+            # pylint: disable-msg=W0702
+            try:
+                mlist = MailList(team_name)
+                mlist.Unlock()
+                statuses[team_name] = 'success'
+            except:
+                statuses[team_name] = 'failure'
+                syslog('xmlrpc', 'Mailing list will not load: %s', team_name)
 
 
 def extractall(tgz_file):

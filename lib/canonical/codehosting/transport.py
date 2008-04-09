@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Bazaar transport for the Launchpad code hosting file system."""
 
@@ -182,6 +183,12 @@ class LaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
+
+        # Cache for authserver responses to getBranchInformation(). This maps
+        # from (user, product, branch) tuples to whatever
+        # getBranchInformation() returns. To clear an individual tuple, set
+        # its value in the cache to None, or delete it from the cache.
+        self._branch_info_cache = {}
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
@@ -236,15 +243,14 @@ class LaunchpadServer(Server):
             raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        branch_id, permissions = self.authserver.getBranchInformation(
-            self.user_id, user, product, branch)
+        branch_id, permissions = self._get_branch_information(
+            user, product, branch)
         if branch_id != '':
             self.logger.debug('Branch (%r, %r, %r) already exists ')
             return branch_id
         else:
             try:
-                return self.authserver.createBranch(
-                    self.user_id, user, product, branch)
+                return self._create_branch(user, product, branch)
             except Fault, f:
                 if f.faultCode == NOT_FOUND_FAULT_CODE:
                     # One might think that it would make sense to raise
@@ -259,6 +265,25 @@ class LaunchpadServer(Server):
                     raise PermissionDenied(f.faultString)
                 else:
                     raise
+
+    def _create_branch(self, user, product, branch):
+        """Create a branch on the authserver."""
+        branch_id = self.authserver.createBranch(
+            self.user_id, user, product, branch)
+        # Clear the cache for this branch. We *could* populate it with
+        # (branch_id, 'w'), but then we'd be building in more assumptions
+        # about the authserver.
+        self._branch_info_cache[(user, product, branch)] = None
+        return branch_id
+
+    def _get_branch_information(self, user, product, branch):
+        """Get branch information from the authserver."""
+        branch_info = self._branch_info_cache.get((user, product, branch))
+        if branch_info is None:
+            branch_info = self.authserver.getBranchInformation(
+                self.user_id, user, product, branch)
+            self._branch_info_cache[(user, product, branch)] = branch_info
+        return branch_info
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions
@@ -280,8 +305,8 @@ class LaunchpadServer(Server):
                 'Path must start with user or team directory: %r'
                 % (user_dir,))
         user = user_dir[1:]
-        branch_id, permissions = self.authserver.getBranchInformation(
-            self.user_id, user, product, branch)
+        branch_id, permissions = self._get_branch_information(
+            user, product, branch)
         return branch_id, permissions, path
 
     def translate_virtual_path(self, virtual_path):
@@ -353,6 +378,7 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
+        self._branch_info_cache.clear()
         unregister_transport(self.scheme, self._factory)
 
 
