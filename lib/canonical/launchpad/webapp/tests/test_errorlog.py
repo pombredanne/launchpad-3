@@ -154,15 +154,39 @@ class TestErrorReportingUtility(unittest.TestCase):
         test_data = dedent("""
             [error_reports]
             copy_to_zlog: true
-            errordir: %s
+            error_dir: %s
             """ % tempfile.mkdtemp())
         config.push('test_data', test_data)
-        shutil.rmtree(config.error_reports.errordir, ignore_errors=True)
+        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
 
     def tearDown(self):
-        shutil.rmtree(config.error_reports.errordir, ignore_errors=True)
+        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
         test_config_data = config.pop('test_data')
         reset_logging()
+
+    def test_configure(self):
+        """Test ErrorReportingUtility.setConfigSection()."""
+        utility = ErrorReportingUtility()
+        # The ErrorReportingUtility uses the config.error_reports section
+        # by default.
+        self.assertEqual(config.error_reports.oops_prefix, utility.prefix)
+        self.assertEqual(config.error_reports.error_dir, utility.error_dir)
+        self.assertEqual(
+            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
+        # Some external processes may use another config section to
+        # provide the error log configuration.
+        utility.configure(section_name='branchscanner')
+        self.assertEqual(config.branchscanner.oops_prefix, utility.prefix)
+        self.assertEqual(config.branchscanner.error_dir, utility.error_dir)
+        self.assertEqual(
+            config.branchscanner.copy_to_zlog, utility.copy_to_zlog)
+
+        # The default error section can be restored.
+        utility.configure()
+        self.assertEqual(config.error_reports.oops_prefix, utility.prefix)
+        self.assertEqual(config.error_reports.error_dir, utility.error_dir)
+        self.assertEqual(
+            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
 
     def test_setOopsToken(self):
         """Test ErrorReportingUtility.setOopsToken()."""
@@ -184,7 +208,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         """Test ErrorReportingUtility.newOopsId()"""
         utility = ErrorReportingUtility()
 
-        errordir = config.error_reports.errordir
+        errordir = config.error_reports.error_dir
 
         # first oops of the day
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
@@ -228,7 +252,7 @@ class TestErrorReportingUtility(unittest.TestCase):
     def test_changeErrorDir(self):
         """Test changing the error dir using the global config."""
         utility = ErrorReportingUtility()
-        errordir = config.error_reports.errordir
+        errordir = utility.error_dir
 
         # First an oops in the original error directory.
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
@@ -237,14 +261,10 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(
             utility.lasterrordir, os.path.join(errordir, '2006-04-01'))
 
-        # ErrorReportingUtility reads the global config to get the
-        # current error directory.
+        # ErrorReportingUtility uses the error_dir attribute to
+        # get the current error directory.
         new_errordir = tempfile.mkdtemp()
-        errordir_data = dedent("""
-            [error_reports]
-            errordir: %s
-            """ % new_errordir)
-        config.push('errordir_data', errordir_data)
+        utility.error_dir = new_errordir
 
         # Now an oops on the same day, in the new directory.
         now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
@@ -258,7 +278,6 @@ class TestErrorReportingUtility(unittest.TestCase):
             utility.lasterrordir, os.path.join(new_errordir, '2006-04-01'))
 
         shutil.rmtree(new_errordir, ignore_errors=True)
-        config_data = config.pop('errordir_data')
 
     def test_findLastOopsId(self):
         """Test ErrorReportingUtility._findLastOopsId()"""

@@ -597,6 +597,8 @@ class SmartserverTests(SSHTestCase):
             self.push, self.local_branch_path, remote_url)
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
+
+
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
         CodeHostingTestProviderAdapter)

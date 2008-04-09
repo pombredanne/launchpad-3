@@ -6,12 +6,9 @@
 
 from twisted.application import service
 
-from canonical.config import config
 from canonical.launchpad.daemons import tachandler
 from canonical.launchpad.daemons.sftp import SSHService
 
-
-config.setProcess('sftp')
 
 # Construct an Application that includes a supermirror SFTP service. 
 application = service.Application('sftponly')

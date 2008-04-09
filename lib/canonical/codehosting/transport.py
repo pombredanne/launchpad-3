@@ -144,6 +144,7 @@ def set_up_logging(configure_oops_reporting=False):
     log.setLevel(logging.DEBUG)
 
     if configure_oops_reporting:
+        errorlog.globalErrorUtility.configure('codehosting')
         tplog.addObserver(oops_reporting_observer)
 
     return log

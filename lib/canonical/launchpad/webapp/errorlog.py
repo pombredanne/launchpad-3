@@ -199,13 +199,27 @@ class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
+    _default_config_section = 'error_reports'
 
     lasterrordir = None
     lastid = 0
 
+
     def __init__(self):
         self.lastid_lock = threading.Lock()
-        self.prefix = config.error_reports.oops_prefix
+        self.configure()
+
+    def configure(self, section_name=None):
+        """Configure the utility using the named section form the config.
+
+        The 'error_reports' section is used if section_name is None.
+        """
+        if section_name is None:
+            section_name = self._default_config_section
+        self.oops_prefix = config[section_name].oops_prefix
+        self.error_dir = config[section_name].error_dir
+        self.copy_to_zlog = config[section_name].copy_to_zlog
+        self.prefix = self.oops_prefix
 
     def setOopsToken(self, token):
         """Append a string to the oops prefix.
@@ -215,7 +229,7 @@ class ErrorReportingUtility:
             the oops_prefix to create a unique identifier for each
             process.
         """
-        self.prefix = config.error_reports.oops_prefix + token
+        self.prefix = self.oops_prefix + token
 
     def _findLastOopsIdFilename(self, directory):
         """Find details of the last OOPS reported in the given directory.
@@ -297,7 +311,7 @@ class ErrorReportingUtility:
         else:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
-        errordir = os.path.join(config.error_reports.errordir, date)
+        errordir = os.path.join(self.error_dir, date)
         if errordir != self.lasterrordir:
             self.lastid_lock.acquire()
             try:
@@ -437,7 +451,7 @@ class ErrorReportingUtility:
             if request:
                 request.oopsid = oopsid
 
-            if config.error_reports.copy_to_zlog:
+            if self.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None

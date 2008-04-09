@@ -199,15 +199,14 @@ def reportOops(autotest, info=None, request=None):
         info = sys.exc_info()
     if request is None:
         request = errorlog.ScriptRequest([])
-    if autotest:
-        errorreports = config.importd.autotest_errorreports
-    else:
-        errorreports = config.importd.production_errorreports
-    config.error_reports = errorreports
     # Instanciating ErrorReportingUtility every time is not thread safe,
     # but it's not important because botmaster is single-threaded. And it
     # ensure that the modified configuration is used.
     error_reporting_utility = errorlog.ErrorReportingUtility()
+    if autotest:
+        error_reporting_utility.configure('importd_autotest')
+    else:
+        error_reporting_utility.configure('importd')
     error_reporting_utility.raising(info, request)
     log.msg(" Recorded", request.oopsid)
 

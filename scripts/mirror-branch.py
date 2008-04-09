@@ -33,7 +33,6 @@ import bzrlib.repository
 
 from canonical.codehosting.puller.worker import (
     install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
-from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
@@ -76,8 +75,8 @@ if __name__ == '__main__':
      branch_type_name, oops_prefix) = arguments
 
     branch_type = BranchType.items[branch_type_name]
-    config.setProcess(
-        'mirror-branch-%s-lazr.conf' % branch_type_map[branch_type])
+    section_name = 'supermirror_%s_puller' % branch_type_map[branch_type]
+    globalErrorUtility.configure(section_name)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
