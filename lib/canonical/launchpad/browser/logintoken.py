@@ -112,7 +112,7 @@ class BaseLoginTokenView(OpenIdMixin):
             return False
 
     def success(self, message):
-        """Indicate to the user that the token has been successfully processed.
+        """Indicate to the user that the token was successfully processed.
 
         This involves adding a notification message, and redirecting the
         user to their Launchpad page.
@@ -423,8 +423,8 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
             emails = ' '.join([email.email for email in guessed])
             msgid = _(
                 '<p>Some email addresses were found in your key but are '
-                'not registered with Launchpad:<code>${emails}</code>. If you '
-                'want to use these addresses with Launchpad, you need to '
+                'not registered with Launchpad:<code>${emails}</code>. If '
+                'you want to use these addresses with Launchpad, you need to '
                 '<a href="${url}/+editemails\">confirm them</a>.</p>',
                 mapping=dict(emails=emails, url=person_url))
             self.request.response.addInfoNotification(structured(msgid))
@@ -498,12 +498,13 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         except GPGKeyNotFoundError:
             self.addError(
                 structured(_(
-                'Launchpad could not import this OpenPGP key, because ${key}. '
-                'Check that you published it correctly in the global key ring '
-                '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
-                'entered the fingerprint correctly (as produced by <kbd>'
-                'gpg --fingerprint YOU</kdb>). Try later or '
-                '<a href="${url}/+editpgpkeys">cancel your request</a>.',
+                'Launchpad could not import this OpenPGP key, because '
+                '${key}. Check that you published it correctly in the '
+                'global key ring (using <kbd>gpg --send-keys '
+                'KEY</kbd>) and that you entered the fingerprint '
+                'correctly (as produced by <kbd>gpg --fingerprint '
+                'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
+                'cancel your request</a>.',
                 mapping=dict(key=key, url=person_url))))
             return None
 
@@ -514,8 +515,8 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                 'The key ${key} cannot be validated because it has been '
                 'publicly revoked. You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="${url}/+editpgpkeys">find and import</a> '
-                'the new key.',
+                'process to <a href="${url}/+editpgpkeys">find and '
+                'import</a> the new key.',
                 mapping=dict(key=key.keyid, url=person_url))))
             return None
 
@@ -545,7 +546,8 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the email address this token refers to is not in use."""
-        validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
+        validated = (
+            EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
         requester = self.context.requester
 
         emailset = getUtility(IEmailAddressSet)
@@ -806,14 +808,14 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         if self.mergeCompleted:
             self.success(_(
                 'The accounts have been merged successfully. Everything that '
-                'belonged to the duplicated account should now belong to your '
-                'own account.'))
+                'belonged to the duplicated account should now belong to '
+                'your own account.'))
         else:
             self.success(_(
                 'The e-mail address %s has been assigned to you, but the '
                 'duplicate account you selected has other registered e-mail '
-                'addresses too. To complete the merge, you have to prove that '
-                'you have access to all those e-mail addresses.'
+                'addresses too. To complete the merge, you have to prove '
+                'that you have access to all those e-mail addresses.'
                 % self.context.email))
         self.context.consume()
 
