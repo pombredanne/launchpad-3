@@ -1,6 +1,6 @@
 = File Attachments of the Bug Report =
 
-File attachments of the bug report itself are displayed in the list
+File attachments of the bug report itself are displayed in the list of
 comments. Since the text of this comment is already displayed as the
 bug report itself (or is accessible via the link "show original bug
 report"), no text content is displayed for this comment.

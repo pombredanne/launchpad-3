@@ -42,16 +42,17 @@ add an attachment via the web interface to the first comment, bugs
 submitted via the email interface can have file attachments, which
 are stored as bug attchments of the first comment. Similary, the first
 comment of bugs imported from other bug trackers may have attachments.
-We display these attachments in the "comment section" of the Web UI,
+We display these attachments in the comment section of the Web UI,
 hence getBugCommentsForDisplay returns the first comment, if it has
 attachments.
 
 Currently, the first comment of bug 11 has no attachments, hence
 BugTaskView.getCommentForDisplay does not return the first comment.
 
-    >>> bug_11 =  getUtility(IBugSet).get(11)
+    >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_11_bugtask = bug_11.bugtasks[0]
-    >>> bug_11_view = getView(bug_11_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_11_view = getView(bug_11_bugtask, '+index', 
+    ...                       LaunchpadTestRequest())
     >>> bug_11_view.initialize()
     >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
     >>> [bug_comment.index for bug_comment in rendered_comments]
