@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import os
 import re
+import time
 import urlparse
 import xmlrpclib
 
@@ -414,6 +415,11 @@ class TestTrac(Trac):
 class TestTracXMLRPCTransport:
     """An XML-RPC transport to be used when testing Trac."""
 
+    seconds_since_epoch = None
+    local_timezone = 'UTC'
+    utc_offset = 0
+
+
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
@@ -433,6 +439,15 @@ class TestTracXMLRPCTransport:
     def bugtracker_version(self):
         """Return the bug tracker version information."""
         return ['0.11.0', '1.0', False]
+
+    def time_snapshot(self):
+        """Return the current time."""
+        if self.seconds_since_epoch is None:
+            local_time = int(time.time())
+        else:
+            local_time = self.seconds_since_epoch
+        utc_time = local_time - self.utc_offset
+        return [self.local_timezone, local_time, utc_time]
 
 
 class TestRoundup(Roundup):

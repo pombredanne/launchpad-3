@@ -8,8 +8,9 @@ installed implement.
     >>> import xmlrpclib
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestTracXMLRPCTransport)
+    >>> trac_transport = TestTracXMLRPCTransport()
     >>> server = xmlrpclib.ServerProxy(
-    ...     'http://example.com/', transport=TestTracXMLRPCTransport())
+    ...     'http://example.com/', transport=trac_transport)
 
 
 == launchpad.bugtracker_version() ==
@@ -20,3 +21,15 @@ bugtracker_version() returns a list of
     >>> server.launchpad.bugtracker_version()
     ['0.11.0', '1.0', False]
 
+
+== launchpad.time_snapshot() ==
+
+    >>> server.launchpad.time_snapshot()
+    ['UTC', ..., ...]
+
+    >>> trac_transport.seconds_since_epoch = 1206328061
+    >>> trac_transport.local_timezone = 'US/Eastern'
+    >>> trac_transport.utc_offset = -4*60*60
+
+    >>> server.launchpad.time_snapshot()
+    ['US/Eastern', 1206328061, 1206342461]
