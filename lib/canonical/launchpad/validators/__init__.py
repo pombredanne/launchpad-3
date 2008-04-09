@@ -39,8 +39,8 @@ class LaunchpadValidationError(ValidationError):
     u'&lt;br/&gt;oops'
 
     >>> from canonical.launchpad.webapp.menu import structured
-    >>> LaunchpadValidationError(structured('<a title="%s">Ok</a>',
-    ... '<evil/>')).snippet()
+    >>> LaunchpadValidationError(
+    ...     structured('<a title="%s">Ok</a>', '<evil/>')).snippet()
     u'<a title="&lt;evil/&gt;">Ok</a>'
     """
     implements(ILaunchpadValidationError)
