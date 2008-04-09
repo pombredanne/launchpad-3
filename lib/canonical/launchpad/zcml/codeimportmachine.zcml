@@ -26,10 +26,7 @@
   <securedutility
     class="canonical.launchpad.database.CodeImportMachineSet"
     provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
-    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSetPublic" />
+    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
   </securedutility>
 
 </configure>

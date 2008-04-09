@@ -429,6 +429,8 @@ codeimport_edit = 'Edit import details'
 
 codeimport_list = 'Code Imports'
 
+codeimport_machines = ViewLabel()
+
 codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
