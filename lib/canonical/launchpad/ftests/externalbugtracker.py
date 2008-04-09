@@ -426,6 +426,8 @@ class TestTracXMLRPCTransport:
         method on this class with the same name as the XML-RPC method is
         called, with the extracted arguments passed on to it.
         """
+        assert handler.endswith('/xmlrpc'), (
+            'The Trac endpoint must end with /xmlrpc')
         args, method_name = xmlrpclib.loads(request)
         prefix = 'launchpad.'
         assert method_name.startswith(prefix), (

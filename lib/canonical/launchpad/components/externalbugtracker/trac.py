@@ -3,16 +3,21 @@
 """Trac ExternalBugTracker utiltiy."""
 
 __metaclass__ = type
-__all__ = ['Trac']
+__all__ = ['Trac', 'TracLPPlugin']
 
 import csv
+from datetime import datetime
 import urllib2
+import xmlrpclib
+
+import pytz
 
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
     UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.webapp.url import urlappend
 
 
 class Trac(ExternalBugTracker):
@@ -187,4 +192,20 @@ class Trac(ExternalBugTracker):
             raise UnknownRemoteStatusError()
 
 
+class TracLPPlugin(ExternalBugTracker):
+    """A Trac instance having the LP plugin installed."""
 
+    def __init__(self, baseurl, xmlrpc_transport=None):
+        super(TracLPPlugin, self).__init__(baseurl)
+        self.xmlrpc_transport = xmlrpc_transport
+
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+        time_zone, local_time, utc_time = server.launchpad.time_snapshot()
+        # Return the UTC time, so we don't have to care about the time
+        # zone for now.
+        trac_time = datetime.fromtimestamp(utc_time)
+        return trac_time.replace(tzinfo=pytz.timezone('UTC'))
