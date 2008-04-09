@@ -1899,7 +1899,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
-        query_clause = " AND ".join(clauses)
+        query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
@@ -1910,12 +1910,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
                     sspph.archive = archive.id AND
-                    sspph.status = %s AND
-                    %s
+                    sspph.status = %(pub_status)s AND
+                    %(more_query_clauses)s
                 ORDER BY upload_distroseries, sourcepackagename,
                     upload_archive, dateuploaded DESC
               )
-              """ % (quote(PackagePublishingStatus.PUBLISHED), query_clause)
+              """ % dict(pub_status=quote(PackagePublishingStatus.PUBLISHED),
+                         more_query_clauses=query_clauses)
 
         rset = SourcePackageRelease.select(
             query,

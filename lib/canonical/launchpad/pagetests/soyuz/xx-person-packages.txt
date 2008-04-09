@@ -215,10 +215,11 @@ applicable:
     iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
+
 == Packages deleted from a PPA ==
 
 When a package is deleted from a PPA it should not appear in the
-+packages list any more.
+packages list any more.
 
 First list the packages in the PPA.
 
