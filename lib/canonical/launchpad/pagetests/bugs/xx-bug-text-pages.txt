@@ -137,9 +137,9 @@ are replaced by a single space.
     >>> attachment_2
     ' http://localhost:58000/91/file%20with%20space.txt text/plain; 
     name="file with space.txt"'
-    >>> print attachment_2 == (' http://localhost:58000/91/'
-    ...                        'file%20with%20space.txt text/plain; '
-    ...                        'name="file with space.txt"')
+    >>> attachment_2 == (' http://localhost:58000/91/'
+    ...                  'file%20with%20space.txt text/plain; '
+    ...                  'name="file with space.txt"')
     True
 
 
