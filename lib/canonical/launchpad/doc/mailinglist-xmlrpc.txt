@@ -83,8 +83,9 @@ Should Mailman poll the actions again before it completes creating these
 lists, there will be nothing to do because lists in the CONSTRUCTING state
 don't show up as needing to be created.
 
-    >>> mailinglist_api.getPendingActions()
-    {}
+    >>> print_actions(mailinglist_api.getPendingActions())
+    team-one --> unsynchronized
+    team-two --> unsynchronized
 
 
 == Creating the mailing lists ==

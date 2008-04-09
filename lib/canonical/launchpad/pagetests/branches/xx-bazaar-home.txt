@@ -75,7 +75,6 @@ registered is the ordering, the registered date is also shown.
     Project
     Last Modified
     Last Commit
-    Revision Author
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links.renderContents()
     '...1...&rarr;...6...of...28 results...'
@@ -105,7 +104,6 @@ recent commits first.
     Project
     Last Modified
     Last Commit
-    Revision Author
 
     >>> browser.goBack()
 
@@ -136,4 +134,3 @@ imported branch listings.
     Project
     Last Modified
     Last Commit
-    Revision Author
