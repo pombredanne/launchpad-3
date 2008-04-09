@@ -10,7 +10,7 @@ installed implement.
     ...     TestTracXMLRPCTransport)
     >>> trac_transport = TestTracXMLRPCTransport()
     >>> server = xmlrpclib.ServerProxy(
-    ...     'http://example.com/', transport=trac_transport)
+    ...     'http://example.com/xmlrpc', transport=trac_transport)
 
 
 == launchpad.bugtracker_version() ==
