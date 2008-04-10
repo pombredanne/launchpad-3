@@ -50,14 +50,13 @@ class BugTrackerURL(URIField):
     i.e. it could end with a slash or be https instead of http.
     """
 
-    errormessage = _("%s is already registered in Launchpad.")
-
     def _validate(self, input):
         """Check that the URL is not already in use by another bugtracker."""
         super(BugTrackerURL, self)._validate(input)
         bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(input)
         if bugtracker is not None and bugtracker != self.context:
-            raise LaunchpadValidationError(self.errormessage % input)
+            raise LaunchpadValidationError(
+                "%s is already registered in Launchpad." % input)
 
 
 class BugTrackerType(DBEnumeratedType):
