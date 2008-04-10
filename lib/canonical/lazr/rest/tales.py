@@ -7,12 +7,13 @@ __metaclass__ = type
 from zope.app.zapi import getGlobalSiteManager
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
-from zope.schema.interfaces import IObject
+from zope.schema.interfaces import IChoice, IObject
 from zope.interface.declarations import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 
+from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollectionField, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation)
@@ -114,6 +115,17 @@ class WadlFieldAPI:
         "Is this field a link to another resource?"
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
+
+    def options(self):
+        """An enumeration of acceptable values for this field.
+
+        :return: An iterable of Items if the field implemenats IChoice
+          and its vocabulary implements IEnumeratedType. Otherwise, None.
+        """
+        if (IChoice.providedBy(self.field) and
+            IEnumeratedType.providedBy(self.field.vocabulary)):
+            return self.field.vocabulary.items
+        return None
 
 
 class WadlOperationAPI:

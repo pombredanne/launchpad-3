@@ -11,6 +11,8 @@
    <param tal:repeat="field context/wadl:all_fields"
     tal:attributes="path field/wadl:path" required="true">
     <link tal:condition="field/wadl:is_link" />
+    <option tal:repeat="option field/wadl:options"
+            tal:attributes="value option/title" />
    </param>
  </representation>
 
@@ -19,20 +21,10 @@
    <param tal:repeat="field context/wadl:all_writable_fields"
     tal:attributes="path field/wadl:path" required="false">
     <link tal:condition="field/wadl:is_link" />
+    <option tal:repeat="option field/wadl:options"
+            tal:attributes="value option/title" />
    </param>
  </representation>
-
- <method tal:repeat="operation context/wadl:named_operations"
-         tal:attributes="id string:${context/wadl:singular_type}-${operation/name};
-                         name operation/op/wadl_operation:http_method">
-   <param name="ws_op" required="true"
-          tal:attributes="fixed operation/name" />
-   <param tal:repeat="field operation/op/params"
-    tal:attributes="name field/__name__;
-                    required field/required">
-    <link tal:condition="field/wadl:is_link" />
-   </param>
- </method>
 
  <resource_type tal:attributes="id context/wadl:singular_type">
   <method name="GET"
@@ -61,6 +53,19 @@
    </request>
   </method>
 
+  <method tal:repeat="operation context/wadl:named_operations"
+          tal:attributes="id string:${context/wadl:singular_type}-${operation/name};
+                          name operation/op/wadl_operation:http_method">
+    <param name="ws_op" required="true"
+           tal:attributes="fixed operation/name" />
+    <param tal:repeat="field operation/op/params"
+     tal:attributes="name field/__name__;
+                     required field/required">
+     <link tal:condition="field/wadl:is_link" />
+     <option tal:repeat="option field/wadl:options"
+             tal:attributes="value option/title" />
+    </param>
+  </method>
  </resource_type>
 
  <resources tal:attributes="href context/wadl:url">
