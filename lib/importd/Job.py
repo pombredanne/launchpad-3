@@ -76,19 +76,21 @@ class Job:
         self.RCS = 'package'
         self.TYPE = 'sourcerer'
         self.product_id = sp.productseries.product.id
-        assert sp.productseries is not None, ("Attempt to import %s %s %s "
-                "which is not mapped to an upstream "
-                "product series" %
-                (distroseries.distribution.name,
-                 distroseries.name,
-                 sourcepackagerelease.name))
-        self.series_id = sp.productseries.id
-        self.series_branch = sp.productseries.series_branch
-        assert self.series_branch is not None, ("Attempt to import %s %s %s"
-            " which has no upstream branch" %
-                (distroseries.distribution.name,
-                 distroseries.name,
-                 sourcepackagerelease.name))
+        # XXX sabdfl 2005-04-12 bug=215159: These are commented out until the
+        # Packaging table has been fixed to support series-level granularity.
+        #assert sp.productseries is not None, ("Attempt to import %s %s %s "
+        #        "which is not mapped to an upstream "
+        #        "product series" %
+        #        (distroseries.distribution.name,
+        #         distroseries.name,
+        #         sourcepackagerelease.name))
+        #self.series_id = sp.productseries.id
+        #self.series_branch = sp.productseries.series_branch
+        #assert self.series_branch is not None, ("Attempt to import %s %s %s"
+        #    " which has no upstream branch" %
+        #        (distroseries.distribution.name,
+        #         distroseries.name,
+        #         sourcepackagerelease.name))
         return self
 
     def from_series(self, series):

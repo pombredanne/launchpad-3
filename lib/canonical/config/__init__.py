@@ -21,13 +21,8 @@ from canonical.lazr.interfaces.config import ConfigErrors
 
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
-# of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
-# config's launchpad.conf to use. LPCONFIG_SECTION is really only used by
-# the test suite to select the testrunner specific section.
+# of configs.
 LPCONFIG = 'LPCONFIG'
-LPCONFIG_SECTION = 'LPCONFIG_SECTION'
-
-DEFAULT_SECTION = 'default'
 DEFAULT_CONFIG = 'development'
 
 
@@ -119,7 +114,7 @@ class CanonicalConfig:
             here, os.pardir, os.pardir, os.pardir))
 
         schemafile = os.path.join(
-            config.root, 'lib' '/zope/app/server/schema.xml')
+            config.root, 'lib/zope/app/server/schema.xml')
         configfile = os.path.join(config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root_options, handlers = ZConfig.loadConfig(schema, configfile)
