@@ -690,6 +690,30 @@ focus before, then that is also shown as a radio option.
     other
 
 
+=== Target branch edge cases ===
+
+If the development focus branch is proposed for merging, we don't
+show the development focus branch as an option.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/firefox/main')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> print_radio_options(nopriv_browser)
+    ~sabdfl/firefox/release-0.9 checked
+    other
+
+If we are looking to propose a branch that has been targetted before,
+we don't show that branch as a possible target (as it is the source
+branch).
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> print_radio_options(nopriv_browser)
+    ~name12/firefox/main checked
+    other
+
+
 == Registering a merge, and junk branches ==
 
 Junk branches cannot be proposed for merging.  The action option is not
