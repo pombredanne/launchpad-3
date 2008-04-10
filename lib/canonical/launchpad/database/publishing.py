@@ -491,16 +491,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 config.builddmaster.root, self.distroseries)
 
         if self.archive.purpose == ArchivePurpose.PPA:
-            archs_available = [
+            architectures_available = [
                 arch for arch in self.distroseries.ppa_architectures]
         else:
-            archs_available = self.distroseries.architectures
+            architectures_available = self.distroseries.architectures
 
-        build_archs = determineArchitecturesToBuild(
-            self, archs_available, self.distroseries, pas_verify)
+        build_architectures = determineArchitecturesToBuild(
+            self, architectures_available, self.distroseries, pas_verify)
 
         builds = []
-        for arch in build_archs:
+        for arch in build_architectures:
             if logger is not None:
                 logger.debug(
                     "Creating PENDING build for %s." % arch.architecturetag)
