@@ -28,8 +28,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchiveSafePublisher, IBinaryPackageFilePublishing,
-    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
+    ArchivePurpose, BuildStatus, IArchiveSafePublisher,
+    IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
@@ -482,7 +483,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
 
-    def createBuilds(self, ignore_pas=False, logger=None,):
+    def createMissingBuilds(self, ignore_pas=False, logger=None,):
         """See `ISourcePackagePublishingHistory`."""
         if self.archive.purpose == ArchivePurpose.PPA or ignore_pas:
             pas_verify = None
@@ -490,7 +491,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pas_verify = BuildDaemonPackagesArchSpecific(
                 config.builddmaster.root, self.distroseries)
 
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.require_virtualized:
             architectures_available = [
                 arch for arch in self.distroseries.ppa_architectures]
         else:
@@ -501,6 +502,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         builds = []
         for arch in build_architectures:
+            build_candidate = self.sourcepackagerelease.getBuildByArch(
+                arch, self.archive)
+            if (build_candidate is not None and
+                (build_candidate.distroarchseries == arch or
+                 build_candidate.buildstate == BuildStatus.FULLYBUILT)):
+                continue
             if logger is not None:
                 logger.debug(
                     "Creating PENDING build for %s." % arch.architecturetag)

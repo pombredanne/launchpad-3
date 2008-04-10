@@ -228,7 +228,7 @@ class PackageUpload(SQLBase):
 
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-        pub_source.createBuilds(logger=logger)
+        pub_source.createMissingBuilds(logger=logger)
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -244,7 +244,7 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createBuilds(ignore_pas=True)
+            pub_source.createMissingBuilds(ignore_pas=True)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
