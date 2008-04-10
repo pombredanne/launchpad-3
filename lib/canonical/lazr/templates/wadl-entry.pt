@@ -1,21 +1,25 @@
 <?xml version="1.0"?>
 <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://research.sun.com/wadl/2006/10 wadl.xsd"
+ xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd"
  xmlns="http://research.sun.com/wadl/2006/10"
  xmlns:tal="http://xml.zope.org/namespaces/tal"
  xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
+
  <representation mediaType="application/json"
   tal:attributes="id string:${context/wadl_entry:singular_type}-full">
    <param tal:repeat="field context/wadl_entry:all_fields"
-    tal:attributes="name field/__name__">
+    tal:attributes="path field/wadl_field:path" required="true">
+    <link tal:condition="field/wadl_field:is_link" />
    </param>
  </representation>
 
  <representation mediaType="application/json"
   tal:attributes="id string:${context/wadl_entry:singular_type}-patch">
-   <!--representation containing only read-only fields, all
-       listed as optional-->
+   <param tal:repeat="field context/wadl_entry:all_writable_fields"
+    tal:attributes="path field/wadl_field:path" required="false">
+    <link tal:condition="field/wadl_field:is_link" />
+   </param>
  </representation>
 
  <!--Add custom methods-->

@@ -12,7 +12,7 @@
         <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
     </securedutility>
 
-    <!-- TALES wadl: namespace -->
+    <!-- TALES namespaces for WADL generation -->
     <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -25,6 +25,13 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlEntryAPI"
         name="wadl_entry"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlFieldAPI"
+        name="wadl_field"
         />
 
     <!-- WebService uses the default LaunchpadRootNavigation -->

@@ -5,9 +5,13 @@
 __metaclass__ = type
 
 from zope.schema import getFields
+from zope.schema.interfaces import IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
+
+from canonical.lazr.interfaces import ICollectionField
+
 
 class WadlAPI:
     "Namespace for WADL functions that operate on resources."
@@ -59,3 +63,32 @@ class WadlEntryAPI(WadlAPI):
     def all_fields(self):
         "Return all schema fields for the object."
         return getFields(self.schema).values()
+
+    def all_writable_fields(self):
+        """Return all writable schema fields for the object.
+
+        Read-only fields and collections are excluded.
+        """
+        return [field for field in self.all_fields()
+                if (not ICollectionField.providedBy(field)
+                    or field.readonly)]
+
+class WadlFieldAPI:
+    "Namespace for WADL functions that operate on schema fields."
+
+    def __init__(self, field):
+        self.field = field
+
+    def path(self):
+        name = self.field.__name__
+        if ICollectionField.providedBy(self.field):
+            repr_name = name + '_collection_link'
+        elif IObject.providedBy(self.field):
+            repr_name = name + '_link'
+        else:
+            repr_name = name
+        return '["%s"]' % repr_name
+
+    def is_link(self):
+        return (IObject.providedBy(self.field) or
+                ICollectionField.providedBy(self.field))
