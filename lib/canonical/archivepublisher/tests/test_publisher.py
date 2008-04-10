@@ -680,8 +680,9 @@ class TestPublisher(TestNativePublishingBase):
         origin_header = 'Origin: '
         origin_lines = [line for line in release_contents if
                         line.startswith(origin_header)]
-        self.assertTrue(len(origin_lines) == 1)
-        origin = origin_lines[0].replace(origin_header, '')
+        [origin] = origin_lines
+        # Throw away 'Origin: ' prefix.
+        origin = origin.replace(origin_header, '')
         self.assertEqual(origin,
             'LP-PPA-%s' % archive_publisher.archive.owner.name)
 
