@@ -18,8 +18,12 @@ As our test runner runs in 'always show tracebacks' mode, we need to
 switch this off for these tests to work
 
     >>> from canonical.config import config
-    >>> show_tracebacks = config.canonical.show_tracebacks
-    >>> config.canonical.show_tracebacks = False
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [canonical]
+    ...     show_tracebacks: False
+    ...     """)
+    >>> config.push('test_data', test_data)
     >>> config.canonical.show_tracebacks
     False
 
@@ -86,9 +90,10 @@ And the OOPS ID is displayed but not linkified.
 
 To avoid affecting other tests, reset the show_tracebacks config item.
 
-    >>> config.canonical.show_tracebacks = show_tracebacks
+    >>> test_config_data = config.pop('test_data')
     >>> config.canonical.show_tracebacks
     True
+
 
 = HTTPCaller handle_errors =
 
