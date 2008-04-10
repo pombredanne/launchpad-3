@@ -213,6 +213,20 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+oauth-authorize"
+      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      template="../templates/oauth-authorize.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+token-authorized"
+      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
+      template="../templates/token-authorized.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+access-token"
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />

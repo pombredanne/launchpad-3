@@ -13,7 +13,6 @@ import sys
 import pytz
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -28,7 +27,8 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
     ISupportsCommentImport, PersonCreationRationale,
     UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -61,6 +61,14 @@ class TooMuchTimeSkew(BugWatchUpdateError):
 #
 
 
+class CheckWatchesErrorUtility(ErrorReportingUtility):
+    """An error utility that for the checkwatches process."""
+
+    def __init__(self):
+        super(CheckWatchesErrorUtility, self).__init__()
+        self.setOopsToken('CW')
+
+
 def report_oops(message=None, properties=None, info=None):
     """Record an oops for the current exception.
 
@@ -90,8 +98,9 @@ def report_oops(message=None, properties=None, info=None):
         properties.append(('error-explanation', message))
 
     # Create the dummy request object.
-    request = errorlog.ScriptRequest(properties)
-    errorlog.globalErrorUtility.raising(info, request)
+    request = ScriptRequest(properties)
+    error_utility = CheckWatchesErrorUtility()
+    error_utility.raising(info, request)
 
     return request
 
@@ -177,7 +186,7 @@ class BugWatchUpdater(object):
                     #      to identify all bug trackers like this so
                     #      that hard-coding like this can be genericised
                     #      (Bug 138949).
-                    self.log.info(
+                    self.log.debug(
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
                     self.updateBugTracker(bug_tracker)
@@ -272,7 +281,7 @@ class BugWatchUpdater(object):
             if bug_watches_to_update.count() > 0:
                 self.updateBugWatches(remotesystem, bug_watches_to_update)
             else:
-                self.log.info(
+                self.log.debug(
                     "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
@@ -294,7 +303,7 @@ class BugWatchUpdater(object):
         try:
             launchpad_status = remotesystem.convertRemoteStatus(
                 remote_status)
-        except UnknownRemoteStatusError, error:
+        except UnknownRemoteStatusError:
             # We log the warning, since we need to know about statuses
             # that we don't handle correctly.
             self.warning("Unknown remote status '%s'." % remote_status,
@@ -602,6 +611,7 @@ class BugWatchUpdater(object):
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        report_oops(message, properties, info)
+        oops_info = report_oops(message, properties, info)
+
         # Also put it in the log.
-        self.log.error(message)
+        self.log.error("%s (%s)" % (message, oops_info.oopsid))

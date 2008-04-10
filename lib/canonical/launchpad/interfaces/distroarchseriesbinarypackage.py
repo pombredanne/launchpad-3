@@ -21,6 +21,8 @@ class IDistroArchSeriesBinaryPackage(Interface):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
+    cache = Attribute("The corresponding IDistroSeriesPackageCache record.")
+
     summary = Attribute("A guessed summary for this package. Either "
         "the currentrelease summary, or the cached one for all "
         "architectures.")

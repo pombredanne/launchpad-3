@@ -50,23 +50,23 @@ Some subscription targets relate to other targets hierarchically. An
 IDistribution, for example, can be said to be a parent of all
 IDistributionSourcePackages for that distribution.
 
-   >>> evolution_package = evolution_sub.target
+    >>> evolution_package = evolution_sub.target
 
 A target's parent can be retrieved using the
 `parent_subscription_target` property.
 
-   >>> print evolution_package.parent_subscription_target.displayname
-   Ubuntu
-   >>> print ubuntu.parent_subscription_target
-   None
-   >>> print firefox.parent_subscription_target
-   None
+    >>> print evolution_package.parent_subscription_target.displayname
+    Ubuntu
+    >>> print ubuntu.parent_subscription_target
+    None
+    >>> print firefox.parent_subscription_target.displayname
+    the Mozilla Project
 
-   >>> ff_milestone = firefox.getMilestone('1.0')
-   >>> ff_milestone.parent_subscription_target == firefox
-   True
-   >>> print ff_milestone.parent_subscription_target.displayname
-   Mozilla Firefox
+    >>> ff_milestone = firefox.getMilestone('1.0')
+    >>> ff_milestone.parent_subscription_target == firefox
+    True
+    >>> print ff_milestone.parent_subscription_target.displayname
+    Mozilla Firefox
 
    >>> ff_trunk = firefox.getSeries('trunk')
    >>> ff_trunk.parent_subscription_target == firefox
@@ -74,79 +74,109 @@ A target's parent can be retrieved using the
    >>> print ff_trunk.parent_subscription_target.displayname
    Mozilla Firefox
 
+   >>> warty = ubuntu.getSeries('warty')
+   >>> warty.parent_subscription_target == ubuntu
+   True
+   >>> print warty.parent_subscription_target.displayname
+   Ubuntu
+
 When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
-   >>> from canonical.launchpad.ftests import syncUpdate
-   >>> from canonical.launchpad.interfaces import (
-   ...     BlueprintNotificationLevel, BugNotificationLevel)
-   >>> from canonical.launchpad.mailnotification import (
-   ...     BugNotificationRecipients)
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.interfaces import (
+    ...     BlueprintNotificationLevel, BugNotificationLevel)
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
 
 We define some utility functions for printing out bug subscriptions and
 the recipients for the notifications they generate.
 
-   >>> def print_bug_subscribers(bug_subscribers):
-   ...     for subscriber in bug_subscribers:
-   ...         print subscriber.name
-   >>> def print_bug_subscriptions(bug_subscriptions):
-   ...     for subscription in bug_subscriptions:
-   ...         print subscription.subscriber.name
-   >>> def print_bug_recipients(recipients):
-   ...     for recipient in recipients:
-   ...         reason = recipients.getReason(recipient)
-   ...         print '%s "%s"' % (recipient.name, reason[1])
+    >>> def print_bug_subscribers(bug_subscribers):
+    ...     for subscriber in bug_subscribers:
+    ...         print subscriber.name
+    >>> def print_bug_subscriptions(bug_subscriptions):
+    ...     for subscription in bug_subscriptions:
+    ...         print subscription.subscriber.name
+    >>> def print_bug_recipients(recipients):
+    ...     for recipient in recipients:
+    ...         reason = recipients.getReason(recipient)
+    ...         print '%s "%s"' % (recipient.name, reason[1])
 
 Sample person has a subscription to Ubuntu and to the Evolution package
 in Ubuntu. We set the bug notification level for both subscriptions.
 
-   >>> ubuntu_sub.bug_notification_level = BugNotificationLevel.COMMENTS
-   >>> evolution_sub.bug_notification_level = BugNotificationLevel.COMMENTS
+    >>> ubuntu_sub.bug_notification_level = BugNotificationLevel.COMMENTS
+    >>> evolution_sub.bug_notification_level = BugNotificationLevel.COMMENTS
 
 `getBugNotificationsRecipients` returns all the bug subscribers to the
 target and its parent, and adds the rationale for the subscriptions to
 the recipients set. Each subscriber is only added once.
 
-   >>> recipients = BugNotificationRecipients()
-   >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
-   ...     recipients=recipients)
-   >>> print_bug_subscriptions(ubuntu.bug_subscriptions)
-   name12
-   >>> print_bug_subscriptions(evolution_package.bug_subscriptions)
-   name12
-   >>> print_bug_subscribers(bug_subscribers)
-   name12
-   >>> print_bug_recipients(recipients)
-   name12 "Subscriber (evolution in ubuntu)"
+    >>> recipients = BugNotificationRecipients()
+    >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
+    ...     recipients=recipients)
+    >>> print_bug_subscriptions(ubuntu.bug_subscriptions)
+    name12
+    >>> print_bug_subscriptions(evolution_package.bug_subscriptions)
+    name12
+    >>> print_bug_subscribers(bug_subscribers)
+    name12
+    >>> print_bug_recipients(recipients)
+    name12 "Subscriber (evolution in ubuntu)"
 
 Foo Bar subscribes to Ubuntu.
 
-   >>> login('foo.bar@canonical.com')
-   >>> ubuntu.addBugSubscription(foobar, foobar)
-   <StructuralSubscription ...>
-   >>> recipients = BugNotificationRecipients()
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.addBugSubscription(foobar, foobar)
+    <StructuralSubscription ...>
+    >>> recipients = BugNotificationRecipients()
 
 The set of subscribers to the evolution package for ubuntu now includes
 both subscribers to the package, and subscribers to the distribution.
 
-   >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
-   ...     recipients=recipients)
-   >>> print_bug_recipients(recipients)
-   name16 "Subscriber (Ubuntu)"
-   name12 "Subscriber (evolution in ubuntu)"
+    >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
+    ...     recipients=recipients)
+    >>> print_bug_recipients(recipients)
+    name16 "Subscriber (Ubuntu)"
+    name12 "Subscriber (evolution in ubuntu)"
 
 We remove Sample Person's bug subscription to the package.
 
-   >>> evolution_sub.blueprint_notification_level = (
-   ...     BlueprintNotificationLevel.METADATA)
-   >>> evolution_package.removeBugSubscription(sampleperson)
-   >>> ubuntu.removeBugSubscription(sampleperson)
-   >>> syncUpdate(evolution_sub)
+    >>> evolution_sub.blueprint_notification_level = (
+    ...     BlueprintNotificationLevel.METADATA)
+    >>> evolution_package.removeBugSubscription(sampleperson)
+    >>> ubuntu.removeBugSubscription(sampleperson)
+    >>> syncUpdate(evolution_sub)
 
 Sample Person is no longer a subscriber to the package, but Foo Bar
 is still a subscriber, by being subscribed to Ubuntu.
 
-   >>> print_bug_subscribers(
-   ...     evolution_package.getBugNotificationsRecipients(
-   ...         recipients=recipients))
-   name16
+    >>> print_bug_subscribers(
+    ...     evolution_package.getBugNotificationsRecipients(
+    ...         recipients=recipients))
+    name16
+
+A project is the parent of each of its products.
+
+Fireox does not have any subscribers.
+
+    >>> print_bug_subscribers(firefox.getBugNotificationsRecipients())
+
+Mozilla is the parent of Fireox.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> print firefox.parent_subscription_target.displayname
+    the Mozilla Project
+
+Foobar subscribes to bug notificatios for Mozilla.
+
+    >>> mozilla.addBugSubscription(foobar, foobar)
+    <StructuralSubscription at ...>
+
+As a result of subscribing to Mozilla, Foobar is now a subscriber of
+Firefox.
+
+    >>> print_bug_subscribers(firefox.getBugNotificationsRecipients())
+    name16

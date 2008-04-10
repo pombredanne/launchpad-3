@@ -19,6 +19,7 @@ import xmlrpclib
 from cStringIO import StringIO
 
 # pylint: disable-msg=F0401
+from Mailman import Errors
 from Mailman import Utils
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
@@ -91,6 +92,7 @@ class XMLRPCRunner(Runner):
         """
         self._check_list_actions()
         self._get_subscriptions()
+        self._check_held_messages()
         syslog('xmlrpc', 'completed oneloop')
         # Snooze for a while.
         return 0
@@ -107,7 +109,7 @@ class XMLRPCRunner(Runner):
             return
         if actions:
             syslog('xmlrpc', 'Received these actions: %s',
-                   COMMASPACE.join(actions.keys()))
+                   COMMASPACE.join(actions))
         else:
             return
         # There are three actions that can currently be taken.  A create
@@ -127,12 +129,15 @@ class XMLRPCRunner(Runner):
         if 'deactivate' in actions:
             self._deactivate(actions['deactivate'], statuses)
             del actions['deactivate']
+        if 'unsynchronized' in actions:
+            self._resynchronize(actions['unsynchronized'], statuses)
+            del actions['unsynchronized']
         # Any other keys should be ignored because they specify actions that
         # we know nothing about.  We'll log them to Mailman's log files
         # though.
         if actions:
             syslog('xmlrpc', 'Invalid xmlrpc action keys: %s',
-                   COMMASPACE.join(actions.keys()))
+                   COMMASPACE.join(actions))
         # Report the statuses to Launchpad.
         self._proxy.reportStatus(statuses)
         # Changes were made, so bump the serial number.
@@ -154,7 +159,7 @@ class XMLRPCRunner(Runner):
             return
         if info:
             syslog('xmlrpc', 'Received subscription info for these lists: %s',
-                   COMMASPACE.join(info.keys()))
+                   COMMASPACE.join(info))
         # Maintain a flag to determine whether there were any changes to
         # Mailman data structures in this XMLRPC request.  If so, we'll need
         # to bump the serial number to ensure that the integration tests can
@@ -237,7 +242,7 @@ class XMLRPCRunner(Runner):
                 # Reject this list creation request.
                 statuses[team_name] = 'failure'
                 syslog('xmlrpc', 'Unexpected create settings: %s',
-                       COMMASPACE.join(initializer.keys()))
+                       COMMASPACE.join(initializer))
                 continue
             # Either the mailing list was deactivated at one point, or it
             # never existed in the first place.  Look for a backup tarfile; if
@@ -359,7 +364,7 @@ class XMLRPCRunner(Runner):
             if modifications:
                 statuses[team_name] = 'failure'
                 syslog('xmlrpc', 'Unexpected modify settings: %s',
-                       COMMASPACE.join(modifications.keys()))
+                       COMMASPACE.join(modifications))
                 continue
             try:
                 mlist = MailList(team_name)
@@ -434,6 +439,108 @@ class XMLRPCRunner(Runner):
             else:
                 syslog('xmlrpc', 'Successfully deleted list: %s', team_name)
                 statuses[team_name] = 'success'
+
+    def _check_held_messages(self):
+        """See if any held messages have been accepted or rejected."""
+        try:
+            dispositions = self._proxy.getMessageDispositions()
+        except (xmlrpclib.ProtocolError, socket.error), error:
+            syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+            return
+        except xmlrpclib.Fault, error:
+            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            return
+        if dispositions:
+            syslog('xmlrpc',
+                   'Received dispositions for these message-ids: %s',
+                   COMMASPACE.join(dispositions))
+        else:
+            return
+        changes_detected = False
+        # For each message that has been acted upon in Launchpad, handle the
+        # message in here in Mailman.  We need to resort the dispositions so
+        # that we can handle all of them for a particular mailing list at the
+        # same time.
+        by_list = {}
+        for message_id, (team_name, action) in dispositions.items():
+            accepts, declines, discards = by_list.setdefault(
+                team_name, ([], [], []))
+            if action == 'accept':
+                accepts.append(message_id)
+            elif action == 'decline':
+                declines.append(message_id)
+            elif action == 'discard':
+                discards.append(message_id)
+            else:
+                syslog('xmlrpc',
+                       'Skipping invalid disposition "%s" for message-id: %s',
+                       action, message_id)
+        # Now cycle through the dispositions for every mailing list.
+        for team_name in by_list:
+            try:
+                mlist = MailList(team_name)
+            except Errors.MMUnknownListError:
+                syslog('xmlrpc', 'Skipping dispositions for unknown list: %s',
+                       team_name)
+                continue
+            try:
+                accepts, declines, discards = by_list[team_name]
+                for message_id in accepts:
+                    request_id = mlist.held_message_ids.pop(message_id, None)
+                    if request_id is None:
+                        syslog('xmlrpc', 'Missing accepted message-id: %s',
+                               message_id)
+                    else:
+                        mlist.HandleRequest(request_id, mm_cfg.APPROVE)
+                        syslog('vette', 'Approved: %s', message_id)
+                        changes_detected = True
+                for message_id in declines:
+                    request_id = mlist.held_message_ids.pop(message_id, None)
+                    if request_id is None:
+                        syslog('xmlrpc', 'Missing declined message-id: %s',
+                               message_id)
+                    else:
+                        mlist.HandleRequest(request_id, mm_cfg.REJECT)
+                        syslog('vette', 'Rejected: %s', message_id)
+                        changes_detected = True
+                for message_id in discards:
+                    request_id = mlist.held_message_ids.pop(message_id, None)
+                    if request_id is None:
+                        syslog('xmlrpc', 'Missing declined message-id: %s',
+                               message_id)
+                    else:
+                        mlist.HandleRequest(request_id, mm_cfg.DISCARD)
+                        syslog('vette', 'Discarded: %s', message_id)
+                        changes_detected = True
+                mlist.Save()
+            finally:
+                mlist.Unlock()
+        # If changes were detected, bump the serial number.
+        if changes_detected:
+            syslog('serial', 'SERIAL: %s', self.serial_number.next())
+
+    def _resynchronize(self, team_names, statuses):
+        """Process resynchronization actions.
+
+        team_names is a sequence of team names to resynchronize.
+
+        statuses is a dictionary mapping team names to one of the strings
+        'success' or 'failure'.
+        """
+        syslog('xmlrpc', 'resynchronizing: %s', COMMASPACE.join(team_names))
+        for team_name in team_names:
+            # There's no way to really know whether the original action
+            # succeeded or not, however, it's unlikely that an action would
+            # fail leaving the mailing list in a usable state.  Therefore, if
+            # the list is loadable and lockable, we'll say it succeeded.
+            # pylint: disable-msg=W0702
+            try:
+                mlist = MailList(team_name)
+                mlist.Unlock()
+                statuses[team_name] = 'success'
+            except:
+                statuses[team_name] = 'failure'
+                syslog('xmlrpc', 'Mailing list will not load: %s', team_name)
 
 
 def extractall(tgz_file):

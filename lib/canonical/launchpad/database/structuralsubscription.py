@@ -16,7 +16,7 @@ from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
-    IProduct, IProductSeries, IStructuralSubscription,
+    IProduct, IProductSeries, IProject, IStructuralSubscription,
     IStructuralSubscriptionTarget)
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -110,6 +110,8 @@ class StructuralSubscriptionTargetMixin:
             args['sourcepackagename'] = self.sourcepackagename
         elif IProduct.providedBy(self):
             args['product'] = self
+        elif IProject.providedBy(self):
+            args['project'] = self
         elif IDistribution.providedBy(self):
             args['distribution'] = self
             args['sourcepackagename'] = None
@@ -117,6 +119,8 @@ class StructuralSubscriptionTargetMixin:
             args['milestone'] = self
         elif IProductSeries.providedBy(self):
             args['productseries'] = self
+        elif IDistroSeries.providedBy(self):
+            args['distroseries'] = self
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.')
