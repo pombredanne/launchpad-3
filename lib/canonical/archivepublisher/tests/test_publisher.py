@@ -677,6 +677,14 @@ class TestPublisher(TestNativePublishingBase):
             archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
         release_contents = open(release_file).read().splitlines()
 
+        origin_header = 'Origin: '
+        origin_lines = [line for line in release_contents if
+                        line.startswith(origin_header)]
+        self.assertTrue(len(origin_lines) == 1)
+        origin = origin_lines[0].replace(origin_header, '')
+        self.assertEqual(origin,
+            'LP-PPA-%s' % archive_publisher.archive.owner.name)
+
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
