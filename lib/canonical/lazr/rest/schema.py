@@ -68,9 +68,8 @@ class URLDereferencingMixin:
         traversal code to dereference a URL into a published object.
 
         :param url: The URL to a resource.
-
         :raise NotFoundError: If the URL does not designate a
-        published object.
+            published object.
         """
         (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
 
@@ -84,7 +83,8 @@ class URLDereferencingMixin:
             query != '' or fragment != ''):
             raise NotFound(self, url, self.request)
 
-        path_parts = map(urllib.unquote, path.split('/')[1:])
+        path_parts = [urllib.unquote(part) for part in path.split('/')]
+        path_parts.pop(0)
         path_parts.reverse()
 
         # Import here is neccessary to avoid circular import.
@@ -102,7 +102,7 @@ class SimpleFieldDeserializer:
     """A deserializer that returns the same value it's served.
 
     The only exception is that the empty string is treated as the lack
-    of a value; ie. None.
+    of a value; i.e. None.
     """
     implements(IFieldDeserializer)
 
@@ -111,6 +111,11 @@ class SimpleFieldDeserializer:
         self.request = request
 
     def deserialize(self, value):
+        "Make sure the value is a string and then call _deserialize()."
+        assert isinstance(value, basestring), 'Deserializing a non-string'
+        return self._deserialize(value)
+
+    def _deserialize(self, value):
         """Return the value as is, unless it's empty; then return None."""
         if value == "":
             return None
@@ -120,7 +125,7 @@ class SimpleFieldDeserializer:
 class IntFieldDeserializer(SimpleFieldDeserializer):
     """A deserializer that transforms its value into an integer."""
 
-    def deserialize(self, value):
+    def _deserialize(self, value):
         """Try to convert the value into an integer."""
         return int(value)
 
@@ -146,28 +151,33 @@ class SimpleVocabularyLookupFieldDeserializer(SimpleFieldDeserializer):
             field, request)
         self.vocabulary = vocabulary
 
-    def deserialize(self, value):
+    def _deserialize(self, value):
         """Find an item in the vocabulary by title."""
+        valid_titles = []
         for item in self.field.vocabulary.items:
             if item.title == value:
                 return item
-        valid_titles = [item.title for item in self.field.vocabulary.items]
-        raise ValueError(('Invalid value "%s". ' % value) +
-                         'Acceptable values are: "' +
-                         '", "'.join(valid_titles) + '"' + '.')
+            valid_titles.append(item.title)
+        raise ValueError(
+            'Invalid value "%s". Acceptable values are: %s' %
+            (value, ', '.join(valid_titles)))
 
 
 class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
                                     URLDereferencingMixin):
     """A deserializer that turns URLs into data model objects."""
 
-    def deserialize(self, value):
+    def _deserialize(self, value):
         """Look up the data model object by URL."""
         try:
-            object = self.dereference_url(value)
+            resource = self.dereference_url(value)
         except NotFound:
             # The URL doesn't correspond to any real object.
             raise ValueError('No such object "%s".' % value)
-        underlying_object = removeSecurityProxy(object)
-        return underlying_object.context
-
+        # We looked up the URL and got the thing at the other end of
+        # the URL: a resource. But internally, a resource isn't a
+        # valid value for any schema field. Instead we want the object
+        # that serves as a resource's context. Any time we want to get
+        # to the object underlying a resource, we need to strip its
+        # security proxy.
+        return removeSecurityProxy(resource).context

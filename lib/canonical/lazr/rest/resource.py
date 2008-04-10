@@ -13,7 +13,7 @@ __all__ = [
     'ReadOnlyResource',
     'ScopedCollection',
     'ServiceRootResource',
-    'URLDereferencingMixin'
+    'URLDereferencingMixin',
     ]
 
 from datetime import datetime

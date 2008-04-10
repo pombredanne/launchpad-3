@@ -2,10 +2,9 @@
 
 """Base classes for one-off HTTP operations."""
 
-from zope.schema.interfaces import (
-    ConstraintNotSatisfied, RequiredMissing, ValidationError)
 from zope.component import getMultiAdapter
 from zope.interface import implements
+from zope.schema.interfaces import RequiredMissing, ValidationError
 
 from canonical.lazr.interfaces import (
     IFieldDeserializer, IResourceGETOperation, IResourcePOSTOperation)
@@ -53,17 +52,12 @@ class ResourceOperation:
             try:
                 value = deserializer.deserialize(self.request.get(name))
                 field.validate(value)
-                validated_values[name] = value
             except RequiredMissing:
                 errors.append("%s: Required input is missing." % name)
-            except ConstraintNotSatisfied, e:
-                # This is a pretty useless error because the client
-                # doesn't know which constraint wasn't satisfied.
-                errors.append("%s: Constraint not satisfied: %s." % (name,
-                                                                     str(e)))
             except (ValueError, ValidationError), e:
-                errors.append("%s: %s" % (name, str(e)))
-
+                errors.append("%s: %s" % (name, e))
+            else:
+                validated_values[name] = value
         return (validated_values, errors)
 
     def call(self, **kwargs):

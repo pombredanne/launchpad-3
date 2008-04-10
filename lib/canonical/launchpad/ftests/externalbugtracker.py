@@ -7,7 +7,9 @@ __metaclass__ = type
 
 import os
 import re
+import time
 import urlparse
+import xmlrpclib
 
 from zope.component import getUtility
 
@@ -408,6 +410,45 @@ class TestTrac(Trac):
             print "CALLED urlopen(%r)" % (url,)
 
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+
+
+class TestTracXMLRPCTransport:
+    """An XML-RPC transport to be used when testing Trac."""
+
+    seconds_since_epoch = None
+    local_timezone = 'UTC'
+    utc_offset = 0
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        assert handler.endswith('/xmlrpc'), (
+            'The Trac endpoint must end with /xmlrpc')
+        args, method_name = xmlrpclib.loads(request)
+        prefix = 'launchpad.'
+        assert method_name.startswith(prefix), (
+            'All methods should be in the launchpad namespace')
+
+        method_name = method_name[len(prefix):]
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def bugtracker_version(self):
+        """Return the bug tracker version information."""
+        return ['0.11.0', '1.0', False]
+
+    def time_snapshot(self):
+        """Return the current time."""
+        if self.seconds_since_epoch is None:
+            local_time = int(time.time())
+        else:
+            local_time = self.seconds_since_epoch
+        utc_time = local_time - self.utc_offset
+        return [self.local_timezone, local_time, utc_time]
 
 
 class TestRoundup(Roundup):

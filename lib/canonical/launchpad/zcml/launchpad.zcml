@@ -345,6 +345,13 @@
       template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+code-import-list"
+      class="canonical.launchpad.browser.ProductSeriesSourceListView"
+      template="../templates/sources-list.pt"
+      permission="zope.Public"
+      />
 
 </facet>
 

@@ -146,8 +146,10 @@
                             </a>
                           </div>
                           <div>
-                            <strong tal:content="view/import_count">123</strong>
-                            imported branches
+                            <a href="/+code-import-list">
+                              <strong tal:content="view/import_count">123</strong>
+                              imported branches
+                            </a>
                           </div>
                           <div>
                             <strong tal:content="view/branches_with_bugs_count">12</strong>
