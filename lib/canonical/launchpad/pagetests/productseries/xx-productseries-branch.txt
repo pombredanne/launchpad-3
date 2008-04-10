@@ -17,7 +17,6 @@ We are not able to link a branch to a series with an import branch.
     >>> browser.getControl('Update').click()
     Traceback (most recent call last):
     LookupError: label 'Update'
-    >>> print find_tag_by_id(browser.contents, 'cannot-link-explanation')
-    <strong id="cannot-link-explanation">
-        Cannot change link because this series is linked to an import.
-      </strong>
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'cannot-link-explanation'))
+    Cannot change link because this series is linked to an import.
