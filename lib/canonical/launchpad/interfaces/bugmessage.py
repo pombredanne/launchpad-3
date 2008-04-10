@@ -31,7 +31,7 @@ class IBugMessage(IHasBug):
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
     remote_comment_id = TextLine(
-        title=u"The id this comment has in the bugwatch's bug tracker")
+        title=u"The id this comment has in the bugwatch's bug tracker.")
 
 
 class IBugMessageSet(Interface):

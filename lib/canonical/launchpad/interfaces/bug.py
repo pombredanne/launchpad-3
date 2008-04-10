@@ -384,10 +384,10 @@ class IBug(IMessageTarget, ICanBeMentored):
                     remote_comment_id=None):
         """Add a comment to this bug.
 
-            :param message: The IMessage to be used as a comment.
-            :param bugwatch: The IBugWatch of the bug this comment was
+            :param message: The `IMessage` to be used as a comment.
+            :param bugwatch: The `IBugWatch` of the bug this comment was
                 imported from, if it's an imported comment.
-            :param user: The IPerson adding the comment.
+            :param user: The `IPerson` adding the comment.
             :param remote_comment_id: The id this comment has in the
                 remote bug tracker, if it's an imported comment.
         """
