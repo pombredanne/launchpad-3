@@ -76,10 +76,14 @@ class TargetBranchWidget(LaunchpadRadioWidget):
                 logged_in_user, branch.product))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.
-        if self.dev_focus is not None:
+        if self.dev_focus is not None and branch != self.dev_focus:
             if self.dev_focus in target_branches:
                 target_branches.remove(self.dev_focus)
             target_branches.insert(0, self.dev_focus)
+
+        # Make sure the the source branch isn't in the target_branches.
+        if branch in target_branches:
+            target_branches.remove(branch)
 
         terms = []
         for branch in target_branches:
