@@ -863,9 +863,9 @@ class BugTrackerHandshakeView(BaseLoginTokenView):
                     "handshakes.")
 
         # If the token has been used already or is invalid, return an
-        # HTTP 401.
+        # HTTP 410 (Gone).
         if self.redirectIfInvalidOrConsumedToken():
-            self.request.response.setStatus(401)
+            self.request.response.setStatus(410)
             return "Token has already been used or is invalid."
 
         # The token is valid, so consume it and return an HTTP 200. This

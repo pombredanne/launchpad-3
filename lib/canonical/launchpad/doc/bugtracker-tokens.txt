@@ -46,14 +46,14 @@ The token has now been consumed.
     True
 
 If we try to access the +bugtracker-handshake URL again, we will receive
-an HTTP 401 (Unauthorized) response.
+an HTTP 410 (Gone) response.
 
     >>> view = getView(token, '+bugtracker-handshake', test_request)
     >>> view()
     'Token has already been used or is invalid.'
 
     >>> print test_request.response.getStatus()
-    401
+    410
 
 Only POST requests are valid when accessing a +bugtracker-handshake URL.
 If we attempt another request method, such as a GET, we will receive an
