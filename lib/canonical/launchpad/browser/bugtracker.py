@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
-    redirection)
+    redirection, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import DelimitedListWidget
 
@@ -193,16 +193,17 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
         # If aliases has an error, unwrap the Dantean exception from
         # Zope so that we can tell the user something useful.
-        if self.getFieldError('aliases') is not None:
+        if self.getFieldError('aliases'):
             # XXX: GavinPanella 2008-04-02 bug=210901: The error
             # messages may already be escaped (with `cgi.escape`), but
             # the water is muddy, so we won't attempt to unescape them
             # or otherwise munge them, in case we introduce a
             # different problem. For now, escaping twice is okay as we
             # won't see any artifacts of that during normal use.
-            self.setFieldError('aliases', '; '.join(
-                    unicode(message) for message in
-                    self.widgets['aliases']._error.errors.args[0]))
+            aliases_errors = self.widgets['aliases']._error.errors.args[0]
+            self.setFieldError('aliases', structured(
+                    '<br />'.join(['%s'] * len(aliases_errors)),
+                    *aliases_errors))
 
     @action('Change', name='change')
     def change_action(self, action, data):

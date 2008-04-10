@@ -192,6 +192,27 @@ tracker uses.
   There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
+If the user inadvertently enters an invalid URL, they are shown an
+informative error message explaining why it is invalid.
+
+  >>> user_browser.getControl('Location', index=0).value = (
+  ...     'what? my wife does this stuff')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  "what? my wife does this stuff" is not a valid URI
+
+  >>> user_browser.getControl('Location', index=0).value = (
+  ...     'http://ξνεr.been.fishing?')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  URIs must consist of ASCII characters
+
 After successfully editing the bug tracker information, the user is
 redirected to the bug tracker page. Note that the change we made to
 the bugtracker name is reflected in the url.
@@ -252,7 +273,7 @@ bugtracker.
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
-  http://bugzilla.mozilla.org/ already refers to The Mozilla.org Bug Tracker
+  http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
 Multiple aliases can be entered by separating URLs with whitespace.
 
@@ -269,6 +290,21 @@ Multiple aliases can be entered by separating URLs with whitespace.
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)
+
+If the user inadvertently enters one or more invalid URLs, they are
+shown informative error messages.
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla/+edit')
+  >>> user_browser.getControl('Location aliases').value = (
+  ...     'ξνεr been http://fishing?')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  URIs must consist of ASCII characters
+  "been" is not a valid URI
 
 
 == Deleting a bug tracker ==
