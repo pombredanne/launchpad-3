@@ -73,35 +73,36 @@ class TestPublisher(TestNativePublishingBase):
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
         archive = self.ubuntutest.getArchiveByComponent('partner')
-        pconfig = removeSecurityProxy(archive.getPubConfig())
-        pconfig.setupArchiveDirs()
-        disk_pool = DiskPool(pconfig.poolroot, pconfig.temproot, self.logger)
+        pub_config = removeSecurityProxy(archive.getPubConfig())
+        pub_config.setupArchiveDirs()
+        disk_pool = DiskPool(
+            pub_config.poolroot, pub_config.temproot, self.logger)
         publisher = Publisher(
-            self.logger, pconfig, disk_pool, archive)
+            self.logger, pub_config, disk_pool, archive)
         pub_source = self.getPubSource(archive=archive,
             filecontent="I am partner")
 
         publisher.A_publish(False)
 
         # Did the file get published in the right place?
-        self.assertEqual(pconfig.poolroot,
+        self.assertEqual(pub_config.poolroot,
             "/var/tmp/archive/ubuntutest-partner/pool")
-        foo_path = "%s/main/f/foo/foo.dsc" % pconfig.poolroot
+        foo_path = "%s/main/f/foo/foo.dsc" % pub_config.poolroot
         self.assertEqual(open(foo_path).read().strip(), "I am partner")
 
         # Check that the index is in the right place.
         publisher.C_writeIndexes(False)
-        self.assertEqual(pconfig.distsroot,
+        self.assertEqual(pub_config.distsroot,
             "/var/tmp/archive/ubuntutest-partner/dists")
         index_path = os.path.join(
-            pconfig.distsroot, 'breezy-autotest', 'partner', 'source',
+            pub_config.distsroot, 'breezy-autotest', 'partner', 'source',
             'Sources.gz')
         self.assertTrue(open(index_path))
 
         # Check the release file is in the right place.
         publisher.D_writeReleaseFiles(False)
         release_file = os.path.join(
-            pconfig.distsroot, 'breezy-autotest', 'Release')
+            pub_config.distsroot, 'breezy-autotest', 'Release')
         self.assertTrue(open(release_file))
 
     def testPartnerReleasePocketPublishing(self):
@@ -112,10 +113,11 @@ class TestPublisher(TestNativePublishingBase):
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
         self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
-        pconfig = removeSecurityProxy(archive.getPubConfig())
-        pconfig.setupArchiveDirs()
-        disk_pool = DiskPool(pconfig.poolroot, pconfig.temproot, self.logger)
-        publisher = Publisher(self.logger, pconfig, disk_pool, archive)
+        pub_config = removeSecurityProxy(archive.getPubConfig())
+        pub_config.setupArchiveDirs()
+        disk_pool = DiskPool(
+            pub_config.poolroot, pub_config.temproot, self.logger)
+        publisher = Publisher(self.logger, pub_config, disk_pool, archive)
         pub_source = self.getPubSource(
             archive=archive, filecontent="I am partner",
             status=PackagePublishingStatus.PENDING)
@@ -126,7 +128,7 @@ class TestPublisher(TestNativePublishingBase):
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # The file was published:
-        foo_path = "%s/main/f/foo/foo.dsc" % pconfig.poolroot
+        foo_path = "%s/main/f/foo/foo.dsc" % pub_config.poolroot
         self.assertEqual(open(foo_path).read().strip(), 'I am partner')
 
         # Nothing to test from these two calls other than that they don't blow
