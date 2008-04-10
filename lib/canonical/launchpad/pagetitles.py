@@ -1257,6 +1257,8 @@ sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
+sources_list = 'Available code imports'
+
 sourcesource_index = 'Upstream source import'
 
 specification_add = 'Register a blueprint in Launchpad'

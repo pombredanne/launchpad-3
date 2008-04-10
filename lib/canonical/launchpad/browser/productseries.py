@@ -17,6 +17,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesShortLink',
     'ProductSeriesSOP',
+    'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
     'ProductSeriesSourceView',
     'ProductSeriesSpecificationsMenu',
@@ -946,6 +947,19 @@ class ProductSeriesSourceSetView:
             html += '>' + str(enum.title) + '</option>\n'
         html += '</select>\n'
         return html
+
+
+class ProductSeriesSourceListView(LaunchpadView):
+    """A listing of all the running imports.
+
+    We take 'running' to mean 'has importstatus==SYNCING'."""
+
+    def initialize(self):
+        self.text = self.request.get('text')
+        results = getUtility(IProductSeriesSet).searchImports(
+            text=self.text, importstatus=ImportStatus.SYNCING)
+
+        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesShortLink(DefaultShortLink):
