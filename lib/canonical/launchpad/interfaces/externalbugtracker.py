@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IExternalBugTracker',
+    'IExternalBugTrackerTokenAPI',
     'ISupportsBugImport',
     'ISupportsCommentImport',
     'ISupportsCommentPushing',
@@ -23,6 +24,13 @@ from zope.interface import Interface
 #      would allow us to get rid of these text constants.
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
+
+
+class IExternalBugTrackerTokenAPI(Interface):
+    """A class used to generate external bugtracker `LoginToken`s."""
+
+    def newBugTrackerToken():
+        """Create a new bugtracker `LoginToken` and return its ID."""
 
 
 class IExternalBugTracker(Interface):
