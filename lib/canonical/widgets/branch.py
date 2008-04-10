@@ -9,6 +9,7 @@ __all__ = [
 
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget, InputErrors
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -181,18 +182,24 @@ class TargetBranchWidget(LaunchpadRadioWidget):
 
         # Lastly render the other option.
         index = len(items)
-        if index == 0:
-            renderfunc = self.renderSelectedItem
-        else:
-            renderfunc = self.renderItem
         other_branch_text = "%s %s" % (
             self._renderLabel("Other:", index),
             self.other_branch_widget())
-        render_args = dict(
-            index=index, text=other_branch_text,
-            value="other", name=self.name,
-            cssClass=self.cssClass)
-        items.append(renderfunc(**render_args))
+        other_branch_onclick = (
+            "this.form['%s.target_branch'].focus()" % self.name)
+
+        elem = renderElement(u'input',
+                             value="other",
+                             name=self.name,
+                             id='%s.%s' % (self.name, index),
+                             cssClass=self.cssClass,
+                             type='radio',
+                             onClick=other_branch_onclick)
+
+        other_radio_button = self._joinButtonToMessageTemplate % (
+            elem, other_branch_text)
+
+        items.append(other_radio_button)
 
         return items
 
