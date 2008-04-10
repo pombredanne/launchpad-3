@@ -20,7 +20,8 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, UniqueField, URIField)
+    ContentNameField, StrippedTextLine, URIField)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -41,7 +42,7 @@ class BugTrackerNameField(ContentNameField):
         return getUtility(IBugTrackerSet).getByName(name)
 
 
-class BugTrackerURL(URIField, UniqueField):
+class BugTrackerURL(URIField):
     """A bug tracker URL that's not used by any other bug trackers.
 
     When checking if the URL is already registered with another
@@ -49,22 +50,14 @@ class BugTrackerURL(URIField, UniqueField):
     i.e. it could end with a slash or be https instead of http.
     """
 
-    # See `UniqueField`.
     errormessage = _("%s is already registered in Launchpad.")
 
-    @property
-    def attribute(self):
-        """See `UniqueField`."""
-        return self.getName()
-
-    @property
-    def _content_iface(self):
-        """See `UniqueField`."""
-        return IBugTracker
-
-    def _getByAttribute(self, url):
-        """See `UniqueField`."""
-        return getUtility(IBugTrackerSet).queryByBaseURL(url)
+    def _validate(self, input):
+        """Check that the URL is not already in use by another bugtracker."""
+        super(BugTrackerURL, self)._validate(input)
+        bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(input)
+        if bugtracker is not None and bugtracker != self.context:
+            raise LaunchpadValidationError(self.errormessage % input)
 
 
 class BugTrackerType(DBEnumeratedType):

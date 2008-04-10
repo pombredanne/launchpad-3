@@ -356,14 +356,8 @@ class UniqueField(TextLine):
 
     def _isValueTaken(self, value):
         """Returns true if and only if the specified value is already taken.
-
-        If the value is taken by the current context, then return
-        False, so that we don't trip over our own shoelaces, so to
-        speak, when we're changing the value of a `UniqueField`.
         """
-        existing = self._getByAttribute(value)
-        return (existing is not None and
-                existing != self.context)
+        return self._getByAttribute(value) is not None
 
     def _validate(self, input):
         """Raise a LaunchpadValidationError if the attribute is not available.
