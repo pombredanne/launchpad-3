@@ -81,7 +81,7 @@ class BugContactEditView(LaunchpadEditFormView):
         if (contact is not None and contact.isTeam() and
             contact not in self.user.getAdministratedTeams()):
             error = structured(
-                "You cannot set %(team)s as the bug contact for "
+                "You cannot set %(team)s as the bug supervisor for "
                 "%(target)s because you are not an administrator of that "
                 "team.<br />If you believe that %(team)s should be the bug"
                 " supervisor for %(target)s, please notify one of the "
