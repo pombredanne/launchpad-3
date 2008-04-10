@@ -3,7 +3,8 @@
 """Integration between the normal Launchpad logging and Twisted's."""
 
 __metaclass__ = type
-__all__ = ['oops_reporting_observer']
+__all__ = ['set_up_logging_for_script']
+
 
 import logging
 
@@ -12,31 +13,30 @@ from twisted.python import log
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.webapp import errorlog
 
-f = open('/home/mwh/foolog.txt', 'w')
+class SayNoFilter(logging.Filter):
+    def filter(self, record):
+        return False
 
-def oops_reporting_observer(args):
-    """A log observer for twisted's logging system that reports OOPSes."""
-    try:
-        print >>f, 'oops_reporting_observer', args
-        if args.get('isError', False) and 'failure' in args:
-            print >>f, 'helllllllllllll'
-            log = logging.getLogger('codehosting')
+class PythonLoggingObserver(log.PythonLoggingObserver):
+
+    def emit(self, eventDict):
+        """XXX."""
+        if eventDict.get('isError', False) and 'failure' in eventDict:
             try:
-                failure = args['failure']
+                failure = eventDict['failure']
                 request = errorlog.ScriptRequest([])
                 errorlog.globalErrorUtility.raising(
                     (failure.type, failure.value, failure.getTraceback()),
                     request,)
-                print >>f, request.oopsid
-                log.info("Logged OOPS id %s."%(request.oopsid,))
+                self.logger.info(
+                    "Logged OOPS id %s: %s: %s",
+                    request.oopsid, failure.type.__name__, failure.value)
             except Exception, e:
-                print >>f, e
-                log.exception("Error reporting OOPS:")
-    finally:
-        f.flush()
+                self.logger.exception("Error reporting OOPS:")
+            return
+        log.PythonLoggingObserver.emit(self, eventDict)
 
-def setup_logging_for_script(options, name):
+def set_up_logging_for_script(options, name):
     logger_object = logger(options, name)
-    log.addObserver(oops_reporting_observer)
-    observer = log.PythonLoggingObserver(loggerName=name)
-    observer.start()
+    log.startLoggingWithObserver(PythonLoggingObserver(loggerName=name).emit)
+    return logger_object
