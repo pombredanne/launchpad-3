@@ -300,6 +300,7 @@ Multiple aliases can be entered by separating URLs with whitespace.
   >>> user_browser.getControl('Location aliases').value = (
   ...     '    http://wolverhampton.example.com/    '
   ...     '  http://toadhall.example.com/      \n'
+  ...     'mailto:cupboardy@notaword.com '
   ...     ' https://wibble.example.com/   \n\n\n')
   >>> user_browser.getControl('Change').click()
 
@@ -310,6 +311,7 @@ Multiple aliases can be entered by separating URLs with whitespace.
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)
+  mailto:cupboardy@notaword.com (Alias)
 
 If the user inadvertently enters one or more invalid URLs, they are
 shown informative error messages.
