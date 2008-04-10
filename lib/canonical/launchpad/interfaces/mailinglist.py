@@ -711,8 +711,9 @@ class IMessageApproval(Interface):
     def approve(reviewer):
         """Approve the message.
 
-        This sets the status to APPROVAL_PENDING because the approval must
-        still be recognized by Mailman.
+        Set the status to APPROVAL_PENDING, indicating that the reviewer has
+        chosen to approve the message, but that Mailman has not yet
+        acknowledged this disposition.
 
         :param reviewer: The person who did the review.
         """
@@ -720,8 +721,9 @@ class IMessageApproval(Interface):
     def reject(reviewer):
         """Reject the message.
 
-        This sets the status to REJECTION_PENDING because the approval must
-        still be recognized by Mailman.
+        Set the status to REJECTION_PENDING, indicating that the reviewer has
+        chosen to reject (i.e. bounce) the message, but that Mailman has not
+        yet acknowledged this disposition.
 
         :param reviewer: The person who did the review.
         """
@@ -729,8 +731,9 @@ class IMessageApproval(Interface):
     def discard(reviewer):
         """Discard the message.
 
-        This sets the status to DISCARD_PENDING because the approval must
-        still be recognized by Mailman.
+        Set the status to DISCARD_PENDING, indicating that the reviewer has
+        chosen to discard the message, but that Mailman has not yet
+        acknowledged this disposition.
 
         :param reviewer: The person who did the review.
         """
