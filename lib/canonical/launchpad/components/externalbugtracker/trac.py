@@ -199,6 +199,23 @@ class TracLPPlugin(ExternalBugTracker):
         super(TracLPPlugin, self).__init__(baseurl)
         self.xmlrpc_transport = xmlrpc_transport
 
+    def _generateAuthenticationToken(self):
+        """Create an authentication token an return it."""
+        from zope.component import getUtility
+        from canonical.launchpad.interfaces import (
+            ILoginTokenSet, LoginTokenType)
+        login_token = getUtility(ILoginTokenSet).new(
+            None, None, 'externalbugtrackers@launchpad.net',
+            LoginTokenType.BUGTRACKER)
+        return login_token.token
+
+    def _authenticate(self):
+        """Authenticate with the Trac instance."""
+        token_text = self._generateAuthenticationToken()
+        base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+        auth_url = urlappend(base_auth_url, token_text)
+        self.urlopen(auth_url)
+
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         endpoint = urlappend(self.baseurl, 'xmlrpc')
