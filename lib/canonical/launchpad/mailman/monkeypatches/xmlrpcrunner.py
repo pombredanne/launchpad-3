@@ -519,28 +519,46 @@ class XMLRPCRunner(Runner):
         if changes_detected:
             syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
-    def _resynchronize(self, team_names, statuses):
+    def _resynchronize(self, actions, statuses):
         """Process resynchronization actions.
 
-        team_names is a sequence of team names to resynchronize.
+        actions is a sequence of 2-tuples specifying what needs to be
+        resynchronized.  The tuple is of the form (listname, current-status).
 
         statuses is a dictionary mapping team names to one of the strings
         'success' or 'failure'.
         """
-        syslog('xmlrpc', 'resynchronizing: %s', COMMASPACE.join(team_names))
-        for team_name in team_names:
+        syslog('xmlrpc', 'resynchronizing: %s',
+               COMMASPACE.join(sorted(name for (name, status) in actions)))
+        for name, status in actions:
             # There's no way to really know whether the original action
             # succeeded or not, however, it's unlikely that an action would
             # fail leaving the mailing list in a usable state.  Therefore, if
             # the list is loadable and lockable, we'll say it succeeded.
             # pylint: disable-msg=W0702
             try:
-                mlist = MailList(team_name)
-                mlist.Unlock()
-                statuses[team_name] = 'success'
+                mlist = MailList(name)
+            except Errors.MMUnknownListError:
+                # If the list status was CONSTRUCTING but it does not exist on
+                # the Mailman side, we can create it now.
+                if status == 'constructing':
+                    if self._create(name):
+                        statuses[name] = 'success'
+                    else:
+                        statuses[name] = 'failure'
+                else:
+                    # Any other condition leading to an unknown list is a
+                    # failure state.
+                    statuses[name] = 'failure'
             except:
-                statuses[team_name] = 'failure'
-                syslog('xmlrpc', 'Mailing list will not load: %s', team_name)
+                # Any other exception is also a failure.
+                statuses[name] = 'failure'
+                syslog('xmlrpc', 'Mailing list does not load: %s', name)
+            else:
+                # The list loaded just fine, so it successfully
+                # resynchronized.  Be sure to unlock it!
+                mlist.Unlock()
+                statuses[name] = 'success'
 
 
 def extractall(tgz_file):
