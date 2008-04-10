@@ -4,6 +4,7 @@ You can easily create a web service by tagging your content interfaces
 with some decorators. From this tagging the web service API will be
 created automatically.
 
+
 == Exporting the data model ==
 
 The LAZR Web Service data model consists of entries and collection (see
@@ -12,6 +13,7 @@ interface and are basically a single resource exported. Think something
 like a bug, a person, an article, etc. Collections are a set of
 resources of the same types, think something like the set of bugs,
 persons, teams, articles, etc.
+
 
 == Exporting entries ==
 
@@ -24,9 +26,9 @@ using the export_field directive. It takes an optional 'as' parameter
 that can be used to change the name under which the field will be
 exported.
 
-For example, this example declares that the IBook interface is
-exported as an entry on the  web service. It exports the title, author,
-and base_price field, but not the inventory_number field.
+For example, here we declare that the IBook interface is exported as an
+entry on the  web service. It exports the title, author, and base_price
+field, but not the inventory_number field.
 
     >>> from zope.interface import Interface
     >>> from zope.schema import TextLine, Float
@@ -102,7 +104,7 @@ And from within a class declaration.
 
 === Exporting a collection ===
 
-Collection scoped to an entry are exported simply by using
+Collections scoped to an entry are exported simply by using
 export_field() on the CollectionField containing the scoped collection
 items:
 

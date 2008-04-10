@@ -63,13 +63,15 @@ def export_entry():
     """
     _check_called_from_interface_def('export_entry()')
     def mark_entry(interface):
-        """Class advisor that tags the interface once its created."""
+        """Class advisor that tags the interface once it is created."""
         _check_interface('export_entry()', interface)
         interface.setTaggedValue(
             LAZR_WEBSERVICE_EXPORTED, dict(type=ENTRY_TYPE))
 
-        # Update the field tags. Set the names of those that don't have an
-        # exported name to their default name.
+        # Set the name of the fields that didn't specify it using the 'as'
+        # parameter in export_field. This must be done here, because the
+        # field's __name__ attribute is only set when the interface is
+        # created.
         for name in interface.names(False):
             tag = interface[name].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
             if tag is None:
@@ -87,7 +89,8 @@ def export_field(field, as=None):
     """Mark the field as part of the entry data model.
 
     :param as: the name under which the field is published in the entry. By
-    default, the same name is used.
+        default, the same name is used.
+    :raises TypeError: if called on an object which doesn't provide IField.
     """
     if not IField.providedBy(field):
         raise TypeError("export_field() can only be used on IFields.")
@@ -96,7 +99,11 @@ def export_field(field, as=None):
 
 
 def export_collection():
-    """Mark the interface as exported on the web service as a collection."""
+    """Mark the interface as exported on the web service as a collection.
+
+    :raises TypeError: if the interface doesn't have a method decorated with
+        @collection_default_content.
+    """
     _check_called_from_interface_def('export_collection()')
 
     # Set the tag at this point, so that future declarations can
@@ -104,7 +111,7 @@ def export_collection():
     tags = _get_interface_tags()
     tags[LAZR_WEBSERVICE_EXPORTED] = dict(type=COLLECTION_TYPE)
 
-    def mark_collection(interface):
+    def verify_collection(interface):
         """Class advisor verifying the collection export requirements."""
         _check_interface('export_collection()', interface)
 
@@ -115,11 +122,15 @@ def export_collection():
                 "@collection_default_content.")
         return interface
 
-    addClassAdvisor(mark_collection)
+    addClassAdvisor(verify_collection)
 
 
 def collection_default_content(f):
-    """Function decorator that tags the method as providing the content."""
+    """Decorates the method that provides the default values of a collection.
+
+    :raises TypeError: if not called from within an interface exported as a
+        collection, or if used more than once in the same interface.
+    """
     _check_called_from_interface_def('@collection_default_content')
 
     tags = _get_interface_tags()
