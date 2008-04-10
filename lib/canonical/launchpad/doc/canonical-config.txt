@@ -121,9 +121,9 @@ conf file is loaded.
     # We must reset the lazr.config instance to test this.
     >>> config._config = None
 
-    >>> config.setInstance('default')
+    >>> config.setInstance('development')
     >>> config.instance_name
-    'default'
+    'development'
 
     >>> config.filename
     '.../configs/development/launchpad-lazr.conf'
