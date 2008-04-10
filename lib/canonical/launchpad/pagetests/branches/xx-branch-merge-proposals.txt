@@ -312,6 +312,12 @@ find one, then the current time is used as the date merged.
     >>> nopriv_browser.getControl('Merged Revision Number').value = '42'
     >>> nopriv_browser.getControl('Mark as Merged').click()
 
+A notification is also added.
+
+    >>> for message in get_feedback_messages(nopriv_browser.contents):
+    ...     print extract_text(message)
+    The proposal has now been marked as merged.
+
 The user is then taken to the proposal details page.  The source branch
 is shown as a link.
 
@@ -338,9 +344,7 @@ an error is shown.
 
     >>> for message in get_feedback_messages(sample_browser.contents):
     ...     print extract_text(message)
-    There is 1 error.
-    The source branch (~name12/gnome-terminal/klingon) has already
-    been marked as merged.
+    The proposal has already been marked as merged.
 
 
 == Resubmitting proposals ==

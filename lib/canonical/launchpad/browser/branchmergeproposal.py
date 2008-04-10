@@ -460,25 +460,20 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     @action('Mark as Merged', name='mark_merged')
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
-        revno = data['merged_revno']
-        self.context.markAsMerged(revno, merge_reporter=self.user)
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            self.request.response.addWarningNotification(
+                'The proposal has already been marked as merged.')
+        else:
+            revno = data['merged_revno']
+            self.context.markAsMerged(revno, merge_reporter=self.user)
+            self.request.response.addNotification(
+                'The proposal has now been marked as merged.')
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the merge proposal."""
 
     def validate(self, data):
-        # If the proposal has been marked as merged while we were
-        # not looking, show an error message.
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.addError(
-                structured(
-                    'The source branch (<a href="%s">%s</a>) has already '
-                    'been marked as merged.'
-                    % (canonical_url(self.context.source_branch),
-                       self.context.source_branch.unique_name)))
-            return
-
         # Ensure a positive integer value.
         revno = data.get('merged_revno')
         if revno is not None:
