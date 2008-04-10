@@ -18,9 +18,9 @@ As our test runner runs in 'always show tracebacks' mode, we need to
 switch this off for these tests to work
 
     >>> from canonical.config import config
-    >>> show_tracebacks = config.show_tracebacks
-    >>> config.show_tracebacks = False
-    >>> config.show_tracebacks
+    >>> show_tracebacks = config.canonical.show_tracebacks
+    >>> config.canonical.show_tracebacks = False
+    >>> config.canonical.show_tracebacks
     False
 
 Anonymous users don't get tracebacks.
@@ -86,8 +86,8 @@ And the OOPS ID is displayed but not linkified.
 
 To avoid affecting other tests, reset the show_tracebacks config item.
 
-    >>> config.show_tracebacks = show_tracebacks
-    >>> config.show_tracebacks
+    >>> config.canonical.show_tracebacks = show_tracebacks
+    >>> config.canonical.show_tracebacks
     True
 
 = HTTPCaller handle_errors =
