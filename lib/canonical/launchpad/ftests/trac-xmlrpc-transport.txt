@@ -1,0 +1,44 @@
+= TestTracXMLRPCTransport =
+
+TestTracXMLRPCTransport is an XML-RPC transport which simulates the LP
+Trac plugin. It can be used to avoid network traffic while testing, and
+it implements the same API taht  Trac instances having the LP plugin
+installed implement.
+
+    >>> import xmlrpclib
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracXMLRPCTransport)
+    >>> trac_transport = TestTracXMLRPCTransport()
+    >>> server = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc', transport=trac_transport)
+
+
+== launchpad.bugtracker_version() ==
+
+bugtracker_version() returns a list of
+[Trac version, plugin version, dupe knowledge]. The version numbers are
+returned as strings. `dupe_knowledge` indicates whether the Trac
+instance knows how to track duplicate bugs.
+
+    >>> server.launchpad.bugtracker_version()
+    ['0.11.0', '1.0', False]
+
+
+== launchpad.time_snapshot() ==
+
+time_snapshot returns information about what the Trac instance thinks
+the current time is. It returns the local time zone, the local time, and
+the UTC time. The times are returned as seconds since epoch.
+
+    >>> server.launchpad.time_snapshot()
+    ['UTC', ..., ...]
+
+It's possible to set which values will be returned, if the current time
+isn't suitable.
+
+    >>> trac_transport.seconds_since_epoch = 1206328061
+    >>> trac_transport.local_timezone = 'US/Eastern'
+    >>> trac_transport.utc_offset = -4*60*60
+
+    >>> server.launchpad.time_snapshot()
+    ['US/Eastern', 1206328061, 1206342461]

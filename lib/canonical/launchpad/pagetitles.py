@@ -429,6 +429,8 @@ codeimport_edit = 'Edit import details'
 
 codeimport_list = 'Code Imports'
 
+codeimport_machines = ViewLabel()
+
 codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
@@ -1254,6 +1256,8 @@ def sourcepackages(context, view):
 sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
+
+sources_list = 'Available code imports'
 
 sourcesource_index = 'Upstream source import'
 

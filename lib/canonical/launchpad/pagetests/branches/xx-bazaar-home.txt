@@ -16,7 +16,7 @@ Check that the Bazaar home page works.
     >>> print extract_text(footer)
     30 branches registered in
     6 projects
-    3 imported branches
+    0 imported branches
     2 branches associated with bug reports
     Launchpad uses Bazaar 0.92.0.
 

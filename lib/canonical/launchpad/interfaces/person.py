@@ -222,7 +222,7 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     USER_CREATED = DBItem(11, """
-        Created by a user to represent a person which does not uses Launchpad.
+        Created by a user to represent a person which does not use Launchpad.
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
@@ -1285,7 +1285,7 @@ class IPersonAdminWriteRestricted(Interface):
         title=_("Visibility"),
         description=_(
             "Public visibility is standard, and Private Membership"
-            "means that a team's members are hidden."),
+            " means that a team's members are hidden."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
 
