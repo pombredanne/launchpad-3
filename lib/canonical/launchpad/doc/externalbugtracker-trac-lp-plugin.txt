@@ -20,6 +20,10 @@ so that we can avoid network traffic in tests.
 Before any XML-RPC methods can be used, we need to authenticate with the
 Trac instance.
 
+    >>> class FakeResponse:
+    ...     def __init__(self):
+    ...         self.headers = {}
+
     >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.interfaces import ILoginTokenSet
     >>> class TestTracLPPlugin(TracLPPlugin):
@@ -36,11 +40,18 @@ Trac instance.
     ...             raise AssertionError("Token as already been consumed.")
     ...         token.consume()
     ...         print "Successfully validated the token."
+    ...         response = FakeResponse()
+    ...         response.headers['Set-Cookie'] = 'trac_auth=random_token'
+    ...         return response
 
     >>> trac = TestTracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
     >>> trac._authenticate()
     Successfully validated the token.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token'
+
 
 == Current time ==
 

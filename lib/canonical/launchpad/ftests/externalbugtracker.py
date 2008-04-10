@@ -17,7 +17,8 @@ from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
+    DebBugs, Mantis, Trac, TracXMLRPCTransport, Roundup, RequestTracker,
+    SourceForge)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -412,7 +413,7 @@ class TestTrac(Trac):
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 
 
-class TestTracXMLRPCTransport:
+class TestTracXMLRPCTransport(TracXMLRPCTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
     seconds_since_epoch = None

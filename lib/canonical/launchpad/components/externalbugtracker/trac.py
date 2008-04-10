@@ -3,7 +3,7 @@
 """Trac ExternalBugTracker utiltiy."""
 
 __metaclass__ = type
-__all__ = ['Trac', 'TracLPPlugin']
+__all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
 
 import csv
 from datetime import datetime
@@ -214,7 +214,9 @@ class TracLPPlugin(ExternalBugTracker):
         token_text = self._generateAuthenticationToken()
         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
         auth_url = urlappend(base_auth_url, token_text)
-        self.urlopen(auth_url)
+        response = self.urlopen(auth_url)
+        auth_cookie = response.headers['Set-Cookie']
+        self.xmlrpc_transport.auth_cookie = auth_cookie
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
@@ -226,3 +228,8 @@ class TracLPPlugin(ExternalBugTracker):
         # zone for now.
         trac_time = datetime.fromtimestamp(utc_time)
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
+
+
+class TracXMLRPCTransport(xmlrpclib.Transport):
+
+    auth_cookie = None
