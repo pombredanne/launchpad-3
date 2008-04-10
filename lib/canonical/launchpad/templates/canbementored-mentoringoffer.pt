@@ -12,17 +12,10 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Offer to mentor this work</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <div tal:content="structure context/fmt:link" />
+      <h1>Offer to mentor this work</h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 

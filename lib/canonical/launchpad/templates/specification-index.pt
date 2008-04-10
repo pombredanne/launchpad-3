@@ -36,7 +36,7 @@
          title="Informational blueprint, no implementation necessary"
          tal:condition="context/informational" />
   </div>
-  <h1>Blueprint overview</h1>
+  <h1 tal:content="context/title" />
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">

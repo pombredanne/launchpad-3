@@ -20,10 +20,10 @@ not show any files.
 Look at a project with a release but no download files.  Ensure the download
 page does not show any files.
 
-    >>> anon_browser.open('http://launchpad.dev/alsa-utils/')
+    >>> anon_browser.open('http://launchpad.dev/thunderbird/')
     >>> anon_browser.getLink('Download project files').click()
     >>> anon_browser.url
-    'http://launchpad.dev/alsa-utils/+download'
+    'http://launchpad.dev/thunderbird/+download'
     >>> content = find_main_content(anon_browser.contents)
     >>> form = content('form')[0]
     >>> para = form('p')[0]
@@ -77,13 +77,13 @@ Now, login as a firefox admin and see the delete fields.
 
 A project owner should not see the delete button when there are no files.
 
-    >>> alsa_owner = setupBrowser(
+    >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
-    >>> alsa_owner.open('http://launchpad.dev/alsa-utils/')
-    >>> alsa_owner.getLink('Download project files').click()
-    >>> alsa_owner.title
-    'alsa-utils project files'
-    >>> content = find_main_content(alsa_owner.contents)
+    >>> tbird_owner.open('http://launchpad.dev/thunderbird/')
+    >>> tbird_owner.getLink('Download project files').click()
+    >>> tbird_owner.title
+    'Mozilla Thunderbird project files'
+    >>> content = find_main_content(tbird_owner.contents)
     >>> form = content('form')[0]
     >>> para = form('p')
     >>> print para[0].string.strip()
@@ -93,7 +93,7 @@ A project owner should not see the delete button when there are no files.
     Release series &#8220;trunk&#8221;
     >>> print para[1].contents[0].string.strip()
     Add download file for release:...
-    >>> alsa_owner.getControl('Delete Files')
+    >>> tbird_owner.getControl('Delete Files')
     Traceback (most recent call last):
     ...
     LookupError: label 'Delete Files'
@@ -442,3 +442,143 @@ A "Delete Files" button is available.
     >>> firefox_owner.getControl('Delete Files').click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u'1 file has been deleted.']
+
+
+== Viewing files on the project overview page ==
+
+Download files are shown in a portlet on the product overview page.
+Only the files for the most recent release that actually has
+downloadble files are shown.  For instance if Firefox has a trunk with
+no releases and a 3.0 series with releases 3.0b1 and 3.0, each of
+which has downloadable files, only the 3.0 release files will be shown.
+
+If there are no releases that have download files then the portlet
+is not displayed.
+
+The latest release for "ALSA-utils" with download files is version 1.0.9a.
+
+    >>> anon_browser.open('http://launchpad.dev/alsa-utils')
+    >>> downloads = find_tag_by_id(anon_browser.contents,
+    ...                            'portlet-projectfiles')
+    >>> print extract_text(downloads).encode('ascii', 'backslashreplace')
+    Latest downloads
+    Release 1.0.9a:
+      alsa-1.0.9a.tgz (md5...)...
+      README.txt (md5...)...
+      alsa-1.0.9a.dmg (md5...)...
+      alsa-1.0.9a.exe (md5...)...
+    &raquo; See all downloads&#8230;
+
+'See all downloads...' is a link to the +download page.
+
+    >>> print downloads.fetch('a')[-1]['href']
+    +download
+
+If we now delete all of the files for release 1.0.9a
+then the files for the next release will be shown.
+
+    >>> alsa_owner = setupBrowser(
+    ...     auth='Basic mark@hbd.com:test')
+    >>> alsa_owner.open('http://launchpad.dev/alsa-utils/trunk/1.0.9a')
+    >>> checkbox = alsa_owner.getControl(name="checkbox_0")
+    >>> checkbox.value = checkbox.options
+    >>> checkbox = alsa_owner.getControl(name="checkbox_1")
+    >>> checkbox.value = checkbox.options
+    >>> checkbox = alsa_owner.getControl(name="checkbox_2")
+    >>> checkbox.value = checkbox.options
+    >>> checkbox = alsa_owner.getControl(name="checkbox_3")
+    >>> checkbox.value = checkbox.options
+    >>> alsa_owner.getControl('Delete Files').click()
+    >>> get_feedback_messages(alsa_owner.contents)
+    [u'4 files have been deleted.']
+
+    >>> anon_browser.open('http://launchpad.dev/alsa-utils')
+    >>> downloads = find_tag_by_id(anon_browser.contents,
+    ...                            'portlet-projectfiles')
+    >>> print extract_text(downloads).encode('ascii', 'backslashreplace')
+    Latest downloads
+    Release 1.0.8:
+      README.txt (md5...)...
+      alsa-1.0.8.tgz (md5...)...
+      alsa-1.0.8.dmg (md5...)...
+      alsa-1.0.8.exe (md5...)...
+    &raquo; See all downloads&#8230;...
+
+A product with no download files will not even have the portlet displayed.
+
+    >>> anon_browser.open('http://launchpad.dev/thunderbird')
+    >>> main = find_main_content(anon_browser.contents)
+    >>> 'Latest downloads' in extract_text(main).encode('ascii', 'backslashreplace')
+    False
+
+== Scheme redirection ==
+
+Files may be downloaded over http or https with the URL for the
+librarian file constructed based upon the scheme of the original
+request.  The Apache configuration for Launchpad production servers
+sets a header called 'X-SCHEME' to indicate the original scheme
+(http or https).
+
+If the configuration 'use_https' is False then http will be used
+regardless of the value of X-SCHEME.  In order to exercise the
+use of X-SCHEME we must set 'use_https' to True and remember
+to reset it when we're done.
+
+    >>> from canonical.config import config
+    >>> old_use_https = config.vhosts.use_https
+    >>> config.vhosts.use_https = True
+
+If the original scheme is https the redirect URL should be https too.
+
+    >>> from textwrap import dedent
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> link = firefox_owner.getLink('foo.txt')
+    >>> url_path = urlparse(link.url)[2]
+    >>> redirect_resp = http(dedent("""\
+    ...     GET %s HTTP/1.1
+    ...     X-SCHEME: https
+    ...     """ % url_path))
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print redirect_url
+    https://localhost:58000/.../foo.txt
+
+However if the original scheme is http then the redirect URL should be
+over http.
+
+    >>> redirect_resp = http(dedent("""\
+    ...     GET %s HTTP/1.1
+    ...     X-SCHEME: http
+    ...     """ % url_path))
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print redirect_url
+    http://localhost:58000/.../foo.txt
+
+When 'use_https' is False the result will always be http.
+
+    >>> config.vhosts.use_https = False
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> link = firefox_owner.getLink('foo.txt')
+    >>> url_path = urlparse(link.url)[2]
+    >>> redirect_resp = http(dedent("""\
+    ...     GET %s HTTP/1.1
+    ...     X-SCHEME: https
+    ...     """ % url_path))
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print redirect_url
+    http://localhost:58000/.../foo.txt
+
+    >>> redirect_resp = http(dedent("""\
+    ...     GET %s HTTP/1.1
+    ...     X-SCHEME: http
+    ...     """ % url_path))
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print redirect_url
+    http://localhost:58000/.../foo.txt
+
+Return 'use_https' to its original value to not mess up future tests.
+
+    >>> config.vhosts.use_https = old_use_https

@@ -555,8 +555,9 @@ class INewSpecification(Interface):
         )
     title = Title(
         title=_('Title'), required=True, description=_(
-            "Describe the feature as clearly as possible in up to 70 characters. "
-            "This title is displayed in every feature list or report."))
+            "Describe the feature as clearly as possible in up to 70 "
+            "characters. This title is displayed in every feature "
+            "list or report."))
     specurl = SpecURLField(
         title=_('Specification URL'), required=False,
         description=_(
@@ -579,7 +580,8 @@ class INewSpecification(Interface):
         vocabulary='ValidPersonOrTeam')
     drafter = PublicPersonChoice(
         title=_('Drafter'), required=False,
-        description=_("The person responsible for drafting the specification."),
+        description=_(
+                "The person responsible for drafting the specification."),
         vocabulary='ValidPersonOrTeam')
     approver = PublicPersonChoice(
         title=_('Approver'), required=False,
@@ -785,7 +787,9 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         """Mark the spec as being accepted for its current series goal."""
 
     def declineBy(decider):
-        """Mark the spec as being declined as a goal for the proposed series."""
+        """Mark the spec as being declined as a goal for the proposed
+        series.
+        """
 
     has_accepted_goal = Attribute('Is true if this specification has been '
         'proposed as a goal for a specific series, '

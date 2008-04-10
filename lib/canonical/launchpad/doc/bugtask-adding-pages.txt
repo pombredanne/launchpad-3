@@ -309,6 +309,7 @@ On the same form, we can add a bug watch, by specifying the remote bug
 URL. If we don't enter a valid URL, we get an error message.
 
     >>> form['field.product'] = u'gnome-terminal'
+    >>> form['field.link_upstream_how'] = u'LINK_UPSTREAM'
     >>> form['field.bug_url'] = u'not-a-url'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
@@ -421,6 +422,7 @@ another bug links to the same bug.
 There's a property for easily retrieving the target for use on the
 confirmation page.
 
+    >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'thunderbird'
     >>> form['field.visited_steps'] = u'choose_product'

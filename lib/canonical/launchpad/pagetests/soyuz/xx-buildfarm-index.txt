@@ -1,0 +1,83 @@
+= BuildFarm page =
+
+The BuildFarm page is accessible from the root page, although we don't
+link to it yet because we are not yet sure of the benefits of doing
+this, since the audience of this page is still restricted.
+
+    >>> anon_browser.open('http://launchpad.dev/+builds')
+
+The BuildFarm contains a list of all builders registered in Launchpad
+ordered by architecture and a short summary about what they are
+processing.
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Launchpad build machines
+    Building PPA packages
+    386                0 waiting
+    The frog builder   NOT OK : None (AUTO)
+    Building other packages
+    386                1 waiting
+    Bob The Builder    NOT OK : None (AUTO)
+    Generated at ...
+
+As we can see, this page also presents the number of builds waiting
+in queue for each supported architecture on each separated build-farm
+we have, 'ppa' and 'other' (PRIMARY and PARTNER).
+
+    >>> def print_depth(contents):
+    ...     depths = find_tags_by_class(contents, 'category')
+    ...     for depth in depths:
+    ...         print extract_text(depth)
+
+    >>> print_depth(anon_browser.contents)
+    386     0 waiting
+    386     1 waiting
+
+In order to test the 'ppa' build queue depth portlet we will retry
+a failed build in Celso's PPA.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     BuildStatus, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> failed_build = cprov.archive.getBuildRecords(
+    ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+    >>> unused = failed_build.retry()
+
+    >>> flush_database_updates()
+    >>> logout()
+
+Now we can see the populated section for the ppa build-farm,
+exposing one pending build record. The 'other' is still present.
+
+    >>> anon_browser.reload()
+    >>> print_depth(anon_browser.contents)
+    386     1 waiting
+    386     1 waiting
+
+From this page, users with the appropriate permission can register new
+builders.
+
+    >>> admin_browser.open("http://launchpad.dev/+builds/+index")
+    >>> admin_browser.getLink("Add builder").click()
+    >>> print admin_browser.title
+    Register a new build machine
+
+While anonymous users are not given the option to register a new build
+and are not permitted if they go directly to the URL.
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/+index")
+    >>> anon_browser.getLink("Add builder")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/+new")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ..., 'launchpad.Admin')

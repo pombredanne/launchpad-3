@@ -31,20 +31,12 @@ in the form "status: resolution" as follows:
     >>> alsa_mantis.convertRemoteStatus('closed: fixed').title
     'Fix Released'
 
-If the status can't be converted, Unknown is returned, and a warning
-is logged.
+If the status can't be converted an UnknownRemoteStatusError is raised.
 
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
-    WARNING:...:Unknown status/resolution foo/bar.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
-warning. This handles the case where we've tried to probe for a bug
-but didn't succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> alsa_mantis.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Updating Bug Watches ==
@@ -191,6 +183,7 @@ updated:
     >>> bug_watch = sorted(example_bug_tracker.watches, key=getid)[0]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> bug_watch.lastchecked = bug_watch.lastchanged
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, [bug_watch])

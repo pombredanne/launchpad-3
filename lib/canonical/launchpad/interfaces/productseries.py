@@ -110,7 +110,7 @@ class RevisionControlSystems(DBEnumeratedType):
     """
 
     CVS = DBItem(1, """
-        Concurrent Version System
+        Concurrent Versions System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread
@@ -145,7 +145,7 @@ def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
     except CvsRootError, e:
-        raise LaunchpadValidationError(str(e))
+        raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
     if root.hostname.count('.') == 0:

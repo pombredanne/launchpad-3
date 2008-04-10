@@ -7,7 +7,8 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchpadCelebrities
+from canonical.launchpad.interfaces import (
+    IBugTaskSet, ILaunchpadCelebrities)
 
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 from canonical.launchpad.scripts.logger import log
@@ -33,6 +34,7 @@ def import_debian_bugs(bugs_to_import):
             continue
         bug = bug_watch_updater.importBug(
             external_debbugs, debbugs, debian, debian_bug)
+
         [debian_task] = bug.bugtasks
         bug_watch_updater.updateBugWatches(
             external_debbugs, [debian_task.bugwatch])

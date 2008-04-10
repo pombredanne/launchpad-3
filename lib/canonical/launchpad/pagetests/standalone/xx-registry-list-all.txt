@@ -1,8 +1,0 @@
-
-We should have a page that lists all projects.
-
-  >>> print http(r"""
-  ... GET /projects/+all HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<h1>All projects registered</h1>...

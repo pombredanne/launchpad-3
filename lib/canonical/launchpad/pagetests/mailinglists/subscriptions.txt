@@ -6,6 +6,10 @@ can subscribe to a mailing list using any of his email addresses, or a
 dynamic subscription which uses whichever email address is his
 preferred address at a given time.
 
+Non-team members can request a subscription to a mailing list at the
+same time as they sign up for a new team.  Their list membership is
+approved at the same time that they are approved for the team.
+
 
 == Setup ==
 
@@ -15,39 +19,21 @@ preferred email address.  Both the admins and rosetta-admins teams are given
 mailing lists but only admins will actually use its mailing list as its
 contact address.
 
-    XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
-    complete.  Also, don't create a list for rosetta-admins through the web
-    because we don't want it to be part of the mailing list beta testers
-    team.  If it is, then the test for subscriptions being available only to
-    beta testers won't work.  It works on launchpad.net because the mailing
-    list beta testers team is different than the launchpad beta testers team.
-    This isn't the case for the testrunner.  Again, all this will go away when
-    the feature goes public. See bug #190974.
-    >>> from canonical.launchpad.ftests import mailinglists_helper
-    >>> mailinglists_helper.beta_program_enable('admins')
-    >>> mailinglists_helper.beta_program_enable('testing-spanish-team')
-
     >>> admin_browser.open('http://launchpad.dev/~admins')
+    >>> admin_browser.getLink('Configure mailing list').click()
+    >>> admin_browser.getControl('Apply for Mailing List').click()
+
+    >>> admin_browser.open('http://launchpad.dev/~rosetta-admins')
     >>> admin_browser.getLink('Configure mailing list').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
 
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
     >>> admin_browser.getControl(name='field.admins').value = ['approve']
+    >>> admin_browser.getControl(name='field.rosetta-admins').value = [
+    ...     'approve']
     >>> admin_browser.getControl('Submit').click()
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, IPersonSet)
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> person_set = getUtility(IPersonSet)
-    >>> rosetta_admins = person_set.getByName('rosetta-admins')
-    >>> rosetta_admins_list = getUtility(IMailingListSet).new(rosetta_admins)
-    >>> mailinglists_helper.review_list('rosetta-admins')
-    >>> logout()
-    >>> flush_database_updates()
-
+    >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> mailinglists_helper.mailman.act()
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
@@ -64,10 +50,9 @@ actually be approved.
     >>> browser.getControl('Apply for Mailing List').click()
 
 
-== Beta testers ==
+== Subscribing ==
 
-A person who is not a member of the beta testers team cannot subscribe to
-mailing lists even if the team they are a member of has a mailing list.
+Any team member can join the mailing list.
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/+addmember')
     >>> admin_browser.getControl('New member').value = 'no-team-memberships'
@@ -75,23 +60,6 @@ mailing lists even if the team they are a member of has a mailing list.
 
     >>> no_team_browser = setupBrowser(
     ...     auth="Basic no-team-memberships@test.com:test")
-    >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
-    >>> no_team_browser.getControl(name='field.subscription.rosetta-admins')
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.subscription.rosetta-admins'
-
-Once the person joins the beta testers team, they can join the mailing list.
-
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> login('foo.bar@canonical.com')
-    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> no_team_memberships = person_set.getByName('no-team-memberships')
-    >>> sabdfl = person_set.getByName('sabdfl')
-    >>> beta.addMember(no_team_memberships, reviewer=sabdfl)
-    >>> flush_database_updates()
-    >>> logout()
-
     >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
     >>> rosetta_admins = no_team_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -202,17 +170,159 @@ menu item to "Don't subscribe".
     ["Don't subscribe"]
 
 
+== Subscription during team signup ==
+
+Jdub is only a member of the ubuntu team.  He can request to be placed
+on another team's mailing list at the same time that he requests
+membership on the team.
+
+First, we need to make sure that Jdub is a member of the Beta Testers
+team.  (Otherwise, the mailing list subscription checkbox won't show at
+all.)
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> person_set = getUtility(IPersonSet)
+    >>> jdub = person_set.getByName('jdub')
+    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> beta.addMember(jdub, reviewer=sabdfl)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> logout()
+
+We also need to confirm that the desired team has a list to subscribe
+to.  We will use Carlos, as he is an administrator for the Rosetta
+Admins team, and he should know if the list is available.
+
+    >>> browser.open('http://launchpad.dev/~carlos/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> rosetta_admins.displayOptions
+    ['Preferred address', "Don't subscribe",
+     'carlos@canonical.com', 'carlos@test.com']
+
+Now Jdub can apply for team membership and mailing list access.
+
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe').value = ['checked']
+    >>> browser.getControl(name='join').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Your request to join Rosetta Administrators is awaiting approval.
+    Your mailing list subscription is awaiting approval.
+
+Jdub hasn't been approved for the team yet, so he is not subscribed to
+the list.  The list does not show up on his Subscription Management
+screen.
+
+    >>> browser.open('http://launchpad.dev/~jdub/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Jeff Waugh's e-mail addresses"
+
+    >>> browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.subscription.rosetta-admins'
+
+Jdub will become a member of the team's mailing list as soon as he has
+been approved for the team.
+
+    >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/')
+    >>> admin_browser.getLink('Show all members').click()
+    >>> admin_browser.getLink(
+    ...     url='/~rosetta-admins/+member/jdub').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~rosetta-admins/+member/jdub'
+    >>> admin_browser.getControl(name='approve').click()
+
+His mailing list subscription is now available to be managed.
+
+    >>> browser.open('http://launchpad.dev/~jdub/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Jeff Waugh's e-mail addresses"
+
+    >>> rosetta_team = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+
+    >>> rosetta_team.displayOptions
+    ['Preferred address', "Don't subscribe", 'jeff.waugh@ubuntulinux.com']
+
+Jdub's mailing list preferences are preserved when he leaves the team.
+When he requests to re-join, the option to re-subscribe to the mailing
+list is not presented.
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins/+leave')
+    >>> browser.getControl(name='leave').click()
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'mailinglist_subscribe'
+
+Of course, the option to subscribe to the mailing list isn't present
+for teams that don't have mailing lists.
+
+    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~testing-spanish-team/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'mailinglist_subscribe'
+
+And the option is also missing from the sign-up pages of teams that
+have restricted membership.  (Note that we can only see the join page
+if we visit the URL directly, as the link is not present on the Team
+Overview.)
+
+    >>> browser.open('http://launchpad.dev/~launchpad/+join')
+    >>> browser.url
+    'http://launchpad.dev/~launchpad/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'mailinglist_subscribe'
+
+
 == Team page quick-links ==
 
 Links to subscribe and unsubscribe from the mailing lists are also
 available from the team's Overview page.
 
-The subscribe link is visible on the admin team's Overview
-page, because Carlos hasn't subscribed yet.
+Carlos can see the subscribe link on the admin team's Overview
+page, because he is not subscribed to the team mailing list.
 
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~admins')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are a member of this team.
     You are not subscribed to the team mailing list.
@@ -236,7 +346,7 @@ has an active mailing list.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
     You are subscribed to the team mailing list.
@@ -251,7 +361,7 @@ Clicking the link will unsubscribe you from the list immediately.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
     You are not subscribed to the team mailing list.
@@ -262,7 +372,7 @@ does not show either link.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-translators')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
 

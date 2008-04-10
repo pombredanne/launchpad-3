@@ -3,12 +3,22 @@
 __metaclass__ = type
 
 __all__ = [
-    'StandardShipItRequestAddView', 'ShippingRequestApproveOrDenyView',
-    'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
-    'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-    'ShipItExportsView', 'ShipItNavigation', 'ShipItReportsView',
-    'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
-    'ShippingRequestSetNavigation', 'ShipitFrontPageView']
+    'ShipItExportsView',
+    'ShipitFrontPageView',
+    'ShipItLoginView',
+    'ShipItLoginForServerCDsView',
+    'ShipItNavigation',
+    'ShipItReportsView',
+    'ShipItRequestServerCDsView',
+    'ShipItRequestView',
+    'ShipItUnauthorizedView',
+    'ShippingRequestAdminView',
+    'ShippingRequestApproveOrDenyView',
+    'ShippingRequestSetNavigation',
+    'ShippingRequestsView',
+    'StandardShipItRequestAddView',
+    'StandardShipItRequestSetNavigation',
+    'StandardShipItRequestsView']
 
 from operator import attrgetter
 
@@ -97,6 +107,8 @@ def shipit_is_open(flavour):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    standard_order_page = '/myrequest'
+    custom_order_page = '/specialrequest'
     series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
@@ -131,9 +143,20 @@ class ShipItLoginView(LoginOrRegister):
         current_order = user.currentShipItRequest()
         if (current_order and
             current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
-            self.request.response.redirect('specialrequest')
+            self.request.response.redirect(self.custom_order_page)
         else:
-            self.request.response.redirect('myrequest')
+            self.request.response.redirect(self.standard_order_page)
+
+
+class ShipItLoginForServerCDsView(ShipItLoginView):
+    """The login page used when users want Server CDs."""
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def __init__(self, context, request):
+        super(ShipItLoginForServerCDsView, self).__init__(context, request)
+        self.flavour = ShipItFlavour.SERVER
 
 
 def _get_flavour_from_layer(request):
@@ -155,11 +178,8 @@ def _get_flavour_from_layer(request):
 class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
-    from_email_addresses = {
-        ShipItFlavour.UBUNTU: config.shipit.ubuntu_from_email_address,
-        ShipItFlavour.EDUBUNTU: config.shipit.edubuntu_from_email_address,
-        ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
-
+    standard_order_page = '/myrequest'
+    custom_order_page = '/specialrequest'
     should_show_custom_request = False
     # This only exists so that our tests can simulate the creation (through
     # the web UI) of requests containing CDs of serieses other than the
@@ -180,7 +200,6 @@ class ShipItRequestView(GeneralFormView):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
-        self.from_email_address = self.from_email_addresses[self.flavour]
         self.fieldNames = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']
@@ -193,11 +212,9 @@ class ShipItRequestView(GeneralFormView):
         These fields include the 'reason' and quantity widgets for users to
         make custom orders.
         """
-        if self.flavour == ShipItFlavour.UBUNTU:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour == ShipItFlavour.KUBUNTU:
+        ubuntu_kubuntu_and_server = [
+            ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
+        if self.flavour in ubuntu_kubuntu_and_server:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
@@ -279,7 +296,7 @@ class ShipItRequestView(GeneralFormView):
     @property
     def download_url(self):
         """Return the URL where the ISO images of this flavour are located."""
-        if self.flavour == ShipItFlavour.UBUNTU:
+        if self.flavour in [ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]:
             return "http://www.ubuntu.com/download"
         elif self.flavour == ShipItFlavour.EDUBUNTU:
             return "http://www.edubuntu.org/Download"
@@ -332,16 +349,8 @@ class ShipItRequestView(GeneralFormView):
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
-        request_set = getUtility(IStandardShipItRequestSet)
-        requests = request_set.getByFlavour(self.flavour, self.user)
-        # XXX: Guilherme Salgado, 2008-02-22: Evil hack to allow users to
-        # request Ubuntu Server CDs on https://shipit.ubuntu.com/.  A more
-        # reasonable solution will replace this one before we start shipping
-        # Hardy.  When removing this hack, one should remember to remove the
-        # rest of it, from the process() method of this view.
-        if self.flavour == ShipItFlavour.UBUNTU:
-            server_requests = request_set.getByFlavour(ShipItFlavour.SERVER)
-            requests = list(requests) + list(server_requests)
+        requests = getUtility(IStandardShipItRequestSet).getByFlavour(
+            self.flavour, self.user)
         return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
@@ -444,7 +453,8 @@ class ShipItRequestView(GeneralFormView):
                 msg = ('Request accepted. Please note that special requests '
                        'can take up to <strong>ten weeks<strong> to deliver. '
                        'For quicker processing, choose a '
-                       '<a href="/myrequest">standard option</a> instead.')
+                       '<a href="%s">standard option</a> instead.'
+                       % self.standard_order_page)
             else:
                 msg = ('Request accepted. Please note that requests usually '
                        'take from 4 to 6 weeks to deliver, depending on the '
@@ -471,16 +481,7 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
-            allowed_flavour = False
-            if self.flavour == ShipItFlavour.UBUNTU:
-                # We're currently accepting requests for Desktop/Server CDs on
-                # shipit.ubuntu.com/myrequest.  Soon we'll use a separate page
-                # for that and drop this.
-                allowed_flavour = request_type.flavour in [
-                    ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]
-            else:
-                allowed_flavour = request_type.flavour == self.flavour
-            if request_type is None or not allowed_flavour:
+            if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
                 return ("The option you chose was not found. Please select "
@@ -495,19 +496,13 @@ class ShipItRequestView(GeneralFormView):
                 quantities[arch] = intOrZero(kw.get(field_name))
                 total_cds += quantities[arch]
 
-        # This is only necessary because we're allowing users to request
-        # Server CDs on shipit.ubuntu.com and so we need to use the standard
-        # option's flavour in those cases.
-        flavour = self.flavour
-        if request_type_id:
-            flavour = request_type.flavour
         # Here we set both requested and approved quantities. This is not a
         # problem because if this order needs manual approval, it'll be
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {flavour: quantities}, distroseries=self.series)
+            {self.flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
@@ -603,6 +598,17 @@ class ShipItRequestView(GeneralFormView):
 
         if errors:
             raise WidgetsError(errors)
+
+
+class ShipItRequestServerCDsView(ShipItRequestView):
+    """Where users can request Ubuntu Server Edition CDs."""
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def __init__(self, context, request):
+        super(ShipItRequestServerCDsView, self).__init__(context, request)
+        self.flavour = ShipItFlavour.SERVER
 
 
 class _SelectMenuOption:

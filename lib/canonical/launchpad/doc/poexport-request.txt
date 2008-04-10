@@ -32,8 +32,8 @@ This is a dummy logger class to capture the export's log messages.
 
 Here's somebody to make a request.
 
-  >>> from canonical.launchpad.database import Person
-  >>> person = Person.get(1)
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.get(1)
 
 
 == Requesting PO files ==
@@ -58,6 +58,7 @@ Now we request that the queue be processed.
     >>> process_queue(MockTransactionManager(), MockLogger())
     log> Exporting objects for Mark Shuttleworth, related to template pmount
     in Ubuntu Hoary package "pmount"
+    log> Stored file at http://.../launchpad-export.tar.gz
 
 We need to make sure the Librarian data has settled into place.
 
@@ -185,6 +186,7 @@ Let's try requesting an export in MO format:
     >>> process_queue(MockTransactionManager(), MockLogger())
     log> Exporting objects for Mark Shuttleworth, related to template pmount
     in Ubuntu Hoary package "pmount"
+    log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
 
     >>> transaction.commit()
 
@@ -255,6 +257,7 @@ The script is run.
     netapplet in NetApplet trunk
     DEBUG   Exporting objects for Mark Shuttleworth, related to template
     alsa-utils in alsa-utils trunk
+    INFO    Stored file at http://.../launchpad-export.tar.gz
     DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
     <BLANKLINE>
 

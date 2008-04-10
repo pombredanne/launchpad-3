@@ -48,7 +48,6 @@ Now, in order to really submit the bug, this email would have to be PGP
 signed, so that the system can verify the sender. But to avoid having
 to sign each email, we'll create a class which fakes a signed email:
 
-    >>> import email
     >>> import email.Utils
     >>> class MockSignedMessage(email.Message.Message):
     ...     @property
@@ -129,8 +128,6 @@ A notification was added:
 
 We define a helper to pretty-print the notification recipients:
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     BugNotificationRecipients)
     >>> def getSubscribers(bug):
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
@@ -1541,8 +1538,6 @@ which bug task to edit:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database.packagebugcontact import (
-    ...     PackageBugContact)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -1730,7 +1725,7 @@ send_process_error_notification().
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     'test@canonical.com', 'Some subject', 'Some error message.',
-    ...     msg, failing_command='foo bar')
+    ...     msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
@@ -1844,6 +1839,159 @@ Launchpad username.
     ...Assignee: Warty Gnome Team (warty-gnome)...
 
 
+== Recovering from errors ==
+
+When a user sends an email with multiple commands, some of them might
+fail (because of bad arguments, for example). Some commands, namely
+'affects', 'bug', 'security' and 'private', must succeed for the entire
+email to be processed, but others can fail without affecting the other
+commands.
+
+The latest firefox bug task has a NEW status.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    NEW
+
+Sample Person sends an email with several commands. First comes an
+'affects', to select the firefox task, then a 'subscribe' with a user
+that doesn't exist (and so is guaranteed to result in a failure) and
+finally, the status of the selected bug task is set to 'confirmed'.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  subscribe nonexistentuser
+    ...  status confirmed
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The 'affects' and 'status' commands were processed successfully - the
+status for the firefox task is now set to CONFIRMED.
+
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+The 'subscribe' command failed, and the user is being notified of the
+failure in an email.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        subscribe nonexistentuser
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    There's no such person with the specified name or email: nonexistentuser
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/BugTrackerEmailInterface
+    or send an email to help@launchpad.net
+
+We send another email to the same bug, selecting the same bug task. The
+email has other two commands - 'security maybe', which is guaranteed to
+fail, and 'status triaged' which is OK. 'security' commands cause the
+entire email to not to be processed, though.
+
+    >>> commit()
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  status triaged
+    ...  security maybe
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The status hasn't changed.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+And the sender receives an email to let them know about the failing
+'security' command.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        security maybe
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    The 'security' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        security yes
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/BugTrackerEmailInterface
+    or send an email to help@launchpad.net
+
+
+== Terminating command input ==
+
+To make it possible to submit emails with lines that look like commands
+(but aren't), a 'done' statement is provided. When the email parser
+encounters a line with that statement, it stops reading any additional
+commands.
+
+We send an email with four commands: 'affects', to choose the target,
+'importance', to set the importance to high, 'done', to stop reading,
+and 'status', which will be ignored.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  importance high
+    ...  done
+    ...  status triaged
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The target (Firefox) is selected and the importance set, but the status
+hasn't changed, since the command to set it came after the 'done' statement.
+
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.importance.name
+    HIGH
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+
 == Requesting help ==
 
 It's possible to ask for the help document for the email interface via
@@ -1925,7 +2073,7 @@ match the criteria described below).
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N in Firefox. See attached debug output.
+    ... Found a bug in Firefox. See attached debug output.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -1956,7 +2104,7 @@ An email may contain more than one attachment; all of them are stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+1 in Firefox. Nothing displayed. See attached files.
+    ... Found a bug in Firefox. Nothing displayed. See attached files.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -1982,8 +2130,26 @@ An email may contain more than one attachment; all of them are stored.
     LibraryFileAlias sample.html text/html UNSPECIFIED
     <html></html>
 
-If the content disposition header of a mail attachment does not start with
-"attachment", the attachment is not stored as a bug attachment.
+A bugnotification is sent for each attached file.
+
+    >>> bug_notifications = BugNotification.select(orderBy='-id', limit=3)
+    >>> for bug_notification in bug_notifications:
+    ...     print '-------------------'
+    ...     print bug_notification.message.chunks[0].content
+    -------------------
+    Found a bug in Firefox. Nothing displayed. See attached files.
+    <BLANKLINE>
+     affects firefox
+    -------------------
+    ** Attachment added: "sample.html"
+       http://.../sample.html
+    -------------------
+    ** Attachment added: "firefox1.log"
+       http://.../firefox1.log
+
+If the content-disposition header of a message part begins with 
+"attachment" it is stored as a bug attachment, even if the 
+content-disposition header does not provide a filename.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -1995,7 +2161,37 @@ If the content disposition header of a mail attachment does not start with
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+2 in Firefox. See attached debug output.
+    ... Found a bug in Firefox. Nothing displayed. See attached files.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-disposition: attachment
+    ...
+    ... some more or less important text
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias unnamed text/plain UNSPECIFIED
+    some more or less important text
+
+If the content-disposition header of a message part begins with "inline",
+it is stored as a bug attachment, if the header additionally provides
+a filename. This ensures that a message part containing debug information
+and the content type text/plain is stored as a bug attchment.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found a bug in Firefox. See attached debug output.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2008,6 +2204,35 @@ If the content disposition header of a mail attachment does not start with
     ... --BOUNDARY"""
     >>>
     >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias firefox.log text/plain UNSPECIFIED
+    debug text line 1
+    debug text line 2
+    debug text line 3
+
+If the content-disposition header of a message part begins with "inline",
+but has no filename, it is not stored as a bug attachment.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found a bug in Firefox. See attached debug output.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-disposition: inline
+    ...
+    ... some text
+    ... --BOUNDARY"""
+    >>>
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     No attachments
@@ -2025,7 +2250,7 @@ as a bug attachment.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+3 in Firefox. See attached debug output.
+    ... Found a bug in Firefox. See attached debug output.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2055,7 +2280,7 @@ text/x-vcard, it is not stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+4 in Firefox.
+    ... Found a bug in Firefox.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2101,7 +2326,7 @@ text/x-vcard, it is not stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+5 in Firefox.
+    ... Found a bug in Firefox.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2171,7 +2396,7 @@ it is considered to contain a patch.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found and fixed bug N+6 in Firefox. See attached patches.
+    ... Found and fixed a bug in Firefox. See attached patches.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2200,7 +2425,7 @@ it is considered to contain a patch.
     LibraryFileAlias logfile text/plain UNSPECIFIED
     this should be log data.
 
-A mail attachment without a filename is named "unnamed".
+Mail attachments without a filename are named "unnamed".
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2212,34 +2437,7 @@ A mail attachment without a filename is named "unnamed".
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+7 in Firefox. See attached patches.
-    ...
-    ...  affects firefox
-    ... --BOUNDARY
-    ... Content-type: text/plain
-    ... Content-disposition: attachment
-    ...
-    ... this could be some log data.
-    ... --BOUNDARY"""
-    >>>
-    >>> process_email(submit_mail)
-    >>> print_attachments(get_latest_added_bug().attachments)
-    LibraryFileAlias unnamed text/plain UNSPECIFIED
-    this could be some log data.
-
-Two or more unnamed attachments are sequentially numbered.
-
-    >>> submit_mail = """From: Sample Person <test@canonical.com>
-    ... To: new@bugs.canonical.com
-    ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: Another bug in Firefox
-    ... Content-type: multipart/mixed; boundary="BOUNDARY"
-    ...
-    ... --BOUNDARY
-    ... Content-type: text/plain
-    ... Content-transfer-encoding: 7bit
-    ...
-    ... Found bug N+8 in Firefox. See attached patches.
+    ... Found a bug in Firefox. See attached patches.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2263,9 +2461,9 @@ Two or more unnamed attachments are sequentially numbered.
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias unnamed text/plain UNSPECIFIED
     this could be some log data.
-    LibraryFileAlias unnamed-1 text/plain UNSPECIFIED
+    LibraryFileAlias unnamed text/plain UNSPECIFIED
     this could be logfile 2.
-    LibraryFileAlias unnamed-2 text/plain UNSPECIFIED
+    LibraryFileAlias unnamed text/plain UNSPECIFIED
     this could be logfile 3.
 
 If an email has two attachments with the same filename, the names are
@@ -2281,7 +2479,7 @@ not changed.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+9 in Firefox. See attached patches.
+    ... Found a bug in Firefox. See attached patches.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2315,12 +2513,12 @@ Base64 encoded attachments are decoded before being stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+10 in Firefox. Attached image file not properly
+    ... Found a bug in Firefox. Attached image file not properly
     ... displayed.
     ...
     ...  affects firefox
     ... --BOUNDARY
-    ... Content-Type: image/jpeg; name=image.jpg
+    ... Content-Type: image/jpeg
     ... Content-Transfer-Encoding: base64
     ... X-Attachment-Id: f_fcuhv1fz0
     ... Content-Disposition: attachment; filename=image.jpg
@@ -2333,6 +2531,59 @@ Base64 encoded attachments are decoded before being stored.
     LibraryFileAlias image.jpg image/jpeg UNSPECIFIED
     this is not a real JPG file
 
+Some mail clients append a filename to the content type of attachments.
+This does not affect the processing. Note though that the filename from
+the content-type header is ignored, even if the content-disposition 
+header does not provide a filename. The content type of the PGP signature
+is properly detected and thus no bug attchement created.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found another bug in Firefox.
+    ...
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-Type: image/jpeg; name="image.jpg"
+    ... Content-Transfer-Encoding: base64
+    ... X-Attachment-Id: f_fcuhv1fz0
+    ... Content-Disposition: attachment
+    ... 
+    ... dGhpcyBpcyBub3QgYSByZWFsIEpQRyBmaWxl==
+    ... --BOUNDARY
+    ... Content-type: text/x-diff; name="sourcefile1.diff"
+    ... Content-disposition: attachment; filename="sourcefile.diff"
+    ...
+    ... this should be diff output.
+    ... --BOUNDARY
+    ... Content-Type: application/pgp-signature; name="signature.asc"
+    ... Content-Description: Digital signature
+    ... Content-Disposition: inline
+    ...
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.4.6 (GNU/Linux)
+    ...
+    ... iD8DBQFH7MnnonjfXui9pOMRAseJAJ0ZHoiLQ+pA2aljwhgszMiImdC1xwCcCdax
+    ... oTWHlYEemRSD/E68f9Zsb2s=
+    ... =HMT0
+    ... -----END PGP SIGNATURE-----
+    ...
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias unnamed image/jpeg; name="image.jpg" UNSPECIFIED
+    this is not a real JPG file
+    LibraryFileAlias sourcefile.diff text/x-diff; name="sourcefile1.diff" PATCH
+    this should be diff output.
 
 
 XXX: Add tests for non-ascii mails.

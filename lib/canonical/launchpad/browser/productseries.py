@@ -135,7 +135,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'editsource', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'add_release', 'rdf', 'review'
+        'add_package', 'add_milestone', 'add_release', 'rdf', 'review',
+        'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -187,6 +188,9 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Review details'
         return Link('+review', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 class ProductSeriesBugsMenu(ApplicationMenu):
 

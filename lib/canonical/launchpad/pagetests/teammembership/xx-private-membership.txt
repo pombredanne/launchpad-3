@@ -83,8 +83,8 @@ on other members' person pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
-    [u'My Team']
     [u'Other Team']
+    [u'My Team']
 
 
 == Teams with Icons ==
@@ -151,7 +151,6 @@ or a blueprint.
 Even the owner of the team with private membership should not see
 MyTeam as an option in the +mentor form.
 
-    >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+bug/1/+mentor')
     >>> team_select = find_tag_by_id(owner_browser.contents, 'field.team')
@@ -280,3 +279,99 @@ no user can set that team as the bug contact of a distribution.
     'http://launchpad.dev/ubuntu/+bugcontact'
     >>> get_feedback_messages(admin_browser.contents)
     [...You must choose a valid person or team to be the bug contact...
+
+
+== Edit the team's visibility ==
+
+A team cannot have its visibility set to private-membership unless the
+subscription policy is also set to restricted.
+
+    >>> admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
+    >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
+    ...     'OPEN']
+    >>> admin_browser.getControl('Visibility').value = [
+    ...     'PRIVATE_MEMBERSHIP']
+    >>> admin_browser.getControl('Save').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There is 1 error.
+    Private teams must have a Restricted subscription policy.
+
+    >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
+    ...     'MODERATED']
+    >>> admin_browser.getControl('Save').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There is 1 error.
+    Private teams must have a Restricted subscription policy.
+
+    >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
+    ...     'RESTRICTED']
+    >>> admin_browser.getControl('Save').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    >>> admin_browser.url
+    'http://launchpad.dev/~otherteam'
+
+Only Launchpad admins can set the visibility. Even the team owner can't do it.
+
+    >>> owner_browser.open('http://launchpad.dev/~otherteam/+edit')
+    >>> owner_browser.getControl('Visibility').value = [
+    ...     'PRIVATE_MEMBERSHIP']
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Visibility'
+
+The team owner also cannot set the subscription policy away from
+restricted, if the visibility is private-membership.
+
+    >>> owner_browser.getControl(name='field.subscriptionpolicy').value = [
+    ...     'MODERATED']
+    >>> owner_browser.getControl('Save').click()
+    >>> for message in get_feedback_messages(owner_browser.contents):
+    ...     print message
+    There is 1 error.
+    Private teams must have a Restricted subscription policy.
+
+A team cannot have its visibility set to private-membership if it is connected
+to other objects which might allow users to infer the membership.
+
+First, subscribe the team to a bug.
+
+    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
+    >>> admin_browser.getControl('Visibility').value = [
+    ...     'PUBLIC']
+    >>> admin_browser.getControl('Save').click()
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+addsubscriber')
+    >>> admin_browser.getControl('Person').value = 'otherteam'
+    >>> admin_browser.getControl('Add').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Other Team team has been subscribed to this bug.
+
+Second, ask a question.
+
+    >>> owner_browser.open(
+    ...     'http://launchpad.dev/firefox/+answer-contact')
+    >>> owner_browser.getControl("Other Team").selected = True
+    >>> owner_browser.getControl('Continue').click()
+    >>> for message in get_feedback_messages(owner_browser.contents):
+    ...     print message
+    English was added to Other Team's preferred languages.
+    Other Team has been added as an answer contact for Mozilla Firefox.
+
+Finally, change the visibility to Private Membership which will fail.
+
+    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
+    >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
+    ...     'RESTRICTED']
+    >>> admin_browser.getControl('Visibility').value = [
+    ...     'PRIVATE_MEMBERSHIP']
+    >>> admin_browser.getControl('Save').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There is 1 error.
+    This team cannot be made private since it is referenced by a
+    bugsubscription and an answercontact.

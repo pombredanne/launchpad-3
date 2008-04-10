@@ -147,6 +147,16 @@ values. Each SchemaSection has a name.
     >>> section_schema_1.name
     'section_1'
 
+A SchemaSection can return a 2-tuple of its category name and specific
+name parts. The category name will be None if the SchemaSection's name
+does not contain a category.
+
+    >>> schema['section_3.app_b'].category_and_section_names
+    ('section_3', 'app_b')
+
+    >>> section_schema_1.category_and_section_names
+    (None, 'section_1')
+
 Optional sections have the optional attribute set to True:
 
     >>> section_schema_1.optional
@@ -478,6 +488,16 @@ from above....
 
     >>> section_1.name
     'section_1'
+
+Like SectionSchemas, sections can return a 2-tuple of their category
+name and specific name parts. The category name will be None if the
+section's name does not contain a category.
+
+    >>> config['section_3.app_b'].category_and_section_names
+    ('section_3', 'app_b')
+
+    >>> section_1.category_and_section_names
+    (None, 'section_1')
 
 The Section's type is the same type as the ConfigSchema.section_factory.
 

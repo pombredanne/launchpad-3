@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 import re
 from urlparse import urlunparse
 
@@ -17,9 +16,9 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
     IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet,
-    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
-    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
+    IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -172,6 +171,10 @@ class MaloneHandler:
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
+                if command_string == 'done':
+                    # If the 'done' statement is encountered,
+                    # stop reading any more commands.
+                    break
                 words = command_string.split(' ')
                 if words and words[0] in command_names:
                     command = emailcommands.get(
@@ -234,6 +237,7 @@ class MaloneHandler:
             bugtask = None
             bugtask_event = None
 
+            processing_errors = []
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
@@ -280,8 +284,18 @@ class MaloneHandler:
                             bugtask, bugtask_event)
 
                 except EmailProcessingError, error:
-                    raise IncomingEmailError(
-                        str(error), failing_command=command)
+                    processing_errors.append((error, command))
+                    if error.stop_processing:
+                        commands = []
+                        rollback()
+                    else:
+                        continue
+
+            if len(processing_errors) > 0:
+                raise IncomingEmailError(
+                    '\n'.join(str(error) for error, command
+                              in processing_errors),
+                    [command for error, command in processing_errors])
 
             if bug_event is not None:
                 try:
@@ -294,7 +308,6 @@ class MaloneHandler:
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
-            rollback()
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
@@ -335,39 +348,18 @@ class MaloneHandler:
     def processAttachments(self, bug, message, signed_mail):
         """Create Bugattachments for "reasonable" mail attachments.
 
-        A mail attachment is stored as a bugattachment if all of the
-        following conditions are met:
-
-            - the content disposition header explicitly says that
-              this is an attachment,
-            - the content type is not "irrelevant". At present,
-              mail signatures, v-cards, and the resource for of MacOS
-              files are considered to be irrelevant.
+        A mail attachment is stored as a bugattachment if its
+        content type is not listed in irrelevant_content_types.
         """
-        unnamed_count = 0
-        for part in signed_mail.walk():
-            content_type = part.get_content_type()
-            content_disposition = part.get('Content-disposition', '').lower()
-            if (part.is_multipart()
-                or content_type in self.irrelevant_content_types
-                or not content_disposition.startswith('attachment')):
+        for chunk in message.chunks:
+            blob = chunk.blob
+            if blob is None:
                 continue
-
-            content = part.get_payload(decode=True)
-            if len(content) == 0:
-                # storing empty files is pointless.
+            # Mutt (other mail clients too?) appends the filename to the
+            # content type.
+            content_type = blob.mimetype.split(';', 1)[0]
+            if content_type in self.irrelevant_content_types:
                 continue
-
-            filename = part.get_filename()
-            if filename is None:
-                if unnamed_count:
-                    filename = 'unnamed-%i' % unnamed_count
-                else:
-                    filename = 'unnamed'
-                unnamed_count += 1
-            filealias = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(content), file=StringIO(content),
-                contentType=content_type)
 
             if content_type in ('text/x-diff', 'text/x-patch'):
                 attach_type = BugAttachmentType.PATCH
@@ -375,8 +367,8 @@ class MaloneHandler:
                 attach_type = BugAttachmentType.UNSPECIFIED
 
             getUtility(IBugAttachmentSet).create(
-                bug=bug, filealias=filealias, attach_type=attach_type,
-                title=filename, message=message)
+                bug=bug, filealias=blob, attach_type=attach_type,
+                title=blob.filename, message=message, send_notifications=True)
 
 
 class AnswerTrackerHandler:

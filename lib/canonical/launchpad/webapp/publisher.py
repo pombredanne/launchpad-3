@@ -35,7 +35,8 @@ from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.layers import (
-    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
+    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
+    WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
@@ -178,9 +179,9 @@ class LaunchpadView(UserAttributeCache):
     - initialize() <-- subclass this for specific initialization
     - template     <-- the template set from zcml, otherwise not present
     - user         <-- currently logged-in user
-    - render()     <-- used to render the page.  override this if you have many
-                       templates not set via zcml, or you want to do rendering
-                       from Python.
+    - render()     <-- used to render the page.  override this if you have
+                       many templates not set via zcml, or you want to do
+                       rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
@@ -330,12 +331,31 @@ def canonical_url(
             request = current_request
 
     if view_name is not None:
+        assert request is not None, (
+            "Cannot check view_name parameter when there request is not "
+            "available.")
+
+        # Look first for a view.
         if queryMultiAdapter((obj, request), name=view_name) is None:
-            raise AssertionError('View "%s" is not registered for "%s".' %
-                (view_name, obj.__class__.__name__))
+            # Look if this is a special name defined by Navigation.
+            navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
+            if isinstance(navigation, Navigation):
+                all_names = navigation.all_traversal_and_redirection_names
+            else:
+                all_names = []
+            if view_name not in all_names:
+                raise AssertionError(
+                    'Name "%s" is not registered as a view or navigation '
+                    'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if rootsite is None:
+    # XXX flacoste 2008/03/18 The check for the WebServiceLayer is kind
+    # of hackish, the idea is that when browsing the web service, we want
+    # URLs to point back at the web service, so we basically ignore rootsite.
+    # I don't feel like designing a proper solution today, we'll need
+    # to revisit this anyway once we tackle API versioning.
+    # Plus we already have a bunch of layer-specific hacks below...
+    if WebServiceLayer.providedBy(request) or rootsite is None:
         # This means we should use the request, or fall back to the main site.
 
         # If there is no request, fall back to the root_url from the
@@ -553,6 +573,32 @@ class Navigation:
         else:
             return nextobj
 
+    @property
+    def all_traversal_and_redirection_names(self):
+        """Return the names of all the traversals and redirections defined."""
+        all_names = set()
+        all_names.update(self.stepto_traversals.keys())
+        all_names.update(self.stepthrough_traversals.keys())
+        all_names.update(self.redirections.keys())
+        return list(all_names)
+
+    @property
+    def stepto_traversals(self):
+        """Return a dictionary containing all the stepto names defined."""
+        return self._combined_class_info('__stepto_traversals__')
+
+    @property
+    def stepthrough_traversals(self):
+        """Return a dictionary containing all the stepthrough names defined.
+        """
+        return self._combined_class_info('__stepthrough_traversals__')
+
+    @property
+    def redirections(self):
+        """Return a dictionary containing all the redirections names defined.
+        """
+        return self._combined_class_info('__redirections__')
+
     def _publishTraverse(self, request, name):
         """Traverse, like zope wants."""
 
@@ -573,7 +619,7 @@ class Navigation:
             self._append_breadcrumb(breadcrumb_text)
 
         # Next, see if we're being asked to stepto somewhere.
-        stepto_traversals = self._combined_class_info('__stepto_traversals__')
+        stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
             if name in stepto_traversals:
                 handler = stepto_traversals[name]
@@ -588,8 +634,7 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
-        namespace_traversals = self._combined_class_info(
-            '__stepthrough_traversals__')
+        namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
@@ -616,7 +661,7 @@ class Navigation:
         # Next, look up redirections.  Note that registered views take
         # priority over redirections, because you can always make your
         # view redirect, but you can't make your redirection 'view'.
-        redirections = self._combined_class_info('__redirections__')
+        redirections = self.redirections
         if redirections is not None:
             if name in redirections:
                 urlto, status = redirections[name]

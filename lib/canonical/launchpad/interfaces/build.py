@@ -63,9 +63,8 @@ class IBuild(Interface):
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
 
-    is_trusted = Attribute(
-        "whether or not the record corresponds to a source targeted to "
-        "the distribution main_archive (archive == distro.main_archive).")
+    is_virtualized = Attribute(
+        "Whether or not this build requires a virtual build host or not.")
 
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "

@@ -704,15 +704,17 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def comments(self):
         """Return the bugtask's comments."""
         comments = get_comments_for_bugtask(self.context, truncate=True)
+        # We show the text of the first comment as the bug description,
+        # or via the special link "View original description", but we want
+        # to display attachments filed together with the bug in the
+        # comment list.
+        comments[0].text_for_display = ''
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
     def getBugCommentsForDisplay(self):
         """Return all the bug comments together with their index."""
-        # The first comment is generally identical to the description,
-        # and we include a special link to it in the template if it
-        # isn't.
-        return get_visible_comments(self.comments[1:])
+        return get_visible_comments(self.comments)
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1468,15 +1470,19 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
+
+    @cachedproperty
+    def bug_id_mapping(self):
         # Now load the bug-branch links for this batch
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
             self.currentBatch())
         # Create a map from the bug id to the branches.
-        self.bug_id_mapping = {}
+        bug_id_mapping = {}
         for bugbranch in bugbranches:
             if check_permission('launchpad.View', bugbranch.branch):
-                self.bug_id_mapping.setdefault(
+                bug_id_mapping.setdefault(
                     bugbranch.bug.id, []).append(bugbranch)
+        return bug_id_mapping
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""

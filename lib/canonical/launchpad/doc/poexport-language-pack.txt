@@ -35,6 +35,16 @@ Some initialisation tasks:
     ...             if line.strip():
     ...                 self.log(line)
 
+This is handy for examining the tar files that are generated.
+
+    >>> def examine_tarfile(tarfile):
+    ...     for member in tarfile.getmembers():
+    ...         if member.isreg() and not member.name.endswith('.xpi'):
+    ...             lines = len(tarfile.extractfile(member).readlines())
+    ...         else:
+    ...             lines = 0
+    ...         print "| %5d | %s" % (lines, member.name)
+
 
 == Base language pack export using Librarian ==
 
@@ -95,17 +105,14 @@ And one of the included .po files look like what we expected.
     '# traducci\xc3\xb3n de es.po al Spanish\n'
 
 
-== Base language pack export using Librarian with date limits ==
+== Language pack with XPI translations ==
 
-Launchpad is also able to generate a tarball of all files for a
-distribution series that only includes translation files which have
-been changed since a certain date.
+Launchpad supports XPI file imports. However, we don't have an export
+process ready, and thus, we do it with an external script that does
+that last part based on .po files and the original en-US.xpi file. To
+achieve that, we export all translations for XPI files in a special
+directory: xpi/translation_domain/
 
-First we need to set up some data to test with, and for this we need
-some DB classes.
-
-    >>> from StringIO import StringIO
-    >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import (
@@ -120,6 +127,115 @@ Get hold of a person.
 Get the Grumpy distro series.
 
     >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
+
+=== Sample data initialisation ===
+
+We need to import an XPI template and a translation to see those files
+exported as part of language packs.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ITranslationImportQueue, RosettaImportStatus)
+    >>> from canonical.launchpad.translationformat.tests.test_xpi_import \
+    ...     import get_en_US_xpi_file_to_import
+
+We are going to import translations for mozilla-firefox package in
+grumpy distro series.
+
+    >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
+    >>> spn = SourcePackageName.byName('mozilla-firefox')
+    >>> pot_header = 'Content-Type: text/plain; charset=UTF-8\n'
+    >>> firefox_template = POTemplate(
+    ...     name='firefox', translation_domain='firefox',
+    ...     distroseries=series, sourcepackagename=spn,
+    ...     owner=mark, languagepack=True, path='en-US.xpi',
+    ...     header=pot_header)
+
+Attach the en-US.xpi (the template) file.
+
+    >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
+    >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> published = True
+    >>> template_entry = translation_import_queue.addOrUpdateEntry(
+    ...     firefox_template.path, en_US_xpi.read(), published,
+    ...     mark, distroseries=series, sourcepackagename=spn,
+    ...     potemplate=firefox_template)
+
+Attach the es.xpi file (the translation) file.
+
+    >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
+    >>> firefox_es_translation = firefox_template.newPOFile('es')
+    >>> translation_entry = translation_import_queue.addOrUpdateEntry(
+    ...     'es.xpi', es_xpi.read(), published,
+    ...     mark, distroseries=series, sourcepackagename=spn,
+    ...     potemplate=firefox_template,
+    ...     pofile=firefox_es_translation)
+
+Before we are ready to import the attached files, we need to approve
+them first.
+
+    >>> template_entry.status = RosettaImportStatus.APPROVED
+    >>> translation_entry.status = RosettaImportStatus.APPROVED
+
+Given that the files are attached to Librarian, we need to commit the
+transaction to make sure it's stored properly and available.
+
+    >>> transaction.commit()
+
+We do now the import from the queue:
+
+    >>> (subject, body) = firefox_template.importFromQueue(template_entry)
+    >>> (subject, body) = firefox_es_translation.importFromQueue(
+    ...     translation_entry)
+    >>> flush_database_caches()
+    >>> transaction.commit()
+
+
+=== Language pack export with XPI files ===
+
+We are now ready to get an exported language pack with XPI files.
+
+    >>> language_pack = export_language_pack(
+    ...     distribution_name='ubuntu',
+    ...     series_name='grumpy',
+    ...     component=None,
+    ...     force_utf8=True,
+    ...     output_file=None,
+    ...     logger=logger)
+    >>> transaction.commit()
+
+We get other entries in language pack + en-US.xpi file and
+the translations in .po file format.
+
+    >>> tarfile = string_to_tarfile(language_pack.file.read())
+    >>> examine_tarfile(tarfile)
+    |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/xpi/
+    |     0 | rosetta-grumpy/xpi/firefox/
+    |    82 | rosetta-grumpy/xpi/firefox/es.po
+    |    74 | rosetta-grumpy/xpi/firefox/en.po
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
+    |     1 | rosetta-grumpy/timestamp.txt
+    |     1 | rosetta-grumpy/mapping.txt
+
+We got a valid en-US.xpi file.
+
+    >>> fh = tarfile.extractfile('rosetta-grumpy/xpi/firefox/en-US.xpi')
+    >>> from zipfile import ZipFile
+    >>> zip = ZipFile(fh, 'r')
+    >>> zip.namelist()
+    ['copyover3.png', 'install.rdf', 'chrome/en-US.jar']
+
+
+== Base language pack export using Librarian with date limits ==
+
+Launchpad is also able to generate a tarball of all files for a
+distribution series that only includes translation files which have
+been changed since a certain date.
+
+First we need to set up some data to test with, and for this we need
+some DB classes.
+
+    >>> from StringIO import StringIO
 
 Get a source package name to go with our distro series.
 
@@ -179,16 +295,6 @@ Create a Welsh PO file, with an active translation submission created on
     >>> new_translation_message.date_reviewed = d2000_01_03
     >>> transaction.commit()
 
-This is handy for examining the tar files that are generated.
-
-    >>> def examine_tarfile(tarfile):
-    ...     for member in tarfile.getmembers():
-    ...         if member.isreg():
-    ...             lines = len(tarfile.extractfile(member).readlines())
-    ...         else:
-    ...             lines = 0
-    ...         print "| %5d | %s" % (lines, member.name)
-
 First, export without any existing base language pack: should get both
 PO files.
 
@@ -209,31 +315,35 @@ Check that the log looks ok.
 
     >>> print '\n'.join(logger.messages)
     Selecting PO files for export
-    Number of PO files to export: 2
-    Exporting PO file ... (1/2)
-    Exporting PO file ... (2/2)
+    Number of PO files to export: 4
+    Exporting PO file ... (1/4)
+    Exporting PO file ... (2/4)
+    Exporting PO file ... (3/4)
+    Exporting PO file ... (4/4)
+    Exporting XPI template files.
     Adding timestamp file
     Adding mapping file
     Done.
     Upload complete, file alias: ...
-
+    Registered the language pack.
 
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
-
-
-    WARNING:root:PO file header entry has no content-type field
-    WARNING:root:PO file header entry has no content-type field
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/xpi/
+    |     0 | rosetta-grumpy/xpi/firefox/
+    |    82 | rosetta-grumpy/xpi/firefox/es.po
+    |    74 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/es/
     |     0 | rosetta-grumpy/es/LC_MESSAGES/
     |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
-    |     1 | rosetta-grumpy/mapping.txt
+    |     2 | rosetta-grumpy/mapping.txt
 
 Check the files look OK.
 
@@ -314,16 +424,22 @@ should get only files that where updated after 2000-01-02.
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
 
-Now, there is only one file exported, the one that had the modification
-date after the last generated language pack.
+Now, there is only one file exported for the 'test' domain, the one that had
+the modification date after the last generated language pack. We ignore the
+xpi entries because those are outside the scope of this test.
 
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/xpi/
+    |     0 | rosetta-grumpy/xpi/firefox/
+    |    82 | rosetta-grumpy/xpi/firefox/es.po
+    |    74 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
-    |     1 | rosetta-grumpy/mapping.txt
+    |     2 | rosetta-grumpy/mapping.txt
 
 There is another situation where a translation file is exported again
 as part of a language pack update, even without being changed.  It is
@@ -359,14 +475,19 @@ template has.  That's why we get both translations:
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/xpi/
+    |     0 | rosetta-grumpy/xpi/firefox/
+    |    82 | rosetta-grumpy/xpi/firefox/es.po
+    |    74 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/es/
     |     0 | rosetta-grumpy/es/LC_MESSAGES/
     |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
-    |     1 | rosetta-grumpy/mapping.txt
+    |     2 | rosetta-grumpy/mapping.txt
 
 
 == Script arguments and concurrency ==
@@ -413,6 +534,7 @@ different distribution and series combinations.
     INFO    creating lockfile
     INFO    Exporting translations for series hoary of distribution ubuntu.
     INFO    Number of PO files to export: 12
+    INFO    Exporting XPI template files.
     INFO    Adding timestamp file
     INFO    Adding mapping file
     INFO    Done.

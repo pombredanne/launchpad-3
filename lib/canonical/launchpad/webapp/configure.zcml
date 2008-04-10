@@ -133,6 +133,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IQuestion"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.QuestionImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
@@ -340,7 +347,12 @@
         factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="canonical.launchpad.interfaces.IQuestion"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.QuestionFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -351,6 +363,18 @@
         for="canonical.launchpad.interfaces.ISpecificationBranch"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTracker"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IBugWatch"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugWatchFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -533,6 +557,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
+        />
+
+    <!-- Make sure that the config is sane for references debugging. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <subscriber

@@ -259,11 +259,18 @@ to get that information corrected if need be.
     ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=7; plural=0\n"
+    ... "Plural-Forms: nplurals=7; plural=n%%7\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
-    ... msgid "foo"
-    ... msgstr "bar"
+    ... msgid "%%d foo"
+    ... msgid_plural "%%d foos"
+    ... msgstr[0] "bar %%d"
+    ... msgstr[1] "bares %%d"
+    ... msgstr[2] "baris %%d"
+    ... msgstr[3] "baribus %%d"
+    ... msgstr[4] "baros %%d"
+    ... msgstr[5] "barorum %%d"
+    ... msgstr[6] "barim %%d"
     ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, False, person,
@@ -315,11 +322,17 @@ plural forms, the file imports just fine.
     ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=6; plural=0\n"
+    ... "Plural-Forms: nplurals=6; plural=n%%6\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
-    ... msgid "foo"
-    ... msgstr "bar"
+    ... msgid "%%d foo"
+    ... msgid_plural "%%d foos"
+    ... msgstr[0] "bar %%d"
+    ... msgstr[1] "bares %%d"
+    ... msgstr[2] "baris %%d"
+    ... msgstr[3] "baribus %%d"
+    ... msgstr[4] "baros %%d"
+    ... msgstr[5] "barorum %%d"
     ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, False, person,

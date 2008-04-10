@@ -441,31 +441,38 @@ Perform `post publication` override:
 
    >>> override = netapplet_srcrel.current_published.changeOverride(
    ...     new_section=new_section)
+
    >>> override.section == new_section
    True
-   >>> override.status.name
-   'PENDING'
-   >>> pub_hist = netapplet_srcrel.publishing_history
-   >>> pub_hist.count()
+
+   >>> print override.status.name
+   PENDING
+
+   >>> netapplet_srcrel.publishing_history.count()
    2
 
 Override information about 'pmount' is pending publication:
 
-   >>> pub_hist[0].status.name, pub_hist[0].section.name
-   ('PENDING', u'base')
+   >>> print netapplet_srcrel.current_published.status.name
+   PENDING
 
-Supersede current publication:
+   >>> print netapplet_srcrel.current_published.section.name
+   base
 
-   >>> superseded_netapplet = netapplet_srcrel.current_published.supersede()
+Supersede previous netapplet publication:
+
+   >>> last_published = netapplet_srcrel.publishing_history[1]
+   >>> superseded_netapplet = last_published.supersede()
+   >>> flush_database_updates()
+
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-We need to flush cached values.
+   >>> print superseded_netapplet.status.name
+   SUPERSEDED
 
-   >>> flush_database_updates()
-
-   >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+   >>> superseded_netapplet.datesuperseded
+   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 
 == DistroSeries Translations migration ==
@@ -483,6 +490,7 @@ transaction manager (in this case a fake one) to make these work.
     ...     def commit(self):
     ...         pass
     >>> transaction_stub = FakeTransactionManager()
+
 
 === Preconditions for migrating translations between distro series ===
 
@@ -618,7 +626,6 @@ working on Humpy, as long as they're still translating the same messages.
 Get the needed objects to prepare this test.
 
     >>> import datetime
-    >>> import pytz
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
@@ -944,22 +951,20 @@ to do the translation migration to this new distro series.
     >>> testing_series.getTranslationTemplates()
     []
 
-The script starts its own transactions, so we need to commit here to be sure
-the new series will be available in the script.
-
-    >>> import subprocess
-    >>> import sys
-    >>> import transaction
-    >>> from canonical.launchpad.ftests.script import run_script
-
 Now, we execute the script that will migrate/copy all current templates
 and translations from testing_series' parent distro series (hoary).
 
-The script fails as long as the defer_translation_imports flag is not
-set.
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.script import run_script
+
+The script starts its own transactions, so we need to commit here to be sure
+the new series will be available in the script.
 
     >>> testing_series_id = testing_series.id
     >>> transaction.commit()
+
+The script fails as long as the defer_translation_imports flag is not
+set.
 
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
@@ -1040,6 +1045,15 @@ the future.
 
    >>> hoary_pub_sources.count()
    6
+
+   >>> for pub in hoary_pub_sources:
+   ...     print pub.displayname
+   alsa-utils 1.0.9a-4ubuntu1 in hoary
+   cnews cr.g7-37 in hoary
+   evolution 1.0 in hoary
+   libstdc++ b8p in hoary
+   linux-source-2.6.15 2.6.15.3 in hoary
+   pmount 0.1-2 in hoary
 
    >>> hoary_pub_source = hoary_pub_sources[0]
 

@@ -1016,5 +1016,34 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
             BranchCreatorNotOwner, self.albert, self.doug)
 
 
+class TestBranchSetGetBranches(TestCase):
+    """Make sure that the branch set gets the correct branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login(ANONYMOUS)
+
+    def tearDown(self):
+        logout()
+        TestCase.tearDown(self)
+
+    def test_get_branch(self):
+        factory = LaunchpadObjectFactory()
+        branch = factory.makeBranch()
+        self.assertEqual(
+            branch,
+            BranchSet().getBranch(branch.owner, branch.product, branch.name))
+
+    def test_get_junk_branch(self):
+        factory = LaunchpadObjectFactory()
+        branch = factory.makeBranch(explicit_junk=True)
+        self.assertTrue(branch.product is None)
+        self.assertEqual(
+            branch,
+            BranchSet().getBranch(branch.owner, None, branch.name))
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

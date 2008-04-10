@@ -172,6 +172,8 @@ target branches or the registrant of the merge proposal.
     Request review: .../+merge/.../+request-review
     Review proposal: .../+merge/.../+review
     Mark as merged: .../+merge/.../+merged
+    Queue for merging: .../+merge/.../+enqueue
+    Remove from queue (disabled)
     Resubmit proposal: .../+merge/.../+resubmit
 
 Someone who is not logged in, or not the one of those that can alter the
@@ -185,6 +187,8 @@ proposal to merge get no actions.
     Request review (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
+    Queue for merging (disabled)
+    Remove from queue (disabled)
     Resubmit proposal (disabled)
 
     >>> anon_browser.open(firefox_merge_url)
@@ -195,6 +199,8 @@ proposal to merge get no actions.
     Request review (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
+    Queue for merging (disabled)
+    Remove from queue (disabled)
     Resubmit proposal (disabled)
 
 When editing the proposal, the whiteboard can be altered, and the
@@ -378,6 +384,214 @@ new proposal that supersedes it.
     >>> print extract_text(find_tag_by_id(
     ...      sample_browser.contents, 'branch-whiteboard-value'))
     Updated work
+
+
+== Merge queues ==
+
+When a branch is the target of one or more merge proposals, a
+merge queue is visible for that branch.  The merge queue contains
+the branch merge proposals that target the branch and that are
+queued.  When a branch merge proposal is queued it indicates that
+the branch is ready to be merged with the target branch.
+
+    >>> sample_browser.open('http://launchpad.dev/~name12/firefox/main')
+    >>> printMergeProposals(sample_browser, 'landing-candidates')
+    ~sabdfl/firefox/release-0.9 (New) - view proposal details
+    This is the whiteboard
+    Merge proposed by Sample Person
+    Work in progress
+
+    >>> print_action_links(sample_browser.contents)
+    Edit whiteboard: ...
+    ...
+    View merge queue: .../~name12/firefox/main/+merge-queue
+    ...
+
+    >>> sample_browser.getLink('View merge queue').click()
+    >>> def print_merge_queue(browser):
+    ...     print extract_text(find_tag_by_id(browser.contents, 'merge-queue'))
+    >>> print_merge_queue(sample_browser)
+    The queue is empty.
+
+You can queue an approved proposal for landing. If you're a reviewer,
+you can queue any proposal for landing, whether it is approved or not.
+
+    >>> sample_browser.open('http://launchpad.dev/~name12/firefox/main')
+    >>> sample_browser.getLink('view proposal details').click()
+    >>> sample_browser.getLink('Queue for merging').click()
+
+Since the user is a reviewer of the target branch, the revision to queue
+is writable, and defaults to the tip of the branch.
+
+    >>> print sample_browser.getControl('Queue Revision').value
+    1
+
+When enqueuing a proposal, a commit message is needed.  This message
+will be used as the commit message of the merge.
+
+    >>> sample_browser.getControl('Commit Message').value = (
+    ...     'This is the commit message')
+    >>> sample_browser.getControl('Enqueue').click()
+
+The status of the branch is now Queued, and Sample Person is also
+recorded as the reviewer of the proposal.
+
+    >>> print_summary(sample_browser)
+    Source branch: ...
+    ...
+    Status: Queued (view queue)
+    Reviewed by: Sample Person
+    Reviewed revision: 1
+    Queued by: Sample Person
+    Queued revision: 1
+
+Next to the status in the summary is a link to view the queue that the
+proposal is queued in.
+
+    >>> sample_browser.getLink('view queue').click()
+    >>> print_merge_queue(sample_browser)
+    Position   Branch details  Commit message
+    1
+    ~sabdfl/firefox/release-0.9 - view proposal details
+    This is the commit message
+
+If the user is not a reviewer of the target branch they can only
+queue for merging branches that have been approved.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> nopriv_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         '~name12/firefox/main')
+    >>> nopriv_browser.getControl('Register').click()
+
+    >>> nopriv_browser.getLink('view proposal details').click()
+    >>> print_action_links(nopriv_browser.contents)
+    Edit ...
+    ...
+    Queue for merging (disabled)
+    ...
+
+Have Sample Person approve the branch.
+
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
+    >>> sample_browser.getLink('view proposal details').click()
+    >>> sample_browser.getLink('Review proposal').click()
+    >>> sample_browser.getControl('Approve').click()
+
+No Privileges Person can now queue the branch.
+
+    >>> nopriv_browser.reload()
+    >>> print_summary(nopriv_browser)
+    Source branch: ~sabdfl/firefox/release-0.9.2
+    Target branch: ~name12/firefox/main
+    Status: Code approved
+    Reviewed by: Sample Person
+    Reviewed revision: 1
+
+    >>> nopriv_browser.getLink('Queue for merging').click()
+
+No Privileges Person however cannot set the revision number to enqueue,
+only the revision that was approved.
+
+    >>> control = nopriv_browser.getControl('Queue Revision')
+    Traceback (most recent call last):
+    LookupError: label 'Queue Revision'
+
+A commit message is still required.
+
+    >>> nopriv_browser.getControl('Commit Message').value = (
+    ...     "This work was done by sabdfl and I think it's cool")
+    >>> nopriv_browser.getControl('Enqueue').click()
+
+No Privileges Person can see the queue, and remove their proposal
+from the queue, but not any other.
+
+    >>> nopriv_browser.getLink('view queue').click()
+    >>> def print_detailed_queue(browser):
+    ...     div = find_tag_by_id(browser.contents, 'merge-queue')
+    ...     table = div.table
+    ...     for row in table.findAll('tr'):
+    ...         for cell in row.findAll('td'):
+    ...             print extract_text(cell)
+    ...             for button in cell.findAll('input'):
+    ...                 if button['type'] == 'submit':
+    ...                     print button['value']
+
+    >>> print_detailed_queue(nopriv_browser)
+    1
+    ~sabdfl/firefox/release-0.9 - view proposal details
+    This is the commit message
+    2  Dequeue
+    ~sabdfl/firefox/release-0.9.2 - view proposal details
+       Bug #4: Reflow problems ...
+    This work was done by sabdfl and I think it's cool
+
+Someone who is a reviewer of the target branch however, can dequeue
+any item, or move items to the front of the queue.
+
+    >>> sample_browser.open(nopriv_browser.url)
+    >>> print_detailed_queue(sample_browser)
+    1  Dequeue
+    ~sabdfl/firefox/release-0.9 - view proposal details
+    This is the commit message
+    2  Dequeue    Move to front
+    ~sabdfl/firefox/release-0.9.2 - view proposal details
+       Bug #4: Reflow problems ...
+    This work was done by sabdfl and I think it's cool
+
+Clicking on the "Move to front" button will move that proposal to the
+front of the queue.
+
+    >>> sample_browser.getControl('Move to front').click()
+    >>> print_detailed_queue(sample_browser)
+    1  Dequeue
+    ~sabdfl/firefox/release-0.9.2 - view proposal details
+       Bug #4: Reflow problems ...
+    This work was done by sabdfl and I think it's cool
+    2  Dequeue    Move to front
+    ~sabdfl/firefox/release-0.9 - view proposal details
+    This is the commit message
+
+Clicking on the "Dequeue" button remove it from the queue.
+
+    >>> sample_browser.getControl('Dequeue', index=0).click()
+    >>> print_detailed_queue(sample_browser)
+    1  Dequeue
+    ~sabdfl/firefox/release-0.9 - view proposal details
+    This is the commit message
+
+The proposal can also be removed from the queue by choosing the
+'Remove from queue' option on the proposal details page.
+
+    >>> sample_browser.getLink('view proposal details').click()
+    >>> sample_browser.getLink('Remove from queue').click()
+
+The user is taken to a form where they can update the whiteboard.
+
+    >>> sample_browser.getControl('Whiteboard').value = (
+    ...     'Removed from the queue as I forgot a test.')
+    >>> sample_browser.getControl('Dequeue').click()
+
+Once out of the queue, the proposal goes back to "Code approved" status.
+
+    >>> print_summary(sample_browser)
+    Source branch: ~sabdfl/firefox/release-0.9
+    Target branch: ~name12/firefox/main
+    Status: Code approved
+    Reviewed by: Sample Person
+    Reviewed revision: 1
+
+
+Remove the proposal created by No Privileges Person.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
+    >>> nopriv_browser.getLink('view proposal details').click()
+    >>> nopriv_browser.getLink('Delete proposal to merge').click()
+    >>> nopriv_browser.getControl('Delete proposal').click()
 
 
 == Default target branches ==

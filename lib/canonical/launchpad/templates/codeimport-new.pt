@@ -1,0 +1,106 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<h1 metal:fill-slot="heading">Code Imports</h1>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
+      For more details on importing source code into Launchpad,
+      see the help wiki page
+      <a href="https://help.launchpad.net/VcsImports">
+          VcsImports</a>.
+    </p>
+
+    <metal:formbody fill-slot="widgets">
+
+      <table class="form">
+
+        <tal:widget define="widget nocall:view/widgets/product">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/branch_name">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+
+        <tr>
+          <td colspan="2">
+            <div class="formHelp">
+              Enter details for the selected repository type.
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <label>
+              <input tal:replace="structure view/rcs_type_svn" />
+              Subversion
+            </label>
+          </td>
+        </tr>
+
+        <tal:widget define="widget nocall:view/widgets/svn_branch_url">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+
+        <tr>
+          <td>
+            <label>
+              <input tal:replace="structure view/rcs_type_cvs" />
+              CVS
+            </label>
+          </td>
+        </tr>
+        <tal:widget define="widget nocall:view/widgets/cvs_root">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/cvs_module">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+
+      </table>
+      <input tal:replace="structure view/rcs_type_emptymarker" />
+
+      <script type="text/javascript">
+        //<![CDATA[
+        function updateWidgets() {
+          /* which rcs type radio button has been selected? */
+          var rcs_types = document.getElementsByName('field.rcs_type');
+          var form = rcs_types[0].form;
+          var rcs_type = 'None';
+          for (var i = 0; i < rcs_types.length; i++) {
+            if (rcs_types[i].checked) {
+              rcs_type = rcs_types[i].value;
+              break;
+            }
+          }
+          // CVS
+          updateField(form['field.cvs_root'], rcs_type == 'CVS');
+          updateField(form['field.cvs_module'], rcs_type == 'CVS');
+          // SVN
+          updateField(form['field.svn_branch_url'], rcs_type == 'SVN');
+        }
+        registerLaunchpadFunction(updateWidgets);
+        //]]>
+      </script>
+
+    </metal:formbody>
+  </div>
+
+
+</div>
+</body>
+</html>

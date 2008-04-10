@@ -18,7 +18,6 @@ __all__ = [
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     'PostedMessageStatus',
-    'is_participant_in_beta_program'
     ]
 
 
@@ -201,6 +200,19 @@ class PostedMessageStatus(DBEnumeratedType):
         Rejected
 
         A message held for first-post moderation has been rejected.
+        """)
+
+    DISCARD_PENDING = DBItem(60, """
+        Discard pending
+
+        The team administrator has discarded this message, but Mailman has not
+        yet been informed of this status.
+        """)
+
+    DISCARDED = DBItem(70, """
+        Discarded
+
+        A message held for first-post moderation has been discarded.
         """)
 
 
@@ -499,6 +511,15 @@ class IMailingListSet(Interface):
         value_type=Object(schema=IMailingList),
         readonly=True)
 
+    unsynchronized_lists = Set(
+        title=_('Unsynchronized lists'),
+        description=_(
+            'All mailing lists with unsynchronized state, e.g. '
+            '`MailingListStatus.CONSTRUCTING` and '
+            '`MailingListStatus.UPDATING`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
+
 
 class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
@@ -593,9 +614,10 @@ class IMailingListAPIView(Interface):
         """Get all new message dispositions.
 
         This returns a dictionary mapping message ids to their disposition,
-        which will either be 'accept' or 'decline'.  This only returns
-        message-ids of disposed messages since the last time this method was
-        called.
+        which will either be 'accept', 'decline' or 'discard'.  This only
+        returns message-ids of disposed messages since the last time this
+        method was called.  Because this also acknowledges the pending states
+        of such messages, it changes the state on the Launchpad server.
 
         :return: A dictionary mapping message-ids to the disposition tuple.
             This tuple is of the form (team-name, action), where the action is
@@ -704,12 +726,22 @@ class IMessageApproval(Interface):
         :param reviewer: The person who did the review.
         """
 
+    def discard(reviewer):
+        """Discard the message.
+
+        This sets the status to DISCARD_PENDING because the approval must
+        still be recognized by Mailman.
+
+        :param reviewer: The person who did the review.
+        """
+
     def acknowledge():
         """Acknowledge the pending status of a message.
 
-        This changes APPROVAL_PENDING to APPROVED status and REJECTION_PENDING
-        to REJECTED status.  It is illegal to call this function when the
-        status is not one of those two.
+        This changes the statuses APPROVAL_PENDING to APPROVED,
+        REJECTION_PENDING to REJECTED and DISCARD_PENDING to DISCARD.  It is
+        illegal to call this function when the status is not one of these
+        states.
         """
 
 
@@ -755,22 +787,3 @@ class CannotChangeSubscription(Exception):
     a member of the team linked to this mailing list, when `person` is a team,
     or when `person` does not own the given email address.
     """
-
-
-def is_participant_in_beta_program(team):
-    """The given team is a participant in the mailing list beta program.
-
-    Participation in the mailing list beta program is determined by membership
-    by the team in the config.mailman.beta_testers_team.
-    """
-    # This is all temporary stuff, so do the imports here so that this entire
-    # check is easier to remove when the mailing list feature goes public.
-    from zope.component import getUtility
-    from canonical.config import config
-    from canonical.launchpad.interfaces import IPersonSet
-    beta_testers_team = getUtility(IPersonSet).getByName(
-        config.mailman.beta_testers_team)
-    # If there are no beta testers then obviously this team cannot
-    # participate in the beta program.
-    return (beta_testers_team is not None and
-            team.hasParticipationEntryFor(beta_testers_team))
