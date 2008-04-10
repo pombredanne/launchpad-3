@@ -2,12 +2,12 @@
 
 """Base classes for one-off HTTP operations."""
 
-from zope.app.form.interfaces import InputErrors
-from zope.formlib.form import Fields, setUpWidgets
+from zope.component import getMultiAdapter
 from zope.interface import implements
+from zope.schema.interfaces import RequiredMissing, ValidationError
 
 from canonical.lazr.interfaces import (
-    IResourceGETOperation, IResourcePOSTOperation)
+    IFieldDeserializer, IResourceGETOperation, IResourcePOSTOperation)
 
 __metaclass__ = type
 __all__ = [
@@ -39,39 +39,25 @@ class ResourceOperation:
         invoking the operation. 'errors' is a list of validation errors.
         """
         validated_values = {}
+        errors = []
 
-        # Obtain field objects for the operation's parameters.
-        fields = Fields(*self.params)
-
-        # Data came in the HTTP request as 'fieldname=value', but Zope
-        # expects all field names to have some prefix and then a dot,
-        # eg. 'op.fieldname=value'. So we create a fake request form.
-        # This code can be removed when we upgrade Zope.
-        old_form = self.request.form
-        new_form = dict([("op." + key, value)
-                         for (key, value) in self.request.form.items()])
-        self.request.form = new_form
-
-        # Convert the field objects into widgets. Widgets know how to
-        # take incoming string key-value pairs from an HTTP request
-        # and transform them into objects that will pass field
-        # validation, and that will be useful when the operation is
-        # invoked.
-        try:
-            widgets = setUpWidgets(fields, 'op', self, self.request)
-            errors = []
-            for widget in widgets:
-                # When talking about a field outside this method,
-                # strip the prefix we had to add to the widget name.
-                field_name = widget.name[widget.name.find('.')+1:]
-                if widget.hasValidInput():
-                    validated_values[field_name] = widget.getInputValue()
-                else:
-                    errors.append("%s: %s" % (field_name, widget.error()))
-        finally:
-            # Restore the old form in case someone else needs it.
-            self.request.form = old_form
-
+        # Take incoming string key-value pairs from the HTTP request.
+        # Transform them into objects that will pass field validation,
+        # and that will be useful when the operation is invoked.
+        for field in self.params:
+            name = field.__name__
+            deserializer = getMultiAdapter((field, self.request),
+                                           IFieldDeserializer)
+            field.bind(self.context)
+            try:
+                value = deserializer.deserialize(self.request.get(name))
+                field.validate(value)
+            except RequiredMissing:
+                errors.append("%s: Required input is missing." % name)
+            except (ValueError, ValidationError), e:
+                errors.append("%s: %s" % (name, e))
+            else:
+                validated_values[name] = value
         return (validated_values, errors)
 
     def call(self, **kwargs):

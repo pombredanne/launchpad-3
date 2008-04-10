@@ -61,7 +61,6 @@ __all__ = [
     'Whiteboard',
     ]
 
-import cgi
 
 from StringIO import StringIO
 from textwrap import dedent
@@ -297,16 +296,18 @@ class DuplicateBug(BugField):
                 You can't mark a bug as a duplicate of itself.""")))
         elif dup_target.duplicateof is not None:
             raise LaunchpadValidationError(_(dedent("""
-                Bug %i is already a duplicate of bug %i. You can only
-                mark a bug report as duplicate of one that isn't a
-                duplicate itself.
-                """% (dup_target.id, dup_target.duplicateof.id))))
+                Bug ${dup} is already a duplicate of bug ${orig}. You
+                can only mark a bug report as duplicate of one that
+                isn't a duplicate itself.
+                """), mapping={'dup': dup_target.id,
+                               'orig': dup_target.duplicateof.id}))
         elif current_bug_has_dup_refs:
             raise LaunchpadValidationError(_(dedent("""
-                There are other bugs already marked as duplicates of Bug %i.
-                These bugs should be changed to be duplicates of another bug
-                if you are certain you would like to perform this change."""
-                % current_bug.id)))
+                There are other bugs already marked as duplicates of
+                Bug ${current}.  These bugs should be changed to be
+                duplicates of another bug if you are certain you would
+                like to perform this change."""),
+                mapping={'current': current_bug.id}))
         else:
             return True
 
@@ -380,7 +381,7 @@ class UniqueField(TextLine):
         # object whose attribute is going to be updated. We need to
         # ensure the new value is unique.
         if self._isValueTaken(input):
-            raise LaunchpadValidationError(self.errormessage, input)
+            raise LaunchpadValidationError(self.errormessage % input)
 
 
 class ContentNameField(UniqueField):
@@ -417,7 +418,7 @@ class BlacklistableContentNameField(ContentNameField):
         if nickname.is_blacklisted(name=input):
             raise LaunchpadValidationError(
                     "The name '%s' has been blocked by the "
-                    "Launchpad administrators", input
+                    "Launchpad administrators" % input
                     )
 
 
@@ -506,13 +507,13 @@ class URIField(TextLine):
         try:
             uri = URI(value)
         except InvalidURIError, e:
-            raise LaunchpadValidationError(cgi.escape(str(e)))
+            raise LaunchpadValidationError(e)
 
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
                 'The URI scheme "%s" is not allowed.  Only URIs with '
-                'the following schemes may be used: %s',
-                uri.scheme, ', '.join(sorted(self.allowed_schemes)))
+                'the following schemes may be used: %s'
+                % (uri.scheme, ', '.join(sorted(self.allowed_schemes))))
 
         if not self.allow_userinfo and uri.userinfo is not None:
             raise LaunchpadValidationError(
@@ -599,14 +600,17 @@ class BaseImageUpload(Bytes):
         if self.exact_dimensions:
             if width != required_width or height != required_height:
                 raise LaunchpadValidationError(_(dedent("""
-                    This image is not exactly %dx%d pixels in size.""" % (
-                    required_width, required_height))))
+                    This image is not exactly ${width}x${height}
+                    pixels in size."""),
+                    mapping={'width': required_width,
+                             'height': required_height}))
         else:
             if width > required_width or height > required_height:
                 raise LaunchpadValidationError(_(dedent("""
-                    This image is larger than %dx%d pixels in size.""" % (
-                    required_width, required_height))))
-
+                    This image is larger than ${width}x${height}
+                    pixels in size."""),
+                    mapping={'width': required_width,
+                             'height': required_height}))
         return True
 
     def validate(self, value):
