@@ -858,6 +858,7 @@ class BugTrackerHandshakeView(BaseLoginTokenView):
         # the token.
         if self.request.method != 'POST':
             self.request.response.setStatus(405)
+            self.request.response.setHeader('Allow', 'POST')
             return ("Only POST requests are accepted for bugtracker "
                     "handshakes.")
 
@@ -867,7 +868,8 @@ class BugTrackerHandshakeView(BaseLoginTokenView):
             self.request.response.setStatus(401)
             return "Token has already been used or is invalid."
 
-        # The token is valid, so consume it and return an HTTP 200.
+        # The token is valid, so consume it and return an HTTP 200. This
+        # tells the remote tracker that authentication was successful.
         self.context.consume()
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-type', 'text/plain')

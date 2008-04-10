@@ -14,8 +14,8 @@ Launchpad offers an XML-RPC interface for generating bug tracker tokens.
     >>> token = getUtility(ILoginTokenSet).get(token_id)
 
 These LoginTokens are used by Launchpad to authenticate with external
-bug trackers. We pass the token to the bug tracker and it then uses the
-token's canonical URL to validate the token.
+bug trackers. We pass the token to the bug tracker and it then makes a
+POST request to the token's canonical URL to validate it.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.webapp.servers import (
@@ -39,13 +39,21 @@ Visiting the token's +bugtracker-handshake URL will result in an HTTP
     >>> print test_request.response.getStatus()
     200
 
-The token has now been consumed. If we try to access the
-+bugtracker-handshake URL again, we will receive an HTTP 401
-(Unauthorized) response.
+The token has now been consumed.
+
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> print token.date_consumed is not None
+    True
+
+If we try to access the +bugtracker-handshake URL again, we will receive
+an HTTP 401 (Unauthorized) response.
 
     >>> view = getView(token, '+bugtracker-handshake', test_request)
     >>> view()
     'Token has already been used or is invalid.'
+
+    >>> print test_request.response.getStatus()
+    401
 
 Only POST requests are valid when accessing a +bugtracker-handshake URL.
 If we attempt another request method, such as a GET, we will receive an
