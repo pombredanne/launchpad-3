@@ -237,6 +237,26 @@ And now the test tracker should have been updated:
 
   >>> logout()
 
+But we forgot, the URL we need actually uses the https scheme. It's
+easy to change.
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla')
+  >>> print extract_text(find_tag_by_id(
+  ...         user_browser.contents, 'bugtracker-urls'))
+  http://trac.example.org/tickets
+  http://mantis.testing.org/ (Alias)
+
+  >>> user_browser.getLink('Change details').click()
+  >>> user_browser.getControl('Location', index=0).value = (
+  ...     'https://trac.example.org/tickets')
+  >>> user_browser.getControl('Change').click()
+
+  >>> print extract_text(find_tag_by_id(
+  ...         user_browser.contents, 'bugtracker-urls'))
+  https://trac.example.org/tickets
+  http://mantis.testing.org/ (Alias)
+
 
 == Aliases ==
 
@@ -258,7 +278,7 @@ They're added on the normal Change Details page.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets
+  https://trac.example.org/tickets
   http://pseudonym.example.com/ (Alias)
 
 It's not possible to add an alias that already refers to another
@@ -286,7 +306,7 @@ Multiple aliases can be entered by separating URLs with whitespace.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets
+  https://trac.example.org/tickets
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)
