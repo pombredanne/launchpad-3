@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'BranchWithSortKeys',
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
@@ -19,6 +18,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from storm.expr import Join, LeftJoin
+from storm.locals import ClassAlias
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
@@ -630,50 +631,12 @@ class Branch(SQLBase):
                 "Cannot delete branch: %s" % self.unique_name)
 
 
-class BranchWithSortKeys(Branch):
-    """A hack to allow the sorting of Branch queries by human-meaningful keys.
-
-    The view BranchWithSortKeys has all of the columns of Branch, with:
-
-     - product.name joined as product_name
-     - author.displayname joined as author_name
-     - owner.displayname joined as owner_name
-
-    These columns are never accessed at the Python level so we don't define
-    them in this class.
-
-    If we could get SQLObject to generate LEFT OUTER JOINs nicely, all this
-    wouldn't be necessary.
-
-    XXX: MichaelHudson 2007-10-12 bug=154016: Get rid of this hack
-    when we've converted over to using Storm.
-    """
-    _table = 'BranchWithSortKeys'
-
-    @classmethod
-    def select(cls, query, clauseTables=None, orderBy=None):
-        """Wrap a query that refers to Branch to refer to BranchWithSortKeys.
-
-        All the queries carefully and generically created in this file refer
-        to the Branch table.  To be able to query the BranchWithSortKeys view
-        instead, we ask the view for the rows with the same ids as the
-        branches returned by the generated query.
-        """
-        tables = ['Branch']
-        if clauseTables is not None:
-            tables.extend(clauseTables)
-        query = """BranchWithSortKeys.id IN
-                   (SELECT Branch.id FROM %s WHERE %s)""" % (
-                ', '.join(tables), query)
-        return super(BranchWithSortKeys, cls).select(query, orderBy=orderBy)
-
-
 LISTING_SORT_TO_COLUMN = {
-    BranchListingSort.PRODUCT: 'product_name',
+    BranchListingSort.PRODUCT: 'product.name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.AUTHOR: 'author_name',
-    BranchListingSort.NAME: 'name',
-    BranchListingSort.REGISTRANT: 'owner_name',
+    BranchListingSort.AUTHOR: 'author.name',
+    BranchListingSort.NAME: 'branch.name',
+    BranchListingSort.REGISTRANT: 'owner.name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-last_scanned',
     BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'last_scanned',
     BranchListingSort.NEWEST_FIRST: '-date_created',
@@ -682,7 +645,7 @@ LISTING_SORT_TO_COLUMN = {
 
 
 DEFAULT_BRANCH_LISTING_SORT = [
-    'product_name', '-lifecycle_status', 'author_name', 'name']
+    'product.name', '-lifecycle_status', 'author.name', 'branch.name']
 
 
 class BranchSet:
@@ -1077,28 +1040,9 @@ class BranchSet:
 
         return clause
 
-    def _lifecycleClause(self, lifecycle_statuses):
-        lifecycle_clause = ''
-        if lifecycle_statuses:
-            lifecycle_clause = (
-                ' AND Branch.lifecycle_status in %s' %
-                quote(lifecycle_statuses))
-        return lifecycle_clause
-
-    def _dormantClause(self, hide_dormant):
-        dormant_clause = ''
-        if hide_dormant:
-            dormant_days = timedelta(
-                days=config.launchpad.branch_dormant_days)
-            last_date = datetime.utcnow() - dormant_days
-            dormant_clause = (
-                ' AND Branch.date_last_modified > %s' %
-                quote(last_date))
-        return dormant_clause
-
     @staticmethod
     def _listingSortToOrderBy(sort_by):
-        """Compute a value to pass as orderBy to BranchWithSortKeys.select().
+        """Compute a value to pass as orderBy to Branch.select().
 
         :param sort_by: an item from the BranchListingSort enumeration.
         """
@@ -1117,6 +1061,42 @@ class BranchSet:
                 order_by.remove(variant_column)
             order_by.insert(0, column)
             return order_by
+
+    def _selectBranches(self, query, visible_by_user, sort_by,
+                        clauseTables=None):
+        clause = self._generateBranchClause(query, visible_by_user)
+        if clauseTables is None:
+            clauseTables = []
+        # Local import to avoid cycles
+        from canonical.launchpad.database import Person, Product
+        Owner = ClassAlias(Person, "owner")
+        Author = ClassAlias(Person, "author")
+        clauseTables += [
+            Join(Owner, Branch.owner == Owner.id),
+            LeftJoin(Author, Branch.author == Author.id),
+            LeftJoin(Product, Branch.product == Product.id)
+            ]
+        return Branch.select(clause, clauseTables=clauseTables,
+                             orderBy=self._listingSortToOrderBy(sort_by))
+
+    def _lifecycleClause(self, lifecycle_statuses):
+        lifecycle_clause = ''
+        if lifecycle_statuses:
+            lifecycle_clause = (
+                ' AND Branch.lifecycle_status in %s' %
+                quote(lifecycle_statuses))
+        return lifecycle_clause
+
+    def _dormantClause(self, hide_dormant):
+        dormant_clause = ''
+        if hide_dormant:
+            dormant_days = timedelta(
+                days=config.launchpad.branch_dormant_days)
+            last_date = datetime.utcnow() - dormant_days
+            dormant_clause = (
+                ' AND Branch.date_last_modified > %s' %
+                quote(last_date))
+        return dormant_clause
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
                              visible_by_user=None, sort_by=None,
@@ -1148,9 +1128,7 @@ class BranchSet:
             '''
             % query_params)
 
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=self._listingSortToOrderBy(sort_by))
+        return self._selectBranches(query, visible_by_user, sort_by)
 
     def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
                                  visible_by_user=None, sort_by=None,
@@ -1160,9 +1138,7 @@ class BranchSet:
         dormant_clause = self._dormantClause(hide_dormant)
         query = 'Branch.owner = %s %s %s' % (
             person.id, lifecycle_clause, dormant_clause)
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=self._listingSortToOrderBy(sort_by))
+        return self._selectBranches(query, visible_by_user, sort_by)
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None,
@@ -1172,9 +1148,7 @@ class BranchSet:
         dormant_clause = self._dormantClause(hide_dormant)
         query = 'Branch.registrant = %s %s %s' % (
             person.id, lifecycle_clause, dormant_clause)
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=self._listingSortToOrderBy(sort_by))
+        return self._selectBranches(query, visible_by_user, sort_by)
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None,
@@ -1187,10 +1161,8 @@ class BranchSet:
             AND BranchSubscription.person = %s %s %s
             '''
             % (person.id, lifecycle_clause, dormant_clause))
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            clauseTables=['BranchSubscription'],
-            orderBy=self._listingSortToOrderBy(sort_by))
+        return self._selectBranches(query, visible_by_user, sort_by,
+                                    clauseTables=['BranchSubscription'])
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None,
@@ -1203,9 +1175,7 @@ class BranchSet:
         query = 'Branch.product = %s %s %s' % (
             product.id, lifecycle_clause, dormant_clause)
 
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=self._listingSortToOrderBy(sort_by))
+        return self._selectBranches(query, visible_by_user, sort_by)
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None,
@@ -1221,10 +1191,8 @@ class BranchSet:
             '''
             % (project.id, lifecycle_clause, dormant_clause))
 
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            clauseTables=['Product'],
-            orderBy=self._listingSortToOrderBy(sort_by))
+        return self._selectBranches(query, visible_by_user, sort_by,
+                                    clauseTables=['Product'])
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
