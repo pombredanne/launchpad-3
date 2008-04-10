@@ -4,25 +4,38 @@
 
 __metaclass__ = type
 
+from zope.app.zapi import getGlobalSiteManager
+from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 
-from canonical.lazr.interfaces import ICollectionField
+from canonical.lazr.interfaces import (
+    ICollectionField, IResourceGETOperation, IResourceOperation,
+    IResourcePOSTOperation)
 
 
 class WadlAPI:
     "Namespace for WADL functions that operate on resources."
 
     def __init__(self, resource):
+        self.resource = resource
         underlying_resource = removeSecurityProxy(resource)
         self.context = underlying_resource.context
 
     def url(self):
-        """Return the full URL to the object."""
+        """Return the full URL to the resource."""
         return canonical_url(self.context)
+
+    def named_operations(self):
+        """Return all named operations registered on the resource."""
+        from canonical.launchpad.interfaces import IBugTask
+        operations = getGlobalSiteManager().adapters.lookupAll(
+            (IBugTask, IHTTPApplicationRequest), IResourceOperation)
+        ops = [{'name' : name, 'op' : op} for name, op in operations]
+        return ops
 
 
 class WadlEntryAPI(WadlAPI):
@@ -92,3 +105,19 @@ class WadlFieldAPI:
     def is_link(self):
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
+
+
+class WadlOperationAPI:
+    "Namespace for WADL functions that operate on named operations."
+
+    def __init__(self, operation):
+        self.operation = operation
+
+    def http_method(self):
+        "The HTTP method used to invoke this operation."
+        if IResourceGETOperation.implementedBy(self.operation):
+            return "GET"
+        elif IResourcePOSTOperation.implementedBy(self.operation):
+            return "POST"
+        else:
+            raise AssertionError("Named operations must use GET or POST.")
