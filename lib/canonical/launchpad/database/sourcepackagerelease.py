@@ -271,8 +271,8 @@ class SourcePackageRelease(SQLBase):
     def _getPackageSize(self):
         """Get the size total (in KB) of files comprising this package.
         
-        Please note: do not use this method for packages with no files
-        or packages with files that are all zero sized.
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
         """
         size_query = """
             SELECT
@@ -295,10 +295,10 @@ class SourcePackageRelease(SQLBase):
         cur.execute(size_query)
         results = cur.fetchone()
 
-        assert len(results) == 1 and results[0] is not None, (
-        "All files in this package are empty or the package has no files.")
-
-        return float(results[0])
+        if len(results) == 1 and results[0] is not None:
+            return float(results[0])
+        else:
+            return 0.0
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
