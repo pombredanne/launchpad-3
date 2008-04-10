@@ -4,6 +4,12 @@
 
   <permission id="launchpad.View" title="Viewing something" />
 
+  <!-- Request large downloads, or other heavyweight jobs that are not
+  semantically like "editing" and are not restricted to administrators.
+  -->
+  <permission id="launchpad.ExpensiveRequest"
+    title="Make expensive requests" />
+
   <permission id="launchpad.Edit" title="Editing something" />
 
   <!-- XXX: David Allouche 2006-07-19
