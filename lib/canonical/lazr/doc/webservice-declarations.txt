@@ -102,8 +102,9 @@ And from within a class declaration.
 
 === Exporting a collection ===
 
-Collection scoped to an entry are exported simply by using export_field() on
-the CollectionField containing the scoped collection items:
+Collection scoped to an entry are exported simply by using
+export_field() on the CollectionField containing the scoped collection
+items:
 
     >>> class ISimpleComment(Interface):
     ...     """A simple comment."""
@@ -113,12 +114,14 @@ the CollectionField containing the scoped collection items:
     >>> from canonical.lazr.rest.schema import CollectionField
     >>> class IBookWithComments(IBook):
     ...     """A book with some comments."""
+    ...     export_entry()
+    ...
     ...     comments = CollectionField(
     ...         value_type=Object(schema=ISimpleComment))
     ...     export_field(comments)
 
-Top-level collections are different though, they are exported by using the
-export_collection() in the *Set class. The set method that returns all
+Top-level collections are different though, they are exported by using
+the export_collection() in the *Set class. The method that returns all
 of the collection items must be tagged with @collection_default_content
 decorator.
 
