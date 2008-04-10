@@ -17,20 +17,118 @@ number of open bugs and questions filed against each package.
 
     >>> maintained = find_tag_by_id(anon_browser.contents, 'packages')
     >>> print extract_text(maintained)
-    Maintained packages
-    Name        Uploaded to Version  When   Failures    Bugs  Questions
-    alsa-utils  Debian Sid  1.0.9a-4 ...    None        0     0
-    ...
-    alsa-utils  Ubuntu Warty 1.0.8-1ubuntu1 ...None     0     0
-    mozilla-firefox Ubuntu Hoary 0.9 ...    None        1     0
-    ...
+    Name
+    Uploaded to
+    Version
+    When
+    Failures
+    Bugs
+    Questions
+    alsa-utils
+    Debian Sid
+    1.0.9a-4
+    2005-07-01
+    None
+    0
+    0
+    pmount
+    Ubuntu Hoary
+    0.1-2
+    2005-06-24
+    None
+    0
+    0
+    netapplet
+    Ubuntu Warty
+    0.99.6-1
+    2005-03-14
+    None
+    0
+    0
+    netapplet
+    Ubuntu Hoary
+    1.0-1
+    2005-03-10
+    None
+    0
+    0
+    alsa-utils
+    Ubuntu Warty
+    1.0.8-1ubuntu1
+    2005-02-03
+    None
+    0
+    0
+    mozilla-firefox
+    Ubuntu Hoary
+    0.9
+    2004-09-27
+    None
+    1
+    0
+    evolution
+    Ubuntu Hoary
+    1.0
+    2004-09-27
+    None
+    0
+    0
     Uploaded packages
-    Name   Uploaded to     Version     When    Failures    Bugs    Questions
-    ...
-    foobar  Ubuntu Breezy-autotest 1.0  ...    i386        0       0
-    ...
-    alsa-utils Ubuntu Hoary 1.0.9a-4ubuntu1... Not yet built 0     0...
+    Name
+    Uploaded to
+    Version
+    When
+    Failures
+    Bugs
+    Questions
+    cdrkit
+    Ubuntu Breezy-autotest
+    1.0
+    2006-12-01
+    i386
+    0
+    0
+    libstdc++
+    Ubuntu Hoary
+    b8p
+    2006-02-10
+    Not yet built
+    0
+    0
+    cnews
+    Ubuntu Hoary
+    cr.g7-37
+    2005-12-22
+    None
+    0
+    0
+    linux-source-2.6.15
+    Ubuntu Hoary
+    2.6.15.3
+    2005-12-22
+    None
+    1
+    0
+    alsa-utils
+    Ubuntu Hoary
+    1.0.9a-4ubuntu1
+    2005-08-01
+    Not yet built
+    0
+    0
     PPA packages
-    Name      Uploaded to         Version When Failures Bugs Questions
-    iceweasel PPA...Mark...Warty    1.0   ...  None     -    -
-    iceweasel PPA...No Priv...Warty 1.0   ...  None     -    -...
+    Name
+    Uploaded to
+    Version
+    When
+    Failures
+    Bugs
+    Questions
+    iceweasel
+    PPA for Mark Shuttleworth -
+    Ubuntu Warty
+    1.0
+    2006-04-11
+    None
+    -
+    -
