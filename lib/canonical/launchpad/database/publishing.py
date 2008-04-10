@@ -19,13 +19,16 @@ import os
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
 
+from canonical.buildmaster.master import determineArchitecturesToBuild
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
-    IArchiveSafePublisher, IBinaryPackageFilePublishing,
+    ArchivePurpose, IArchiveSafePublisher, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
@@ -479,6 +482,37 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
 
+    def createBuilds(self, ignore_pas=False, logger=None,):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.archive.purpose == ArchivePurpose.PPA or ignore_pas:
+            pas_verify = None
+        else:
+            pas_verify = BuildDaemonPackagesArchSpecific(
+                config.builddmaster.root, self.distroseries)
+
+        if self.archive.purpose == ArchivePurpose.PPA:
+            archs_available = [
+                arch for arch in self.distroseries.ppa_architectures]
+        else:
+            archs_available = self.distroseries.architectures
+
+        build_archs = determineArchitecturesToBuild(
+            self, archs_available, self.distroseries, pas_verify)
+
+        builds = []
+        for arch in build_archs:
+            if logger is not None:
+                logger.debug(
+                    "Creating PENDING build for %s." % arch.architecturetag)
+            build = self.sourcepackagerelease.createBuild(
+                distroarchseries=arch, archive=self.archive,
+                pocket=self.pocket)
+            build_queue = build.createBuildQueueEntry()
+            build_queue.score()
+            builds.append(build)
+
+        return builds
+
     @property
     def secure_record(self):
         """See `IPublishing`."""
@@ -652,7 +686,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
-        return SecureSourcePackagePublishingHistory(
+        secure_copy = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
@@ -662,6 +696,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             embargo=False)
+        return SourcePackagePublishingHistory.get(secure_copy.id)
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -848,7 +883,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         current = self.secure_record
         target_das = distroseries[current.distroarchseries.architecturetag]
 
-        return SecureBinaryPackagePublishingHistory(
+        secure_copy = SecureBinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=target_das,
@@ -859,3 +894,4 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             datecreated=UTC_NOW,
             pocket=pocket,
             embargo=False)
+        return BinaryPackagePublishingHistory.get(secure_copy.id)
