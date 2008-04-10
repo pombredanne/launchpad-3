@@ -14,24 +14,24 @@
 
     <!-- TALES namespaces for WADL generation -->
     <adapter
-        for="*"
+        for="canonical.lazr.interfaces.IHTTPResource"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlAPI"
+        factory="canonical.lazr.rest.tales.WadlResourceAPI"
         name="wadl"
         />
 
     <adapter
-        for="*"
+        for="canonical.lazr.interfaces.IEntryResource"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryAPI"
-        name="wadl_entry"
+        factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
+        name="wadl"
         />
 
     <adapter
-        for="*"
+        for="zope.schema.interfaces.IField"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlFieldAPI"
-        name="wadl_field"
+        name="wadl"
         />
 
     <adapter

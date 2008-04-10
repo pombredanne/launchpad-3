@@ -8,6 +8,7 @@ from zope.app.zapi import getGlobalSiteManager
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IObject
+from zope.interface.declarations import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -17,10 +18,11 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation)
 
 
-class WadlAPI:
+class WadlResourceAPI:
     "Namespace for WADL functions that operate on resources."
 
     def __init__(self, resource):
+        "Initialize with a resource."
         self.resource = resource
         underlying_resource = removeSecurityProxy(resource)
         self.context = underlying_resource.context
@@ -31,26 +33,25 @@ class WadlAPI:
 
     def named_operations(self):
         """Return all named operations registered on the resource."""
-        from canonical.launchpad.interfaces import IBugTask
         operations = getGlobalSiteManager().adapters.lookupAll(
-            (IBugTask, IHTTPApplicationRequest), IResourceOperation)
+            (providedBy(self.context), IHTTPApplicationRequest),
+            IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
 
 
-class WadlEntryAPI(WadlAPI):
+class WadlEntryResourceAPI(WadlResourceAPI):
     "Namespace for WADL functions that operate on entry resources."
 
     def __init__(self, entry_resource):
-        self.resource = entry_resource
+        "Initialize with an entry resource."
+        super(WadlEntryResourceAPI, self).__init__(entry_resource)
         self.entry = self.resource.entry
         self.schema = self.entry.schema
-        underlying_resource = removeSecurityProxy(entry_resource)
-        self.data_object = underlying_resource.context
 
     def singular_type(self):
         "Return the singular name for this object type."
-        return self.data_object.__class__.__name__
+        return self.entry.__class__.__name__
 
     def type_link(self):
         "The URL to the resource type for the object."
@@ -71,7 +72,7 @@ class WadlEntryAPI(WadlAPI):
         # Right now the resource type is defined in the same file
         # as the resource, so a relative link is fine. This won't
         # always be so.
-        return "#" + self.singular_type() + '-patch'
+        return "#" + self.singular_type() + '-diff'
 
     def all_fields(self):
         "Return all schema fields for the object."
@@ -90,9 +91,16 @@ class WadlFieldAPI:
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
+        "Initialize with a field."
         self.field = field
 
     def path(self):
+        """The 'path' to this field within a JSON document.
+
+        This is just a string that looks like Python code you'd write
+        to do a dictionary lookup. There's no XPath-like standard for
+        JSON so we made something up that seems JSONic.
+        """
         name = self.field.__name__
         if ICollectionField.providedBy(self.field):
             repr_name = name + '_collection_link'
@@ -103,6 +111,7 @@ class WadlFieldAPI:
         return '["%s"]' % repr_name
 
     def is_link(self):
+        "Is this field a link to another resource?"
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
 
@@ -111,6 +120,7 @@ class WadlOperationAPI:
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
+        "Initialize with an operation."
         self.operation = operation
 
     def http_method(self):
