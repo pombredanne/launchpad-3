@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 import re
-import cgi
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -146,7 +145,7 @@ def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
     except CvsRootError, e:
-        raise LaunchpadValidationError(cgi.escape(str(e)))
+        raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
     if root.hostname.count('.') == 0:

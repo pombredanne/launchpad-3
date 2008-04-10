@@ -8,6 +8,7 @@ from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 
+
 __all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
 
 
@@ -34,7 +35,6 @@ def login(email, participation=None):
     global _logged_in
     _logged_in = True
     authutil = getUtility(IPlacelessAuthUtility)
-
 
     if email != ANONYMOUS:
         # Create an anonymous interaction first because this calls
