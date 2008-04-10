@@ -85,7 +85,6 @@ admin or expert, but he is one of the owners of a translation group.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> from canonical.launchpad.database.person import Person
 
     >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
     >>> login('foo.bar@canonical.com')
