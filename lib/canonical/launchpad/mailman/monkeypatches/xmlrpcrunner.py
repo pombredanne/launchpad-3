@@ -539,8 +539,8 @@ class XMLRPCRunner(Runner):
             try:
                 mlist = MailList(name)
             except Errors.MMUnknownListError:
-                # If the list status was CONSTRUCTING but it does not exist on
-                # the Mailman side, we can create it now.
+                # The list doesn't exist on the Mailman side, so if its status
+                # is CONSTRUCTING, we can create it now.
                 if status == 'constructing':
                     if self._create(name):
                         statuses[name] = 'success'
