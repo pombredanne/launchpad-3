@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+        'copy_attribute',
         'use_template'
         ]
 
@@ -35,13 +36,20 @@ def use_template(template, include=None, exclude=None):
                    if name not in exclude]
 
     for name in include:
-        field = copy(template.get(name))
-        # Fields are ordered based on a global counter in the Field class.
-        # We increment and use Field.order to reorder the copied fields. 
-        # If fields are subsequently defined, they they will follow the
-        # copied fields.
-        if isinstance(field, Field):
-            Field.order += 1
-            field.order = Field.order
-        locals[name] = field
+        locals[name] = copy_attribute(template.get(name))
 
+
+def copy_attribute(attribute):
+    """Copy an interface attribute.
+
+    This makes sure that the relative ordering of IField is presevered.
+    """
+    new_attribute = copy(attribute)
+    # Fields are ordered based on a global counter in the Field class.
+    # We increment and use Field.order to reorder the copied fields.
+    # If fields are subsequently defined, they they will follow the
+    # copied fields.
+    if isinstance(new_attribute, Field):
+        Field.order += 1
+        new_attribute.order = Field.order
+    return new_attribute
