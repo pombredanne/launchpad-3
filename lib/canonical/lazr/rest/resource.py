@@ -121,6 +121,7 @@ class HTTPResource(URLDereferencingMixin):
         return len(adapters) > 0
 
     def getPreferredContentTypes(self):
+        """Find which content types the client prefers to receive."""
         return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
 
     def _parseAcceptStyleHeader(self, value):
