@@ -32,9 +32,9 @@ notification they would like to receive.
 
 == Notification Recipients ==
 
-Recipients are determined using getCreationNotificationRecipients.
+Recipients are determined using getNotificationRecipients.
 
-    >>> recipients = bmp.getCreationNotificationRecipients(
+    >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.STATUS)
 
 Subscribers to all related branches are candidates.
@@ -44,7 +44,7 @@ Subscribers to all related branches are candidates.
 
 Only subscribers whose level is >= the minimum level are selected.
 
-    >>> recipients = bmp.getCreationNotificationRecipients(
+    >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.FULL)
     >>> [target_subscriber] == recipients.keys()
     True

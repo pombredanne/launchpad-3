@@ -17,6 +17,7 @@ from canonical.launchpad.database.productseries import (
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
@@ -64,13 +65,13 @@ class TestImportUpdated(ImportdTestCase):
         return ProductSeries.get(series_id)
 
     def testNoBranchError(self):
-        # setDateLastSynced must raise an exception if the series does not have
-        # its import_branch set.
+        # setDateLastSynced must raise an exception if the series does not
+        # have its import_branch set.
         #
         # The import_branch attribute is set when the import branch is pushed
         # to the internal server. The setDateLastSynced method is only called
-        # for successful production jobs, so there must always be an internally
-        # published import branch at this point.
+        # for successful production jobs, so there must always be an
+        # internally published import branch at this point.
         self.series().import_branch = None
         self.assertRaises(NoImportBranchError,
             self.series().importUpdated)
@@ -84,18 +85,18 @@ class TestImportUpdated(ImportdTestCase):
         self.assertRaises(DatePublishedSyncError,
             self.series().importUpdated)
 
-    # WARNING: RACE CONDITION if the mirroring starts after the branch has been
-    # published internally, but before importUpdated is called. The supermirror
-    # will be up-to-date with the latest import when mirroring completes, but
-    # importUpdated will see that the branch is out of date, and will not
-    # update datepublishedsync. When the mirroring completes,
-    # import_branch.last_mirrored will be older than datelastsynced, because it
-    # records the date when mirroring started, so Launchpad will believe that
-    # the branch is out of date. Since this fails on the pessimistic side, this
-    # is acceptable -- DavidAllouche 2006-12-12.
+    # WARNING: RACE CONDITION if the mirroring starts after the branch has
+    # been published internally, but before importUpdated is called. The
+    # supermirror will be up-to-date with the latest import when mirroring
+    # completes, but importUpdated will see that the branch is out of date,
+    # and will not update datepublishedsync. When the mirroring completes,
+    # import_branch.last_mirrored will be older than datelastsynced, because
+    # it records the date when mirroring started, so Launchpad will believe
+    # that the branch is out of date. Since this fails on the pessimistic
+    # side, this is acceptable -- DavidAllouche 2006-12-12.
 
-    # XXX DavidAllouche 2006-12-21: This race condition can be avoided if
-    # the branch puller only runs for vcs-imports branches when
+    # XXX DavidAllouche 2006-12-21: This race condition can be avoided if the
+    # branch puller only runs for vcs-imports branches when
     # importd_branch.last_mirrored < datelastsynced.
 
     # XXX DavidAllouche 2006-12-21: The race can be resolved if we record
@@ -157,7 +158,8 @@ class TestImportUpdated(ImportdTestCase):
             2001, 1, 1, tzinfo=UTC)
         series.datelastsynced = datetime.datetime(2002, 1, 1, tzinfo=UTC)
         series.importUpdated()
-        self.assertEqual(str(series.datepublishedsync), str(datepublishedsync))
+        self.assertEqual(
+            str(series.datepublishedsync), str(datepublishedsync))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
     def testLastSyncWasMirrored(self):
@@ -228,53 +230,55 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         for series in ProductSeries.select():
             series.deleteImport()
         flush_database_updates()
+        self.factory = LaunchpadObjectFactory()
 
-    def getSeriesForProduct(self, product_name):
-        """Return a arbitrary ProducSeries associated to named product."""
-        # We return the development focus of the product, just because that's
-        # the easiest thing to do.
-        product = getUtility(IProductSet).getByName(product_name)
-        return product.development_focus
+    def makeSeries(self, project_name=None, product_name=None,
+                   series_name=None):
+        """Make a new ProductSeries for a new Product, mabye in a new Project.
+        """
+        if project_name is not None:
+            project = self.factory.makeProject(name=project_name)
+        else:
+            project = None
+        product = self.factory.makeProduct(name=product_name, project=project)
+        return self.factory.makeSeries(product=product, name=series_name)
 
-    def addImportDetailsToSeries(self, series):
+    def addImportDetailsToSeries(self, series, module_name='hello'):
         """Add import data to the provided series.
 
-        'importstatus' will be set to SYNCING, abitrarily.
+        'importstatus' will be set to SYNCING, arbitrarily.
         """
         series.rcstype = RevisionControlSystems.CVS
         series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
-        series.cvsmodule = 'hello'
+        series.cvsmodule = module_name
         series.cvsbranch = 'MAIN'
         series.importstatus = ImportStatus.SYNCING
         flush_database_updates()
 
     def testEmpty(self):
-        """We start out with no series with import data, so searchImports()
-        returns no results.
-        """
+        # We start out with no series with import data, so searchImports()
+        # returns no results.
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 
     def testOneSeries(self):
-        """When there is one series with import data, it is returned."""
-        series = self.getSeriesForProduct('firefox')
+        # When there is one series with import data, it is returned.
+        series = self.makeSeries()
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
 
-    def testOneSeriesNoProject(self):
-        """Series for products with no project should be returned too."""
-        series = self.getSeriesForProduct('jokosher')
-        self.failIf(series.product.project)
+    def testOneSeriesWithProject(self):
+        # Series for products with a project should be returned too.
+        series = self.makeSeries(project_name="whatever")
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
 
     def testExcludeDeactivatedProducts(self):
-        """Deactivating a product means that series associated to it are no
-        longer returned.
-        """
-        series = self.getSeriesForProduct('firefox')
+        # Deactivating a product means that series associated to it are no
+        # longer returned.
+        series = self.factory.makeSeries()
         self.addImportDetailsToSeries(series)
         self.failUnless(series.product.active)
         results = getUtility(IProductSeriesSet).searchImports()
@@ -284,11 +288,23 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 
+    def testExcludeDeactivatedProjects(self):
+        # Deactivating a project means that series associated to products in
+        # it are no longer returned.
+        series = self.makeSeries(project_name="whatever")
+        self.addImportDetailsToSeries(series)
+        self.failUnless(series.product.project.active)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+        series.product.project.active = False
+        flush_database_updates()
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [])
+
     def testSearchByStatus(self):
-        """If passed a status, searchImports only returns series with that
-        status.
-        """
-        series = self.getSeriesForProduct('firefox')
+        # If passed a status, searchImports only returns series with that
+        # status.
+        series = self.makeSeries()
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports(
             importstatus=ImportStatus.SYNCING)
@@ -296,6 +312,63 @@ class TestProductSeriesSearchImports(unittest.TestCase):
         results = getUtility(IProductSeriesSet).searchImports(
             importstatus=ImportStatus.PROCESSING)
         self.assertEquals(list(results), [])
+
+    def testSorting(self):
+        # Returned series are sorted by product name, then series name.
+        product1_a = self.makeSeries(product_name='product1', series_name='a')
+        product2_a = self.makeSeries(product_name='product2', series_name='a')
+        product1_b = self.factory.makeSeries(
+            product=product1_a.product, name='b')
+        self.addImportDetailsToSeries(product1_a, 'a')
+        self.addImportDetailsToSeries(product1_b, 'b')
+        self.addImportDetailsToSeries(product2_a, 'c')
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(
+            list(results), [product1_a, product1_b, product2_a])
+
+    def testSearchByProduct(self):
+        # Searching can filter by product name and other texts.
+        series = self.makeSeries(product_name='product')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='product')
+        self.assertEquals(
+            list(results), [series])
+
+    def testSearchByProductWithProject(self):
+        # Searching can filter by product name and other texts, and returns
+        # matching products even if the product is in a project which does not
+        # match.
+        series = self.makeSeries(
+            project_name='whatever', product_name='product')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='product')
+        self.assertEquals(
+            list(results), [series])
+
+    def testSearchByProject(self):
+        # Searching can filter by project name and other texts.
+        series = self.makeSeries(
+            project_name='project', product_name='product')
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='project')
+        self.assertEquals(
+            list(results), [series])
+
+    def testSearchByProjectWithNonMatchingProduct(self):
+        # If a project matches the text, it's an easy mistake to make to
+        # consider all the products with no project as matching too.
+        series_1 = self.makeSeries(product_name='product1')
+        series_2 = self.makeSeries(
+            project_name='thisone', product_name='product2')
+        self.addImportDetailsToSeries(series_1, 'a')
+        self.addImportDetailsToSeries(series_2, 'b')
+        results = getUtility(IProductSeriesSet).searchImports(
+            text='thisone')
+        self.assertEquals(
+            list(results), [series_2])
 
 
 def test_suite():

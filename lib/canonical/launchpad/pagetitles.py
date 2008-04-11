@@ -573,7 +573,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug contact for %s')
+edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -1256,6 +1256,8 @@ def sourcepackages(context, view):
 sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
+
+sources_list = 'Available code imports'
 
 sourcesource_index = 'Upstream source import'
 
