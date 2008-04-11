@@ -366,7 +366,7 @@ class UniqueField(TextLine):
         object of this same context. The 'input' should be valid as per
         TextLine.
         """
-        TextLine._validate(self, input)
+        super(UniqueField, self)._validate(input)
         assert self._content_iface is not None
         _marker = object()
 
