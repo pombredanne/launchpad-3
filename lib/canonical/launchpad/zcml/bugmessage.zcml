@@ -7,6 +7,9 @@
     <!-- BugMessage -->
     <content class="canonical.launchpad.database.BugMessage">
         <allow interface="canonical.launchpad.interfaces.IBugMessage" />
+        <require
+            permission="zope.Public"
+            set_attributes="remote_comment_id" />
     </content>
 
     <!-- BugMessageSet -->

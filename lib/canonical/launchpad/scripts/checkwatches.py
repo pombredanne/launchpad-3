@@ -23,9 +23,9 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugTrackerSet,
-    IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
-    ISupportsCommentImport, PersonCreationRationale,
+    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
+    IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
+    IPersonSet, ISupportsCommentImport, PersonCreationRationale,
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
@@ -587,6 +587,40 @@ class BugWatchUpdater(object):
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
                 {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
+    def pushBugComments(self, external_bugtracker, bug_watch):
+        """Push Launchpad comments to the remote bug.
+
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentPushing`.
+        :param bug_watch: The bug watch to which the comments should be
+            pushed.
+        """
+        pushed_comments = 0
+
+        for message in bug_watch.bug.messages[1:]:
+            bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+                bug_watch.bug, message)
+
+            # We only push those comments that haven't been pushed
+            # already.
+            if bug_message.remote_comment_id is not None:
+                continue
+
+            remote_id = external_bugtracker.addRemoteComment(
+                bug_watch.remotebug, message.text_contents)
+
+            bug_message.remote_comment_id = remote_id
+            pushed_comments += 1
+
+        if pushed_comments > 0:
+            self.log.info("Pushed %(count)i comments to remote bug "
+                "%(remotebug)s on %(bugtracker_url)s from Launchpad bug "
+                "%(bug_id)s" %
+                {'count': pushed_comments,
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
