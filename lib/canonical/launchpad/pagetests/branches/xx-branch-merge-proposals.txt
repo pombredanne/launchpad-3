@@ -692,8 +692,8 @@ focus before, then that is also shown as a radio option.
 
 === Target branch edge cases ===
 
-If the development focus branch is proposed for merging, we don't
-show the development focus branch as an option.
+When the development focus branch is proposed for merging,
+don't suggest that we merge it onto itself.
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/firefox/main')
@@ -702,7 +702,7 @@ show the development focus branch as an option.
     ~sabdfl/firefox/release-0.9 checked
     other
 
-If we are looking to propose a branch that has been targetted before,
+If we are looking to propose a branch that has been targeted before,
 we don't show that branch as a possible target (as it is the source
 branch).
 
