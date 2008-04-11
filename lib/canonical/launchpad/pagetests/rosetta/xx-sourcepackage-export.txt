@@ -211,7 +211,6 @@ a warning would appear on the export request form that wasn't there before.
     ...     'ubuntu/hoary/+source/evolution/+export')
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-
     This package has templates with different native file formats.  If you
     proceed, all translations will be exported in the single format you
     specify.
