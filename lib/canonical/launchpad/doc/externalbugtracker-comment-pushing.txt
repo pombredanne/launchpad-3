@@ -59,7 +59,8 @@ ISupportsCommentPushing interface.
     ...     next_comment_id = 1
     ...     remote_comments = {}
     ...
-    ...     def addRemoteComment(self, remote_bug, comment_body):
+    ...     def addRemoteComment(self, remote_bug, comment_body,
+    ...         rfc822msgid=None):
     ...         remote_comment_id = str(self.next_comment_id)
     ...         self.remote_comments[remote_comment_id] = comment_body
     ...
