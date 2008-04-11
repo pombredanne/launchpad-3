@@ -75,7 +75,7 @@ from canonical.launchpad.interfaces import (
     ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IObjectPrivacy,
+    INominationsReviewTableBatchNavigator, INullBugTask,
     IPerson, IPersonBugTaskSearch, IProduct,
     IProductSeries, IProductSeriesBugTask,
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
@@ -104,6 +104,7 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr import decorates, EnumeratedType, Item
+from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -707,15 +708,17 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def comments(self):
         """Return the bugtask's comments."""
         comments = get_comments_for_bugtask(self.context, truncate=True)
+        # We show the text of the first comment as the bug description,
+        # or via the special link "View original description", but we want
+        # to display attachments filed together with the bug in the
+        # comment list.
+        comments[0].text_for_display = ''
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
     def getBugCommentsForDisplay(self):
         """Return all the bug comments together with their index."""
-        # The first comment is generally identical to the description,
-        # and we include a special link to it in the template if it
-        # isn't.
-        return get_visible_comments(self.comments[1:])
+        return get_visible_comments(self.comments)
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1234,7 +1237,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             # The source package was changed, so tell the user that we've
             # subscribed the new bug contacts.
             self.request.response.addNotification(
-                "The bug contacts for %s have been subscribed to this bug."
+                "The bug supervisor for %s has been subscribed to this bug."
                  % (bugtask.bugtargetdisplayname))
 
     @action('Save Changes', name='save')

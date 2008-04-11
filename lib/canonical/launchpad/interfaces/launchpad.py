@@ -53,7 +53,6 @@ __all__ = [
     'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
-    'IObjectPrivacy',
     'IOpenIdApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
@@ -542,10 +541,3 @@ class ILaunchpadUsage(Interface):
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)
-
-
-class IObjectPrivacy(Interface):
-    """Privacy-related information about an object."""
-
-    is_private = Bool(title=_("Whether access to the object is restricted."))
-    privacy_info = Text(title=_("Who and when the object was privatized."))

@@ -734,7 +734,7 @@ class MilestoneEmailCommand(EditEmailCommand):
         else:
             raise EmailProcessingError(
                 "You do not have permission to set the milestone for %s. "
-                "Only owners, drivers and bug contacts may assign "
+                "Only owners, drivers and bug supervisors may assign "
                 "milestones." % (context.pillar.title,))
 
     def _userCanEditMilestone(self, user, bugtask):
@@ -806,7 +806,7 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
         if not context.canTransitionToStatus(attr_value, user):
             raise EmailProcessingError(
                 'The status cannot be changed to %s because you are not '
-                'the registrant or a bug contact for %s.' % (
+                'the registrant or a bug supervisor for %s.' % (
                     attr_value.name.lower(), context.pillar.displayname))
 
         context.transitionToStatus(attr_value, user)

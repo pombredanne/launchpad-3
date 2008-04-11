@@ -88,7 +88,7 @@
       />
 
     <adapter
-      provides="canonical.launchpad.interfaces.IObjectPrivacy"
+      provides="canonical.lazr.interfaces.IObjectPrivacy"
       for="canonical.launchpad.interfaces.IBugTask"
       factory="canonical.launchpad.browser.BugTaskPrivacyAdapter"
       permission="zope.Public"

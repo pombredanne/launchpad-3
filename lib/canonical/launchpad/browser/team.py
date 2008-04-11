@@ -33,15 +33,18 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet, IObjectPrivacy,
+    IMailingList, IMailingListSet,
     IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    TeamContactMethod, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.lazr.interfaces import IObjectPrivacy
 
 
 class TeamPrivacyAdapter:
@@ -94,7 +97,7 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
     field_names = [
         'teamowner', 'name', 'displayname', 'teamdescription',
         'subscriptionpolicy', 'defaultmembershipperiod',
-        'renewal_policy', 'defaultrenewalperiod']
+        'renewal_policy', 'defaultrenewalperiod', 'visibility']
     custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
@@ -105,6 +108,32 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    def validate(self, data):
+        if 'visibility' in data:
+            visibility = data['visibility']
+        else:
+            visibility = self.context.visibility
+        if visibility != PersonVisibility.PUBLIC:
+            if 'visibility' in data:
+                warning = self.context.visibility_consistency_warning
+                if warning is not None:
+                    self.setFieldError('visibility', warning)
+            if (data['subscriptionpolicy']
+                != TeamSubscriptionPolicy.RESTRICTED):
+                self.setFieldError(
+                    'subscriptionpolicy',
+                    'Private teams must have a Restricted subscription'
+                    ' policy.')
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        Only Launchpad Admins get to see the visibility field.
+        """
+        super(TeamEditView, self).setUpFields()
+        if not check_permission('launchpad.Admin', self.context):
+            self.form_fields = self.form_fields.omit('visibility')
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.

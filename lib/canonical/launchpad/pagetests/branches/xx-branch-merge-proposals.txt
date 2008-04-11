@@ -296,6 +296,13 @@ There is an action link here to mark as merged.
 
     >>> nopriv_browser.getLink('Mark as merged').click()
 
+If either two users were trying to mark the branch as merged at the
+same time, or a resubmit occurs, the error is handled elegantly.
+We set up the page here before the proposal is merged.
+
+    >>> merge_url = nopriv_browser.url
+    >>> sample_browser.open(merge_url)
+
 When marking a proposal as merged there is an optional revision number.
 If this is set then the when setting the merge proposal as merged the
 system looks for the revision in the history of the target branch,
@@ -304,6 +311,12 @@ find one, then the current time is used as the date merged.
 
     >>> nopriv_browser.getControl('Merged Revision Number').value = '42'
     >>> nopriv_browser.getControl('Mark as Merged').click()
+
+A notification is also added.
+
+    >>> for message in get_feedback_messages(nopriv_browser.contents):
+    ...     print extract_text(message)
+    The proposal has now been marked as merged.
 
 The user is then taken to the proposal details page.  The source branch
 is shown as a link.
@@ -322,6 +335,16 @@ Gone from the target branch.
     ~name12/gnome-terminal/scanned (New) - view proposal details
       This is the whiteboard
       Work in progress
+
+Now if the other browser attempts to also mark as merged,
+an error is shown.
+
+    >>> sample_browser.getControl('Merged Revision Number').value = '42'
+    >>> sample_browser.getControl('Mark as Merged').click()
+
+    >>> for message in get_feedback_messages(sample_browser.contents):
+    ...     print extract_text(message)
+    The proposal has already been marked as merged.
 
 
 == Resubmitting proposals ==

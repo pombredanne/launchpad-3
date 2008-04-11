@@ -84,7 +84,7 @@ def test_suite():
                 # doesn't do what we want.
                 suite.addTest(unittest.FunctionTestCase(
                     make_test(config_file, 'configs/' + description)))
-            elif filename == 'launchpad-lazr.conf':
+            elif filename.endswith('-lazr.conf'):
                 # Test the lazr.config conf files.
                 config_file = os.path.join(dirpath, filename)
                 description = config_file[prefix_len:]

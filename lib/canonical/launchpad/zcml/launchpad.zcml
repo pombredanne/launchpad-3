@@ -345,11 +345,18 @@
       template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+code-import-list"
+      class="canonical.launchpad.browser.ProductSeriesSourceListView"
+      template="../templates/sources-list.pt"
+      permission="zope.Public"
+      />
 
 </facet>
 
 <adapter
-  provides="canonical.launchpad.interfaces.IObjectPrivacy"
+  provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
   factory="canonical.launchpad.components.privacy.ObjectPrivacy"
   permission="zope.Public"

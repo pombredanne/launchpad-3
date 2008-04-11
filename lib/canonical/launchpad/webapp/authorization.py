@@ -18,6 +18,8 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
+from canonical.lazr.interfaces import IObjectPrivacy
+
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, ILaunchpadPrincipal, IAuthorization)
 
@@ -26,19 +28,17 @@ steveIsFixingThis = False
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
 
-    def _checkRequiredAccessLevelAndPrivacy(
-            self, principal, permission, object):
+    def _checkRequiredAccessLevel(self, principal, permission, object):
         """Check that the principal has the level of access required.
 
         Each permission specifies the level of access it requires (read or
         write) and all LaunchpadPrincipals have an access_level attribute. If
         the principal's access_level is not sufficient for that permission,
-        return False.
-
-        Also return False if the object is private and the principal doesn't
-        have access to private objects.
+        returns False.
         """
-        # XXX: salgado, 2008-04-04: This doesn't work as a global import.
+        # This doesn't work as a global import and it doesn't seem to be the
+        # consequence of circular dependencies:
+        # https://pastebin.canonical.com/3921/
         from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
         lp_permission = getUtility(ILaunchpadPermission, permission)
         if lp_permission.access_level == "write":
@@ -53,21 +53,15 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         else:
             raise AssertionError(
                 "Unknown access level: %s" % lp_permission.access_level)
+        return True
 
-        # XXX: salgado, 2008-04-04: Maybe we should move IObjectPrivacy to
-        # webapp to not have to import from launchpad.interfaces here.
-        from canonical.launchpad.interfaces import IObjectPrivacy
-        object_with_privacy = IObjectPrivacy(object, None)
-        # XXX: HELP! I don't know why I need to check if object_with_privacy
-        # is None, but some tests fail without it
-        # (pagetests/product/xx-product-files.txt, at least) because the
-        # object given to checkPermission() is None.  And checkPermission()
-        # also checks the return of queryAdapter() to see if it's not None, so
-        # I guess this is expected?  Maybe there should be an explicit "if
-        # object is None: return False" in the beginning of checkPermission()?
-        if object_with_privacy is None:
-            return False
-        elif object_with_privacy.is_private:
+    def _checkPrivacy(self, principal, object):
+        """If the object is private, check that the principal can access it.
+
+        If the object is private and the principal's access level doesn't give
+        access to private objects, return False.  Return True otherwise.
+        """
+        if IObjectPrivacy(object).is_private:
             required_access_level = [
                 AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE]
             if principal.access_level not in required_access_level:
@@ -86,8 +80,9 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
 
         Workflow:
         - If the principal is not None and its access level is not what is
-          required by the permission or the object to authorize is private and
-          the principal has no access to private objects, deny.
+          required by the permission, deny.
+        - If the object to authorize is private and the principal has no
+          access to private objects, deny.
         - If we have zope.Public, allow.  (We shouldn't ever get this, though.)
         - If we have launchpad.AnyPerson and the principal is an
           ILaunchpadPrincipal then allow.
@@ -95,6 +90,19 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
+        # If we have a view, get its context and use that to get an
+        # authorization adapter.
+        if IView.providedBy(object):
+            objecttoauthorize = object.context
+        else:
+            objecttoauthorize = object
+        if objecttoauthorize is None:
+            # We will not be able to lookup an adapter for this, so we can
+            # return False already.
+            return False
+        # Remove security proxies from object to authorize.
+        objecttoauthorize = removeSecurityProxy(objecttoauthorize)
+
         principals = [participation.principal
                       for participation in self.participations
                           if participation.principal is not system_user]
@@ -105,19 +113,12 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         else:
             principal = principals[0]
 
-        # If we have a view, get its context and use that to get an
-        # authorization adapter.
-        if IView.providedBy(object):
-            objecttoauthorize = object.context
-        else:
-            objecttoauthorize = object
-        # Remove security proxies from object to authorize.
-        objecttoauthorize = removeSecurityProxy(objecttoauthorize)
-
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
-            if not self._checkRequiredAccessLevelAndPrivacy(
+            if not self._checkRequiredAccessLevel(
                 principal, permission, objecttoauthorize):
+                return False
+            if not self._checkPrivacy(principal, objecttoauthorize):
                 return False
 
         # XXX kiko 2007-02-07:
@@ -131,7 +132,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
             if steveIsFixingThis:
-                warnings.warn('zope.Public being used raw on object %r' % object)
+                warnings.warn(
+                    'zope.Public being used raw on object %r' % object)
             return True
         if permission is CheckerPublic:
             return True

@@ -1,13 +1,13 @@
 = Permission checking =
 
-Permission checking in Launchpad is done by check_permission(), which
-checks that that the currently logged in user has the requested
-permission on an object.  This is the same check available in TALES as
+The check_permission() helper is a wrapper around Zope's security API
+that makes it easy to check if a user has the requested permission on a
+given object.  This is the same check available in TALES as
 something/required:permission.Name.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet, IHasOwner
+    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.get(12)

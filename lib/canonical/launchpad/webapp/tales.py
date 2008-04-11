@@ -40,7 +40,6 @@ from canonical.launchpad.interfaces import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    IObjectPrivacy,
     IPerson,
     IPersonSet,
     IProduct,
@@ -62,7 +61,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
-
+from canonical.lazr.interfaces import IObjectPrivacy
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -2434,9 +2433,4 @@ class GotoStructuralObject:
 
     @property
     def context_privacy(self):
-        try:
-            headercontext, adapter = nearest_context_with_adapter(
-                self.use_context, IObjectPrivacy)
-        except NoCanonicalUrl:
-            return False
-        return adapter
+        return IObjectPrivacy(self.use_context)

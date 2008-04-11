@@ -1005,7 +1005,6 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
-    >>> from canonical.launchpad.webapp.interfaces import AccessLevel
     >>> from canonical.launchpad.interfaces import (
     ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')

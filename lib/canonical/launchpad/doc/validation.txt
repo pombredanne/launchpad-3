@@ -125,4 +125,4 @@ an IWidgetInputErrorView:
     >>> IWidgetInputErrorView.providedBy(view)
     True
     >>> view.snippet()
-    'lp validation error'
+    u'lp validation error'

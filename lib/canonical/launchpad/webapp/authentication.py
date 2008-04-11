@@ -197,8 +197,8 @@ class LaunchpadLoginSource:
 
         Return None if there is no person with the given id.
 
-        The access_level is also stored in the principal for further
-        permission checking, if needed.
+        The `access_level` can be used for further restricting the capability
+        of the principal.  By default, no further restriction is added.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -221,8 +221,8 @@ class LaunchpadLoginSource:
 
         Return None if there is no person with the given email address.
 
-        The access_level is also stored in the principal for further
-        permission checking, if needed.
+        The `access_level` can be used for further restricting the capability
+        of the principal.  By default, no further restriction is added.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to

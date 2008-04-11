@@ -20,8 +20,6 @@ __all__ = [
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
 from zope.interface import Interface
 
-from canonical.lazr import DBEnumeratedType, DBItem
-
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
