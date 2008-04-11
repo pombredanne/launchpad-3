@@ -1,3 +1,17 @@
+launchpad-buildd (45) dapper-cat; urgency=low
+
+  * slave.py: Stop setting BuilderStatus.WAITING in each failure
+    method, as this gives us a race where the builddmaster might
+    dispatch another build to us before we're done cleaning up.
+  * slave.py: Don't set BuildStatus.OK in buildComplete(), this is
+    now a generic "the build has ended, succesfully or not" method.
+  * slave.py: Define a new buildOK() method that sets BuildStatus.OK.
+  * debian.py: When done cleaning, if the build isn't already marked
+    as failed, call buildOK, then call buildComplete unconditionally.
+  * The above changes should resolve https://launchpad.net/bugs/179466
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Tue, 08 Apr 2008 14:12:07 -0600
+
 launchpad-buildd (44) dapper-cat; urgency=low
 
   * slave.py: Redefine "private" _unpackChroot() as "public" doUnpack(),

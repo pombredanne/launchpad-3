@@ -355,7 +355,9 @@ class MaloneHandler:
             blob = chunk.blob
             if blob is None:
                 continue
-            content_type = blob.mimetype
+            # Mutt (other mail clients too?) appends the filename to the
+            # content type.
+            content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
                 continue
 
@@ -494,7 +496,7 @@ class SpecificationHandler:
                     filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
-        if signed_msg['Sender'] == config.bounce_address:
+        if signed_msg['Sender'] == config.canonical.bounce_address:
             if log and filealias:
                 log.warning('We received an email from Launchpad: %s'
                             % filealias.http_url)

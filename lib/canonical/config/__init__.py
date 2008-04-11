@@ -3,7 +3,7 @@
 Configuration information pulled from launchpad.conf.
 
 The configuration section used is specified using the LPCONFIG
-environment variable, and defaults to 'default'
+environment variable, and defaults to 'development'
 '''
 
 __metaclass__ = type
@@ -29,7 +29,7 @@ LPCONFIG = 'LPCONFIG'
 LPCONFIG_SECTION = 'LPCONFIG_SECTION'
 
 DEFAULT_SECTION = 'default'
-DEFAULT_CONFIG = 'default'
+DEFAULT_CONFIG = 'development'
 
 
 class CanonicalConfig:

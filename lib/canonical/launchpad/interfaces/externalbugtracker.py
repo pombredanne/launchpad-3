@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'IExternalBugTracker',
-    'ISupportsCommentImport',
+    'IExternalBugTrackerTokenAPI',
     'ISupportsBugImport',
+    'ISupportsCommentImport',
+    'ISupportsCommentPushing',
     'UNKNOWN_REMOTE_IMPORTANCE',
     'UNKNOWN_REMOTE_STATUS',
     ]
@@ -22,6 +24,13 @@ from zope.interface import Interface
 #      would allow us to get rid of these text constants.
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
+
+
+class IExternalBugTrackerTokenAPI(Interface):
+    """A class used to generate external bugtracker `LoginToken`s."""
+
+    def newBugTrackerToken():
+        """Create a new bugtracker `LoginToken` and return its ID."""
 
 
 class IExternalBugTracker(Interface):
@@ -51,7 +60,7 @@ class IExternalBugTracker(Interface):
 
 
 class ISupportsCommentImport(IExternalBugTracker):
-    """A an external bug tracker that supports comment imports."""
+    """An external bug tracker that supports comment imports."""
 
     def getCommentIds(bug_watch):
         """Return all the comment IDs for a given remote bug."""
@@ -64,7 +73,7 @@ class ISupportsCommentImport(IExternalBugTracker):
 
 
 class ISupportsBugImport(IExternalBugTracker):
-    """A an external bug tracker that supports bug imports."""
+    """An external bug tracker that supports bug imports."""
 
     def getBugReporter(remote_bug):
         """Return the person who submitted the given bug.
@@ -79,4 +88,21 @@ class ISupportsBugImport(IExternalBugTracker):
         """Return the specific target name of the bug.
 
         Return None if no target can be determined.
+        """
+
+
+class ISupportsCommentPushing(IExternalBugTracker):
+    """An external bug tracker that can push comments to the remote tracker.
+    """
+
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msg_id=None):
+        """Push a comment to the remote bug.
+
+        :param remote_bug: The ID of the bug on the remote tracker to
+            which the comment should be attached.
+        :param comment_body: The body of the comment to push to the
+            remote tracker.
+        :param msg_id: The rfc822 message ID of the local comment. This
+            doesn't have to be passed, since not all remote bugtrackers
+            require it.
         """

@@ -188,7 +188,7 @@ link them):
     'Define upstream link for linux-source-2.6.15 in Ubuntu Hoary'
 
 If you are logged in and can edit the upstream project, you can also set
-a bug tracker and a bug contact. Let's first fix Firefox to stop using
+a bug tracker and a bug supervisor. Let's first fix Firefox to stop using
 Malone officially for the sake of this test:
 
     >>> login('foo.bar@canonical.com')
@@ -210,7 +210,7 @@ And check out the report:
     >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> admin_browser.getLink('change').click()
     >>> admin_browser.title
-    'Edit bug contact for Mozilla Firefox'
+    'Edit bug supervisor for Mozilla Firefox'
 
 If you're not allowed to edit the product, no love for you, though:
 
