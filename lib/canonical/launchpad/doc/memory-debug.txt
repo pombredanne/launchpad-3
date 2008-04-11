@@ -13,7 +13,7 @@ debug.references variable is true. It is turned off by default.
 
 Setting it to true, will save in endRequest() a dump of the current
 memory usage and counts in the file specified in
-config.debug.references_scoreboard_file. (We also set the
+config.debug.references_scoreboard_file.  (We also set the
 config.debug.references_leak_log file which will contain the
 differential diagnostic.)
 
@@ -59,6 +59,18 @@ present (left by a previous run.)
     >>> os.path.exists(scoreboard_path)
     False
 
+The memory monitoring code also watches the garbage list. Make sure that
+there is some available:
+
+    >>> class garbage(object):
+    ...     """Uncollectable objects involved in a cycle."""
+    ...     def __init__(self):
+    ...         self.cycle = self
+    ...     def __del__(self):
+    ...         """The presence of this method makes us garbage."""
+    >>> trash = garbage()
+    >>> del trash
+
 So the first time endRequest() is called, the references count is dumped
 to the scoreboard file.
 
@@ -85,30 +97,59 @@ to the scoreboard file.
     >>> publication.endRequest(create_request(), None)
 
 The first line of the scoreboard is the number of bytes of RSS used and
-then a list of count and types.
+the number of items on the garbage list.
 
     >>> import re
     >>> scoreboard = open(scoreboard_path, 'r')
     >>> lines = scoreboard.readlines()
-    >>> re.match('\d+$', lines[0].strip()) is not None
+    >>> re.match('\d+ \d+$', lines[0].strip()) is not None
     True
+
+Lines up to the '=== GARBAGE ===' marker contains a count and a type
+name. This is the number of references for that type.
+
     >>> re.match('\d+ <type.*>$', lines[1].strip()) is not None
     True
 
+After the '=== GARBAGE ===' marker, again we find a count and type name
+on each subsequent lines.
+
+    >>> garbage_marker = lines.index('=== GARBAGE ===\n')
+    >>> garbage_marker > 1
+    True
+    >>> print "\n".join(lines[garbage_marker:])
+    === GARBAGE ===
+    ...1 G<class 'garbage'>...
+
 On the second request, the scoreboard will be compared to the previous
 one and differences will be reported in the references leak log file.
-The format is date pageid increase_in_RSS type=increase; type=increase.
+The format is:
+
+    date pageid increase_in_RSS increase_in_garbage type=increase; \
+    type=increase; G<type>=increase; ...
+
+Type names prefixed by G means that a number of instances of that type
+was added to the garbage list.
+
 Example:
 
     2008-04-03:18:15:45 Question:+index 0.57Mb <type 'tuple'>=6419;
-        <type 'dict'>=2744; <type 'list'>=1942; <type 'weakref'>=544
+        <type 'dict'>=2744; <type 'list'>=1942; <type 'weakref'>=544;
+        G<class 'garbage'>=1
 
     >>> os.path.exists(references_log_path)
     False
+
+(Add some garbage)
+
+    >>> trash = garbage()
+    >>> del trash
+
     >>> publication.endRequest(create_request(), None)
     >>> references_log = open(references_log_path, 'r')
     >>> references_log.read()
-    "... View:+template ...Mb... <type 'list'>=...; ...\n"
+    "... View:+template ...Mb... <type 'list'>=...;
+    ...G<class 'garbage'>=1...\n"
 
 Of course when the tool is off, none of the above processing takes
 place:
@@ -131,3 +172,14 @@ place:
 
     >>> ignored = config.pop('debug-references')
     >>> config.threads = orig_threads
+
+    >>> import gc
+    >>> new_garbage = []
+    >>> for g in gc.garbage:
+    ...     # We only know how to clean our own garbage.
+    ...     if isinstance(g, garbage):
+    ...         del g.cycle
+    ...     else:
+    ...         new_garbage.append(g)
+    >>> gc.garbage = new_garbage
+
