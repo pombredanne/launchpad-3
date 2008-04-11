@@ -7,19 +7,17 @@ from twisted.internet import reactor
 from twisted.python import log
 from twisted.python.failure import Failure
 
-from buildbot.process.step import ShellCommand,BuildStep
+from buildbot.process.step import ShellCommand, BuildStep
 from buildbot.process.base import ConfigurableBuildFactory, ConfigurableBuild
 from buildbot.status.progress import Expectations
 from buildbot.status.event import Event
 
 from importd.Job import CopyJob
 
-from zope.component import getUtility
-
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import ProductSeries
-from canonical.launchpad.interfaces import IProductSeriesSet, ImportStatus
+from canonical.launchpad.interfaces import ImportStatus
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.lp import initZopeless
@@ -36,7 +34,7 @@ class LogAdaptor(logging.Handler):
     """I present a logging.Logger interface and log the results
     to a callable"""
     def __init__(self, sink):
-        self.sink=sink
+        self.sink = sink
         logging.Handler.__init__(self)
     def emit(self, record):
         """Log record to the sink"""
@@ -46,7 +44,7 @@ class LoggingLogAdaptor(logging.Handler):
     """I present a logging.Logger interface and log the results to a
     twisted log.msg interface"""
     def __init__(self, log):
-        self.logger=log
+        self.logger = log
         logging.Handler.__init__(self)
     def emit(self, record):
         """Log record to the log.msg interface"""
@@ -76,8 +74,8 @@ def tryToAbortTransaction():
     """Try to abort the transaction, ignore psycopg.Error.
 
     If some of our database-talking code raises, we want to be sure we have
-    aborted any transaction we may have started, otherwise a subsequent begin()
-    would fail. Broadly, the error conditions are of two sorts:
+    aborted any transaction we may have started, otherwise a subsequent
+    begin() would fail. Broadly, the error conditions are of two sorts:
 
       * something went wrong in our code, we could handle that case more
         cleanly by aborting the transaction only if we have started one.
@@ -85,7 +83,8 @@ def tryToAbortTransaction():
       * something went wrong with the database (like a lost connection), in
         that case, abort will likely fail.
 
-    So, anyway, we need a way to abort() that works even if abort() would fail.
+    So, anyway, we need a way to abort() that works even if abort() would
+    fail.
 
     :note: this function should only be used in exception handlers to provide
         graceful recovery. It is _not_ a proper way to abort a transaction.
@@ -97,7 +96,7 @@ def tryToAbortTransaction():
 
 
 def buildersFromDatabase(config):
-    """Create the list of Builder instances from ProductSeries in the database.
+    """Return a list of Builder instances from ProductSeries in the database.
 
     This is called by from botmaster/master.cfg. That file is executed by
     Buildbot on initialization and when reloading the builders.
@@ -199,15 +198,14 @@ def reportOops(autotest, info=None, request=None):
         info = sys.exc_info()
     if request is None:
         request = errorlog.ScriptRequest([])
-    if autotest:
-        errorreports = config.importd.autotest_errorreports
-    else:
-        errorreports = config.importd.production_errorreports
-    config.launchpad.errorreports = errorreports
     # Instanciating ErrorReportingUtility every time is not thread safe,
     # but it's not important because botmaster is single-threaded. And it
     # ensure that the modified configuration is used.
     error_reporting_utility = errorlog.ErrorReportingUtility()
+    if autotest:
+        error_reporting_utility.configure('importd_autotest')
+    else:
+        error_reporting_utility.configure('importd')
     error_reporting_utility.raising(info, request)
     log.msg(" Recorded", request.oopsid)
 
@@ -225,8 +223,8 @@ class NotifyingBuild(ConfigurableBuild):
             self.getObserver().startBuild()
         except:
             # Catch any exception, log an OOPS, safely abort the transaction,
-            # convert the exception into a Twisted failure and pass it. Leaving
-            # the exception bubble up breaks Buildbot.
+            # convert the exception into a Twisted failure and pass it.
+            # Leaving the exception bubble up breaks Buildbot.
             self.importdReportException()
             f = Failure()
             tryToAbortTransaction()
@@ -246,8 +244,8 @@ class NotifyingBuild(ConfigurableBuild):
                 self.getObserver().buildFinished(successful)
             except:
                 # Catch any exception, log an OOPS, safely abort the
-                # transaction, convert the exception into a Twisted failure and
-                # pass it. Leaving the exception bubble up breaks Buildbot.
+                # transaction, convert the exception into a Twisted failure
+                # and pass it. Letting the exception rise breaks Buildbot.
                 self.importdReportException()
                 f = Failure()
                 tryToAbortTransaction()
@@ -286,8 +284,8 @@ class NotifyingBuild(ConfigurableBuild):
         """Record an OOPS for the current exception.
 
         Usually, exceptions are caused by database connection problems. So we
-        just log an OOPS for the exception and we do not try to give additional
-        details.
+        just log an OOPS for the exception and we do not try to give
+        additional details.
         """
         reportOops(self.importd_autotest)
 
@@ -299,9 +297,9 @@ class NotifyingBuild(ConfigurableBuild):
             ('series.id', self.importDJob.seriesID)],
             # XXX: DavidAllouche 2007-04-05:
             # It would be nice to show step.words() and the step log here
-            # when recording a build failure. But I do not know how to retrieve
-            # this data. I tried looking at the buildbot code, but then the
-            # magic smoke started to escape out of my ears.
+            # when recording a build failure. But I do not know how to
+            # retrieve this data. I tried looking at the buildbot code, but
+            # then the magic smoke started to escape out of my ears.
             URL=self.importDJob.series_url)
         # XXX: DavidAllouche 2007-04-05:
         # We should be using step.words() as the BuildFailure argument to
@@ -478,7 +476,8 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
         source_name = {'cvs': 'cvsworking',
                        'svn': 'svnworking'}[self.job.RCS.lower()]
         local_source = os.path.join(workdir, source_name)
-        remote_dir = self.source_repo.rstrip('/') + '/%08x' % self.job.seriesID
+        remote_dir = (
+            self.source_repo.rstrip('/') + '/%08x' % self.job.seriesID)
         self.steps.append((SourceTransportShellCommand, {
             'workdir': workdir,
             'command': [sys.executable, script_path,
@@ -556,12 +555,6 @@ class JobBuildStep(BuildStep):
         if update.has_key('rc'):
             rc = self.rc = update['rc']
             self.addHeader("program finished with exit code %d\n" % rc)
-    #def remoteUpdate(self,update):
-    #    if update.has_key('header'):
-    #       self.addHeader(update['header'])
-
-    def addHeader(self, header):
-        self.log.addHeader(header)
 
     def remoteComplete(self, failure=None):
         log.msg("remote complete", self.stepId)
@@ -604,7 +597,7 @@ class MakeJobFileStep(JobBuildStep):
         JobBuildStep.__init__(self, **kwargs)
         self.job = job
         self.jobfile = jobfile
-        self.workdir=workdir
+        self.workdir = workdir
         self.log = Logfile()
 
     def words(self):
