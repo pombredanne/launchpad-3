@@ -11,21 +11,8 @@ from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 
-# XXX: JonathanLange: 2008-03-31:
-# Since r5793, the Launchpad configuration system has been fundamentally
-# changed, and there is no clear way to tell the web database adapter to
-# connect as a different user.
-#
-# We'll hack around this by overriding the name of the Launchpad user. This is
-# OK, since we're only doing it for the authserver.
-#
-# This was added to allow us to safely revert r5793, which is suspected of
-# causing serious performance regressions on the authserver.
-config_data = dedent("""
-    [database]
-    dbuser: authserver
-    """)
-config.push('authserver', config_data)
+# Make sure we get the authserver's database configuration.
+config.setProcess('authserver')
 
 execute_zcml_for_scripts(use_web_security=True)
 
