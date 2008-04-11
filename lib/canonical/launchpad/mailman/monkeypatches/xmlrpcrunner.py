@@ -138,8 +138,22 @@ class XMLRPCRunner(Runner):
         if actions:
             syslog('xmlrpc', 'Invalid xmlrpc action keys: %s',
                    COMMASPACE.join(actions))
-        # Report the statuses to Launchpad.
-        self._proxy.reportStatus(statuses)
+        # Report the statuses to Launchpad.  Do this individually so as to
+        # reduce the possibility that a bug in Launchpad causes the reporting
+        # all subsequent mailing lists statuses to fail.  The reporting of
+        # status triggers synchronous operations in Launchpad, such as
+        # notifying team admins that their mailing list is ready, and those
+        # operations could fail for spurious reasons.  That shouldn't affect
+        # the status reporting for any other list.  This is a little more
+        # costly, but it's not that bad.
+        for team_name, status in statuses.items():
+            this_status = {team_name: status}
+            try:
+                self._proxy.reportStatus(this_status)
+            except (xmlrpclib.ProtocolError, socket.error), error:
+                syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+            except xmlrpclib.Fault, error:
+                syslog('xmlrpc', 'Launchpad exception: %s', error)
         # Changes were made, so bump the serial number.
         syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
