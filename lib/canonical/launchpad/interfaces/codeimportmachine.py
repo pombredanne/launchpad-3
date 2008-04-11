@@ -9,12 +9,11 @@ __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
-    'ICodeImportMachineSetPublic',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
@@ -138,6 +137,9 @@ class ICodeImportMachinePublic(Interface):
         title=_('Host name'), required=True,
         description=_('The hostname of the machine.'))
 
+    current_jobs = Attribute(
+        'The current jobs that the machine is processing.')
+
 
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""
@@ -150,16 +152,6 @@ class ICodeImportMachineSet(Interface):
 
         The machine will initially be in the 'OFFLINE' state.
         """
-
-
-class ICodeImportMachineSetPublic(Interface):
-    """Parts of the CodeImportMachineSet interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated."""
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
 
     def getByHostname(hostname):
         """Retrieve the code import machine for a hostname.

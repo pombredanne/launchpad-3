@@ -1,5 +1,6 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702,W0603
+# pylint: disable-msg=W0702
+# pylint: disable-msg=W0603
 
 """Layers used by Canonical tests.
 
@@ -28,11 +29,14 @@ __all__ = [
     'ExperimentalLaunchpadZopelessLayer',
     ]
 
+import gc
 import logging
 import os
+import signal
 import socket
 import sys
 from textwrap import dedent
+import threading
 import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -98,8 +102,8 @@ class LayerIsolationError(LayerError):
     This generally indicates a test has screwed up by not resetting
     something correctly to the default state.
 
-    The test suite should abort as further test failures may well
-    be spurious.
+    The test suite should abort if it cannot clean up the mess as further
+    test failures may well be spurious.
     """
 
 
@@ -155,6 +159,10 @@ class BaseLayer:
     @classmethod
     @profiled
     def testSetUp(cls):
+        # Store currently running threads so we can detect if a test
+        # leaves new threads running.
+        BaseLayer._threads = threading.enumerate()
+
         BaseLayer.check()
 
         BaseLayer.original_working_directory = os.getcwd()
@@ -199,6 +207,28 @@ class BaseLayer:
         BaseLayer.test_name = None
 
         BaseLayer.check()
+
+        # Check for tests that leave live threads around early.
+        # A live thread may be the cause of other failures, such as
+        # uncollectable garbage.
+        new_threads = [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+        if new_threads:
+            BaseLayer.flagTestIsolationFailure(
+                    "Test left new live threads: %s" % repr(new_threads))
+        del BaseLayer._threads
+
+        # Objects with __del__ methods cannot participate in refence cycles.
+        # Fail tests with memory leaks now rather than when Launchpad crashes
+        # due to a leak because someone ignored the warnings.
+        if gc.garbage:
+            gc.collect() # Expensive, so only do if there might be garbage.
+            if gc.garbage:
+                BaseLayer.flagTestIsolationFailure(
+                        "Test left uncollectable garbage\n"
+                        "%s (referenced from %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
 
     @classmethod
     @profiled
@@ -699,6 +729,63 @@ class ZopelessLayer(BaseLayer):
                 "This test removed the PermissiveSecurityPolicy and didn't "
                 "restore it.")
         logout()
+
+
+class TwistedLayer(BaseLayer):
+    """A layer for cleaning up the Twisted thread pool."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    def _save_signals(cls):
+        """Save the current signal handlers."""
+        TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
+        TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
+        TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+
+    @classmethod
+    def _restore_signals(cls):
+        """Restore the signal handlers."""
+        signal.signal(signal.SIGINT, TwistedLayer._original_sigint)
+        signal.signal(signal.SIGTERM, TwistedLayer._original_sigterm)
+        signal.signal(signal.SIGCHLD, TwistedLayer._original_sigchld)
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        TwistedLayer._save_signals()
+        from twisted.internet import interfaces, reactor
+        from twisted.python import threadpool
+        if interfaces.IReactorThreads.providedBy(reactor):
+            pool = getattr(reactor, 'threadpool', None)
+            # If the Twisted threadpool has been obliterated (probably by
+            # testTearDown), then re-build it using the values that Twisted
+            # uses.
+            if pool is None:
+                reactor.threadpool = threadpool.ThreadPool(0, 10)
+                reactor.threadpool.start()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        # Shutdown and obliterate the Twisted threadpool, to plug up leaking
+        # threads.
+        from twisted.internet import interfaces, reactor
+        if interfaces.IReactorThreads.providedBy(reactor):
+            reactor.suggestThreadPoolSize(0)
+            pool = getattr(reactor, 'threadpool', None)
+            if pool is not None:
+                reactor.threadpool.stop()
+                reactor.threadpool = None
+        TwistedLayer._restore_signals()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):

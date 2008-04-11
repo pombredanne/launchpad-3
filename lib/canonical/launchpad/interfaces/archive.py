@@ -11,8 +11,8 @@ __all__ = [
     'IArchive',
     'IArchiveEditDependenciesForm',
     'IArchivePackageDeletionForm',
-    'IArchiveEditDependenciesForm',
     'IArchiveSet',
+    'IArchiveSourceSelectionForm',
     'IPPAActivateForm',
     ]
 
@@ -98,6 +98,10 @@ class IArchive(IHasOwner):
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
+
+    expanded_archive_dependencies = Attribute(
+        "The expanded list of archive dependencies. It includes the implicit "
+        "PRIMARY archive dependency for PPAs.")
 
     archive_url = Attribute("External archive URL.")
 
@@ -210,6 +214,13 @@ class IArchive(IHasOwner):
         Person table indexes while searching.
         """
 
+    def findDepCandidateByName(distroarchseries, name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
+        """
+
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
 
@@ -250,13 +261,17 @@ class IPPAActivateForm(Interface):
         required=True, default=False)
 
 
-class IArchivePackageDeletionForm(Interface):
-    """Schema used to delete packages within a archive."""
+class IArchiveSourceSelectionForm(Interface):
+    """Schema used to select sources within an archive."""
 
     name_filter = TextLine(
         title=_("Package name"), required=False, default=None,
         description=_("Display packages only with name matching the given "
                       "filter."))
+
+
+class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
+    """Schema used to delete packages within an archive."""
 
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
@@ -296,6 +311,13 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAsForUser(user):
+        """Return all PPAs the given user can participate.
+
+        The result is ordered by PPA owner's displayname.
+        """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

@@ -220,7 +220,8 @@ class PrivateEmailCommand(EmailCommand):
             private = False
         else:
             raise EmailProcessingError(
-                get_error_message('private-parameter-mismatch.txt'))
+                get_error_message('private-parameter-mismatch.txt'),
+                stop_processing=True)
 
         # Snapshot.
         edited_fields = set()
@@ -265,7 +266,8 @@ class SecurityEmailCommand(EmailCommand):
             security_related = False
         else:
             raise EmailProcessingError(
-                get_error_message('security-parameter-mismatch.txt'))
+                get_error_message('security-parameter-mismatch.txt'),
+                stop_processing=True)
 
         # Take a snapshot.
         edited = False
@@ -570,11 +572,12 @@ class AffectsEmailCommand(EmailCommand):
             path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
-                get_error_message('affects-no-arguments.txt'))
+                get_error_message('affects-no-arguments.txt'),
+                stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
         except BugTargetNotFound, error:
-            raise EmailProcessingError(unicode(error))
+            raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
@@ -731,7 +734,7 @@ class MilestoneEmailCommand(EditEmailCommand):
         else:
             raise EmailProcessingError(
                 "You do not have permission to set the milestone for %s. "
-                "Only owners, drivers and bug contacts may assign "
+                "Only owners, drivers and bug supervisors may assign "
                 "milestones." % (context.pillar.title,))
 
     def _userCanEditMilestone(self, user, bugtask):
@@ -803,7 +806,7 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
         if not context.canTransitionToStatus(attr_value, user):
             raise EmailProcessingError(
                 'The status cannot be changed to %s because you are not '
-                'the registrant or a bug contact for %s.' % (
+                'the registrant or a bug supervisor for %s.' % (
                     attr_value.name.lower(), context.pillar.displayname))
 
         context.transitionToStatus(attr_value, user)

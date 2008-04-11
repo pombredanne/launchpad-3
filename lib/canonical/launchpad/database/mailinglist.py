@@ -80,12 +80,20 @@ class MessageApproval(SQLBase):
         self.disposal_date = UTC_NOW
         self.status = PostedMessageStatus.REJECTION_PENDING
 
+    def discard(self, reviewer):
+        """See `IMessageApproval`."""
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.DISCARD_PENDING
+
     def acknowledge(self):
         """See `IMessageApproval`."""
         if self.status == PostedMessageStatus.APPROVAL_PENDING:
             self.status = PostedMessageStatus.APPROVED
         elif self.status == PostedMessageStatus.REJECTION_PENDING:
             self.status = PostedMessageStatus.REJECTED
+        elif self.status == PostedMessageStatus.DISCARD_PENDING:
+            self.status = PostedMessageStatus.DISCARDED
         else:
             raise AssertionError('Not an acknowledgeable state: %s' %
                                  self.status)
@@ -307,8 +315,8 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.status == MailingListStatus.ACTIVE:
-            raise CannotSubscribe('Mailing list is not active: %s' %
+        if not self.isUsable():
+            raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
@@ -487,6 +495,12 @@ class MailingListSet:
     def deactivated_lists(self):
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
+
+    @property
+    def unsynchronized_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.select('status IN %s' % sqlvalues(
+            (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
 
 
 class MailingListSubscription(SQLBase):

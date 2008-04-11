@@ -3904,14 +3904,16 @@ ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
-
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'qQ7dw1fXCR5hhJRN7ztj', '2nWXXdVfpV1G761xDhqNp3WR0Pqvc5WD78V1n7RJFwStQV8v5cqMLqqpp9jq5VLbDHgKC6csPm2ZVBv5');
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'hgm2VK35vXD6rLg5pxWw', 'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz');
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
 
 
 ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
 
-INSERT INTO OAuthConsumer (id, disabled, date_created, secret, key) VALUES (1, 'f', CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '', 'foobar123451432');
+INSERT INTO oauthconsumer (id, date_created, disabled, "key", secret) VALUES (1, '2008-03-18 20:57:19.108004', false, 'foobar123451432', '');
+INSERT INTO oauthconsumer (id, date_created, disabled, "key", secret) VALUES (2, '2008-03-18 20:57:44.710251', false, 'launchpad-library', '');
 
 ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
 

@@ -213,6 +213,20 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+oauth-authorize"
+      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      template="../templates/oauth-authorize.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+token-authorized"
+      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
+      template="../templates/token-authorized.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+access-token"
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
@@ -329,6 +343,13 @@
       name="+recently-changed-branches"
       class="canonical.launchpad.browser.RecentlyChangedBranchesView"
       template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+code-import-list"
+      class="canonical.launchpad.browser.ProductSeriesSourceListView"
+      template="../templates/sources-list.pt"
       permission="zope.Public"
       />
 

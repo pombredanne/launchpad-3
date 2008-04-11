@@ -110,9 +110,10 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 status=None, importance=None, assignee=None,
-                 milestone=None, statusexplanation=None, bugwatch=None):
+    def __init__(self, bugtask, product=None,
+                 sourcepackagename=None, status=None, importance=None,
+                 assignee=None, milestone=None, statusexplanation=None,
+                 bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -655,7 +656,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:

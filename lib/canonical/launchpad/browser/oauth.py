@@ -3,16 +3,19 @@
 __metaclass__ = type
 __all__ = [
     'OAuthAccessTokenView',
-    'OAuthRequestTokenView']
+    'OAuthAuthorizeTokenView',
+    'OAuthRequestTokenView',
+    'OAuthTokenAuthorizedView']
 
 from zope.component import getUtility
+from zope.formlib.form import Action, Actions
 
-from canonical.launchpad.interfaces import IOAuthConsumerSet, OAuthPermission
-from canonical.launchpad.webapp import LaunchpadView
-
-
-# The challenge included in responses with a 401 status.
-CHALLENGE = 'OAuth realm="https://api.launchpad.net"'
+from canonical.launchpad.interfaces import (
+    IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
+    OAuthPermission, OAUTH_CHALLENGE)
+from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
+from canonical.launchpad.webapp.authentication import (
+    check_oauth_signature, get_oauth_authorization)
 
 
 class OAuthRequestTokenView(LaunchpadView):
@@ -25,10 +28,10 @@ class OAuthRequestTokenView(LaunchpadView):
         with a 401 status.  If the key is not empty but there's no consumer
         with it, we register a new consumer.
         """
-        form = self.request.form
+        form = get_oauth_authorization(self.request)
         consumer_key = form.get('oauth_consumer_key')
         if not consumer_key:
-            self.request.unauthorized(CHALLENGE)
+            self.request.unauthorized(OAUTH_CHALLENGE)
             return u''
 
         consumer_set = getUtility(IOAuthConsumerSet)
@@ -36,13 +39,72 @@ class OAuthRequestTokenView(LaunchpadView):
         if consumer is None:
             consumer = consumer_set.new(key=consumer_key)
 
-        if not check_signature(self.request):
+        if not check_oauth_signature(self.request, consumer, None):
             return u''
 
         token = consumer.newRequestToken()
         body = u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
         return body
+
+
+def token_exists_and_is_not_reviewed(form, action):
+    return form.token is not None and not form.token.is_reviewed
+
+
+def create_oauth_permission_actions():
+    """Return a list of `Action`s for each possible `OAuthPermission`."""
+    actions = Actions()
+    def success(form, action, data):
+        form.reviewToken(action.permission)
+    for permission in OAuthPermission.items:
+        action = Action(
+            permission.title, name=permission.name, success=success,
+            condition=token_exists_and_is_not_reviewed)
+        action.permission = permission
+        actions.append(action)
+    return actions
+
+
+class OAuthAuthorizeTokenView(LaunchpadFormView):
+    """Where users authorize consumers to access Launchpad on their behalf."""
+
+    actions = create_oauth_permission_actions()
+    label = "Authorize application to access Launchpad on your behalf"
+    schema = IOAuthRequestToken
+    field_names = []
+    token = None
+
+    def initialize(self):
+        key = self.request.form.get('oauth_token')
+        if key:
+            self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
+        super(OAuthAuthorizeTokenView, self).initialize()
+
+    def reviewToken(self, permission):
+        self.token.review(self.user, permission)
+        callback = self.request.form.get('oauth_callback')
+        if callback:
+            self.next_url = callback
+        else:
+            self.next_url = (
+                '+token-authorized?oauth_token=%s' % self.token.key)
+
+
+class OAuthTokenAuthorizedView(LaunchpadView):
+    """Where users who reviewed tokens may get redirected to.
+
+    If the consumer didn't include an oauth_callback when sending the user to
+    Launchpad, this is the page the user is redirected to after he logs in and
+    reviews the token.
+    """
+
+    def initialize(self):
+        key = self.request.form.get('oauth_token')
+        self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
+        assert self.token.is_reviewed, (
+            'Users should be directed to this page only if they already '
+            'authorized the token.')
 
 
 class OAuthAccessTokenView(LaunchpadView):
@@ -60,51 +122,23 @@ class OAuthAccessTokenView(LaunchpadView):
             form.get('oauth_consumer_key'))
 
         if consumer is None:
-            self.request.unauthorized(CHALLENGE)
+            self.request.unauthorized(OAUTH_CHALLENGE)
             return u''
 
         token = consumer.getRequestToken(form.get('oauth_token'))
         if token is None:
-            self.request.unauthorized(CHALLENGE)
+            self.request.unauthorized(OAUTH_CHALLENGE)
             return u''
 
-        if not check_signature(self.request):
+        if not check_oauth_signature(self.request, consumer, token):
             return u''
 
         if (not token.is_reviewed
             or token.permission == OAuthPermission.UNAUTHORIZED):
-            self.request.unauthorized(CHALLENGE)
+            self.request.unauthorized(OAUTH_CHALLENGE)
             return u''
 
         access_token = token.createAccessToken()
         body = u'oauth_token=%s&oauth_token_secret=%s' % (
             access_token.key, access_token.secret)
         return body
-
-
-def check_signature(request):
-    """Check that the request is correctly signed.
-
-    If the signature is incorrect or its method is not supported, set the
-    appropriate status in the response and return False.
-    """
-    form = request.form
-    if form.get('oauth_signature_method') != 'PLAINTEXT':
-        # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported
-        # now. Others will be implemented later.
-        request.response.setStatus(400)
-        return False
-
-    consumer = getUtility(IOAuthConsumerSet).getByKey(
-        form.get('oauth_consumer_key'))
-    token = consumer.getRequestToken(form.get('oauth_token'))
-    if token is not None:
-        token_secret = token.secret
-    else:
-        token_secret = ''
-    expected_signature = "&".join([consumer.secret, token_secret])
-    if expected_signature != form.get('oauth_signature'):
-        request.unauthorized(CHALLENGE)
-        return False
-
-    return True
