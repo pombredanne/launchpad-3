@@ -13,14 +13,19 @@ __all__ = [
     'export_collection',
     'export_entry',
     'export_field',
+    'generate_entry_interface',
     ]
 
 import sys
 
 from zope.interface.advice import addClassAdvisor
-from zope.interface.interface import TAGGED_DATA
+from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface
+from zope.schema import getFields
 from zope.schema.interfaces import IField
+
+from canonical.lazr.interface import copy_attribute
+from canonical.lazr.interfaces.rest import IEntry
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
 LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
@@ -148,3 +153,25 @@ def collection_default_content(f):
     tag['collection_default_content'] = f.__name__
 
     return f
+
+
+def generate_entry_interface(interface):
+    """Create an IEntry subinterface based on the tags in interface."""
+    if not isinstance(interface, InterfaceClass):
+        raise TypeError('not an interface.')
+
+    tag = interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    if tag is None:
+        raise TypeError(
+            "'%s' isn't tagged for webservice export." % interface.__name__)
+
+    attrs = {}
+    for name, field in getFields(interface).items():
+        tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        if not tag:
+            continue
+        attrs[tag['as']] = copy_attribute(field)
+
+    return InterfaceClass(
+        "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,
+        __doc__=interface.__doc__, __module__=interface.__module__)

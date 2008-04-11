@@ -203,6 +203,48 @@ And the interface must have been exported as a collection:
     ...     def a_function(): pass
     Traceback (most recent call last):
       ...
-    TypeError: @collection_default_content can only be used from within an 
+    TypeError: @collection_default_content can only be used from within an
     interface exported as a collection.
-    
+
+
+== Generating the webservice ==
+
+The webservice can be generated from these tagged interface.
+generate_entry_interface() will create a subinterface of IEntry
+containing the a copy of the IField definitions of the original
+interface that were tagged for export.
+
+    >>> from canonical.lazr.rest.declarations import generate_entry_interface
+    >>> interface = generate_entry_interface(IBook)
+
+The created interface is named with 'Entry' appended to the original
+name, and is in the same module
+
+    >>> interface.__module__
+    '__builtin__'
+    >>> interface.__name__
+    'IBookEntry'
+
+It extends IEntry.
+
+    >>> from canonical.lazr.interfaces.rest import IEntry
+    >>> interface.extends(IEntry)
+    True
+
+All fields tagged were copied to the new interface:
+
+    >>> for name, field in sorted(interface.namesAndDescriptions()):
+    ...     print "%s: %s" % (name, field.__class__.__name__)
+    author: TextLine
+    price: Float
+    title: TextLine
+
+It's an error to use that on an interface that wasn't marked for export:
+
+    >>> class SimpleNotExported(Interface):
+    ...     """Interface not exported."""
+    >>> generate_entry_interface(SimpleNotExported)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'SimpleNotExported' isn't tagged for webservice export.
+
