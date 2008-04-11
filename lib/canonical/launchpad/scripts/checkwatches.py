@@ -25,8 +25,8 @@ from canonical.launchpad.components.externalbugtracker import (
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
-    IPersonSet, ISupportsCommentImport, PersonCreationRationale,
-    UNKNOWN_REMOTE_STATUS)
+    IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
