@@ -105,4 +105,6 @@ class ISupportsCommentPushing(IExternalBugTracker):
         :param msg_id: The rfc822 message ID of the local comment. This
             doesn't have to be passed, since not all remote bugtrackers
             require it.
+
+        Return the ID assigned to the comment by the remote bugtracker.
         """
