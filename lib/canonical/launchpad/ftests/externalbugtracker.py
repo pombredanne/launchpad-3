@@ -433,6 +433,11 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         prefix = 'launchpad.'
         assert method_name.startswith(prefix), (
             'All methods should be in the launchpad namespace')
+        if self.auth_cookie is None:
+            # All the Trac XML-RPC methods need authentication.
+            raise xmlrpclib.ProtocolError(
+                method_name, errcode=403, errmsg="Forbidden",
+                headers=None)
 
         method_name = method_name[len(prefix):]
         method = getattr(self, method_name)
