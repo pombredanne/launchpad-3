@@ -97,7 +97,7 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
 
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'team_url': canonical_url(team),
@@ -119,7 +119,7 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
 
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'team_url': canonical_url(team),
@@ -248,7 +248,7 @@ class TeamMembership(SQLBase):
 
         msg = get_email_template(templatename) % replacements
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
     def setStatus(self, status, user, comment=None):
@@ -345,7 +345,7 @@ class TeamMembership(SQLBase):
         member = self.person
         reviewer = self.last_changed_by
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         new_status = self.status
         admins_emails = team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
