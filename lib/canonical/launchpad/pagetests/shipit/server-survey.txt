@@ -1,0 +1,100 @@
+= Server survey =
+
+When a user comes into ShipIt to request server CDs we ask them to
+answer a small survey.
+
+    >>> browser.open('http://shipit.ubuntu.dev/')
+    >>> browser.getLink('request CDs of Ubuntu Server Edition').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/login-server'
+    >>> browser.getControl(name='loginpage_email').value = 'marilize@hbd.com'
+    >>> browser.getControl(name='loginpage_password').value = 'test'
+    >>> browser.getControl('Log In').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/survey'
+
+The survey is not compulsory, so users can continue without answering
+any question.
+
+    >>> browser.getControl('Continue to Request a Free CD').click()
+
+After that they're taken to the page where they can request the CDs.
+
+    >>> browser.url
+    'http://shipit.ubuntu.dev/myrequest-server'
+    >>> browser.getControl(name='ordertype').value = ['16']
+    >>> browser.getControl(name='field.recipientdisplayname').value = 'Foo'
+    >>> browser.getControl(name='field.organization').value = 'Baz'
+    >>> browser.getControl(name='field.addressline1').value = 'Street'
+    >>> browser.getControl(name='field.city').value = 'City'
+    >>> browser.getControl(name='field.province').value = 'Province'
+    >>> browser.getControl(name='field.postcode').value = '123456'
+    >>> browser.getControl(name='field.country').value = ['226']
+    >>> browser.getControl(name='field.phone').value = '43242442'
+    >>> browser.getControl('Request CDs').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Request accepted. Please note that requests usually take from 4 to 6 weeks
+    to deliver, depending on the country of shipping.
+
+If they do request CDs but don't answer any questions in the survey,
+though, we'll ask them, once again, to answer the survey if they come
+back to request more server CDs.
+
+    >>> browser.open('http://shipit.ubuntu.dev/')
+    >>> browser.getLink('request CDs of Ubuntu Server Edition').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/survey'
+
+Which they can skip once again. (They may choose to skip it as many
+times as they want)
+
+    >>> browser.getControl('Continue to Request a Free CD').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/myrequest-server'
+
+Now Marilize decides to request a lot more CDs because she's attending
+a conference and would like to have some CDs to hand out there.
+
+    >>> browser.getLink('special request').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/specialrequest-server'
+    >>> browser.getControl(name='field.ubuntu_quantityx86').value = '90'
+    >>> browser.getControl(name='field.reason').value = 'Going to a conf.'
+    >>> browser.getControl('Change Request').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Request changed successfully.
+    ...
+
+If she comes back once again, she'll be asked to answer the survey
+again.
+
+    >>> browser.open('http://shipit.ubuntu.dev/')
+    >>> browser.getLink('request CDs of Ubuntu Server Edition').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/survey'
+
+By this time she probably realizes it's easier to answer the survey once
+than to keep skipping it every time she comes back, so she answers it.
+
+    >>> browser.getControl(name="field.environment").displayValue = ['Work']
+    >>> browser.getControl(name="field.employee_number").displayValue = [
+    ...     '2 - 5']
+    >>> browser.getControl(name="field.evaluated_uses").displayValue = [
+    ...     'Backups', 'CRM']
+    >>> browser.getControl('Continue to Request a Free CD').click()
+
+Since her request was "special" (containing custom quantities), she's
+now taken to the specialrequest page.
+
+    >>> browser.url
+    'http://shipit.ubuntu.dev/specialrequest-server'
+
+And when she comes back once again, she's taken directly to the
+specialrequest page.
+
+    >>> browser.open('http://shipit.ubuntu.dev/')
+    >>> browser.getLink('request CDs of Ubuntu Server Edition').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/specialrequest-server'

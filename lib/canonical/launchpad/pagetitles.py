@@ -1199,6 +1199,8 @@ shipit_reports = 'ShipIt reports'
 
 shipit_requestcds = 'Your ShipIt Request'
 
+shipit_survey = 'ShipIt Survey'
+
 shipitrequests_index = 'ShipIt requests'
 
 shipitrequests_search = 'Search ShipIt requests'
