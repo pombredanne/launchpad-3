@@ -60,7 +60,7 @@ class IExternalBugTracker(Interface):
 
 
 class ISupportsCommentImport(IExternalBugTracker):
-    """A external bug tracker that supports comment imports."""
+    """An external bug tracker that supports comment imports."""
 
     def getCommentIds(bug_watch):
         """Return all the comment IDs for a given remote bug."""
@@ -73,7 +73,7 @@ class ISupportsCommentImport(IExternalBugTracker):
 
 
 class ISupportsBugImport(IExternalBugTracker):
-    """A external bug tracker that supports bug imports."""
+    """An external bug tracker that supports bug imports."""
 
     def getBugReporter(remote_bug):
         """Return the person who submitted the given bug.
