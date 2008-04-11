@@ -370,3 +370,22 @@ Or exported as an entry.
       ...
     TypeError: 'IBook' isn't exported as a collection.
 
+
+=== Security ===
+
+The adapters have checkers defined for them that grant access to all
+attributes in the interface. (There is no reason to protect them since
+the underlying content security checker will still apply.)
+
+    >>> from canonical.lazr.debug import debug_proxy
+    >>> from zope.security.checker import ProxyFactory
+
+    # ProxyFactory wraps the content using the defined checker.
+    >>> print debug_proxy(ProxyFactory(entry_adapter))
+    zope.security._proxy._Proxy (using zope.security.checker.Checker)
+        public: author, price, schema, title
+        public (set): author, price, schema, title
+
+    >>> print debug_proxy(ProxyFactory(collection_adapter))
+    zope.security._proxy._Proxy (using zope.security.checker.Checker)
+        public: find

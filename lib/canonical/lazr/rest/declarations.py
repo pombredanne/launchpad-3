@@ -26,11 +26,13 @@ from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
 from zope.schema.interfaces import IField
+from zope.security.checker import CheckerPublic
 
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
-from canonical.lazr.interfaces.rest import IEntry
+from canonical.lazr.interfaces.rest import ICollection, IEntry
 from canonical.lazr.rest.resource import Collection, Entry
+from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
 LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
@@ -212,6 +214,9 @@ def generate_entry_adapter(content_interface, webservice_interface):
     factory = type(classname, bases=(Entry,), dict=cdict)
 
     classImplements(factory, webservice_interface)
+
+    protect_schema(
+        factory, webservice_interface, write_permission=CheckerPublic)
     return factory
 
 
@@ -225,4 +230,7 @@ def generate_collection_adapter(interface):
         'find': lambda self: (getattr(self.context, method_name)()),
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
-    return type(classname, bases=(Collection,), dict=cdict)
+    factory = type(classname, bases=(Collection,), dict=cdict)
+
+    protect_schema(factory, ICollection)
+    return factory
