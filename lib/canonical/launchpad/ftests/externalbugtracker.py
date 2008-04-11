@@ -413,9 +413,18 @@ class TestTrac(Trac):
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 
 
+class MockTracRemoteBug:
+    """A mockup of a remote Trac bug."""
+
+    def __init__(self, id, last_modified):
+        self.id = id
+        self.last_modified = last_modified
+
+
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
+    remote_bugs = {}
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
