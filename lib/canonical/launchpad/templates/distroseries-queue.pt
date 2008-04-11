@@ -145,7 +145,7 @@
            <td style="vertical-align: bottom">
              <label>Component:</label><br/>
              <select name="component_override" size="1">
-               <option value="nochange" selected="true">(no change)</option>
+               <option value="nochange" selected="selected">(no change)</option>
                <option tal:repeat="option context/components"
                        tal:attributes="value option/name"
                        tal:content="option/name"/>
@@ -154,7 +154,7 @@
            <td style="vertical-align: bottom">
              <label>Section:</label><br/>
              <select name="section_override" size="1">
-               <option value="nochange" selected="true">(no change)</option>
+               <option value="nochange" selected="selected">(no change)</option>
                <option tal:repeat="option view/sortedSections"
                        tal:attributes="value option/name"
                        tal:content="option/name"/>
@@ -162,7 +162,7 @@
            <td style="vertical-align: bottom">
              <label>Priority:</label><br/>
              <select name="priority_override" size="1">
-               <option value="nochange" selected="true">(no change)</option>
+               <option value="nochange" selected="selected">(no change)</option>
                <option tal:repeat="option view/priorities"
                        tal:attributes="value option/value"
                        tal:content="option/title/lower"/>
@@ -225,10 +225,6 @@
           <td/>
           <td tal:condition="view/availableActions"/>
           <td>
-            <tal:checkbox condition="view/availableActions">
-               <input type="checkbox" name="BINARY_NAME"
-                      tal:attributes="value binary/name"/>
-            </tal:checkbox>
             <a tal:attributes="href file/libraryfile/http_url">
               <tal:filename content="file/libraryfile/filename"/>
             </a>
