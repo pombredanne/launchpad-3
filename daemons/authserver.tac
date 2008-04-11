@@ -6,7 +6,6 @@
 from twisted.application import service
 
 from canonical.config import config
-
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.launchpad.scripts import execute_zcml_for_scripts

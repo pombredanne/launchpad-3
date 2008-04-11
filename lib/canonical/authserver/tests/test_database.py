@@ -72,8 +72,7 @@ class DatabaseTest(unittest.TestCase):
         self.cursor.execute(
             "SELECT next_mirror_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
-        [next_mirror_time] = self.cursor.fetchone()
-        return next_mirror_time
+        return self.cursor.fetchone()[0]
 
     def setNextMirrorTime(self, branch_id, next_mirror_time):
         """Set next_mirror_time on the branch with the given id."""
@@ -135,9 +134,6 @@ class UserDetailsStorageTest(DatabaseTest):
 
     def test_getUser(self):
         # Getting a user should return a valid dictionary of details
-
-        # Note: we access _getUserInteraction directly to avoid mucking around
-        # with setting up a ConnectionPool
         storage = DatabaseUserDetailsStorage(None)
         userDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual('Mark Shuttleworth', userDict['displayname'])
@@ -169,9 +165,9 @@ class UserDetailsStorageTest(DatabaseTest):
         storage = DatabaseUserDetailsStorage(None)
         userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual('Stuart Bishop', userDict['displayname'])
-        self.assertEqual(['stuart.bishop@canonical.com',
-                          'stuart@stuartbishop.net'],
-                         userDict['emailaddresses'])
+        self.assertEqual(
+            set(['stuart.bishop@canonical.com', 'stuart@stuartbishop.net']),
+            set(userDict['emailaddresses']))
 
     def test_noUnconfirmedAddresses(self):
         # Unconfirmed addresses should not be returned, so if we add a NEW
@@ -348,10 +344,10 @@ class UserDetailsStorageTest(DatabaseTest):
             JOIN Person ON (SSHKey.person = Person.id)
             WHERE Person.name = 'sabdfl'
             """)
-        [expected_keytext] = self.cursor.fetchone()
+        expected_keytext = self.cursor.fetchone()[0]
 
         storage = DatabaseUserDetailsStorage(None)
-        [(keytype, keytext)] = storage._getSSHKeysInteraction('sabdfl')
+        keytype, keytext = storage._getSSHKeysInteraction('sabdfl')[0]
         self.assertEqual('DSA', keytype)
         self.assertEqual(expected_keytext, keytext)
 

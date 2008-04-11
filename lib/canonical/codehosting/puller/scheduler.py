@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 __metaclass__ = type
 __all__ = ['BadMessage',
@@ -33,6 +34,7 @@ from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
+
 
 class BadMessage(Exception):
     """Raised when the protocol receives a message that we don't recognize."""
@@ -211,10 +213,10 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         on stderr, it's probably a traceback, so we use the last line of that
         as a failure reason."""
         if not self.reported_mirror_finished:
-            error = self._stderr.getvalue()
-            reason.error = error
+            stderr = self._stderr.getvalue()
+            reason.error = stderr
             if error:
-                errorline = error.splitlines()[-1]
+                errorline = stderr.splitlines()[-1]
             else:
                 errorline = str(reason.value)
             # The general policy when multiple errors occur is to report the

@@ -109,6 +109,7 @@ class UserDetailsStorageMixin:
             [email.email for email in person.validatedemails])
 
     def getSSHKeys(self, loginID):
+        """See `IUserDetailsStorage`."""
         return deferToThread(self._getSSHKeysInteraction, loginID)
 
     @read_only_transaction
@@ -180,6 +181,7 @@ class UserDetailsStorageMixin:
         }
 
     def getUser(self, loginID):
+        """See `IUserDetailsStorage`."""
         return deferToThread(self._getUserInteraction, loginID)
 
     @read_only_transaction
