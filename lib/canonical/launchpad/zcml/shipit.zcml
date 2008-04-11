@@ -171,6 +171,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItSurveyView"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
         permission="launchpad.AnyPerson"
         name="survey"
         template="../templates/shipit-survey.pt"
