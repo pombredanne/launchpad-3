@@ -1,0 +1,264 @@
+= Launchpad's WADL documents =
+
+Let's get a WADL representation of a Launchpad resource (in this case,
+a bug task), and see what's inside.
+
+   >>> wadl = webservice.get('/debian/+source/mozilla-firefox/+bug/1',
+   ...                       'application/vd.sun.wadl+xml').getBody()
+
+It's an XML document.
+
+   >>> print wadl
+   <?xml version="1.0"?>
+   <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://research.sun.com/wadl/2006/10"
+       xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
+   ...
+   </application>
+
+Let's parse it.
+
+   >>> import cElementTree as ET
+   >>> tree = ET.fromstring(wadl)
+
+The root tag of any WADL document is called 'application'. Note the
+namespaced tag name; I'm going to ignore the namespace from this point
+on.
+
+   >>> tree.tag
+   '{http://research.sun.com/wadl/2006/10}application'
+
+A WADL representation of a Launchpad resource has four tags beneath
+the 'application' tag. These tags describe the representation you get
+from a GET request and are expected to send with a PUT request, the
+representation you are expected to send with a PATCH request, a
+description of what you're allowed to do with a certain type of
+resource, and a statement that this resource is of the type just
+described.
+
+   >>> (resources, resource_type, diff_rep, full_rep) = sorted(
+   ...     tree.getchildren(), key=lambda x: x.attrib)
+
+
+== Representations ==
+
+First let's look at the two representations. Each is a
+'representation' tag, and each specifies what media type it's
+describing. Both of these are JSON representations.
+
+   >>> full_rep.tag
+   '...representation'
+   >>> full_rep.attrib
+   {'mediaType': 'application/json', 'id': 'BugTaskEntry-full'}
+
+   >>> diff_rep.tag
+   '...representation'
+   >>> diff_rep.attrib
+   {'mediaType': 'application/json', 'id': 'BugTaskEntry-diff'}
+
+
+=== Parameters ===
+
+The 'representation' tag can specify parameters that point clients to
+interesting parts of the representation. Our JSON representations of
+entries are hashes, and we've chosen to specify a parameter for each
+key of the hash.
+
+   >>> full_params = full_rep.getchildren()
+   >>> full_params[0].tag
+   '...param'
+   >>> full_rep_names = sorted([param.attrib['name']
+   ...                         for param in full_params])
+   >>> full_rep_names
+   ['assignee_link', 'bug_link', ... 'title']
+
+In addition to a name, each parameter has a 'path', which is what you
+have to do to the JSON data structure to get the parameter's value.
+
+   >>> sorted([param.attrib['path'] for param in full_params])
+   ['["assignee_link"]', '["bug_link"]', ... '["title"]']
+
+So to get the assignee link out of data structure 'foo' you need the code
+'foo["assignee_link"]'. This is not a standard; it's something we made up due
+to the lack of an XPath-like standard for JSON. If such a standard
+emerges we should change it.
+
+Some parameters are links to other resources. These parameters have a
+child tag called 'link' with information about what's on the other end
+of the link.
+
+   >>> assignee_param, = [p for p in full_params
+   ...                    if p.attrib['name'] == 'assignee_link']
+   >>> assignee_link, = assignee_param.getchildren()
+   >>> assignee_link.tag
+   '...link'
+
+Right now there's no information about the link, just the fact that it
+is a link.
+
+   >>> assignee_link.attrib
+   {}
+
+The full representation contains all fields, even read-only ones,
+because it's describing the document you receive when you make a GET
+request. You can modify such a document and send it back with PUT, so
+the full representation also suffices to describe the documents you
+PUT. But you can't send values for read-only fields with PATCH, so we
+define a second representation for use with PATCH requests.
+
+   >>> diff_params = diff_rep.getchildren()
+   >>> diff_params[0].tag
+   '...param'
+   >>> diff_rep_names = sorted([param.attrib['name']
+   ...                          for param in diff_params])
+
+   >>> 'related_tasks_collection_link' in full_rep_names
+   True
+   >>> 'related_tasks_collection_link' in diff_rep_names
+   False
+
+Most 'param' tags don't tell the client much beyond where to find a
+certain parameter, but some of our parameters take values from a
+proscribed vocabulary. These parameters correspond to Choice fields
+who take their vocabulary from an EnumeratedValue. For these
+parameters, we provide the client with information about the possible
+values.
+
+   >>> status_param, = [p for p in full_params
+   ...                  if p.attrib['name'] == 'status']
+   >>> status_options = status_param.getchildren()
+   >>> status_options[0].tag
+   '...option'
+   >>> sorted(s.attrib['value'] for s in status_options)
+   ['Confirmed', 'Fix Committed', ... "Won't Fix"]
+
+
+== The resource type ==
+
+The 'representation' tags tell you what representations a resource
+sends and receives. In this case the representations are for a 'bug
+task' resource. What about the resource itself? All bug tasks are
+pretty much the same, and so most of the information about a bug task
+is kept in a 'resource_type' tag.
+
+   >>> resource_type.tag
+   '...resource_type'
+
+A resource type tells the client about the three standard operations
+on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
+operations.
+
+   >>> methods = sorted(resource_type.getchildren(),
+   ...                  key=lambda x: x.attrib['id'])
+   >>> post, get, patch, put = methods
+
+The name of a method is always the HTTP method used to activate
+it. Different operations that use the same method are distinguished by
+id. Here that's not a problem; we have one custom POST method
+('BugTaskEntry-change_status'), plus the standard GET, PATCH, and PUT.
+
+   >>> [m.attrib['name'] for m in methods]
+   ['POST', 'GET', 'PATCH', 'PUT']
+
+   >>> [m.attrib['id'] for m in methods]
+   ['BugTaskEntry-change_status', 'BugTaskEntry-get',
+    'BugTaskEntry-patch', 'BugTaskEntry-put']
+
+
+=== Standard operations ===
+
+The standard GET method defines a 'response' tag, which tells the
+client that they can use content negotiation to get two different
+representations of a bug task: the JSON one described above as
+"BugTask-full", and a WADL document--this document, in fact.
+
+   >>> response, = get.getchildren()
+   >>> response.tag
+   '...response'
+   >>> representations = response.getchildren()
+   >>> sorted([rep.attrib for rep in representations])
+   [{'href': '#BugTaskEntry-full'},
+    {'mediaType': 'application/vd.sun.wadl+xml', 'id': 'BugTaskEntry-wadl'}]
+
+Note that the JSON representation is just a hyperlink to the
+representation defined earlier.
+
+Similarly, the standard PUT and PATCH methods each include a 'request'
+tag, which tells the client which representation it should send along
+with a request.
+
+   >>> request, = put.getchildren()
+   >>> request.tag
+   '...request'
+   >>> representation, = request.getchildren()
+   >>> representation.attrib
+   {'href': '#BugTaskEntry-full'}
+
+   >>> patch.getchildren()[0].getchildren()[0].attrib
+   {'href': '#BugTaskEntry-diff'}
+
+This is why we defined the representations separately. Now we can
+link to them instead of describing them every time.
+
+
+=== Custom operations ===
+
+Custom operations define parameters, just like representations do.
+
+   >>> post_params = sorted(post.getchildren(),
+   ...                      key=lambda x: x.attrib['name'])
+   >>> [p.attrib['name'] for p in post_params]
+   ['status', 'ws_op']
+
+The 'ws_op' parameter is present for all custom operations. It's always
+required, and fixed to a particular value.
+
+   >>> status, ws_op = post_params
+   >>> ws_op.attrib['required']
+   'true'
+   >>> ws_op.attrib['fixed']
+   'change_status'
+
+Depending on the operation there might be other parameters. If the
+parameters of the right type, they too can be described with a list of
+valid values.
+
+   >>> sorted([o.attrib['value'] for o in status.getchildren()])
+   ['Confirmed', 'Fix Committed', ... "Won't Fix"]
+
+
+== The resource ==
+
+Now we know what a bug task resource can do and what documents it can
+serve. But we haven't defined any actual bug task resources! This
+happens in the final tag under consideration.
+
+   >>> resources.attrib['href']
+   'http://api.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
+
+The tag is called 'resources' but only one resource is defined. That's
+because this WADL document is a representation of a specific resource:
+a bug task. It's not a description of the whole site--in fact, there
+is no such description, just descriptions of the kinds of objects and
+how they interact.
+
+   >>> resource, = resources.getchildren()
+
+A resource's path is defined relative to the URL given in its paren
+'resources' tag. Since only one resource is being defined, the
+simplest thing to do is put the full URL in the 'resources' tag.
+
+   >>> resource.attrib['path']
+   ''
+
+The whole rest of the document was dedicated to defining the interface
+of bug task-type entries, so to say that the resource at
+/debian/+source/mozilla-firefox/+bug/1 is a bug task-type entry, all
+we have to do is refer to the previous definition.
+
+   >>> resource.attrib['type']
+   '#BugTaskEntry'
+
+A client can resolve the relative URL "#BugTaskEntry" and figure out
+what HTTP methods the resource exposes and what representations it
+serves and expects.
