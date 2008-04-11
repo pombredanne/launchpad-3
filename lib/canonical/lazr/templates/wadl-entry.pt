@@ -8,8 +8,8 @@
 
  <representation mediaType="application/json"
   tal:attributes="id string:${context/wadl:singular_type}-full">
-   <param tal:repeat="field context/wadl:all_fields"
-    tal:attributes="path field/wadl:path" required="true">
+   <param tal:repeat="field context/wadl:all_fields" required="true"
+    tal:attributes="name field/wadl:name; path field/wadl:path">
     <link tal:condition="field/wadl:is_link" />
     <option tal:repeat="option field/wadl:options"
             tal:attributes="value option/title" />
@@ -19,7 +19,8 @@
  <representation mediaType="application/json"
   tal:attributes="id string:${context/wadl:singular_type}-diff">
    <param tal:repeat="field context/wadl:all_writable_fields"
-    tal:attributes="path field/wadl:path" required="false">
+          required="false"
+          tal:attributes="name field/wadl:name; path field/wadl:path">
     <link tal:condition="field/wadl:is_link" />
     <option tal:repeat="option field/wadl:options"
             tal:attributes="value option/title" />

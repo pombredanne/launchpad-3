@@ -95,6 +95,16 @@ class WadlFieldAPI:
         "Initialize with a field."
         self.field = field
 
+    def name(self):
+        """The name of this field."""
+        name = self.field.__name__
+        if ICollectionField.providedBy(self.field):
+            return name + '_collection_link'
+        elif IObject.providedBy(self.field):
+            return name + '_link'
+        else:
+            return name
+
     def path(self):
         """The 'path' to this field within a JSON document.
 
@@ -102,14 +112,7 @@ class WadlFieldAPI:
         to do a dictionary lookup. There's no XPath-like standard for
         JSON so we made something up that seems JSONic.
         """
-        name = self.field.__name__
-        if ICollectionField.providedBy(self.field):
-            repr_name = name + '_collection_link'
-        elif IObject.providedBy(self.field):
-            repr_name = name + '_link'
-        else:
-            repr_name = name
-        return '["%s"]' % repr_name
+        return '["%s"]' % self.name()
 
     def is_link(self):
         "Is this field a link to another resource?"
