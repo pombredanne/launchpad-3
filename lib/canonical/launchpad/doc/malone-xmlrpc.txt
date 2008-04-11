@@ -1,5 +1,4 @@
-XML-RPC Integration with Malone
-===============================
+= XML-RPC Integration with Malone =
 
 Malone provides an XML-RPC interface for filing bugs.
 
@@ -9,8 +8,8 @@ Malone provides an XML-RPC interface for filing bugs.
     ...     'http://test@canonical.com:test@xmlrpc.launchpad.dev/bugs/',
     ...     transport=XMLRPCTestTransport())
 
-The filebug API
----------------
+
+== The filebug API ==
 
 The filebug API is:
 
@@ -40,8 +39,8 @@ The return value is the bug URL, in short form, e.g.:
 
 Support for attachments will be added in the near future.
 
-Examples
---------
+
+== Examples ==
 
 First, let's define a simple event listener to show that the
 ISQLObjectCreatedEvent is being published when a bug is reported through
@@ -149,8 +148,8 @@ Reporting a package bug.
     >>> print evolution_bug.sourcepackagename.name
     evolution
 
-Error Handling
---------------
+
+== Error Handling ==
 
 Malone's xmlrpc interface provides extensive error handling. The various
 error conditions it recognizes are:
@@ -226,3 +225,58 @@ Invalid subscriber.
             "nosuch@subscriber.com" was found'>
 
     >>> on_created_listener.unregister()
+
+
+== Generating bugtracker authentication tokens ==
+
+Launchpad Bugs also provides an XML-RPC API for generating login tokens
+for authentication with external bug trackers.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPrivateMaloneApplication, IPrivateApplication)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> private_root = getUtility(IPrivateApplication)
+    >>> verifyObject(IPrivateMaloneApplication,
+    ...     private_root.bugs)
+    True
+
+The API provides a single method, newBugTrackerToken(), which returns
+the ID of the new LoginToken.
+
+    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.launchpad.interfaces import (
+    ...     IExternalBugTrackerTokenAPI, ILoginTokenSet)
+    >>> from canonical.launchpad.xmlrpc.bug import (
+    ...     ExternalBugTrackerTokenAPI)
+
+    >>> bugtracker_token_api = ExternalBugTrackerTokenAPI(
+    ...     private_root.bugs, TestRequest())
+
+    >>> verifyObject(IExternalBugTrackerTokenAPI, bugtracker_token_api)
+    True
+
+    >>> token_id = bugtracker_token_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token
+    <LoginToken at ...>
+
+The LoginToken generated will be of the LoginTokenType BUGTRACKER.
+
+    >>> print token.tokentype.title
+    Launchpad is authenticating itself with a remote bug tracker.
+
+These requests are all handled by the private xml-rpc server.
+
+    >>> bugtracker_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
+    ...     transport=XMLRPCTestTransport())
+
+    >>> token_id = bugtracker_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token
+    <LoginToken at ...>
+
+    >>> print token.tokentype.title
+    Launchpad is authenticating itself with a remote bug tracker.

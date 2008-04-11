@@ -1,0 +1,86 @@
+= ExternalBugTracker: TracLPPlugin =
+
+This covers the implementation of the ExternalBugTracker class for Trac
+instances having the LP XML-RPC plugin installed.
+
+For testing purposes, a custom XML-RPC transport can be passed to it,
+so that we can avoid network traffic in tests.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     TracLPPlugin)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracXMLRPCTransport)
+    >>> test_transport = TestTracXMLRPCTransport()
+    >>> trac = TracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    >>> trac.xmlrpc_transport is test_transport
+    True
+
+
+== Authentication ==
+
+Before any XML-RPC methods can be used, we need to authenticate with the
+Trac instance.
+
+    >>> class FakeResponse:
+    ...     def __init__(self):
+    ...         self.headers = {}
+
+    >>> from canonical.launchpad.webapp.url import urlappend
+    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> class TestTracLPPlugin(TracLPPlugin):
+    ...     def urlopen(self, url):
+    ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+    ...         if not url.startswith(base_auth_url + '/'):
+    ...             raise AssertionErrror("Unexpected URL: %s" % url)
+    ...         token_text = url.split('/')[-1]
+    ...         token = getUtility(ILoginTokenSet)[token_text]
+    ...         if token.tokentype.name != 'BUGTRACKER':
+    ...             raise AssertionError(
+    ...                 'Invalid token type: %s' % token.tokentype.name)
+    ...         if token.date_consumed is not None:
+    ...             raise AssertionError("Token as already been consumed.")
+    ...         token.consume()
+    ...         print "Successfully validated the token."
+    ...         response = FakeResponse()
+    ...         response.headers['Set-Cookie'] = 'trac_auth=random_token'
+    ...         return response
+
+    >>> trac = TestTracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    >>> trac._authenticate()
+    Successfully validated the token.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token'
+
+The cookie is set by the transport used.
+
+    >>> trac = TracLPPlugin('http://example.com/')
+    >>> transport = trac.xmlrpc_transport
+    >>> transport.auth_cookie = 'trac_auth=random_token'
+
+    >>> class FakeConnection:
+    ...     def putheader(self, header, value):
+    ...         print "%s: %s" % (header, value)
+    >>> transport.send_host(FakeConnection(), 'example.com')
+    Host: example.com
+    Cookie: trac_auth=random_token
+
+== Current time ==
+
+The current time is always returned in UTC, no matter if the Trac
+instance returns another time zone.
+
+    >>> trac = TestTracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+
+    >>> import time
+    >>> from datetime import datetime
+    >>> trac_time = datetime(2008, 4, 9, 3, 2, 1)
+    >>> test_transport.seconds_since_epoch = int(time.mktime(
+    ...     trac_time.timetuple()))
+    >>> test_transport.local_timezone = 'CET'
+    >>> test_transport.utc_offset = 60*60
+    >>> trac.getCurrentDBTime()
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)

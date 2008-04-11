@@ -3,16 +3,21 @@
 """Trac ExternalBugTracker utiltiy."""
 
 __metaclass__ = type
-__all__ = ['Trac']
+__all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
 
 import csv
+from datetime import datetime
 import urllib2
+import xmlrpclib
+
+import pytz
 
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
     UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.webapp.url import urlappend
 
 
 class Trac(ExternalBugTracker):
@@ -187,4 +192,52 @@ class Trac(ExternalBugTracker):
             raise UnknownRemoteStatusError()
 
 
+class TracLPPlugin(ExternalBugTracker):
+    """A Trac instance having the LP plugin installed."""
 
+    def __init__(self, baseurl, xmlrpc_transport=None):
+        super(TracLPPlugin, self).__init__(baseurl)
+
+        if xmlrpc_transport is None:
+            xmlrpc_transport = TracXMLRPCTransport()
+        self.xmlrpc_transport = xmlrpc_transport
+
+    def _generateAuthenticationToken(self):
+        """Create an authentication token an return it."""
+        from zope.component import getUtility
+        from canonical.launchpad.interfaces import (
+            ILoginTokenSet, LoginTokenType)
+        login_token = getUtility(ILoginTokenSet).new(
+            None, None, 'externalbugtrackers@launchpad.net',
+            LoginTokenType.BUGTRACKER)
+        return login_token.token
+
+    def _authenticate(self):
+        """Authenticate with the Trac instance."""
+        token_text = self._generateAuthenticationToken()
+        base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+        auth_url = urlappend(base_auth_url, token_text)
+        response = self.urlopen(auth_url)
+        auth_cookie = response.headers['Set-Cookie']
+        self.xmlrpc_transport.auth_cookie = auth_cookie
+
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+        time_zone, local_time, utc_time = server.launchpad.time_snapshot()
+        # Return the UTC time, so we don't have to care about the time
+        # zone for now.
+        trac_time = datetime.fromtimestamp(utc_time)
+        return trac_time.replace(tzinfo=pytz.timezone('UTC'))
+
+
+class TracXMLRPCTransport(xmlrpclib.Transport):
+
+    auth_cookie = None
+
+    def send_host(self, connection, host):
+        xmlrpclib.Transport.send_host(self, connection, host)
+        if self.auth_cookie is not None:
+            connection.putheader('Cookie', self.auth_cookie)
