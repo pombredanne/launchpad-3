@@ -613,6 +613,7 @@ class BugWatchUpdater(object):
             remote_id = external_bugtracker.addRemoteComment(
                 bug_watch.remotebug, message.text_contents)
 
+            bug_message.bugwatch = bug_watch
             bug_message.remote_comment_id = remote_id
             pushed_comments += 1
 

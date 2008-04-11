@@ -9,7 +9,7 @@
         <allow interface="canonical.launchpad.interfaces.IBugMessage" />
         <require
             permission="zope.Public"
-            set_attributes="remote_comment_id" />
+            set_attributes="remote_comment_id bugwatch" />
     </content>
 
     <!-- BugMessageSet -->
