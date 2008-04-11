@@ -117,7 +117,8 @@ The message has been disposed by Foo Bar on today's date.
 
 == Rejecting the message ==
 
-Held messages can also be rejected.
+Held messages can also be rejected, in which case the original message is
+bounced back to the sender.
 
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
@@ -142,6 +143,34 @@ Held messages can also be rejected.
     True
 
 
+== Discarding the message ==
+
+Held messages can also be discarded.  Nothing further is done with the
+message.
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: My third test
+    ... Message-ID: <third-post>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... This is my third post!
+    ... """)
+    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message.discard(owner)
+    >>> syncUpdate(held_message)
+
+    >>> print held_message.message_id
+    <third-post>
+    >>> held_message.status
+    <DBItem PostedMessageStatus.DISCARD_PENDING, (60) Discard pending>
+    >>> print held_message.disposed_by.displayname
+    No Privileges Person
+    >>> held_message.disposal_date is not None
+    True
+
+
 == Message sets ==
 
 It's convenient to be able to request all of the new messages, or all
@@ -153,22 +182,22 @@ A few more messages are held for approval.
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
     ... To: test-one@lists.launchpad.dev
-    ... Subject: My third test
-    ... Message-ID: <third-post>
+    ... Subject: My fourth test
+    ... Message-ID: <fourth-post>
     ... Date: Fri, 01 Aug 2000 01:09:01 -0000
     ...
-    ... This is my third post!
+    ... This is my fourth post!
     ... """)
     >>> held_message = mailing_list.holdMessage(message)
 
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
     ... To: test-one@lists.launchpad.dev
-    ... Subject: My fourth test
-    ... Message-ID: <fourth-post>
+    ... Subject: My fifth test
+    ... Message-ID: <fifth-post>
     ... Date: Fri, 01 Aug 2000 01:09:02 -0000
     ...
-    ... This is my fourth post!
+    ... This is my fifth post!
     ... """)
     >>> held_message = mailing_list.holdMessage(message)
 
@@ -197,5 +226,5 @@ Here are all the messages pending approval...
 ...and all the messages where are waiting for any disposition.
 
     >>> print_messages(PostedMessageStatus.NEW)
+    <fifth-post> My fifth test
     <fourth-post> My fourth test
-    <third-post> My third test

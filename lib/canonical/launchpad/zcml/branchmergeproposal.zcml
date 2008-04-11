@@ -15,7 +15,8 @@
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
                        root_message
-                       isPersonValidReviewer isMergable isValidTransition
+                       isPersonValidReviewer isMergable
+                       getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
         permission="launchpad.Edit"
@@ -26,7 +27,14 @@
                     enqueue dequeue moveToFrontOfQueue
                     " />
   </content>
-
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"

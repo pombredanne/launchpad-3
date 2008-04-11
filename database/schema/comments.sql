@@ -1568,6 +1568,13 @@ COMMENT ON COLUMN ShockAndAwe.name IS 'The name of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.title IS 'The title of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And Awe program';
 
+-- ShipItSurvey*
+COMMENT ON TABLE ShipItSurvey IS 'A sequence of questions and their answers given by a ShipIt user.';
+COMMENT ON TABLE ShipItSurveyQuestion IS 'The text of a question that is asked of ShipIt users.';
+COMMENT ON TABLE ShipItSurveyAnswer IS 'The text of an answer given by ShipIt users. Answers are usually multiple choice, but freeform answers could be stored here too.';
+COMMENT ON TABLE ShipItSurveyResult IS 'A single element in a ShipItSurvey.';
+COMMENT ON COLUMN ShipItSurveyResult.answer IS 'The given answer. NULL indicates not answered (which may be different to declined to answer).';
+
 -- Shipment
 COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
 COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';

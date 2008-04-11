@@ -173,7 +173,7 @@ A notification was added:
     True
 
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
-subscribed "implicitly" since he's a bug contact for the mozilla
+subscribed "implicitly" since he's a bug supervisor for the mozilla
 package:
 
     >>> getSubscribers(added_bug)
@@ -911,8 +911,9 @@ telling you that you what bug it's a duplicate of.
     Failing command:
         duplicate 4
     ...
-    Bug 4 is already a duplicate of bug 2. You can only duplicate to
-    bugs that are not duplicates themselves.
+    Bug 4 is already a duplicate of bug 2. You can only
+    mark a bug report as duplicate of one that isn't a
+    duplicate itself.
     ...
 
 If the specified bug has other bugs marked as a duplicate of it, an
@@ -1106,7 +1107,7 @@ permissions also elicits an error message:
         milestone 1.0
     ...
     You do not have permission to set the milestone for Mozilla Firefox.
-    Only owners, drivers and bug contacts may assign milestones.
+    Only owners, drivers and bug supervisors may assign milestones.
     ...
 
     >>> login('test@canonical.com')
@@ -1347,7 +1348,7 @@ be grouped together:
 
     >>> email_user = getUtility(ILaunchBag).user
 
-Bug contacts can set some restricted statuses:
+Bug supervisors can set some restricted statuses:
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -1386,7 +1387,7 @@ Everyone else gets an explanatory error message:
         status wontfix
     ...
     The status cannot be changed to wontfix because you are not the
-    registrant or a bug contact for Mozilla Firefox.
+    registrant or a bug supervisor for Mozilla Firefox.
     ...
 
 Let's take a look at all the other error messages that the sub
@@ -1512,7 +1513,7 @@ If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
 which bug task to edit:
 
-=== The user is a bug contact of the upstream product ===
+=== The user is a bug supervisors of the upstream product ===
 
     >>> login('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -1534,7 +1535,7 @@ which bug task to edit:
     ...
         Status: New => Confirmed
 
-=== The user is a package bug contact ===
+=== The user is a package bug supervisor ===
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet)
@@ -1570,7 +1571,7 @@ which bug task to edit:
         Assignee: (unassigned) => No Privileges Person
     ...
 
-=== The user is a bug contact of a distribution ===
+=== The user is a bug supervisor of a distribution ===
 
 XXX: TBD after InitialBugContacts is implemented.
      -- Bjorn Tillenius, 2005-11-30
@@ -1725,7 +1726,7 @@ send_process_error_notification().
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     'test@canonical.com', 'Some subject', 'Some error message.',
-    ...     msg, failing_command='foo bar')
+    ...     msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
@@ -1837,6 +1838,159 @@ Launchpad username.
     >>> print get_bug_edit_notification_texts(bug_delta)[0]
     **...
     ...Assignee: Warty Gnome Team (warty-gnome)...
+
+
+== Recovering from errors ==
+
+When a user sends an email with multiple commands, some of them might
+fail (because of bad arguments, for example). Some commands, namely
+'affects', 'bug', 'security' and 'private', must succeed for the entire
+email to be processed, but others can fail without affecting the other
+commands.
+
+The latest firefox bug task has a NEW status.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    NEW
+
+Sample Person sends an email with several commands. First comes an
+'affects', to select the firefox task, then a 'subscribe' with a user
+that doesn't exist (and so is guaranteed to result in a failure) and
+finally, the status of the selected bug task is set to 'confirmed'.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  subscribe nonexistentuser
+    ...  status confirmed
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The 'affects' and 'status' commands were processed successfully - the
+status for the firefox task is now set to CONFIRMED.
+
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+The 'subscribe' command failed, and the user is being notified of the
+failure in an email.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        subscribe nonexistentuser
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    There's no such person with the specified name or email: nonexistentuser
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/BugTrackerEmailInterface
+    or send an email to help@launchpad.net
+
+We send another email to the same bug, selecting the same bug task. The
+email has other two commands - 'security maybe', which is guaranteed to
+fail, and 'status triaged' which is OK. 'security' commands cause the
+entire email to not to be processed, though.
+
+    >>> commit()
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  status triaged
+    ...  security maybe
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The status hasn't changed.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
+
+And the sender receives an email to let them know about the failing
+'security' command.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        security maybe
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    The 'security' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        security yes
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/BugTrackerEmailInterface
+    or send an email to help@launchpad.net
+
+
+== Terminating command input ==
+
+To make it possible to submit emails with lines that look like commands
+(but aren't), a 'done' statement is provided. When the email parser
+encounters a line with that statement, it stops reading any additional
+commands.
+
+We send an email with four commands: 'affects', to choose the target,
+'importance', to set the importance to high, 'done', to stop reading,
+and 'status', which will be ignored.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: %s@bugs.canonical.com
+    ... Date: Thu Apr 3 11:53:23 BST 2008
+    ... Subject: A new bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ...  importance high
+    ...  done
+    ...  status triaged
+    ... """ % ff_bug.id
+    >>> process_email(submit_mail)
+
+The target (Firefox) is selected and the importance set, but the status
+hasn't changed, since the command to set it came after the 'done' statement.
+
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.importance.name
+    HIGH
+    >>> for task in ff_bug.bugtasks:
+    ...     if task.product == firefox:
+    ...         print task.status.name
+    CONFIRMED
 
 
 == Requesting help ==
@@ -2378,6 +2532,59 @@ Base64 encoded attachments are decoded before being stored.
     LibraryFileAlias image.jpg image/jpeg UNSPECIFIED
     this is not a real JPG file
 
+Some mail clients append a filename to the content type of attachments.
+This does not affect the processing. Note though that the filename from
+the content-type header is ignored, even if the content-disposition 
+header does not provide a filename. The content type of the PGP signature
+is properly detected and thus no bug attchement created.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found another bug in Firefox.
+    ...
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-Type: image/jpeg; name="image.jpg"
+    ... Content-Transfer-Encoding: base64
+    ... X-Attachment-Id: f_fcuhv1fz0
+    ... Content-Disposition: attachment
+    ... 
+    ... dGhpcyBpcyBub3QgYSByZWFsIEpQRyBmaWxl==
+    ... --BOUNDARY
+    ... Content-type: text/x-diff; name="sourcefile1.diff"
+    ... Content-disposition: attachment; filename="sourcefile.diff"
+    ...
+    ... this should be diff output.
+    ... --BOUNDARY
+    ... Content-Type: application/pgp-signature; name="signature.asc"
+    ... Content-Description: Digital signature
+    ... Content-Disposition: inline
+    ...
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.4.6 (GNU/Linux)
+    ...
+    ... iD8DBQFH7MnnonjfXui9pOMRAseJAJ0ZHoiLQ+pA2aljwhgszMiImdC1xwCcCdax
+    ... oTWHlYEemRSD/E68f9Zsb2s=
+    ... =HMT0
+    ... -----END PGP SIGNATURE-----
+    ...
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias unnamed image/jpeg; name="image.jpg" UNSPECIFIED
+    this is not a real JPG file
+    LibraryFileAlias sourcefile.diff text/x-diff; name="sourcefile1.diff" PATCH
+    this should be diff output.
 
 
 XXX: Add tests for non-ascii mails.

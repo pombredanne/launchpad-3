@@ -205,7 +205,7 @@ class BranchMailer:
         self.pending_emails = []
         self.subscribers_want_notification = False
         self.initial_scan = None
-        self.email_from = config.noreply_from_address
+        self.email_from = config.canonical.noreply_from_address
 
     def initializeEmailQueue(self, initial_scan):
         """Create an email queue and determine whether to create diffs.
@@ -332,7 +332,7 @@ class BzrSync:
 
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
-        self.email_from = config.noreply_from_address
+        self.email_from = config.canonical.noreply_from_address
 
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)

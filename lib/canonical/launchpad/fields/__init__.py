@@ -61,6 +61,7 @@ __all__ = [
     'Whiteboard',
     ]
 
+
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -295,15 +296,18 @@ class DuplicateBug(BugField):
                 You can't mark a bug as a duplicate of itself.""")))
         elif dup_target.duplicateof is not None:
             raise LaunchpadValidationError(_(dedent("""
-                Bug %i is already a duplicate of bug %i. You can only
-                duplicate to bugs that are not duplicates themselves.
-                """% (dup_target.id, dup_target.duplicateof.id))))
+                Bug ${dup} is already a duplicate of bug ${orig}. You
+                can only mark a bug report as duplicate of one that
+                isn't a duplicate itself.
+                """), mapping={'dup': dup_target.id,
+                               'orig': dup_target.duplicateof.id}))
         elif current_bug_has_dup_refs:
             raise LaunchpadValidationError(_(dedent("""
-                There are other bugs already marked as duplicates of Bug %i.
-                These bugs should be changed to be duplicates of another bug
-                if you are certain you would like to perform this change."""
-                % current_bug.id)))
+                There are other bugs already marked as duplicates of
+                Bug ${current}.  These bugs should be changed to be
+                duplicates of another bug if you are certain you would
+                like to perform this change."""),
+                mapping={'current': current_bug.id}))
         else:
             return True
 
@@ -362,7 +366,7 @@ class UniqueField(TextLine):
         object of this same context. The 'input' should be valid as per
         TextLine.
         """
-        TextLine._validate(self, input)
+        super(UniqueField, self)._validate(input)
         assert self._content_iface is not None
         _marker = object()
 
@@ -413,8 +417,8 @@ class BlacklistableContentNameField(ContentNameField):
 
         if nickname.is_blacklisted(name=input):
             raise LaunchpadValidationError(
-                    "The name '%(input)s' has been blocked by the "
-                    "Launchpad administrators" % vars()
+                    "The name '%s' has been blocked by the "
+                    "Launchpad administrators" % input
                     )
 
 
@@ -503,7 +507,7 @@ class URIField(TextLine):
         try:
             uri = URI(value)
         except InvalidURIError, e:
-            raise LaunchpadValidationError(str(e))
+            raise LaunchpadValidationError(e)
 
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
@@ -596,14 +600,17 @@ class BaseImageUpload(Bytes):
         if self.exact_dimensions:
             if width != required_width or height != required_height:
                 raise LaunchpadValidationError(_(dedent("""
-                    This image is not exactly %dx%d pixels in size.""" % (
-                    required_width, required_height))))
+                    This image is not exactly ${width}x${height}
+                    pixels in size."""),
+                    mapping={'width': required_width,
+                             'height': required_height}))
         else:
             if width > required_width or height > required_height:
                 raise LaunchpadValidationError(_(dedent("""
-                    This image is larger than %dx%d pixels in size.""" % (
-                    required_width, required_height))))
-
+                    This image is larger than ${width}x${height}
+                    pixels in size."""),
+                    mapping={'width': required_width,
+                             'height': required_height}))
         return True
 
     def validate(self, value):
@@ -660,11 +667,10 @@ class ProductNameField(PillarNameField):
 def is_valid_public_person_link(person, other):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     assert IPerson.providedBy(person)
-    if person.visibility in (PersonVisibility.PRIVATE,
-                             PersonVisibility.PRIVATE_MEMBERSHIP):
-        return False
-    else:
+    if person.visibility == PersonVisibility.PUBLIC:
         return True
+    else:
+        return False
 
 
 class PublicPersonChoice(Choice):
