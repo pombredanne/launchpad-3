@@ -161,6 +161,11 @@ class ShipItLoginForServerCDsView(ShipItLoginView):
 
     @property
     def custom_order_page(self):
+        """Return the page where users make custom requests for server CDs.
+
+        If the user hasn't answered the survey yet, we return the /survey page
+        instead.
+        """
         user = getUtility(ILaunchBag).user
         if getUtility(IShipItSurveySet).personHasAnswered(user):
             return '/specialrequest-server'
@@ -169,6 +174,11 @@ class ShipItLoginForServerCDsView(ShipItLoginView):
 
     @property
     def standard_order_page(self):
+        """Return the page where users make standard requests for server CDs.
+
+        If the user hasn't answered the survey yet, we return the /survey page
+        instead.
+        """
         user = getUtility(ILaunchBag).user
         if getUtility(IShipItSurveySet).personHasAnswered(user):
             return '/myrequest-server'
@@ -1175,6 +1185,7 @@ class StandardShipItRequestSetNavigation(Navigation):
 
 
 class ShipItSurveyView(LaunchpadFormView):
+    """A survey that should be answered by people requesting server CDs."""
 
     schema = ShipItSurveySchema
     label = 'About you'
@@ -1185,6 +1196,14 @@ class ShipItSurveyView(LaunchpadFormView):
 
     @action(_("Continue to Request a Free CD"), name="continue")
     def continue_action(self, action, data):
+        """Continue to the page where the user requests server CDs.
+
+        Also stores the answered questions in the database.
+
+        If the user has an existing request with custom quantities of server
+        CDs, he'll be sent to /specialrequest-server, otherwise he's sent to
+        /myrequest-server.
+        """
         getUtility(IShipItSurveySet).new(self.user, data)
         current_order = self.user.currentShipItRequest()
         server = ShipItFlavour.SERVER

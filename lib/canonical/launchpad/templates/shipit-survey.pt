@@ -28,9 +28,9 @@
 
     <metal:widgets metal:fill-slot="widgets">
       <table class="form">
-        <tal:block define="widgets widgets|view/widgets"
+        <tal:block define="widgets view/widgets"
                    repeat="widget widgets">
-      
+
         <tal:widget
             tal:define="field_name widget/context/__name__;
                         error python:view.getFieldError(field_name);
@@ -62,6 +62,6 @@
   </div>
 
 </div>
-    
+
 </body>
 </html>
