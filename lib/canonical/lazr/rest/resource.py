@@ -48,7 +48,9 @@ from canonical.lazr.rest.schema import URLDereferencingMixin
 
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
+    "A page template class for generating web service-related documents."
     pass
+
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
     """A JSON encoder for JSON-exposable resources like entry resources.
@@ -96,6 +98,10 @@ class HTTPResource(URLDereferencingMixin):
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
+    # Some interesting media types.
+    WADL_TYPE = 'application/vd.sun.wadl+xml'
+    JSON_TYPE = 'application/json'
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -113,6 +119,55 @@ class HTTPResource(URLDereferencingMixin):
         adapters = getAdapters((self.context, self.request),
                                IResourcePOSTOperation)
         return len(adapters) > 0
+
+    def getPreferredContentTypes(self):
+        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+
+    def _parseAcceptStyleHeader(self, value):
+        """Parse an HTTP header from the Accept-* family.
+
+        These headers contain a list of possible values, each with an
+        optional priority.
+
+        This code is modified from Zope's
+        BrowserLanguages#getPreferredLanguages.
+
+        :return: All values, in descending order of priority.
+        """
+        values = value.split(',')
+        # In the original getPreferredLanguages there was some language
+        # code normalization here, which I removed.
+        values = [v for v in values if v != ""]
+
+        accepts = []
+        for index, value in enumerate(values):
+            l = value.split(';', 2)
+
+            # If not supplied, quality defaults to 1...
+            quality = 1.0
+
+            if len(l) == 2:
+                q = l[1]
+                if q.startswith('q='):
+                    q = q.split('=', 2)[1]
+                    quality = float(q)
+
+            if quality == 1.0:
+                # ... but we use 1.9 - 0.001 * position to
+                # keep the ordering between all items with
+                # 1.0 quality, which may include items with no quality
+                # defined, and items with quality defined as 1.
+                quality = 1.9 - (0.001 * index)
+
+            accepts.append((quality, l[0].strip()))
+
+        # Filter langs with q=0, which means
+        # unwanted lang according to the spec
+        # See: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
+        accepts = [acc for acc in accepts if acc[0] > 0]
+        accepts.sort()
+        accepts.reverse()
+        return [value for quality, value in accepts]
 
 
 class WebServiceBatchNavigator(BatchNavigator):
@@ -328,9 +383,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         appropriate HTTP response code.
         """
 
-        if media_type != 'application/json':
+        if media_type != self.JSON_TYPE:
             self.request.response.setStatus(415)
-            return None, 'Expected a media type of application/json.'
+            return None, 'Expected a media type of %s.' % self.JSON_TYPE
         try:
             h = simplejson.loads(unicode(representation))
         except ValueError:
@@ -355,19 +410,29 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # No custom operation was specified. Implement a standard
             # GET, which serves a JSON or WADL representation of the
             # entry.
+            content_types = self.getPreferredContentTypes()
+            try:
+                wadl_pos = content_types.index(self.WADL_TYPE)
+            except ValueError:
+                wadl_pos = None
+            try:
+                json_pos = content_types.index(self.JSON_TYPE)
+            except ValueError:
+                json_pos = None
 
-            #TODO: parse the Accept header.
-            content_type = self.request['HTTP_ACCEPT']
-            wadl_type = 'application/vd.sun.wadl+xml'
-            if content_type == wadl_type:
+            # If the client's desire for WADL outranks its desire for
+            # JSON, serve WADL.  Otherwise, serve JSON.
+            if wadl_pos is not None and (json_pos is None or
+                                         wadl_pos < json_pos):
                 result = self.toWADL().encode("utf-8")
-                self.request.response.setHeader('Content-Type', wadl_type)
+                self.request.response.setHeader(
+                    'Content-Type', self.WADL_TYPE)
                 return result
             else:
                 result = self
 
         # Serialize the result to JSON.
-        self.request.response.setHeader('Content-Type', 'application/json')
+        self.request.response.setHeader('Content-Type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
     def do_PUT(self, media_type, representation):
@@ -599,7 +664,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                 raise NotFound(self, self.collection_name)
             result = self.batch(entries, self.request)
 
-        self.request.response.setHeader('Content-type', 'application/json')
+        self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
 
