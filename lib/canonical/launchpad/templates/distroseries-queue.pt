@@ -87,11 +87,11 @@
        <tbody class="lesser">
          <tal:batch repeat="packageupload batch">
            <tal:block
-                define="filelist_class string:queue-${packageupload/displayname}">
+                define="filelist_class string:queue-${packageupload/displayname}-${packageupload/id}">
              <tr class="queue-row">
                 <td width="14">
                   <a tal:attributes="href string:./+queue;
-                     onclick string:return toggleExpandableTableRow('${filelist_class}')">
+                     onclick string:return toggleExpandableTableRows('${filelist_class}')">
                     <img tal:attributes="id string:${filelist_class}-arrow"
                          width="14" height="14"
                          src="/@@/treeCollapsed" alt="view files"/>
@@ -138,20 +138,12 @@
            </tal:block>
          </tal:batch>
          <tr tal:condition="view/availableActions">
-           <td colspan="4"/>
-           <td><label>Component:</label></td>
-           <td><label>Section:</label></td>
-           <td><label>Priority:</label></td>
-           <td colspan="2">
-             <input value="Reject" name="Reject" type="submit"/>
-           </td>
-         </tr>
-         <tr tal:condition="view/availableActions">
            <td colspan="4" style="text-align: right;
-                                  vertical-align: text-bottom">
+                                  vertical-align: bottom">
              <label>For selected uploads/files:</label>
            </td>
-           <td>
+           <td style="vertical-align: bottom">
+             <label>Component:</label><br/>
              <select name="component_override" size="1">
                <option value="nochange" selected="true">(no change)</option>
                <option tal:repeat="option context/components"
@@ -159,14 +151,16 @@
                        tal:content="option/name"/>
              </select>
            </td>
-           <td>
+           <td style="vertical-align: bottom">
+             <label>Section:</label><br/>
              <select name="section_override" size="1">
                <option value="nochange" selected="true">(no change)</option>
                <option tal:repeat="option view/sortedSections"
                        tal:attributes="value option/name"
                        tal:content="option/name"/>
              </select>
-           <td>
+           <td style="vertical-align: bottom">
+             <label>Priority:</label><br/>
              <select name="priority_override" size="1">
                <option value="nochange" selected="true">(no change)</option>
                <option tal:repeat="option view/priorities"
@@ -174,73 +168,15 @@
                        tal:content="option/title/lower"/>
              </select>
            </td>
-           <td colspan="2">
+           <td colspan="2" style="vertical-align: bottom">
+             <input value="Reject" name="Reject" type="submit"/>
+             <br/>
+             <br/>
              <input value="Accept" name="Accept" type="submit"/>
            </td>
          </tr>
        </tbody>
      </table>
-
-     <tal:has_items tal:condition="batch">
-     <table class="form" tal:condition="view/availableActions">
-         <tr><td>
-           <label>
-             <input type="radio" name="Hold" value="hold" checked="checked"/>
-             Hold
-           </label>
-         </td></tr>
-         <tr><td>
-           <label>
-             <input type="radio" name="Accept" value="accept"/>
-             Accept selected uploads
-           </label>
-         </td></tr>
-         <tr><td>
-           <label>
-             <input type="radio" name="Reject" value="reject"/>
-             Reject selected uploads
-           </label>
-         </td></tr>
-         <tr><td>
-           <label>
-             <input type="radio" name="Override" value="override"/>
-             Override selected uploads:
-           </label>
-         </td></tr>
-         <tr><td>
-           <table>
-             <tr><label>
-                 <td width="20%">
-                 <td> Component:</td>
-                 <td>
-                   <input size="10" type="text" name="override_component">
-                 </td>
-             </label></tr>
-             <tr>
-               <label>
-                 <td width="20%">
-                 <td>Section:</td>
-                 <td><input size="10" type="text" name="override_section"></td>
-               </label>
-             </tr>
-             <tr>
-               <label>
-                 <td width="20%">
-                 <td>Priority:</td>
-                 <td>
-                   <input size="10" type="text" name="override_piriority">
-                 </td>
-               </label>
-             </tr>
-           </table>
-         </td></tr>
-         <tr><td>
-             <input value="Process" name="Process"
-                    type="submit"/>
-         </td></tr>
-         <tr><td><strong>DEMO! This does not do anything yet!</strong></td></tr>
-     </table>
-     </tal:has_items>
 
      </form>
 
@@ -267,7 +203,8 @@
 
     <tal:source repeat="source packageupload/sources">
       <tr tal:repeat="file source/sourcepackagerelease/files"
-              attributes="class filelist_class">
+          tal:attributes="class string:${filelist_class}"
+          style="display:none">
         <td/>
         <td tal:condition="view/availableActions"/>
         <td>
@@ -282,7 +219,9 @@
 
     <tal:build repeat="queuebuild packageupload/builds">
       <tal:binary repeat="binary queuebuild/build/binarypackages">
-        <tr tal:repeat="file binary/files" attributes="class filelist_class">
+        <tr tal:repeat="file binary/files"
+            tal:attributes="class string:${filelist_class}"
+            style="display:none">
           <td/>
           <td tal:condition="view/availableActions"/>
           <td>
@@ -307,7 +246,9 @@
 
     <tal:custom define="customfiles packageupload/customfiles"
                 condition="customfiles">
-      <tr tal:repeat="custom customfiles" attributes="class filelist_class">
+      <tr tal:repeat="custom customfiles"
+          tal:attributes="class string:${filelist_class}"
+          style="display:none">
         <td/>
         <td tal:condition="view/availableActions"></td>
         <td>
