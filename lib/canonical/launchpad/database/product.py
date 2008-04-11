@@ -721,6 +721,12 @@ class ProductSet:
         if len(licenses) > 0:
             product.licenses = licenses
 
+        # XXX: jamesh 2008-04-11
+        # Access the product ID to make sure the object has been
+        # created, removing a flush loop with the trunk product
+        # series.
+        product_id = product.id
+
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
             owner, 'trunk',
