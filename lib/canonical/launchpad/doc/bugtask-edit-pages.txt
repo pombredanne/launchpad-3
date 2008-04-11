@@ -62,7 +62,7 @@ changed to the corresponding source package.
     ...     print notification.message
     'linux-2.6.12' is a binary package. This bug has been assigned to
     its source package 'linux-source-2.6.15' instead.
-    The bug contacts for linux-source-2.6.15 (Ubuntu) have been
+    The bug supervisor for linux-source-2.6.15 (Ubuntu) has been
     subscribed to this bug.
 
     >>> ubuntu_thunderbird_task.sourcepackagename = ubuntu_thunderbird
@@ -246,8 +246,8 @@ But an unprivileged user does not.
     >>> isinstance(bugtask_edit_view.widgets['milestone'], ItemDisplayWidget)
     True
 
-A bug contact can also change the milestone. Let's set no-priv as Ubuntu's bug
-contact.
+A bug supervisor can also change the milestone. Let's set no-priv as
+Ubuntu's bug supervisor.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
 

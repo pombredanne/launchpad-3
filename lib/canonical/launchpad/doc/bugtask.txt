@@ -210,7 +210,7 @@ package).
 == Editing Bug Tasks ==
 
 When changing status we must pass the user making the change. Some
-statuses are restricted to Bug Contacts only.
+statuses are restricted to Bug Supervisors only.
 
 
 === Upstream Bug Tasks ===
