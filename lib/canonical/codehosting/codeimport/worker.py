@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'CodeImportSourceDetails',
     'ForeignTreeStore',
     'ImportWorker',
     'get_default_bazaar_branch_store',

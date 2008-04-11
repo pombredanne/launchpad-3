@@ -70,15 +70,6 @@ class ExitWithoutCallingFinishJob(Exception):
     """
     pass
 
-@defer_to_thread
-@writing_transaction
-def update_heartbeat(job_id, tail):
-    """Call `updateHeartbeat` for the job of id 'job_id'."""
-    job = getUtility(ICodeImportJobSet).getById(job_id)
-    if job is None:
-        raise ExitWithoutCallingFinishJob
-    getUtility(ICodeImportJobWorkflow).updateHeartbeat(job, tail)
-
 
 @defer_to_thread
 @writing_transaction
@@ -116,32 +107,31 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
 
     UPDATE_HEARTBEAT_INTERVAL = 30
 
-    def __init__(self, deferred, job_id, logfile, clock=None):
-        ProcessMonitorProtocolWithTimeout.__init__(self, deferred, 100)
-        self.job_id = job_id
-        self.tail = ''
-        self.logfile = logfile
-        if clock is None:
-            clock = reactor
-        self._looping_call = task.LoopingCall(
-            self.runNotification, self._updateHeartbeat)
-        self._looping_call.clock = clock
+    def __init__(self, deferred, worker_monitor, log_file, clock=None):
+        ProcessMonitorProtocolWithTimeout.__init__(self, deferred, 100, clock)
+        self.worker_monitor = worker_monitor
+        self._tail = ''
+        self._log_file = log_file
+        self._looping_call = task.LoopingCall(self._updateHeartbeat)
+        self._looping_call.clock = self._clock
 
     def connectionMade(self):
+        ProcessMonitorProtocolWithTimeout.connectionMade(self)
         self._looping_call.start(self.UPDATE_HEARTBEAT_INTERVAL)
 
     def _updateHeartbeat(self):
-        return update_heartbeat(self.job_id, self.tail)
+        self.runNotification(
+            self.worker_monitor.updateHeartbeat, self._tail)
 
     def outReceived(self, data):
-        print 'outReceived', repr(data)
-        self.logfile.write(data)
-        self.tail = (self.tail + data)[-100:]
+        self._log_file.write(data)
+        self._tail = (self._tail + data)[-100:]
 
-    def errReceived(self, data):
-        print 'errReceived', repr(data)
-        # Hmm, think about this!
-        self.logfile.write(data)
+    errReceived = outReceived
+
+    def processEnded(self, reason):
+        ProcessMonitorProtocolWithTimeout.processEnded(self, reason)
+        self._looping_call.stop()
 
 
 class CodeImportWorkerMonitor:
@@ -150,10 +140,20 @@ class CodeImportWorkerMonitor:
         get_rocketfuel_root(),
         'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id):
+    def __init__(self, job_id, logger):
         self.job_id = job_id
         self.call_finish_job = True
         self.logger = logger
+
+    @defer_to_thread
+    @writing_transaction
+    def updateHeartbeat(self, tail):
+        """Call `updateHeartbeat` for the job of id 'job_id'."""
+        job = getUtility(ICodeImportJobSet).getById(self.job_id)
+        if job is None:
+            self.call_finish_job = False
+            raise ExitWithoutCallingFinishJob
+        getUtility(ICodeImportJobWorkflow).updateHeartbeat(job, tail)
 
     def _launchProcess(self, source_details):
         deferred = defer.Deferred()
@@ -187,25 +187,3 @@ class CodeImportWorkerMonitor:
             status = CodeImportResultStatus.SUCCESS
         return finish_job(self.job_id, status, self.tmpfile)
 
-
-if __name__ == '__main__':
-    execute_zcml_for_scripts()
-    initZopeless(
-        implicitBegin=False
-        )
-    from optparse import OptionParser
-    from canonical.launchpad import scripts
-
-    parser = OptionParser()
-    scripts.logger_options(parser)
-    options, args = parser.parse_args()
-    logger = scripts.logger(options, 'code-import-worker')
-    
-
-    def go():
-        m = CodeImportWorkerMonitor(int(sys.argv[1]))
-        return m.run().addErrback(
-            log.err).addCallback(
-            lambda ignored: reactor.stop())
-    reactor.callWhenRunning(go)
-    reactor.run()
