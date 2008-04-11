@@ -18,14 +18,17 @@ __all__ = [
 
 import sys
 
+from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
 from zope.schema.interfaces import IField
 
+from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
 from canonical.lazr.interfaces.rest import IEntry
+from canonical.lazr.rest.resource import Entry
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
 LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
@@ -168,10 +171,39 @@ def generate_entry_interface(interface):
     attrs = {}
     for name, field in getFields(interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-        if not tag:
+        if tag is None:
             continue
         attrs[tag['as']] = copy_attribute(field)
 
     return InterfaceClass(
         "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,
         __doc__=interface.__doc__, __module__=interface.__module__)
+
+
+def generate_entry_adapter(content_interface, webservice_interface):
+    """Create a class adapting from content_interface to webservice_interface.
+    """
+    if not isinstance(content_interface, InterfaceClass):
+        raise TypeError('content_interface is not an interface.')
+
+    if not isinstance(webservice_interface, InterfaceClass):
+        raise TypeError('webservice_interface is not an interface.')
+
+    tag = content_interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    if tag is None:
+        raise TypeError(
+            "'%s' isn't tagged for webservice export." %
+            content_interface.__name__)
+
+    attrs = {'schema': webservice_interface}
+    for name, field in getFields(content_interface).items():
+        tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        if tag is None:
+            continue
+        attrs[tag['as']] = Passthrough(name, 'context')
+
+    classname = "%sAdapter" % webservice_interface.__name__[1:]
+    factory = type(classname, bases=(Entry,), dict=attrs)
+
+    classImplements(factory, webservice_interface)
+    return factory

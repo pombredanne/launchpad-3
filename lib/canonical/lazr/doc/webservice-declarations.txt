@@ -209,31 +209,33 @@ And the interface must have been exported as a collection:
 
 == Generating the webservice ==
 
+=== Entry ==
+
 The webservice can be generated from these tagged interface.
 generate_entry_interface() will create a subinterface of IEntry
 containing the a copy of the IField definitions of the original
 interface that were tagged for export.
 
     >>> from canonical.lazr.rest.declarations import generate_entry_interface
-    >>> interface = generate_entry_interface(IBook)
+    >>> entry_interface = generate_entry_interface(IBook)
 
 The created interface is named with 'Entry' appended to the original
 name, and is in the same module
 
-    >>> interface.__module__
+    >>> entry_interface.__module__
     '__builtin__'
-    >>> interface.__name__
+    >>> entry_interface.__name__
     'IBookEntry'
 
 It extends IEntry.
 
     >>> from canonical.lazr.interfaces.rest import IEntry
-    >>> interface.extends(IEntry)
+    >>> entry_interface.extends(IEntry)
     True
 
 All fields tagged were copied to the new interface:
 
-    >>> for name, field in sorted(interface.namesAndDescriptions()):
+    >>> for name, field in sorted(entry_interface.namesAndDescriptions()):
     ...     print "%s: %s" % (name, field.__class__.__name__)
     author: TextLine
     price: Float
@@ -244,6 +246,60 @@ It's an error to use that on an interface that wasn't marked for export:
     >>> class SimpleNotExported(Interface):
     ...     """Interface not exported."""
     >>> generate_entry_interface(SimpleNotExported)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'SimpleNotExported' isn't tagged for webservice export.
+
+The adapter can be generated using the generate_entry_adapter(). It
+takes the tagged content interface and the IEntry subinterface as
+parameters.
+
+    >>> from canonical.lazr.rest.declarations import generate_entry_adapter
+    >>> entry_adapter_factory = generate_entry_adapter(IBook, entry_interface)
+
+The resulting adapter provides the webservice interface:
+
+    >>> entry_interface.implementedBy(entry_adapter_factory)
+    True
+
+The resulting class is named based on the interface:
+
+    >>> entry_adapter_factory.__name__
+    'BookEntryAdapter'
+
+The resulting adapter has its schema attribute set to the exported
+interface, and proxies all attribute to the underlying object.
+
+    >>> from zope.interface import implements
+    >>> from zope.interface.verify import verifyObject
+
+    >>> class Book(object):
+    ...     """Simple IBook implementation."""
+    ...     implements(IBook)
+    ...     def __init__(self, author, title, base_price, inventory_number):
+    ...         self.author = author
+    ...         self.title = title
+    ...         self.base_price = base_price
+    ...         self.inventory_number = inventory_number
+
+    >>> entry_adapter = entry_adapter_factory(
+    ...     Book(u'Aldous Huxley', u'Island', 10.0, '12345'))
+
+    >>> entry_adapter.schema is entry_interface
+    True
+    >>> verifyObject(entry_interface, entry_adapter)
+    True
+    >>> entry_adapter.author
+    u'Aldous Huxley'
+    >>> entry_adapter.price
+    10.0
+    >>> entry_adapter.title
+    u'Island'
+
+It's an error to call this on an interface not exported on the web
+service:
+
+    >>> generate_entry_adapter(SimpleNotExported, entry_interface)
     Traceback (most recent call last):
       ...
     TypeError: 'SimpleNotExported' isn't tagged for webservice export.
