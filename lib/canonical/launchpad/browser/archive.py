@@ -447,6 +447,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     custom_widget('destination_archive', DestinationArchiveRadioWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
 
+    default_pocket = PackagePublishingPocket.RELEASE
+
     def setUpFields(self):
         """Override `ArchiveSourceSelectionFormView`.
 
@@ -525,20 +527,23 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         """Simply re-issue the form with the new values."""
         pass
 
-    def validate_copy(self, action, data):
-        """Validate copy parameters.
+    def _checkCopyDestination(self, source, series, pocket, archive):
+        """Whether or not the given destination is allowed for copy.
 
-        Ensure we have, at least, one source selected ...
+        Return False if the given destination is the current location
+        package, True otherwise.
         """
-        form.getWidgetsData(self.widgets, 'field', data)
+        if series is not None:
+            if (source.distroseries == series and
+                source.archive == archive and
+                source.pocket == pocket):
+                return False
+        else:
+            if source.archive == archive and source.pocket == pocket:
+                return False
 
-        if len(data.get('selected_sources', [])) == 0:
-            self.setFieldError('selected_sources', 'No sources selected.')
 
-        if (data.get('destination_archive') == self.context and
-            data.get('destination_series') is None):
-            self.setFieldError(
-                'destination_series', 'Select a different series.')
+        return True
 
     def _doCopy(self, sources, series, pocket, archive,
                 include_binaries=False):
@@ -567,12 +572,62 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             source_copy = source.copyTo(series, pocket, archive)
             copies.append(source_copy)
             if not include_binaries:
-                source_copy.createBuilds(ignore_pas=True)
+                source_copy.createMissingBuilds(ignore_pas=True)
                 continue
             for binary in source.getPublishedBinaries():
                 binary_copy = binary.copyTo(series, pocket, archive)
                 copies.append(binary_copy)
         return copies
+
+    def validate_copy(self, action, data):
+        """Validate copy parameters.
+
+        Ensure we have:
+
+         * At least, one source selected;
+         * The default series input is not given when copying to the
+           context PPA;
+         * The selecte destination fits all selected sources.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        selected_sources = data.get('selected_sources', [])
+        destination_archive = data.get('destination_archive')
+        destination_series = data.get('destination_series')
+        destination_pocket = self.default_pocket
+
+        if len(selected_sources) == 0:
+            self.setFieldError('selected_sources', 'No sources selected.')
+            return
+
+        if (destination_archive == self.context and
+            destination_series is None):
+            self.setFieldError(
+                'destination_series', 'Select a different series.')
+            return
+
+        broken_copies = []
+        for source in selected_sources:
+            if not self._checkCopyDestination(
+                source, destination_series, destination_pocket,
+                destination_archive):
+                broken_copies.append(source)
+
+        if len(broken_copies) == 0:
+            return
+
+        if len(broken_copies) == 1:
+            error_message = """
+                The following source cannot be copied because it
+                was targeted to the same location: %s
+            """ % broken_copies[0].displayname
+        else:
+            error_message = """
+                The following sources cannot be copied because they
+                were targeted to the same location: %s
+            """ % ", ".join([source.displayname for source in broken_copies])
+
+        self.setFieldError('selected_sources', error_message)
 
     @action(_("Copy Packages"), name="copy", validator="validate_copy")
     def action_copy(self, action, data):
@@ -585,7 +640,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         destination_series = data.get('destination_series')
         include_binaries = data.get('include_binaries')
 
-        destination_pocket = PackagePublishingPocket.RELEASE
+        destination_pocket = self.default_pocket
 
         copies = self._doCopy(
             selected_sources, destination_series, destination_pocket,

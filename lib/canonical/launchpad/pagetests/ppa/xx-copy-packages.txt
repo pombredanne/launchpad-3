@@ -316,8 +316,25 @@ the archive won't be changed).
     There is 1 error.
     Select a different series.
 
-Okay, now James gets a little more careful and re-selects the 'pmount'
-source and 'grumpy' as Destination Series.
+Without thinking much James erroneously selects 'hoary' series and
+pushes the copy button. The same error is raised.
+
+    >>> jblack_browser.getControl(
+    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+
+    >>> jblack_browser.getControl(
+    ...     'Destination series').value = ['hoary']
+
+    >>> jblack_browser.getControl("Copy Packages").click()
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    The following source cannot be copied because it
+    was targeted to the same location: pmount 0.1-1 in hoary
+
+Darn, now James being more careful and re-selects the 'pmount' source
+and 'grumpy' as Destination Series.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [str(pmount_pub_id)]
@@ -550,6 +567,29 @@ sources to ensure the binaries are really there.
       mozilla-firefox
       ff from iceweasel
     ...
+
+Not using his brain again, James tries to copy the two sources to the
+same location within James Blackwell Friends' PPAs, pretty much as if
+he was trying to break Launchpad. Poor James, this time he gets a
+plural error message.
+
+    >>> jblack_browser.getLink('Copy packages').click()
+
+    >>> jblack_browser.getControl(
+    ...    name='field.selected_sources').value = [
+    ...    str(pmount_pub_id), str(iceweasel_pub_id)]
+
+    >>> jblack_browser.getControl(
+    ...     'Destination series').value = ['hoary']
+
+    >>> jblack_browser.getControl("Copy Packages").click()
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    The following sources cannot be copied because they
+    were targeted to the same location:
+    iceweasel 1.0 in hoary, pmount 0.1-1 in hoary
 
 
 That's all folks !
