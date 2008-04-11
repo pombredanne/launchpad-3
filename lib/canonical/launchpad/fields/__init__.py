@@ -297,8 +297,8 @@ class DuplicateBug(BugField):
         elif dup_target.duplicateof is not None:
             raise LaunchpadValidationError(_(dedent("""
                 Bug ${dup} is already a duplicate of bug ${orig}. You
-                can only duplicate to bugs that are not duplicates
-                themselves.
+                can only mark a bug report as duplicate of one that
+                isn't a duplicate itself.
                 """), mapping={'dup': dup_target.id,
                                'orig': dup_target.duplicateof.id}))
         elif current_bug_has_dup_refs:
@@ -366,7 +366,7 @@ class UniqueField(TextLine):
         object of this same context. The 'input' should be valid as per
         TextLine.
         """
-        TextLine._validate(self, input)
+        super(UniqueField, self)._validate(input)
         assert self._content_iface is not None
         _marker = object()
 
