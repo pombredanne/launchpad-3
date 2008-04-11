@@ -47,18 +47,19 @@ Let's check the complex properties of a build object.
     >>> firefox_build.is_virtualized
     False
 
-The 'firefox_build' is already finished and the `estimated_buildstart`
-property should be empty (None)
+The 'firefox_build' is already finished and requesting the estimated build
+start time makes no sense. Hence an exception is raised.
 
-    >>> firefox_build.estimated_buildstart is None
-    True
+    >>> firefox_build.getEstimatedBuildStartTime()
+    Traceback (most recent call last):
+    ...
+    AssertionError: The start time is only estimated for pending builds.
 
 The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
 hence ask for its estimated build start time. The latter will be
 undefined however because the corresponding build pool is empty.
 
-    >>> from datetime import datetime as DT
-    >>> pending_build.estimated_buildstart == DT.utcfromtimestamp(0)
+    >>> pending_build.getEstimatedBuildStartTime() is None
     True
 
 The currently published component is provided via the 'current_component'
