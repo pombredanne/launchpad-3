@@ -54,13 +54,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedLaunchpadZopelessLayer
 
-    def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13 bug=120156
-        # Override Twisted's post-test cleanup.
-        # The tests fail badly if this is removed, for unknown reasons.
-        from twisted.internet import defer
-        return defer.succeed(None)
-
     @defer_to_thread
     def test_remove_branch_directory(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
@@ -288,13 +281,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedLaunchpadZopelessLayer
-
-    def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13 bug=120156: Override Twisted's
-        # post-test cleanup. The tests fail badly if this is removed, for
-        # unknown reasons.
-        from twisted.internet import defer
-        return defer.succeed(None)
 
     def installServer(self, server):
         self.server = server

@@ -34,7 +34,7 @@ class _BranchSubscriptionView(LaunchpadFormView):
     """Contains the common functionality of the Add and Edit views."""
 
     schema = IBranchSubscription
-    field_names = ['notification_level', 'max_diff_lines']
+    field_names = ['notification_level', 'max_diff_lines', 'review_level']
 
     LEVELS_REQUIRING_LINES_SPECIFICATION = (
         BranchSubscriptionNotificationLevel.DIFFSONLY,
@@ -52,15 +52,17 @@ class _BranchSubscriptionView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def add_notification_message(self, initial,
-                                 notification_level, max_diff_lines):
+                                 notification_level, max_diff_lines,
+                                 review_level):
         if notification_level in self.LEVELS_REQUIRING_LINES_SPECIFICATION:
             lines_message = '<li>%s</li>' % max_diff_lines.description
         else:
             lines_message = ''
 
-        format_str = '%%s<ul><li>%%s</li>%s</ul>' % lines_message
+        format_str = '%%s<ul><li>%%s</li>%s<li>%%s</li></ul>' % lines_message
         message = structured(format_str, initial,
-                             notification_level.description)
+                             notification_level.description,
+                             review_level.description)
         self.request.response.addNotification(message)
 
     def optional_max_diff_lines(self, notification_level, max_diff_lines):
@@ -85,13 +87,14 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
             notification_level = data['notification_level']
             max_diff_lines = self.optional_max_diff_lines(
                 notification_level, data['max_diff_lines'])
+            review_level = data['review_level']
 
             self.context.subscribe(
-                self.user, notification_level, max_diff_lines)
+                self.user, notification_level, max_diff_lines, review_level)
 
             self.add_notification_message(
                 'You have subscribed to this branch with: ',
-                notification_level, max_diff_lines)
+                notification_level, max_diff_lines, review_level)
 
 
 class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
@@ -130,7 +133,8 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
             self.add_notification_message(
                 'Subscription updated to: ',
                 subscription.notification_level,
-                subscription.max_diff_lines)
+                subscription.max_diff_lines,
+                subscription.review_level)
         else:
             self.request.response.addNotification(
                 'You are not subscribed to this branch.')
@@ -139,8 +143,9 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     """View used to subscribe someone other than the current user."""
 
-    field_names = ['person', 'notification_level', 'max_diff_lines']
-    for_input=True
+    field_names = [
+        'person', 'notification_level', 'max_diff_lines', 'review_level']
+    for_input = True
 
     # Since we are subscribing other people, the current user
     # is never considered subscribed.
@@ -160,6 +165,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         notification_level = data['notification_level']
         max_diff_lines = self.optional_max_diff_lines(
             notification_level, data['max_diff_lines'])
+        review_level = data['review_level']
         person = data['person']
         subscription = self.context.getSubscription(person)
         self.next_url = canonical_url(self.context)
@@ -178,16 +184,19 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                 self.next_url = None
                 return
 
-            self.context.subscribe(person, notification_level, max_diff_lines)
+            self.context.subscribe(
+                person, notification_level, max_diff_lines, review_level)
 
             self.add_notification_message(
                 '%s has been subscribed to this branch with: '
-                % person.displayname, notification_level, max_diff_lines)
+                % person.displayname, notification_level, max_diff_lines,
+                review_level)
         else:
             self.add_notification_message(
                 '%s was already subscribed to this branch with: '
                 % person.displayname,
-                subscription.notification_level, subscription.max_diff_lines)
+                subscription.notification_level, subscription.max_diff_lines,
+                review_level)
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
@@ -198,7 +207,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     This is the only current way to edit a team branch subscription.
     """
     schema = IBranchSubscription
-    field_names = ['notification_level', 'max_diff_lines']
+    field_names = ['notification_level', 'max_diff_lines', 'review_level']
 
     def initialize(self):
         self.branch = self.context.branch

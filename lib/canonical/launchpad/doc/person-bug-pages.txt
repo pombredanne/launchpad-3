@@ -164,10 +164,10 @@ Using the advanced form we can query for closed bugs someone is subscribed to.
     [(8, 'FIXRELEASED', u'name16')]
 
 
-== Bugs for Bug Contact ==
+== Bugs for Bug Supervisor ==
 
 Malone can generate bug reports for packages on which a user is a bug
-contact. The Person context is used only to get a list of packages that
+supervisor. The Person context is used only to get a list of packages that
 the user has chosen to subscribe to, but any package could be searched
 from these reports, simply by hacking the URL.
 

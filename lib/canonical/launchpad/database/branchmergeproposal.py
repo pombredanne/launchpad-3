@@ -137,6 +137,22 @@ class BranchMergeProposal(SQLBase):
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
+    def getNotificationRecipients(self, min_level):
+        """See IBranchMergeProposal.getNotificationRecipients"""
+        recipients = {}
+        branches = [self.source_branch, self.target_branch]
+        if self.dependent_branch is not None:
+            branches.append(self.dependent_branch)
+        for branch in branches:
+            branch_recipients = branch.getNotificationRecipients()
+            for recipient in branch_recipients:
+                subscription, rationale = branch_recipients.getReason(
+                    recipient)
+                if (subscription.review_level < min_level):
+                    continue
+                recipients[recipient] = (subscription, rationale)
+        return recipients
+
     def isValidTransition(self, next_state, user=None):
         """See `IBranchMergeProposal`."""
         [wip, needs_review, code_approved, rejected,

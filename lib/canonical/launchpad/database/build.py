@@ -62,6 +62,7 @@ class Build(SQLBase):
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
+    estimated_build_duration = IntervalCol(default=None)
 
     @property
     def buildqueue_record(self):
@@ -297,7 +298,9 @@ class Build(SQLBase):
         satisfied and if it is reachable in the build context.
         """
         name, version, relation = self._parseDependencyToken(token)
-        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        dep_candidate = self.archive.findDepCandidateByName(
+            self.distroarchseries, name)
 
         if not dep_candidate:
             return False
@@ -306,7 +309,14 @@ class Build(SQLBase):
             dep_candidate.binarypackageversion, version, relation):
             return False
 
-        if dep_candidate.component not in self.ogre_components:
+        # Only PRIMARY archive build dependencies should be restricted
+        # to the ogre_components. Both PARTNER and PPA can reach
+        # dependencies from all components in the PRIMARY archive.
+        # Moreover, PARTNER and PPA component domain is single, i.e,
+        # PARTNER only contains packages in 'partner' component and PPAs
+        # only contains packages in 'main' component.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            dep_candidate.component not in self.ogre_components):
             return False
 
         return True

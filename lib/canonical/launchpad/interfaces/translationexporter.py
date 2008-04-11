@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces to handle translation files exports."""
@@ -30,7 +30,7 @@ class ITranslationExporter(Interface):
     """Exporter for translation files."""
 
     def getExportersForSupportedFileFormat(file_format):
-        """Return all `ITranslationFormatExporter` that can export file_format.
+        """Return `ITranslationFormatExporter`s that can export file_format.
 
         :param file_format: The source `ITranslationFileFormat` format for the
             translation file we want to export.
@@ -75,11 +75,11 @@ class ITranslationFormatExporter(Interface):
         :return: Unicode string representing given `ITranslationMessageData`.
         """
 
-    def exportTranslationFiles(translation_file_list, ignore_obsolete=False,
+    def exportTranslationFiles(translation_files, ignore_obsolete=False,
                                force_utf8=False):
         """Return an `IExportedTranslationFile` representing the export.
 
-        :param translation_file_list: A list of ITranslationFileData objects
+        :param translation_files: A sequence of `ITranslationFileData` objects
             to export.
         :param ignore_obsolete: A flag indicating whether obsolete messages
             should be exported.

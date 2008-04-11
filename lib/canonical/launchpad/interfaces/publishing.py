@@ -329,6 +329,12 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Pocket, ordered by architecturetag.
         """
 
+    def getBuilds():
+        """Return `IBuild` objects in this SourcePackageRelease` context.
+
+        The builds are ordered by `DistroArchSeries.architecturetag`.
+        """
+
     def getSourceAndBinaryLibraryFiles():
         """Return LibraryFileAlias records for all source and binaries.
 

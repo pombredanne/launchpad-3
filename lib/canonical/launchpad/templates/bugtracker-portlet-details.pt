@@ -8,11 +8,9 @@
     <div class="portletBody">
         <div class="portletContent">
 
-        <b>Base URL:</b><br />
+        <b>Location:</b><br />
         <img alt="" src="/@@/link" />
-        <a
-           tal:attributes="href context/baseurl"
-           tal:content="context/baseurl">http://test.mozilla.org</a><br />
+        <a tal:replace="structure context/fmt:external-link" /><br />
 
         <b>Tracker Type:</b>
         <span tal:replace="context/bugtrackertype/title">BugZilla</span>

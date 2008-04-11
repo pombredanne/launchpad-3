@@ -196,6 +196,17 @@ class IBranchMergeProposal(Interface):
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
 
+    def getNotificationRecipients(min_level):
+        """Return the people who should be notified.
+
+        Recipients will be returned as a dictionary where the key is the
+        person, and the values are (subscription, rationale) tuples.
+
+        :param min_level: The minimum notification level needed to be
+            notified.
+        """
+
+
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
 

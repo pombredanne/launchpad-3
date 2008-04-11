@@ -7,10 +7,16 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet',
-    'SSHKey', 'SSHKeySet',
-    'WikiName', 'WikiNameSet',
-    'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
+    'IrcID',
+    'IrcIDSet',
+    'JabberID',
+    'JabberIDSet',
+    'Person',
+    'PersonSet',
+    'SSHKey',
+    'SSHKeySet',
+    'WikiName',
+    'WikiNameSet']
 
 from datetime import datetime, timedelta
 import pytz
@@ -41,6 +47,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.oauth import OAuthAccessToken
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -95,7 +102,8 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import (
+    public_person_validator, visibility_validator)
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -225,7 +233,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
     visibility = EnumCol(
         enum=PersonVisibility,
-        default=PersonVisibility.PUBLIC)
+        default=PersonVisibility.PUBLIC,
+        validator=visibility_validator)
 
     personal_standing = EnumCol(
         enum=PersonalStanding, default=PersonalStanding.UNKNOWN,
@@ -253,6 +262,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # doing and we don't want any email notifications to be sent.
         TeamMembershipSet().new(
             team_owner, self, TeamMembershipStatus.ADMIN, team_owner)
+
+    @property
+    def oauth_access_tokens(self):
+        """See `IPerson`."""
+        return OAuthAccessToken.select("""
+            person = %s
+            AND (date_expires IS NULL OR date_expires > %s)
+            """ % sqlvalues(self, UTC_NOW))
 
     @cachedproperty
     def _location(self):
@@ -1549,6 +1566,96 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             new_name = base_new_name + str(count)
             count += 1
         self.name = new_name
+
+    @property
+    def visibility_consistency_warning(self):
+        """Warning used when changing the team's visibility.
+
+        A private-membership team cannot be connected to other
+        objects, since it may be possible to infer the membership.
+        """
+        cur = cursor()
+        references = list(postgresql.listReferences(cur, 'person', 'id'))
+        # These tables will be skipped since they do not risk leaking
+        # team membership information, except StructuralSubscription
+        # which will be checked further down to provide a clearer warning.
+        skip = [
+            ('emailaddress', 'person'),
+            ('gpgkey', 'owner'),
+            ('ircid', 'person'),
+            ('jabberid', 'person'),
+            ('karma', 'person'),
+            ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
+            ('logintoken', 'requester'),
+            ('personlanguage', 'person'),
+            ('personlocation', 'person'),
+            ('signedcodeofconduct', 'owner'),
+            ('sshkey', 'person'),
+            ('structuralsubscription', 'subscriber'),
+            # Private-membership teams can have members, but they
+            # cannot be members of other teams.
+            ('teammembership', 'team'),
+            # A private-membership team must be able to participate in itself.
+            ('teamparticipation', 'person'),
+            ('teamparticipation', 'team'),
+            # This table is handled entirely by triggers.
+            ('validpersonorteamcache', 'id'),
+            ]
+        warnings = set()
+        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+            if (src_tab, src_col) in skip:
+                continue
+            cur.execute('SELECT 1 FROM %s WHERE %s=%d LIMIT 1'
+                        % (src_tab, src_col, self.id))
+            if cur.rowcount > 0:
+                if src_tab[0] in 'aeiou':
+                    article = 'an'
+                else:
+                    article = 'a'
+                warnings.add('%s %s' % (article, src_tab))
+
+        # Add warnings for subscriptions in StructuralSubscription table
+        # describing which kind of object is being subscribed to.
+        cur.execute("""
+            SELECT
+                count(product) AS product_count,
+                count(productseries) AS productseries_count,
+                count(project) AS project_count,
+                count(milestone) AS milestone_count,
+                count(distribution) AS distribution_count,
+                count(distroseries) AS distroseries_count,
+                count(sourcepackagename) AS sourcepackagename_count
+            FROM StructuralSubscription
+            WHERE subscriber=%d LIMIT 1
+            """ % self.id)
+
+        row = cur.dictfetchone()
+        for column, warning in [
+            ('product_count', 'a project subscriber'),
+            ('productseries_count', 'a project series subscriber'),
+            ('project_count', 'a project subscriber'),
+            ('milestone_count', 'a milestone subscriber'),
+            ('distribution_count', 'a distribution subscriber'),
+            ('distroseries_count', 'a distroseries subscriber'),
+            ('sourcepackagename_count', 'a source package subscriber'),
+            ]:
+            if row[column] > 0:
+                warnings.add(warning)
+
+        # Compose warning string.
+        warnings = sorted(warnings)
+        if len(warnings) == 0:
+            return None
+        else:
+            if len(warnings) == 1:
+                message = warnings[0]
+            else:
+                message = '%s and %s' % (
+                    ', '.join(warnings[:-1]),
+                    warnings[-1])
+            return ('This team cannot be made private since it is referenced'
+                    ' by %s.' % message)
 
     def getActiveMemberships(self):
         """See `IPerson`."""

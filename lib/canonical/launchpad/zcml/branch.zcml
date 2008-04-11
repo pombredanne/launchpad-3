@@ -167,6 +167,14 @@
       template="../templates/branch-edit.pt" />
 
   <browser:page
+      name="+edit-import"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.CodeImportEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/codeimport-edit.pt" />
+
+  <browser:page
       name="+delete"
       for="canonical.launchpad.interfaces.IBranch"
       class="canonical.launchpad.browser.BranchDeletionView"

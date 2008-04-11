@@ -111,6 +111,5 @@ class IBugAttachmentEditForm(Interface):
             "text/plain"),
         required=True)
     patch = Bool(
-        title=u"Patch",
-        description=u"Check this box if the attachment is a patch.",
+        title=u"This attachment is a patch",
         required=True, default=False)
