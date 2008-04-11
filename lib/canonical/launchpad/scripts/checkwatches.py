@@ -64,9 +64,7 @@ class TooMuchTimeSkew(BugWatchUpdateError):
 class CheckWatchesErrorUtility(ErrorReportingUtility):
     """An error utility that for the checkwatches process."""
 
-    def __init__(self):
-        super(CheckWatchesErrorUtility, self).__init__()
-        self.setOopsToken('CW')
+    _default_config_section = 'checkwatches'
 
 
 def report_oops(message=None, properties=None, info=None):

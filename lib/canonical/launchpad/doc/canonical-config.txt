@@ -55,7 +55,7 @@ which extends default/launchpad-lazr.conf.
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/default/launchpad-lazr.conf'
+    '.../configs/development/launchpad-lazr.conf'
 
 CanonicalConfig provides __contains__ and __getitem__ to check and
 access lazr.config sections and keys.
@@ -211,12 +211,12 @@ conf file is loaded.
     # We must reset the lazr.config instance to test this.
     >>> config._config = None
 
-    >>> config.setInstance('default')
+    >>> config.setInstance('development')
     >>> config.instance_name
-    'default'
+    'development'
 
     >>> config.filename
-    '.../configs/default/launchpad-lazr.conf'
+    '.../configs/development/launchpad-lazr.conf'
     >>> config.extends.filename
     '.../canonical/config/schema-lazr.conf'
 
@@ -260,7 +260,7 @@ the process's name.
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/default/launchpad-lazr.conf'
+    '.../configs/development/launchpad-lazr.conf'
 
     >>> config.answertracker.days_before_expiration
     15
@@ -287,7 +287,7 @@ module to test CanonicalConfig's behaviour.
 #    >>> config.filename
 #    '.../configs/mailman-itests/launchpad-lazr.conf'
 #    >>> config.extends.filename
-#    '.../configs/default/launchpad-lazr.conf'
+#    '.../configs/development/launchpad-lazr.conf'
 #    >>> config.database.dbname
 #    'launchpad_dev'
 

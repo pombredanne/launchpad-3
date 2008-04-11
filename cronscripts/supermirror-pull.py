@@ -9,8 +9,7 @@ from twisted.internet import defer, reactor
 
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.codehosting.puller import (
-    configure_oops_reporting, mirror, scheduler)
+from canonical.codehosting.puller import mirror, scheduler
 
 
 def clean_shutdown(ignored):
@@ -51,7 +50,6 @@ if __name__ == '__main__':
             'Expected one of %s, but got: %r'
             % (branch_type_map.keys(), which))
 
-    configure_oops_reporting(branch_type)
     log = logger(options, 'branch-puller')
     manager = scheduler.JobScheduler(
         scheduler.BranchStatusClient(), log, branch_type)

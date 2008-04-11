@@ -45,6 +45,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
+from canonical.launchpad.webapp.menu import structured
+
 
 def can_be_nominated_for_serieses(serieses):
     """Can the bug be nominated for these serieses?"""
@@ -58,7 +60,7 @@ def can_be_nominated_for_serieses(serieses):
         series_str = ", ".join(unnominatable_serieses)
         raise LaunchpadValidationError(_(
             "This bug has already been nominated for these "
-            "series: %s"), series_str)
+            "series: ${series}", mapping={'series': series_str}))
 
     return True
 
@@ -90,10 +92,12 @@ def _validate_ascii_printable_text(text):
         first_non_ascii_char = text[unicode_error.start:unicode_error.end]
         e_with_acute = u'\N{LATIN SMALL LETTER E WITH ACUTE}'
         raise LaunchpadValidationError(_(dedent("""
-            Sorry, but non-ASCII characters (such as '%s'), aren't accepted
-            by our shipping company. Please change these to ASCII
-            equivalents. (For instance, '%s' should be changed to 'e')"""
-            % (first_non_ascii_char, e_with_acute))))
+            Sorry, but non-ASCII characters (such as '${char}'),
+            aren't accepted by our shipping company. Please change
+            these to ASCII equivalents. (For instance, '${example}'
+            should be changed to 'e')"""),
+            mapping={'char': first_non_ascii_char,
+                     'example': e_with_acute}))
     if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
         raise LaunchpadValidationError(_(
             'Non printable characters are not allowed.'))
@@ -288,7 +292,7 @@ def valid_bug_number(value):
         bugset.get(value)
     except NotFoundError:
         raise LaunchpadValidationError(_(
-            "Bug %i doesn't exist." % value))
+            "Bug ${bugid} doesn't exist.", mapping={'bugid': value}))
     return True
 
 
@@ -299,13 +303,14 @@ def valid_cve_sequence(value):
         return True
     else:
         raise LaunchpadValidationError(_(
-            "%s is not a valid CVE number"), value)
+            "${cve} is not a valid CVE number", mapping={'cve': value}))
 
 
 def _validate_email(email):
     if not valid_email(email):
-        raise LaunchpadValidationError(_(dedent("""
-            %s isn't a valid email address.""" % escape(email))))
+        raise LaunchpadValidationError(_(
+            "${email} isn't a valid email address.",
+            mapping={'email': email}))
 
 
 def validate_new_team_email(email):
@@ -317,10 +322,12 @@ def validate_new_team_email(email):
     _validate_email(email)
     email = getUtility(IEmailAddressSet).getByEmail(email)
     if email is not None:
-        raise LaunchpadValidationError(_(
-            '%s is already registered in Launchpad and is associated with '
-            '<a href="%s">%s</a>.'), email.email,
-            canonical_url(email.person), email.person.browsername)
+        message = _('${email} is already registered in Launchpad and is '
+                    'associated with <a href="${url}">${team}</a>.',
+                    mapping={'email': escape(email.email),
+                             'url':   canonical_url(email.person),
+                             'team':  escape(email.person.browsername)})
+        raise LaunchpadValidationError(structured(message))
     return True
 
 
@@ -338,9 +345,11 @@ def validate_new_person_email(email):
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)
     if owner is not None:
-        raise LaunchpadValidationError(_(
-            "The profile you're trying to create already exists: "
-            '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
+        message = _("The profile you're trying to create already exists: "
+                    '<a href="${url}">${owner}</a>.',
+                    mapping={'url': canonical_url(owner),
+                             'owner': escape(owner.browsername)})
+        raise LaunchpadValidationError(structured(message))
     return True
 
 
@@ -362,9 +371,10 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
         # task opened.
         if bug.getBugTask(distribution) is not None:
             raise LaunchpadValidationError(_(
-                    'This bug is already open on %s with no package '
-                    'specified. You should fill in a package name for the '
-                    'existing bug.'), distribution.displayname)
+                    'This bug is already open on ${distribution} with no '
+                    'package specified. You should fill in a package '
+                    'name for the existing bug.',
+                    mapping={'distribution': distribution.displayname}))
     else:
         # Prevent having a task on only the distribution if there's at
         # least one task already on the distribution, whether or not
@@ -376,9 +386,10 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
 
         if len(distribution_tasks_for_bug) > 0:
             raise LaunchpadValidationError(_(
-                    'This bug is already on %s. Please specify an affected '
-                    'package in which the bug has not yet been reported.'),
-                    distribution.displayname)
+                    'This bug is already on ${distribution}. Please '
+                    'specify an affected package in which the bug '
+                    'has not yet been reported.',
+                    mapping={'distribution': distribution.displayname}))
     validate_distrotask(bug, distribution, sourcepackagename)
 
 
@@ -393,20 +404,22 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         try:
             distribution.guessPackageNames(sourcepackagename.name)
         except NotFoundError, e:
-            raise LaunchpadValidationError(escape(unicode(e)))
+            raise LaunchpadValidationError(e)
     new_source_package = distribution.getSourcePackage(sourcepackagename)
     if sourcepackagename is not None and (
         bug.getBugTask(new_source_package) is not None):
         # Ensure this distribution/sourcepackage task is unique.
         raise LaunchpadValidationError(_(
-                'This bug has already been reported on %s (%s).'),
-                sourcepackagename.name, distribution.name)
+                'This bug has already been reported on ${source} '
+                '(${distribution}).',
+                mapping={'source': sourcepackagename.name,
+                         'distribution': distribution.name}))
     elif (sourcepackagename is None and
           bug.getBugTask(distribution) is not None):
         # Don't allow two distribution tasks with no source package.
         raise LaunchpadValidationError(_(
-                'This bug has already been reported on %s.'),
-                 distribution.name)
+                'This bug has already been reported on ${distribution}.',
+                 mapping={'distribution': distribution.name}))
     else:
         # The bugtask is valid.
         pass
@@ -424,8 +437,8 @@ def valid_upstreamtask(bug, product):
     params = BugTaskSearchParams(user, bug=bug)
     if product.searchTasks(params):
         errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for %s'),
-            product.displayname))
+            'A fix for this bug has already been requested for ${product}',
+            mapping={'product': product.displayname})))
 
     if errors:
         raise WidgetsError(errors)
@@ -597,7 +610,7 @@ def validate_date_interval(start_date, end_date, error_msg=None):
         error_msg = _("This event can't start after it ends.")
     errors = []
     if start_date >= end_date:
-        errors.append(LaunchpadValidationError(escape(error_msg)))
+        errors.append(LaunchpadValidationError(error_msg))
     if errors:
         raise WidgetsError(errors)
 

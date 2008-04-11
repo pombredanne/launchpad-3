@@ -81,8 +81,4 @@ class VisibilityValidator(Validator):
         self._verify(value, state)
         return value
 
-    def toPython(self, value, state=None):
-        self._verify(value, state)
-        return value
-
 visibility_validator = VisibilityValidator()
