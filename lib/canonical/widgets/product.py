@@ -122,6 +122,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
 
+    # XXX: EdwinGrubbs 2008-04-11 bug=216040
+    # This entire function can be removed after the deprecated
+    # licenses have been removed from the enum.
     def renderItemsWithValues(self, values):
         """Render the list of possible values, with those found in
         `values` being marked as selected.
