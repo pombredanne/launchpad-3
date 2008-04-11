@@ -223,6 +223,7 @@ class TracLPPlugin(ExternalBugTracker):
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
+        self._authenticate()
         endpoint = urlappend(self.baseurl, 'xmlrpc')
         server = xmlrpclib.ServerProxy(
             endpoint, transport=self.xmlrpc_transport)

@@ -46,6 +46,7 @@ Trac instance.
     ...         response.headers['Set-Cookie'] = 'trac_auth=random_token'
     ...         return response
 
+    >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TestTracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
     >>> trac._authenticate()
@@ -67,11 +68,13 @@ The cookie is set by the transport used.
     Host: example.com
     Cookie: trac_auth=random_token
 
+
 == Current time ==
 
 The current time is always returned in UTC, no matter if the Trac
 instance returns another time zone.
 
+    >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TestTracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
 
@@ -83,4 +86,5 @@ instance returns another time zone.
     >>> test_transport.local_timezone = 'CET'
     >>> test_transport.utc_offset = 60*60
     >>> trac.getCurrentDBTime()
+    Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
