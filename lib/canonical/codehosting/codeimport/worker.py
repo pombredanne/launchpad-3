@@ -28,6 +28,7 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
+from canonical.launchpad.interfaces import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
@@ -144,6 +145,24 @@ class CodeImportSourceDetails:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+
+    @classmethod
+    def fromCodeImport(cls, code_import):
+        """Convert a `CodeImport` to an instance."""
+        if code_import.rcs_type == RevisionControlSystems.SVN:
+            rcstype = 'svn'
+            svn_branch_url = str(code_import.svn_branch_url)
+            cvs_root = cvs_module = None
+        elif code_import.rcs_type == RevisionControlSystems.CVS:
+            rcstype = 'cvs'
+            svn_branch_url = None
+            cvs_root = str(code_import.cvs_root)
+            cvs_module = str(code_import.cvs_module)
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return cls(
+            code_import.branch.id, rcstype, svn_branch_url,
+            cvs_root, cvs_module)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
