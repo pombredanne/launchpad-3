@@ -1,7 +1,7 @@
 (We will use the advanced filebug form in the examples below, to skip
 searching for dupes.)
 
-Filing a public bug on an upstream will subscribe the bug contact, as
+Filing a public bug on an upstream will subscribe the bug supervisor, as
 well.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
@@ -17,7 +17,7 @@ well.
     http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
 Now sabdfl (because he's the bug reporter), guadamen (because they are
-the product bug contact), and lifeless (because he is a subscriber to
+the product bug supervisor), and lifeless (because he is a subscriber to
 mozilla) are subscribed to this bug:
 
     >>> from zope.component import getUtility
