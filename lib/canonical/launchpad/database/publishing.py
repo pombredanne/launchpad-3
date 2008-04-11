@@ -483,7 +483,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
 
-    def createMissingBuilds(self, ignore_pas=False, logger=None,):
+    def createMissingBuilds(self, ignore_pas=False, logger=None):
         """See `ISourcePackagePublishingHistory`."""
         if self.archive.purpose == ArchivePurpose.PPA or ignore_pas:
             pas_verify = None
@@ -502,23 +502,36 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         builds = []
         for arch in build_architectures:
-            build_candidate = self.sourcepackagerelease.getBuildByArch(
-                arch, self.archive)
-            if (build_candidate is not None and
-                (build_candidate.distroarchseries == arch or
-                 build_candidate.buildstate == BuildStatus.FULLYBUILT)):
-                continue
-            if logger is not None:
-                logger.debug(
-                    "Creating PENDING build for %s." % arch.architecturetag)
-            build = self.sourcepackagerelease.createBuild(
-                distroarchseries=arch, archive=self.archive,
-                pocket=self.pocket)
-            build_queue = build.createBuildQueueEntry()
-            build_queue.score()
-            builds.append(build)
-
+            build_candidate = self._createMissingBuildForArchitecture(
+                arch, logger=None)
+            if build_candidate is not None:
+                builds.append(build_candidate)
         return builds
+
+    def _createMissingBuildForArchitecture(self, arch, logger=None):
+        """Create a build for a given architecture if it doesn't exist yet.
+
+        Return the just-created `IBuild` record already scored or None
+        if it was already present.
+        """
+        build_candidate = self.sourcepackagerelease.getBuildByArch(
+            arch, self.archive)
+
+        if (build_candidate is not None and
+            (build_candidate.distroarchseries == arch or
+             build_candidate.buildstate == BuildStatus.FULLYBUILT)):
+            return None
+
+        if logger is not None:
+            logger.debug("Creating PENDING build for %s."
+                         % arch.architecturetag)
+
+        build = self.sourcepackagerelease.createBuild(
+            distroarchseries=arch, archive=self.archive, pocket=self.pocket)
+        build_queue = build.createBuildQueueEntry()
+        build_queue.score()
+
+        return build
 
     @property
     def secure_record(self):

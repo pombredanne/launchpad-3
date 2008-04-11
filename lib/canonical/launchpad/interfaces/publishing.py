@@ -335,7 +335,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         The builds are ordered by `DistroArchSeries.architecturetag`.
         """
 
-    def createMissingBuilds(ignore_pas=False, logger=None,):
+    def createMissingBuilds(ignore_pas=False, logger=None):
         """Create missing Build records for a published source.
 
         P-a-s should be only initialised and considered when accepting
