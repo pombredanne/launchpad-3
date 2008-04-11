@@ -197,6 +197,9 @@ class TracLPPlugin(ExternalBugTracker):
 
     def __init__(self, baseurl, xmlrpc_transport=None):
         super(TracLPPlugin, self).__init__(baseurl)
+
+        if xmlrpc_transport is None:
+            xmlrpc_transport = TracXMLRPCTransport()
         self.xmlrpc_transport = xmlrpc_transport
 
     def _generateAuthenticationToken(self):
@@ -233,3 +236,8 @@ class TracLPPlugin(ExternalBugTracker):
 class TracXMLRPCTransport(xmlrpclib.Transport):
 
     auth_cookie = None
+
+    def send_host(self, connection, host):
+        xmlrpclib.Transport.send_host(self, connection, host)
+        if self.auth_cookie is not None:
+            connection.putheader('Cookie', self.auth_cookie)

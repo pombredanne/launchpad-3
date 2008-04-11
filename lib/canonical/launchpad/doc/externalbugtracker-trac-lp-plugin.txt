@@ -13,6 +13,8 @@ so that we can avoid network traffic in tests.
     >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
+    >>> trac.xmlrpc_transport is test_transport
+    True
 
 
 == Authentication ==
@@ -52,11 +54,26 @@ Trac instance.
     >>> test_transport.auth_cookie
     'trac_auth=random_token'
 
+The cookie is set by the transport used.
+
+    >>> trac = TracLPPlugin('http://example.com/')
+    >>> transport = trac.xmlrpc_transport
+    >>> transport.auth_cookie = 'trac_auth=random_token'
+
+    >>> class FakeConnection:
+    ...     def putheader(self, header, value):
+    ...         print "%s: %s" % (header, value)
+    >>> transport.send_host(FakeConnection(), 'example.com')
+    Host: example.com
+    Cookie: trac_auth=random_token
 
 == Current time ==
 
 The current time is always returned in UTC, no matter if the Trac
 instance returns another time zone.
+
+    >>> trac = TestTracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
 
     >>> import time
     >>> from datetime import datetime
