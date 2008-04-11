@@ -192,6 +192,24 @@ class Trac(ExternalBugTracker):
             raise UnknownRemoteStatusError()
 
 
+def needs_authentication(func):
+    """Decorator for automatically authenticate if needed.
+
+    If an `xmlrpclib.ProtocolError` with error code 403 is raised by the
+    function, we'll try to authenticate and call the function again.
+    """
+    def decorator(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except xmlrpclib.ProtocolError, error:
+            # Catch authentication errors only.
+            if error.errcode != 403:
+                raise
+            self._authenticate()
+            return func(self, *args, **kwargs)
+    return decorator
+
+
 class TracLPPlugin(ExternalBugTracker):
     """A Trac instance having the LP plugin installed."""
 
@@ -221,9 +239,9 @@ class TracLPPlugin(ExternalBugTracker):
         auth_cookie = response.headers['Set-Cookie']
         self.xmlrpc_transport.auth_cookie = auth_cookie
 
+    @needs_authentication
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        self._authenticate()
         endpoint = urlappend(self.baseurl, 'xmlrpc')
         server = xmlrpclib.ServerProxy(
             endpoint, transport=self.xmlrpc_transport)

@@ -419,6 +419,10 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
+    expired_cookie = None
+
+    def expire_cookie(self, cookie):
+        self.expired_cookie = cookie
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -433,7 +437,8 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         prefix = 'launchpad.'
         assert method_name.startswith(prefix), (
             'All methods should be in the launchpad namespace')
-        if self.auth_cookie is None:
+        if (self.auth_cookie is None or
+            self.auth_cookie == self.expired_cookie):
             # All the Trac XML-RPC methods need authentication.
             raise xmlrpclib.ProtocolError(
                 method_name, errcode=403, errmsg="Forbidden",

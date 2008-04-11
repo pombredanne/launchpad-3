@@ -26,6 +26,7 @@ Trac instance.
     ...     def __init__(self):
     ...         self.headers = {}
 
+    >>> import random
     >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.interfaces import ILoginTokenSet
     >>> class TestTracLPPlugin(TracLPPlugin):
@@ -43,7 +44,8 @@ Trac instance.
     ...         token.consume()
     ...         print "Successfully validated the token."
     ...         response = FakeResponse()
-    ...         response.headers['Set-Cookie'] = 'trac_auth=random_token'
+    ...         response.headers['Set-Cookie'] = (
+    ...             'trac_auth=random_token-' + str(random.random()))
     ...         return response
 
     >>> test_transport = TestTracXMLRPCTransport()
@@ -53,7 +55,7 @@ Trac instance.
     Successfully validated the token.
 
     >>> test_transport.auth_cookie
-    'trac_auth=random_token'
+    'trac_auth=random_token-...'
 
 The cookie is set by the transport used.
 
@@ -85,6 +87,23 @@ instance returns another time zone.
     ...     trac_time.timetuple()))
     >>> test_transport.local_timezone = 'CET'
     >>> test_transport.utc_offset = 60*60
+    >>> trac.getCurrentDBTime()
+    Successfully validated the token.
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+An authorization request was automatically sent, since the method needed
+authentication. Because the cookie is now set, other calls won't cause
+in authorization request.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token-...'
+    >>> trac.getCurrentDBTime()
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+If the cookie gets expired, an authorization request is automatically
+sent again.
+
+    >>> test_transport.expire_cookie(test_transport.auth_cookie)
     >>> trac.getCurrentDBTime()
     Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
