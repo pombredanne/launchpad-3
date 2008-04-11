@@ -162,7 +162,7 @@ class CodeImportWorkerMonitor:
     def _launchProcess(self, source_details):
         deferred = defer.Deferred()
         protocol = CodeImportWorkerMonitorProtocol(
-            deferred, self._job_id, self._log_file)
+            deferred, self, self._log_file)
         command = [sys.executable, self.path_to_script]
         command.extend(source_details.asArguments())
         reactor.spawnProcess(

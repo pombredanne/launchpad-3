@@ -5,7 +5,9 @@
 __metaclass__ = type
 
 
+import shutil
 import StringIO
+import tempfile
 import unittest
 
 from twisted.internet import defer
@@ -14,15 +16,20 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting.codeimport.worker import (
+    CodeImportSourceDetails, get_default_bazaar_branch_store)
 from canonical.codehosting.codeimport.worker_monitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
-from canonical.database.constants import UTC_NOW
+from canonical.codehosting.codeimport.tests.test_foreigntree import (
+    SubversionServer)
+from canonical.codehosting.codeimport.tests.test_worker import (
+    clean_up_default_stores_for_import)
 from canonical.database.sqlbase import commit
-from canonical.launchpad.database import CodeImportJob
+from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.interfaces import (
-    CodeImportResultStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportResultSet, ICodeImportSet)
+    CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
+    ICodeImportJobWorkflow, ICodeImportResultSet, ICodeImportSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
@@ -68,6 +75,7 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
         self.clock.advance(0.1)
         # And check that updateHeartbeat is called at the frequency we expect:
         for i in range(4):
+            self.protocol.resetTimeout()
             self.assertEqual(
                 self.worker_monitor.calls,
                 [('updateHeartbeat', '')]*i)
@@ -232,33 +240,76 @@ class TestWorkerMonitor(TestCase):
         self.assertEqual(calls, [])
 
 
-class TestXXXWorkerMonitorIntegration(TestCase):
+from bzrlib.tests import TestCaseWithMemoryTransport
+
+class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def nukeCodeImportSampleData(self):
+        for job in CodeImportJob.select():
+            job.destroySelf()
+        for code_import in CodeImport.select():
+            code_import.destroySelf()
 
     def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        self.factory = LaunchpadObjectFactory()
         self.nukeCodeImportSampleData()
-        self.subversion_server = SubversionServer()
+        self.repo_path = tempfile.mkdtemp()
+        self.addCleanup(lambda : shutil.rmtree(self.repo_path))
+        self.subversion_server = SubversionServer(self.repo_path)
         self.subversion_server.setUp()
         self.addCleanup(self.subversion_server.tearDown)
-        self.repo_path = tempfile.mkdtmp()
-        self.addCleanup(lambda : shutil.rmtree(self.repo_path))
-        self.subversion_server.makeRepository(self.repo_path, 'stuff')
-        self.machine = self.factory.makeCodeImportMachine(online=True)
+        self.svn_branch_url = self.subversion_server.makeBranch(
+            'trunk', [('README', 'contents')])
+        self.machine = self.factory.makeCodeImportMachine(set_online=True)
+
+    def createApprovedCodeImport(self, svn_branch_url):
+        code_import = self.factory.makeCodeImport(
+            svn_branch_url=svn_branch_url)
+        source_details = CodeImportSourceDetails.fromCodeImport(code_import)
+        clean_up_default_stores_for_import(source_details)
+        self.addCleanup(
+            lambda : clean_up_default_stores_for_import(source_details))
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            self.factory.makePerson())
+        getUtility(ICodeImportJobWorkflow).newJob(code_import)
+        return code_import
 
     def getStartedJob(self):
         code_import = self.createApprovedCodeImport(
-            svn_branch_url=self.repo_path)
+            svn_branch_url=self.svn_branch_url)
         job = getUtility(ICodeImportJobSet).getJobForMachine(self.machine)
-        assert code_import == job
+        self.assertEqual(code_import, job.code_import)
         return job
 
+    def checkCodeImportResultCreated(self, code_import_id):
+        code_import = getUtility(ICodeImportSet).get(code_import_id)
+        results = list(getUtility(ICodeImportResultSet).getResultsForImport(
+            code_import))
+        self.failUnless(len(results), 1)
+
+    def checkBranchImportedOKForCodeImport(self, code_import_id):
+        code_import = getUtility(ICodeImportSet).get(code_import_id)
+        tree_path = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tree_path))
+
+        bazaar_tree = get_default_bazaar_branch_store().pull(
+            code_import.branch.id, tree_path)
+
+        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+
     def test_import(self):
-        job = self.getDueJob()
+        job = self.getStartedJob()
         code_import_id = job.code_import.id
         job_id = job.id
         commit()
         result = CodeImportWorkerMonitor(job_id).run()
+        @read_only_transaction
         def check_result(ignored):
-            self.checkCodeImportResultCreated()
+            self.checkCodeImportResultCreated(code_import_id)
             self.checkBranchImportedOKForCodeImport(code_import_id)
             return ignored
         return result.addCallback(check_result)

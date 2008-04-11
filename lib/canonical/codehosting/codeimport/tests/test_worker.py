@@ -362,6 +362,27 @@ class TestWorkerCore(WorkerTest):
                 worker.working_directory, worker.FOREIGN_WORKING_TREE_PATH),
             branch.local_path)
 
+def clean_up_default_stores_for_import(source_details):
+    """Clean up default branch and foreign tree stores for an import.
+
+    This checks for an existing branch and/or foreign tree tarball
+    corresponding to the passed in import and deletes them if they
+    are found.
+
+    If there are tarballs or branches in the default stores that
+    might conflict with working on our job, life gets very, very
+    confusing.
+    """
+    treestore = get_default_foreign_tree_store()
+    tree_transport = treestore.transport
+    archive_name = treestore._getTarballName(source_details.branch_id)
+    if tree_transport.has(archive_name):
+        tree_transport.delete(archive_name)
+    branchstore = get_default_bazaar_branch_store()
+    branch_transport = branchstore.transport
+    branch_name = '%08x' % source_details.branch_id
+    if branchstore.transport.has(branch_name):
+        branchstore.transport.delete_tree(branch_name)
 
 class TestActualImportMixin:
     """Mixin for tests that check the actual importing."""
@@ -436,33 +457,11 @@ class TestActualImportMixin:
         bazaar_tree = worker.getBazaarWorkingTree()
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
-    def cleanUpDefaultStoresForImport(self, source_details):
-        """Clean up default branch and foreign tree stores for an import.
-
-        This checks for an existing branch and/or foreign tree tarball
-        corresponding to the passed in import and deletes them if they
-        are found.
-
-        If there are tarballs or branches in the default stores that
-        might conflict with working on our job, life gets very, very
-        confusing.
-        """
-        treestore = get_default_foreign_tree_store()
-        tree_transport = treestore.transport
-        archive_name = treestore._getTarballName(source_details.branch_id)
-        if tree_transport.has(archive_name):
-            tree_transport.delete(archive_name)
-        branchstore = get_default_bazaar_branch_store()
-        branch_transport = branchstore.transport
-        branch_name = '%08x' % source_details.branch_id
-        if branchstore.transport.has(branch_name):
-            branchstore.transport.delete_tree(branch_name)
-
     def test_import_script(self):
         # Like test_import, but using the code-import-worker.py script
         # to perform the import.
 
-        self.cleanUpDefaultStoresForImport(self.source_details)
+        clean_up_default_stores_for_import(self.source_details)
 
         script_path = os.path.join(
             get_rocketfuel_root(), 'scripts', 'code-import-worker.py')
@@ -471,7 +470,7 @@ class TestActualImportMixin:
         self.assertEqual(retcode, 0)
 
         self.addCleanup(
-            lambda : self.cleanUpDefaultStoresForImport(self.source_details))
+            lambda : clean_up_default_stores_for_import(self.source_details))
 
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))
