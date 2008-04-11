@@ -263,3 +263,176 @@ initial/empty state.
     setFocusByName('field.dependency_candidate');
     // -->
 
+
+== ArchivePackageCopyingView ==
+
+This class extends ArchiveSourceSelectionFormView, an thus uses the
+same mechanisms for presenting and filtering available sources for
+copying, the 'selected_sources' widget. Related features don't need to
+be retested.
+
+    >>> login('celso.providelo@canonical.com')
+
+Issuing a empty request we can inspect the internal attributes used to
+build the page.
+
+    >>> empty_request = LaunchpadTestRequest(form={})
+    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view.initialize()
+
+The main difference for ArchivePackageDeletionView  is that this uses a
+different 'source' provider, which includes deleted sources.
+
+    >>> [pub.status.name for pub in view.sources]
+    ['DELETED', 'DELETED', 'DELETED']
+
+This view also contens a property providing the PPA in which the
+current user has upload/copy rights, see `IArchiveSet.getPPAsForUser`.
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    [u'cprov']
+
+Also whether or not the user is allowed to perform copies, which is
+essentially: participates, at least, in one PPA.
+
+    >>> view.can_copy
+    True
+
+And finaly if the user has the right to upload/copy to the context
+PPA.
+
+    >>> view.can_copy_to_context_ppa
+    True
+
+Lets exercise the properties. No priveleged user has his own PPA, thus
+he can copy to it, but not to the Celso's PPA.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view.initialize()
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    [u'no-priv']
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    False
+
+Foo bar user has no PPA, so he cannot perform copies at all.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view.initialize()
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    []
+
+    >>> view.can_copy
+    False
+
+    >>> view.can_copy_to_context_ppa
+    False
+
+When we activate the Ubuntu team PPA, in which Celso's participates,
+he will be able to copy not only to his PPA but also to the PPA for a
+team he is member of.
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> ubuntu_team_ppa = getUtility(IArchiveSet).ensure(
+    ...     owner=ubuntu_team, distribution=None, purpose=ArchivePurpose.PPA,
+    ...     description="Don't we have a distribution ?")
+
+    >>> login('celso.providelo@canonical.com')
+    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view.initialize()
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    [u'cprov', u'ubuntu-team']
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    True
+
+We will prepare a empty POST and inspect the default form values.
+
+    >>> empty_post = LaunchpadTestRequest(
+    ...    form={'field.destination_archive': '',
+    ...          'field.destination_series': ''})
+    >>> empty_post.method = 'POST'
+    >>> view = getView(cprov.archive, "+copy-packages", empty_post)
+    >>> view.initialize()
+
+The 'destination_archive' widget contents is directly based on the
+'ppas_for_user', but it excludes the context PPA from the list of
+options making it the default option, 'This PPA' rendered option.
+
+    >>> archive_widget = view.widgets['destination_archive']
+
+    >>> archive_widget.required
+    False
+
+    >>> print archive_widget.translate(archive_widget._messageNoValue)
+    This PPA
+
+    >>> for item in archive_widget.vocabulary:
+    ...     print item.title
+    PPA for Ubuntu Team
+
+    >>> print archive_widget.getInputValue() == cprov.archive
+    True
+
+The 'destination_series' widget behaves similarly, it contains all
+series available for the PPA distribution and default to 'The same
+series', which ends up being None in the browser domain.
+
+    >>> series_widget = view.widgets['destination_series']
+
+    >>> series_widget.required
+    False
+
+    >>> print archive_widget.translate(series_widget._messageNoValue)
+    The same series
+
+    >>> for item in series_widget.vocabulary:
+    ...     print item.title
+    Breezy Badger Autotest
+    Grumpy
+    Hoary
+    Warty
+
+    >>> print series_widget.getInputValue()
+    None
+
+The 'destination_archive' widget behaves different depending on
+whether or not the user has permission to perform copies to the
+context PPA.
+
+No Privileges user can't copy package to the Celso's PPA, thus
+'destination' widget will become required and will fail if an empty
+value is submitted.
+
+    >>> login('no-priv@canonical.com')
+
+    >>> view = getView(cprov.archive, "+copy-packages", empty_post)
+    >>> view.initialize()
+
+    >>> archive_widget = view.widgets['destination_archive']
+    >>> archive_widget.required
+    True
+
+    >>> for item in archive_widget.vocabulary:
+    ...     print item.title
+    PPA for No Privileges Person
+
+    >>> print archive_widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('destination_archive', u'Destination PPA', )
+

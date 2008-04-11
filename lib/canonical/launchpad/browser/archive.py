@@ -13,6 +13,7 @@ __all__ = [
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveNavigation',
+    'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
     ]
@@ -33,9 +34,10 @@ from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageDeletionForm, IArchiveSourceSelectionForm, IArchiveSet,
-    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
-    IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
+    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
+    IArchiveSourceSelectionForm, IArchiveSet, IBuildSet, IHasBuildRecords,
+    ILaunchpadCelebrities, IPPAActivateForm, IStructuralHeaderPresentation,
+    NotFoundError, PackagePublishingStatus, PackagePublishingPocket)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -43,6 +45,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -67,7 +70,8 @@ class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'edit_dependencies']
+    links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
+             'edit_dependencies']
 
     def ppa(self):
         text = 'View PPA'
@@ -92,11 +96,15 @@ class ArchiveContextMenu(ContextMenu):
         text = 'Delete packages'
         return Link('+delete-packages', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
+    def copy(self):
+        text = 'Copy packages'
+        return Link('+copy-packages', text, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
-
 
 
 class ArchiveViewBase:
@@ -416,6 +424,189 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         notification = "\n".join(messages)
         self.request.response.addNotification(
             structured(notification, comment=comment))
+
+
+class DestinationArchiveRadioWidget(LaunchpadDropdownWidget):
+    """Redefining default display value as 'This PPA'."""
+    _messageNoValue = _("vocabulary-copy-to-context-ppa", "This PPA")
+
+
+class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
+    """Redefining default display value as 'The same series'."""
+    _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
+
+
+class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
+    """Archive package copying view class.
+
+    This view presents a package selection slot in a POST form implementing
+    a copying action that can be performed upon a set of selected packages.
+    """
+    schema = IArchivePackageCopyingForm
+
+    custom_widget('destination_archive', DestinationArchiveRadioWidget)
+    custom_widget('destination_series', DestinationSeriesDropdownWidget)
+
+    def setUpFields(self):
+        """Override `ArchiveSourceSelectionFormView`.
+
+        See `createDestinationFields` method.
+        """
+        ArchiveSourceSelectionFormView.setUpFields(self)
+        self.form_fields = (
+            self.createDestinationArchiveField() +
+            self.createDestinationSeriesField() +
+            self.form_fields)
+
+    @cachedproperty
+    def ppas_for_user(self):
+        """Return all PPAs for which the user accessing the page can copy."""
+        return getUtility(IArchiveSet).getPPAsForUser(self.user)
+
+    @cachedproperty
+    def can_copy(self):
+        """Whether or not the current user can copy packages to any PPA."""
+        return self.ppas_for_user.count() > 0
+
+    @cachedproperty
+    def can_copy_to_context_ppa(self):
+        """Whether or not the current user can copy to the context PPA."""
+        return self.user.inTeam(self.context.owner)
+
+    def createDestinationArchiveField(self):
+        """Create the 'destination_archive' field."""
+        terms = []
+        required = True
+
+        for ppa in self.ppas_for_user:
+            # Do not include the context PPA in the dropdown widget
+            # and make this field not required. This way we can safely
+            # default to the context PPA when copying.
+            if self.can_copy_to_context_ppa and self.context == ppa:
+                required = False
+                continue
+            terms.append(SimpleTerm(ppa, str(ppa.owner.name), ppa.title))
+
+        return form.Fields(
+            Choice(__name__='destination_archive',
+                   title=_('Destination PPA'),
+                   vocabulary=SimpleVocabulary(terms),
+                   description=_("Select the destination PPA."),
+                   missing_value=self.context,
+                   required=required),
+            custom_widget=self.custom_widgets['destination_archive'],
+            render_context=self.render_context)
+
+    def createDestinationSeriesField(self):
+        """Create the 'destination_series' field."""
+        terms = []
+        # XXX cprov 20080408: this code uses the context PPA series intead of
+        # targetted or all series available in Launchpad. It might become
+        # a problem when we support PPAs for other distribution. If we do
+        # it will be probably simpler to use the DistroSeries vocabulary
+        # and validate the selected value before copying.
+        for series in self.context.distribution.serieses:
+            terms.append(
+                SimpleTerm(series, str(series.name), series.displayname))
+        return form.Fields(
+            Choice(__name__='destination_series',
+                   title=_('Destination series'),
+                   vocabulary=SimpleVocabulary(terms),
+                   description=_("Select the destination series."),
+                   required=False),
+            custom_widget=self.custom_widgets['destination_series'],
+            render_context=self.render_context)
+
+    def getSources(self, name=None):
+        return self.context.getPublishedSources(name=name)
+
+    @action(_("Update"), name="update")
+    def action_update(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
+
+    def validate_copy(self, action, data):
+        """Validate copy parameters.
+
+        Ensure we have, at least, one source selected ...
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        if len(data.get('selected_sources', [])) == 0:
+            self.setFieldError('selected_sources', 'No sources selected.')
+
+        if (data.get('destination_archive') == self.context and
+            data.get('destination_series') is None):
+            self.setFieldError(
+                'destination_series', 'Select a different series.')
+
+    def _doCopy(self, sources, series, pocket, archive,
+                include_binaries=False):
+        """Perform the complete copy of the given sources.
+
+        Copy each item of the given list of `SourcePackagePublishingHistory`
+        to the given destination, also copy published binaries for each
+        source if requested to.
+
+        :param: sources: a list of `SourcePackagePublishingHistory`;
+        :param: series: the target `DistroSeries`, if None is given the same
+            current source distroseries will be used as destination;
+        :param: pocket: the target `PackagePublishingPocket`;
+        :param: archive: the target `Archive`;
+        :param: include_binaries: optional boolean, controls whether or
+            not the published binaries for each given source should be also
+            copied along with the source;
+        :return: a list of `SourcePackagePublishingHistory` and
+            `BinaryPackagePublishingHistory` corresponding to the copied
+            publications.
+        """
+        copies = []
+        for source in sources:
+            if series is None:
+                series = source.distroseries
+            source_copy = source.copyTo(series, pocket, archive)
+            copies.append(source_copy)
+            if not include_binaries:
+                source_copy.createBuilds(ignore_pas=True)
+                continue
+            for binary in source.getPublishedBinaries():
+                binary_copy = binary.copyTo(series, pocket, archive)
+                copies.append(binary_copy)
+        return copies
+
+    @action(_("Copy Packages"), name="copy", validator="validate_copy")
+    def action_copy(self, action, data):
+        """Perform the copy of the selected packages."""
+        if len(self.errors) != 0:
+            return
+
+        selected_sources = data.get('selected_sources')
+        destination_archive = data.get('destination_archive')
+        destination_series = data.get('destination_series')
+        include_binaries = data.get('include_binaries')
+
+        destination_pocket = PackagePublishingPocket.RELEASE
+
+        copies = self._doCopy(
+            selected_sources, destination_series, destination_pocket,
+            destination_archive, include_binaries)
+
+        # Refresh the selected_sources, it changes when sources get
+        # copied within the PPA.
+        self.refreshSelectedSourcesWidget()
+
+        # Present a page notification describing the action.
+        messages = []
+        messages.append(
+            '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
+                canonical_url(destination_archive),
+                destination_archive.title))
+
+        for copy in copies:
+            messages.append('<br/>%s' % copy.displayname)
+
+        notification = "\n".join(messages)
+        self.request.response.addNotification(structured(notification))
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):

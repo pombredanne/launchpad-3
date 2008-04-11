@@ -1,0 +1,94 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
+
+<metal:portlets fill-slot="portlets">
+   <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
+
+  <h1>Copy packages from <tal:title replace="context/title" /></h1>
+
+    <tal:cannot_copy condition="not: view/can_copy">
+      <p>For copying packages you have to participate at least of one
+         PPA. <a tal:attributes="href
+         string:${view/user/fmt:url}/+activate-ppa">Activate your own PPA</a>
+         or join a team with a active PPA.</p>
+    </tal:cannot_copy>
+
+    <tal:can_copy condition="view/can_copy">
+
+      <tal:inactive_ppa_header condition="not: view/has_sources">
+        <p>This PPA does not contain any source packages published.</p>
+      </tal:inactive_ppa_header>
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+
+      <div class="form" metal:fill-slot="widgets"
+           tal:condition="view/has_sources">
+
+        <metal:selectable-sources
+          use-macro="context/@@+form-macros/selectable-sources" />
+
+        <table style="margin-top: 1em;"
+          tal:condition="view/available_sources_size">
+
+          <tal:archive
+            define="widget nocall:view/widgets/destination_archive|nothing"
+            condition="widget">
+            <metal:widget
+              metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:archive>
+
+          <tal:series
+            define="widget nocall:view/widgets/destination_series|nothing"
+            condition="widget">
+            <metal:widget
+              metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:series>
+
+          <tal:binaries
+            define="widget nocall:view/widgets/include_binaries|nothing"
+            condition="widget">
+            <metal:widget
+              metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:binaries>
+
+          <tr>
+            <td colspan="2">
+              <input
+                tal:replace="structure view/actions/field.actions.copy/render" />
+            </td>
+          </tr>
+
+        </table>
+
+        </div> <!-- widgets -->
+
+        <div class="actions" metal:fill-slot="buttons">
+        </div> <!--empties buttons section -->
+
+      </div> <!-- launchpad_form -->
+
+    </tal:can_copy>
+
+</div> <!--main -->
+
+<div metal:fill-slot="help">
+
+</div>
+
+</body>
+</html>

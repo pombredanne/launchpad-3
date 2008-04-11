@@ -125,6 +125,8 @@ archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
+archive_copy_packages = ContextTitle('Copy packages from %s')
+
 archive_delete_packages = ContextTitle('Delete packages from %s')
 
 archive_edit = ContextTitle('Edit %s')

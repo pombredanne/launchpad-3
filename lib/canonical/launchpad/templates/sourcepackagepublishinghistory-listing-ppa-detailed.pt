@@ -27,9 +27,16 @@
       </tal:view_changesfile>
     </td>
     <td tal:condition="context/archive/owner/isTeam"
-        tal:define="spr context/sourcepackagerelease">
-      <a tal:attributes="href spr/dscsigningkey/owner/fmt:url"
-         tal:content="spr/dscsigningkey/owner/name"></a></td>
+        tal:define="spr context/sourcepackagerelease;
+                    signer spr/dscsiginingkey/owner|nothing">
+      <tal:has_signer condition="signer">
+        <a tal:attributes="href spr/dscsigningkey/owner/fmt:url"
+           tal:content="spr/dscsigningkey/owner/name"></a>
+      </tal:has_signer>
+      <tal:no_signer condition="not: signer">
+        no signer
+      </tal:no_signer>
+    </td>
     <td tal:attributes="title context/datepublished/fmt:datetime"
         tal:content="context/datepublished/fmt:approximatedate">2005-09-16</td>
     <td tal:content="context/status/title">PUBLISHED</td>
