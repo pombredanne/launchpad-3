@@ -13,6 +13,8 @@ __all__ = [
     'export_collection',
     'export_entry',
     'export_field',
+    'generate_collection_adapter',
+    'generate_entry_adapter',
     'generate_entry_interface',
     ]
 
@@ -28,7 +30,7 @@ from zope.schema.interfaces import IField
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
 from canonical.lazr.interfaces.rest import IEntry
-from canonical.lazr.rest.resource import Entry
+from canonical.lazr.rest.resource import Collection, Entry
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
 LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
@@ -158,8 +160,8 @@ def collection_default_content(f):
     return f
 
 
-def generate_entry_interface(interface):
-    """Create an IEntry subinterface based on the tags in interface."""
+def _check_tagged_interface(interface, type):
+    """Make sure that the interface is exported under the proper type."""
     if not isinstance(interface, InterfaceClass):
         raise TypeError('not an interface.')
 
@@ -167,7 +169,18 @@ def generate_entry_interface(interface):
     if tag is None:
         raise TypeError(
             "'%s' isn't tagged for webservice export." % interface.__name__)
+    elif tag['type'] != type:
+        art = 'a'
+        if type == 'entry':
+            art = 'an'
+        raise TypeError(
+            "'%s' isn't exported as %s %s." % (interface.__name__, art, type))
 
+
+def generate_entry_interface(interface):
+    """Create an IEntry subinterface based on the tags in interface."""
+
+    _check_tagged_interface(interface, 'entry')
     attrs = {}
     for name, field in getFields(interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
@@ -183,27 +196,33 @@ def generate_entry_interface(interface):
 def generate_entry_adapter(content_interface, webservice_interface):
     """Create a class adapting from content_interface to webservice_interface.
     """
-    if not isinstance(content_interface, InterfaceClass):
-        raise TypeError('content_interface is not an interface.')
+    _check_tagged_interface(content_interface, 'entry')
 
     if not isinstance(webservice_interface, InterfaceClass):
         raise TypeError('webservice_interface is not an interface.')
 
-    tag = content_interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-    if tag is None:
-        raise TypeError(
-            "'%s' isn't tagged for webservice export." %
-            content_interface.__name__)
-
-    attrs = {'schema': webservice_interface}
+    cdict = {'schema': webservice_interface}
     for name, field in getFields(content_interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        attrs[tag['as']] = Passthrough(name, 'context')
+        cdict[tag['as']] = Passthrough(name, 'context')
 
     classname = "%sAdapter" % webservice_interface.__name__[1:]
-    factory = type(classname, bases=(Entry,), dict=attrs)
+    factory = type(classname, bases=(Entry,), dict=cdict)
 
     classImplements(factory, webservice_interface)
     return factory
+
+
+def generate_collection_adapter(interface):
+    """Create a class adapting from interface to ICollection."""
+    _check_tagged_interface(interface, 'collection')
+
+    tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    method_name = tag['collection_default_content']
+    cdict = {
+        'find': lambda self: (getattr(self.context, method_name)()),
+        }
+    classname = "%sCollectionAdapter" % interface.__name__[1:]
+    return type(classname, bases=(Collection,), dict=cdict)
