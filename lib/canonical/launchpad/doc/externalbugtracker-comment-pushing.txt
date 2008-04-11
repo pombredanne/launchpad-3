@@ -37,7 +37,7 @@ BugWatch, Message and BugMessage instances with which to work.
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
-    >>> bug_message = bug.linkMessage(message)
+    >>> bug_message = bug.linkMessage(message, bug_watch)
 
 The ISupportsCommentPushing interface defines one method that an
 ExternalBugTracker must support in order to be able to push comments to
@@ -103,12 +103,6 @@ remote_comment_id.
     >>> print_bug_messages(bug, bug_watch)
     1: Pushing, for the purpose of.
 
-The BugMessage's bugwatch will be set to the bugwatch to which the
-comment was pushed.
-
-    >>> bug_message.bugwatch == bug_watch
-    True
-
 If we try to push the comment again, nothing will happen because we
 already have a remote id for it (ergo it has been pushed already).
 
@@ -128,8 +122,8 @@ tracker the next time the bugwatch updater accesses it.
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
-    >>> bugmessage_two = bug.linkMessage(message_two)
-    >>> bugmessage_three = bug.linkMessage(message_three)
+    >>> bugmessage_two = bug.linkMessage(message_two, bug_watch)
+    >>> bugmessage_three = bug.linkMessage(message_three, bug_watch)
 
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
     Comment added as remote comment 2
@@ -141,13 +135,25 @@ tracker the next time the bugwatch updater accesses it.
     2: Body the second.
     3: Body the third.
 
-Again, the BugMessages' bugwatch fields will be set to bug_watch.
+    >>> commit()
 
-    >>> bugmessage_two.bugwatch == bug_watch
-    True
+If a comment on the Launchpad bug isn't related to the bug watch, it
+won't be pushed.
 
-    >>> bugmessage_three.bugwatch == bug_watch
-    True
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> message_four = getUtility(IMessageSet).fromText(
+    ...     "Comment the fourth", "Body the fourth.", sample_person)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> bugmessage_four = bug.linkMessage(message_four)
+    >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
+
+    >>> print_bug_messages(bug, bug_watch)
+    1: Pushing, for the purpose of.
+    2: Body the second.
+    3: Body the third.
+    None: Body the fourth.
 
 The bug watch updater won't try to push comments that have been imported
 from the remote bugtracker. To demonstrate this, we need to create an
@@ -196,6 +202,7 @@ Each of the imported comments has its remote_comment_id field set.
     1: Pushing, for the purpose of.
     2: Body the second.
     3: Body the third.
+    None: Body the fourth.
     4: External comment 1.
     5: External comment 2.
     6: External comment 3.

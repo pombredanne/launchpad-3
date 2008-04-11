@@ -604,14 +604,15 @@ class BugWatchUpdater(object):
                 bug_watch.bug, message)
 
             # We only push those comments that haven't been pushed
-            # already.
-            if bug_message.remote_comment_id is not None:
+            # already. We don't push any comments not associated with
+            # the bug watch.
+            if (bug_message.remote_comment_id is not None or
+                bug_message.bugwatch != bug_watch):
                 continue
 
             remote_id = external_bugtracker.addRemoteComment(
                 bug_watch.remotebug, message.text_contents)
 
-            bug_message.bugwatch = bug_watch
             bug_message.remote_comment_id = remote_id
             pushed_comments += 1
 
