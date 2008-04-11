@@ -61,6 +61,8 @@ __all__ = [
     'Whiteboard',
     ]
 
+import cgi
+
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -377,7 +379,7 @@ class UniqueField(TextLine):
         # object whose attribute is going to be updated. We need to
         # ensure the new value is unique.
         if self._isValueTaken(input):
-            raise LaunchpadValidationError(self.errormessage % input)
+            raise LaunchpadValidationError(self.errormessage, input)
 
 
 class ContentNameField(UniqueField):
@@ -413,8 +415,8 @@ class BlacklistableContentNameField(ContentNameField):
 
         if nickname.is_blacklisted(name=input):
             raise LaunchpadValidationError(
-                    "The name '%(input)s' has been blocked by the "
-                    "Launchpad administrators" % vars()
+                    "The name '%s' has been blocked by the "
+                    "Launchpad administrators", input
                     )
 
 
@@ -503,13 +505,13 @@ class URIField(TextLine):
         try:
             uri = URI(value)
         except InvalidURIError, e:
-            raise LaunchpadValidationError(str(e))
+            raise LaunchpadValidationError(cgi.escape(str(e)))
 
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
                 'The URI scheme "%s" is not allowed.  Only URIs with '
-                'the following schemes may be used: %s'
-                % (uri.scheme, ', '.join(sorted(self.allowed_schemes))))
+                'the following schemes may be used: %s',
+                uri.scheme, ', '.join(sorted(self.allowed_schemes)))
 
         if not self.allow_userinfo and uri.userinfo is not None:
             raise LaunchpadValidationError(
@@ -660,11 +662,10 @@ class ProductNameField(PillarNameField):
 def is_valid_public_person_link(person, other):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     assert IPerson.providedBy(person)
-    if person.visibility in (PersonVisibility.PRIVATE,
-                             PersonVisibility.PRIVATE_MEMBERSHIP):
-        return False
-    else:
+    if person.visibility == PersonVisibility.PUBLIC:
         return True
+    else:
+        return False
 
 
 class PublicPersonChoice(Choice):

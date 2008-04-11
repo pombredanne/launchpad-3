@@ -313,8 +313,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
+        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
+        pubrec.secure_record.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.

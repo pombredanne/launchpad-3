@@ -99,22 +99,6 @@ mv ${DISTSCOPYROOT_PARTNER}/dists ${ARCHIVEROOT_PARTNER}/dists.new
 rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 rsync -aH --delete ${DISTSROOT_PARTNER}/ ${ARCHIVEROOT_PARTNER}/dists.new
 
-# XXX: dsilvers 2006-02-04:
-# DAK created some extra d-i pockets which
-# were aren't necessarily going to create. Until we have a more
-# satisfactory correction in the publisher we just touch the Packages
-# files to ensure that the Release files get generated properly.
-
-if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    for DIST in dapper breezy; do
-      for COMP in restricted universe; do
-       for ARCH in i386 amd64 powerpc hppa sparc ia64; do
-         touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
-       done
-      done
-    done
-fi
-
 # Publish the results for all archives (except PPA).
 # (The -R only affects the primary and the partner archive.)
 publish-distro.py -v -v --partner -d $DISTRONAME -R ${DISTSROOT_PARTNER}.new
