@@ -342,21 +342,34 @@ The PersonActiveMembership vocabulary only shows teams where the
 membership is public.
 
     >>> from canonical.launchpad.interfaces import PersonVisibility
-    >>> launchpad_team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-    >>> vcs_imports = person_set.getByName('vcs-imports')
-    >>> vcs_imports.visibility = PersonVisibility.PRIVATE
+    >>> otherteam = person_set.getByName('otherteam')
+    >>> otherteam.addMember(foo_bar, foo_bar)
 
+    >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
     guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
+    launchpad Launchpad Developers Launchpad Developers
     testing-spanish-team testing Spanish team testing Spanish team
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
+    vcs-imports VCS imports VCS imports
 
-    >>> launchpad_team.visibility = PersonVisibility.PUBLIC
-    >>> vcs_imports.visibility = PersonVisibility.PUBLIC
+
+    >>> otherteam.visibility = PersonVisibility.PUBLIC
+    >>> for term in person_active_membership:
+    ...     print term.token, term.value.displayname, term.title
+    guadamen GuadaMen GuadaMen
+    admins Launchpad Administrators Launchpad Administrators
+    launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
+    launchpad Launchpad Developers Launchpad Developers
+    otherteam Other Team Other Team
+    testing-spanish-team testing Spanish team testing Spanish team
+    name18 Ubuntu Gnome Team Ubuntu Gnome Team
+    ubuntu-team Ubuntu Team Ubuntu Team
+    vcs-imports VCS imports VCS imports
 
     >>> term = person_active_membership.getTerm(launchpad_team)
     >>> print term.token, term.value.displayname, term.title

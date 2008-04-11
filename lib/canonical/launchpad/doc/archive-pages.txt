@@ -37,7 +37,7 @@ We query the available PUBLISHED sources and use them to build the
     >>> [pub.id for pub in view.sources]
     [27, 28, 29]
 
-    >>> view.has_sources_for_deletion
+    >>> view.has_sources
     True
 
     >>> view.available_sources_size
@@ -115,7 +115,7 @@ which the available options already exclude the deleted items.
 
     >>> view.available_sources_size
     0
-    >>> view.has_sources_for_deletion
+    >>> view.has_sources
     False
 
     >>> import transaction
@@ -129,7 +129,7 @@ situation and ignore it. See bug #185922 for reference.
     >>> view.initialize()
     >>> view.available_sources_size
     0
-    >>> view.has_sources_for_deletion
+    >>> view.has_sources
     False
     >>> len(view.errors)
     2

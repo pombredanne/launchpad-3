@@ -118,6 +118,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     # of the actual code of the handler comes from our monkey patches modules.
     for mm_name, lp_name in (('LaunchpadMember', 'lphandler'),
                              ('LaunchpadHeaders', 'lpheaders'),
+                             ('LPStanding', 'lpstanding'),
                              ('LPModerate', 'lpmoderate'),
                              ):
         handler_path = os.path.join(

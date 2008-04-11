@@ -1,0 +1,76 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="bazaar">
+
+<body>
+
+  <h1 metal:fill-slot="heading">Available code imports</h1>
+
+<div metal:fill-slot="main" class="visualPadding"
+     tal:define="batch view/batchnav/currentBatch">
+
+  <form action="" method="GET">
+    <fieldset>
+        <label for="text">List projects matching:</label>
+
+        <div class="formControls">
+            <input type="text" name="text"
+                   tal:attributes="value view/text" size="25" />
+            <input type="submit" name="search" value="Search" />
+            <br />
+        </div>
+
+    </fieldset>
+  </form>
+
+  <tal:no-results condition="not:batch">
+    <p>No imports found matching criteria.</p>
+  </tal:no-results>
+
+  <tal:results condition="batch">
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
+    <table class="listing" width="100%">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Series</th>
+          <th>Source Details</th>
+          <th>Last Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="series batch">
+          <td>
+            <a tal:attributes="href series/product/fmt:url"
+               tal:content="series/product/displayname"
+              >$Product.name</a>
+          </td>
+          <td><a tal:attributes="href series/fmt:url"
+                 tal:content="series/displayname"
+              >Series.name</a></td>
+          <td tal:content="series/getImportDetailsForDisplay">
+            :pserver:user@host:/cvsroot module
+          </td>
+          <td>
+            <span
+              tal:attributes="title series/datelastsynced/fmt:datetime"
+              tal:content="series/datelastsynced/fmt:approximatedate"
+              >$Series.datelastsynced</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
+  </tal:results>
+
+</div>
+
+</body>
+</html>

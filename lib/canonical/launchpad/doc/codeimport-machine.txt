@@ -7,36 +7,6 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
-== Accessing ICodeImportMachine/ICodeImportMachineSet ==
-
-The CodeImportMachine table is represented by an utility that provides the
-ICodeImportMachineSet interface.  Currently we hide all aspects of the new
-system from anonymous and regular users.
-
-    >>> login(ANONYMOUS)
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine_set.getAll()
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-
-    >>> login('test@canonical.com')
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine_set.getAll()
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-
-Once we've logged in as David Allouche, a member of vcs-imports, the
-object that provides ICodeImportMachineSet allows access to machines by
-hostname and to all machines.
-
-    >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> ddaa = getUtility(ILaunchBag).user
-    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
-    True
-
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICodeImportMachineSet, machine_set)
@@ -136,7 +106,15 @@ heartbeat for some time.
 === setQuiescing ===
 
 The setQuiescing method sets the machine's state to QUIESCING and
-records the corresponding event.
+records the corresponding event.  A user is passed into the method
+to be recorded in the event, and will in almost all cases be a
+member of vcs-imports.
+
+    >>> login('david.allouche@canonical.com')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ddaa = getUtility(ILaunchBag).user
+    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
+    True
 
     >>> new_machine.setOnline()
     >>> new_events = NewEvents()

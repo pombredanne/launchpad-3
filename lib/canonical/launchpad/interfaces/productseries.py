@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 import re
-import cgi
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -146,7 +145,7 @@ def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
     except CvsRootError, e:
-        raise LaunchpadValidationError(cgi.escape(str(e)))
+        raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
     if root.hostname.count('.') == 0:
@@ -244,7 +243,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
     bugcontact = Attribute(
-        'Currently just a reference to the Product bug contact.')
+        'Currently just a reference to the Product bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Product security contact.')
 
@@ -340,6 +339,12 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         allow_query=False,    # Query makes no sense in Subversion.
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
+    def getImportDetailsForDisplay():
+        """Get a one-line summary of the location this import is from.
+
+        Only makes sense for series with import details set."""
+
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,

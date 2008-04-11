@@ -379,7 +379,7 @@
                   <tal:render-if condition="view/shouldShowContactWidget">
                     <tr>
                       <td>
-                          <label for="field.bug_contact">Bug contact:</label>
+                          <label for="field.bug_contact">Bug supervisor:</label>
                       </td>
                     </tr>
                     <tr>
