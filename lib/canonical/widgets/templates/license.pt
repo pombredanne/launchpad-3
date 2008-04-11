@@ -14,7 +14,7 @@
 </script>
 <div style="color: black">
 
-  <em>Select the license(s) under which you release your project.</em>
+  Select the license(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"
      tal:define="is_empty not:view/_getFormInput">
     <input id="license_pending" name="license_status" type="radio"
@@ -39,20 +39,12 @@
     <input tal:replace="structure view/checkbox_matrix" />
   </div>
 
-  Launchpad.net is free to use for software projects that share
-  their source code and comply with
-  <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
-  these licensing policies.</a>
-  <br/>
-  <a href="http://help.launchpad.net/Feedback">Contact us</a>
-  for pricing information if your project uses a proprietary license.
-
-  <div tal:condition="view/has_deprecated_gpl" style="color: red">
-    Please uncheck the deprecated GPL option and select
-    GNU GPLv2 and/or GNU GPLv3.
-  </div>
-  <div tal:condition="view/has_deprecated_lgpl" style="color: red">
-    Please uncheck the deprecated LGPL option and select
-    GNU LGPLv2 and/or GNU LGPLv3.
-  </div>
+  <p>
+    Launchpad.net is free to use for software projects that share
+    their source code and comply with
+    <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
+    these licensing policies.</a>
+    <br/>
+    Contact us if your project uses a proprietary licence.
+  </p>
 </div>

@@ -13,7 +13,7 @@ from zope.app.form.utility import setUpWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import IProduct, License
+from canonical.launchpad.interfaces import IProduct
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 
@@ -122,18 +122,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
 
-    def has_deprecated_gpl(self):
-        if self._getFormValue() == '':
-            return False
-        else:
-            return License.GPL in self._getFormValue()
-
-    def has_deprecated_lgpl(self):
-        if self._getFormValue() == '':
-            return False
-        else:
-            return License.LGPL in self._getFormValue()
-
     def renderItemsWithValues(self, values):
         """Render the list of possible values, with those found in
         `values` being marked as selected.
@@ -141,7 +129,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
         Overrides method in `ItemsEditWidgetBase' so that deprecated
         license choices can be hidden.
         """
-        deprecated_license_choices = [License.GPL, License.LGPL]
         if self._getFormValue() == '':
             # _getFormValue() is only an empty string when it is first
             # displayed. If the form is submitted with no boxes checked,
@@ -163,7 +150,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         rendered_items = []
         count = 0
         for term in self.vocabulary:
-            if (term.value in deprecated_license_choices
+            if (term.value.name.startswith('_DEPRECATED_')
                 and term.value not in checked_licenses):
                 # The self.context is the IProduct.licenses field
                 # and self.context.context is the Product object,

@@ -27,7 +27,6 @@ __all__ = [
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
-    'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
     'PersonEditJabberIDsView',
