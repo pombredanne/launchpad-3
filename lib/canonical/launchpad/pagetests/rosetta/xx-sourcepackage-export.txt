@@ -6,8 +6,11 @@ translations for a source package.
 
 == Where to request ==
 
-The option is shown in the Translations action bar for a source package.
-The link is called "Download translations."
+For qualified users (see below), the option is shown in the Translations
+action bar for a source package.  The link is called "Download
+translations."
+
+Mark is a qualified user.
 
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open(
@@ -31,9 +34,10 @@ reasonable level.
     >>> def can_download_translations(browser):
     ...     """Can browser download full package translations?
     ...
-    ...     Checks for the "Download translations" link, but also attempts
-    ...     direct access to the download page and sees that the two have
-    ...     consistent access rules.
+    ...     Checks for the "Download translations" link on an Ubuntu
+    ...     package.  Also attempts direct access to the same package's
+    ...     download page and sees that the two have consistent access
+    ...     rules.
     ...     """
     ...     browser.open(
     ...         'http://translations.launchpad.dev/'
@@ -100,8 +104,8 @@ admin or expert, but he is one of the owners of a translation group.
 
     >>> gussie = factory.makePerson(email='gussie@drones.example.com',
     ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')
-    >>> nobles = factory.makeTeam(gussie)
-    >>> group = factory.makeTranslationGroup(nobles)
+    >>> translators = factory.makeTeam(gussie)
+    >>> group = factory.makeTranslationGroup(translators)
 
     >>> # Log out so we can go back to using test browsers.
     >>> logout()
@@ -126,8 +130,30 @@ Gussie's translation group takes charge of Ubuntu translations.
 This change gives Gussie the ability to download full package
 translations.
 
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(ubuntu)
     >>> can_download_translations(gussie_browser)
-    False
+    True
+
+The Hon. Freddie Threepwood is not an administrator and is not involved
+in the translation effort.  He is, however, a member of the team that
+is allowed to upload packages to Ubuntu.
+
+    >>> login('foo.bar@canonical.com')
+    >>> freddie = factory.makePerson(
+    ...     email='freddie@blandings.example.com', name='freddie',
+    ...     displayname='Freddie Threepwood', password='test')
+    >>> uploaders = factory.makeTeam(freddie)
+    >>> ubuntu.upload_admin = uploaders
+    >>> syncUpdate(ubuntu)
+    >>> logout()
+
+Freddie can download translations based on this qualification alone.
+
+    >>> freddie_browser = setupBrowser(
+    ...     auth='Basic freddie@blandings.example.com:test')
+    >>> can_download_translations(freddie_browser)
+    True
 
 
 == Making the request ==
@@ -135,6 +161,9 @@ translations.
 The "Download translations" link leads to a page that lets the user select an
 export format, and request the download.
 
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/mozilla/+export')
     >>> print browser.title
     Download translations for "mozilla in Ubuntu Hoary"
 
@@ -182,6 +211,7 @@ a warning would appear on the export request form that wasn't there before.
     ...     'ubuntu/hoary/+source/evolution/+export')
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
+
     This package has templates with different native file formats.  If you
     proceed, all translations will be exported in the single format you
     specify.

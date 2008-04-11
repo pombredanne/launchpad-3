@@ -1050,7 +1050,8 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
             # User has upload rights to this package.
             user.inTeam(self.obj.distribution.upload_admin) or
             # User is owner of applicable translation group.
-            translation_group is not None and user.inTeam(translation_group))
+            (translation_group is not None and
+             user.inTeam(translation_group.owner)))
 
 
 class EditBugTracker(EditByRegistryExpertsOrOwnersOrAdmins):
