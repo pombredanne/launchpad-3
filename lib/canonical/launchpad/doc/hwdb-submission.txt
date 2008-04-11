@@ -84,7 +84,7 @@ identical data a second time leads to an error.
     >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
-    ['Submission key already exists.']
+    [u'Submission key already exists.']
 
 
 If the field distribution contains a name which is not known in the
@@ -161,7 +161,7 @@ The field `emailaddress` must contain a formally valid email address.
     >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
-    ['Invalid email address']
+    [u'Invalid email address']
 
 All fields are required.
 

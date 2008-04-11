@@ -61,7 +61,7 @@
                 </td>
               </tr>
               <tr tal:define="bugcontact context/bugcontact">
-                <th>Bug contact:</th>
+                <th>Bug supervisor:</th>
                 <td>
                   <tal:none condition="not:bugcontact"
                   >None set</tal:none>

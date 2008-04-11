@@ -65,7 +65,7 @@ class BugAttachmentEditView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.current_bugtask)
 
-    @action('Delete attachment', name='delete')
+    @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
         self.request.response.addInfoNotification(structured(
             'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.'

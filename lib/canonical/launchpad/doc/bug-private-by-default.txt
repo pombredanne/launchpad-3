@@ -1,6 +1,6 @@
 = Private by default bugs =
 
-A product with private bugs by default must always have a bug contact
+A product with private bugs by default must always have a bug supervisor
 (this is enforced by a DB constraint).
 
     >>> from canonical.testing import LaunchpadZopelessLayer
@@ -38,7 +38,7 @@ A product with private bugs by default must always have a bug contact
     >>> sorted(sub.name for sub in landscape_task.bug.getDirectSubscribers())
     [u'landscape-developers', u'no-priv']
 
-The bug contact is always subscribed, except in the case of a security
+The bug supervisor is always subscribed, except in the case of a security
 related bug.
 
     >>> security_bug_params = CreateBugParams(

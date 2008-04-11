@@ -128,6 +128,28 @@ class TestLaunchpadServer(TestCase):
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
+    def test_translationIsCached(self):
+        # We don't go to the authserver for every path translation.
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        # ~testuser/firefox/baz is branch 1.
+        branch_id, permissions, path = self.server._translate_path(
+            '~testuser/firefox/baz/.bzr')
+        self.assertEqual(1, branch_id)
+
+        # Futz with the fake authserver.
+        del self.authserver._branch_set[1]
+        branch_info = self.authserver.getBranchInformation(
+            1, 'testuser', 'firefox', 'baz')
+        # The authserver says there is no ~testuser/firefox/baz branch.
+        self.assertEqual(('', ''), branch_info)
+
+        # But we can still translate ~testuser/firefox/baz in the transport.
+        branch_id, permissions, path = self.server._translate_path(
+            '~testuser/firefox/baz/.bzr')
+        self.assertEqual(1, branch_id)
+
 
 class TestLaunchpadTransport(TestCase):
 

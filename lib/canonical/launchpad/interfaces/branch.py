@@ -31,6 +31,7 @@ __all__ = [
     'UnknownBranchTypeError'
     ]
 
+from cgi import escape
 from datetime import timedelta
 import re
 from zope.interface import Interface, Attribute
@@ -46,6 +47,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
@@ -233,8 +235,9 @@ class BranchURIField(URIField):
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
-                "cannot be on <code>%s</code>." % launchpad_domain)
-            raise LaunchpadValidationError(message)
+                "cannot be on <code>${domain}</code>.",
+                mapping={'domain': escape(launchpad_domain)})
+            raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
@@ -247,10 +250,11 @@ class BranchURIField(URIField):
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
-                "The bzr branch <a href=\"%s\">%s</a> is already registered "
-                "with this URL.")
-            raise LaunchpadValidationError(
-                message, canonical_url(branch), branch.displayname)
+                'The bzr branch <a href="${url}">${branch}</a> is '
+                'already registered with this URL.',
+                mapping={'url': canonical_url(branch),
+                         'branch': escape(branch.displayname)})
+            raise LaunchpadValidationError(structured(message))
 
 
 BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
@@ -279,8 +283,9 @@ def branch_name_validator(name):
     """
     if not valid_branch_name(name):
         raise LaunchpadValidationError(
-            _("Invalid branch name '%s'. %s"), name,
-            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+            _("Invalid branch name '${name}'. ${message}",
+              mapping={'name': name,
+                       'message': BRANCH_NAME_VALIDATION_ERROR_MESSAGE}))
     return True
 
 

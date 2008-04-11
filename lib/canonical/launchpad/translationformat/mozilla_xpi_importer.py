@@ -299,6 +299,9 @@ class PropertyFile:
 
             line_num += 1
             if not is_multi_line_comment:
+                # Remove any white space before the useful data, like
+                # ' # foo'.
+                line = line.lstrip()
                 if line.startswith(u'#'):
                     # It's a whole line comment.
                     ignore_comment = False
@@ -388,7 +391,7 @@ class PropertyFile:
                             message=u"invalid msgid: '%s'" % key)
                 else:
                     # Got a line that is not a valid message nor a valid
-                    # commnet. Ignore it because main en-US.xpi catalog from
+                    # comment. Ignore it because main en-US.xpi catalog from
                     # Firefox has such line/error. We follow the 'be strict
                     # with what you export, be permisive with what you import'
                     # policy.

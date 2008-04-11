@@ -127,10 +127,11 @@ def export(distroseries, component, update, force_utf8, logger):
             logger.warning(
                 "%s doesn't have source file registered." % potemplate.title)
             continue
+        domain = template.translation_domain.encode('ascii')
         archive.add_file(
             os.path.join(path_prefix, 'xpi', domain, 'en-US.xpi'),
             librarian_client.getFileByAlias(
-                template.source_file.content.id).read())
+                template.source_file.id).read())
 
     logger.info("Adding timestamp file")
     # Is important that the timestamp contain the date when the export
