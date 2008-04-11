@@ -1,7 +1,7 @@
 = Projects with private-bugs-by-default =
 
 Projects can be configured to default all new bugs to private; the bugs
-will have their bug contacts subscribed, but will otherwise be invisible
+will have their bug supervisor subscribed, but will otherwise be invisible
 to Launchpad users in general.
 
 == Setting private-bugs-by-default ==
@@ -17,7 +17,7 @@ reported about that project will be private by default.
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
 
-However, the product's bug contact must be set, and if it is not, as is
+However, the product's bug supervisor must be set, and if it is not, as is
 the case with Firefox, the user will get an error:
 
     >>> admin_browser.open("http://launchpad.dev/firefox/+review")
@@ -29,7 +29,7 @@ the case with Firefox, the user will get an error:
     ...     print tag.renderContents()
     There is 1 error.
     <BLANKLINE>
-    Set a <a href="...+bugcontact">bug contact</a> for this project first.
+    Set a <a href="...+bugcontact">bug supervisor</a> for this project first.
 
 == Visual effects ==
 
