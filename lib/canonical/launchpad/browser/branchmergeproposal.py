@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action)
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.authorization import check_permission
 
 
@@ -459,8 +460,14 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     @action('Mark as Merged', name='mark_merged')
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
-        revno = data['merged_revno']
-        self.context.markAsMerged(revno, merge_reporter=self.user)
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            self.request.response.addWarningNotification(
+                'The proposal has already been marked as merged.')
+        else:
+            revno = data['merged_revno']
+            self.context.markAsMerged(revno, merge_reporter=self.user)
+            self.request.response.addNotification(
+                'The proposal has now been marked as merged.')
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

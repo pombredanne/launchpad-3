@@ -656,7 +656,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:

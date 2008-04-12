@@ -145,11 +145,7 @@ def set_up_logging(configure_oops_reporting=False):
     log.setLevel(logging.DEBUG)
 
     if configure_oops_reporting:
-        errorreports = config.codehosting
-
-        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
-        config.launchpad.errorreports.errordir = errorreports.errordir
-        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
+        errorlog.globalErrorUtility.configure('codehosting')
         tplog.addObserver(oops_reporting_observer)
 
     return log

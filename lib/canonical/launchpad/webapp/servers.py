@@ -1047,7 +1047,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         else:
             # Everything is fine, let's return the principal.
             pass
-        return getUtility(IPlacelessLoginSource).getPrincipal(token.person.id)
+        return getUtility(IPlacelessLoginSource).getPrincipal(
+            token.person.id, access_level=token.permission)
 
 
 class WebServiceRequestTraversal:
