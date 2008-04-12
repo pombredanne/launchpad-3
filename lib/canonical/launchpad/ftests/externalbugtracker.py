@@ -491,16 +491,26 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             # those members of bugs_modified_since that are in that
             # list.
             if criteria.has_key('bugs'):
-                bugs_to_return = [
+                bug_list = [
                     bug for bug in bugs_modified_since
                     if bug.id in criteria['bugs']]
             else:
-                bugs_to_return = bugs_modified_since
+                bug_list = bugs_modified_since
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
         if level == 0:
-            return [{'id': bug.id} for bug in bugs_to_return]
+            bugs_to_return = [{'id': bug.id} for bug in bug_list]
+
+            # XXX 2008-04-12 gmb:
+            #     xmlrpclib will expand lists of length 1 - no, really,
+            #     see xmlrpclib.py:1386 - so we wrap lists of length 1
+            #     in another list to make sure this doesn't break
+            #     things.
+            if len(bugs_to_return) == 1:
+                bugs_to_return = [bugs_to_return]
+
+        return bugs_to_return
 
 
 class TestRoundup(Roundup):

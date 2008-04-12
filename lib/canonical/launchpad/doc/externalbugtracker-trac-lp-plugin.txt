@@ -114,6 +114,14 @@ of the ids of the bugs which have been modified since that time.
     ...     bug_ids_to_check, last_checked)
     ['1', '3']
 
+Different last_checked times will result in different numbers of bugs
+being returned.
+
+    >>> last_checked = datetime(2008, 2, 1, 0, 0, 0)
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    ['1']
+
 If no bugs have been updated since last_checked, getModifiedRemoteBugs()
 will return an empty list.
 
