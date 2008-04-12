@@ -103,3 +103,13 @@ test XML-RPC transport to check.
     ...     '3': MockTracRemoteBug('3', datetime(2008, 1, 1, 1, 2, 3)),}
 
     >>> test_transport.remote_bugs = remote_bugs
+
+Calling the getModifiedRemoteBugs() method of our trac instance and
+passing it a list of bug ids and a  datetime object will return a list
+of the ids of the bugs which have been modified since that time.
+
+    >>> bug_ids_to_check = ['1', '2', '3']
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, datetime(2008, 1, 1, 0, 0, 0))
+    ['1', '3']
+
