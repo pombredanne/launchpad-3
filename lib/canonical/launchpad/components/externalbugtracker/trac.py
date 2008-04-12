@@ -245,8 +245,8 @@ class TracLPPlugin(ExternalBugTracker):
             time.mktime(last_checked.timetuple()))
 
         # We retrieve only the IDs of the modified bugs from the server.
-        modified_bugs = server.launchpad.bug_info(0, dict(
-            modified_since=last_checked_timestamp,
+        time_snapshot, modified_bugs = server.launchpad.bug_info(
+            0, dict(modified_since=last_checked_timestamp,
             bugs=remote_bug_ids))
 
         return [bug['id'] for bug in modified_bugs]
