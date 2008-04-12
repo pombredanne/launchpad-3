@@ -1,5 +1,5 @@
-The bug contact reports present an overview and searchable bug listing
-views for packages for which a user is a bug contact.
+The bug supervisor reports present an overview and searchable bug listing
+views for packages for which a user is a bug supervisor.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
     >>> print anon_browser.contents

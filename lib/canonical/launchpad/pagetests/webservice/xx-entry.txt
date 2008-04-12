@@ -68,7 +68,7 @@ Custom operations may have error handling.
   ...     bugtask_path, 'change_status', {}, status='Triaged')
   HTTP/1.1 401 Unauthorized
   ...
-  Only Bug Contacts may change status to Triaged.
+  Only Bug Supervisors may change status to Triaged.
 
 Trying to invoke a nonexistent custom operation yields an error.
 

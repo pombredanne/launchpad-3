@@ -573,7 +573,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug contact for %s')
+edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -1202,6 +1202,8 @@ shipit_oops = 'Error: Oops'
 shipit_reports = 'ShipIt reports'
 
 shipit_requestcds = 'Your ShipIt Request'
+
+shipit_survey = 'ShipIt Survey'
 
 shipitrequests_index = 'ShipIt requests'
 
