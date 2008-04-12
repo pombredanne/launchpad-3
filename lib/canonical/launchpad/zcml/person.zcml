@@ -32,6 +32,9 @@
     <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
+    <allow
+      interface="canonical.launchpad.interfaces.IPersonAdminWriteRestricted"
+      />
 
     <require
       permission="launchpad.View"
@@ -46,20 +49,15 @@
       set_schema="canonical.launchpad.interfaces.IPersonPublic"
       />
     <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.IPersonAdminWriteRestricted"
+      />
+    <require
       permission="launchpad.Special"
       attributes="deactivateAccount"
       />
     <require
       permission="launchpad.Edit"
-      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
-                  renewTeamMembership"
-      />
-    <require
-      permission="launchpad.Admin"
-      attributes="deactivateAllMembers"
-      />
-    <require
-      permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
   </content>
@@ -608,7 +606,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Admin"
+    permission="launchpad.Owner"
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"

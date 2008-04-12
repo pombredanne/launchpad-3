@@ -9,6 +9,7 @@ __all__ = [
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
+    'PrivateMaloneApplication',
     'RosettaApplication',
     'ShipItApplication',
     ]
@@ -19,13 +20,14 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IProductSet, IRosettaApplication, IShipItApplication,
-    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
+    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet,
+    ICodeImportSchedulerApplication, IDistroSeriesSet,
+    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
+    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
+    IOpenIdApplication, IPrivateMaloneApplication, IProductSet,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet,
+    ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -40,6 +42,13 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
+
+
+class PrivateMaloneApplication:
+    """ExternalBugTracker authentication token end-point."""
+    implements(IPrivateMaloneApplication)
+
+    title = "Launchpad Bugs."
 
 
 class ShipItApplication:

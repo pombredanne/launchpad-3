@@ -62,6 +62,7 @@ class Build(SQLBase):
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
+    estimated_build_duration = IntervalCol(default=None)
 
     @property
     def buildqueue_record(self):

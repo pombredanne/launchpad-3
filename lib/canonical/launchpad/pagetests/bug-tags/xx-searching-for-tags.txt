@@ -72,7 +72,7 @@ The error message is also valid and correctly escaped:
     >>> for tag in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print tag.prettify()
     <div class="message">
-    '&lt;script&gt;alert(&quot;cheezburger&quot;);&lt;/script&gt;' isn't ...
+    '&lt;script&gt;alert("cheezburger");&lt;/script&gt;' isn't ...
     </div>
 
 The script we tried to inject is not present, unescaped, anywhere in

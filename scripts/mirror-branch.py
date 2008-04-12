@@ -31,10 +31,17 @@ import sys
 
 import bzrlib.repository
 
-from canonical.launchpad.interfaces import BranchType
-from canonical.codehosting.puller import configure_oops_reporting
 from canonical.codehosting.puller.worker import (
     install_worker_ui_factory, PullerWorker, PullerWorkerProtocol)
+from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
+
+
+branch_type_map = {
+    BranchType.HOSTED: 'upload',
+    BranchType.MIRRORED: 'mirror',
+    BranchType.IMPORTED: 'import'
+    }
 
 
 def shut_up_deprecation_warning():
@@ -68,8 +75,8 @@ if __name__ == '__main__':
      branch_type_name, oops_prefix) = arguments
 
     branch_type = BranchType.items[branch_type_name]
-
-    configure_oops_reporting(branch_type, oops_prefix=False)
+    section_name = 'supermirror_%s_puller' % branch_type_map[branch_type]
+    globalErrorUtility.configure(section_name)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 

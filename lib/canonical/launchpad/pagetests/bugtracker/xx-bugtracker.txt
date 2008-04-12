@@ -192,6 +192,27 @@ tracker uses.
   There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
+If the user inadvertently enters an invalid URL, they are shown an
+informative error message explaining why it is invalid.
+
+  >>> user_browser.getControl('Location', index=0).value = (
+  ...     'what? my wife does this stuff')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  "what? my wife does this stuff" is not a valid URI
+
+  >>> user_browser.getControl('Location', index=0).value = (
+  ...     'http://ξνεr.been.fishing?')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  URIs must consist of ASCII characters
+
 After successfully editing the bug tracker information, the user is
 redirected to the bug tracker page. Note that the change we made to
 the bugtracker name is reflected in the url.
@@ -216,6 +237,26 @@ And now the test tracker should have been updated:
 
   >>> logout()
 
+But we forgot, the URL we need actually uses the https scheme. It's
+easy to change.
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla')
+  >>> print extract_text(find_tag_by_id(
+  ...         user_browser.contents, 'bugtracker-urls'))
+  http://trac.example.org/tickets
+  http://mantis.testing.org/ (Alias)
+
+  >>> user_browser.getLink('Change details').click()
+  >>> user_browser.getControl('Location', index=0).value = (
+  ...     'https://trac.example.org/tickets')
+  >>> user_browser.getControl('Change').click()
+
+  >>> print extract_text(find_tag_by_id(
+  ...         user_browser.contents, 'bugtracker-urls'))
+  https://trac.example.org/tickets
+  http://mantis.testing.org/ (Alias)
+
 
 == Aliases ==
 
@@ -237,7 +278,7 @@ They're added on the normal Change Details page.
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets
+  https://trac.example.org/tickets
   http://pseudonym.example.com/ (Alias)
 
 It's not possible to add an alias that already refers to another
@@ -252,23 +293,40 @@ bugtracker.
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
-  http://bugzilla.mozilla.org/ already refers to The Mozilla.org Bug Tracker
+  http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
 Multiple aliases can be entered by separating URLs with whitespace.
 
   >>> user_browser.getControl('Location aliases').value = (
   ...     '    http://wolverhampton.example.com/    '
   ...     '  http://toadhall.example.com/      \n'
+  ...     'mailto:cupboardy@notaword.com '
   ...     ' https://wibble.example.com/   \n\n\n')
   >>> user_browser.getControl('Change').click()
 
   >>> bugtracker_url_list = find_tag_by_id(
   ...     user_browser.contents, 'bugtracker-urls')
   >>> print extract_text(bugtracker_url_list)
-  http://trac.example.org/tickets
+  https://trac.example.org/tickets
   http://toadhall.example.com/ (Alias)
   http://wolverhampton.example.com/ (Alias)
   https://wibble.example.com/ (Alias)
+  mailto:cupboardy@notaword.com (Alias)
+
+If the user inadvertently enters one or more invalid URLs, they are
+shown informative error messages.
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla/+edit')
+  >>> user_browser.getControl('Location aliases').value = (
+  ...     'ξνεr been http://fishing?')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  URIs must consist of ASCII characters
+  "been" is not a valid URI
 
 
 == Deleting a bug tracker ==
