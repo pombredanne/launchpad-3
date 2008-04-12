@@ -95,16 +95,13 @@ class ISupportsCommentPushing(IExternalBugTracker):
     """An external bug tracker that can push comments to the remote tracker.
     """
 
-    def addRemoteComment(self, remote_bug, comment_body, rfc822msg_id=None):
+    def addRemoteComment(self, remote_bug, message):
         """Push a comment to the remote bug.
 
         :param remote_bug: The ID of the bug on the remote tracker to
             which the comment should be attached.
-        :param comment_body: The body of the comment to push to the
-            remote tracker.
-        :param msg_id: The rfc822 message ID of the local comment. This
-            doesn't have to be passed, since not all remote bugtrackers
-            require it.
+        :param message: The Launchpad `Message` that should be pushed to
+            the remote bugtracker.
 
         Return the ID assigned to the comment by the remote bugtracker.
         """
