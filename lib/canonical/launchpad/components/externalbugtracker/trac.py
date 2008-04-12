@@ -193,7 +193,7 @@ class Trac(ExternalBugTracker):
             raise UnknownRemoteStatusError()
 
 
-class TracLPPlugin(ExternalBugTracker):
+class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
     def __init__(self, baseurl, xmlrpc_transport=None):
