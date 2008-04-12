@@ -181,5 +181,5 @@ place:
     ...         del g.cycle
     ...     else:
     ...         new_garbage.append(g)
-    >>> gc.garbage = new_garbage
+    >>> gc.garbage[:] = new_garbage
 
