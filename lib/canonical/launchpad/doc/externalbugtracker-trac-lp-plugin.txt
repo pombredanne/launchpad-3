@@ -136,3 +136,23 @@ will return an empty list.
 Like all other ExternalBugTrackers, the TrackLPPlugin ExternalBugTracker
 allows us to fetch bugs statuses from the remote bug tracker.
 
+To demonstrate this, we'll add some statuses to our mock remote bugs.
+
+    >>> test_transport.remote_bugs['1'].status = 'open'
+    >>> test_transport.remote_bugs['2'].status = 'fixed'
+    >>> test_transport.remote_bugs['3'].status = 'reopened'
+
+We need to call initializeRemoteBugDB() on our TracLPPlugin instance to
+be able to retrieve remote statuses.
+
+    >>> last_checked = (2008, 1, 1, 0, 0, 0)
+    >>> bugs_to_update = trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    >>> trac.initializeRemoteBugDB(bugs_to_update)
+
+Calling getRemoteStatus() on our example TracLPPlugin instance will
+return the status for whichever bug we request.
+
+    >>> trac.getRemoteStatus('1')
+    'open'
+
