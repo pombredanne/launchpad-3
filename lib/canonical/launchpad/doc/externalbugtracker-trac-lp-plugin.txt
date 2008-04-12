@@ -130,3 +130,9 @@ will return an empty list.
     ...     bug_ids_to_check, last_checked)
     []
 
+
+== Getting the status of remote bugs ==
+
+Like all other ExternalBugTrackers, the TrackLPPlugin ExternalBugTracker
+allows us to fetch bugs statuses from the remote bug tracker.
+

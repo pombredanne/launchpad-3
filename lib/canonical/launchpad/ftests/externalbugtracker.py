@@ -418,9 +418,10 @@ class TestTrac(Trac):
 class MockTracRemoteBug:
     """A mockup of a remote Trac bug."""
 
-    def __init__(self, id, last_modified):
+    def __init__(self, id, last_modified=None, status=None):
         self.id = id
         self.last_modified = last_modified
+        self.status = status
 
 
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
