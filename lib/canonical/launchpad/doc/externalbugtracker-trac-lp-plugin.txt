@@ -121,3 +121,4 @@ will return an empty list.
     >>> trac.getModifiedRemoteBugs(
     ...     bug_ids_to_check, last_checked)
     []
+
