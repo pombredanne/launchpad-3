@@ -103,7 +103,7 @@ class ImportProcess:
                         entry_to_import.import_into.importFromQueue(
                             entry_to_import, self.logger))
 
-                    from_email = config.rosetta.rosettaadmin.email
+                    from_email = config.rosettaadmin.email
                     to_email = helpers.contactEmailAddresses(
                         entry_to_import.importer)
                     text = MailWrapper().format(mail_body)

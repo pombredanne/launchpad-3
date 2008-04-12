@@ -429,6 +429,8 @@ codeimport_edit = 'Edit import details'
 
 codeimport_list = 'Code Imports'
 
+codeimport_machines = ViewLabel()
+
 codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
@@ -571,7 +573,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug contact for %s')
+edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -1201,6 +1203,8 @@ shipit_reports = 'ShipIt reports'
 
 shipit_requestcds = 'Your ShipIt Request'
 
+shipit_survey = 'ShipIt Survey'
+
 shipitrequests_index = 'ShipIt requests'
 
 shipitrequests_search = 'Search ShipIt requests'
@@ -1254,6 +1258,8 @@ def sourcepackages(context, view):
 sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
+
+sources_list = 'Available code imports'
 
 sourcesource_index = 'Upstream source import'
 

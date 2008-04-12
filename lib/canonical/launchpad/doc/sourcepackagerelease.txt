@@ -320,3 +320,25 @@ The second one, executes the import.
     INFO    creating lockfile
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     ...
+
+
+== Package sizes ==
+
+The size of a package can be obtained via a private SourcePackageRelease
+method.
+
+    >>> spr = SourcePackageRelease.get(14)
+    >>> spr.name
+    u'mozilla-firefox'
+    >>> spr._getPackageSize()
+    9690.0
+
+Verify that empty packages have a size of zero.
+
+    >>> from canonical.launchpad.database import SourcePackageName
+    >>> linux_src = SourcePackageName.selectOneBy(
+    ...     name="linux-source-2.6.15")
+    >>> spr = SourcePackageRelease.selectOneBy(
+    ...     sourcepackagename=linux_src, version='2.6.15.3')
+    >>> spr._getPackageSize()
+    0.0

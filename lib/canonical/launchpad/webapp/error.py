@@ -53,9 +53,10 @@ class SystemErrorView:
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
         self.computeDebugOutput()
-        if config.show_tracebacks:
+        if config.canonical.show_tracebacks:
             self.show_tracebacks = True
-        # if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
+        # if canonical.launchpad.layers.PageTestLayer.providedBy(
+        #     self.request):
         #     self.pagetesting = True
         # XXX 20080109 mpt: We don't use this any more. See bug 181472.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
