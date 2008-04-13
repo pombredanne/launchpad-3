@@ -31,11 +31,11 @@ zconfig_schema = ZConfig.loadSchema(zconfig_schema_file)
 
 def main():
     parser = optparse.OptionParser(usage="""\
-%prog [options] [overrides]
+%prog [options] [zconfig_overrides]
 
-Parse all launchpad.conf files found under the 'config' directory rooted at
-the current working directory.  Warn about any problems loading the config
-file.
+Parse all launchpad.conf and *-lazr.conf files found under the 'config'
+directory rooted at the current working directory.  Warn about any
+problems loading the config file.
 
 With a specified directory, search there instead of the current working
 directory for launchpad.conf files.  The search is always recursive.
@@ -43,7 +43,7 @@ directory for launchpad.conf files.  The search is always recursive.
 The environment variable LPCONFIG can be used to limit the search to only
 subdirectories of config that match $LPCONFIG, otherwise all are searched.
 
-overrides are passed directly to ZConfig.loadConfig().
+zconfig_overrides are passed directly to ZConfig.loadConfig().
 """)
     parser.add_option('-v', '--verbose',
                       action='count', dest='verbosity',
