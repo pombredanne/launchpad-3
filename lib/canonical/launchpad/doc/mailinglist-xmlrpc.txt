@@ -84,8 +84,8 @@ lists, there will be nothing to do because lists in the CONSTRUCTING state
 don't show up as needing to be created.
 
     >>> print_actions(mailinglist_api.getPendingActions())
-    team-one --> unsynchronized
-    team-two --> unsynchronized
+    team-one --> unsynchronized constructing
+    team-two --> unsynchronized constructing
 
 
 == Creating the mailing lists ==
