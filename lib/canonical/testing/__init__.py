@@ -10,6 +10,7 @@ __all__ = [
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
     'LaunchpadScriptLayer', 'ExperimentalLaunchpadZopelessLayer',
+    'TwistedLaunchpadZopelessLayer'
     ]
 
 import logging

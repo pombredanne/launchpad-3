@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
 
 from twisted.internet import defer
+from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 
