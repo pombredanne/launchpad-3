@@ -62,6 +62,11 @@
     </ul>
     <tal:navigation replace="structure faqs/@@+navigation-links-lower" />
   </tal:results>
+
+  <p condition="context/required:launchpad.Moderate">
+    <a href="+createfaq">Create a new FAQ</a> to answer a question not listed
+    among this project's FAQs.
+  </p>
 </div>
 
 <metal:help fill-slot="help">
@@ -72,6 +77,10 @@
   </p>
   <p>If you hover the mouse over a FAQ's title, the beginning of its content
     will pop-up after a few seconds.
+  </p>
+  <p>
+    The project owner and answer contacts can add a new FAQ from the
+    'Create a new FAQ' link.
   </p>
 </metal:help>
 </body>
