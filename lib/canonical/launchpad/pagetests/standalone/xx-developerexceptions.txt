@@ -37,9 +37,7 @@ And the OOPS ID is displayed but not linkified.
     <...
     <h1 class="exception">Oops!</h1>
     ...
-    Include the error <abbr>ID</abbr>
-    <code class="oopsid">OOPS-...</code>
-    in your message.
+    <code class="oopsid">OOPS-...</code>)
     ...
 
 Launchpad developers logged in via Basic Auth get tracebacks.
@@ -58,9 +56,7 @@ And the OOPS ID is displayed and linkified.
     <...
     <h1 class="exception">Oops!</h1>
     ...
-    Include the error <abbr>ID</abbr>
-    <a href=...oops.cgi/OOPS-...><code class="oopsid">OOPS-...</code></a>
-    in your message.
+    <a href=...oops.cgi/OOPS-...><code class="oopsid">OOPS-...</code></a>)
     ...
 
 Other users logged in via basic auth don't get tracebacks. In this
@@ -79,9 +75,7 @@ And the OOPS ID is displayed but not linkified.
     <...
     <h1 class="exception">Oops!</h1>
     ...
-    Include the error <abbr>ID</abbr>
-    <code class="oopsid">OOPS-...</code>
-    in your message.
+    <code class="oopsid">OOPS-...</code>)
     ...
 
 To avoid affecting other tests, reset the show_tracebacks config item.
