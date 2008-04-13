@@ -5,7 +5,7 @@
 
 Usage hint:
 
-% utilities/check-configs.py -v 'canonical/pid_dir=/tmp'
+% utilities/check-configs.py -v
 """
 
 import _pythonpath
