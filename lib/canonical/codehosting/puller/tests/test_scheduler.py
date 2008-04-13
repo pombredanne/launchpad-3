@@ -32,6 +32,7 @@ from canonical.testing import (
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
 
+
 class FakeBranchStatusClient:
 
     def __init__(self, branch_queues=None):

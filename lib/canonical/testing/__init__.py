@@ -56,4 +56,5 @@ from canonical.testing.layers import (
     ExperimentalLaunchpadZopelessLayer,
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer)
+    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer,
+    TwistedLaunchpadZopelessLayer)
