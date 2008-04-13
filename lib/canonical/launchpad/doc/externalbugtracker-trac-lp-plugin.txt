@@ -156,3 +156,15 @@ return the status for whichever bug we request.
     >>> trac.getRemoteStatus('1')
     'open'
 
+    >>> trac.getRemoteStatus('3')
+    'reopened'
+
+If we try to get the status of bug 2 we'll get a BugNotFound error,
+since that bug wasn't in the list of bugs that were modified since our
+last_checked time.
+
+    >>> trac.getRemoteStatus('2')
+    Traceback...
+      ...
+    BugNotFound: 2
+

@@ -203,6 +203,21 @@ class TracLPPlugin(Trac):
             xmlrpc_transport = TracXMLRPCTransport()
         self.xmlrpc_transport = xmlrpc_transport
 
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        self.bugs = {}
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        time_snapshot, remote_bugs = server.launchpad.bug_info(
+            1, dict(bugs=bug_ids))
+        bugs = {}
+        for remote_bug in remote_bugs:
+            bugs[int(remote_bug['id'])] = remote_bug
+
+        self.bugs = bugs
+
     def _generateAuthenticationToken(self):
         """Create an authentication token an return it."""
         from zope.component import getUtility
