@@ -418,10 +418,18 @@ class TestTrac(Trac):
 class MockTracRemoteBug:
     """A mockup of a remote Trac bug."""
 
-    def __init__(self, id, last_modified=None, status=None):
+    def __init__(self, id, last_modified=None, status=None, resolution=None):
         self.id = id
         self.last_modified = last_modified
         self.status = status
+        self.resolution = resolution
+
+    def asDict(self):
+        """Return the bug's metadata, but not its comments, as a dict."""
+        return {
+            'id': self.id,
+            'status': self.status,
+            'resolution': self.resolution,}
 
 
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
@@ -474,7 +482,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         #     This is only a partial implementation of this; it will
         #     grow over time as implement different methods that call
         #     this method.
-        bugs_to_return = []
+        bugs_to_return = self.remote_bugs.values()
 
         # If we have a modified_since timestamp, we return bugs modified
         # since that time.
@@ -484,24 +492,25 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             modified_since = datetime.fromtimestamp(
                 criteria['modified_since'])
 
-            bugs_modified_since = [
-                bug for bug in self.remote_bugs.values()
+            bugs_to_return = [
+                bug for bug in bugs_to_return
                 if bug.last_modified > modified_since]
 
-            # If we have a list of bug IDs specified, we only return
-            # those members of bugs_modified_since that are in that
-            # list.
-            if criteria.has_key('bugs'):
-                bug_list = [
-                    bug for bug in bugs_modified_since
-                    if bug.id in criteria['bugs']]
-            else:
-                bug_list = bugs_modified_since
+        # If we have a list of bug IDs specified, we only return
+        # those members of bugs_modified_since that are in that
+        # list.
+        if criteria.has_key('bugs'):
+            bugs_to_return = [
+                bug for bug in bugs_to_return
+                if bug.id in criteria['bugs']]
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
         if level == 0:
-            bugs_to_return = [{'id': bug.id} for bug in bug_list]
+            bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
+        # For level 1, we return the bug's metadata, too.
+        elif level == 1:
+            bugs_to_return = [bug.asDict() for bug in bugs_to_return]
 
         return (self.time_snapshot(), bugs_to_return)
 
