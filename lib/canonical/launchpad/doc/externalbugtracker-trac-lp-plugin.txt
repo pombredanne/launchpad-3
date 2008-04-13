@@ -164,7 +164,7 @@ since that bug wasn't in the list of bugs that were modified since our
 last_checked time.
 
     >>> trac.getRemoteStatus('2')
-    Traceback...
+    Traceback (most recent call last):
       ...
     BugNotFound: 2
 
