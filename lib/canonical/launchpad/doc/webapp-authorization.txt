@@ -1,14 +1,13 @@
+= Permission checking =
 
-check_permission
-----------------
+The check_permission() helper is a wrapper around Zope's security API
+that makes it easy to check if a user has the requested permission on a
+given object.  This is the same check available in TALES as
+something/required:permission.Name.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet, IHasOwner
-
-This is the same check available in TALES as something/required:permission.Name.
-It checks that the currently logged in user has the requested permission on an
-object:
+    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.get(12)
@@ -26,5 +25,61 @@ If the permission doesn't exist, it raises an error:
     Traceback (most recent call last):
     ...
     ValueError: ('Undefined permission id', 'mushroom.Badger')
+    >>> logout()
 
 
+== Access level ==
+
+Users logged in through the web application have full access, which
+means they can read/change any object they have access to.
+
+    >>> from canonical.launchpad.webapp.interaction import (
+    ...     Participation, setupInteraction)
+    >>> mock_participation = Participation()
+    >>> login('test@canonical.com', mock_participation)
+    >>> mock_participation.principal.access_level
+    <DBItem AccessLevel.WRITE_PRIVATE...
+    >>> check_permission('launchpad.View', sample_person)
+    True
+    >>> check_permission('launchpad.Edit', sample_person)
+    True
+
+In the webservice, though, the authentication is done using OAuth, and
+the level of access given by the user is stored in OAuthAccessToken
+and later in the principal so that consumers can only do the operations
+that the user authorized.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     AccessLevel, IPlacelessAuthUtility)
+    >>> principal = getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
+    ...     'test@canonical.com')
+    >>> logout()
+    >>> principal.access_level = AccessLevel.READ_PRIVATE
+    >>> setupInteraction(principal)
+    >>> check_permission('launchpad.View', sample_person)
+    True
+    >>> check_permission('launchpad.Edit', sample_person)
+    False
+
+The access level in a principal also specifies whether or not it has
+access to private objects.  For instance, the above principal has
+permission to read private and non-private objects (READ_PRIVATE).
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> login('test@canonical.com')
+    >>> bug_1 = getUtility(IBugSet).get(1)
+    >>> bug_1.setPrivate(True, sample_person)
+    True
+    >>> syncUpdate(bug_1)
+    >>> check_permission('launchpad.View', bug_1)
+    True
+
+A principal with permission to read only non-private objects won't have
+access to that bug, though.
+
+    >>> logout()
+    >>> principal.access_level = AccessLevel.READ_PUBLIC
+    >>> setupInteraction(principal)
+    >>> check_permission('launchpad.View', bug_1)
+    False

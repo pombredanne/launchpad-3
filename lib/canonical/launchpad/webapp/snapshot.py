@@ -64,5 +64,3 @@ class Snapshot:
         if providing is not None:
             directlyProvides(self, providing)
 
-    def __eq__(self, other):
-        return bool(self.__dict__ == other.__dict__)

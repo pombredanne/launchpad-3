@@ -29,7 +29,7 @@ zcml directives. :-(
 We'll put an interface in canonical.launchpad.ftests.IFoo, and set the
 default view for the IFooLayer layer.
 
-    >>> from zope.component import queryDefaultViewName, queryView
+    >>> from zope.component import queryView
     >>> import canonical.launchpad.ftests
     >>> from zope.interface import Interface, implements
     >>> class IFoo(Interface):
@@ -245,7 +245,6 @@ Next, a functional/integration test of the overridden directive.
     >>> print queryView(fooobject, '+whatever2', request)
     None
 
-    >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
     ...     package="canonical.launchpad">
@@ -338,7 +337,6 @@ Next, a functional/integration test of the overridden directive.
     >>> print queryView(fooobject, '+someeditform', request)
     None
 
-    >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
     ...     package="canonical.launchpad">
@@ -421,7 +419,6 @@ Next, a functional/integration test of the overridden directive.
     >>> print queryView(fooobject, '+someaddform', request)
     None
 
-    >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
     ...     package="canonical.launchpad">
@@ -500,7 +497,6 @@ Next, a functional/integration test of the directive.
     >>> print queryView(fooobject, '+somegeneralform', request)
     None
 
-    >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
     ...     package="canonical.launchpad">
@@ -579,7 +575,6 @@ Next, a functional/integration test of the overridden directive.
     >>> print queryView(fooobject, '+someschemadisplay', request)
     None
 
-    >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser"
     ...     package="canonical.launchpad">
@@ -622,7 +617,6 @@ Next, a functional/integration test of the overridden directive.
     >>> print queryView(fooobject, '+impliedfacet', request)
     None
 
-    >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns="http://namespaces.zope.org/zope"
     ...            xmlns:browser="http://namespaces.zope.org/browser"
@@ -684,6 +678,29 @@ Next, a functional/integration test of the overridden directive.
     SimpleViewClass from display.pt
     >>> print impliedfacet_schemadisplay.__launchpad_facetname__
     whole-facet
+
+
+== Overriding zope:permission ==
+
+The permissions used in Launchpad must also specify the level of access
+they require ('read' or 'write'), so our zope:permission directive will
+register an ILaunchpadPermission with the given access_level instead of
+an IPermission.
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope"
+    ...     i18n_domain="canonical">
+    ...   <include file="lib/canonical/launchpad/webapp/meta-overrides.zcml" />
+    ...   <permission id="foo.bar" title="Foo Bar" access_level="read" />
+    ... </configure>
+    ... """) 
+    >>> from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> permission = getUtility(ILaunchpadPermission, 'foo.bar')
+    >>> verifyObject(ILaunchpadPermission, permission)
+    True
+    >>> permission.access_level
+    u'read'
 
 
 == Cleaning up the interfaces and objects to test with ==
