@@ -9,7 +9,7 @@ import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.rdb.interfaces import IZopeDatabaseAdapter
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 

@@ -20,7 +20,7 @@ from datetime import datetime
 import pytz
 import simplejson
 
-from zope.app.datetimeutils import (
+from zope.datetime import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError

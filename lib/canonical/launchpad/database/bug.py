@@ -15,7 +15,7 @@ import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
 
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
