@@ -331,6 +331,15 @@ An IBugBranch.
     >>> canonical_url(bug_branch)
     u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'
 
+== BranchMergeProposals ==
+
+    >>> mainline = getUtility(IBranchSet).get(15)
+    >>> release26 = getUtility(IBranchSet).get(16)
+    >>> merge_proposal = mainline.addLandingTarget(mainline.owner, release26)
+    >>> print canonical_url(merge_proposal)
+    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/...
+
+
 == POTemplates and so on ==
 
     >>> from canonical.launchpad.interfaces import (
