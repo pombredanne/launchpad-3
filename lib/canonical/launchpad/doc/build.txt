@@ -546,7 +546,7 @@ three additional private builds for cprov:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -562,7 +562,7 @@ Cprov can also see his own builds of course:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -880,7 +880,7 @@ Accessing the cprov builds when logged in as admin will see the records:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
 
 Likewise when logged in as cprov:
@@ -891,7 +891,7 @@ Likewise when logged in as cprov:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
 
 When logged in as anonymous this will generate a securtity exception

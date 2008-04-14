@@ -1185,3 +1185,47 @@ the shipit-reports cronscript.
     >>> process.returncode
     0
 
+
+== Server survey ==
+
+When requesting CDs, people may be asked to answer a small survey.
+At this point we're not doing anything with their answers, so we have
+a single method which takes a dictionary mapping questions to answers
+and store them in the database.
+
+The keys in this dictionary must be attribute names of
+ShipItSurveySchema and the values have to be either None or one or more
+lazr.Item objects.
+
+    >>> from canonical.launchpad.interfaces.shipit import (
+    ...     EnvironmentVocabulary, EvaluatedUsesVocabulary, IShipItSurveySet,
+    ...     ShipItSurveySchema)
+    >>> schema = ShipItSurveySchema
+    >>> answers = {
+    ...     'environment': EnvironmentVocabulary.HOME,
+    ...     'evaluated_uses': [EvaluatedUsesVocabulary.CRM,
+    ...                        EvaluatedUsesVocabulary.PROXY],
+    ...     'business_sector': None}
+    >>> survey_set = getUtility(IShipItSurveySet)
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> survey = survey_set.new(salgado, answers)
+    >>> survey
+    <ShipItSurvey...
+
+We also have a method to tell us whether or not a given person has
+already answered the survey.
+
+    >>> survey_set.personHasAnswered(salgado)
+    True
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> survey_set.personHasAnswered(sabdfl)
+    False
+
+If all answers are None or empty sequences, we won't record the person
+as having answered the survey.
+
+    >>> answers = {'environment': None, 'evaluated_uses': []}
+    >>> print survey_set.new(sabdfl, answers)
+    None
+    >>> survey_set.personHasAnswered(sabdfl)
+    False

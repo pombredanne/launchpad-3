@@ -169,10 +169,6 @@ class TestCopyPackage(unittest.TestCase):
         binaries_pending_ids = excludeOlds(
             binaries_pending, self.binaries_pending_ids)
 
-        # We have to compare IDs because the copied list is actually a
-        # list of Secure*PublishingHistory records and the lookups are
-        # the records from the correspondent DB view
-        # *PackagePublishingHistory.
         copied_ids = [pub.id for pub in copied]
         pending_ids = sources_pending_ids + binaries_pending_ids
 
