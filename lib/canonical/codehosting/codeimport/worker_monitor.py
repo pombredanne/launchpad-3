@@ -16,6 +16,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
 from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -52,9 +53,9 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
             exists to allow testing that does not depend on an external clock.
             If a clock is not passed in explicitly the reactor is used.
         """
-        # Magic number for timeout here!
         ProcessMonitorProtocolWithTimeout.__init__(
-            self, deferred, timeout=1800, clock=clock)
+            self, deferred, clock=clock,
+            timeout=config.codeimport.worker_inactivity_timeout)
         self.worker_monitor = worker_monitor
         self._tail = ''
         self._log_file = log_file
