@@ -215,8 +215,7 @@ class TestShippingRun(unittest.TestCase):
         self.failUnless(run.requests_count == len(approved_request_ids))
 
     def test_shippingrun_creation_adds_cds_for_edubuntu_request(self):
-        """If a request contains Edubuntu CDs we ensure it has an equal number
-        of Ubuntu CDs when a shipping run is created.
+        """Ensure there is an Ubuntu CD for each Edubuntu CD.
 
         Edubuntu CDs are not standalone, so we need to make sure the recipient
         can use them by including one Ubuntu CD for each Edubuntu one in the
@@ -286,8 +285,7 @@ class TestShippingRun(unittest.TestCase):
                     % arch)
 
     def test_shippingrun_creation_does_nothing_for_kubuntu_request(self):
-        """Do not add CDs to requests containing only Kubuntu CDs when a
-        shipping run is created from them.
+        """Ubuntu CDs are not added for Kubuntu CD only orders.
 
         That is because Kubuntu CDs are standalone and so we don't need to add
         anything to the request so that the user can use the CDs. (This is not
@@ -305,8 +303,7 @@ class TestShippingRun(unittest.TestCase):
             set(request.getContainedFlavours()), set([ShipItFlavour.KUBUNTU]))
 
     def test_shippingrun_creation_does_nothing_for_ubuntu_request(self):
-        """Do not add CDs to requests containing only Ubuntu CDs when a
-        shipping run is created from them.
+        """Ubuntu CDs are not added for Ubuntu CD only orders.
 
         That is because Ubuntu CDs are standalone and so we don't need to add
         anything to the request so that the user can use the CDs. (This is not

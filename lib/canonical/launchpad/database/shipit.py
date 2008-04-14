@@ -252,7 +252,7 @@ class ShippingRequest(SQLBase):
         for arch in ShipItArchitecture.items:
             arch_requested_cds = requested_cds[arch]
             # Any of {x86,amd64,ppc}_requested_cds can be None here, so we use
-            # a default value for getattr to make things easier.
+            # a default value for getattr() to make things easier.
             quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
         return quantities
 
@@ -607,6 +607,9 @@ class ShippingRequestSet:
                     requested_ubuntu.keys() + requested_edubuntu.keys())
                 new_ubuntu_quantities = {}
                 for arch in all_requested_arches:
+                    # Need to use getattr() here because
+                    # requested_edubuntu[arch] will be None if the request
+                    # doesn't contain any Edubuntu CDs of that architecture.
                     edubuntu_qty = getattr(
                         requested_edubuntu[arch], 'quantityapproved', 0)
                     if edubuntu_qty == 0:
