@@ -15,7 +15,13 @@
     </tr>
     <tr>
       <th>Status:</th>
-      <td tal:content="context/queue_status/title">High</td>
+      <td>
+        <tal:status replace="context/queue_status/title">
+        Work in progress</tal:status>
+        <tal:queued condition="context/queue_status/enumvalue:QUEUED">
+          (<a tal:attributes="href view/queue_location">view queue</a>)
+        </tal:queued>
+      </td>
     </tr>
     <tal:reviewed condition="context/reviewer">
       <tr>
@@ -27,5 +33,15 @@
         <td tal:content="view/reviewed_revision_number">1234</td>
       </tr>
     </tal:reviewed>
+    <tal:queued condition="context/queue_status/enumvalue:QUEUED">
+      <tr>
+        <th>Queued by:</th>
+        <td tal:content="structure context/queuer/fmt:link">Some User</td>
+      </tr>
+      <tr>
+        <th>Queued revision:</th>
+        <td tal:content="view/queued_revision_number">1234</td>
+      </tr>
+    </tal:queued>
   </tbody>
 </table>

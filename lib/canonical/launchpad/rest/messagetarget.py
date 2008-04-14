@@ -19,7 +19,7 @@ class IMessageTargetEntry(IEntry):
     """The part of a message target that we expose through the web service.
     """
 
-    messages = CollectionField(value_type=Object(schema=IMessage),
-                               is_entry_container=True)
+    messages = CollectionField(value_type=Object(schema=IMessage))
+
     followup_subject = TextLine(
         title=u"The likely subject of the next message.")

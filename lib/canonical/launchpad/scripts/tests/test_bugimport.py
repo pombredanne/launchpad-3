@@ -697,8 +697,11 @@ class BugImportScriptTestCase(unittest.TestCase):
 class TestBugWatch:
     """A mock bug watch object for testing `ExternalBugTracker.updateWatches`.
 
-    This bug watch is guaranteed to trigger a DB failure when `updaateStatus`
+    This bug watch is guaranteed to trigger a DB failure when `updateStatus`
     is called if its `failing` attribute is True."""
+
+    lastchecked = None
+
     def __init__(self, id, bug, failing):
         """Initialize the object."""
         self.id = id
@@ -768,10 +771,6 @@ class TestExternalBugTracker(ExternalBugTracker):
     is guaranteed to trigger a database error.
     """
 
-    def __init__(self, bugtracker):
-        super(TestExternalBugTracker, self).__init__(bugtracker.baseurl)
-        self.bugtracker = bugtracker
-
     def getRemoteBug(self, bug_id):
         """Return the bug_id and an empty dictionary for data.
 
@@ -796,15 +795,6 @@ class TestExternalBugTracker(ExternalBugTracker):
         """
         return BugTaskStatus.FIXRELEASED
 
-    def _getBugWatch(self, bug_watch_id):
-        """Returns a mock bug watch object.
-
-        We override this method to force one of our two bug watches
-        to be returned. The first is guaranteed to trigger a db error,
-        the second should update successfuly.
-        """
-        return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
-
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
 
@@ -828,9 +818,24 @@ class TestExternalBugTracker(ExternalBugTracker):
 class TestBugWatchUpdater(BugWatchUpdater):
     """A mock `BugWatchUpdater` object."""
 
+    def updateBugTracker(self, bug_tracker):
+        # Save the current bug tracker, so _getBugWatch can reference it.
+        self.bugtracker = bug_tracker
+        super(TestBugWatchUpdater, self).updateBugTracker(bug_tracker)
+
     def _getExternalBugTracker(self, bug_tracker):
         """See `BugWatchUpdater`."""
-        return TestExternalBugTracker(bug_tracker)
+        return TestExternalBugTracker(bug_tracker.baseurl)
+
+    def _getBugWatch(self, bug_watch_id):
+        """Returns a mock bug watch object.
+
+        We override this method to force one of our two bug watches
+        to be returned. The first is guaranteed to trigger a db error,
+        the second should update successfuly.
+        """
+        return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
+
 
 
 class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):

@@ -9,7 +9,7 @@ __all__ = [
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
-    'RegistryApplication',
+    'PrivateMaloneApplication',
     'RosettaApplication',
     'ShipItApplication',
     ]
@@ -20,12 +20,12 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
+    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet,
+    ICodeImportSchedulerApplication, IDistroSeriesSet,
+    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
+    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
+    IOpenIdApplication, IPrivateMaloneApplication, IProductSet,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet,
     ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
@@ -44,8 +44,11 @@ class CodeImportSchedulerApplication:
     title = "Code Import Scheduler"
 
 
-class RegistryApplication:
-    implements(IRegistryApplication)
+class PrivateMaloneApplication:
+    """ExternalBugTracker authentication token end-point."""
+    implements(IPrivateMaloneApplication)
+
+    title = "Launchpad Bugs."
 
 
 class ShipItApplication:
@@ -194,10 +197,3 @@ class HWDBApplication:
 class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
-
-    # See ServiceRootResource for more on top_level_collections
-    @property
-    def top_level_collections(self):
-        return { 'bugtasks' : getUtility(IBugTaskSet),
-                 'bugs' : getUtility(IBugSet),
-                 'people' : getUtility(IPersonSet) }

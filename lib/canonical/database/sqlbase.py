@@ -664,12 +664,12 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     Default database name is the one specified in the main configuration file.
     """
     from canonical.config import config
-    con_str = 'dbname=%s' % (dbname or config.dbname)
+    con_str = 'dbname=%s' % (dbname or config.database.dbname)
     if user:
         con_str += ' user=%s' % user
-    if config.dbhost:
-        con_str += ' host=%s' % config.dbhost
-    con = psycopg2.connect(con_str)
+    if config.database.dbhost:
+        con_str += ' host=%s' % config.database.dbhost
+    con = psycopg.connect(con_str)
     con.set_isolation_level(isolation)
     return con
 

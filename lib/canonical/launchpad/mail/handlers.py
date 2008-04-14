@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 import re
 from urlparse import urlunparse
 
@@ -17,9 +16,9 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
     IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet,
-    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
-    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
+    IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -172,6 +171,10 @@ class MaloneHandler:
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
+                if command_string == 'done':
+                    # If the 'done' statement is encountered,
+                    # stop reading any more commands.
+                    break
                 words = command_string.split(' ')
                 if words and words[0] in command_names:
                     command = emailcommands.get(
@@ -234,6 +237,7 @@ class MaloneHandler:
             bugtask = None
             bugtask_event = None
 
+            processing_errors = []
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
@@ -280,8 +284,18 @@ class MaloneHandler:
                             bugtask, bugtask_event)
 
                 except EmailProcessingError, error:
-                    raise IncomingEmailError(
-                        str(error), failing_command=command)
+                    processing_errors.append((error, command))
+                    if error.stop_processing:
+                        commands = []
+                        rollback()
+                    else:
+                        continue
+
+            if len(processing_errors) > 0:
+                raise IncomingEmailError(
+                    '\n'.join(str(error) for error, command
+                              in processing_errors),
+                    [command for error, command in processing_errors])
 
             if bug_event is not None:
                 try:
@@ -294,7 +308,6 @@ class MaloneHandler:
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
-            rollback()
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
@@ -342,7 +355,9 @@ class MaloneHandler:
             blob = chunk.blob
             if blob is None:
                 continue
-            content_type = blob.mimetype
+            # Mutt (other mail clients too?) appends the filename to the
+            # content type.
+            content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
                 continue
 
@@ -353,7 +368,7 @@ class MaloneHandler:
 
             getUtility(IBugAttachmentSet).create(
                 bug=bug, filealias=blob, attach_type=attach_type,
-                title=blob.filename, message=message)
+                title=blob.filename, message=message, send_notifications=True)
 
 
 class AnswerTrackerHandler:
@@ -481,7 +496,7 @@ class SpecificationHandler:
                     filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
-        if signed_msg['Sender'] == config.bounce_address:
+        if signed_msg['Sender'] == config.canonical.bounce_address:
             if log and filealias:
                 log.warning('We received an email from Launchpad: %s'
                             % filealias.http_url)

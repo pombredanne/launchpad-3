@@ -14,7 +14,6 @@ from zope.app.testing.functional import FunctionalTestSetup
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
 
-
 from canonical.config import dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import (

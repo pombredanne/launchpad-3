@@ -153,7 +153,7 @@
         label="Administer builder"
         facet="overview"
         fields="name title description processor url manual owner
-                trusted builderok failnotes vm_host active"
+                virtualized builderok failnotes vm_host active"
         permission="launchpad.Admin"
         template="../templates/builder-admin.pt"
         />

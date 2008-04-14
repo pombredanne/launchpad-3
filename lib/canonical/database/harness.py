@@ -18,7 +18,7 @@ sys.path.insert(0, '../..')
 if len(sys.argv) > 1:
     dbuser = sys.argv[1]
 else:
-    dbuser = 'launchpad'
+    dbuser = None
 
 import transaction
 from zope.component import getUtility
@@ -45,6 +45,7 @@ def switch_db_user(dbuser, commit_first=True):
 # canonical.launchpad.interfaces, but it's good to have this available in the
 # namespace.
 #
+# pylint: disable-msg=W0614,W0401
 from canonical.launchpad.database import *
 from canonical.launchpad.interfaces import *
 from canonical.launchpad.testing import LaunchpadObjectFactory

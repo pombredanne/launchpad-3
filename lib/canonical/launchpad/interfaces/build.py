@@ -13,7 +13,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Timedelta
 
+from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 class IBuild(Interface):
@@ -31,6 +33,9 @@ class IBuild(Interface):
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     archive = Attribute("The archive")
+    estimated_build_duration = Timedelta(
+        title=_("Estimated Build Duration"), required=False,
+        description=_("Estimated build duration interval"))
 
     # Properties
     current_component = Attribute(
@@ -63,9 +68,8 @@ class IBuild(Interface):
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
 
-    is_trusted = Attribute(
-        "whether or not the record corresponds to a source targeted to "
-        "the distribution main_archive (archive == distro.main_archive).")
+    is_virtualized = Attribute(
+        "Whether or not this build requires a virtual build host or not.")
 
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "

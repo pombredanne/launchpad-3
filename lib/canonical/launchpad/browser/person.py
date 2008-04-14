@@ -11,6 +11,7 @@ __all__ = [
     'FOAFSearchView',
     'PeopleListView',
     'PersonAddView',
+    'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBranchesMenu',
@@ -30,22 +31,13 @@ __all__ = [
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
-    'PersonEditJabberIDsView',
-    'PersonEditIRCNicknamesView',
-    'PersonEditSSHKeysView',
-    'PersonEditHomePageView',
-    'PersonAnswerContactForView',
-    'PersonAssignedBugTaskSearchListingView',
-    'ReportedBugTaskSearchListingView',
-    'BugContactPackageBugsSearchListingView',
-    'SubscribedBugTaskSearchListingView',
-    'PersonRdfView',
-    'PersonTranslationView',
     'PersonFacets',
     'PersonGPGView',
+    'PersonIndexView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
+    'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
     'PersonRdfView',
@@ -65,7 +57,6 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
-    'PersonIndexView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
@@ -96,12 +87,12 @@ import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
-from zope.interface import implements
+from zope.formlib.form import FormFields
+from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice, List, TextLine
+from zope.schema import Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -114,21 +105,21 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams,
-    BugTaskStatus, CannotSubscribe, CannotUnsubscribe,
+    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    CannotSubscribe, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
     ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IOpenLaunchBag,
-    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
-    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
-    QuestionParticipation, SSHKeyType, SpecificationFilter,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    is_participant_in_beta_program)
+    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
+    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, PersonVisibility, QuestionParticipation,
+    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -161,6 +152,7 @@ from canonical.launchpad.webapp import (
     custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
+
 
 class RestrictedMembershipsPersonView(LaunchpadView):
     """Secure access to team membership information for a person.
@@ -409,14 +401,27 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         pass
 
 
+class ITeamMembershipInvitationAcknowledgementForm(Interface):
+    """Schema for the form in which team admins acknowledge invitations.
+
+    We could use ITeamMembership for that, but the acknowledger_comment is
+    marked readonly there and that means LaunchpadFormView won't include the
+    value of that in the data given to our action handler.
+    """
+
+    acknowledger_comment = Text(
+        title=_("Comment"), required=False, readonly=False)
+
+
 class TeamInvitationView(LaunchpadFormView):
+    """Where team admins can accept/decline membership invitations."""
 
     implements(IBrowserPublisher)
 
-    schema = ITeamMembership
+    schema = ITeamMembershipInvitationAcknowledgementForm
     label = 'Team membership invitation'
-    field_names = ['reviewercomment']
-    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
+    field_names = ['acknowledger_comment']
+    custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
 
@@ -444,7 +449,7 @@ class TeamInvitationView(LaunchpadFormView):
             return
         member = self.context.person
         member.acceptInvitationToBeMemberOf(
-            self.context.team, data['reviewercomment'])
+            self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("This team is now a member of ${team}", mapping=dict(
                   team=self.context.team.browsername)))
@@ -457,7 +462,7 @@ class TeamInvitationView(LaunchpadFormView):
             return
         member = self.context.person
         member.declineInvitationToBeMemberOf(
-            self.context.team, data['reviewercomment'])
+            self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("Declined the invitation to join ${team}", mapping=dict(
                   team=self.context.team.browsername)))
@@ -691,8 +696,9 @@ class PersonBugsMenu(ApplicationMenu):
 
     def softwarebugs(self):
         text = 'Show package report'
-        summary = ('A summary report for packages where %s is a bug contact.'
-                   % self.context.displayname)
+        summary = (
+            'A summary report for packages where %s is a bug supervisor.'
+            % self.context.displayname)
         return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):
@@ -985,7 +991,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change branding'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Owner')
     def reassign(self):
         target = '+reassign'
         text = 'Change owner'
@@ -1061,9 +1067,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Configure mailing list'
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
-        return Link(target, text, summary,
-                    enabled=is_participant_in_beta_program(self.context),
-                    icon='edit')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1643,10 +1647,15 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
-        """Return the open bugs related to a person."""
+    def search(self, extra_params=None):
+        """Return the open bugs related to a person.
+
+        :param extra_params: A dict that provides search params added to
+            the search criteria taken from the request. Params in
+            `extra_params` take precedence over request params.
+        """
         context = self.context
-        params = self.buildSearchParams()
+        params = self.buildSearchParams(extra_params=extra_params)
         subscriber_params = copy.copy(params)
         subscriber_params.subscriber = context
         assignee_params = copy.copy(params)
@@ -1866,14 +1875,14 @@ class PersonView(LaunchpadView, FeedsMixin):
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.APPROVED,
-            orderBy='-TeamMembership.datejoined')
+            orderBy='-TeamMembership.date_joined')
         return members[:5]
 
     @cachedproperty
     def recently_proposed_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.PROPOSED,
-            orderBy='-TeamMembership.datejoined')
+            orderBy='-TeamMembership.date_proposed')
         return members[:5]
 
     @cachedproperty
@@ -1924,6 +1933,11 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return True
         return False
 
+    @cachedproperty
+    def openid_identity_url(self):
+        """The identity URL for the person."""
+        return canonical_url(OpenIDPersistentIdentity(self.context))
+
     @property
     def subscription_policy_description(self):
         """Return the description of this team's subscription policy."""
@@ -1953,12 +1967,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         A user can subscribe to the list if the team has an active
         mailing list, and if they do not already have a subscription.
         """
-        # XXX mars 2008-02-26:
-        # Remove this check after the mailing list beta test is complete.
-        # See bug #190974.
-        if not self.isBetaUser:
-            return False
-
         if self.team_has_mailing_list:
             # If we are already subscribed, then we can not subscribe again.
             return not self.user_is_subscribed_to_list
@@ -2159,11 +2167,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
         return self.context.is_openid_enabled
-
-    @cachedproperty
-    def openid_identity_url(self):
-        """The identity URL for the person."""
-        return canonical_url(OpenIDPersistentIdentity(self.context))
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
@@ -2890,7 +2893,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
             text = '<a href="%s">%s</a>' % (
                 canonical_url(team), team.displayname)
             terms.append(SimpleTerm(team, team.name, text))
-        self.form_fields = form.Fields(
+        self.form_fields = FormFields(
             List(__name__='teams',
                  title=_(''),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
@@ -2993,8 +2996,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         super(PersonEditEmailsView, self).setUpFields()
         self.form_fields = (self._validated_emails_field() +
                             self._unvalidated_emails_field() +
-                            form.fields(TextLine(__name__='newemail',
-                                                 title=u'Add a new address'))
+                            FormFields(TextLine(__name__='newemail',
+                                                title=u'Add a new address'))
                             + self._mailing_list_fields())
 
     @property
@@ -3029,7 +3032,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         if preferred:
             terms.insert(0, SimpleTerm(preferred, preferred.email))
 
-        return form.Fields(
+        return FormFields(
             Choice(__name__='VALIDATED_SELECTED',
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
@@ -3053,7 +3056,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         else:
             title = _('These addresses may be yours')
 
-        return form.Fields(
+        return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
@@ -3081,9 +3084,6 @@ class PersonEditEmailsView(LaunchpadFormView):
         If a team doesn't have a mailing list, or the mailing list
         isn't usable, it's not included.
         """
-        # Only beta testers are allowed to subscribe to mailing lists.
-        if not self.isBetaUser:
-            return form.FormFields()
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
@@ -3099,7 +3099,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                                title=team.name,
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
-        return form.FormFields(*fields)
+        return FormFields(*fields)
 
     @property
     def mailing_list_widgets(self):
@@ -3677,7 +3677,6 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3694,7 +3693,6 @@ class PersonBranchesView(BranchListingView):
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
@@ -3707,7 +3705,6 @@ class PersonRegisteredBranchesView(BranchListingView):
 class PersonOwnedBranchesView(BranchListingView):
     """View for branch listing for a person's owned branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
@@ -3720,7 +3717,6 @@ class PersonOwnedBranchesView(BranchListingView):
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3736,3 +3732,32 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0 and team != self.context]
+
+
+class PersonOAuthTokensView(LaunchpadView):
+    """Where users can see/revoke their non-expired access tokens."""
+
+    def initialize(self):
+        # Store the (sorted) list of access tokens that are going to be
+        # used in the template.
+        self.tokens = sorted(
+            self.context.oauth_access_tokens,
+            key=lambda token: token.consumer.key)
+        if self.request.method == 'POST':
+            self.expireToken()
+
+    def expireToken(self):
+        """Expire the token with the key contained in the request's form."""
+        form = self.request.form
+        consumer = getUtility(IOAuthConsumerSet).getByKey(
+            form.get('consumer_key'))
+        token = consumer.getAccessToken(form.get('token_key'))
+        if token is not None:
+            token.date_expires = datetime.now(pytz.timezone('UTC'))
+            self.request.response.addInfoNotification(
+                "Authorization revoked successfully.")
+            self.request.response.redirect(canonical_url(self.user))
+        else:
+            self.request.response.addInfoNotification(
+                "Couldn't find authorization given to %s. Maybe it has been "
+                "revoked already?" % consumer.key)

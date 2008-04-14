@@ -49,20 +49,13 @@ Trac.convertRemoteStatus() handles the conversion.
     >>> trac.convertRemoteStatus('worksforme').title
     'Invalid'
 
-If the status isn't one that our Trac ExternalBugTracker can understand,
-Unknown will be returned and a warning logged.
+If the status isn't one that our Trac ExternalBugTracker can understand
+an UnknownRemoteStatusError will be raised.
 
     >>> trac.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown remote status 'eggs'.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
-warning. This handles the case where we've tried to probe for a bug
-but didn't succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> trac.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Initialization ==
@@ -122,20 +115,6 @@ doesn't support CSV exports of individual tickets:
     CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
 
 
-== Invalid Bug Statuses ==
-
-Some Trac instances don't specificy a status field in their CSV exports. To
-deal with this, our Trac instance will simply return UNKNOWN_REMOTE_STATUS
-when it encounters such an instance. We can demonstrate this with a simple
-invalid bug:
-
-    >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
-    >>> trac.bugs = {invalid_bug['id']: invalid_bug}
-    >>> trac.getRemoteStatus(invalid_bug['id'])
-    WARNING:...:Trac ticket 1 defines no status.
-    'UNKNOWN'
-
-
 == Updating Bug Watches ==
 
 First, we create some bug watches to test with:
@@ -173,14 +152,15 @@ And have a Trac instance process them:
 
 We'll add some more watches now.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> bug_watches = dict(
-    ...     (int(bug_watch.remotebug), bug_watch)
+    ...     (int(bug_watch.remotebug), bug_watch.id)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> for remote_bug, bug_watch in bug_watches.items():
+    >>> for remote_bug, bug_watch_id in bug_watches.items():
+    ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (remote_bug, bug_watch.remotestatus)
     1: fixed
 
@@ -203,7 +183,7 @@ We'll add some more watches now.
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
-    ...     bug_watches[remote_bug_id] = bug_watch
+    ...     bug_watches[remote_bug_id] = bug_watch.id
 
     >>> trac.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
@@ -211,7 +191,9 @@ We'll add some more watches now.
     CALLED urlopen(u'http://.../query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
-    ...     remote_status = bug_watches[remote_bug_id].remotestatus
+    ...     bug_watch = getUtility(IBugWatchSet).get(
+    ...         bug_watches[remote_bug_id])
+    ...     remote_status = bug_watch.remotestatus
     ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
     Remote bug 1: fixed
     Remote bug 143: fixed
@@ -245,7 +227,7 @@ watch hasn't altered:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> trac.trace_calls = False
-    >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
-    INFO:...:Updating 12 watches on http://bugs.some.where
+    >>> bug_watch_updater.updateBugWatches(trac, [bug_watch])
+    INFO:...:Updating 1 watches on http://bugs.some.where
     >>> bug_watch.lastchanged == old_last_changed
     True

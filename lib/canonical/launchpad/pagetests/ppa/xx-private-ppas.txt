@@ -22,6 +22,7 @@ admin, and go to his admin page.
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
 
@@ -60,6 +61,7 @@ private.
     ...     "http://launchpad.dev/~landscape-developers/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
 A member of a private team PPA will see his team's PPA in the listing.

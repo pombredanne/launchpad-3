@@ -22,7 +22,7 @@ Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
     >>> landscape_team = Person.byName('landscape-developers')
     >>> cprov_landscape_membership = TeamMembership.selectOneBy(
     ...     personID=cprov.id, teamID=landscape_team.id)
-    >>> cprov_landscape_membership.statusname
+    >>> cprov_landscape_membership.status.title
     'Approved'
     >>> cprov.inTeam(landscape_team)
     True
@@ -84,7 +84,7 @@ members.
     False
     >>> membership = TeamMembership.selectOneBy(
     ...     person=launchpad, team=landscape_team)
-    >>> membership.statusname
+    >>> membership.status.title
     'Invited'
 
 And nor will the admins of Landscape Developers be able to do any changes
@@ -128,14 +128,14 @@ the Launchpad Developers.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'invitations'))
     Sent by         On behalf of
-    Sample Person   Landscape Developers
+    Andrew Bennetts Landscape Developers
 
     >>> browser.getLink(
     ...     url='/~launchpad/+invitation/landscape-developers').click()
     >>> browser.url
     'http://launchpad.dev/~launchpad/+invitation/landscape-developers'
 
-    >>> browser.getControl(name='field.reviewercomment').value = (
+    >>> browser.getControl(name='field.acknowledger_comment').value = (
     ...     'This is just a test')
     >>> browser.getControl('Accept').click()
 

@@ -24,6 +24,9 @@
       branch - one of the branches of the merge proposal
     The following variables define what is shown and are optional.
       dependent_branch - the dependent branch to link to
+      show_whiteboard - show the whiteboard
+      show_status - show the proposal status
+      show_commit_message - show the commit message
       show_associations - show the bugs and specs
       show_lifecycle - show the branch lifecycle status
   </tal:comment>
@@ -44,8 +47,15 @@
         view proposal details</a>
     </dt>
     <dd>
-      <div class="whiteboard" tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+      <div class="whiteboard"
+           tal:condition="show_whiteboard|nothing"
+           tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
         The whiteboard.
+      </div>
+      <div class="commit_message"
+           tal:condition="show_commit_message|nothing"
+           tal:content="structure mergeproposal/commit_message/fmt:text-to-html">
+        The commit message.
       </div>
       <div tal:condition="mergeproposal/show_registrant|nothing">
         Merge proposed by
@@ -57,6 +67,7 @@
           <tal:dependent replace="structure dependent_branch/fmt:link" />
         </div>
       </tal:show-dependent>
+      <tal:show-status condition="show_status|nothing">
       <div tal:condition="not: mergeproposal/queue_status/enumvalue:MERGED">
         <tal:proposal-status replace="mergeproposal/queue_status/title"/>
       </div>
@@ -70,7 +81,7 @@
           at revision <tal:revno replace="mergeproposal/merged_revno"/>
         </tal:have-revno>
       </div>
-
+      </tal:show-status>
       <tal:show-links condition="show_associations|nothing">
 
         <tal:branch-link define="branch mergeproposal/source_branch">

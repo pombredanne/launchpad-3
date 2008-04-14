@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
@@ -171,8 +172,9 @@ class BugTracker(SQLBase):
         """See `IBugTracker.aliases`."""
         alias_urls = set(alias.base_url for alias in self._bugtracker_aliases)
         # Although it does no harm if the current baseurl is also an
-        # alias, we hide it here to avoid confusion.
-        alias_urls.discard(self.baseurl)
+        # alias, we hide it and all its permutations to avoid
+        # confusion.
+        alias_urls.difference_update(base_url_permutations(self.baseurl))
         return tuple(sorted(alias_urls))
 
     def _set_aliases(self, alias_urls):
@@ -205,6 +207,14 @@ class BugTracker(SQLBase):
         The aliases are found by querying BugTrackerAlias. Assign an
         iterable of URLs or None to set or remove aliases.
         """)
+
+    @property
+    def imported_bug_messages(self):
+        """See `IBugTracker`."""
+        return BugMessage.select(
+            AND((BugMessage.q.bugwatchID == BugWatch.q.id),
+                (BugWatch.q.bugtrackerID == self.id)),
+            orderBy=BugMessage.q.id)
 
 
 class BugTrackerSet:

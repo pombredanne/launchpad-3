@@ -3,15 +3,19 @@
 __metaclass__ = type
 
 __all__ = [
-    'PlacelessAuthUtility',
-    'SSHADigestEncryptor',
+    'check_oauth_signature',
+    'get_oauth_authorization',
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
+    'PlacelessAuthUtility',
+    'SSHADigestEncryptor',
     ]
 
 import binascii
 import random
 import sha
+
+from contrib.oauth import OAuthRequest
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -24,13 +28,11 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
+from canonical.launchpad.interfaces import (
+    IPersonSet, IPasswordEncryptor, OAUTH_CHALLENGE)
 from canonical.launchpad.webapp.interfaces import (
-        CookieAuthPrincipalIdentifiedEvent)
+    AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
+    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 
 
 class PlacelessAuthUtility:
@@ -109,7 +111,7 @@ class PlacelessAuthUtility:
             # Hack to make us not even think of using a session if there
             # isn't already a cookie in the request, or one waiting to be
             # set in the response.
-            cookie_name = config.launchpad.session.cookie
+            cookie_name = config.launchpad_session.cookie
             if (request.cookies.get(cookie_name) is not None or
                 request.response.getCookie(cookie_name) is not None):
                 return self._authenticateUsingCookieAuth(request)
@@ -183,14 +185,20 @@ class SSHADigestEncryptor:
         pw2 = (encrypted or '').strip()
         return pw1 == pw2
 
+
 class LaunchpadLoginSource:
     """A login source that uses the launchpad SQL database to look up
     principal information.
     """
     implements(IPlacelessLoginSource)
 
-    def getPrincipal(self, id):
-        """Return a principal based on the person with the provided id.
+    def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE):
+        """Return an `ILaunchpadPrincipal` for the person with the given id.
+
+        Return None if there is no person with the given id.
+
+        The `access_level` can be used for further restricting the capability
+        of the principal.  By default, no further restriction is added.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -199,16 +207,22 @@ class LaunchpadLoginSource:
         """
         person = getUtility(IPersonSet).get(id)
         if person is not None:
-            return self._principalForPerson(person)
+            return self._principalForPerson(person, access_level)
         else:
             return None
 
     def getPrincipals(self, name):
         raise NotImplementedError
 
-    def getPrincipalByLogin(self, login):
+    def getPrincipalByLogin(
+            self, login, access_level=AccessLevel.WRITE_PRIVATE):
         """Return a principal based on the person with the email address
         signified by "login".
+
+        Return None if there is no person with the given email address.
+
+        The `access_level` can be used for further restricting the capability
+        of the principal.  By default, no further restriction is added.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -217,34 +231,35 @@ class LaunchpadLoginSource:
         """
         person = getUtility(IPersonSet).getByEmail(login)
         if person is not None:
-            return self._principalForPerson(person)
+            return self._principalForPerson(person, access_level)
         else:
             return None
 
-    def _principalForPerson(self, person):
+    def _principalForPerson(self, person, access_level):
         person = removeSecurityProxy(person)
         principal = LaunchpadPrincipal(
-            person.id,
-            person.browsername,
-            person.displayname,
-            person.password,
-            )
+            person.id, person.browsername, person.displayname,
+            person.password, access_level=access_level)
         principal.__parent__ = self
         return principal
+
 
 # Fake a containment hierarchy because Zope3 is on crack.
 authService = PlacelessAuthUtility()
 loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
 
+
 class LaunchpadPrincipal:
 
     implements(ILaunchpadPrincipal)
 
-    def __init__(self, id, title, description, pwd=None):
+    def __init__(self, id, title, description, pwd=None,
+                 access_level=AccessLevel.WRITE_PRIVATE):
         self.id = id
         self.title = title
         self.description = description
+        self.access_level = access_level
         self.__pwd = pwd
 
     def getLogin(self):
@@ -255,3 +270,43 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
+
+def get_oauth_authorization(request):
+    """Retrieve OAuth authorization information from a request.
+
+    The authorization information may be in the Authorization header,
+    or it might be in the query string or entity-body.
+
+    :return: a dictionary of authorization information.
+    """
+    header = request._auth
+    if header is not None and header.startswith("OAuth "):
+        return OAuthRequest._split_header(header)
+    else:
+        return request.form
+
+
+def check_oauth_signature(request, consumer, token):
+    """Check that the given OAuth request is correctly signed.
+
+    If the signature is incorrect or its method is not supported, set the
+    appropriate status in the request's response and return False.
+    """
+    authorization = get_oauth_authorization(request)
+
+    if authorization.get('oauth_signature_method') != 'PLAINTEXT':
+        # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported
+        # now. Others will be implemented later.
+        request.response.setStatus(400)
+        return False
+
+    if token is not None:
+        token_secret = token.secret
+    else:
+        token_secret = ''
+    expected_signature = "&".join([consumer.secret, token_secret])
+    if expected_signature != authorization.get('oauth_signature'):
+        request.unauthorized(OAUTH_CHALLENGE)
+        return False
+
+    return True

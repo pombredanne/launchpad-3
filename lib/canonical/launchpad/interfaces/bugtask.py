@@ -32,12 +32,13 @@ __all__ = [
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'valid_remote_bug_url']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
+    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
@@ -47,6 +48,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -161,7 +163,7 @@ class BugTaskStatus(DBEnumeratedType):
         Triaged
 
         This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug contact to
+        something needing fixing. The user must be a bug supervisor to
         set this status, so it carries more weight than merely
         Confirmed.
         """)
@@ -358,16 +360,21 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             "The age of this task, expressed as the length of time between "
             "datecreated and now."))
     owner = Int()
-    target = Attribute("The software in which this bug should be fixed")
+    target = Object(
+        title=_('Target'), required=False,
+        description=_("The software in which this bug should be fixed."),
+        schema=IBugTarget)
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    pillar = Attribute(
-        "The LP pillar (product or distribution) associated with this "
-        "task.")
+    pillar = Choice(
+        title=_('Pillar'),
+        description=_("The LP pillar (product or distribution) "
+                      "associated with this task."),
+        vocabulary='DistributionOrProduct', readonly=True)
     other_affected_pillars = Attribute(
         "The other pillars (products or distributions) affected by this bug. "
         "This returns a list of pillars OTHER THAN the pillar associated "
@@ -493,6 +500,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         None.
         """
 
+
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
 
@@ -576,7 +584,7 @@ class IBugTaskSearchBase(Interface):
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
-        title=_('Bug contact'), vocabulary='ValidPersonOrTeam',
+        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
@@ -1004,6 +1012,7 @@ class IAddBugTaskForm(Interface):
         title=_('Visited steps'), required=False,
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
+
 
 class IAddBugTaskWithProductCreationForm(Interface):
 

@@ -67,17 +67,13 @@ Mozilla.org's using this old version. Here's the scoop:
 
 We support them just fine:
 
-    >>> bug_watch_updater.updateBugWatches(
-    ...     old_bugzilla, mozilla_bugzilla.watches)
-    INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
-    WARNING:...:Didn't find bug u'2000' on https://bugzilla.mozilla.org
-    (local bugs: 1).
-    >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    2000: RESOLVED FIXED
+    >>> remote_bugs = ['42', '123543']
+    >>> old_bugzilla.initializeRemoteBugDB(remote_bugs)
+    >>> for remote_bug in remote_bugs:
+    ...     print "%s: %s" % (
+    ...         remote_bug, old_bugzilla.getRemoteStatus(remote_bug))
+    42: RESOLVED FIXED
     123543: ASSIGNED
-    42: RESOLVED FIXED
-    42: RESOLVED FIXED
 
 
 Bugzilla oddities
@@ -106,17 +102,13 @@ Some Bugzillas have some weird properties that we need to cater for:
 
 Yet everything still works as expected:
 
-    >>> bug_watch_updater.updateBugWatches(
-    ...     weird_bugzilla, mozilla_bugzilla.watches)
-    INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
-    WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2).
-    >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    >>> remote_bugs = ['2000', '123543']
+    >>> weird_bugzilla.initializeRemoteBugDB(remote_bugs)
+    >>> for remote_bug in remote_bugs:
+    ...     print "%s: %s" % (
+    ...         remote_bug, weird_bugzilla.getRemoteStatus(remote_bug))
     2000: ASSIGNED
     123543: RESOLVED FIXED
-    42: RESOLVED FIXED
-    42: RESOLVED FIXED
 
 
 Broken Bugzillas
@@ -132,8 +124,9 @@ invalid XML:
     (2, 20)
     >>> "</foobar>" in broken_bugzilla._readBugItemFile()
     True
-    >>> bug_watch_updater.updateBugWatches(
-    ...     broken_bugzilla, mozilla_bugzilla.watches)
+
+    >>> remote_bugs = ['42', '2000']
+    >>> broken_bugzilla.initializeRemoteBugDB(remote_bugs)
     Traceback (most recent call last):
     ...
     UnparseableBugData: Failed to parse XML description...

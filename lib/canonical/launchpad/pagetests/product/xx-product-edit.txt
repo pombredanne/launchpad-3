@@ -166,3 +166,41 @@ again have zero licenses.
     There is 1 error.
     Select all licenses for this software or select
     Other/Proprietary or Other/Open Source.
+
+== Admin can use the reviewer whiteboard on +review page ==
+
+A Launchpad Admin can use the reviewer whiteboard on the +review page
+for storing random notes about a project. At first the whiteboard is
+empty, then we store some insightful notes in it.
+
+   >>> admin_browser.open('http://launchpad.dev/firefox/+review')
+   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
+   ''
+   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value = \
+   ... """Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
+   ... Contacted the upstream maintainer (bart@foo.com) to discuss handing
+   ... over this project 2007-12-04."""
+   >>> admin_browser.getControl(name='field.actions.change').click()
+   >>> admin_browser.open('http://launchpad.dev/firefox/+review')
+   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
+   'Registered by https://launchpad.net/kurt but orphaned...'
+
+A Launchpad Admin can also see the project whiteboard on the index page.
+
+   >>> admin_browser.open('http://launchpad.dev/firefox')
+   >>> contents = find_main_content(admin_browser.contents)
+   >>> print extract_text(contents.find(id='project-admin-whiteboard'))
+   Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
+   Contacted the upstream maintainer (bart@foo.com) to discuss handing
+   over this project 2007-12-04.
+   (edit reviewer whiteboard)
+
+Name1 is the registrant for the Firefox product, but is not a
+Launchpad Admin, and so cannot see the reviewer whiteboard.
+
+   >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
+   >>> user_browser.open('http://launchpad.dev/firefox/')
+   >>> contents = find_main_content(user_browser.contents)
+   >>> print contents.find(id='project-admin-whiteboard')
+   None
+

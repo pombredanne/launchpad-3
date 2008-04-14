@@ -45,19 +45,12 @@ The basic Roundup bug statuses (i.e. those available by default in new Roundup i
     'Fix Released'
 
 If the status isn't something that our Roundup ExternalBugTracker can
-understand, Unknown will be returned and a warning logged.
+understand an UnknownRemoteStatusError will be raised.
 
     >>> roundup.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown remote status 'eggs'.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't succeed. For
-example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> roundup.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Initialization ==

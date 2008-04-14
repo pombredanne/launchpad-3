@@ -33,7 +33,7 @@
     <thead>
       <tr>
         <th>Title</th>
-        <th>Home Page</th>
+        <th>Location</th>
         <th>Linked Projects</th>
         <th class="type">Type</th>
         <th class="amount">Watches</th>
@@ -45,10 +45,10 @@
           <td><a tal:attributes="href bugtracker/name"
                  tal:content="bugtracker/title">$Bugtracker.title
               </a></td>
-          <td><a class="link-external"
-                 tal:attributes="href bugtracker/baseurl"
-                 tal:content="bugtracker/baseurl">$Bugtracker.baseurl</a></td>
-            <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
+          <td>
+            <a tal:replace="structure bugtracker/fmt:external-link" />
+          </td>
+          <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
             <tal:pillars condition="pillar_data">
               <tal:pillar-entry repeat="pillar pillar_data/pillars">
                   <a tal:attributes="href pillar/fmt:url"
@@ -71,16 +71,12 @@
     </tbody>
   </table>
 
-      <div
-        class="action"
-        tal:define="link context/menu:context/newbugtracker"
-        tal:condition="link/enabled"
-      >
-        <p>
-          <img alt="" src="/@@/add" />
-          <tal:link replace="structure link/@@+link" />
-        </p>
-      </div>
+  <p
+     tal:define="link context/menu:context/newbugtracker"
+     tal:content="structure link/render"
+     tal:condition="link/enabled">
+    Add a new bug tracker
+  </p>
 
 </div>
 

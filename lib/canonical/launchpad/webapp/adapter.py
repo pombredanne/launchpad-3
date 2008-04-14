@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# We use global in this module.
+# pylint: disable-msg=W0602
 
 __metaclass__ = type
 
@@ -35,6 +37,7 @@ __all__ = [
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
@@ -148,12 +151,12 @@ def _check_expired(timeout):
 
 def hard_timeout_expired():
     """Returns True if the hard request timeout been reached."""
-    return _check_expired(dbconfig.db_statement_timeout)
+    return _check_expired(config.database.db_statement_timeout)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(dbconfig.soft_request_timeout)
+    return _check_expired(config.database.soft_request_timeout)
 
 
 # ---- Prevent database access in the main thread of the app server

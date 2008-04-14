@@ -36,6 +36,19 @@
     permission="zope.Public"
     />
 
+  <securedutility
+    class="canonical.launchpad.systemhomes.PrivateMaloneApplication"
+    provides="canonical.launchpad.interfaces.IPrivateMaloneApplication">
+    <allow interface="canonical.launchpad.interfaces.IPrivateMaloneApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.IPrivateMaloneApplication"
+    interface="canonical.launchpad.interfaces.IExternalBugTrackerTokenAPI"
+    class="canonical.launchpad.xmlrpc.ExternalBugTrackerTokenAPI"
+    permission="zope.Public"
+    />
+
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
     <require like_class="xmlrpclib.Fault" />
   </class>

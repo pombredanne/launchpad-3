@@ -163,7 +163,7 @@ class FileUploadClient:
         return databaseName
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
-        """See canonical.librarian.interfaces.ILibrarianUploadClient"""
+        """See `IFileUploadClient`."""
         if file is None:
             raise TypeError('No data')
         if size <= 0:
@@ -174,7 +174,7 @@ class FileUploadClient:
         try:
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendHeader('Database-Name', config.dbname)
+            self._sendHeader('Database-Name', config.database.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())

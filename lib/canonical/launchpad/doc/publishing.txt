@@ -168,7 +168,7 @@ test this feature.
     >>> test_publisher.prepareBreezyAutotest()
 
 We will create a publication for a source (foo) and two
-architecture-specific binaries in ubuntu/breezy-autotest.
+architecture-independent binaries in ubuntu/breezy-autotest.
 
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingStatus, PackagePublishingPocket)
@@ -188,13 +188,20 @@ architecture-specific binaries in ubuntu/breezy-autotest.
     foo-bin 666 in breezy-autotest i386
     foo-bin 666 in breezy-autotest hppa
 
-Using the source publication, ISecureSourcePackagePublishingHistory we
+Using the source publication, ISecureSourcePackagePublishingHistory, we
 can obtain the published binaries.
 
     >>> created_ids = [bin.id for bin in binaries]
     >>> retrieved_ids = [bin.id for bin in source.getPublishedBinaries()]
     >>> sorted(created_ids) == sorted(retrieved_ids)
     True
+
+We can also inspect the builds created for a source publication
+without retrieving its binaries.
+
+    >>> for build in source.getBuilds():
+    ...     print build.title
+    i386 build of foo 666 in ubuntutest breezy-autotest PROPOSED
 
 Now that we know how to retrieve generated binary publication related
 to a source publication we can exercise the API provided to copy
@@ -251,7 +258,7 @@ have to make them PUBLISHED emulating what would have been done by the
 publisher.
 
     >>> def publish(pub):
-    ...     pub.status = PackagePublishingStatus.PUBLISHED
+    ...     pub.secure_record.status = PackagePublishingStatus.PUBLISHED
 
     >>> publish(copied_source)
     >>> for bin in copied_binaries:

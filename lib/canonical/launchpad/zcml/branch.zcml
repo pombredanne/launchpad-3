@@ -13,7 +13,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="name title summary url mirror_status_message
-                        private owner author product home_page lifecycle_status
+                        private owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
@@ -92,6 +92,14 @@
   </browser:pages>
 
   <browser:page
+    name="+merge-queue"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchMergeQueueView"
+    facet="branches"
+    permission="zope.Public"
+    template="../templates/branch-merge-queue.pt" />
+
+  <browser:page
     name="+portlet-subscribers"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchSubscriptionsView"
@@ -146,6 +154,14 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-edit.pt" />
+
+  <browser:page
+      name="+edit-import"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.CodeImportEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/codeimport-edit.pt" />
 
   <browser:page
       name="+delete"

@@ -26,16 +26,16 @@ librarianService = service.IServiceCollection(application)
 # Service that announces when the daemon is ready
 tachandler.ReadyService().setServiceParent(librarianService)
 
-path = config.librarian.server.root
+path = config.librarian_server.root
 storage = storage.LibrarianStorage(path, db.Library())
 
 f = FileUploadFactory(storage)
 uploadPort = str(config.librarian.upload_port)
 strports.service(uploadPort, f).setServiceParent(librarianService)
 
-if config.librarian.server.upstream_host:
-    upstreamHost = config.librarian.server.upstream_host
-    upstreamPort = int(config.librarian.server.upstream_port)
+if config.librarian_server.upstream_host:
+    upstreamHost = config.librarian_server.upstream_host
+    upstreamPort = config.librarian_server.upstream_port
     print 'Using upstream librarian http://%s:%d' % (upstreamHost, upstreamPort)
 else:
     upstreamHost = upstreamPort = None

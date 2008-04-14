@@ -211,7 +211,7 @@ class DistributionMirror(SQLBase):
         """
         template = get_email_template('notify-mirror-owner.txt')
         fromaddress = format_address(
-            "Launchpad Mirror Prober", config.noreply_from_address)
+            "Launchpad Mirror Prober", config.canonical.noreply_from_address)
 
         replacements = {
             'distro': self.distribution.title,
