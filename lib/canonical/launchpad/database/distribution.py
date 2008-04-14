@@ -69,7 +69,7 @@ from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBugSupervisor,
     IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
     IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
@@ -92,7 +92,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         IDistribution, IFAQTarget, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
         IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugContact)
+        IHasBugSupervisor)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -113,8 +113,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
-    bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person',
+    bug_supervisor = ForeignKey(
+        dbName='bug_supervisor', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
@@ -1192,7 +1192,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # database hard for each product rendered.
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
-                 prejoins=["bugcontact", "bugtracker", "project",
+                 prejoins=["bug_supervisor", "bugtracker", "project",
                            "development_focus.user_branch",
                            "development_focus.import_branch"]))
 
@@ -1213,11 +1213,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
 
-    def setBugContact(self, bugcontact, user):
-        """See `IHasBugContact`."""
-        self.bugcontact = bugcontact
-        if bugcontact is not None:
-            subscription = self.addBugSubscription(bugcontact, user)
+    def setBugSupervisor(self, bug_supervisor, user):
+        """See `IHasBugSupervisor`."""
+        self.bug_supervisor = bug_supervisor
+        if bug_supervisor is not None:
+            subscription = self.addBugSubscription(bug_supervisor, user)
 
 
 class DistributionSet:
