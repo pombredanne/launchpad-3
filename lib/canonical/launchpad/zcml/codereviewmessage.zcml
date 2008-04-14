@@ -9,4 +9,9 @@
         <allow interface="canonical.launchpad.interfaces.ICodeReviewMessage"
         />
     </content>
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        path_expression="string:+comment/${id}"
+        attribute_to_parent="branch_merge_proposal"
+        rootsite="code" />
 </configure>
