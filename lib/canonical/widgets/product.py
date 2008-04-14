@@ -108,14 +108,12 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if value == self._missing:
             value = field.missing_value
 
-        items = []
-
-        ## Bugs tracked in Launchpad Bugs.
+        # Bugs tracked in Launchpad Bugs.
         malone_item_arguments = dict(
             index=0, text=self._renderLabel("In Launchpad", 0),
             value="malone", name=self.name, cssClass=self.cssClass)
 
-        ## Project or somewhere else.
+        # Project or somewhere else.
         project = product.project
         if project is None or project.bugtracker is None:
             project_bugtracker_caption = "Somewhere else"
@@ -128,9 +126,9 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             index=1, text=self._renderLabel(project_bugtracker_caption, 1),
             value="project", name=self.name, cssClass=self.cssClass)
 
-        ## External bug tracker.
-        # The bugtracker widget can't be within the <label> tag, since
-        # Firefox doesn't cope with it well.
+        # External bug tracker.
+        ## The bugtracker widget can't be within the <label> tag,
+        ## since Firefox doesn't cope with it well.
         external_bugtracker_text = "%s %s" % (
             self._renderLabel("In a registered bug tracker:", 2),
             self.bugtracker_widget())
@@ -138,11 +136,11 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             index=2, text=external_bugtracker_text,
             value="external", name=self.name, cssClass=self.cssClass)
 
-        ## Upstream email address (special-case bug tracker).
+        # Upstream email address (special-case bug tracker).
         if (IBugTracker.providedBy(value) and
             value.bugtrackertype == BugTrackerType.EMAILADDRESS):
-                self.upstream_email_address_widget.setRenderedValue(
-                    value.baseurl.lstrip('mailto:'))
+            self.upstream_email_address_widget.setRenderedValue(
+                value.baseurl.lstrip('mailto:'))
         external_bugtracker_email_text = "%s %s" % (
             self._renderLabel("By emailing an upstream bug contact:", 3),
             self.upstream_email_address_widget())
@@ -150,35 +148,30 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             index=3, text=external_bugtracker_email_text,
             value="external-email", name=self.name, cssClass=self.cssClass)
 
-        # Put them all together.
-        if value == field.malone_marker:
-            items.append(self.renderSelectedItem(**malone_item_arguments))
-            items.append(self.renderItem(**external_bugtracker_arguments))
-            items.append(self.renderItem(
-                    **external_bugtracker_email_arguments))
-            items.append(self.renderItem(**project_bugtracker_arguments))
-        elif value != self.context.missing_value:
-            items.append(self.renderItem(**malone_item_arguments))
-            if value.bugtrackertype == BugTrackerType.EMAILADDRESS:
-                items.append(self.renderItem(
-                        **external_bugtracker_arguments))
-                items.append(self.renderSelectedItem(
-                        **external_bugtracker_email_arguments))
-            else:
-                items.append(self.renderSelectedItem(
-                        **external_bugtracker_arguments))
-                items.append(self.renderItem(
-                        **external_bugtracker_email_arguments))
-            items.append(self.renderItem(**project_bugtracker_arguments))
-        else:
-            items.append(self.renderItem(**malone_item_arguments))
-            items.append(self.renderItem(**external_bugtracker_arguments))
-            items.append(self.renderItem(
-                    **external_bugtracker_email_arguments))
-            items.append(
-                self.renderSelectedItem(**project_bugtracker_arguments))
+        # All the choices arguments in order.
+        all_arguments = [malone_item_arguments,
+                         external_bugtracker_arguments,
+                         external_bugtracker_email_arguments,
+                         project_bugtracker_arguments]
 
-        return items
+        # Figure out the selected choice.
+        if value == field.malone_marker:
+            selected = malone_item_arguments
+        elif value != self.context.missing_value:
+            if value.bugtrackertype == BugTrackerType.EMAILADDRESS:
+                selected = external_bugtracker_email_arguments
+            else:
+                selected = external_bugtracker_arguments
+        else:
+            selected = project_bugtracker_arguments
+
+        # Render.
+        for arguments in all_arguments:
+            if arguments is selected:
+                render = self.renderSelectedItem
+            else:
+                render = self.renderItem
+            yield render(**arguments)
 
 class LicenseWidget(CheckBoxMatrixWidget):
     """A CheckBox widget with a custom template.
