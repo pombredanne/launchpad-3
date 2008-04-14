@@ -23,7 +23,8 @@ from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
 from canonical.launchpad.daemons.sftp import getPublicKeyString
-from canonical.testing.layers import TwistedLayer
+from canonical.testing.layers import (
+    TwistedLaunchpadZopelessLayer, TwistedLayer)
 
 
 class MockRealm:
@@ -318,7 +319,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     MSG_USERAUTH_BANNER message.
     """
 
-    layer = TwistedLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         self.valid_login = 'testuser'
