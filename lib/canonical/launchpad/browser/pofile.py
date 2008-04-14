@@ -432,6 +432,7 @@ class POFileTranslateView(BaseTranslationView):
     def _initializeShowOption(self):
         # Get any value given by the user
         self.show = self.request.form.get('show')
+        self.search_text = self.request.form.get('search')
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
@@ -460,7 +461,7 @@ class POFileTranslateView(BaseTranslationView):
         pofile = self.context
         potemplate = pofile.potemplate
         if self.show == 'all':
-            ret = potemplate.getPOTMsgSets()
+            ret = potemplate.getPOTMsgSets(search=self.search_text)
         elif self.show == 'translated':
             ret = pofile.getPOTMsgSetTranslated()
         elif self.show == 'need_review':

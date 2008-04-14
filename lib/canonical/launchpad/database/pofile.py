@@ -187,6 +187,10 @@ class POFileMixIn(RosettaStats):
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
 
+    def findPOTMsgSetsContaining(self, text):
+        """See `IPOFile`."""
+        return self.potemplate.getPOTMsgSets(search=text)
+
 
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
@@ -399,7 +403,7 @@ class POFile(SQLBase, POFileMixIn):
             """ % sqlvalues(self, person),
             orderBy=['potmsgset', '-date_created'])
 
-    def getPOTMsgSetTranslated(self):
+    def getPOTMsgSetTranslated(self, search=None):
         """See `IPOFile`."""
         query = [
             'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
@@ -409,6 +413,9 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationMessage.is_current',
             'NOT TranslationMessage.is_fuzzy']
         self._appendCompletePluralFormsConditions(query)
+
+        if search is not None:
+            self._appendSearchConditions(query, search)
 
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
@@ -577,6 +584,19 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
+    def _appendSearchConditions(self, query, text):
+        """Add conditions to filter POTMsgSets by `text`."""
+        query.append("""
+            ((POTMsgSet.msgid_singular IS NOT NULL AND
+              POTMsgSet.msgid_singular IN (
+                SELECT POMsgID.id FROM POMsgID
+                  WHERE msgid LIKE '%%' || %s || '%%')) OR
+             (POTMsgSet.msgid_plural IS NOT NULL AND
+              POTMsgSet.msgid_plural IN (
+                SELECT POMsgID.id FROM POMsgID
+                  WHERE msgid LIKE '%%' || %s || '%%')))
+            """ % (quote_like(search), quote_like(search)))
+
     def _appendCompletePluralFormsConditions(self, query):
         """Add conditions to implement ITranslationMessage.is_complete in SQL.
 
@@ -592,7 +612,6 @@ class POFile(SQLBase, POFileMixIn):
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
-
 
     def updateStatistics(self):
         """See `IPOFile`."""

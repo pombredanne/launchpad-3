@@ -25,7 +25,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
+    SQLBase, quote, flush_database_updates, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
@@ -296,24 +296,36 @@ class POTemplate(SQLBase, RosettaStats):
             POTMsgSet.sequence = %s
             """ % sqlvalues (self.id, sequence))
 
-    def getPOTMsgSets(self, current=True, slice=None):
+
+    def getPOTMsgSets(self, current=True, search=None):
         """See `IPOTemplate`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self)
+            ]
+
         if current:
             # Only count the number of POTMsgSet that are current.
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
-                    sqlvalues(self.id),
-                orderBy='sequence')
-        else:
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
-                orderBy='sequence')
+            clauses.append('POTMsgSet.sequence > 0')
 
-        if slice is not None:
-            # Want only a subset specified by slice
-            results = results[slice]
+        if search is not None:
+            # XXX 2008-04-14 Danilo:
+            # Doing subselects on POMsgID has proved to perform best
+            # during testing: doing LEFT OUTER JOINs with POMsgID
+            # table for both msgid_singular and msgid_plural proved
+            # to be too slow.
+            clauses.append("""
+              ((POTMsgSet.msgid_singular IS NOT NULL AND
+                POTMsgSet.msgid_singular IN (
+                  SELECT POMsgID.id FROM POMsgID
+                    WHERE msgid LIKE '%%' || %s || '%%')) OR
+               (POTMsgSet.msgid_plural IS NOT NULL AND
+                POTMsgSet.msgid_plural IN (
+                  SELECT POMsgID.id FROM POMsgID
+                    WHERE msgid LIKE '%%' || %s || '%%')))
+              """ % (quote_like(search), quote_like(search)))
 
-        return results
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""

@@ -139,6 +139,12 @@
               changed in Launchpad
             </option>
           </select>
+          <tal:is_beta condition="view/isBetaUser">
+            <label for="search_box">containing</label>
+            <input id="search_box" type="text" name="search"
+                   title="Enter English string to search for"
+                   tal:attributes="value view/search_text" />
+          </tal:is_beta>
           <input
             type="submit" value="Filter" />
         </form>
