@@ -213,22 +213,21 @@ def needs_authentication(func):
 class TracLPPlugin(ExternalBugTracker):
     """A Trac instance having the LP plugin installed."""
 
-    def __init__(self, baseurl, xmlrpc_transport=None):
+    def __init__(self, baseurl, xmlrpc_transport=None,
+                 internal_xmlrpc_transport=None):
         super(TracLPPlugin, self).__init__(baseurl)
 
         if xmlrpc_transport is None:
             xmlrpc_transport = TracXMLRPCTransport()
         self.xmlrpc_transport = xmlrpc_transport
+        self.internal_xmlrpc_transport = internal_xmlrpc_transport
 
     def _generateAuthenticationToken(self):
         """Create an authentication token an return it."""
-        from zope.component import getUtility
-        from canonical.launchpad.interfaces import (
-            ILoginTokenSet, LoginTokenType)
-        login_token = getUtility(ILoginTokenSet).new(
-            None, None, 'externalbugtrackers@launchpad.net',
-            LoginTokenType.BUGTRACKER)
-        return login_token.token
+        internal_xmlrpc = xmlrpclib.ServerProxy(
+            'http://xmlrpc-private.launchpad.dev:8087/bugs',
+            transport=self.internal_xmlrpc_transport)
+        return internal_xmlrpc.newBugTrackerToken()
 
     def _authenticate(self):
         """Authenticate with the Trac instance."""

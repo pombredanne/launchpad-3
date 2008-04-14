@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.scripts import checkwatches, debbugs
+from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -411,6 +412,19 @@ class TestTrac(Trac):
             print "CALLED urlopen(%r)" % (url,)
 
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+
+
+class TestTracInternalXMLRPCTransport:
+
+    def request(self, host, handler, request, verbose=None):
+        args, method_name = xmlrpclib.loads(request)
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def newBugTrackerToken(self):
+        token_api = ExternalBugTrackerTokenAPI(None, None)
+        print "Using XML-RPC to generate token"
+        return token_api.newBugTrackerToken()
 
 
 class TestTracXMLRPCTransport(TracXMLRPCTransport):

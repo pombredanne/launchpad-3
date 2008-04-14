@@ -26,6 +26,10 @@ Trac instance.
     ...     def __init__(self):
     ...         self.headers = {}
 
+
+The generation of token is done outside the transaction.
+
+
     >>> import random
     >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.interfaces import ILoginTokenSet
@@ -48,10 +52,14 @@ Trac instance.
     ...             'trac_auth=random_token-' + str(random.random()))
     ...         return response
 
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracInternalXMLRPCTransport)
     >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TestTracLPPlugin(
-    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
     >>> trac._authenticate()
+    Using XML-RPC to generate token
     Successfully validated the token.
 
     >>> test_transport.auth_cookie
@@ -78,7 +86,8 @@ instance returns another time zone.
 
     >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TestTracLPPlugin(
-    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
 
     >>> import time
     >>> from datetime import datetime
@@ -88,6 +97,7 @@ instance returns another time zone.
     >>> test_transport.local_timezone = 'CET'
     >>> test_transport.utc_offset = 60*60
     >>> trac.getCurrentDBTime()
+    Using XML-RPC to generate token
     Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
 
@@ -105,5 +115,6 @@ sent again.
 
     >>> test_transport.expire_cookie(test_transport.auth_cookie)
     >>> trac.getCurrentDBTime()
+    Using XML-RPC to generate token
     Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
