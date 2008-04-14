@@ -491,7 +491,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # XXX 2008-04-12 gmb:
         #     This is only a partial implementation of this; it will
         #     grow over time as implement different methods that call
-        #     this method.
+        #     this method. See bugs 203564, 158703 and 158705.
 
         # We sort the list of bugs for the sake of testing.
         bug_ids = sorted([bug_id for bug_id in self.remote_bugs.keys()])
@@ -505,7 +505,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
 
         # If we have a modified_since timestamp, we return bugs modified
         # since that time.
-        if criteria.has_key('modified_since'):
+        if 'modified_since' in criteria:
             # modified_since is an integer timestamp, so we convert it
             # to a datetime.
             modified_since = datetime.fromtimestamp(
@@ -518,12 +518,10 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # If we have a list of bug IDs specified, we only return
         # those members of bugs_to_return that are in that
         # list.
-        if criteria.has_key('bugs'):
+        if 'bugs' in criteria:
             bugs_to_return = [
                 bug for bug in bugs_to_return
                 if bug.id in criteria['bugs']]
-        else:
-            bugs_to_return = bugs_to_return
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
