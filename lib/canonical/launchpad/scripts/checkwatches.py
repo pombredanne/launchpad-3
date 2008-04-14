@@ -27,7 +27,8 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
     ISupportsCommentImport, PersonCreationRationale,
     UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -60,6 +61,12 @@ class TooMuchTimeSkew(BugWatchUpdateError):
 #
 
 
+class CheckWatchesErrorUtility(ErrorReportingUtility):
+    """An error utility that for the checkwatches process."""
+
+    _default_config_section = 'checkwatches'
+
+
 def report_oops(message=None, properties=None, info=None):
     """Record an oops for the current exception.
 
@@ -89,8 +96,9 @@ def report_oops(message=None, properties=None, info=None):
         properties.append(('error-explanation', message))
 
     # Create the dummy request object.
-    request = errorlog.ScriptRequest(properties)
-    errorlog.globalErrorUtility.raising(info, request)
+    request = ScriptRequest(properties)
+    error_utility = CheckWatchesErrorUtility()
+    error_utility.raising(info, request)
 
     return request
 
@@ -293,7 +301,7 @@ class BugWatchUpdater(object):
         try:
             launchpad_status = remotesystem.convertRemoteStatus(
                 remote_status)
-        except UnknownRemoteStatusError, error:
+        except UnknownRemoteStatusError:
             # We log the warning, since we need to know about statuses
             # that we don't handle correctly.
             self.warning("Unknown remote status '%s'." % remote_status,

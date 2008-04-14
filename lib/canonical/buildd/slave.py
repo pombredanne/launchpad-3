@@ -91,10 +91,10 @@ class BuildManager(object):
             self._subprocess, command, args, env=os.environ,
             path=os.environ["HOME"], childFDs=childfds)
 
-    def _unpackChroot(self, chroottarfile):
-        """Unpack the buld chroot."""
+    def doUnpack(self):
+        """Unpack the build chroot."""
         self.runSubProcess(self._unpackpath,
-                           ["unpack-chroot", self._buildid, chroottarfile])
+                           ["unpack-chroot", self._buildid, self._chroottarfile])
 
     def doCleanup(self):
         """Remove the build tree etc."""
@@ -118,7 +118,8 @@ class BuildManager(object):
             os.symlink( self._slave.cachePath(files[f]),
                         "%s/build-%s/%s" % (os.environ["HOME"],
                                             self._buildid, f))
-        self._unpackChroot(self._slave.cachePath(chroot))
+        self._chroottarfile = self._slave.cachePath(chroot)
+        self.runSubProcess("/bin/echo", ["echo", "Forking build subprocess..."])
 
     def iterate(self, success):
         """Perform an iteration of the slave.
@@ -338,7 +339,6 @@ class BuildDSlave(object):
         """Cease building because the builder has a problem."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to BUILDERFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.BUILDERFAIL
 
     def chrootFail(self):
@@ -349,21 +349,24 @@ class BuildDSlave(object):
         """
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to CHROOTFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.CHROOTFAIL
 
     def buildFail(self):
         """Cease building because the package failed to build."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to PACKAGEFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.PACKAGEFAIL
+
+    def buildOK(self):
+        """Having passed all possible failure states, mark a build as OK."""
+        if self.builderstatus != BuilderStatus.BUILDING:
+            raise ValueError("Slave is not BUILDING when set to OK")
+        self.buildstatus = BuildStatus.OK
 
     def depFail(self, dependencies):
         """Cease building due to a dependency issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to DEPFAIL")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.DEPFAIL
         self.builddependencies = dependencies
 
@@ -371,7 +374,6 @@ class BuildDSlave(object):
         """Give-back package due to a transient buildd/archive issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to GIVENBACK")
-        self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.GIVENBACK
 
     def buildComplete(self):
@@ -382,7 +384,6 @@ class BuildDSlave(object):
             raise ValueError("Slave is not BUILDING when told build is "
                              "complete")
         self.builderstatus = BuilderStatus.WAITING
-        self.buildstatus = BuildStatus.OK
 
 
 class XMLRPCBuildDSlave(xmlrpc.XMLRPC):

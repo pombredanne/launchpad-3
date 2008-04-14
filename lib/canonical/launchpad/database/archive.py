@@ -683,3 +683,16 @@ class ArchiveSet:
         if size is None:
             return 0
         return int(size)
+
+    def getPPAsForUser(self, user):
+        """See `IArchiveSet`."""
+        query = """
+            Archive.owner = Person.id AND
+            TeamParticipation.team = Archive.owner AND
+            TeamParticipation.person = %s AND
+            Archive.purpose = %s
+        """ % sqlvalues(user, ArchivePurpose.PPA)
+
+        return Archive.select(
+            query, clauseTables=['Person', 'TeamParticipation'],
+            orderBy=['Person.displayname'])

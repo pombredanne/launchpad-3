@@ -192,8 +192,8 @@ class ProductLicenseMixin:
             user = getUtility(ILaunchBag).user
             subject = "Project License Submitted for %s by %s" % (
                     self.product.name, user.name)
-            fromaddress = format_address("Launchpad",
-                                         config.noreply_from_address)
+            fromaddress = format_address(
+                "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
             def indent(text):
@@ -384,7 +384,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
-        text = 'Change bug contact'
+        text = 'Change bug supervisor'
         return Link('+bugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -920,7 +920,7 @@ class ProductReviewView(ProductEditView):
         if data.get('private_bugs') and self.context.bugcontact is None:
             self.setFieldError('private_bugs',
                 structured(
-                    'Set a <a href="%s/+bugcontact">bug contact</a> '
+                    'Set a <a href="%s/+bugcontact">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 

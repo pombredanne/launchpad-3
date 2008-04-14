@@ -570,7 +570,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    Build details for i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
 This feature is also useful from the PPA owner perspective. When
 Celso's visualise there that there was a failure while building
@@ -596,4 +596,4 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    Build details for i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE

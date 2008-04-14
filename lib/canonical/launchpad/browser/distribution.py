@@ -334,7 +334,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
-        text = 'Change bug contact'
+        text = 'Change bug supervisor'
         return Link('+bugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

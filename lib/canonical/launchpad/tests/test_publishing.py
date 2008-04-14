@@ -149,20 +149,11 @@ class SoyuzTestPublisher:
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive)
 
-        # Determine architecture to build.
-        from canonical.buildmaster.master import determineArchitecturesToBuild
-        legal_archs = [das for das in distroseries.architectures]
-        archs = determineArchitecturesToBuild(
-            pub_source, legal_archs, distroseries)
-
-        # Build and publish binaries.
-        if archive is None:
-            archive = pub_source.archive
-        spr = pub_source.sourcepackagerelease
+        builds = pub_source.createMissingBuilds(ignore_pas=True)
         published_binaries = []
-        for arch in archs:
+        for build in builds:
             pub_binaries = self._buildAndPublishBinaryForSource(
-                arch, archive, spr, status, pocket, scheduleddeletiondate,
+                archive, build, status, pocket, scheduleddeletiondate,
                 dateremoved, filecontent, binaryname, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks)
@@ -172,14 +163,15 @@ class SoyuzTestPublisher:
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
     def _buildAndPublishBinaryForSource(
-        self, distroarchseries, archive, sourcepackagerelease, status,
-        pocket, scheduleddeletiondate, dateremoved, filecontent, binaryname,
-        summary, description, shlibdep, depends, recommends, suggests,
-        conflicts, replaces, provides, pre_depends, enhances, breaks):
+        self, archive, build, status, pocket, scheduleddeletiondate,
+        dateremoved, filecontent, binaryname, summary, description,
+        shlibdep, depends, recommends, suggests, conflicts, replaces,
+        provides, pre_depends, enhances, breaks):
         """Return the corresponding BinaryPackagePublishingHistory."""
-        # Create a Build record.
-        build = sourcepackagerelease.createBuild(
-            distroarchseries=distroarchseries, archive=archive, pocket=pocket)
+        sourcepackagerelease = build.sourcepackagerelease
+        distroarchseries = build.distroarchseries
+        if archive is None:
+            archive = build.archive
 
         # Create a BinaryPackageRelease
         bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(binaryname)
