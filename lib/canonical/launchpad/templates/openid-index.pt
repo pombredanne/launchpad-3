@@ -12,10 +12,10 @@
             those run by Canonical and Ubuntu.
             <p>
             To learn more about using this service, please review the
-            <a href="https://help.launchpad.net/OpenID">instructions</a>.
+            <a href="https://help.launchpad.net/OpenID">instructions</a>.</p>
             <p>
             Note that this site is meant to be called from an OpenID enabled
-            service and therefore has no user facing functions.
+            service and therefore has no user facing functions.</p>
         </div>
     </body>
 </html>
