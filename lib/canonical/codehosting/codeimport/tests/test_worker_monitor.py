@@ -300,11 +300,6 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         """Assert that finishJob was called with the given status."""
         self.assertEqual(self.worker_monitor.result_status, status)
 
-    @read_only_transaction
-    def assertFinishJobNotCalled(self, ignored):
-        """Assert that finishJob was not called."""
-        self.assertEqual(self.worker_monitor.result_status, None)
-
     def test_success(self):
         # In the successful case, finishJob is called with
         # CodeImportResultStatus.SUCCESS.
@@ -323,11 +318,10 @@ class TestWorkerMonitorRunNoProcess(TestCase):
             CodeImportResultStatus.FAILURE)
 
     def test_quiet_exit(self):
-        # If the process deferred fails with ExitQuietly, finishJob is not
-        # called and the call to run() succeeds.
+        # If the process deferred fails with ExitQuietly, the call to run()
+        # succeeds.
         self.worker_monitor.process_deferred = defer.fail(ExitQuietly())
-        return self.worker_monitor.run().addCallback(
-            self.assertFinishJobNotCalled)
+        return self.worker_monitor.run()
 
     def test_quiet_exit_from_finishJob(self):
         # If finishJob fails with ExitQuietly, the call to run() still
@@ -401,7 +395,6 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        code_import = getUtility(ICodeImportSet).get(code_import)
         results = list(getUtility(ICodeImportResultSet).getResultsForImport(
             code_import))
         self.failUnless(len(results), 1)
@@ -421,8 +414,8 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""
         code_import = getUtility(ICodeImportSet).get(code_import_id)
-        self.assertCodeImportResultCreated(code_import_id)
-        self.assertBranchImportedOKForCodeImport(code_import_id)
+        self.assertCodeImportResultCreated(code_import)
+        self.assertBranchImportedOKForCodeImport(code_import)
 
     def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
