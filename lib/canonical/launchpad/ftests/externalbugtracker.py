@@ -467,13 +467,22 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
 
-    def bug_info(self, level, criteria):
+    def bug_info(self, level, criteria=None):
         """Return info about a bug or set of bugs."""
         # XXX 2008-04-12 gmb:
         #     This is only a partial implementation of this; it will
         #     grow over time as implement different methods that call
         #     this method.
+
+        # We sort the list of bugs for the sake of testing.
+        bug_ids = sorted([bug_id for bug_id in self.remote_bugs.keys()])
         bugs_to_return = []
+
+        for bug_id in bug_ids:
+            bugs_to_return.append(self.remote_bugs[bug_id])
+
+        if criteria is None:
+            criteria = {}
 
         # If we have a modified_since timestamp, we return bugs modified
         # since that time.
@@ -483,24 +492,24 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             modified_since = datetime.fromtimestamp(
                 criteria['modified_since'])
 
-            bugs_modified_since = [
-                bug for bug in self.remote_bugs.values()
+            bugs_to_return = [
+                bug for bug in bugs_to_return
                 if bug.last_modified > modified_since]
 
-            # If we have a list of bug IDs specified, we only return
-            # those members of bugs_modified_since that are in that
-            # list.
-            if criteria.has_key('bugs'):
-                bug_list = [
-                    bug for bug in bugs_modified_since
-                    if bug.id in criteria['bugs']]
-            else:
-                bug_list = bugs_modified_since
+        # If we have a list of bug IDs specified, we only return
+        # those members of bugs_to_return that are in that
+        # list.
+        if criteria.has_key('bugs'):
+            bugs_to_return = [
+                bug for bug in bugs_to_return
+                if bug.id in criteria['bugs']]
+        else:
+            bugs_to_return = bugs_to_return
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
         if level == 0:
-            bugs_to_return = [{'id': bug.id} for bug in bug_list]
+            bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
 
         return (self.time_snapshot(), bugs_to_return)
 
