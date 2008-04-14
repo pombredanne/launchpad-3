@@ -400,7 +400,8 @@ def escape(message):
     translated, then santizied.
 
     :param message: This may be a string, `zope.i18n.Message`,
-    	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+    	`zope.configuration.fields.MessageID`, or an instance of
+    	`IStructuredString`.
     """
     if IStructuredString.providedBy(message):
         return message.escapedtext
