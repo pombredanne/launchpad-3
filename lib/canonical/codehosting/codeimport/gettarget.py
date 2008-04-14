@@ -35,12 +35,12 @@ class ImportdTargetGetter:
 
     def get_target(self):
         branch = getUtility(IProductSeriesSet)[self.series_id].import_branch
-        from_location = self._store._getMirrorURL(branch)
+        from_location = self._store._getMirrorURL(branch.id)
         self.upgrade_location(from_location)
         to_location = os.path.join(self.workingdir, 'bzrworking')
         if os.path.isdir(to_location):
             shutil.rmtree(to_location)
-        self._store.pull(branch, to_location)
+        self._store.pull(branch.id, to_location)
 
     def upgrade_location(self, location):
         """Upgrade the branch at this location to the current default format.

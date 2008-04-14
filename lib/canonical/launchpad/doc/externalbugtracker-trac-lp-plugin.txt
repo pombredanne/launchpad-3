@@ -84,3 +84,49 @@ instance returns another time zone.
     >>> test_transport.utc_offset = 60*60
     >>> trac.getCurrentDBTime()
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+
+== Getting modified bugs ==
+
+We only want to update the bug watches whose remote bugs have been
+modified since the last time we checked.
+
+In order to demonstrate this, we'll create some mock remote bugs for our
+test XML-RPC transport to check.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     MockTracRemoteBug)
+
+    >>> remote_bugs = {
+    ...     '1': MockTracRemoteBug('1', datetime(2008, 4, 1, 0, 0, 0)),
+    ...     '2': MockTracRemoteBug('2', datetime(2007, 1, 1, 1, 1, 1)),
+    ...     '3': MockTracRemoteBug('3', datetime(2008, 1, 1, 1, 2, 3)),}
+
+    >>> test_transport.remote_bugs = remote_bugs
+
+Calling the getModifiedRemoteBugs() method of our trac instance and
+passing it a list of bug ids and a  datetime object will return a list
+of the ids of the bugs which have been modified since that time.
+
+    >>> bug_ids_to_check = ['1', '2', '3']
+    >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    ['1', '3']
+
+Different last_checked times will result in different numbers of bugs
+being returned.
+
+    >>> last_checked = datetime(2008, 2, 1, 0, 0, 0)
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    ['1']
+
+If no bugs have been updated since last_checked, getModifiedRemoteBugs()
+will return an empty list.
+
+    >>> last_checked = datetime(2008, 5, 1, 0, 0, 0)
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    []
+

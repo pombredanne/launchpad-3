@@ -40,7 +40,7 @@ class ImportdPublisher:
         branch = series.import_branch
         commit()
         local = os.path.join(self.workingdir, 'bzrworking')
-        self._store.push(branch, WorkingTree.open(local))
+        self._store.push(branch.id, WorkingTree.open(local))
 
 
 def ensure_series_branch(series):

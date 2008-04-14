@@ -173,7 +173,7 @@ A notification was added:
     True
 
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
-subscribed "implicitly" since he's a bug contact for the mozilla
+subscribed "implicitly" since he's a bug supervisor for the mozilla
 package:
 
     >>> getSubscribers(added_bug)
@@ -911,8 +911,9 @@ telling you that you what bug it's a duplicate of.
     Failing command:
         duplicate 4
     ...
-    Bug 4 is already a duplicate of bug 2. You can only duplicate to
-    bugs that are not duplicates themselves.
+    Bug 4 is already a duplicate of bug 2. You can only
+    mark a bug report as duplicate of one that isn't a
+    duplicate itself.
     ...
 
 If the specified bug has other bugs marked as a duplicate of it, an
@@ -1106,7 +1107,7 @@ permissions also elicits an error message:
         milestone 1.0
     ...
     You do not have permission to set the milestone for Mozilla Firefox.
-    Only owners, drivers and bug contacts may assign milestones.
+    Only owners, drivers and bug supervisors may assign milestones.
     ...
 
     >>> login('test@canonical.com')
@@ -1347,7 +1348,7 @@ be grouped together:
 
     >>> email_user = getUtility(ILaunchBag).user
 
-Bug contacts can set some restricted statuses:
+Bug supervisors can set some restricted statuses:
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -1386,7 +1387,7 @@ Everyone else gets an explanatory error message:
         status wontfix
     ...
     The status cannot be changed to wontfix because you are not the
-    registrant or a bug contact for Mozilla Firefox.
+    registrant or a bug supervisor for Mozilla Firefox.
     ...
 
 Let's take a look at all the other error messages that the sub
@@ -1512,7 +1513,7 @@ If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
 which bug task to edit:
 
-=== The user is a bug contact of the upstream product ===
+=== The user is a bug supervisors of the upstream product ===
 
     >>> login('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -1534,7 +1535,7 @@ which bug task to edit:
     ...
         Status: New => Confirmed
 
-=== The user is a package bug contact ===
+=== The user is a package bug supervisor ===
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet)
@@ -1570,7 +1571,7 @@ which bug task to edit:
         Assignee: (unassigned) => No Privileges Person
     ...
 
-=== The user is a bug contact of a distribution ===
+=== The user is a bug supervisor of a distribution ===
 
 XXX: TBD after InitialBugContacts is implemented.
      -- Bjorn Tillenius, 2005-11-30

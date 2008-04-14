@@ -107,7 +107,6 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 .offline {text-align: center; width: 100%; margin: 2em auto !important;}
 /* That !important is necessary only while #nonhelp exists. */
 .unavailable {color: #999; background: none;}
-.oopsid {color: #cc0000; font-weight: bold;}
 
 /* --- Error, warning, and info messages --- */
 
@@ -1658,6 +1657,8 @@ table.listing table tfoot td, table.listing table td {
 }
 table.duplicate.listing * {color: #999;}
 
+table.listing table.simple {margin-left: 2em;}
+table.listing table.simple td {padding: 0.25em;}
 /* --- Sortable tables --- */
 
 table.sortable a.sortheader {

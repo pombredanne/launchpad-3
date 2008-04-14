@@ -11,6 +11,8 @@ import time
 import urlparse
 import xmlrpclib
 
+from datetime import datetime
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -413,9 +415,18 @@ class TestTrac(Trac):
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 
 
+class MockTracRemoteBug:
+    """A mockup of a remote Trac bug."""
+
+    def __init__(self, id, last_modified):
+        self.id = id
+        self.last_modified = last_modified
+
+
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
+    remote_bugs = {}
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
@@ -455,6 +466,51 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             local_time = self.seconds_since_epoch
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
+
+    def bug_info(self, level, criteria):
+        """Return info about a bug or set of bugs."""
+        # XXX 2008-04-12 gmb:
+        #     This is only a partial implementation of this; it will
+        #     grow over time as implement different methods that call
+        #     this method.
+        bugs_to_return = []
+
+        # If we have a modified_since timestamp, we return bugs modified
+        # since that time.
+        if criteria.has_key('modified_since'):
+            # modified_since is an integer timestamp, so we convert it
+            # to a datetime.
+            modified_since = datetime.fromtimestamp(
+                criteria['modified_since'])
+
+            bugs_modified_since = [
+                bug for bug in self.remote_bugs.values()
+                if bug.last_modified > modified_since]
+
+            # If we have a list of bug IDs specified, we only return
+            # those members of bugs_modified_since that are in that
+            # list.
+            if criteria.has_key('bugs'):
+                bug_list = [
+                    bug for bug in bugs_modified_since
+                    if bug.id in criteria['bugs']]
+            else:
+                bug_list = bugs_modified_since
+
+        # We only return what's required based on the level parameter.
+        # For level 0, only IDs are returned.
+        if level == 0:
+            bugs_to_return = [{'id': bug.id} for bug in bug_list]
+
+            # XXX 2008-04-12 gmb:
+            #     xmlrpclib will expand lists of length 1 - no, really,
+            #     see xmlrpclib.py:1386 - so we wrap lists of length 1
+            #     in another list to make sure this doesn't break
+            #     things.
+            if len(bugs_to_return) == 1:
+                bugs_to_return = [bugs_to_return]
+
+        return bugs_to_return
 
 
 class TestRoundup(Roundup):

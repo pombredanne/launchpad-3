@@ -257,8 +257,8 @@ the ID of the new LoginToken.
     >>> verifyObject(IExternalBugTrackerTokenAPI, bugtracker_token_api)
     True
 
-    >>> token_id = bugtracker_token_api.newBugTrackerToken()
-    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token_string = bugtracker_token_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet)[token_string]
     >>> token
     <LoginToken at ...>
 
@@ -273,8 +273,8 @@ These requests are all handled by the private xml-rpc server.
     ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
     ...     transport=XMLRPCTestTransport())
 
-    >>> token_id = bugtracker_api.newBugTrackerToken()
-    >>> token = getUtility(ILoginTokenSet).get(token_id)
+    >>> token_string = bugtracker_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet)[token_string]
     >>> token
     <LoginToken at ...>
 

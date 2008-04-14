@@ -122,4 +122,4 @@ class ExternalBugTrackerTokenAPI(LaunchpadXMLRPCView):
             None, None, 'externalbugtrackers@launchpad.net',
             LoginTokenType.BUGTRACKER)
 
-        return login_token.id
+        return login_token.token

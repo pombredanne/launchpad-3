@@ -7,6 +7,7 @@ __all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
 
 import csv
 from datetime import datetime
+import time
 import urllib2
 import xmlrpclib
 
@@ -231,6 +232,24 @@ class TracLPPlugin(ExternalBugTracker):
         # zone for now.
         trac_time = datetime.fromtimestamp(utc_time)
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
+
+    def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
+        """See `IExternalBugTracker`."""
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        # Convert last_checked into an integer timestamp (which is what
+        # the Trac LP plugin expects).
+        last_checked_timestamp = int(
+            time.mktime(last_checked.timetuple()))
+
+        # We retrieve only the IDs of the modified bugs from the server.
+        modified_bugs = server.launchpad.bug_info(0, dict(
+            modified_since=last_checked_timestamp,
+            bugs=remote_bug_ids))
+
+        return [bug['id'] for bug in modified_bugs]
 
 
 class TracXMLRPCTransport(xmlrpclib.Transport):

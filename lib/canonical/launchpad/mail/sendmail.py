@@ -196,17 +196,17 @@ def sendmail(message, to_addrs=None):
     # Add a Sender: header to show that we were the one sending the
     # email.
     if "Sender" not in message:
-        message["Sender"] = config.bounce_address
+        message["Sender"] = config.canonical.bounce_address
 
     # Add an Errors-To: header for bounce handling
     del message['Errors-To']
-    message['Errors-To'] = config.bounce_address
+    message['Errors-To'] = config.canonical.bounce_address
 
     # Add a Return-Path: header for bounce handling as well. Normally
     # this is added by the SMTP mailer using the From: header. But we
     # want it to be bounce_address instead.
     if 'return-path' not in message:
-        message['Return-Path'] = config.bounce_address
+        message['Return-Path'] = config.canonical.bounce_address
 
     # Add Precedence header to prevent automatic reply programs
     # (e.g. vacation) from trying to respond to our messages.
@@ -225,7 +225,8 @@ def sendmail(message, to_addrs=None):
 
         if config.instance_name == 'testrunner':
             # when running in the testing environment, store emails
-            TestMailer().send(config.bounce_address, to_addrs, raw_message)
+            TestMailer().send(
+                config.canonical.bounce_address, to_addrs, raw_message)
         else:
             if config.zopeless.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
@@ -236,7 +237,8 @@ def sendmail(message, to_addrs=None):
 
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
-                smtp.sendmail(config.bounce_address, to_addrs, raw_message)
+                smtp.sendmail(
+                    config.canonical.bounce_address, to_addrs, raw_message)
                 smtp.quit()
         # Strip the angle brackets to the return a Message-Id consistent with
         # raw_sendmail (which doesn't include them).
@@ -244,7 +246,8 @@ def sendmail(message, to_addrs=None):
     else:
         # The "MAIL FROM" is set to the bounce address, to behave in a way
         # similar to mailing list software.
-        return raw_sendmail(config.bounce_address, to_addrs, raw_message)
+        return raw_sendmail(
+            config.canonical.bounce_address, to_addrs, raw_message)
 
 
 def raw_sendmail(from_addr, to_addrs, raw_message):
