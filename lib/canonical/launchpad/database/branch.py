@@ -1127,11 +1127,10 @@ class BranchSet:
         from canonical.launchpad.database import Person, Product
         Owner = ClassAlias(Person, "owner")
         Author = ClassAlias(Person, "author")
-        clauseTables += [
-            Join(Owner, Branch.owner == Owner.id),
-            LeftJoin(Author, Branch.author == Author.id),
-            LeftJoin(Product, Branch.product == Product.id)
-            ]
+        clauseTables += [LeftJoin(
+                LeftJoin(Join(Branch, Owner, Branch.owner == Owner.id),
+                         Author, Branch.author == Author.id),
+                Product, Branch.product == Product.id)]
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
 
