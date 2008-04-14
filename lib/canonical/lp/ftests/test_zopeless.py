@@ -5,7 +5,7 @@ from threading import Thread
 import unittest
 import warnings
 
-import psycopg
+import psycopg2
 from sqlobject import StringCol, IntCol
 from zope.testing.doctest import DocTestSuite
 
@@ -147,7 +147,7 @@ class TestZopeless(unittest.TestCase):
         MoreBeer(name='Victoria Bitter')
         try:
             MoreBeer(name='Victoria Bitter')
-        except psycopg.DatabaseError:
+        except psycopg2.DatabaseError:
             pass
         else:
             self.fail('Unique constraint was not triggered')
@@ -165,7 +165,7 @@ class TestZopeless(unittest.TestCase):
         self.tm.commit()
 
         # Make another change from a non-SQLObject connection, and commit that
-        conn = psycopg.connect('dbname=' + PgTestSetup().dbname)
+        conn = psycopg2.connect('dbname=' + PgTestSetup().dbname)
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         cur.execute("UPDATE MoreBeer SET rating=4 "

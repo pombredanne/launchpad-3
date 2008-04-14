@@ -10,9 +10,9 @@ from cStringIO import StringIO
 from urllib import urlopen
 import unittest
 
-import psycopg
+import psycopg2
 
-from sqlos.interfaces import IConnectionName
+#from sqlos.interfaces import IConnectionName
 
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.component import getUtility, ComponentLookupError
@@ -126,7 +126,7 @@ class BaseTestCase(unittest.TestCase):
                         'Launchpad database should not be available.'
                         )
                 return
-        except psycopg.Error:
+        except psycopg2.Error:
             pass
         self.failIf(
                 self.want_launchpad_database,

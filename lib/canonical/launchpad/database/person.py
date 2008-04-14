@@ -235,7 +235,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC,
-        validator=visibility_validator)
+        ) # validator=visibility_validator)
 
     personal_standing = EnumCol(
         enum=PersonalStanding, default=PersonalStanding.UNKNOWN,

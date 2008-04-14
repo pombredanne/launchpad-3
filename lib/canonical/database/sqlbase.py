@@ -669,7 +669,7 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
         con_str += ' user=%s' % user
     if config.database.dbhost:
         con_str += ' host=%s' % config.database.dbhost
-    con = psycopg.connect(con_str)
+    con = psycopg2.connect(con_str)
     con.set_isolation_level(isolation)
     return con
 

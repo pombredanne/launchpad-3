@@ -23,7 +23,7 @@ import gzip
 import os.path
 import urllib
 
-import psycopg
+import psycopg2
 from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
@@ -117,7 +117,7 @@ class ScriptRecorder:
         try:
             connection = connect_func(*args, **kw)
             exception = None
-        except (psycopg.Warning, psycopg.Error), connect_exception:
+        except (psycopg2.Warning, psycopg2.Error), connect_exception:
             connection = None
             exception = connect_exception
 
@@ -147,7 +147,7 @@ class ScriptRecorder:
         real_cursor = cursor.real_cursor
         try:
             real_cursor.execute(query, params)
-        except (psycopg.Warning, psycopg.Error), exception:
+        except (psycopg2.Warning, psycopg2.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -158,10 +158,10 @@ class ScriptRecorder:
             entry.description = real_cursor.description
             # Might have changed now fetchall() has been done.
             entry.rowcount = real_cursor.rowcount
-        except (psycopg.InterfaceError, psycopg.DatabaseError,
-                psycopg.Warning):
+        except (psycopg2.InterfaceError, psycopg2.DatabaseError,
+                psycopg2.Warning):
             raise
-        except psycopg.Error:
+        except psycopg2.Error:
             # No results, such as an UPDATE query.
             entry.results = None
 
@@ -174,7 +174,7 @@ class ScriptRecorder:
         try:
             if connection.real_connection is not None:
                 connection.real_connection.close()
-        except (psycopg.Warning, psycopg.Error), exception:
+        except (psycopg2.Warning, psycopg2.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -186,7 +186,7 @@ class ScriptRecorder:
         entry = CommitScriptEntry(connection)
         try:
             connection.real_connection.commit()
-        except (psycopg.Warning, psycopg.Error), exception:
+        except (psycopg2.Warning, psycopg2.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -198,7 +198,7 @@ class ScriptRecorder:
         entry = RollbackScriptEntry(connection)
         try:
             connection.real_connection.rollback()
-        except (psycopg.Warning, psycopg.Error), exception:
+        except (psycopg2.Warning, psycopg2.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -210,7 +210,7 @@ class ScriptRecorder:
         entry = SetIsolationLevelScriptEntry(connection, level)
         try:
             connection.real_connection.set_isolation_level(level)
-        except (psycopg.Warning, psycopg.Error), exception:
+        except (psycopg2.Warning, psycopg2.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -421,7 +421,7 @@ class MockDbConnection:
     def _checkClosed(self):
         """Guard that raises an exception if the connection is closed."""
         if self._closed is True:
-            raise psycopg.InterfaceError('Connection closed.')
+            raise psycopg2.InterfaceError('Connection closed.')
 
     def close(self):
         """As per DB-API."""
@@ -525,7 +525,7 @@ class MockDbCursor:
     def _checkClosed(self):
         """Raise an exception if the cursor or connection is closed."""
         if self._closed is True:
-            raise psycopg.Error('Cursor closed.')
+            raise psycopg2.Error('Cursor closed.')
         self.connection._checkClosed()
 
     # Index in our results that the next fetch will return. We don't consume
@@ -550,9 +550,9 @@ class MockDbCursor:
         """As per DB-API."""
         self._checkClosed()
         if self._script_entry is None:
-            raise psycopg.Error("No query issued yet")
+            raise psycopg2.Error("No query issued yet")
         if self._script_entry.results is None:
-            raise psycopg.Error("Query returned no results")
+            raise psycopg2.Error("Query returned no results")
         try:
             row = self._script_entry.results[self._fetch_position]
             self._fetch_position += 1
@@ -569,9 +569,9 @@ class MockDbCursor:
         """As per DB-API."""
         self._checkClosed()
         if self._script_entry is None:
-            raise psycopg.Error('No query issued yet')
+            raise psycopg2.Error('No query issued yet')
         if self._script_entry.results is None:
-            raise psycopg.Error('Query returned no results')
+            raise psycopg2.Error('Query returned no results')
         results = self._script_entry.results[self._fetch_position:]
         self._fetch_position = len(results)
         return results

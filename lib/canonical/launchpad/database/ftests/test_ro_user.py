@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 import unittest
-import psycopg
+import psycopg2
 
 from canonical.database.sqlbase import cursor
 from canonical.testing import LaunchpadZopelessLayer
@@ -29,14 +29,14 @@ class RoUserTestCase(unittest.TestCase):
         # Except on sequences
         cur.execute("SAVEPOINT attempt")
         self.failUnlessRaises(
-                psycopg.Error, cur.execute, "SELECT nextval('person_id_seq')"
+                psycopg2.Error, cur.execute, "SELECT nextval('person_id_seq')"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
 
         # UPDATES should fail
         cur.execute("SAVEPOINT attempt")
         self.failUnlessRaises(
-                psycopg.Error, cur.execute, "UPDATE Person SET password=NULL"
+                psycopg2.Error, cur.execute, "UPDATE Person SET password=NULL"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
 
@@ -44,7 +44,7 @@ class RoUserTestCase(unittest.TestCase):
         # We need to use a table with no FK references to it
         cur.execute("SAVEPOINT attempt")
         self.failUnlessRaises(
-                psycopg.Error, cur.execute, "DELETE FROM WikiName"
+                psycopg2.Error, cur.execute, "DELETE FROM WikiName"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
 

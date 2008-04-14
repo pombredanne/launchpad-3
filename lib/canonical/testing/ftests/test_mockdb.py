@@ -8,7 +8,7 @@ __all__ = []
 import os
 import unittest
 
-import psycopg
+import psycopg2
 from zope.testing.testrunner import dont_retry, RetryTest
 
 from canonical.config import config
@@ -93,10 +93,10 @@ class MockDbTestCase(unittest.TestCase):
                     config.database.dbname, config.database.dbhost
                     )
         if self.mode == 'direct':
-            con = psycopg.connect(connection_string)
+            con = psycopg2.connect(connection_string)
             #con = canonical.ftests.pgsql._org_connect(connection_string)
         else:
-            con = self.script.connect(psycopg.connect, connection_string)
+            con = self.script.connect(psycopg2.connect, connection_string)
         self.connections.append(con)
         return con
 
@@ -165,7 +165,7 @@ class MockDbTestCase(unittest.TestCase):
                     "dbname=not_a_sausage host=%s user=yourmom"
                     % (config.database.dbhost))
             self.assertRaises(
-                    psycopg.OperationalError, self.connect, connection_string
+                    psycopg2.OperationalError, self.connect, connection_string
                     )
 
     @dont_retry
@@ -206,7 +206,7 @@ class MockDbTestCase(unittest.TestCase):
             con = self.connect()
             cur = con.cursor()
             self.assertRaises(
-                    psycopg.ProgrammingError,
+                    psycopg2.ProgrammingError,
                     cur.execute, "SELECT blood FROM Stone"
                     )
 
@@ -329,7 +329,7 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             con = self.connect()
             con.close()
-            self.assertRaises(psycopg.InterfaceError, con.commit)
+            self.assertRaises(psycopg2.InterfaceError, con.commit)
 
     def testFailedRollback(self):
         # Confirm exeptions raised on commit are recorded and replayed.
@@ -342,7 +342,7 @@ class MockDbTestCase(unittest.TestCase):
                 # but will likely need to stay until we switch to Storm.
                 con.rollback()
             else:
-                self.assertRaises(psycopg.InterfaceError, con.rollback)
+                self.assertRaises(psycopg2.InterfaceError, con.rollback)
 
     @dont_retry
     def testFailedSetIsolationLevel(self):
@@ -351,7 +351,7 @@ class MockDbTestCase(unittest.TestCase):
             con = self.connect()
             con.close()
             self.assertRaises(
-                    psycopg.InterfaceError, con.set_isolation_level, 666
+                    psycopg2.InterfaceError, con.set_isolation_level, 666
                     )
 
     @dont_retry
@@ -362,7 +362,7 @@ class MockDbTestCase(unittest.TestCase):
             cur = con.cursor()
             con.close()
             self.assertRaises(
-                    psycopg.InterfaceError, cur.execute,
+                    psycopg2.InterfaceError, cur.execute,
                     "SELECT name FROM Person WHERE name='stub'"
                     )
             # Should raise an exception according to the DB-API, but
@@ -372,7 +372,7 @@ class MockDbTestCase(unittest.TestCase):
             # the sqlobject/sqlos combination relies on this behavior.
             try:
                 con.close()
-            except psycopg.Error:
+            except psycopg2.Error:
                 self.fail(
                         "Connection.close() now DB-API compliant. Fix test.")
 
@@ -393,7 +393,7 @@ class MockDbTestCase(unittest.TestCase):
             self.failUnlessEqual(len(desc), 1) # One column retrieved.
             self.failUnlessEqual(len(desc[0]), 7) # And it must be a 7-tuple.
             self.failUnlessEqual(desc[0][0], "name")
-            self.failUnlessEqual(desc[0][1], psycopg.STRING)
+            self.failUnlessEqual(desc[0][1], psycopg2.STRING)
 
             # Make sure our record and replay descriptions are identical to
             # the direct description.
@@ -451,7 +451,7 @@ class MockDbTestCase(unittest.TestCase):
             cur = con.cursor()
             cur.close()
             self.failUnlessRaises(
-                    psycopg.Error, cur.execute,
+                    psycopg2.Error, cur.execute,
                     "SELECT name FROM Person WHERE name='stub'"
                     )
             cur = con.cursor()
@@ -468,14 +468,14 @@ class MockDbTestCase(unittest.TestCase):
             # Dapper's psycopg1 doesn't do this, so we only test the
             # wrapper's behavior.
             if mode != 'direct':
-                self.failUnlessRaises(psycopg.Error, cur.fetchone)
+                self.failUnlessRaises(psycopg2.Error, cur.fetchone)
 
             cur.execute("""
                 UPDATE Person SET displayname='Foo' WHERE name='stub'
                 """)
             # This should raise an exception because an UPDATE query
             # returns no results.
-            self.assertRaises(psycopg.Error, cur.fetchone)
+            self.assertRaises(psycopg2.Error, cur.fetchone)
 
             # Now test that a query that returns results returns the correct
             # number of correct results in the correct order.
@@ -522,14 +522,14 @@ class MockDbTestCase(unittest.TestCase):
             if mode != 'direct':
                 # We only do this test against our mock db. psycopg1 gives
                 # a SystemError if fetchall is called before a query issued!
-                self.assertRaises(psycopg.Error, cur.fetchall) # No query yet.
+                self.assertRaises(psycopg2.Error, cur.fetchall) # No query yet.
 
             # This should raise an exeption as an UPDATE query returns no
             # results.
             cur.execute(
                     "UPDATE Person SET displayname='Foo' WHERE name='stub'"
                     )
-            self.assertRaises(psycopg.Error, cur.fetchall) # Not a SELECT.
+            self.assertRaises(psycopg2.Error, cur.fetchall) # Not a SELECT.
 
             # Ensure that cur.fetchall() returns the correct number of
             # correct results in the correct order.

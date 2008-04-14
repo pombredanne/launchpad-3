@@ -316,7 +316,7 @@ class DatabaseConfig:
         overlay = config
         for part in self._config_section.split('.'):
             overlay = getattr(overlay, part)
-        return [overlay, config]
+        return [overlay, config.database]
 
     def __getattr__(self, name):
         sections = self._getConfigSections()

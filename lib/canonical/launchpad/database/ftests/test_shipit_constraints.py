@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 import unittest
-import psycopg
+import psycopg2
 
 from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces import ShippingRequestStatus
@@ -78,7 +78,7 @@ class ShipitConstraintsTestCase(unittest.TestCase):
         # Try to create two orders, neither approved. The second should fail.
         cur.execute("SAVEPOINT attempt1")
         self.insert(cur)
-        self.failUnlessRaises(psycopg.Error, self.insert, cur)
+        self.failUnlessRaises(psycopg2.Error, self.insert, cur)
         cur.execute("ROLLBACK TO SAVEPOINT attempt1")
 
         # Try to create two orders, the first explicitly approved. The
@@ -90,7 +90,7 @@ class ShipitConstraintsTestCase(unittest.TestCase):
             UPDATE ShippingRequest SET status=%(approved)s, whoapproved=1
             WHERE id = %(req1_id)s
             """, vars())
-        self.failUnlessRaises(psycopg.Error, self.insert, cur)
+        self.failUnlessRaises(psycopg2.Error, self.insert, cur)
         cur.execute("ROLLBACK TO SAVEPOINT attempt2")
 
 

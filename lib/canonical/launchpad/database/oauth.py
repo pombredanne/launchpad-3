@@ -82,8 +82,9 @@ class OAuthConsumerSet:
         return OAuthConsumer.selectOneBy(key=key)
 
 
-class OAuthToken(SQLBase):
-    """See `IOAuthToken`."""
+class OAuthAccessToken(SQLBase):
+    """See `IOAuthAccessToken`."""
+    implements(IOAuthAccessToken)
 
     consumer = ForeignKey(
         dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
@@ -93,11 +94,6 @@ class OAuthToken(SQLBase):
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
     secret = StringCol(notNull=False, default='')
-
-
-class OAuthAccessToken(OAuthToken):
-    """See `IOAuthAccessToken`."""
-    implements(IOAuthAccessToken)
 
     permission = EnumCol(enum=AccessLevel, notNull=True)
 
@@ -119,9 +115,18 @@ class OAuthAccessToken(OAuthToken):
                 access_token=self, nonce=nonce, request_timestamp=date)
 
 
-class OAuthRequestToken(OAuthToken):
+class OAuthRequestToken(SQLBase):
     """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
+
+    consumer = ForeignKey(
+        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=False, default=None)
+    date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
+    date_expires = UtcDateTimeCol(notNull=False, default=None)
+    key = StringCol(notNull=True)
+    secret = StringCol(notNull=False, default='')
 
     permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)

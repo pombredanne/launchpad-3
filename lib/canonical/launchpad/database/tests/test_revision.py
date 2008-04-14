@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-import psycopg
+import psycopg2
 import transaction
 from zope.component import getUtility
 
@@ -52,7 +52,7 @@ class TestTipRevisionsForBranches(TestCase):
         # sending a broken SQL statement to the database
         try:
             cursor().execute('break this transaction')
-        except psycopg.DatabaseError:
+        except psycopg2.DatabaseError:
             pass
 
     def testNoBranches(self):
