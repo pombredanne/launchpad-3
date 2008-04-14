@@ -105,14 +105,14 @@ test XML-RPC transport to check.
 
     >>> test_transport.remote_bugs = remote_bugs
 
-Calling the getModifiedRemoteBugs() method of our trac instance and
+Calling the getModifiedRemoteBugs() method of our Trac instance and
 passing it a list of bug IDs and a datetime object will return a list
 of the IDs of the bugs which have been modified since that time.
 
     >>> bug_ids_to_check = ['1', '2', '3']
     >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
-    >>> trac.getModifiedRemoteBugs(
-    ...     bug_ids_to_check, last_checked)
+    >>> sorted(trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked))
     ['1', '3']
 
 Different last_checked times will result in different numbers of bugs
