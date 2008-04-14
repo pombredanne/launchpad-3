@@ -18,6 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
+    BranchCreationException,
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
@@ -1043,6 +1044,60 @@ class TestBranchSetGetBranches(TestCase):
         self.assertEqual(
             branch,
             BranchSet().getBranch(branch.owner, None, branch.name))
+
+
+class TestBranchCreation(TestCase):
+    """Make sure that creation rules are followed."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login(ANONYMOUS)
+
+    def tearDown(self):
+        logout()
+        TestCase.tearDown(self)
+
+    def test_different_owners_same_product_same_name_fails(self):
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct()
+        branch = factory.makeBranch(product=product, name="sample-branch")
+        self.assertRaises(
+            BranchCreationException,
+            factory.makeBranch,
+            product=product,
+            name="sample-branch")
+
+    def test_different_owners_junk_same_name_ok(self):
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct()
+        name = "sample-branch"
+        b1 = factory.makeBranch(explicit_junk=True, name=name)
+        self.assertTrue(b1.product is None)
+        self.assertEqual(name, b1.name)
+
+        b2 = factory.makeBranch(explicit_junk=True, name=name)
+        self.assertTrue(b2.product is None)
+        self.assertEqual(name, b2.name)
+
+        self.assertTrue(b1.owner != b2.owner)
+
+    def test_same_owner_junk_same_name_fails(self):
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct()
+        owner = factory.makePerson()
+        name = "sample-branch"
+        b1 = factory.makeBranch(owner=owner, explicit_junk=True, name=name)
+        self.assertTrue(b1.product is None)
+        self.assertEqual(name, b1.name)
+
+        self.assertRaises(
+            BranchCreationException,
+            factory.makeBranch,
+            owner=owner,
+            explicit_junk=True,
+            name="sample-branch")
 
 
 def test_suite():

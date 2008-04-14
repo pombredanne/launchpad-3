@@ -35,7 +35,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreationException, BranchCreationForbidden,
+    BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -916,6 +917,24 @@ class BranchSet:
         # name here to give a nicer error message than 'ERROR: new row for
         # relation "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
+
+        # Make sure that the new branch has a unique name if not a junk
+        # branch.
+        if product is None:
+            existing = Branch.selectBy(
+                owner=owner, product=None, name=name).count()
+            if existing > 0:
+                raise BranchCreationException(
+                    'A junk branch with the name "${name}" already exists '
+                    'for "${owner}".'
+                    % {'name': name, 'owner': owner.name})
+        else:
+            existing = Branch.selectBy(product=product, name=name).count()
+            if existing > 0:
+                raise BranchCreationException(
+                    'A branch with the name "${name}" already exists '
+                    'for project "${project}".'
+                    % {'name': name, 'project': product.name})
 
         branch = Branch(
             registrant=creator,
