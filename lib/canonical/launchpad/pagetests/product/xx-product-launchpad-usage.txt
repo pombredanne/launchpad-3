@@ -141,7 +141,7 @@ email address where bug reports should be sent.
     >>> registrant_browser.getControl(
     ...     'By emailing an upstream bug contact').selected = True
     >>> registrant_browser.getControl(
-    ...     name='field.upstream_email_address').value = (
+    ...     name='field.bugtracker.upstream_email_address').value = (
     ...         'puff@magicdragon.com')
     >>> registrant_browser.getControl('Change').click()
 

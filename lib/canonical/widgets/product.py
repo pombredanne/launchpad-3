@@ -72,7 +72,6 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             return self.bugtracker_widget.getInputValue()
         elif form_value == "external-email":
             email_address = self.upstream_email_address_widget.getInputValue()
-            import pdb; pdb.set_trace()
             if email_address is None or len(email_address) == 0:
                 pass # XXX: ERROR
             bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
