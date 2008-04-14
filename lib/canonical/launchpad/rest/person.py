@@ -14,7 +14,7 @@ __all__ = [
 from zope.component import adapts, getUtility
 from zope.schema import Choice, Object, TextLine
 
-from canonical.lazr.rest import Collection, Entry
+from canonical.lazr.rest import Entry
 from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
