@@ -522,8 +522,6 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             bugs_to_return = [
                 bug for bug in bugs_to_return
                 if bug.id in criteria['bugs']]
-        else:
-            bugs_to_return = bugs_to_return
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
