@@ -100,7 +100,8 @@ test XML-RPC transport to check.
     >>> remote_bugs = {
     ...     '1': MockTracRemoteBug('1', datetime(2008, 4, 1, 0, 0, 0)),
     ...     '2': MockTracRemoteBug('2', datetime(2007, 1, 1, 1, 1, 1)),
-    ...     '3': MockTracRemoteBug('3', datetime(2008, 1, 1, 1, 2, 3)),}
+    ...     '3': MockTracRemoteBug('3', datetime(2008, 1, 1, 1, 2, 3)),
+    ...     }
 
     >>> test_transport.remote_bugs = remote_bugs
 
