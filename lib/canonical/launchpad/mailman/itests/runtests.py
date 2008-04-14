@@ -85,6 +85,17 @@ def integrationTestCleanUp(testobj):
     DELETE FROM TeamParticipation
     WHERE person IN (SELECT id FROM DeathRow);
 
+    DELETE FROM MessageChunk
+    WHERE message IN (SELECT id from Message WHERE owner IN
+                      (SELECT id FROM DeathRow));
+
+    DELETE FROM Message
+    WHERE owner IN (SELECT id FROM DeathRow);
+
+    DELETE FROM MessageApproval
+    WHERE mailing_list IN (SELECT id from MailingList WHERE team IN
+                           (SELECT id FROM DeathRow));
+
     DELETE FROM MailingList
     WHERE team IN (SELECT id FROM DeathRow);
 
@@ -126,11 +137,18 @@ def integrationTestCleanUp(testobj):
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
-        # Remove all the locks except the master lock.
-        lock_dir = os.path.join(VAR_PREFIX, 'locks')
-        for filename in os.listdir(lock_dir):
-            if not filename.startswith('master-qrunner'):
-                os.remove(os.path.join(lock_dir, filename))
+    # Clean up the library data.  Remove only the librarian files, not any
+    # intermediate directories.
+    from canonical.config import config
+    for dirpath, dirnames, filenames in os.walk(config.librarian_server.root):
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            os.remove(path)
+    # Remove all the locks except the master lock.
+    lock_dir = os.path.join(VAR_PREFIX, 'locks')
+    for filename in os.listdir(lock_dir):
+        if not filename.startswith('master-qrunner'):
+            os.remove(os.path.join(lock_dir, filename))
 
 
 def find_tests(match_regexps):

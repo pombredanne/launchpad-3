@@ -178,7 +178,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'This list is made up of any drivers or owners from this '
         'DistroSeries, and the Distribution to which it belong.')
     bugcontact = Attribute(
-        'Currently just a reference to the Distribution bug contact.')
+        'Currently just a reference to the Distribution bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Distribution security contact.')
     messagecount = Attribute("The total number of translatable items in "

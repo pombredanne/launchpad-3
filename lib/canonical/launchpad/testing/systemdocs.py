@@ -17,7 +17,7 @@ import os
 import sys
 
 import transaction
-from zope.component import getUtility, getView
+from zope.component import getUtility, getMultiAdapter
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
@@ -124,7 +124,7 @@ def LayeredDocFileSuite(*args, **kw):
 class SpecialOutputChecker(doctest.OutputChecker):
     """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
     def output_difference(self, example, got, optionflags):
-        if config.chunkydiff is False:
+        if config.canonical.chunkydiff is False:
             return doctest.OutputChecker.output_difference(
                 self, example, got, optionflags)
 
@@ -158,7 +158,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
         form=form, SERVER_URL=server_url, method=method)
     if layer is not None:
         setFirstLayer(request, layer)
-    return getView(context, name, request)
+    return getMultiAdapter((context, request), name=name)
 
 
 def setGlobs(test):

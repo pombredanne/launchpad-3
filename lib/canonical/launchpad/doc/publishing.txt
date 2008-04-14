@@ -258,7 +258,7 @@ have to make them PUBLISHED emulating what would have been done by the
 publisher.
 
     >>> def publish(pub):
-    ...     pub.status = PackagePublishingStatus.PUBLISHED
+    ...     pub.secure_record.status = PackagePublishingStatus.PUBLISHED
 
     >>> publish(copied_source)
     >>> for bin in copied_binaries:

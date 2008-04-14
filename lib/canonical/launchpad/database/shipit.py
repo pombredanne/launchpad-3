@@ -2,11 +2,20 @@
 # pylint: disable-msg=E0611,W0212,W0102
 
 __metaclass__ = type
-__all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
-           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
-           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet',
-           'ShipItReport', 'ShipItReportSet',
-           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
+__all__ = [
+    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
+    'RequestedCDs',
+    'ShipItReport',
+    'ShipItReportSet',
+    'ShipItSurveySet',
+    'Shipment',
+    'ShipmentSet',
+    'ShippingRequest',
+    'ShippingRequestSet',
+    'ShippingRun',
+    'ShippingRunSet',
+    'StandardShipItRequest',
+    'StandardShipItRequestSet']
 
 from StringIO import StringIO
 import csv
@@ -24,6 +33,8 @@ from sqlobject.sqlbuilder import AND, SQLConstant
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
 
+from canonical.lazr import Item
+
 from canonical.config import config
 from canonical.uuid import generate_uuid
 
@@ -39,13 +50,14 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces import (
-    IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-    IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
-    IShippingRun, IShippingRunSet, IShipmentSet, ShippingRequestPriority,
-    IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
-    SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE,
-    ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
-    ShippingService, ShippingRequestStatus, ShippingRequestType)
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IRequestedCDs, IShipItReport,
+    IShipItReportSet, IShipItSurveySet, IShipment, IShipmentSet,
+    IShippingRequest, IShippingRequestSet, IShippingRun, IShippingRunSet,
+    IStandardShipItRequest, IStandardShipItRequestSet,
+    MAX_CDS_FOR_UNTRUSTED_PEOPLE, ShipItArchitecture, ShipItConstants,
+    ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
+    ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType,
+    ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
 from canonical.launchpad.database.country import Country
 
 
@@ -1587,3 +1599,63 @@ class ShipItReportSet:
     def getAll(self):
         """See IShipItReportSet"""
         return ShipItReport.select()
+
+
+# Most ShipItSurvey-related classes don't have an associated interface because
+# they're not being used anywhere yet -- at this point we're only storing the
+# answers in the database.
+class ShipItSurveyQuestion(SQLBase):
+    question = StringCol(notNull=True)
+
+
+class ShipItSurveyAnswer(SQLBase):
+    answer = StringCol(notNull=True)
+
+
+class ShipItSurveyResult(SQLBase):
+    survey = ForeignKey(
+        dbName='survey', foreignKey='ShipItSurvey', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='ShipItSurveyQuestion', notNull=True)
+    answer = ForeignKey(
+        dbName='answer', foreignKey='ShipItSurveyAnswer', notNull=False)
+
+
+class ShipItSurvey(SQLBase):
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    exported = BoolCol(notNull=True, default=False)
+
+
+class ShipItSurveySet:
+    """See IShipItSurveySet"""
+    implements(IShipItSurveySet)
+
+    def personHasAnswered(self, person):
+        """See IShipItSurveySet"""
+        return ShipItSurvey.selectBy(person=person).count() > 0
+
+    def new(self, person, answers):
+        """See IShipItSurveySet"""
+        survey = None
+        for key, values in answers.items():
+            if not values:
+                # There's no point in registering the fact that users have not
+                # answered a question.
+                continue
+            if survey is None:
+                survey = ShipItSurvey(person=person)
+            question_text = str(ShipItSurveySchema[key].title)
+            question = ShipItSurveyQuestion.selectOneBy(
+                question=question_text)
+            if question is None:
+                question = ShipItSurveyQuestion(question=question_text)
+            if isinstance(values, Item):
+                values = [values]
+            for value in values:
+                answer = ShipItSurveyAnswer.selectOneBy(answer=value.title)
+                if answer is None:
+                    answer = ShipItSurveyAnswer(answer=value.title)
+                ShipItSurveyResult(
+                    survey=survey, question=question, answer=answer)
+        return survey
