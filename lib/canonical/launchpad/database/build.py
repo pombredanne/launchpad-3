@@ -237,8 +237,8 @@ class Build(SQLBase):
     @property
     def ogre_components(self):
         """See `IBuild`."""
-        # Builds target to BACKPORTS are allowed to depend on any component,
-        # exactly as if it was published in 'multiverse' component.
+        # Builds targeted to BACKPORTS are allowed to depend on any
+        # component, exactly as if they were published in 'multiverse'.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
             return self.component_dependencies['multiverse']
 

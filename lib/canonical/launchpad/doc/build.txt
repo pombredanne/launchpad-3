@@ -710,10 +710,10 @@ A proper name for this "model" would be 'cross-component-dependency'.
     multiverse | main restricted universe multiverse
        partner | partner
 
-As reported in bug #198936, builds for BACKPORTS pocket are allowed to
-use any component available, independently of the component they are
-currently published. This is a vary desirable special-case, because it
-avoids changes to acomodate the backported source in the already
+As reported in bug #198936, builds for the BACKPORTS pocket are
+allowed to use any component available, independently of the component they are
+currently published. This special-case is important because it
+avoids changes to accommodate the backported source in the already
 released series.
 
     >>> release_pocket = build.pocket
@@ -721,9 +721,9 @@ released series.
     >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
     >>> syncUpdate(build)
 
-Ultimately, it means that a build targeted to BACKPORTS pocket will
-behave as if it was published in 'multiverse' component, despite of
-the component it is actually published.
+Ultimately, it means that a build targeted to the BACKPORTS pocket
+will behave as if it were published in the multiverse component,
+despite the component it is actually published in.
 
     >>> testOgreComponents()
      Component | Ogre-Model
