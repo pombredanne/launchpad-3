@@ -318,5 +318,5 @@ class IBuilderSet(Interface):
             a used instance this return parameter will be dropped.
         """
 
-    def getBuildersForQueue(self, processor, virtualized):
+    def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""
