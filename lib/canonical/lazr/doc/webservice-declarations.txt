@@ -211,10 +211,10 @@ And the interface must have been exported as a collection:
 
 === Entry ==
 
-The webservice can be generated from these tagged interface.
+The webservice can be generated from tagged interfaces.
 generate_entry_interface() will create a subinterface of IEntry
-containing the a copy of the IField definitions of the original
-interface that were tagged for export.
+containing a copy of the IField definitions from the original interface
+that were tagged for export.
 
     >>> from canonical.lazr.rest.declarations import generate_entry_interface
     >>> entry_interface = generate_entry_interface(IBook)
