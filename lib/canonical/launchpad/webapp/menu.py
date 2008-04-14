@@ -20,7 +20,8 @@ __all__ = [
 
 import cgi
 
-from zope.i18n import translate, Message, MessageID
+from zope.i18n import translate, Message
+from zope.configuration.fields import MessageID
 from zope.interface import implements
 from zope.component import getMultiAdapter
 
