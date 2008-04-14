@@ -304,17 +304,18 @@ The destination series always default to 'The same series'.
     ...     'Destination series').displayValue
     ['The same series']
 
-When he requests the copy a error is raised, since a copy to 'This
-PPA' and 'The same series' is not allowed because it results in
-publishing cruft (the former publishing record will be dominated and
-the archive won't be changed).
+When he requests the copy a error is raised, since a copy of a
+published source to 'This PPA' and 'The same series' is not allowed
+because it results in publishing cruft (the former publishing record
+will be dominated and the archive won't be changed).
 
     >>> jblack_browser.getControl("Copy Packages").click()
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    Select a different series.
+    The following source cannot be copied because it
+    was targeted to the same location: pmount 0.1-1 in hoary
 
 Without thinking much James erroneously selects 'hoary' series and
 pushes the copy button. The same error is raised.
@@ -369,7 +370,7 @@ Note that the builds for pmount in grumpy where also created.
 
 After some time, James realises that pmount in hoary doesn't make much
 sense and simply deletes it, so his users won't be bothered by this
-boken package.
+broken package.
 
 We will publish all sources in James' PPA so the will show up in the
 delete-packages interface.
@@ -591,6 +592,130 @@ plural error message.
     were targeted to the same location:
     iceweasel 1.0 in hoary, pmount 0.1-1 in hoary
 
+James goes wild and decided to create a new team PPA for his sandbox
+tests.
 
-That's all folks !
+    >>> jblack_browser.open('http://launchpad.dev/people')
+    >>> jblack_browser.getLink('Register a team').click()
+
+    >>> jblack_browser.getControl(
+    ...     name="field.name").value = 'jblack-sandbox'
+
+    >>> jblack_browser.getControl(
+    ...     'Display Name').value = 'James Blackwell Sandbox'
+
+    >>> jblack_browser.getControl("Create").click()
+
+    >>> jblack_browser.getLink('Activate Personal Package Archive').click()
+    >>> jblack_browser.getControl(name="field.accepted").value = True
+    >>> jblack_browser.getControl(name="field.description").value = (
+    ...    'Come friends ...')
+    >>> jblack_browser.getControl("Activate").click()
+
+    >>> print jblack_browser.title
+    PPA for James Blackwell Sandbox
+
+James now goes to to his PPA and copy all sources to his Sandbox PPA
+for a mass rebulid, including the deleted source. James is getting
+insane because PPA-copy-ui is so cool.
+
+    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.getLink('Copy packages').click()
+
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source          Published   Status     Series           Section  Built
+    pmount - 0.1-1              Pending    Warty            Editors  i386
+    pmount - 0.1-1              Published  Grumpy           Editors  i386
+    pmount - 0.1-1              Deleted    Hoary            Editors  i386
+
+    >>> login('foo.bar@canonical.com')
+    >>> jblack = getUtility(IPersonSet).getByName('jblack')
+    >>> jblack_sources = jblack.archive.getPublishedSources()
+    >>> jblack_pub_ids = [str(pub.id) for pub in jblack_sources]
+    >>> logout()
+
+    >>> jblack_browser.getControl(name='field.selected_sources').value = (
+    ...     jblack_pub_ids)
+
+    >>> jblack_browser.getControl(
+    ...     'Destination PPA').value = ['jblack-sandbox']
+
+    >>> jblack_browser.getControl(
+    ...     'Destination series').value = ['']
+
+    >>> jblack_browser.getControl('Copy binaries').selected = False
+
+    >>> jblack_browser.getControl("Copy Packages").click()
+
+Okay, all sources were copied to James Sandbox PPA on their
+corresponding series and are scheduled for rebuild.
+
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Packages copied to PPA for James Blackwell Sandbox:
+    pmount 0.1-1 in warty
+    pmount 0.1-1 in grumpy
+    pmount 0.1-1 in hoary
+
+    >>> jblack_browser.getLink('PPA for James Blackwell Sandbox').click()
+    >>> print jblack_browser.title
+    PPA for James Blackwell Sandbox
+
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source         Uploader  Published  Status   Series  Section  Built
+    pmount - 0.1-1 no signer            Pending   Hoary  Editors  i386
+    pmount - 0.1-1 no signer            Pending   Grumpy Editors  i386
+    pmount - 0.1-1 no signer            Pending   Warty  Editors  i386
+
+Not yet happy, James goes back to his PPA to check if the copy-package
+interface can be used to resurrect deleted packages.
+
+    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.getLink('Copy packages').click()
+
+    >>> login('foo.bar@canonical.com')
+    >>> jblack = getUtility(IPersonSet).getByName('jblack')
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> [deleted_pub] = jblack.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.DELETED)
+    >>> deleted_pub_id = deleted_pub.id
+    >>> logout()
+
+James select the deleted pmount_1.0-1 publication in Hoary and target
+it to 'This PPA', 'The same series'.
+
+    >>> jblack_browser.getControl(name='field.selected_sources').value = (
+    ...     [str(deleted_pub_id)])
+
+    >>> print jblack_browser.getControl(
+    ...     'Destination PPA').displayValue
+    ['This PPA']
+
+    >>> print jblack_browser.getControl(
+    ...     'Destination series').displayValue
+    ['The same series']
+
+    >>> jblack_browser.getControl('Copy binaries').selected = True
+
+When he submits the form, he can a pending publication of his selected
+source in the wanted destination. So, done, in the next cycle the
+deleted files will be re-published in his archive disk.
+
+    >>> jblack_browser.getControl("Copy Packages").click()
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Packages copied to PPA for James Blackwell:
+    pmount 0.1-1 in hoary
+
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source          Published   Status     Series           Section  Built
+    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Warty            Editors  i386
+    pmount - 0.1-1              Published  Grumpy           Editors  i386
+    pmount - 0.1-1              Deleted    Hoary            Editors  i386
+
+
+That's all folks, someone has to stop James craziness.
 

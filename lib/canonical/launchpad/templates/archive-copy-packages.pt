@@ -88,6 +88,35 @@
 
 <div metal:fill-slot="help">
 
+  <p>This page allows you to copy package from one location to
+    another. To do this, search first for the desired packages,
+    select one of more  of them, select a destination PPA and
+    destination series and whether or not you want the related
+    binaries to be copied too.</p>
+
+  <p>You can copy packages from a PPA to any of the PPAs you have
+    upload rights. It saves your time, not requiring you to download
+    the selected source, rebuild, resign and re-upload the package. In
+    the same way it allows Launchpad to trace the same contents
+    published in different location in a simpler way.</p>
+
+  <p>Via this interface, you can also copy publications within a PPA
+    you have upload rights. It allows having the same source, and
+    potentially the same binaries, published in more than one series
+    within a PPA.</p>
+
+  <p>Deleted sources and its binaries can be undeleted using this
+    interface. They can be undeleted in the original location or
+    anywhere else you select as destination.</p>
+
+  <p>Source-only copies, when you do not copy binaries, will
+    immediately result in the corresponding build records, ready to be
+    dispatched.<p>
+
+  <p>Copies are new publications, as so, they will be processed
+    periodically and will be materialised in disk during the next
+    publisher run, which happens every 20 minutes.</p>
+
 </div>
 
 </body>

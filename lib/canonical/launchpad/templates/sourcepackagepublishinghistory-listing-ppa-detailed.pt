@@ -28,7 +28,7 @@
     </td>
     <td tal:condition="context/archive/owner/isTeam"
         tal:define="spr context/sourcepackagerelease;
-                    signer spr/dscsiginingkey/owner|nothing">
+                    signer spr/dscsigningkey/owner|nothing">
       <tal:has_signer condition="signer">
         <a tal:attributes="href spr/dscsigningkey/owner/fmt:url"
            tal:content="spr/dscsigningkey/owner/name"></a>

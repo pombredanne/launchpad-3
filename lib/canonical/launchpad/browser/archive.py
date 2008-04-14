@@ -33,11 +33,12 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSourceSelectionForm, IArchiveSet, IBuildSet, IHasBuildRecords,
-    ILaunchpadCelebrities, IPPAActivateForm, IStructuralHeaderPresentation,
-    NotFoundError, PackagePublishingStatus, PackagePublishingPocket)
+    ArchivePurpose, BuildStatus, DistroSeriesStatus, IArchive,
+    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
+    IArchivePackageDeletionForm, IArchiveSourceSelectionForm, IArchiveSet,
+    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
+    IStructuralHeaderPresentation, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -447,6 +448,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     custom_widget('destination_archive', DestinationArchiveRadioWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
 
+    # Maximum number of 'sources' presented.
+    max_sources_presented = 20
+
     default_pocket = PackagePublishingPocket.RELEASE
 
     def setUpFields(self):
@@ -508,6 +512,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
         for series in self.context.distribution.serieses:
+            if series.status == DistroSeriesStatus.OBSOLETE:
+                continue
             terms.append(
                 SimpleTerm(series, str(series.name), series.displayname))
         return form.Fields(
@@ -530,9 +536,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     def _checkCopyDestination(self, source, series, pocket, archive):
         """Whether or not the given destination is allowed for copy.
 
+        It always ok to copy a DELETED publication.
+
         Return False if the given destination is the current location
         package, True otherwise.
         """
+        if source.status == PackagePublishingStatus.DELETED:
+            return True
+
         if series is not None:
             if (source.distroseries == series and
                 source.archive == archive and
@@ -541,7 +552,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         else:
             if source.archive == archive and source.pocket == pocket:
                 return False
-
 
         return True
 
@@ -568,14 +578,17 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         copies = []
         for source in sources:
             if series is None:
-                series = source.distroseries
-            source_copy = source.copyTo(series, pocket, archive)
+                destination_series = source.distroseries
+            else:
+                destination_series = series
+            source_copy = source.copyTo(destination_series, pocket, archive)
             copies.append(source_copy)
             if not include_binaries:
                 source_copy.createMissingBuilds(ignore_pas=True)
                 continue
             for binary in source.getPublishedBinaries():
-                binary_copy = binary.copyTo(series, pocket, archive)
+                binary_copy = binary.copyTo(
+                    destination_series, pocket, archive)
                 copies.append(binary_copy)
         return copies
 
@@ -598,12 +611,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         if len(selected_sources) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
-            return
-
-        if (destination_archive == self.context and
-            destination_series is None):
-            self.setFieldError(
-                'destination_series', 'Select a different series.')
             return
 
         broken_copies = []
