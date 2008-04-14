@@ -257,8 +257,9 @@ class Build(SQLBase):
         is returned.
         """
         # This method may only be invoked for pending jobs.
-        assert self.buildstate == BuildStatus.NEEDSBUILD, (
-            "The start time is only estimated for pending builds.")
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise AssertionError(
+                "The start time is only estimated for pending builds.")
 
         # A None value indicates that the estimated dispatch time is not
         # available.

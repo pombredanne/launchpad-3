@@ -39,7 +39,7 @@
                  tal:content="context/changesfile/filename">CHANGESFILE</a>
             </td>
             <td tal:condition="not:context/changesfile">
-              <i>not available</i>
+              <em>not available</em>
             </td>
           </tr>
 
@@ -90,7 +90,7 @@
                 3 hours
               </td>
               <td tal:condition="not: estimated_buildstart">
-                <i>not available</i>
+                <em>not available</em>
               </td>
             </tr>
 
@@ -131,7 +131,7 @@
                   tal:content="start/fmt:approximatedate" />
               </td>
               <td tal:condition="not: context/buildduration">
-                 <i>not available</i>
+                 <em>not available</em>
               </td>
             </tr>
 
@@ -142,7 +142,7 @@
                    tal:attributes="href context/builder/fmt:url"/>
               </td>
               <td tal:condition="not: context/builder">
-                 <i>not available</i>
+                 <em>not available</em>
               </td>
             </tr>
           </tal:built>
@@ -154,7 +154,7 @@
                  tal:content="context/buildlog/filename">BUILDLOG</a>
             </td>
             <td tal:condition="not: context/buildlog">
-              <i>not available</i>
+              <em>not available</em>
             </td>
           </tr>
 
@@ -170,7 +170,7 @@
               </tal:duration>
             </td>
             <td tal:condition="not: context/datebuilt">
-               <i>not available</i>
+               <em>not available</em>
             </td>
           </tr>
 

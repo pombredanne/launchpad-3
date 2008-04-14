@@ -58,8 +58,8 @@ Each listed binary links to the corresponding page.
     >>> anon_browser.getLink("mozilla-firefox 0.9").url
     'http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9'
 
-Let's make sure that the estimated build start time field is displayed
-for jobs that are still in the build queue.
+For Pending build jobs (still waiting in the build queue) an estimated
+build start time can be seen by the user.
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/+builds/+build/11")

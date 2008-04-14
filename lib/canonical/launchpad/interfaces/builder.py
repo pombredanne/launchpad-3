@@ -126,7 +126,7 @@ class IBuilder(IHasOwner):
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-    currentjob = Attribute("BuildQueue instance for job being processed")
+    currentjob = Attribute("BuildQueue instance for job being processed.")
     status = Attribute("Generated status information")
     pocket_dependencies = Attribute("""
         A dictionary of pocket to a tuple of pocket dependencies.

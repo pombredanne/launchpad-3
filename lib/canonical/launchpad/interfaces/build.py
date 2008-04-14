@@ -135,13 +135,10 @@ class IBuild(Interface):
     def getEstimatedBuildStartTime():
         """Get the estimated build start time for a pending build job.
 
-        A time stamp and a None value is returned in the case of success
-        and failure respectively. A None return value indicates that an
-        estimated start time is not available.
-
-        Please note: this method only makes sense for build jobs that are
-        pending (i.e. still waiting in the build queue). Calling it for
-        jobs in other states will trigger an exception.
+        :return: a timestamp upon success or None on failure. None
+            indicates that an estimated start time is not available.
+        :raise: AssertionError when the build job is not in the 
+            `BuildStatus.NEEDSBUILD` state.
         """
 
 class IBuildSet(Interface):
