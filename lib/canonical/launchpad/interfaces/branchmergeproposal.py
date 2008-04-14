@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -207,7 +207,10 @@ class IBranchMergeProposal(Interface):
         """
 
 
-    votes = Attribute('The votes cast or expected for this proposal')
+    # Cannot specify value type without creating a circular dependency
+    votes = List(
+        title=_('The votes cast or expected for this proposal'),
+        )
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
