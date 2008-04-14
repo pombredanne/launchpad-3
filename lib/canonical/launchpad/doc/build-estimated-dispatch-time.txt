@@ -1,18 +1,21 @@
-Create a setup with one job building and another one pending.
+In order to exercise the estimation of build job start times a setup
+with one job building and another build job pending/waiting is to be
+created.
 
-Activate builders present in sampledata, we need to be logged in as a
-member of launchpad-buildd-admin:
+Activate the builders present in sampledata; we need to be logged in
+as a member of launchpad-buildd-admin:
 
     >>> from canonical.launchpad.ftests import login
     >>> login('celso.providelo@canonical.com')
-
-Set IBuilder.builderok of all present builders:
-
     >>> from canonical.launchpad.interfaces import IBuilderSet
     >>> builder_set = getUtility(IBuilderSet)
 
+Do we have two builders?
+
     >>> builder_set.count()
     2
+
+These are the builders available.
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> for b in builder_set:
@@ -22,15 +25,14 @@ Set IBuilder.builderok of all present builders:
     builder: name='bob', id=1
     builder: name='frog', id=2
 
-Use ubuntu/hoary.
+The 'alsa-utils' package is the one to be built (in the ubuntu/hoary
+distroseries).
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
     >>> hoary.main_archive.require_virtualized
     False
-
-The 'alsa-utils' package will is the one to be built.
 
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingPocket)
@@ -79,17 +81,12 @@ Set an appropriate estimated build duration. Please note, the estimated
 build duration will be exposed on the IBuild interface in one of the
 forthcoming branches and may at present only be changed directly.
 
-    >>> from canonical.database.sqlbase import cursor
-    >>> cur = cursor()
-    >>> cur.execute("UPDATE build SET estimated_build_duration = "
-    ...             "interval '55 minutes' WHERE id=%s" % cur_build.id)
+    >>> print cur_build.estimated_build_duration
+    None
 
-Commit all changes to database.
-
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> commit()
-    >>> flush_database_updates()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_build = removeSecurityProxy(cur_build)
+    >>> naked_build.estimated_build_duration = timedelta(minutes=56)
 
 Check the estimated build start time for the pending job.
 
