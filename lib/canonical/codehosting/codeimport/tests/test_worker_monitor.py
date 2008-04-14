@@ -10,7 +10,9 @@ import StringIO
 import tempfile
 import unittest
 
-from twisted.internet import defer
+from bzrlib.tests import TestCaseWithMemoryTransport
+
+from twisted.internet import defer, error
 from twisted.trial.unittest import TestCase
 
 from zope.component import getUtility
@@ -108,7 +110,7 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
         self.assertEqual(self.protocol._tail, 'a'*50 + 'b'*50)
 
 
-class TestWorkerMonitor(TestCase):
+class TestWorkerMonitorUnit(TestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class."""
 
     layer = TwistedLaunchpadZopelessLayer
@@ -226,11 +228,19 @@ class TestWorkerMonitor(TestCase):
 
     def test_callFinishJobCallsFinishJobFailure(self):
         # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE if
-        # its argument is a Failure.
+        # its argument is a Failure and swallows the failure.
         calls = self.patchOutFinishJob()
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
-        return self.assertFailure(ret, RuntimeError)
+        return ret
+
+    def test_callFinishJobLogsTracebackOnFailure(self):
+        # When callFinishJob is called with a failure, it dumps the traceback
+        # of the failure into the log file.
+        ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
+        self.worker_monitor._log_file.seek(0)
+        log_text = self.worker_monitor._log_file.read()
+        self.assertIn('RuntimeError', log_text)
 
     def test_callFinishJobRespects_call_finish_job(self):
         # callFinishJob does not call finishJob if _call_finish_job is False.
@@ -240,13 +250,69 @@ class TestWorkerMonitor(TestCase):
         self.assertEqual(calls, [])
 
 
-from bzrlib.tests import TestCaseWithMemoryTransport
+class TestWorkerMonitorRunNoProcess(TestCase):
+    """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
+    """
+
+    class WorkerMonitor(CodeImportWorkerMonitor):
+
+        def _launchProcess(self, source_details):
+            return self.process_deferred
+
+        def finishJob(self, status):
+            self.result_status = status
+            return defer.succeed(None)
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+        job = self.factory.makeCodeImportJob()
+        self.code_import_id = job.code_import.id
+        getUtility(ICodeImportJobWorkflow).startJob(
+            job, self.factory.makeCodeImportMachine(set_online=True))
+        self.job_id = job.id
+        self.worker_monitor = self.WorkerMonitor(job.id)
+        commit()
+
+    @read_only_transaction
+    def checkFinishJobCalledWithStatus(self, ignored, status):
+        """ """
+        self.assertEqual(self.worker_monitor.result_status, status)
+
+    def test_success(self):
+        self.worker_monitor.process_deferred = defer.succeed(None)
+        deferred = self.worker_monitor.run().addCallback(
+            self.checkFinishJobCalledWithStatus,
+            CodeImportResultStatus.SUCCESS)
+        return deferred
+
+    def test_failure(self):
+        self.worker_monitor.process_deferred = defer.fail(RuntimeError())
+        deferred = self.worker_monitor.run().addCallback(
+            self.checkFinishJobCalledWithStatus,
+            CodeImportResultStatus.FAILURE)
+        return deferred
+
+    def test_quiet_exit(self):
+        self.worker_monitor.process_deferred = defer.fail(ExitQuietly())
+        return self.worker_monitor.run()
+
+    def test_quiet_exit_from_finishJob(self):
+        self.worker_monitor.process_deferred = defer.succeed(None)
+        def finishJob(reason):
+            raise ExitQuietly
+        self.worker_monitor.finishJob = finishJob
+        deferred = self.worker_monitor.run()
+        return deferred
+
 
 class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     layer = TwistedLaunchpadZopelessLayer
 
     def nukeCodeImportSampleData(self):
+        """Delete all the sample data that might interfere with tests."""
         for job in CodeImportJob.select():
             job.destroySelf()
         for code_import in CodeImport.select():

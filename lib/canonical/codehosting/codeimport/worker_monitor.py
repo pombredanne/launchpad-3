@@ -183,9 +183,10 @@ class CodeImportWorkerMonitor:
         if not self._call_finish_job:
             return reason
         if isinstance(reason, failure.Failure):
+            self._log_file.write("Import failed:\n")
+            reason.printTraceback(self._log_file)
             status = CodeImportResultStatus.FAILURE
         else:
             status = CodeImportResultStatus.SUCCESS
-        return self.finishJob(status).addCallback(
-            lambda ignored: reason)
+        return self.finishJob(status)
 
