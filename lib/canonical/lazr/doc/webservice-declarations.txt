@@ -389,3 +389,57 @@ the underlying content security checker will still apply.)
     >>> print debug_proxy(ProxyFactory(collection_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
         public: find
+
+
+== ZCML Registration ==
+
+There is a ZCML directive available that will inspect a given module and
+generate and register all the interfaces and adapters for all interfaces
+marked for export.
+
+(Put the interface in a module where it will be possible for the ZCML
+handler to inspect.)
+
+    >>> import sys
+    >>> from types import ModuleType
+    >>> bookexample = ModuleType('bookexample')
+    >>> sys.modules['canonical.lazr.bookexample'] = bookexample
+    >>> bookexample.IBook = IBook
+    >>> bookexample.IBookSet = IBookSet
+    >>> bookexample.ISimpleComment = ISimpleComment
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure
+    ...     xmlns:webservice="http://namespaces.canonical.com/webservice">
+    ...   <include file="lib/canonical/lazr/rest/meta.zcml" />
+    ...   <webservice:register module="canonical.lazr.bookexample" />
+    ... </configure>
+    ... """)
+
+After the registration, adapters from IBook to IEntry, and IBookSet to
+ICollection are available:
+
+    >>> from zope.component import getAdapter
+    >>> book = Book(u'George Orwell', u'1984', 10.0, u'12345-1984')
+    >>> bookset = BookSet([book])
+
+    >>> entry_adapter = getAdapter(book, IEntry)
+    >>> verifyObject(IEntry, entry_adapter)
+    True
+
+    >>> print entry_adapter.schema.__name__
+    IBookEntry
+    >>> verifyObject(entry_adapter.schema, entry_adapter)
+    True
+
+    >>> collection_adapter = getAdapter(bookset, ICollection)
+    >>> verifyObject(ICollection, collection_adapter)
+    True
+
+(Clean-up.)
+
+    >>> from zope.testing.cleanup import cleanUp
+    >>> cleanUp()
+    >>> del bookexample
+    >>> del sys.modules['canonical.lazr.bookexample']
