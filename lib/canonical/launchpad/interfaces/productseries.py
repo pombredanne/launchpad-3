@@ -38,6 +38,7 @@ from canonical.launchpad import _
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
 
+
 class ImportStatus(DBEnumeratedType):
     """This schema describes the states that a SourceSource record can take
     on."""
