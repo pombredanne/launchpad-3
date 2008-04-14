@@ -11,7 +11,6 @@ __all__ = [
 from email.Utils import make_msgid
 
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
@@ -21,12 +20,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -64,23 +61,6 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
-
-
-def notifyModification(func):
-    """Decorator to notify on successful modification.
-
-    If the operation raises an exception, no notification is emitted.
-    Otherwise, a notification is emitted.
-    """
-    def decorator(self, *args, **kwargs):
-        snapshot = BranchMergeProposalDelta.snapshot(self)
-        try:
-            result = func(self, *args, **kwargs)
-        except:
-            raise
-        notify(SQLObjectModifiedEvent(self, snapshot, None))
-        return result
-    return decorator
 
 
 class BranchMergeProposal(SQLBase):
@@ -209,13 +189,11 @@ class BranchMergeProposal(SQLBase):
         # transitioning to the same state.
         self.queue_status = next_state
 
-    @notifyModification
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
 
-    @notifyModification
     def requestReview(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
@@ -250,19 +228,16 @@ class BranchMergeProposal(SQLBase):
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
 
-    @notifyModification
     def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
 
-    @notifyModification
     def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
 
-    @notifyModification
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
         if self.queue_status != BranchMergeProposalStatus.CODE_APPROVED:
@@ -292,7 +267,6 @@ class BranchMergeProposal(SQLBase):
         self.date_queued = UTC_NOW
         self.syncUpdate()
 
-    @notifyModification
     def dequeue(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status != BranchMergeProposalStatus.QUEUED:
@@ -308,7 +282,6 @@ class BranchMergeProposal(SQLBase):
         # Remove from the queue.
         self.queue_position = None
 
-    @notifyModification
     def moveToFrontOfQueue(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status != BranchMergeProposalStatus.QUEUED:
@@ -322,14 +295,12 @@ class BranchMergeProposal(SQLBase):
         self.queue_position = first_entry.queue_position - 1
         self.syncUpdate()
 
-    @notifyModification
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
         self._transitionToState(
             BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
 
-    @notifyModification
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
@@ -348,7 +319,6 @@ class BranchMergeProposal(SQLBase):
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
-    @notifyModification
     def resubmit(self, registrant):
         """See `IBranchMergeProposal`."""
         # You can transition from REJECTED to SUPERSEDED, but
