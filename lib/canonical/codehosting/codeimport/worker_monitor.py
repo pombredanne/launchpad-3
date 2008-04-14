@@ -147,7 +147,11 @@ class ExitQuietly(Exception):
 
 
 class CodeImportWorkerMonitor:
-    """ """
+    """Controller for a single import job.
+
+    An instance of `CodeImportWorkerMonitor` runs a child process to
+    perform an import and communicates status to the database.
+    """
 
     path_to_script = os.path.join(
         get_rocketfuel_root(),
@@ -199,7 +203,8 @@ class CodeImportWorkerMonitor:
         if log_file_size > 0:
             self._log_file.seek(0)
             branch = job.code_import.branch
-            log_file_name = '%s-%s-log.txt' % (branch.product.name, branch.name)
+            log_file_name = '%s-%s-log.txt' % (
+                branch.product.name, branch.name)
             # Watch out for this failing!!
             log_file_alias = getUtility(ILibraryFileAliasSet).create(
                 log_file_name, log_file_size, self._log_file,
