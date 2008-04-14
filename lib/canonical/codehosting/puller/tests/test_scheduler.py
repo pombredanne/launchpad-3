@@ -1,5 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702,W0222
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0222
 
 __metaclass__ = type
 
@@ -15,7 +15,7 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.urlutils import local_path_to_url
 
-from twisted.internet import defer, error, task
+from twisted.internet import defer, error
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -26,8 +26,11 @@ from canonical.codehosting.puller.worker import (
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.testing import LaunchpadScriptLayer, reset_logging
 from canonical.launchpad.webapp import errorlog
+from canonical.testing import (
+    reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
+from canonical.twistedsupport.tests.test_processmonitor import (
+    makeFailure, suppress_stderr, ProcessTestsMixin)
 
 
 class FakeBranchStatusClient:
@@ -50,17 +53,6 @@ class FakeBranchStatusClient:
     def mirrorFailed(self, branch_id, revision_id):
         self.calls.append(('mirrorFailed', branch_id, revision_id))
         return defer.succeed(None)
-
-
-def makeFailure(exception_factory, *args, **kwargs):
-    """Make a Failure object from the given exception factory.
-
-    Any other arguments are passed straight on to the factory.
-    """
-    try:
-        raise exception_factory(*args, **kwargs)
-    except:
-        return failure.Failure()
 
 
 class TestJobScheduler(unittest.TestCase):
@@ -118,8 +110,116 @@ class TestJobScheduler(unittest.TestCase):
             os.unlink(self.masterlock)
 
 
-class TestPullerMasterProtocol(TrialTestCase):
+class TestPullerWireProtocol(TrialTestCase):
+    """Tests for the `PullerWireProtocol`.
+
+    Some of the docstrings and comments in this class refer to state numbers
+    -- see the docstring of `PullerWireProtocol` for what these mean.
+    """
+
+    layer = TwistedLayer
+
+    class StubTransport:
+        def loseConnection(self):
+            pass
+
+    class StubPullerProtocol:
+
+        def __init__(self):
+            self.calls = []
+            self.failure = None
+
+        def do_method(self, *args):
+            self.calls.append(('method',) + args)
+
+        def do_raise(self):
+            return 1/0
+
+        def unexpectedError(self, failure):
+            self.failure = failure
+
+    def setUp(self):
+        self.puller_protocol = self.StubPullerProtocol()
+        self.protocol = scheduler.PullerWireProtocol(self.puller_protocol)
+        self.protocol.makeConnection(self.StubTransport())
+
+    def convertToNetstring(self, string):
+        """Encode `string` as a netstring."""
+        return '%d:%s,' % (len(string), string)
+
+    def sendToProtocol(self, *arguments):
+        """Send each element of `arguments` to the protocol as a netstring."""
+        for argument in arguments:
+            self.protocol.dataReceived(self.convertToNetstring(str(argument)))
+
+    def assertUnexpectedErrorCalled(self, exception_type):
+        """Assert that the puller protocol's unexpectedError has been called.
+
+        The failure is asserted to contain an exception of type
+        `exception_type`."""
+        self.failUnless(self.puller_protocol.failure is not None)
+        self.failUnless(
+            self.puller_protocol.failure.check(exception_type))
+
+    def assertProtocolInState0(self):
+        """Assert that the protocol is in state 0."""
+        return self.protocol._current_command is None
+
+    def test_methodDispatch(self):
+        # The wire protocol object calls the named method on the
+        # puller_protocol.
+        self.sendToProtocol('method')
+        # The protocol is now in state [1]
+        self.assertEqual(self.puller_protocol.calls, [])
+        self.sendToProtocol(0)
+        # As we say we are not passing any arguments, the protocol executes
+        # the command straight away.
+        self.assertEqual(self.puller_protocol.calls, [('method',)])
+        self.assertProtocolInState0()
+
+    def test_methodDispatchWithArguments(self):
+        # The wire protocol waits for the given number of arguments before
+        # calling the method.
+        self.sendToProtocol('method', 1)
+        # The protocol is now in state [2]
+        self.assertEqual(self.puller_protocol.calls, [])
+        self.sendToProtocol('arg')
+        # We've now passed in the declared number of arguments so the protocol
+        # executes the command.
+        self.assertEqual(self.puller_protocol.calls, [('method', 'arg')])
+        self.assertProtocolInState0()
+
+    def test_commandRaisesException(self):
+        # If a command raises an exception, the puller_protocol's
+        # unexpectedError method is called with the corresponding failure.
+        self.sendToProtocol('raise', 0)
+        self.assertUnexpectedErrorCalled(ZeroDivisionError)
+        self.assertProtocolInState0()
+
+    def test_nonIntegerArgcount(self):
+        # Passing a non integer where there should be an argument count is an
+        # error.
+        self.sendToProtocol('method', 'not-an-int')
+        self.assertUnexpectedErrorCalled(ValueError)
+
+    def test_unrecognizedMessage(self):
+        # The protocol notifies the listener as soon as it receives an
+        # unrecognized command name.
+        self.sendToProtocol('foo')
+        self.assertUnexpectedErrorCalled(scheduler.BadMessage)
+
+    def test_invalidNetstring(self):
+        # The protocol terminates the session if it receives an unparsable
+        # netstring.
+        self.protocol.dataReceived('foo')
+        self.assertUnexpectedErrorCalled(NetstringParseError)
+
+
+class TestPullerMonitorProtocol(
+    ProcessTestsMixin, TrialTestCase):
     """Tests for the process protocol used by the job manager."""
+
+    layer = TwistedLayer
 
     class StubPullerListener:
         """Stub listener object that records calls."""
@@ -137,99 +237,60 @@ class TestPullerMasterProtocol(TrialTestCase):
             self.calls.append(('mirrorFailed', message, oops))
 
 
-    class StubTransport:
-        """Stub transport that implements the minimum for a ProcessProtocol.
-
-        We're manually feeding data to the protocol, so we don't need a real
-        transport.
-        """
-
-        only_sigkill_kills = False
-
-        def __init__(self, protocol, clock):
-            self.protocol = protocol
-            self.clock = clock
-            self.calls = []
-
-        def loseConnection(self):
-            self.calls.append('loseConnection')
-
-        def signalProcess(self, signal_name):
-            self.calls.append(('signalProcess', signal_name))
-            if not self.only_sigkill_kills or signal_name == 'KILL':
-                reason = failure.Failure(error.ProcessTerminated())
-                self.clock.callLater(0, self.protocol.processEnded, reason)
-
+    def makeProtocol(self):
+        return scheduler.PullerMonitorProtocol(
+            self.termination_deferred, self.listener, self.clock)
 
     def setUp(self):
-        self.arbitrary_branch_id = 1
         self.listener = self.StubPullerListener()
-        self.termination_deferred = defer.Deferred()
-        self.clock = task.Clock()
-        self.protocol = scheduler.PullerMasterProtocol(
-            self.termination_deferred, self.listener, self.clock)
-        self.protocol.transport = self.StubTransport(
-            self.protocol, self.clock)
-        self.protocol.connectionMade()
+        ProcessTestsMixin.setUp(self)
 
     def assertProtocolSuccess(self):
         """Assert that the protocol saw no unexpected errors."""
         self.assertEqual(None, self.protocol._termination_failure)
 
-    def convertToNetstring(self, string):
-        return '%d:%s,' % (len(string), string)
-
-    def sendToProtocol(self, *arguments):
-        for argument in arguments:
-            self.protocol.outReceived(self.convertToNetstring(str(argument)))
-
     def test_startMirroring(self):
         """Receiving a startMirroring message notifies the listener."""
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.assertEqual(['startMirroring'], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.sendToProtocol('mirrorSucceeded', 1, 1234)
+        self.protocol.do_mirrorSucceeded('1234')
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
+        self.protocol.do_mirrorFailed('Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
         self.assertProtocolSuccess()
 
-    def test_timeoutWithoutProgress(self):
-        """If we don't receive any messages after the configured timeout
-        period, then we kill the child process.
-        """
-        self.protocol.connectionMade()
-        self.clock.advance(config.supermirror.worker_timeout + 1)
-        return self.assertFailure(
-            self.termination_deferred, scheduler.TimeoutError)
-
-    def assertMessageResetsTimeout(self, *message):
+    def assertMessageResetsTimeout(self, callable, *args):
         """Assert that sending the message resets the protocol timeout."""
         self.assertTrue(2 < config.supermirror.worker_timeout)
+        # Advance until the timeout has nearly elapsed.
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.sendToProtocol(*message)
+        # Send the message.
+        callable(*args)
+        # Advance past the timeout.
         self.clock.advance(2)
+        # Check that we still succeeded.
         self.assertProtocolSuccess()
 
     def test_progressMadeResetsTimeout(self):
         """Receiving 'progressMade' resets the timeout."""
-        self.assertMessageResetsTimeout('progressMade', 0)
+        self.assertMessageResetsTimeout(self.protocol.do_progressMade)
 
     def test_startMirroringResetsTimeout(self):
         """Receiving 'startMirroring' resets the timeout."""
-        self.assertMessageResetsTimeout('startMirroring', 0)
+        self.assertMessageResetsTimeout(self.protocol.do_startMirroring)
 
     def test_mirrorSucceededDoesNotResetTimeout(self):
         """Receiving 'mirrorSucceeded' doesn't reset the timeout.
@@ -239,12 +300,12 @@ class TestPullerMasterProtocol(TrialTestCase):
         happens, we want to kill it quickly so that we can continue mirroring
         other branches.
         """
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.sendToProtocol('mirrorSucceeded', 1, 'rev1')
+        self.protocol.do_mirrorSucceeded('rev1')
         self.clock.advance(2)
         return self.assertFailure(
-            self.termination_deferred, scheduler.TimeoutError)
+            self.termination_deferred, error.TimeoutError)
 
     def test_mirrorFailedDoesNotResetTimeout(self):
         """Receiving 'mirrorFailed' doesn't reset the timeout.
@@ -252,40 +313,25 @@ class TestPullerMasterProtocol(TrialTestCase):
         mirrorFailed doesn't reset the timeout for the same reasons as
         mirrorSucceeded.
         """
-        self.sendToProtocol('startMirroring', 0)
+        self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.sendToProtocol('mirrorFailed', 2, 'error message', 'OOPS')
+        self.protocol.do_mirrorFailed('error message', 'OOPS')
         self.clock.advance(2)
         return self.assertFailure(
-            self.termination_deferred, scheduler.TimeoutError)
-
-    def test_processTermination(self):
-        """The protocol fires a Deferred when it is terminated."""
-        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
-        return self.termination_deferred
-
-    def test_processTerminationCancelsTimeout(self):
-        """When the process ends (for any reason) cancel the timeout."""
-        self.protocol._processTerminated(
-            failure.Failure(error.ConnectionDone()))
-        self.clock.advance(config.supermirror.worker_timeout * 2)
-        self.assertProtocolSuccess()
+            self.termination_deferred, error.TimeoutError)
 
     def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise
         an error that includes the contents of stderr and the exit condition.
         """
-
         def check_failure(failure):
             self.assertEqual('error message', failure.error)
             return failure
 
         self.termination_deferred.addErrback(check_failure)
 
-        self.protocol.errReceived('error ')
-        self.protocol.errReceived('message')
-        self.protocol.processEnded(
-            failure.Failure(error.ProcessTerminated(exitCode=1)))
+        self.protocol.errReceived('error message')
+        self.simulateProcessExit(clean=False)
 
         return self.assertFailure(
             self.termination_deferred, error.ProcessTerminated)
@@ -294,90 +340,55 @@ class TestPullerMasterProtocol(TrialTestCase):
         """If the process prints to stderr, then the Deferred fires an
         errback, even if it terminated successfully.
         """
-
         def check_failure(failure):
+            failure.trap(Exception)
             self.assertEqual('error message', failure.error)
-            return failure
 
         self.termination_deferred.addErrback(check_failure)
 
-        self.protocol.errReceived('error ')
-        self.protocol.errReceived('message')
-        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+        self.protocol.errReceived('error message')
+        self.simulateProcessExit()
 
         return self.termination_deferred
 
-    def test_unrecognizedMessage(self):
-        """The protocol notifies the listener when it receives an unrecognized
-        message.
-        """
-        self.protocol.outReceived(self.convertToNetstring('foo'))
-
-        # Give the process time to die.
-        self.clock.advance(1)
-
-        def check_failure(exception):
-            self.assertEqual(
-                [('signalProcess', 'INT')], self.protocol.transport.calls)
-            self.assertTrue('foo' in str(exception))
-
-        deferred = self.assertFailure(
-            self.termination_deferred, scheduler.BadMessage)
-
-        return deferred.addCallback(check_failure)
-
-    def test_invalidNetstring(self):
-        """The protocol terminates the session if it receives an unparsable
-        netstring.
-        """
-        self.protocol.outReceived('foo')
-
-        # Give the process time to die.
-        self.clock.advance(1)
-
-        def check_failure(exception):
-            self.assertEqual(
-                ['loseConnection', ('signalProcess', 'INT')],
-                self.protocol.transport.calls)
-            self.assertTrue('foo' in str(exception))
-
-        deferred = self.assertFailure(
-            self.termination_deferred, NetstringParseError)
-
-        return deferred.addCallback(check_failure)
-
-    def test_interruptThenKill(self):
-        """If SIGINT doesn't kill the process, we SIGKILL after 5 seconds."""
-        fail = makeFailure(RuntimeError, 'error message')
-        self.protocol.transport.only_sigkill_kills = True
-
-        # When the error happens, we SIGINT the process.
-        self.protocol.unexpectedError(fail)
+    def test_errorBeforeStatusReport(self):
+        # If the subprocess exits before reporting success or failure, the
+        # puller master should record failure.
+        self.protocol.do_startMirroring()
+        self.protocol.errReceived('traceback')
+        self.simulateProcessExit(clean=False)
         self.assertEqual(
-            [('signalProcess', 'INT')],
-            self.protocol.transport.calls)
+            self.listener.calls,
+            ['startMirroring', ('mirrorFailed', 'traceback', None)])
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
 
-        # After 5 seconds, we send SIGKILL.
-        self.clock.advance(6)
+    @suppress_stderr
+    def test_errorBeforeStatusReportAndFailingMirrorFailed(self):
+        # If the subprocess exits before reporting success or failure, *and*
+        # the attempt to record failure fails, there's not much we can do but
+        # we should still not hang.  In keeping with the general policy, we
+        # fire the termination deferred with the first thing to go wrong --
+        # the process termination in this case -- and log.err() the failed
+        # attempt to call mirrorFailed().
+
+        runtime_error_failure = makeFailure(RuntimeError)
+        class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
+            def mirrorFailed(self, message, oops):
+                return runtime_error_failure
+        self.protocol.listener = FailingMirrorFailedStubPullerListener()
+        self.listener = self.protocol.listener
+        self.protocol.errReceived('traceback')
+        self.simulateProcessExit(clean=False)
         self.assertEqual(
-            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
-            self.protocol.transport.calls)
-
-        # SIGKILL is assumed to kill the process.  We check that the
-        # failure passed to the termination_deferred is the failure we
-        # created above, not the ProcessTerminated that results from
-        # the process dying.
-
-        def check_failure(exception):
-            self.assertEqual('error message', str(exception))
-
-        deferred = self.assertFailure(
-            self.termination_deferred, RuntimeError)
-
-        return deferred.addCallback(check_failure)
+            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
 
 
 class TestPullerMaster(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.status_client = FakeBranchStatusClient()
@@ -448,6 +459,8 @@ class TestPullerMaster(TrialTestCase):
 
 
 class TestPullerMasterSpawning(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         from twisted.internet import reactor
@@ -534,7 +547,7 @@ protocol = PullerWorkerProtocol(sys.stdout)
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = LaunchpadScriptLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         BranchTestCase.setUp(self)
@@ -570,7 +583,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             self.db_branch.id, local_path_to_url('src-branch'),
             self.db_branch.unique_name, self.db_branch.branch_type,
             logging.getLogger(), self.client,
-            set([config.launchpad.errorreports.oops_prefix]))
+            set([config.error_reports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
             script = open('script.py', 'w')
@@ -613,8 +626,9 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
     def test_lock_with_magic_id(self):
         # When the subprocess locks a branch, it is locked with the right ID.
-        class PullerMasterProtocolWithLockID(scheduler.PullerMasterProtocol):
-            """Subclass of PullerMasterProtocol that defines a lock_id method.
+        class PullerMonitorProtocolWithLockID(
+            scheduler.PullerMonitorProtocol):
+            """Subclass of PullerMonitorProtocol with a lock_id method.
 
             This protocol defines a method that records on the listener the
             lock id reported by the subprocess.
@@ -629,10 +643,11 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             """A subclass of PullerMaster that allows recording of lock ids.
             """
 
-            master_protocol_class = PullerMasterProtocolWithLockID
+            protocol_class = PullerMonitorProtocolWithLockID
 
         check_lock_id_script = """
         branch.lock_write()
+        protocol.mirrorSucceeded('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
@@ -680,8 +695,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         # or erred back, we keep hold of the result and send a signal to kill
         # the first process and wait for it to die.
 
-        class LockingPullerMasterProtocol(scheduler.PullerMasterProtocol):
-            """Extend PullerMasterProtocol with a 'branchLocked' method."""
+        class LockingPullerMonitorProtocol(scheduler.PullerMonitorProtocol):
+            """Extend PullerMonitorProtocol with a 'branchLocked' method."""
 
             def do_branchLocked(self):
                 """Notify the listener that the branch is now locked."""
@@ -699,7 +714,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         class LockingPullerMaster(scheduler.PullerMaster):
             """Extend PullerMaster for the purposes of the test."""
 
-            master_protocol_class = LockingPullerMasterProtocol
+            protocol_class = LockingPullerMonitorProtocol
 
             # This is where the result of the deferred returned by 'func' will
             # be stored.  We need to store seen_final_result and final_result
@@ -828,65 +843,6 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         deferred = self._run_with_destination_locked(
             mirror_fails_to_unlock, 1)
-
-        return deferred.addErrback(self._dumpError)
-
-    def mirror_with_unexpected_failure(self):
-        """Attempt to mirror using a script that fails with a NameError.
-
-        The script will fail with a distinctive NameError before reporting
-        success or failure, and this function will return a deferred that
-        calls back with the ProcessTerminated exception that results.
-        """
-        unexpected_error_script = """
-        OOGA_BOOGA
-        """
-
-        puller_master = self.makePullerMaster(
-            script_text=unexpected_error_script)
-
-        destination_branch = BzrDir.create_branch_convenience(
-            puller_master.destination_url)
-
-        # "Mirroring" the branch will fail.
-        return self.assertFailure(
-            puller_master.mirror(), error.ProcessTerminated)
-
-    def test_mirror_with_unexpected_failure(self):
-        # If the puller worker script fails before recording success or
-        # failure, the branch is considered to have failed.
-
-        # We run a "mirror" that will fail with a distinctive
-        # NameError:
-        deferred = self.mirror_with_unexpected_failure()
-
-        # And check that the process monitoring machinery will call
-        # "mirrorFailed" for the branch.
-        def check_mirror_failed(ignored):
-            self.assertEqual(len(self.client.calls), 1)
-            mirror_failed_call, = self.client.calls
-            self.assertEqual(
-                mirror_failed_call[:2],
-                ('mirrorFailed', self.db_branch.id))
-            self.assertTrue(
-                "OOGA_BOOGA" in mirror_failed_call[2])
-            return ignored
-        deferred.addCallback(check_mirror_failed)
-
-        return deferred.addErrback(self._dumpError)
-
-    def test_mirror_with_unexpected_failure_and_failing_authserver(self):
-        # If the puller worker script fails before recording success
-        # or failure _and_ the call to the authserver to record this
-        # failure fails, there's not much we can do, but we should
-        # exit cleanly and not hang.
-
-        class FailingFakeBranchStatusClient(FakeBranchStatusClient):
-            def mirrorFailed(self, branch_id, revision_id):
-                return defer.fail(Exception())
-        self.client = FailingFakeBranchStatusClient()
-
-        deferred = self.mirror_with_unexpected_failure()
 
         return deferred.addErrback(self._dumpError)
 

@@ -128,7 +128,7 @@ clickable link to his PPA page:
     'PPA for Celso Providelo'
 
 The PPA page "Actions" portlet list all the related pages, only
-'View build records' and 'View PPA' is allowed for unprivileged 
+'View build records' and 'View PPA' is allowed for unprivileged
 access.
 
     >>> print extract_text(
@@ -210,6 +210,7 @@ The headings:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
+    <th>Built</th>
     </tr>
     </thead>
     ...
@@ -221,11 +222,11 @@ The data:
     ...         print extract_text(ppa_row)
 
     >>> print_ppa_package_rows(browser.contents)
-    Source                    Published   Status     Series           Section
-    cdrkit - 1.0              2007-07-09  Published  Breezy-autotest  Editors
-    commercialpackage - 1.0-1             Pending    Warty            Devel
-    iceweasel - 1.0           2007-07-09  Published  Warty            Editors
-    pmount - 0.1-1            2007-07-09  Published  Warty            Editors
+    Source              Published   Status     Series      Section  Built
+    cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
+    comm... - 1.0-1                 Pending    Warty       Devel
+    iceweasel - 1.0     2007-07-09  Published  Warty       Editors
+    pmount - 0.1-1      2007-07-09  Published  Warty       Editors
 
 Note that the changesfile link is not presented for anonymous access
 neither for PPA owners.
@@ -242,7 +243,7 @@ the PPA owner.
     ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> print_ppa_package_rows(cprov_browser.contents)
-    Source                    Published   Status     Series   Section
+    Source                    Published   Status     Series   Section  Built
     ...
     commercialpackage - 1.0-1             Pending    Warty    Devel
     ...
@@ -252,9 +253,9 @@ LP-admins user.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> print_ppa_package_rows(admin_browser.contents)
-    Source                                   Published   Status  Series Section
+    Source                         Published   Status  Series Section  Built
     ...
-    commercialpackage - 1.0-1  (changesfile)             Pending Warty  Devel
+    comm... - 1.0-1  (changesfile)             Pending Warty  Devel
     ...
 
 Each data row is expandable to contain some sections containing:
@@ -269,6 +270,8 @@ Each data row is expandable to contain some sections containing:
     Publishing details
       Published on 2007-07-09
     Changelog
+    Builds
+      i386
     Built Packages
       mozilla-firefox ff from iceweasel
     Files
@@ -323,9 +326,9 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     >>> browser.getControl("Search").click()
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source                    Published   Status     Series           Section
-    cdrkit - 1.0              2007-07-09  Published  Breezy-autotest  Editors
-    commercialpackage - 1.0-1             Pending    Warty            Devel
+    Source          Published   Status     Series           Section  Built
+    cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
+    comm... - 1.0-1             Pending    Warty            Devel
 
 Use can explicitly select 'published' filter and will get the same result.
 
@@ -333,9 +336,9 @@ Use can explicitly select 'published' filter and will get the same result.
     >>> browser.getControl("Search").click()
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source                    Published   Status     Series           Section
-    cdrkit - 1.0              2007-07-09  Published  Breezy-autotest  Editors
-    commercialpackage - 1.0-1             Pending    Warty            Devel
+    Source          Published   Status     Series           Section  Built
+    cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
+    comm... - 1.0-1             Pending    Warty            Devel
 
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
@@ -344,7 +347,7 @@ result will only contain packages SUPERSEDED or DELETED.
     >>> browser.getControl("Search").click()
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source            Published    Status        Series   Section
+    Source            Published    Status        Series   Section  Built
     iceweasel - 1.0   2007-07-09   Superseded    Warty    Editors
     pmount - 0.1-1    2007-07-09   Deleted       Warty    Editors
 
@@ -355,11 +358,11 @@ any package ever published in the context PPA.
     >>> browser.getControl("Search").click()
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source                    Published    Status     Series          Section
-    cdrkit - 1.0              2007-07-09   Published  Breezy-autotest Editors
-    commercialpackage - 1.0-1              Pending    Warty           Devel
-    iceweasel - 1.0           2007-07-09   Superseded Warty           Editors
-    pmount - 0.1-1            2007-07-09   Deleted    Warty           Editors
+    Source             Published    Status     Series      Section  Built
+    cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
+    comm... - 1.0-1                 Pending    Warty       Devel
+    iceweasel - 1.0    2007-07-09   Superseded Warty       Editors
+    pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
 
 
 == Empty PPAs ==
@@ -485,6 +488,7 @@ The package row headings show an Uploader column:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
+    <th>Built</th>
     </tr>
     </thead>
     ...
@@ -492,7 +496,7 @@ The package row headings show an Uploader column:
 The package row data shows the uploader:
 
     >>> print_ppa_package_rows(browser.contents)
-    Source                 Uploader Published Status   Series  Section
+    Source                 Uploader Published Status   Series  Section  Built
     mozilla-firefox - 0.9  name16             Pending  Hoary   Base
 
 Links from files go to their on-archive locations:
@@ -506,3 +510,77 @@ The uploader name is linkified to that user's home page:
     >>> browser.url
     'http://launchpad.dev/~name16'
 
+
+== PPA Built column ==
+
+Each row in the PPA package list contains a special column that
+summarises its 'build status'. It contains the following information
+for each published source:
+
+ * Completely built: green 'yes' icon only;
+
+ * Build in progress: 'build-building' icon, followed by the
+   architecture tags being built linking to the corresponding build
+   page
+
+ * Build failures: red 'no' icon, followed by the architecture tags
+   which have failed to build linking to the corresponding build page.
+
+Anyone can see the build status for package in Celso's PPA.
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+
+    >>> def print_built_status(contents):
+    ...     rows = find_tags_by_class(contents, 'ppa_package_row')
+    ...     headers = rows[0].findAll('th')
+    ...     print extract_text(headers[0]), extract_text(headers[-1])
+    ...     for row in rows[1:]:
+    ...         columns = row.findAll('td')
+    ...         name = extract_text(columns[0])
+    ...         built_icon = columns[-1].img['src']
+    ...         built_text = columns[-1].a
+    ...         if built_text is not None:
+    ...             built_text = built_text.renderContents()
+    ...         print name, built_icon, built_text
+
+    >>> print_built_status(anon_browser.contents)
+    Source                    Built
+    cdrkit - 1.0              /@@/no i386
+    commercialpackage - 1.0-1 /@@/yes None
+
+As mentioned before anyone can visualise 'at a glance' that there was
+a failure while building 'cdrkit' source in Celso's PPA. They can also
+easily see that the failure was in the i386 build, and optionally
+click in the link to visit the build-record page (to check the dates
+of downloading the buildlog).
+
+    >>> anon_browser.getLink('i386').click()
+
+    >>> print anon_browser.title
+    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+This feature is also useful from the PPA owner perspective. When
+Celso's visualise there that there was a failure while building
+'cdrkit' on i386 he can quickly 'retry' the failure.
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+
+    >>> cprov_browser.getLink('i386').click()
+    >>> cprov_browser.getLink("Retry build").click()
+    >>> cprov_browser.getControl("Retry Build").click()
+
+At this point anyone can also visualise that 'cdrkit' source is being
+built in Celso's PPA.
+
+    >>> anon_browser.getLink('View PPA').click()
+    >>> print_built_status(anon_browser.contents)
+    Source                    Built
+    cdrkit - 1.0              /@@/build-building i386
+    commercialpackage - 1.0-1 /@@/yes None
+
+Again the architecture tags listed on the 'built' column link to the
+corresponding build page.
+
+    >>> anon_browser.getLink('i386').click()
+    >>> print anon_browser.title
+    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE

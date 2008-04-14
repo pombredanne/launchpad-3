@@ -144,6 +144,11 @@ def integrationTestCleanUp(testobj):
         for filename in filenames:
             path = os.path.join(dirpath, filename)
             os.remove(path)
+    # Remove all the locks except the master lock.
+    lock_dir = os.path.join(VAR_PREFIX, 'locks')
+    for filename in os.listdir(lock_dir):
+        if not filename.startswith('master-qrunner'):
+            os.remove(os.path.join(lock_dir, filename))
 
 
 def find_tests(match_regexps):

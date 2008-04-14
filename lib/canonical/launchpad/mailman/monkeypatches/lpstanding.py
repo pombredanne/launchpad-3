@@ -6,11 +6,9 @@ This handler checks Launchpad member's personal standing in order to determine
 whether list non-members are allowed to post to a mailing list.
 """
 
-import socket
 import xmlrpclib
 
 from Mailman import mm_cfg
-from Mailman.Logging.Syslog import syslog
 
 
 def process(mlist, msg, msgdata):

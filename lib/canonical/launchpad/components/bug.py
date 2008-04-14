@@ -16,8 +16,10 @@ class BugDelta:
                  private=None, security_related=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cve=None,
                  attachment=None, tags=None,
-                 added_bugtasks=None, bugtask_deltas=None):
+                 added_bugtasks=None, bugtask_deltas=None,
+                 bug_before_modification=None):
         self.bug = bug
+        self.bug_before_modification = bug_before_modification
         self.bugurl = bugurl
         self.user = user
         self.title = title

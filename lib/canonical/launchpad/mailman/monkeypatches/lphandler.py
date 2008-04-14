@@ -3,7 +3,6 @@
 """A global pipeline handler for determining Launchpad membership."""
 
 
-import socket
 import xmlrpclib
 
 from Mailman import Errors

@@ -1,0 +1,161 @@
+= Authorizing a request token =
+
+Once the consumer gets a request token, it must send the user to
+Launchpad's +oauth-authorize page in order for the user to authenticate
+and authorize or not the consumer to act on his behalf.
+
+    # Create a new request token.
+    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('salgado@ubuntu.com')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> logout()
+
+According to the OAuth Core 1.0 spec, the request to the service
+provider's user authorization URL (+oauth-authorize in our case) must
+use the HTTP GET method and may include the oauth_callback parameter.
+The oauth_token parameter, on the other hand, is required in the
+Launchpad implementation.
+
+The +oauth-authorize page is restricted to logged in users, so users
+will first be asked to log in.
+
+    # Set handleErrors to True so that the Unauthorized exception is handled
+    # by the publisher and we get redirected to the +login page.
+    >>> browser.handleErrors = True
+    >>> from urllib import urlencode
+    >>> params = dict(
+    ...     oauth_token=token.key, oauth_callback='http://launchpad.dev/bzr')
+    >>> browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    >>> browser.url
+    'http://.../+oauth-authorize/+login?oauth_token=...&oauth_callback=...'
+
+And then the user is redirected back to the +oauth-authorize page.
+Note how the query parameters are kept.
+
+    >>> browser.getControl('E-mail address:', index=0).value = (
+    ...     'no-priv@canonical.com')
+    >>> browser.getControl('Password:').value = 'test'
+    >>> browser.getControl(name='loginpage_submit_login').click()
+    >>> browser.url
+    'http://.../+oauth-authorize?oauth_token=...&oauth_callback=...'
+    >>> browser.title
+    'Authorize application to access Launchpad on your behalf'
+
+    >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> print extract_text(main_content)
+    Authorize application to access Launchpad on your behalf
+    The application identified as foobar123451432 wants to access Launchpad on
+    your behalf. What level of access do you want to grant?
+    ...
+    See all applications authorized to access Launchpad on your behalf.
+
+This page contains one submit button for each item of OAuthPermission.
+
+    >>> browser.getControl('No Access')
+    <SubmitControl...
+    >>> browser.getControl('Read Non-Private Data')
+    <SubmitControl...
+    >>> browser.getControl('Change Non-Private Data')
+    <SubmitControl...
+    >>> browser.getControl('Read Anything')
+    <SubmitControl...
+    >>> browser.getControl('Change Anything')
+    <SubmitControl...
+
+    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
+    >>> from canonical.launchpad.interfaces import OAuthPermission
+    >>> len(actions) == len(OAuthPermission.items)
+    True
+
+Once the user authorizes the application to access Launchpad on his
+behalf, we issue a redirect to the given oauth_callback (if it was
+specified by the application).
+
+    >>> browser.getControl('Read Non-Private Data').click()
+
+    # This is the URL given to Launchpad in oauth_callback.
+    >>> browser.url
+    'http://launchpad.dev/bzr'
+
+After the authorization is granted the token gets its permission and
+person set.
+
+    # Need to get the token again as it's been changed in another
+    # transaction.
+    >>> token = consumer.getRequestToken(token.key)
+    >>> token.person.name
+    u'no-priv'
+    >>> token.permission
+    <DBItem OAuthPermission.READ_PUBLIC...
+    >>> token.is_reviewed
+    True
+
+If no oauth_callback is specified, we redirect the user to
++authorized-token.
+
+    # Create a new (unreviewed) token.
+    >>> login('salgado@ubuntu.com')
+    >>> token = consumer.newRequestToken()
+    >>> logout()
+
+    >>> params = dict(oauth_token=token.key)
+    >>> browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+
+    >>> browser.getControl('Read Anything').click()
+
+    >>> browser.url
+    'http://launchpad.dev/+token-authorized?...'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Almost finished ...
+    To finish authorizing the application identified as foobar123451432 to
+    access Launchpad on your behalf you should go back to the application
+    window in which you started the process and inform it that you have done
+    your part of the process.
+
+If we can't find the token, we will explain that to the user.
+
+    >>> params = dict(oauth_callback='http://example.com/oauth')
+    >>> browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Unable to identify application
+    The information provided by the remote application was incorrect or
+    incomplete. Because of that we were unable to identify the application
+    which would access Launchpad on your behalf.
+    See all applications authorized to access Launchpad on your behalf.
+
+    >>> params = dict(
+    ...     oauth_token='zzzzzz', oauth_callback='http://example.com/oauth')
+    >>> browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Unable to identify application
+    The information provided by the remote application was incorrect or
+    incomplete. Because of that we were unable to identify the application
+    which would access Launchpad on your behalf.
+    See all applications authorized to access Launchpad on your behalf.
+
+The same happens if the token is already reviewed.  Although that's
+probably an indication that the user has already reviewed that token in
+another window/tab so there's no need to worry.
+
+    # Need to get the token again as it's been changed in another
+    # transaction.
+    >>> token = consumer.getRequestToken(token.key)
+    >>> token.is_reviewed
+    True
+    >>> params = dict(
+    ...     oauth_token=token.key, oauth_callback='http://example.com/oauth')
+    >>> browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Request already reviewed
+    This request for accessing Launchpad on your behalf has been
+    reviewed ... ago.
+    See all applications authorized to access Launchpad on your behalf.
+

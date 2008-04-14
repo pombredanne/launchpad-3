@@ -129,14 +129,31 @@ class XMLRPCRunner(Runner):
         if 'deactivate' in actions:
             self._deactivate(actions['deactivate'], statuses)
             del actions['deactivate']
+        if 'unsynchronized' in actions:
+            self._resynchronize(actions['unsynchronized'], statuses)
+            del actions['unsynchronized']
         # Any other keys should be ignored because they specify actions that
         # we know nothing about.  We'll log them to Mailman's log files
         # though.
         if actions:
             syslog('xmlrpc', 'Invalid xmlrpc action keys: %s',
                    COMMASPACE.join(actions))
-        # Report the statuses to Launchpad.
-        self._proxy.reportStatus(statuses)
+        # Report the statuses to Launchpad.  Do this individually so as to
+        # reduce the possibility that a bug in Launchpad causes the reporting
+        # all subsequent mailing lists statuses to fail.  The reporting of
+        # status triggers synchronous operations in Launchpad, such as
+        # notifying team admins that their mailing list is ready, and those
+        # operations could fail for spurious reasons.  That shouldn't affect
+        # the status reporting for any other list.  This is a little more
+        # costly, but it's not that bad.
+        for team_name, status in statuses.items():
+            this_status = {team_name: status}
+            try:
+                self._proxy.reportStatus(this_status)
+            except (xmlrpclib.ProtocolError, socket.error), error:
+                syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+            except xmlrpclib.Fault, error:
+                syslog('xmlrpc', 'Launchpad exception: %s', error)
         # Changes were made, so bump the serial number.
         syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
@@ -515,6 +532,47 @@ class XMLRPCRunner(Runner):
         # If changes were detected, bump the serial number.
         if changes_detected:
             syslog('serial', 'SERIAL: %s', self.serial_number.next())
+
+    def _resynchronize(self, actions, statuses):
+        """Process resynchronization actions.
+
+        actions is a sequence of 2-tuples specifying what needs to be
+        resynchronized.  The tuple is of the form (listname, current-status).
+
+        statuses is a dictionary mapping team names to one of the strings
+        'success' or 'failure'.
+        """
+        syslog('xmlrpc', 'resynchronizing: %s',
+               COMMASPACE.join(sorted(name for (name, status) in actions)))
+        for name, status in actions:
+            # There's no way to really know whether the original action
+            # succeeded or not, however, it's unlikely that an action would
+            # fail leaving the mailing list in a usable state.  Therefore, if
+            # the list is loadable and lockable, we'll say it succeeded.
+            # pylint: disable-msg=W0702
+            try:
+                mlist = MailList(name)
+            except Errors.MMUnknownListError:
+                # The list doesn't exist on the Mailman side, so if its status
+                # is CONSTRUCTING, we can create it now.
+                if status == 'constructing':
+                    if self._create(name):
+                        statuses[name] = 'success'
+                    else:
+                        statuses[name] = 'failure'
+                else:
+                    # Any other condition leading to an unknown list is a
+                    # failure state.
+                    statuses[name] = 'failure'
+            except:
+                # Any other exception is also a failure.
+                statuses[name] = 'failure'
+                syslog('xmlrpc', 'Mailing list does not load: %s', name)
+            else:
+                # The list loaded just fine, so it successfully
+                # resynchronized.  Be sure to unlock it!
+                mlist.Unlock()
+                statuses[name] = 'success'
 
 
 def extractall(tgz_file):

@@ -3,7 +3,6 @@
 """A pipeline handler for holding list non-members postings for approval.
 """
 
-import socket
 import xmlrpclib
 
 from email.Utils import formatdate, make_msgid
@@ -33,7 +32,7 @@ def process(mlist, msg, msgdata):
         if mlist.isMember(sender):
             return
     # From here on out, we're dealing with senders who are not members of the
-    # mailing list.  The are also not Launchpad members in good standing or
+    # mailing list.  They are also not Launchpad members in good standing or
     # we'd have already approved the message.  So now the message must be held
     # in Launchpad for approval via the LP u/i.
     sender = msg.get_sender()
@@ -58,7 +57,8 @@ def process(mlist, msg, msgdata):
     if message_id in holds:
         # No legitimate sender should ever give us a message with a duplicate
         # message id, so treat this as spam.
-        syslog('vette', 'Discarding duplicate held message-id: %s', message_id)
+        syslog('vette',
+               'Discarding duplicate held message-id: %s', message_id)
         raise Errors.DiscardMessage
     holds[message_id] = request_id
     # In addition to Message-ID, the librarian requires a Date header.
