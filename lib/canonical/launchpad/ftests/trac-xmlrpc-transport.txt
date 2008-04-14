@@ -71,11 +71,15 @@ We'll add some bugs to our trac transport to demonstrate this.
 
     >>> remote_bugs = {
     ...     '1': MockTracRemoteBug(
-    ...         '1', datetime(2008, 4, 1, 0, 0, 0)),
+    ...         id='1', last_modified=datetime(2008, 4, 1, 0, 0, 0),
+    ...         status='open'),
     ...     '2': MockTracRemoteBug(
-    ...         '2', datetime(2007, 1, 1, 1, 1, 1)),
+    ...         id='2', last_modified=datetime(2007, 1, 1, 1, 1, 1),
+    ...         status='closed'),
     ...     '3': MockTracRemoteBug(
-    ...         '3', datetime(2008, 1, 1, 1, 2, 3)),}
+    ...         id='3', last_modified=datetime(2008, 1, 1, 1, 2, 3),
+    ...         status='fixed'),
+    ...     }
 
     >>> trac_transport.remote_bugs = remote_bugs
 
@@ -85,6 +89,19 @@ bugs, along with a time snapshot as returned by time_snapshot().
     >>> time_snapshot, bugs = trac_transport.bug_info(level=0)
     >>> print bugs
     [{'id': '1'}, {'id': '2'}, {'id': '3'}]
+
+Specifying a level of 1 will return each bug's metadata, not including
+its last modified time.
+
+    >>> def print_bugs(bug_list):
+    ...     for bug in bug_list:
+    ...         print "%(id)s: %(status)s." % bug
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=1)
+    >>> print_bugs(bugs)
+    1: open.
+    2: closed.
+    3: fixed.
 
 The criteria dict has two possible keys: modified_since and bugs.
 Specifying a value for modified_since will cause only the bugs modified
