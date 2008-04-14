@@ -468,7 +468,26 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         return [self.local_timezone, local_time, utc_time]
 
     def bug_info(self, level, criteria=None):
-        """Return info about a bug or set of bugs."""
+        """Return info about a bug or set of bugs.
+
+        :param level: The level of detail to return about the bugs
+            requested. This can be one of:
+            0: Return IDs only.
+            1: Return Metadata only.
+            2: Return Metadata + comments.
+            3: Return all data about each bug.
+
+        :param criteria: The selection criteria by which bugs will be
+            returned. Possible keys include:
+            modified_since: An integer timestamp. If specified, only
+                bugs modified since this timestamp will
+                be returned.
+            bugs: A list of bug IDs. If specified, only bugs whose IDs are in
+                this list will be returned.
+
+        Return a tuple of (ts, bugs) where ts is a time snapshot as
+        returned by `time_snapshot()` and bugs is a list of bug dicts.
+        """
         # XXX 2008-04-12 gmb:
         #     This is only a partial implementation of this; it will
         #     grow over time as implement different methods that call
