@@ -48,12 +48,6 @@
        />
 
     <adapter
-        for="canonical.launchpad.interfaces.IPersonSet"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.PersonCollection"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.IPersonSet
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IResourceGETOperation"
@@ -114,7 +108,7 @@
 
     <adapter
         for="canonical.launchpad.interfaces.IBugComment"
-        provides="canonical.launchpad.rest.IMessageEntry"
+        provides="canonical.lazr.interfaces.rest.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"
         />
 

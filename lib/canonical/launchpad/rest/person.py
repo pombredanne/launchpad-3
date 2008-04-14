@@ -7,7 +7,6 @@ __all__ = [
     'GetMembersByStatusOperation',
     'GetPeopleOperation',
     'IPersonEntry',
-    'PersonCollection',
     'PersonEntry',
     'PersonFactoryOperation'
     ]
@@ -88,16 +87,6 @@ class GetMembersByStatusOperation(ResourceGETOperation):
         the given status.
         """
         return self.context.getMembersByStatus(status.value)
-
-
-class PersonCollection(Collection):
-    """A collection of people."""
-
-    def find(self):
-        """Return all the people and teams on the site."""
-        # Pass an empty query into find() to get all people
-        # and teams.
-        return self.context.find("")
 
 
 class GetPeopleOperation(ResourceGETOperation):
