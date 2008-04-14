@@ -19,7 +19,7 @@ from textwrap import dedent
 import threading
 
 import zope.app.appsetup
-import zope.app.mail.delivery
+import zope.sendmail.delivery
 from zope.configuration.config import ConfigurationMachine
 from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
@@ -128,7 +128,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     def kill_queue_processor_threads():
         for thread in threading.enumerate():
             if isinstance(
-                thread, zope.app.mail.delivery.QueueProcessorThread):
+                thread, zope.sendmail.delivery.QueueProcessorThread):
                 thread.stop()
                 thread.join(30)
                 if thread.isAlive():

@@ -12,8 +12,8 @@ import re
 import time
 
 from zope.interface import implements
-from zope.app.content_types import guess_content_type
-from zope.app.datetimeutils import rfc1123_date
+from zope.contenttype import guess_content_type
+from zope.datetime import rfc1123_date
 from zope.app.publisher.browser.fileresource import setCacheControl
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound

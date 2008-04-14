@@ -18,7 +18,7 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config

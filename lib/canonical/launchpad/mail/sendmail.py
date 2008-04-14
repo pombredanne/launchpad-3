@@ -29,7 +29,7 @@ from email import Charset
 from smtplib import SMTP
 
 from zope.app import zapi
-from zope.app.mail.interfaces import IMailDelivery
+from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config

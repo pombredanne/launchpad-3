@@ -6,7 +6,7 @@ __metaclass__ = type
 from cookielib import domain_match
 from zope.component import getUtility
 from zope.app.session.interfaces import ISession
-from zope.app.session.http import CookieClientIdManager
+from zope.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 
 from canonical.config import config
