@@ -1,6 +1,6 @@
 SET client_min_messages=ERROR;
 
-CREATE TABLE Subscription (
+CREATE TABLE CommercialSubscription (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE Subscription (
 );
 
 -- Need indexes for people merge
-CREATE INDEX subscription__product__idx
-  ON Subscription(product);
+CREATE INDEX commercialsubscription__product__idx
+  ON CommercialSubscription(product);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
