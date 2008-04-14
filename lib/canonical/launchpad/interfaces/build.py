@@ -137,7 +137,7 @@ class IBuild(Interface):
 
         :return: a timestamp upon success or None on failure. None
             indicates that an estimated start time is not available.
-        :raise: AssertionError when the build job is not in the 
+        :raise: AssertionError when the build job is not in the
             `BuildStatus.NEEDSBUILD` state.
         """
 

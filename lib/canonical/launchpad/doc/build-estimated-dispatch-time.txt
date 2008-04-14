@@ -69,7 +69,7 @@ Make sure the job at hand is currently being built.
     True
 
 The start time estimation mechanism for a pending job N depends on
-proper "build start time" and "estimated build duration" values for 
+proper "build start time" and "estimated build duration" values for
 other jobs that are either currently building or pending but ahead
 of job N in the build queue. These values will now be set for the job
 that is currently building.
