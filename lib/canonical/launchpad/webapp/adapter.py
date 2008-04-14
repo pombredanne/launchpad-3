@@ -14,7 +14,7 @@ import warnings
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.rdb.interfaces import DatabaseException
+from zope.rdb.interfaces import DatabaseException
 from zope.publisher.interfaces import Retry
 
 from psycopgda.adapter import PsycopgAdapter, PsycopgConnection

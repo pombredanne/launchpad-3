@@ -23,7 +23,7 @@ from zope.event import notify
 
 from zope.security.proxy import removeSecurityProxy
 
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 

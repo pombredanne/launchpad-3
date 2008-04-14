@@ -20,7 +20,7 @@ import logging
 import pytz
 from email.Utils import parseaddr
 from zope.interface import implements
-from zope.app import datetimeutils
+from zope import datetime
 
 from canonical.launchpad.interfaces import (
     ITranslationHeaderData, TooManyPluralFormsError, TranslationConstants,
@@ -298,15 +298,15 @@ class POHeader:
             elif key == 'pot-creation-date':
                 try:
                     self.template_creation_date = (
-                        datetimeutils.parseDatetimetz(value))
-                except datetimeutils.DateTimeError:
+                        datetime.parseDatetimetz(value))
+                except datetime.DateTimeError:
                     # We couldn't parse it, leave current default value.
                     pass
             elif key == 'po-revision-date':
                 try:
                     self.translation_revision_date = (
-                        datetimeutils.parseDatetimetz(value))
-                except datetimeutils.DateTimeError:
+                        datetime.parseDatetimetz(value))
+                except datetime.DateTimeError:
                     # We couldn't parse it.
                     self.translation_revision_date = None
             elif key == 'last-translator':
@@ -319,8 +319,8 @@ class POHeader:
                 # too so old exports will still work.
                 try:
                     self.launchpad_export_date = (
-                        datetimeutils.parseDatetimetz(value))
-                except datetimeutils.DateTimeError:
+                        datetime.parseDatetimetz(value))
+                except datetime.DateTimeError:
                     self.launchpad_export_date = None
             else:
                 # We don't use the other keys.
