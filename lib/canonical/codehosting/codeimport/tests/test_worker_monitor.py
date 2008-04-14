@@ -12,7 +12,7 @@ import unittest
 
 from bzrlib.tests import TestCaseWithMemoryTransport
 
-from twisted.internet import defer, error
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from zope.component import getUtility
@@ -24,7 +24,7 @@ from canonical.codehosting.codeimport.worker_monitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
-    SubversionServer)
+    CVSServer, SubversionServer)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.database.sqlbase import commit
@@ -324,16 +324,31 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.nukeCodeImportSampleData()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(lambda : shutil.rmtree(self.repo_path))
+        self.machine = self.factory.makeCodeImportMachine(set_online=True)
+
+    def makeCVSCodeImport(self):
+        """Make a CVS `CodeImport` that points to a real CVS repository."""
+        cvs_server = CVSServer(self.repo_path)
+        cvs_server.setUp()
+        self.addCleanup(cvs_server.tearDown)
+
+        cvs_server.makeModule('trunk', [('README', 'original\n')])
+
+        return self.factory.makeCodeImport(
+            cvs_root=cvs_server.getRoot(), cvs_module='trunk')
+
+    def makeSVNCodeImport(self):
+        """Make a CVS `CodeImport` that points to a real CVS repository."""
         self.subversion_server = SubversionServer(self.repo_path)
         self.subversion_server.setUp()
         self.addCleanup(self.subversion_server.tearDown)
-        self.svn_branch_url = self.subversion_server.makeBranch(
+        svn_branch_url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
-        self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
-    def createApprovedCodeImport(self, svn_branch_url):
-        code_import = self.factory.makeCodeImport(
+        return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
+
+    def approveCodeImport(self, code_import):
         source_details = CodeImportSourceDetails.fromCodeImport(code_import)
         clean_up_default_stores_for_import(source_details)
         self.addCleanup(
@@ -344,9 +359,8 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         getUtility(ICodeImportJobWorkflow).newJob(code_import)
         return code_import
 
-    def getStartedJob(self):
-        code_import = self.createApprovedCodeImport(
-            svn_branch_url=self.svn_branch_url)
+    def getStartedJob(self, code_import):
+        self.approveCodeImport(code_import)
         job = getUtility(ICodeImportJobSet).getJobForMachine(self.machine)
         self.assertEqual(code_import, job.code_import)
         return job
@@ -367,18 +381,26 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
-    def test_import(self):
-        job = self.getStartedJob()
+    @read_only_transaction
+    def checkImport(self, ignored, code_import_id):
+        self.checkCodeImportResultCreated(code_import_id)
+        self.checkBranchImportedOKForCodeImport(code_import_id)
+
+    def test_import_cvs(self):
+        job = self.getStartedJob(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         commit()
         result = CodeImportWorkerMonitor(job_id).run()
-        @read_only_transaction
-        def check_result(ignored):
-            self.checkCodeImportResultCreated(code_import_id)
-            self.checkBranchImportedOKForCodeImport(code_import_id)
-            return ignored
-        return result.addCallback(check_result)
+        return result.addCallback(self.checkImport, code_import_id)
+
+    def test_import_svn(self):
+        job = self.getStartedJob(self.makeSVNCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        commit()
+        result = CodeImportWorkerMonitor(job_id).run()
+        return result.addCallback(self.checkImport, code_import_id)
 
 
 def test_suite():
