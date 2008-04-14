@@ -4,7 +4,8 @@
 
 __metaclass__ = type
 
+from canonical.lazr.interfaces.config import *
 from canonical.lazr.interfaces.feed import *
 from canonical.lazr.interfaces.field import *
-from canonical.lazr.interfaces.config import *
+from canonical.lazr.interfaces.objectprivacy import *
 from canonical.lazr.interfaces.rest import *

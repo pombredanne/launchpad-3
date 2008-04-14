@@ -582,7 +582,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             self.db_branch.id, local_path_to_url('src-branch'),
             self.db_branch.unique_name, self.db_branch.branch_type,
             logging.getLogger(), self.client,
-            set([config.launchpad.errorreports.oops_prefix]))
+            set([config.error_reports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
             script = open('script.py', 'w')
