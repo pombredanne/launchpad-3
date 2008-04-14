@@ -1065,6 +1065,14 @@ class WebServiceRequestTraversal:
         WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
+        stack = self.getTraversalStack()
+        # Only accept versioned URLs
+        if stack[-1] == 'beta':
+            stack.pop()
+            self.setTraversalStack(stack)
+            self.setVirtualHostRoot(names=('beta', ))
+        else:
+            raise NotFound(self, '', self)
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 

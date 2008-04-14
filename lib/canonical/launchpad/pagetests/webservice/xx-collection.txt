@@ -13,7 +13,7 @@ collection.
   >>> people_collection['total_size']
   62
   >>> people_collection['next_collection_link']
-  u'http://api.launchpad.dev/people?ws_start=5&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws_start=5&ws_size=5'
   >>> people_collection.get('prev_collection_link') is None
   True
 
@@ -23,7 +23,7 @@ collection.
   >>> people_entries[0]['name']
   u'spiv'
   >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/~spiv'
+  u'http://api.launchpad.dev/beta/~spiv'
   >>> people_entries[-1]['name']
   u'bug-importer'
 
@@ -31,9 +31,9 @@ You can get other pages of the collection by following links:
 
   >>> second_batch = webservice.get("/people?ws_start=5&ws_size=5").jsonBody()
   >>> second_batch['next_collection_link']
-  u'http://api.launchpad.dev/people?ws_start=10&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws_start=10&ws_size=5'
   >>> second_batch['prev_collection_link']
-  u'http://api.launchpad.dev/people?ws_start=0&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws_start=0&ws_size=5'
 
   >>> people_entries = sorted(second_batch['entries'])
   >>> people_entries[0]['name']
@@ -45,7 +45,7 @@ You can also get a larger batch than the default:
   >>> len(big_batch['entries'])
   50
   >>> big_batch.get('next_collection_link')
-  u'http://api.launchpad.dev/people?ws_start=50&ws_size=50'
+  u'http://api.launchpad.dev/beta/people?ws_start=50&ws_size=50'
 
   >>> bigger_batch = webservice.get("/people?ws_size=75").jsonBody()
   >>> len(bigger_batch['entries'])
@@ -63,14 +63,14 @@ The elements of a collection can be looked up by unique identifier:
   [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
    (u'displayname', u'Launchpad Administrators'),
    (u'member_memberships_collection_link',
-    u'http://api.launchpad.dev/~admins/member_memberships'),
+    u'http://api.launchpad.dev/beta/~admins/member_memberships'),
    (u'members_collection_link',
-      u'http://api.launchpad.dev/~admins/members'),
+      u'http://api.launchpad.dev/beta/~admins/members'),
    (u'name', u'admins'),
-   (u'self_link', u'http://api.launchpad.dev/~admins'),
+   (u'self_link', u'http://api.launchpad.dev/beta/~admins'),
    (u'team_memberships_collection_link',
-    u'http://api.launchpad.dev/~admins/team_memberships'),
-   (u'teamowner_link', u'http://api.launchpad.dev/~sabdfl')]
+    u'http://api.launchpad.dev/beta/~admins/team_memberships'),
+   (u'teamowner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
 
 A collection may be scoped to an element:
 
@@ -110,7 +110,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/people?ws_op=people&text=s&ws_start=5&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws_op=people&text=s&ws_start=5&ws_size=5'
   >>> [p['name'] for p in sorted(s_people['entries'])]
   [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
 
@@ -146,7 +146,7 @@ the collection of people.
   ...         comment=comment, name=name, display_name=display_name,
   ...         password=password)
 
-  >>> print webservice.get('~serviceuser')
+  >>> print webservice.get('/~serviceuser')
   HTTP/1.1 404 Not Found
   ...
 
@@ -155,10 +155,10 @@ the collection of people.
   ...                     "password")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/~serviceuser
+  Location: http://api.launchpad.dev/beta/~serviceuser
   <BLANKLINE>
 
-  >>> print webservice.get('~serviceuser')
+  >>> print webservice.get('/~serviceuser')
   HTTP/1.1 200 Ok
   ...
 
@@ -166,10 +166,10 @@ the collection of people.
   ...                     "", "", "Your Name Here", "")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/~serviceuser2
+  Location: http://api.launchpad.dev/beta/~serviceuser2
   <BLANKLINE>
 
-  >>> print webservice.get('~serviceuser2')
+  >>> print webservice.get('/~serviceuser2')
   HTTP/1.1 200 Ok
   ...
 

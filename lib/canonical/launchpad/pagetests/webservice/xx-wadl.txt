@@ -234,7 +234,7 @@ serve. But we haven't defined any actual bug task resources! This
 happens in the final tag under consideration.
 
    >>> resources.attrib['href']
-   'http://api.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
+   'http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/1'
 
 The tag is called 'resources' but only one resource is defined. That's
 because this WADL document is a representation of a specific resource:

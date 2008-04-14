@@ -80,9 +80,14 @@ class WebServiceCaller:
 
     def __call__(self, path, method='GET', data=None, headers=None):
         # Make an HTTP request.
+        if not path.startswith('/beta/'):
+            prefix = '/beta'
+            if not path.startswith('/'):
+                prefix += '/'
+            path = prefix + path
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:
-            full_url = 'http://api.launchpad.dev' + path
+            full_url = 'http://api.launchpad.dev/' + path
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )

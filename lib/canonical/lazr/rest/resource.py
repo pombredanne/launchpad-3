@@ -135,6 +135,8 @@ class HTTPResource(URLDereferencingMixin):
 
         :return: All values, in descending order of priority.
         """
+        if value is None:
+            return []
         values = value.split(',')
         # In the original getPreferredLanguages there was some language
         # code normalization here, which I removed.

@@ -699,6 +699,11 @@ will act as though you had performed a GET on the URL
 
     >>> def create_web_service_request(
     ...     path_info, method='GET', body=None, environ=None):
+    ...     if not path_info.startswith('/beta/'):
+    ...         prefix = '/beta'
+    ...         if not path_info.startswith('/'):
+    ...             prefix += '/'
+    ...         path_info = prefix + path_info
     ...     test_environ = {
     ...         'SERVER_URL': 'http://api.launchpad.dev',
     ...         'HTTP_HOST': 'api.launchpad.dev',
@@ -720,11 +725,11 @@ will act as though you had performed a GET on the URL
     ...     request.processInputs()
     ...     return request
 
-    >>> request = create_web_service_request('/')
     >>> app = MyServiceRootResource()
     >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(app)
-
+    >>> request = create_web_service_request('/')
+    >>> ignore = request.traverse(app)
     >>> app(request)
     'This is a web service.'
 
@@ -736,7 +741,7 @@ service root also.
     >>> ICanonicalUrlData.providedBy(app)
     True
     >>> canonical_url(app)
-    u'http://api.launchpad.dev/'
+    u'http://api.launchpad.dev/beta/'
 
 
 == Collection resources ==
@@ -786,7 +791,7 @@ works. Here's page one, with two cookbooks on it.
     >>> sorted(representation.keys())
     [u'entries', u'next_collection_link', u'start', u'total_size']
     >>> representation['next_collection_link']
-    u'http://api.launchpad.dev/cookbooks?ws_start=2&ws_size=2'
+    u'http://api.launchpad.dev/beta/cookbooks?ws_start=2&ws_size=2'
     >>> len(representation['entries'])
     2
     >>> representation['total_size']
@@ -803,7 +808,7 @@ has the last cookbook on it.
     >>> sorted(representation.keys())
     [u'entries', u'prev_collection_link', u'start', u'total_size']
     >>> representation['prev_collection_link']
-    u'http://api.launchpad.dev/cookbooks?ws_start=0&ws_size=2'
+    u'http://api.launchpad.dev/beta/cookbooks?ws_start=0&ws_size=2'
     >>> len(representation['entries'])
     1
 
@@ -852,7 +857,7 @@ existing author:
     >>> request.response.getStatus()
     201
     >>> request.response.getHeader('Location')
-    'http://api.launchpad.dev/cookbooks/Beard%20on%20Bread'
+    'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread'
 
 Here we create a cookbook for a new author.
 
@@ -866,7 +871,7 @@ Here we create a cookbook for a new author.
     >>> request.response.getStatus()
     201
     >>> request.response.getHeader('Location')
-    'http://api.launchpad.dev/cookbooks/Everyday%20Greens'
+    'http://api.launchpad.dev/beta/cookbooks/Everyday%20Greens'
 
 The new Author object is created implicitly and is published as a
 resource afterwards.
@@ -892,12 +897,12 @@ entry's resource), and possibly links to associated resources.
     >>> entries[0]['name']
     u'Beard on Bread'
     >>> entries[0]['self_link']
-    u'http://api.launchpad.dev/cookbooks/Beard%20on%20Bread'
+    u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread'
 
 Each cookbook, for instance, has a link to its author.
 
     >>> entries[0]['author_link']
-    u'http://api.launchpad.dev/authors/James%20Beard'
+    u'http://api.launchpad.dev/beta/authors/James%20Beard'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -922,14 +927,14 @@ the "Joy of Cooking" cookbook object into an EntryResource.
     >>> joy = simplejson.loads(joy_resource())
     >>> sorted(joy.items())
     [(u'author_link',
-      u'http://api.launchpad.dev/authors/Irma%20S.%20Rombauer'),
+      u'http://api.launchpad.dev/beta/authors/Irma%20S.%20Rombauer'),
      (u'comments_collection_link',
-      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/comments'),
+      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking/comments'),
      (u'name', u'The Joy of Cooking'),
      (u'recipes_collection_link',
-      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes'),
+      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking/recipes'),
      (u'self_link',
-      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking')]
+      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking')]
 
 You can also traverse from an entry to an item in a scoped collection:
 
@@ -941,8 +946,8 @@ You can also traverse from an entry to an item in a scoped collection:
     [(u'comments_collection_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
     (u'cookbook_link',
-     u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'),
-    (u'dish_link', u'http://api.launchpad.dev/dishes/Roast%20chicken'),
+     u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking'),
+    (u'dish_link', u'http://api.launchpad.dev/beta/dishes/Roast%20chicken'),
     (u'instructions', u'Draw, singe, stuff, and truss...'),
     (u'self_link',
      u'http://api.../The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
@@ -1074,7 +1079,7 @@ The cookbook's URL has changed back to what it was before.
     >>> put_request.response.getStatus()
     301
     >>> put_request.response.getHeader('Location')
-    'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
+    'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking'
 
 So has the cookbook's name.
 
@@ -1089,7 +1094,7 @@ we change a cookbook's author. Since all objects are identified by
 their URLs, we make the change by modifying the cookbook's
 'author_link' field to point to another author.
 
-    >>> joy['author_link'] = u'http://api.launchpad.dev/authors/Julia%20Child'
+    >>> joy['author_link'] = u'http://api.launchpad.dev/beta/authors/Julia%20Child'
     >>> resource = create_web_service_request(
     ...     '/cookbooks/The%20Joy%20of%20Cooking',
     ...     body=simplejson.dumps(joy), environ=headers,
@@ -1099,4 +1104,4 @@ their URLs, we make the change by modifying the cookbook's
 
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
-    u'http://api.launchpad.dev/authors/Julia%20Child'
+    u'http://api.launchpad.dev/beta/authors/Julia%20Child'

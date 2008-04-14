@@ -11,22 +11,22 @@ A person is linked to their team memberships.
   >>> salgado = webservice.get("/~salgado").jsonBody()
 
   >>> salgado['team_memberships_collection_link']
-  u'http://api.launchpad.dev/~salgado/team_memberships'
+  u'http://api.launchpad.dev/beta/~salgado/team_memberships'
 
 Similarly, a team is linked to the team memberships of its members.
 
   >>> landscape_developers = webservice.get(
   ...     "/~landscape-developers").jsonBody()
   >>> landscape_developers['member_memberships_collection_link']
-  u'http://api.launchpad.dev/~landscape-developers/member_memberships'
+  u'http://api.launchpad.dev/beta/~landscape-developers/member_memberships'
 
 Team memberships are first-class objects with their own URLs.
 
   >>> salgado_memberships = sorted(webservice.get(
   ...     "/~salgado/team_memberships").jsonBody()['entries'])
   >>> [m['self_link'] for m in salgado_memberships]
-  [u'http://api.launchpad.dev/~admins/+member/salgado',
-   u'http://api.launchpad.dev/~landscape-developers/+member/salgado']
+  [u'http://api.launchpad.dev/beta/~admins/+member/salgado',
+   u'http://api.launchpad.dev/beta/~landscape-developers/+member/salgado']
 
 Team memberships also have data fields.
 
@@ -39,17 +39,17 @@ Team memberships also have data fields.
 Each team membership links to the person who approved the link.
 
   >>> salgado_landscape['last_changed_by_link']
-  u'http://api.launchpad.dev/~name16'
+  u'http://api.launchpad.dev/beta/~name16'
 
 Also to the person whose membership it is.
 
   >>> salgado_landscape['member_link']
-  u'http://api.launchpad.dev/~salgado'
+  u'http://api.launchpad.dev/beta/~salgado'
 
 Also to the team in which the membership is valid.
 
   >>> salgado_landscape['team_link']
-  u'http://api.launchpad.dev/~landscape-developers'
+  u'http://api.launchpad.dev/beta/~landscape-developers'
 
 A TeamMembership relates a person to a team, and the relationship
 works both ways. You've already seen how the representation of a
@@ -61,8 +61,8 @@ memberships in the team.
   ...     "/~landscape-developers/member_memberships").jsonBody()['entries']
 
   >>> [m['self_link'] for m in sorted(landscape_memberships)]
-  [u'http://api.launchpad.dev/~landscape-developers/+member/name12',
-   u'http://api.launchpad.dev/~landscape-developers/+member/salgado']
+  [u'http://api.launchpad.dev/beta/~landscape-developers/+member/name12',
+   u'http://api.launchpad.dev/beta/~landscape-developers/+member/salgado']
 
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are TeamMemberships. You've
@@ -72,5 +72,5 @@ are the members.
   >>> landscape_members = webservice.get(
   ...     "/~landscape-developers/members").jsonBody()['entries']
   >>> [m['self_link'] for m in sorted(landscape_members)]
-  [u'http://api.launchpad.dev/~salgado',
-   u'http://api.launchpad.dev/~name12']
+  [u'http://api.launchpad.dev/beta/~salgado',
+   u'http://api.launchpad.dev/beta/~name12']

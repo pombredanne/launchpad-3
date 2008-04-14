@@ -48,14 +48,14 @@ capabilities.
   >>> negotiated_type('application/json, application/vd.sun.wadl+xml')
   'application/json'
 
-  >>> negotiated_type('application/vd.sun.wadl+xml, text/html, ' +
+  >>> negotiated_type('application/vd.sun.wadl+xml, text/html, '
   ...                 'application/json')
   'application/vd.sun.wadl+xml'
 
   >>> negotiated_type('application/json;q=0.5, application/vd.sun.wadl+xml')
   'application/vd.sun.wadl+xml'
 
-  >>> negotiated_type('application/json;q=0,' +
+  >>> negotiated_type('application/json;q=0,'
   ...                 'application/vd.sun.wadl+xml;q=0.1')
   'application/vd.sun.wadl+xml'
 
@@ -149,7 +149,7 @@ use the web service to change the person's name to 'salgado2'.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/~salgado2
+  Location: http://api.launchpad.dev/beta/~salgado2
   <BLANKLINE>
 
 At this point we can no longer manipulate the 'salgado' Person by
@@ -161,7 +161,7 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   >>> print modify_person('salgado2', {'name' : 'salgado'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/~salgado
+  Location: http://api.launchpad.dev/beta/~salgado
   <BLANKLINE>
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
@@ -248,7 +248,7 @@ You can't change the link to an entry's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/~salgado/team_memberships'
+  >>> link = 'http://api.launchpad.dev/beta/~salgado/team_memberships'
   >>> print modify_person('salgado',
   ...                    {'team_memberships_collection_link' : link },
   ...                    'PATCH')
@@ -301,8 +301,8 @@ relationships to other objects. Here we change the owner of the
 
   >>> admins = webservice.get('/~admins').jsonBody()
   >>> admins['teamowner_link']
-  u'http://api.launchpad.dev/~sabdfl'
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/~salgado'
+  u'http://api.launchpad.dev/beta/~sabdfl'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~salgado'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -347,7 +347,7 @@ of HTTP).
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the kind of object that can own a team:
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/bugs/1'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
@@ -358,7 +358,7 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/~admins'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 500 Internal Server Error
   ...ERROR:  new row for relation "person" violates check constraint
