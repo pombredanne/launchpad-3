@@ -502,15 +502,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         if level == 0:
             bugs_to_return = [{'id': bug.id} for bug in bug_list]
 
-            # XXX 2008-04-12 gmb:
-            #     xmlrpclib will expand lists of length 1 - no, really,
-            #     see xmlrpclib.py:1386 - so we wrap lists of length 1
-            #     in another list to make sure this doesn't break
-            #     things.
-            if len(bugs_to_return) == 1:
-                bugs_to_return = [bugs_to_return]
-
-        return bugs_to_return
+        return (self.time_snapshot(), bugs_to_return)
 
 
 class TestRoundup(Roundup):
