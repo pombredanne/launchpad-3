@@ -11,8 +11,8 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, IArchive, IBazaarApplication, IBranch,
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
-    ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
+    ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportMachine, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
@@ -419,13 +419,12 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         return user.inTeam(admins)
 
 
-class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
-    permission = 'launchpad.Admin'
+class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Owner'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """Only the team owner and Launchpad admins have launchpad.Admin on a
-        team.
+        """Only the team owner and Launchpad admins need this.
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
@@ -890,16 +889,6 @@ class EditCodeImport(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportJob.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportJob
-
-
 class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportJobSet utility.
 
@@ -918,17 +907,6 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportJobWorkflow
-
-
-class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImportMachine listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportMachineSet
 
 
 class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):

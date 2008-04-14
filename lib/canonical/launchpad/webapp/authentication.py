@@ -30,12 +30,9 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPersonSet, IPasswordEncryptor, OAUTH_CHALLENGE)
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import (
-        CookieAuthPrincipalIdentifiedEvent)
+    AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
+    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 
 
 class PlacelessAuthUtility:
@@ -195,8 +192,13 @@ class LaunchpadLoginSource:
     """
     implements(IPlacelessLoginSource)
 
-    def getPrincipal(self, id):
-        """Return a principal based on the person with the provided id.
+    def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE):
+        """Return an `ILaunchpadPrincipal` for the person with the given id.
+
+        Return None if there is no person with the given id.
+
+        The `access_level` can be used for further restricting the capability
+        of the principal.  By default, no further restriction is added.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -205,16 +207,22 @@ class LaunchpadLoginSource:
         """
         person = getUtility(IPersonSet).get(id)
         if person is not None:
-            return self._principalForPerson(person)
+            return self._principalForPerson(person, access_level)
         else:
             return None
 
     def getPrincipals(self, name):
         raise NotImplementedError
 
-    def getPrincipalByLogin(self, login):
+    def getPrincipalByLogin(
+            self, login, access_level=AccessLevel.WRITE_PRIVATE):
         """Return a principal based on the person with the email address
         signified by "login".
+
+        Return None if there is no person with the given email address.
+
+        The `access_level` can be used for further restricting the capability
+        of the principal.  By default, no further restriction is added.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -223,18 +231,15 @@ class LaunchpadLoginSource:
         """
         person = getUtility(IPersonSet).getByEmail(login)
         if person is not None:
-            return self._principalForPerson(person)
+            return self._principalForPerson(person, access_level)
         else:
             return None
 
-    def _principalForPerson(self, person):
+    def _principalForPerson(self, person, access_level):
         person = removeSecurityProxy(person)
         principal = LaunchpadPrincipal(
-            person.id,
-            person.browsername,
-            person.displayname,
-            person.password,
-            )
+            person.id, person.browsername, person.displayname,
+            person.password, access_level=access_level)
         principal.__parent__ = self
         return principal
 
@@ -249,10 +254,12 @@ class LaunchpadPrincipal:
 
     implements(ILaunchpadPrincipal)
 
-    def __init__(self, id, title, description, pwd=None):
+    def __init__(self, id, title, description, pwd=None,
+                 access_level=AccessLevel.WRITE_PRIVATE):
         self.id = id
         self.title = title
         self.description = description
+        self.access_level = access_level
         self.__pwd = pwd
 
     def getLogin(self):

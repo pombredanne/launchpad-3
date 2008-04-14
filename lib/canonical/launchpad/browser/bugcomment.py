@@ -89,7 +89,9 @@ class BugComment:
         """
         comment_limit = config.malone.max_comment_size
 
-        bits = [unicode(chunk.content) for chunk in self.chunks if chunk.content]
+        bits = [unicode(chunk.content)
+                for chunk in self.chunks
+                if chunk.content is not None and len(chunk.content) > 0]
         text = self.text_contents = '\n\n'.join(bits)
 
         if truncate and comment_limit and len(text) > comment_limit:
@@ -122,6 +124,7 @@ class BugComment:
 
     def isEmpty(self):
         """Return True if text_for_display is empty."""
+
         return (len(self.text_for_display) == 0 and
             len(self.bugattachments) == 0)
 

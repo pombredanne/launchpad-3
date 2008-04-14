@@ -23,14 +23,24 @@ resource yields a 405 error.
   Allow: GET HEAD POST PATCH PUT DELETE OPTIONS
   ...
 
-  >>> print webservice.delete("/people")
+  >>> print webservice.delete("/bugs")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
+  ...
+
+  >>> print webservice.delete("/people")
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET POST
   ...
 
   >>> print webservice.delete("/~salgado")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET PUT PATCH
+  ...
+
+  >>> print webservice.delete("/debian/+source/mozilla-firefox/+bug/1")
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET POST PUT PATCH
   ...
 
 

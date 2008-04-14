@@ -14,7 +14,7 @@ contact any external servers.
 
     >>> import subprocess
     >>> process = subprocess.Popen(
-    ...     'cronscripts/checkwatches.py', shell=True,
+    ...     ['cronscripts/checkwatches.py', '-v'],
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
@@ -25,16 +25,30 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    INFO    No watches to update on http://bugs.debian.org
+    DEBUG   No watches to update on http://bugs.debian.org
     WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
     WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
-    INFO    No watches to update on http://bugzilla.gnome.org/bugs
-    INFO    No watches to update on http://sourceforge.net/
-    INFO    No watches to update on https://bugzilla.mozilla.org/
-    INFO    Skipping updating Ubuntu Bugzilla watches.
+    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG   No watches to update on http://sourceforge.net/
+    DEBUG   No watches to update on https://bugzilla.mozilla.org/
+    DEBUG   Skipping updating Ubuntu Bugzilla watches.
     INFO    Time for this run: ... seconds.
+    DEBUG   Removing lock file:...
     <BLANKLINE>
+
+Opps reported by the checkwatches process are raised using the
+CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix and
+their type is 'BugWatchUpdateWarning'.
+
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     CheckWatchesErrorUtility)
+    >>> error_utility = CheckWatchesErrorUtility()
+    >>> report = error_utility.getLastOopsReport()
+    >>> report.id
+    'OOPS-...TCW...'
+    >>> report.type
+    'BugWatchUpdateWarning'
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
@@ -71,7 +85,8 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
-The timeout will also produce an OOPS report.
+The timeout will also produce an OOPS report and the OOPS id will be
+included in the logged error message.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
     >>> oops_hook.install()
@@ -92,8 +107,8 @@ The timeout will also produce an OOPS report.
     ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
-    ERROR:root:Connection timed out when updating http://bugs.example.com
-    OOPS-...
+    ERROR...Connection timed out when updating ... (OOPS-...)
+    OOPS-...TCW...
     baseurl=u'http://bugs.example.com'
     bugtracker=u'example-bugs'
     error-explanation=u'Connection timed out when updating...
@@ -191,5 +206,5 @@ requests are actually made.
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com
-    ERROR Connection timed out when updating http://bugs.example.com
+    ERROR Connection timed out when updating ... (OOPS-...)
 

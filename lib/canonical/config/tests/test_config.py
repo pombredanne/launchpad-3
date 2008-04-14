@@ -19,19 +19,16 @@ from canonical.lazr.interfaces.config import ConfigErrors
 # Calculate some landmark paths.
 import canonical.config
 here = os.path.dirname(canonical.config.__file__)
-schema_file = os.path.join(here, 'schema.xml')
+schema_file = os.path.join(
+    here, os.pardir, os.pardir, 'zope/app/server/schema.xml')
 schema = ZConfig.loadSchema(schema_file)
 
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
 
-# This is necessary because pid_dir typically points to a directory that only
-# exists on the deployed servers, almost never on a developer machine.
-overrides = ['canonical/pid_dir=/tmp']
-
 
 def make_test(config_file, description):
     def test_function():
-        root, handlers = ZConfig.loadConfig(schema, config_file, overrides)
+        root, handlers = ZConfig.loadConfig(schema, config_file)
     test_function.__name__ = description
     return test_function
 
@@ -84,7 +81,7 @@ def test_suite():
                 # doesn't do what we want.
                 suite.addTest(unittest.FunctionTestCase(
                     make_test(config_file, 'configs/' + description)))
-            elif filename == 'launchpad-lazr.conf':
+            elif filename.endswith('-lazr.conf'):
                 # Test the lazr.config conf files.
                 config_file = os.path.join(dirpath, filename)
                 description = config_file[prefix_len:]

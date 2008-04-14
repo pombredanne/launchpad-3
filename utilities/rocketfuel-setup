@@ -47,7 +47,7 @@ if [ $? -ne 0 ]; then
   echo "launchpad.dev added to /etc/hosts"
 fi
 
-for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev bazaar.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev feeds.launchpad.dev; do
+for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev bazaar.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev feeds.launchpad.dev openid.launchpad.dev; do
   dev_host;
 done
 
