@@ -1,4 +1,5 @@
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     metal:use-macro="context/@@main_template/master"
