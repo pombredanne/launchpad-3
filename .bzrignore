@@ -14,3 +14,5 @@ thread*.request
 ./TAGS
 lib/mailman
 TAGS
+cover.txt
+lint.txt
