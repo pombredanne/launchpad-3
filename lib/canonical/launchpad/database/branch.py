@@ -920,21 +920,18 @@ class BranchSet:
 
         # Make sure that the new branch has a unique name if not a junk
         # branch.
-        if product is None:
-            existing = Branch.selectBy(
-                owner=owner, product=None, name=name).count()
-            if existing > 0:
-                raise BranchCreationException(
-                    'A junk branch with the name "${name}" already exists '
-                    'for "${owner}".'
+        if not self.isBranchNameAvailable(owner, product, name):
+            params = {'name': name}
+            if product is None:
+                params['maybe_junk'] = 'junk '
+                params['context'] = owner.name
+            else:
+                params['maybe_junk'] = ''
+                params['context'] = product.name
+            raise BranchCreationException(
+                'A ${maybe_junk}branch with the name "${name}" already '
+                'exists for "${context}".' % params
                     % {'name': name, 'owner': owner.name})
-        else:
-            existing = Branch.selectBy(product=product, name=name).count()
-            if existing > 0:
-                raise BranchCreationException(
-                    'A branch with the name "${name}" already exists '
-                    'for project "${project}".'
-                    % {'name': name, 'project': product.name})
 
         branch = Branch(
             registrant=creator,
@@ -1382,3 +1379,21 @@ class BranchSet:
             """ % sqlvalues(user, product),
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
+
+    def isBranchNameAvailable(owner, product, branch_name, branch=None):
+        """See `IBranchSet`."""
+        if product is None:
+            existing = Branch.selectBy(
+                owner=owner, product=None, name=name).count()
+            if existing > 0:
+                raise BranchCreationException(
+                    'A junk branch with the name "${name}" already exists '
+                    'for "${owner}".'
+                    % {'name': name, 'owner': owner.name})
+        else:
+            existing = Branch.selectBy(product=product, name=name).count()
+            if existing > 0:
+                raise BranchCreationException(
+                    'A branch with the name "${name}" already exists '
+                    'for project "${project}".'
+                    % {'name': name, 'project': product.name})
