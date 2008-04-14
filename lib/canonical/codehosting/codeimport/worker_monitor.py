@@ -11,7 +11,7 @@ import sys
 import tempfile
 
 from twisted.internet import defer, reactor, task
-from twisted.python import failure, log
+from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
@@ -23,19 +23,38 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
     ILibraryFileAliasSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
 from canonical.twistedsupport import defer_to_thread
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
+    """The protocol by which the child process talks to the monitor.
+
+    In terms of bytes, the protocol is extremely simple: any output is
+    stored in the log file and seen as timeout-resetting activity.
+    Every UPDATE_HEARTBEAT_INTERVAL seconds we ask the monitor to
+    update the heartbeat of the job we are working on and pass the
+    tail of the log output.
+    """
 
     UPDATE_HEARTBEAT_INTERVAL = 30
 
     def __init__(self, deferred, worker_monitor, log_file, clock=None):
-        ProcessMonitorProtocolWithTimeout.__init__(self, deferred, 100, clock)
+        """Construct an instance.
+
+        :param deferred: See `ProcessMonitorProtocol.__init__` -- the deferred
+            that will be fired when the process has exited.
+        :param worker_monitor: A `CodeImportWorkerMonitor` instance.
+        :param log_file: A file object that the output of the child
+            process will be logged to.
+        :param clock: A provider of Twisted's IReactorTime.  This parameter
+            exists to allow testing that does not depend on an external clock.
+            If a clock is not passed in explicitly the reactor is used.
+        """
+        # Magic number for timeout here!
+        ProcessMonitorProtocolWithTimeout.__init__(
+            self, deferred, timeout=1800, clock=clock)
         self.worker_monitor = worker_monitor
         self._tail = ''
         self._log_file = log_file
@@ -43,25 +62,49 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
         self._looping_call.clock = self._clock
 
     def connectionMade(self):
+        """See `BaseProtocol.connectionMade`.
+
+        We call updateHeartbeat for the first time when we are
+        connected to the process and every UPDATE_HEARTBEAT_INTERVAL
+        seconds thereafter.
+        """
         ProcessMonitorProtocolWithTimeout.connectionMade(self)
         self._looping_call.start(self.UPDATE_HEARTBEAT_INTERVAL)
 
     def _updateHeartbeat(self):
+        """Ask the monitor to update the heartbeat.
+
+        We use runNotification() to serialize the updates and ensure
+        that any errors are handled properly.  We do not return the
+        deferred, as we want this function to be called at a frequency
+        independent of how long it takes to update the heartbeat."""
         self.runNotification(
             self.worker_monitor.updateHeartbeat, self._tail)
 
     def outReceived(self, data):
+        """See `ProcessProtocol.outReceived`.
+
+        Any output resets the timeout, is stored in the logfile and
+        updates the tail of the log.
+        """
+        self.resetTimeout()
         self._log_file.write(data)
         self._tail = (self._tail + data)[-100:]
 
     errReceived = outReceived
 
     def processEnded(self, reason):
+        """See `ProcessMonitorProtocolWithTimeout.processEnded`.
+
+        We stop updating the heartbeat when the process exits.
+        """
         ProcessMonitorProtocolWithTimeout.processEnded(self, reason)
         self._looping_call.stop()
 
 def read_only_transaction(function):
-    """XXX."""
+    """Wrap 'function' in a transaction and Zope session.
+
+    The transaction is always aborted."""
     def transacted(*args, **kwargs):
         begin()
         login(ANONYMOUS)
@@ -74,7 +117,10 @@ def read_only_transaction(function):
 
 
 def writing_transaction(function):
-    """XXX."""
+    """Wrap 'function' in a transaction and Zope session.
+
+    The transaction is committed if 'function' returns normally and
+    aborted if it raises an exception."""
     def transacted(*args, **kwargs):
         begin()
         login(ANONYMOUS)
@@ -91,34 +137,37 @@ def writing_transaction(function):
 
 
 class ExitQuietly(Exception):
+    """Raised to indicate that we should abort and exit without fuss.
+
+    Raised when the job we are working on disappears, as we assume
+    this is the result of the job being killed or reclaimed.
+    """
     pass
 
 
 class CodeImportWorkerMonitor:
+    """ """
 
     path_to_script = os.path.join(
         get_rocketfuel_root(),
         'scripts', 'code-import-worker.py')
 
     def __init__(self, job_id):
+        """Construct an instance.
+
+        :param job_id: The ID of the CodeImportJob we are to work on.
+        """
         self._job_id = job_id
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
 
-    def begin(self):
-        begin()
-        login(ANONYMOUS)
-
-    def rollback(self):
-        logout()
-        rollback()
-
-    def commit(self):
-        logout()
-        commit()
-
     def getJob(self):
-        """Only call this from defer_to_thread-ed methods!"""
+        """Fetch the `CodeImportJob` object we are working on from the DB.
+
+        Only call this from defer_to_thread-ed methods!
+
+        :raises ExitQuietly: if the job is not found.
+        """
         job = getUtility(ICodeImportJobSet).getById(self._job_id)
         if job is None:
             self._call_finish_job = False
@@ -129,21 +178,21 @@ class CodeImportWorkerMonitor:
     @defer_to_thread
     @read_only_transaction
     def getSourceDetails(self):
-        """XXX."""
+        """Get a `CodeImportSourceDetails` for the job we are working on."""
         return CodeImportSourceDetails.fromCodeImport(
             self.getJob().code_import)
 
     @defer_to_thread
     @writing_transaction
     def updateHeartbeat(self, tail):
-        """XXX."""
+        """Call the updateHeartbeat method for the job we are working on."""
         getUtility(ICodeImportJobWorkflow).updateHeartbeat(
             self.getJob(), tail)
 
     @defer_to_thread
     @writing_transaction
     def finishJob(self, status):
-        """XXX."""
+        """Call the finishJob method for the job we are working on."""
         job = self.getJob()
         log_file_size = self._log_file.tell()
         if log_file_size > 0:
@@ -160,6 +209,7 @@ class CodeImportWorkerMonitor:
             job, status, log_file_alias)
 
     def _launchProcess(self, source_details):
+        """Launch the code-import-worker.py child process."""
         deferred = defer.Deferred()
         protocol = CodeImportWorkerMonitorProtocol(
             deferred, self, self._log_file)
@@ -170,16 +220,19 @@ class CodeImportWorkerMonitor:
         return deferred
 
     def run(self):
+        """Perform the import."""
         return self.getSourceDetails().addCallback(
             self._launchProcess).addBoth(
             self.callFinishJob).addErrback(
             self._silenceQuietExit)
 
     def _silenceQuietExit(self, failure):
+        """Quietly swallow a ExitQuietly failure."""
         failure.trap(ExitQuietly)
         return None
 
     def callFinishJob(self, reason):
+        """Call finishJob() with the appropriate status."""
         if not self._call_finish_job:
             return reason
         if isinstance(reason, failure.Failure):

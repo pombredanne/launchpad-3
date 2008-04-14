@@ -56,6 +56,7 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
         ProcessTestsMixin.setUp(self)
 
     def makeProtocol(self):
+        """See `ProcessTestsMixin.makeProtocol`."""
         return CodeImportWorkerMonitorProtocol(
             self.termination_deferred, self.worker_monitor, self.log_file,
             self.clock)
@@ -111,16 +112,28 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
 
 
 class TestWorkerMonitorUnit(TestCase):
-    """Unit tests for most of the `CodeImportWorkerMonitor` class."""
+    """Unit tests for most of the `CodeImportWorkerMonitor` class.
+
+    We have to pay attention to the fact that several of the methods of the
+    `CodeImportWorkerMonitor` class are wrapped in decorators that create and
+    commit a transaction, and have to start our own transactions to check what
+    they did."""
 
     layer = TwistedLaunchpadZopelessLayer
 
     def getResultsForOurCodeImport(self):
+        """Return the `CodeImportResult`s for the `CodeImport` we created.
+        """
         code_import = getUtility(ICodeImportSet).get(self.code_import_id)
         return getUtility(ICodeImportResultSet).getResultsForImport(
             code_import)
 
     def getOneResultForOurCodeImport(self):
+        """Return the only `CodeImportResult` for the `CodeImport` we created.
+
+        This method fails the test if there is more than one
+        `CodeImportResult` for this `CodeImport`.
+        """
         results = list(self.getResultsForOurCodeImport())
         self.failUnlessEqual(len(results), 1)
         return results[0]
@@ -255,11 +268,17 @@ class TestWorkerMonitorRunNoProcess(TestCase):
     """
 
     class WorkerMonitor(CodeImportWorkerMonitor):
+        """See `CodeImportWorkerMonitor`.
+
+        Override _launchProcess to return a deferred that we can
+        callback/errback as we choose.
+        """
 
         def _launchProcess(self, source_details):
             return self.process_deferred
 
         def finishJob(self, status):
+            assert self.result_status is None, "finishJob called twice!"
             self.result_status = status
             return defer.succeed(None)
 
@@ -273,38 +292,51 @@ class TestWorkerMonitorRunNoProcess(TestCase):
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
         self.worker_monitor = self.WorkerMonitor(job.id)
+        self.worker_monitor.result_status = None
         commit()
 
     @read_only_transaction
-    def checkFinishJobCalledWithStatus(self, ignored, status):
-        """ """
+    def assertFinishJobCalledWithStatus(self, ignored, status):
+        """Assert that finishJob was called with the given status."""
         self.assertEqual(self.worker_monitor.result_status, status)
 
+    @read_only_transaction
+    def assertFinishJobNotCalled(self, ignored):
+        """Assert that finishJob was not called."""
+        self.assertEqual(self.worker_monitor.result_status, None)
+
     def test_success(self):
+        # In the successful case, finishJob is called with
+        # CodeImportResultStatus.SUCCESS.
         self.worker_monitor.process_deferred = defer.succeed(None)
-        deferred = self.worker_monitor.run().addCallback(
-            self.checkFinishJobCalledWithStatus,
+        return self.worker_monitor.run().addCallback(
+            self.assertFinishJobCalledWithStatus,
             CodeImportResultStatus.SUCCESS)
-        return deferred
 
     def test_failure(self):
+        # If the process deferred is fired with a failure, finishJob is called
+        # with CodeImportResultStatus.FAILURE, but the call to run() still
+        # succeeds.
         self.worker_monitor.process_deferred = defer.fail(RuntimeError())
-        deferred = self.worker_monitor.run().addCallback(
-            self.checkFinishJobCalledWithStatus,
+        return self.worker_monitor.run().addCallback(
+            self.assertFinishJobCalledWithStatus,
             CodeImportResultStatus.FAILURE)
-        return deferred
 
     def test_quiet_exit(self):
+        # If the process deferred fails with ExitQuietly, finishJob is not
+        # called and the call to run() succeeds.
         self.worker_monitor.process_deferred = defer.fail(ExitQuietly())
-        return self.worker_monitor.run()
+        return self.worker_monitor.run().addCallback(
+            self.assertFinishJobNotCalled)
 
     def test_quiet_exit_from_finishJob(self):
+        # If finishJob fails with ExitQuietly, the call to run() still
+        # succeeds.
         self.worker_monitor.process_deferred = defer.succeed(None)
         def finishJob(reason):
             raise ExitQuietly
         self.worker_monitor.finishJob = finishJob
-        deferred = self.worker_monitor.run()
-        return deferred
+        return self.worker_monitor.run()
 
 
 class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
@@ -327,7 +359,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeCVSCodeImport(self):
-        """Make a CVS `CodeImport` that points to a real CVS repository."""
+        """Make a `CodeImport` that points to a real CVS repository."""
         cvs_server = CVSServer(self.repo_path)
         cvs_server.setUp()
         self.addCleanup(cvs_server.tearDown)
@@ -338,7 +370,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
             cvs_root=cvs_server.getRoot(), cvs_module='trunk')
 
     def makeSVNCodeImport(self):
-        """Make a CVS `CodeImport` that points to a real CVS repository."""
+        """Make a `CodeImport` that points to a real Subversion repository."""
         self.subversion_server = SubversionServer(self.repo_path)
         self.subversion_server.setUp()
         self.addCleanup(self.subversion_server.tearDown)
@@ -348,7 +380,13 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
 
-    def approveCodeImport(self, code_import):
+    def getStartedJobForImport(self, code_import):
+        """Get a started `CodeImportJob` for `code_import`.
+
+        This method approves the import, creates a job, marks it started and
+        returns the job.  It also makes sure there are no branches or foreign
+        trees in the default stores to interfere with processing this job.
+        """
         source_details = CodeImportSourceDetails.fromCodeImport(code_import)
         clean_up_default_stores_for_import(source_details)
         self.addCleanup(
@@ -357,50 +395,52 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
         getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        return code_import
-
-    def getStartedJob(self, code_import):
-        self.approveCodeImport(code_import)
         job = getUtility(ICodeImportJobSet).getJobForMachine(self.machine)
         self.assertEqual(code_import, job.code_import)
         return job
 
-    def checkCodeImportResultCreated(self, code_import_id):
-        code_import = getUtility(ICodeImportSet).get(code_import_id)
+    def assertCodeImportResultCreated(self, code_import):
+        """Assert that a `CodeImportResult` was created for `code_import`."""
+        code_import = getUtility(ICodeImportSet).get(code_import)
         results = list(getUtility(ICodeImportResultSet).getResultsForImport(
             code_import))
         self.failUnless(len(results), 1)
 
-    def checkBranchImportedOKForCodeImport(self, code_import_id):
-        code_import = getUtility(ICodeImportSet).get(code_import_id)
+    def assertBranchImportedOKForCodeImport(self, code_import):
+        """Assert that a branch was pushed into the default branch store."""
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))
 
         bazaar_tree = get_default_bazaar_branch_store().pull(
             code_import.branch.id, tree_path)
 
+        # The same Mystery Guest as in the test_worker tests.
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
     @read_only_transaction
-    def checkImport(self, ignored, code_import_id):
-        self.checkCodeImportResultCreated(code_import_id)
-        self.checkBranchImportedOKForCodeImport(code_import_id)
+    def assertImported(self, ignored, code_import_id):
+        """Assert that the `CodeImport` of the given id was imported."""
+        code_import = getUtility(ICodeImportSet).get(code_import_id)
+        self.assertCodeImportResultCreated(code_import_id)
+        self.assertBranchImportedOKForCodeImport(code_import_id)
 
     def test_import_cvs(self):
-        job = self.getStartedJob(self.makeCVSCodeImport())
+        # Create a CVS CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         commit()
         result = CodeImportWorkerMonitor(job_id).run()
-        return result.addCallback(self.checkImport, code_import_id)
+        return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_svn(self):
-        job = self.getStartedJob(self.makeSVNCodeImport())
+    def test_import_subversion(self):
+        # Create a Subversion CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         commit()
         result = CodeImportWorkerMonitor(job_id).run()
-        return result.addCallback(self.checkImport, code_import_id)
+        return result.addCallback(self.assertImported, code_import_id)
 
 
 def test_suite():

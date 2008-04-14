@@ -499,7 +499,8 @@ class TestCVSImport(WorkerTest, TestActualImportMixin):
         foreign_tree.commit()
 
     def makeSourceDetails(self, repository_path, module_name, files):
-        """Make a CVS `CodeImport` that points to a real CVS repository."""
+        """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
+        """
         cvs_server = CVSServer(repository_path)
         cvs_server.setUp()
         self.addCleanup(cvs_server.tearDown)
@@ -530,7 +531,8 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
         shutil.rmtree('working_tree')
 
     def makeSourceDetails(self, repository_path, branch_name, files):
-        """Make a Subversion `CodeImport` that points to a real SVN repo."""
+        """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
+        """
         svn_server = SubversionServer(repository_path)
         svn_server.setUp()
         self.addCleanup(svn_server.tearDown)
