@@ -92,7 +92,7 @@ lint-verbose:
 	@bash ./utilities/lint.sh -v
 
 check-configs:
-	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
+	${PYTHON} utilities/check-configs.py
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
