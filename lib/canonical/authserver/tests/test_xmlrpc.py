@@ -107,8 +107,7 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
         loginId = r1['id']
         salt = r1['salt'].decode('base64')
         r2 = self.server.authUser(
-                loginId, SSHADigestEncryptor().encrypt('test', salt)
-                )
+                loginId, SSHADigestEncryptor().encrypt('test', salt))
         self.failUnlessEqual(r2['displayname'], 'Sample Person')
         self.failUnless('test@canonical.com' in r2['emailaddresses'])
 

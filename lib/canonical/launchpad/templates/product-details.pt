@@ -57,7 +57,7 @@
       <td tal:condition="not:context/driver">Not yet assigned</td>
     </tr>
     <tr>
-      <th>Bug contact:</th>
+      <th>Bug supervisor:</th>
       <td tal:condition="context/bugcontact">
         <a
           tal:attributes="href context/bugcontact/fmt:url"
