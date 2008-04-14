@@ -255,6 +255,20 @@ class TestBugLinking(BzrSyncTestCase):
         self.assertStatusEqual(
             self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
 
+    def test_knownMainlineRevisionsDoesntMakeLink(self):
+        """Don't add BugBranches for known mainline revision."""
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
+        # Create a new DB branch to sync with.
+        new_db_branch = self.makeDatabaseBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, new_db_branch)
+        self.assertEqual(
+            getUtility(IBugBranchSet).getBugBranch(self.bug1, new_db_branch),
+            None,
+            "Should not create a BugBranch.")
+
     def test_nonMainlineRevisionsDontMakeBugBranches(self):
         """Don't add BugBranches based on non-mainline revisions."""
         # Make the base revision.

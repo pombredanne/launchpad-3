@@ -53,6 +53,40 @@ Now we just wait for Mailman to resynchronize its state with Launchpad.
     >>> itest_one.status
     <DBItem MailingListStatus.ACTIVE, (5) Active>
 
+However, if the list status on Launchpad is CONSTRUCTING, but the mailing list
+does not actually exist in Mailman, then Mailman will create it.
+
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-two'
+    >>> browser.getControl('Display Name').value = 'ITest Two'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+    >>> from Mailman.Utils import list_names
+    >>> sorted(list_names())
+    ['itest-one', 'unused_mailman_site_list']
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_two = person_set.getByName('itest-two')
+    >>> itest_two = mailing_list_set.new(team_two, team_two.teamowner)
+    >>> raw_itest_two = removeSecurityProxy(itest_two)
+    >>> raw_itest_two.status = MailingListStatus.CONSTRUCTING
+    >>> raw_itest_two.reviewer = person_set.getByName('foo.bar')
+    >>> raw_itest_two.date_reviewed = UTC_NOW
+
+    >>> serial_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> sorted(list_names())
+    ['itest-one', 'itest-two', 'unused_mailman_site_list']
+
+    >>> itest_two = mailing_list_set.get('itest-two')
+    >>> itest_two.status
+    <DBItem MailingListStatus.ACTIVE, (5) Active>
+
 
 == Lost updates ==
 
