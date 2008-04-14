@@ -32,7 +32,7 @@ Trac instance.
     ...     def urlopen(self, url):
     ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
     ...         if not url.startswith(base_auth_url + '/'):
-    ...             raise AssertionErrror("Unexpected URL: %s" % url)
+    ...             raise AssertionError("Unexpected URL: %s" % url)
     ...         token_text = url.split('/')[-1]
     ...         token = getUtility(ILoginTokenSet)[token_text]
     ...         if token.tokentype.name != 'BUGTRACKER':
@@ -105,8 +105,8 @@ test XML-RPC transport to check.
     >>> test_transport.remote_bugs = remote_bugs
 
 Calling the getModifiedRemoteBugs() method of our trac instance and
-passing it a list of bug ids and a  datetime object will return a list
-of the ids of the bugs which have been modified since that time.
+passing it a list of bug IDs and a datetime object will return a list
+of the IDs of the bugs which have been modified since that time.
 
     >>> bug_ids_to_check = ['1', '2', '3']
     >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
