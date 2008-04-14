@@ -11,6 +11,7 @@ import inspect
 from zope.app.component.metaconfigure import handler
 from zope.configuration.fields import GlobalObject
 from zope.interface import Interface
+from zope.interface.interfaces import IInterface
 
 
 from canonical.lazr.rest.declarations import (
@@ -31,7 +32,9 @@ def find_exported_interfaces(module):
 
     :return: iterator of interfaces.
     """
-    for name, interface in inspect.getmembers(module, inspect.isclass):
+    for name, interface in inspect.getmembers(module):
+        if not IInterface.providedBy(interface):
+            continue
         tag = interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
