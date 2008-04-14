@@ -39,7 +39,7 @@ except ImportError:
         import elementtree.ElementTree as ET
 
 from zope.component import getUtility
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (

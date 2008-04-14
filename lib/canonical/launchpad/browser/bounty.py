@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.security.interfaces import Unauthorized
 from zope.app.form.browser.editview import EditView

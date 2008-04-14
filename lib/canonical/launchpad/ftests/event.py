@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-from zope.app.tests import ztapi
+from zope.app.testing import ztapi
 
 
 class TestEventListener:

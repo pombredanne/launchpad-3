@@ -7,7 +7,7 @@ from threading import Thread
 import sqlos
 import sqlobject
 import transaction
-from zope.app.rdb.interfaces import DatabaseException
+from zope.rdb.interfaces import DatabaseException
 
 from canonical.testing import LaunchpadFunctionalLayer
 

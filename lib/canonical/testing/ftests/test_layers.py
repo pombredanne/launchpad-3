@@ -14,7 +14,7 @@ import psycopg
 
 from sqlos.interfaces import IConnectionName
 
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.rdb.interfaces import IZopeDatabaseAdapter
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config

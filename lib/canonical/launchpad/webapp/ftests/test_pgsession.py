@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 from datetime import timedelta
 from zope.component import getUtility
-from zope.app.session.interfaces import ISessionDataContainer, ISessionData
+from zope.session.interfaces import ISessionDataContainer, ISessionData
 
 from canonical.launchpad.webapp.pgsession import (
         PGSessionDataContainer, PGSessionData

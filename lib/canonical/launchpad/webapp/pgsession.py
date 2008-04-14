@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from zope.app.session.interfaces import (
+from zope.rdb.interfaces import IZopeDatabaseAdapter
+from zope.session.interfaces import (
         ISessionDataContainer, ISessionData, ISessionPkgData
         )
 from psycopgda.adapter import PG_ENCODING

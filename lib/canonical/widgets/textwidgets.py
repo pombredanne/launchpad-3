@@ -3,7 +3,7 @@
 import datetime
 import pytz
 
-from zope.app.datetimeutils import parse, DateTimeError
+from zope.datetime import parse, DateTimeError
 from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import ConversionError
 

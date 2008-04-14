@@ -11,10 +11,10 @@ __metaclass__ = type
 import sqlos
 from sqlos.connection import connCache
 from sqlos.interfaces import IConnectionName
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.testing.functional import FunctionalTestSetup
 from zope.component import getUtility
-from zope.component.exceptions import ComponentLookupError
+from zope.component.interfaces import ComponentLookupError
 
 from canonical.config import config
 from canonical.database.revision import confirm_dbrevision

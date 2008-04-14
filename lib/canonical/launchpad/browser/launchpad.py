@@ -31,12 +31,12 @@ import re
 import time
 from datetime import timedelta, datetime
 
-from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
+from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.app.traversing.interfaces import ITraversable
+from zope.traversing.interfaces import ITraversable
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
