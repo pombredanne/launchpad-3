@@ -355,4 +355,5 @@ class DebianBuildManager(BuildManager):
         else:
             # Successful clean
             if not self.alreadyfailed:
-                self._slave.buildComplete()
+                self._slave.buildOK()
+        self._slave.buildComplete()

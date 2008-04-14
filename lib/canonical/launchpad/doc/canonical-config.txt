@@ -55,7 +55,7 @@ which extends default/launchpad-lazr.conf.
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/default/launchpad-lazr.conf'
+    '.../configs/development/launchpad-lazr.conf'
 
 CanonicalConfig provides __contains__ and __getitem__ to check and
 access lazr.config sections and keys.
@@ -66,114 +66,24 @@ access lazr.config sections and keys.
     >>> config['launchpad']['default_batch_size']
     5
 
+The application root directory is assigned to the root attribute.
 
-== Transition from ZConfig to LAZR ==
+    >>> import canonical.config
+    >>> example_path = canonical.config.__file__
+    >>> config.root in example_path
+    True
+    >>> example_path[len(config.root):]
+    '/lib/canonical/...'
 
-XXX sinzui 2008-02-11: This feature must be removed when all
-launchpad callsites use lazr.config.
+The config instance has additional attributes that come from the
+ZConfig.
 
-During the transition from `ZConfig` to `canonical.lazr.config`,
-`canonical.config` will load both config systems. When the
-section and key are not found in the lazr.config instance,
-canonical.config will failover to the ZConfig instance.
-
-
-=== There are three states that govern the returned value ===
-
-There are three states that `canonical.config` recognizes:
-
-1. When the section or key does not exist in either ZConfig or
-lazr.config, an error is raised. This state implies that the callsite
-was updated to lazr.config, but there is an error with the callsite
-or the schema. Neither the lazr.config or the ZConfig instances have
-a value for answertracker.bad_key. An AttributeError is raised stating
-the fact.
-
-Note that the ZConfig instance is stored in config._cache, while the
-lazr.config instance is stored in config._config.
-
-    >>> config._config.answertracker['bad_key']
-    Traceback (most recent call last):
-      ...
-    KeyError: 'bad_key'
-
-    >>> config._cache.testrunner.answertracker.bad_key
-    Traceback (most recent call last):
-     ...
-    AttributeError: SectionValue instance has no attribute 'bad_key'
-
-    >>> config.answertracker.bad_key
-    Traceback (most recent call last):
-     ...
-    AttributeError: ZConfig or lazr.config instances have no attribute
-    answertracker.bad_key.
-
-2. When the key is found in the lazr.config instance, the
-lazr.config value is returned. It is assumed that the callsite
-was updated to lazr.conf. For example, The lazr.config schema has
-a database category, and the ZConfig does not.
-
-    >>> config._config.launchpad_session.cookie
-    'launchpad_tests'
-
-    >>> config._cache.testrunner.launchpad_session.cookie
-    Traceback (most recent call last):
-     ...
-    AttributeError: SectionValue instance has no attribute 'launchpad_session'
-
-    >>> config.launchpad_session.cookie
-    'launchpad_tests'
-
-3. When the key is found in ZConfig, only, the ZConfig value is
-returned. The key was probably a ZConfig section; lazr.config does not
-support multi-sections. For example, the ZConfig instance has nested
-launchpad_session as sesson in launchpad: 'launchpad.session.dbuser'.
-
-    >>> config._config.launchpad['session'].dbuser
-    Traceback (most recent call last):
-      ...
-    KeyError: 'session'
-
-    >>> config._cache.testrunner.launchpad.session.dbuser
-    'session'
-
-    >>> config.launchpad.session.dbuser
-    'session'
-
-
-=== UnconvertedConfigWarning ===
-
-To support the developer, migrating to lazr.config, warnings can
-be emitted when ZConfig values are returned. When the
-ENABLE_DEPRECATED_ZCONFIG_WARNINGS is set to true in the
-environment, a warning is raised when canonical.config fails over
-to ZConfig.
-
-Note, the testrunner treats all warnings as errors, so we can
-test this by by checking for a traceback. Adding:
-
-{{{
-import warnings
-warnings.filterwarnings('default', '.*', UnconvertedConfigWarning)
-}}}
-
-will show all the warning emitted after the test completes.
-
-Repeating the test for state 3, when the key is only found in ZConfig, a
-warning is emitted to state that the callsite requested a non-existent
-key.
-
-    >>> import os
-    >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'true'
-
-    >>> config.launchpad.session.dbuser
-    Traceback (most recent call last):
-     ...
-    UnconvertedConfigWarning: Callsite requests a nonexistent key:
-    'launchpad.session'.
-
-    >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
-
+    >>> config.devmode
+    True
+    >>> len(config.servers)
+    4
+    >>> config.threads
+    4
 
 == Working with test configurations ==
 
@@ -211,12 +121,12 @@ conf file is loaded.
     # We must reset the lazr.config instance to test this.
     >>> config._config = None
 
-    >>> config.setInstance('default')
+    >>> config.setInstance('development')
     >>> config.instance_name
-    'default'
+    'development'
 
     >>> config.filename
-    '.../configs/default/launchpad-lazr.conf'
+    '.../configs/development/launchpad-lazr.conf'
     >>> config.extends.filename
     '.../canonical/config/schema-lazr.conf'
 
@@ -260,7 +170,7 @@ the process's name.
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/default/launchpad-lazr.conf'
+    '.../configs/development/launchpad-lazr.conf'
 
     >>> config.answertracker.days_before_expiration
     15
@@ -287,7 +197,7 @@ module to test CanonicalConfig's behaviour.
 #    >>> config.filename
 #    '.../configs/mailman-itests/launchpad-lazr.conf'
 #    >>> config.extends.filename
-#    '.../configs/default/launchpad-lazr.conf'
+#    '.../configs/development/launchpad-lazr.conf'
 #    >>> config.database.dbname
 #    'launchpad_dev'
 

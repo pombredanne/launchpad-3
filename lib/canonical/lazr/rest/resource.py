@@ -12,15 +12,13 @@ __all__ = [
     'JSONItem',
     'ReadOnlyResource',
     'ScopedCollection',
-    'ServiceRootResource'
+    'ServiceRootResource',
+    'URLDereferencingMixin',
     ]
 
 from datetime import datetime
 import pytz
 import simplejson
-from StringIO import StringIO
-import urllib
-import urlparse
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
@@ -33,13 +31,10 @@ from zope.schema import ValidationError, getFields
 from zope.schema.interfaces import IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url and BatchNavigator code should be moved into lazr.
-from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -47,6 +42,7 @@ from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
     IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+from canonical.lazr.rest.schema import URLDereferencingMixin
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -91,7 +87,7 @@ class JSONItem:
         return str(self.context.title)
 
 
-class HTTPResource:
+class HTTPResource(URLDereferencingMixin):
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
@@ -102,45 +98,6 @@ class HTTPResource:
     def __call__(self):
         """See `IHTTPResource`."""
         pass
-
-    def dereference_url(self, url):
-        """Look up a resource in the web service by URL.
-
-        Representations use URLs to refer to other resources in the
-        web service. When processing an incoming representation it's
-        often necessary to see which object a URL refers to. This
-        method calls the URL traversal code to dereference a URL into
-        a published object.
-
-        :param url: The URL to a resource.
-
-        :raise NotFoundError: If the URL does not designate a
-        published object.
-        """
-        (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
-
-        request_host = self.request.get('HTTP_HOST')
-        if config.vhosts.use_https:
-            site_protocol = 'https'
-        else:
-            site_protocol = 'http'
-
-        if (host != request_host or protocol != site_protocol or
-            query != '' or fragment != ''):
-            raise NotFound(self, url, self.request)
-
-        path_parts = map(urllib.unquote, path.split('/')[1:])
-        path_parts.reverse()
-
-        # Import here is neccessary to avoid circular import.
-        from canonical.launchpad.webapp.servers import WebServiceClientRequest
-        request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
-        setFirstLayer(request, WebServiceLayer)
-        request.setTraversalStack(path_parts)
-
-        publication = self.request.publication
-        request.setPublication(publication)
-        return request.traverse(publication.getApplication(self.request))
 
     def implementsPOST(self):
         """Returns True if this resource will respond to POST.
