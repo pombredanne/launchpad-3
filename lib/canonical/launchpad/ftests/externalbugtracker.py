@@ -476,17 +476,45 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
 
-    def bug_info(self, level, criteria):
-        """Return info about a bug or set of bugs."""
+    def bug_info(self, level, criteria=None):
+        """Return info about a bug or set of bugs.
+
+        :param level: The level of detail to return about the bugs
+            requested. This can be one of:
+            0: Return IDs only.
+            1: Return Metadata only.
+            2: Return Metadata + comments.
+            3: Return all data about each bug.
+
+        :param criteria: The selection criteria by which bugs will be
+            returned. Possible keys include:
+            modified_since: An integer timestamp. If specified, only
+                bugs modified since this timestamp will
+                be returned.
+            bugs: A list of bug IDs. If specified, only bugs whose IDs are in
+                this list will be returned.
+
+        Return a tuple of (ts, bugs) where ts is a time snapshot as
+        returned by `time_snapshot()` and bugs is a list of bug dicts.
+        """
         # XXX 2008-04-12 gmb:
         #     This is only a partial implementation of this; it will
         #     grow over time as implement different methods that call
-        #     this method.
-        bugs_to_return = self.remote_bugs.values()
+        #     this method. See bugs 203564, 158703 and 158705.
+
+        # We sort the list of bugs for the sake of testing.
+        bug_ids = sorted([bug_id for bug_id in self.remote_bugs.keys()])
+        bugs_to_return = []
+
+        for bug_id in bug_ids:
+            bugs_to_return.append(self.remote_bugs[bug_id])
+
+        if criteria is None:
+            criteria = {}
 
         # If we have a modified_since timestamp, we return bugs modified
         # since that time.
-        if criteria.has_key('modified_since'):
+        if 'modified_since' in criteria:
             # modified_since is an integer timestamp, so we convert it
             # to a datetime.
             modified_since = datetime.fromtimestamp(
@@ -497,9 +525,9 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
                 if bug.last_modified > modified_since]
 
         # If we have a list of bug IDs specified, we only return
-        # those members of bugs_modified_since that are in that
+        # those members of bugs_to_return that are in that
         # list.
-        if criteria.has_key('bugs'):
+        if 'bugs' in criteria:
             bugs_to_return = [
                 bug for bug in bugs_to_return
                 if bug.id in criteria['bugs']]

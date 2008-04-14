@@ -260,9 +260,11 @@ class TracLPPlugin(Trac):
             time.mktime(last_checked.timetuple()))
 
         # We retrieve only the IDs of the modified bugs from the server.
+        criteria = {
+            'modified_since': last_checked_timestamp,
+            'bugs': remote_bug_ids,}
         time_snapshot, modified_bugs = server.launchpad.bug_info(
-            0, dict(modified_since=last_checked_timestamp,
-            bugs=remote_bug_ids))
+            level=0, criteria=criteria)
 
         return [bug['id'] for bug in modified_bugs]
 
