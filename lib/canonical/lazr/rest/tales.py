@@ -93,6 +93,29 @@ class WadlEntryResourceAPI(WadlResourceAPI):
                 if (not ICollectionField.providedBy(field)
                     or field.readonly)]
 
+class WadlCollectionResourceAPI(WadlResourceAPI):
+    "Namespace for WADL functions that operate on collection resources."
+
+    def __init__(self, collection_resource):
+        "Initialize with a collection resource."
+        super(WadlCollectionResourceAPI, self).__init__(collection_resource)
+        self.collection = self.resource.collection
+
+    def collection_type(self):
+        return self.collection.__class__.__name__
+
+    def collection_representation_link(self):
+        "The URL to the description of the collection's representation."
+        return "#" + self.collection_type() + "-page"
+
+    def type_link(self):
+        "The URL to the resource type for the object."
+        # Right now the resource type is defined in the same file
+        # as the resource, so a relative link is fine. This won't
+        # always be so.
+        return "#" + self.collection_type()
+
+
 class WadlFieldAPI:
     "Namespace for WADL functions that operate on schema fields."
 

@@ -120,6 +120,36 @@ class HTTPResource(URLDereferencingMixin):
                                IResourcePOSTOperation)
         return len(adapters) > 0
 
+    def toWADL(self, template_name):
+        """Represent this resource as a WADL application.
+
+        The WADL document describes the capabilities of this resource.
+        """
+        template = LazrPageTemplateFile('../templates/' + template_name)
+        namespace = template.pt_getContext()
+        namespace['context'] = self
+        return template.pt_render(namespace)
+
+    def getPreferredSupportedContentType(self):
+        """Of the content types we serve, which would the client prefer?
+
+        The web service supports WADL and JSON representations. The
+        default is JSON. This method determines whether the client
+        would rather have WADL or JSON.
+        """
+        content_types = self.getPreferredContentTypes()
+        try:
+            wadl_pos = content_types.index(self.WADL_TYPE)
+        except ValueError:
+            wadl_pos = float("infinity")
+        try:
+            json_pos = content_types.index(self.JSON_TYPE)
+        except ValueError:
+            json_pos = float("infinity")
+        if wadl_pos < json_pos:
+            return self.WADL_TYPE
+        return self.JSON_TYPE
+
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
         return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
@@ -356,6 +386,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # collection resource.
                 if value is not None:
                     key = name + '_collection_link'
+                    # XXXXXXXXX This code needs to be refactored
+                    # so we can get the URL of a scoped collection
+                    # from elsewhere.
                     data[key] = "%s/%s" % (data['self_link'], name)
             elif IObject.providedBy(field):
                 # The field is an entry; include a link to the
@@ -397,6 +430,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return None, 'Expected a JSON hash.'
         return h, None
 
+
     def do_GET(self):
         """Render an appropriate representation of the entry."""
         # Handle a custom operation, probably a search.
@@ -411,19 +445,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # No custom operation was specified. Implement a standard
             # GET, which serves a JSON or WADL representation of the
             # entry.
-            content_types = self.getPreferredContentTypes()
-            try:
-                wadl_pos = content_types.index(self.WADL_TYPE)
-            except ValueError:
-                wadl_pos = float("infinity")
-            try:
-                json_pos = content_types.index(self.JSON_TYPE)
-            except ValueError:
-                json_pos = float("infinity")
-
-            # If the client's desire for WADL outranks its desire for
-            # JSON, serve WADL.  Otherwise, serve JSON.
-            if wadl_pos < json_pos:
+            if self.getPreferredSupportedContentType() == self.WADL_TYPE:
                 result = self.toWADL().encode("utf-8")
                 self.request.response.setHeader(
                     'Content-Type', self.WADL_TYPE)
@@ -483,10 +505,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         The WADL document describes the capabilities of this resource.
         """
-        template = LazrPageTemplateFile('../templates/wadl-entry.pt')
-        namespace = template.pt_getContext()
-        namespace['context'] = self
-        return template.pt_render(namespace)
+        return super(EntryResource, self).toWADL('wadl-entry.pt')
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -657,15 +676,29 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                 # just needs this string served to the client.
                 return result
         else:
-            # No custom operation was specified. Implement a standard GET,
-            # which retrieves the items in the collection.
+            # No custom operation was specified. Implement a standard
+            # GET, which serves a JSON or WADL representation of the
+            # collection.
             entries = self.collection.find()
             if entries is None:
                 raise NotFound(self, self.collection_name)
+
+            if self.getPreferredSupportedContentType() == self.WADL_TYPE:
+                result = self.toWADL().encode("utf-8")
+                self.request.response.setHeader(
+                    'Content-Type', self.WADL_TYPE)
+                return result
             result = self.batch(entries, self.request)
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
+
+    def toWADL(self):
+        """Represent this resource as a WADL application.
+
+        The WADL document describes the capabilities of this resource.
+        """
+        return super(CollectionResource, self).toWADL('wadl-collection.pt')
 
 
 class ServiceRootResource:
@@ -722,3 +755,5 @@ class ScopedCollection:
         """See `ICollection`."""
         return self.collection
 
+    def url(self):
+        
