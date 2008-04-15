@@ -177,7 +177,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'A list of the people or teams who are drivers for this series. '
         'This list is made up of any drivers or owners from this '
         'DistroSeries, and the Distribution to which it belong.')
-    bugcontact = Attribute(
+    bug_supervisor = Attribute(
         'Currently just a reference to the Distribution bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Distribution security contact.')

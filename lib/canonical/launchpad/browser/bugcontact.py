@@ -1,13 +1,13 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Browser view for bug contact."""
+"""Browser view for bug supervisor."""
 
 __metaclass__ = type
 
 __all__ = ['BugContactEditView']
 
 
-from canonical.launchpad.interfaces import IHasBugContact
+from canonical.launchpad.interfaces import IHasBugSupervisor
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -16,8 +16,8 @@ from canonical.launchpad.webapp.menu import structured
 class BugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug contact."""
 
-    schema = IHasBugContact
-    field_names = ['bugcontact']
+    schema = IHasBugSupervisor
+    field_names = ['bug_supervisor']
 
     @action('Change', name='change')
     def change_action(self, action, data):

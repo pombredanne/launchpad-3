@@ -6,7 +6,7 @@
 
   <browser:page
     name="+bugcontact"
-    for="canonical.launchpad.interfaces.IHasBugContact"
+    for="canonical.launchpad.interfaces.IHasBugSupervisor"
     facet="bugs"
     class="canonical.launchpad.browser.BugContactEditView"
     permission="launchpad.Edit"

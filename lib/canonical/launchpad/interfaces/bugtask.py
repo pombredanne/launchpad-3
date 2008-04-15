@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BUG_CONTACT_BUGTASK_STATUSES',
+    'BUG_SUPERVISOR_BUGTASK_STATUSES',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -278,7 +278,7 @@ RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INVALID,
     BugTaskStatus.WONTFIX)
 
-BUG_CONTACT_BUGTASK_STATUSES = (
+BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
     BugTaskStatus.TRIAGED)
 
@@ -385,7 +385,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any
-    # new bugcontacts that should get an email containing full bug details
+    # new subscribers that should get an email containing full bug details
     # (rather than just the standard change mail.) It is a property on
     # IBugTask because we currently only ever need this value for events
     # handled on IBugTask.
@@ -437,7 +437,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         :user: the user requesting the change
 
         Some status transitions, e.g. Triaged, require that the user
-        be a bug contact or the owner of the project.
+        be a bug supervisor or the owner of the project.
         """
 
     def transitionToStatus(new_status, user):
@@ -586,7 +586,7 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_contact = Choice(
+    bug_supervisor = Choice(
         title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
         required=False)
     bug_commenter = Choice(
@@ -798,7 +798,7 @@ class BugTaskSearchParams:
                  component=None, pending_bugwatch_elsewhere=False,
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_contact=None, bug_reporter=None, nominated_for=None,
+                 bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False):
         self.bug = bug
         self.searchtext = searchtext
@@ -823,7 +823,7 @@ class BugTaskSearchParams:
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
-        self.bug_contact = bug_contact
+        self.bug_supervisor = bug_supervisor
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
@@ -918,7 +918,7 @@ class IBugTaskSet(Interface):
                    milestone=None):
         """Create a bug task on a bug and return it.
 
-        If the bug is public, bug contacts will be automatically
+        If the bug is public, bug supervisors will be automatically
         subscribed.
 
         If the bug has any accepted series nominations for a supplied
