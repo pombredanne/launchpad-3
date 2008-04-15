@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Trac ExternalBugTracker utiltiy."""
+"""Trac ExternalBugTracker implementation."""
 
 __metaclass__ = type
 __all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
@@ -194,7 +194,7 @@ class Trac(ExternalBugTracker):
 
 
 def needs_authentication(func):
-    """Decorator for automatically authenticate if needed.
+    """Decorator for automatically authenticating if needed.
 
     If an `xmlrpclib.ProtocolError` with error code 403 is raised by the
     function, we'll try to authenticate and call the function again.
@@ -224,7 +224,7 @@ class TracLPPlugin(ExternalBugTracker):
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
 
     def _generateAuthenticationToken(self):
-        """Create an authentication token an return it."""
+        """Create an authentication token and return it."""
         internal_xmlrpc = xmlrpclib.ServerProxy(
             config.checkwatches.xmlrpc_url,
             transport=self.internal_xmlrpc_transport)

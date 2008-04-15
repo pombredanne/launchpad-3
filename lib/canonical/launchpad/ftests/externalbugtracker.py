@@ -16,9 +16,9 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    DebBugs, Mantis, Trac, TracXMLRPCTransport, Roundup, RequestTracker,
-    SourceForge)
+    BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
+    ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
+    Trac, TracXMLRPCTransport)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -432,7 +432,7 @@ class TestTracInternalXMLRPCTransport:
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)
-        print "Using XML-RPC to generate token"
+        print "Using XML-RPC to generate token."
         return token_api.newBugTrackerToken()
 
 

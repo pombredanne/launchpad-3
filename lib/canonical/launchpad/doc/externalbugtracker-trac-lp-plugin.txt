@@ -51,7 +51,7 @@ Trac to validate $token and return a Set-Cookie header.
     ...             raise AssertionError(
     ...                 'Invalid token type: %s' % token.tokentype.name)
     ...         if token.date_consumed is not None:
-    ...             raise AssertionError("Token as already been consumed.")
+    ...             raise AssertionError("Token has already been consumed.")
     ...         token.consume()
     ...         print "Successfully validated the token."
     ...         response = FakeResponse()
@@ -75,7 +75,7 @@ visible to Trac.
 The method that authenticates with Trac is _authenticate().
 
     >>> trac._authenticate()
-    Using XML-RPC to generate token
+    Using XML-RPC to generate token.
     Successfully validated the token.
 
 
@@ -99,7 +99,7 @@ the Set-Cookie header.
     None
 
 The XML-RPC transport will then take the auth_cookie and set the Cookie
-header in its requests
+header in its requests.
 
     >>> trac = TracLPPlugin('http://example.com/')
     >>> transport = trac.xmlrpc_transport
@@ -131,13 +131,13 @@ instance returns another time zone.
     >>> test_transport.local_timezone = 'CET'
     >>> test_transport.utc_offset = 60*60
     >>> trac.getCurrentDBTime()
-    Using XML-RPC to generate token
+    Using XML-RPC to generate token.
     Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
 
 An authorization request was automatically sent, since the method needed
 authentication. Because the cookie is now set, other calls won't cause
-in authorization request.
+an authorization request.
 
     >>> test_transport.auth_cookie
     'trac_auth=random_token-...'
@@ -149,6 +149,6 @@ sent again.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> trac.getCurrentDBTime()
-    Using XML-RPC to generate token
+    Using XML-RPC to generate token.
     Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
