@@ -572,9 +572,6 @@ class PersonSetContextMenu(ContextMenu):
 
 class PersonSOP(StructuralObjectPresentation):
 
-    def isPrivate(self):
-        return self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP
-
     def getIntroHeading(self):
         return None
 
