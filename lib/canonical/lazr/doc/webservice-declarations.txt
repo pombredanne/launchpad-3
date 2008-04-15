@@ -241,7 +241,8 @@ All fields tagged were copied to the new interface:
     price: Float
     title: TextLine
 
-It's an error to use that on an interface that wasn't marked for export:
+It's an error to use generate_entry_interface() on an interface that
+wasn't marked for export:
 
     >>> class SimpleNotExported(Interface):
     ...     """Interface not exported."""
@@ -275,7 +276,7 @@ The resulting class is named based on the interface:
     'BookEntryAdapter'
 
 The resulting adapter has its schema attribute set to the exported
-interface, and proxies all attribute to the underlying object.
+interface, and proxies all attributes to the underlying object.
 
     >>> from zope.interface import implements
     >>> from zope.interface.verify import verifyObject
@@ -303,8 +304,8 @@ interface, and proxies all attribute to the underlying object.
     >>> entry_adapter.title
     u'Island'
 
-It's an error to call this on an interface not exported on the web
-service:
+It's an error to call this function on an interface not exported on the
+web service:
 
     >>> generate_entry_adapter(SimpleNotExported, entry_interface)
     Traceback (most recent call last):
@@ -355,8 +356,8 @@ with the @collection_default_content decorator.
     >>> collection_adapter.find()
     ['A book', 'Another book']
 
-It's an error to call this on an interface not exported on the web
-service:
+It's an error to call this function on an interface not exported on the
+web service:
 
     >>> generate_collection_adapter(SimpleNotExported)
     Traceback (most recent call last):

@@ -51,7 +51,8 @@ class IMessage(Interface):
     export_field(owner)
 
 
-    # Schema is really IMessage, but cannot be declared at this time.
+    # Schema is really IMessage, but this cannot be declared here. It's
+    # fixed below after the IMessage definition is complete.
     parent = Object(
             title=_('Parent'), schema=Interface,
             required=False, readonly=True)

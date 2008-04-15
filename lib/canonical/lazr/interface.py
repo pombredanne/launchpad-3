@@ -42,7 +42,7 @@ def use_template(template, include=None, exclude=None):
 def copy_attribute(attribute):
     """Copy an interface attribute.
 
-    This makes sure that the relative ordering of IField is presevered.
+    This makes sure that the relative ordering of IField is preserved.
     """
     new_attribute = copy(attribute)
     # Fields are ordered based on a global counter in the Field class.

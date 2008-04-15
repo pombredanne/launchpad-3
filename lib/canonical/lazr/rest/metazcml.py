@@ -46,8 +46,8 @@ def register_webservice(context, module):
     """Generate and register web service adapters.
 
     All interfaces in the module are inspected, and appropriate interfaces and
-    adapters are generated and registered for the one marked for export on the
-    web service.
+    adapters are generated and registered for the ones marked for export on
+    the web service.
     """
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
