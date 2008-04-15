@@ -241,18 +241,6 @@ class TestWorkerMonitorUnit(TestCase):
             self.worker_monitor.finishJob(CodeImportResultStatus.SUCCESS),
             ZeroDivisionError).addCallback(check_failure)
 
-    def test_finishJobFailureReportedOverUploadFailure(self):
-        # If the upload to the librarian fails for any reason, the worker
-        # monitor still calls the finishJob workflow method, and if *that*
-        # fails, then this is the failure that is reported.
-
-        # Write some text so that we try to upload the log.
-        self.worker_monitor._log_file.write('some text')
-        # Make _createLibrarianFileAlias fail in a distinctive way.
-        self.worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
-        # Not sure how to write this test :(
-        pass
-
     def patchOutFinishJob(self):
         calls = []
         def finishJob(status):
