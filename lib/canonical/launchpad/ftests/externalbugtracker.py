@@ -415,6 +415,11 @@ class TestTrac(Trac):
 
 
 class TestTracInternalXMLRPCTransport:
+    """Test XML-RPC Transport for the internal XML-RPC server.
+
+    This transport executes all methods as the 'launchpad' db user, and
+    then switches back to the 'checkwatches' user.
+    """
 
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
@@ -439,7 +444,8 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
     utc_offset = 0
     expired_cookie = None
 
-    def expire_cookie(self, cookie):
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
         self.expired_cookie = cookie
 
     def request(self, host, handler, request, verbose=None):

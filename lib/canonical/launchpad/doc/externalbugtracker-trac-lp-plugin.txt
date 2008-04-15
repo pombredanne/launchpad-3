@@ -129,7 +129,7 @@ in authorization request.
 If the cookie gets expired, an authorization request is automatically
 sent again.
 
-    >>> test_transport.expire_cookie(test_transport.auth_cookie)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> trac.getCurrentDBTime()
     Using XML-RPC to generate token
     Successfully validated the token.

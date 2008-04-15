@@ -261,10 +261,15 @@ class TracLPPlugin(ExternalBugTracker):
 
 
 class TracXMLRPCTransport(xmlrpclib.Transport):
+    """XML-RPC Transport for Trac bug trackers.
+
+    It sends a cookie header as authentication.
+    """
 
     auth_cookie = None
 
     def send_host(self, connection, host):
+        """Send the host and cookie headers."""
         xmlrpclib.Transport.send_host(self, connection, host)
         if self.auth_cookie is not None:
             connection.putheader('Cookie', self.auth_cookie)
