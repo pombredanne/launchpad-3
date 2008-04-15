@@ -127,6 +127,7 @@ class ExistingPOFileInDatabase:
             is_fuzzy,
             is_current,
             is_imported,
+            was_fuzzy_in_last_import,
             %s
           FROM TranslationMessage
             JOIN POFile ON
@@ -150,12 +151,14 @@ class ExistingPOFileInDatabase:
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
-             is_imported, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
+             is_imported, was_fuzzy_in_last_import,
+             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
              msgstr5) in rows:
-            if is_current:
-                look_at = self.messages
-            elif is_imported:
+            if is_imported:
                 look_at = self.imported
+                is_fuzzy = was_fuzzy_in_last_import
+            elif is_current:
+                look_at = self.messages
             else:
                 # We don't care about non-current and non-imported messages
                 # yet.  To be part of super-fast-imports-phase2.
