@@ -1504,7 +1504,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
-        for package_counts in self.context.getBugContactOpenBugCounts(
+        for package_counts in self.context.getBugSubscriberOpenBugCounts(
             self.user):
             package = package_counts['package']
             L.append({
@@ -1531,7 +1531,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         current_package = self.current_package
 
         other_packages = [
-            package for package in self.context.getBugContactPackages()
+            package for package in self.context.getBugSubscriberPackages()
             if package != current_package]
 
         package_links = []

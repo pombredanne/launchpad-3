@@ -807,15 +807,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
-    def getBugContactPackages():
-        """Return a list of packages for which this person is a bug contact.
+    def getBugSubscriberPackages():
+        """Return the packages for which this person is a bug subscriber.
 
         Returns a list of IDistributionSourcePackage's, ordered alphabetically
         (A to Z) by name.
         """
 
-    def getBugContactOpenBugCounts(user):
-        """Return open bug counts for this bug contact's packages.
+    def getBugSubscriberOpenBugCounts(user):
+        """Return open bug counts for this bug subscriber's packages.
 
             :user: The user doing the search. Private bugs that this
                    user doesn't have access to won't be included in the

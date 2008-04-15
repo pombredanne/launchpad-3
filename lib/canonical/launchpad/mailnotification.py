@@ -131,7 +131,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addDistroBugContact(self, person, distro):
+    def addDistroBugSupervisor(self, person, distro):
         """Registers a distribution bug supervisor for this bug."""
         reason = "Bug Supervisor (%s)" % distro.displayname
         # All displaynames in these reasons should be changed to bugtargetname
@@ -157,7 +157,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamBugContact(self, person, upstream):
+    def addUpstreamBugSupervisor(self, person, upstream):
         """Registers an upstream bug supervisor for this bug."""
         reason = "Bug Supervisor (%s)" % upstream.displayname
         if person.isTeam():
@@ -226,12 +226,12 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     return msg
 
 
-def _send_bug_details_to_new_bugcontacts(
+def _send_bug_details_to_new_bug_subscribers(
     bug, previous_subscribers, current_subscribers):
     """Send an email containing full bug details to new bug subscribers.
 
     This function is designed to handle situations where bugtasks get
-    reassigned to new products or sourcepackages, and the new bugcontacts
+    reassigned to new products or sourcepackages, and the new bug subscribers
     need to be notified of the bug.
     """
     prev_subs_set = set(previous_subscribers)
@@ -775,10 +775,10 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers.update(
             bugtask.milestone.getBugNotificationsRecipients(recipients))
 
-    # If the target's bug contact isn't set,
+    # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
     pillar = bugtask.pillar
-    if pillar.bugcontact is None:
+    if pillar.bug_supervisor is None:
         also_notified_subscribers.add(pillar.owner)
         if recipients is not None:
             recipients.addRegistrant(pillar.owner, pillar)
@@ -839,7 +839,7 @@ def notify_bugtask_edited(modified_bugtask, event):
 
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
-    _send_bug_details_to_new_bugcontacts(
+    _send_bug_details_to_new_bug_subscribers(
         event.object.bug, previous_subscribers, current_subscribers)
     update_security_contact_subscriptions(modified_bugtask, event)
 
