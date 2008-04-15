@@ -356,6 +356,10 @@ class BugTask(SQLBase, BugTaskMixin):
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
     date_incomplete = UtcDateTimeCol(notNull=False, default=None)
+    date_left_new = UtcDateTimeCol(notNull=False, default=None)
+    date_triaged = UtcDateTimeCol(notNull=False, default=None)
+    date_fix_committed = UtcDateTimeCol(notNull=False, default=None)
+    date_fix_released = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
@@ -698,6 +702,27 @@ class BugTask(SQLBase, BugTaskMixin):
             # Confirmed.
             self.date_inprogress = now
 
+        if (old_status == BugTaskStatus.NEW and
+            new_status > BugTaskStatus.NEW and
+            self.date_left_new is None):
+            # This task is leaving the NEW status for the first time
+            self.date_left_new = now
+
+        if (old_status < BugTaskStatus.TRIAGED and
+            new_status >= BugTaskStatus.TRIAGED):
+            # This task is now marked as TRIAGED
+            self.date_triaged = now
+
+        if (old_status < BugTaskStatus.FIXCOMMITTED and
+            new_status >= BugTaskStatus.FIXCOMMITTED):
+            # This task is now marked as FIXCOMMITTED
+            self.date_fix_committed = now
+
+        if (old_status < BugTaskStatus.FIXRELEASED and
+            new_status >= BugTaskStatus.FIXRELEASED):
+            # This task is now marked as FIXRELEASED
+            self.date_fix_released = now
+
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
         # we keep a date_incomplete recorded for them.
@@ -723,6 +748,15 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if new_status < BugTaskStatus.INPROGRESS:
             self.date_inprogress = None
+
+        if new_status < BugTaskStatus.TRIAGED:
+            self.date_triaged = None
+
+        if new_status < BugTaskStatus.FIXCOMMITTED:
+            self.date_fix_committed = None
+
+        if new_status < BugTaskStatus.FIXRELEASED:
+            self.date_fix_released = None
 
     def transitionToAssignee(self, assignee):
         """See `IBugTask`."""

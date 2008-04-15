@@ -357,6 +357,23 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         description=_(
             "The date on which this task was marked either Fix Committed or "
             "Fix Released."))
+    date_left_new = Datetime(
+        title=_("Date left new"),
+        description=_(
+            "The date on which this task was marked with a status "
+            "higher than New."))
+    date_triaged = Datetime(
+        title=_("Date Triaged"),
+        description=_(
+            "The date on which this task was marked Triaged."))
+    date_fix_committed = Datetime(
+        title=_("Date Fix Committed"),
+        description=_(
+            "The date on which this task was marked Fix Committed."))
+    date_fix_released = Datetime(
+        title=_("Date Fix Relesaed"),
+        description=_(
+            "The date on which this task was marked Fix Released."))
     age = Datetime(
         title=_("Age"),
         description=_(
