@@ -20,6 +20,7 @@ import shutil
 import sys
 import tempfile
 
+import transaction
 from zope.component import getUtility
 
 from canonical.codehosting.tests.helpers import make_bazaar_branch_and_tree
@@ -28,7 +29,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
 
 
 def main(argv):
@@ -36,14 +36,13 @@ def main(argv):
     if os.path.exists(config.codehosting.branches_root):
         shutil.rmtree(config.codehosting.branches_root)
     execute_zcml_for_scripts()
-    ztm = initZopeless()
     try:
         branches = Branch.select(
             "Branch.branch_type = %s" % sqlvalues(BranchType.HOSTED))
         for branch in branches:
             make_bazaar_branch_and_tree(branch)
     finally:
-        ztm.abort()
+        transaction.abort()
     print "Created %d branches based on sample data." % len(list(branches))
 
 
