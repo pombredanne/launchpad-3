@@ -26,7 +26,7 @@ an informative message is displayed as per the OpenID spec.
     To learn more about using this service, please review the
     <a href="https://help.launchpad.net/OpenID">instructions</a>.</p>
     <p>
-    Note that this site is meant to be called from an OpenID enabled
+    Note that this site is meant to be called from an OpenID-enabled
     service and therefore has no user-facing functions.</p>
     ...
 
