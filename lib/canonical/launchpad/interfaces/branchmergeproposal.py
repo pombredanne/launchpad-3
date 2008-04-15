@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -207,6 +207,11 @@ class IBranchMergeProposal(Interface):
         """
 
 
+    # Cannot specify value type without creating a circular dependency
+    votes = List(
+        title=_('The votes cast or expected for this proposal'),
+        )
+
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
 
@@ -328,6 +333,9 @@ class IBranchMergeProposal(Interface):
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
         """
+
+    def nominateReviewer(reviewer, registrant):
+        """Create a vote for the specified person."""
 
     def createMessage(owner, subject, content=None, vote=None, parent=None,
                       _date_created=None):
