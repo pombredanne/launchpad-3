@@ -228,7 +228,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         and BinaryPackageRelease keep the uploaded data, but the publishing
         tables have the overridden data.
         """
-        # foo_2.9-1 is targeted to universe.
+        # bar_1.0-1_universe is targeted to universe.
         upload_dir = self.queueUpload("bar_1.0-1_universe", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
@@ -263,12 +263,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             version="1.0-1", exact_match=True, archive=self.name16.archive)
         queue_item.realiseUpload()
 
-        bprs = build.binarypackages
-        for bpr in bprs:
-            self.assertEqual(bpr.component.name, "universe")
-            [bpph] = BinaryPackagePublishingHistory.selectBy(
-                binarypackagerelease=bpr, archive=self.name16.archive)
-            self.assertEqual(bpph.component.name, "main")
+        for binary_package in build.binarypackages:
+            self.assertEqual(binary_package.component.name, "universe")
+            [binary_pub] = BinaryPackagePublishingHistory.selectBy(
+                binarypackagerelease=binary_package,
+                archive=self.name16.archive)
+            self.assertEqual(binary_pub.component.name, "main")
 
     def testPPABinaryUploads(self):
         """Check the usual binary upload life-cycle for PPAs."""
