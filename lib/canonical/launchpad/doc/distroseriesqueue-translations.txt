@@ -268,7 +268,7 @@ Distribution archives (i.e. PPAs).
   >>> queue_item.archive = foobar_archive
 
   >>> queue_item.customfiles[0].publish(mock_logger)
-  DEBUG: Publishing custom pmount,pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
+  DEBUG: Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
   DEBUG: Skipping translations since it is a PPA.
 
 
