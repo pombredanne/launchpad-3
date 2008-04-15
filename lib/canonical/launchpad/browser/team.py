@@ -40,10 +40,9 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet,
-    IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
-    TeamContactMethod, TeamMembershipStatus,
+    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, LoginTokenType, MailingListStatus,
+    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
     TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy

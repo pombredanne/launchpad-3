@@ -6,7 +6,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Text
+from zope.schema import Bool
 
 from canonical.launchpad import _
 

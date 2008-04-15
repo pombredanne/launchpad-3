@@ -9,7 +9,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine, Text
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _

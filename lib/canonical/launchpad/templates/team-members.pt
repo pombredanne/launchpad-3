@@ -18,13 +18,6 @@
 
 <div metal:fill-slot="main">
 
-	<div id="team-properties" style="float: right;">
-		<img 
-			src="/@@/private-large"
-			title="Membership of this team is private"
-			alt="(Private Membership)"
-			tal:condition="CONTEXTS/lp:immediate_object_is_private" />
-	</div>
   <h1>Members of
     &#8220;<span tal:replace="context/browsername" />&#8221;
   </h1>
