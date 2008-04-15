@@ -20,14 +20,14 @@ an informative message is displayed as per the OpenID spec.
     <a href="http://openid.net/">OpenID</a> technology.
     This site allows you to use
     <a href="https://launchpad.net/people/+me">your Launchpad account</a>
-    to log into OpenID enabled sites around the Internet including
+    to log into OpenID-enabled sites around the Internet including
     those run by Canonical and Ubuntu.</p>
     <p>
     To learn more about using this service, please review the
     <a href="https://help.launchpad.net/OpenID">instructions</a>.</p>
     <p>
     Note that this site is meant to be called from an OpenID enabled
-    service and therefore has no user facing functions.</p>
+    service and therefore has no user-facing functions.</p>
     ...
 
 
