@@ -12,11 +12,15 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.schema import Choice
 
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.vocabularies.dbobjects import (
+    WebBugTrackerVocabulary)
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
@@ -31,26 +35,25 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
     def __init__(self, field, vocabulary, request):
         LaunchpadRadioWidget.__init__(self, field, vocabulary, request)
 
-        ## Bug tracker widget.
-        self.bugtracker_widget = (
-            CustomWidgetFactory(LaunchpadDropdownWidget))
+        # Bug tracker widget.
+        self.bugtracker = Choice(vocabulary=WebBugTrackerVocabulary())
+        self.bugtracker_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
         setUpWidget(
-            self, 'bugtracker', field, IInputWidget, prefix=self.name,
-            value=field.context.bugtracker, context=field.context)
+            self, 'bugtracker', self.bugtracker, IInputWidget,
+            prefix=self.name, value=field.context.bugtracker,
+            context=field.context)
         if self.bugtracker_widget.extra is None:
             self.bugtracker_widget.extra = ''
-        # Select the the corresponding radio option automatically if
-        # the user selects a bug tracker.
+        ## Select the the corresponding radio option automatically if
+        ## the user selects a bug tracker.
         self.bugtracker_widget.extra += (
             ' onchange="selectWidget(\'%s.2\', event);"' % self.name)
 
-        ## Upstream email address field and widget.
-        # This is to make email address bug trackers appear separately
-        # from the main bug tracker list.
+        # Upstream email address field and widget.
+        ## This is to make email address bug trackers appear
+        ## separately from the main bug tracker list.
         self.upstream_email_address = StrippedTextLine(
-            title=u'Email Address', required=False,
-            constraint=email_validator, description=(
-                u"The upstream email address that bugs should be sent to."),
+            required=False, constraint=email_validator,
             __name__='upstream_email_address')
         self.upstream_email_address_widget = (
             CustomWidgetFactory(StrippedTextWidget))
@@ -58,8 +61,8 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self, 'upstream_email_address', self.upstream_email_address,
             IInputWidget, prefix=self.name, value='',
             context=self.upstream_email_address.context)
-        # Select the the corresponding radio option automatically if
-        # the user starts typing.
+        ## Select the the corresponding radio option automatically if
+        ## the user starts typing.
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''
         self.upstream_email_address_widget.extra += (
@@ -73,10 +76,11 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         elif form_value == "external-email":
             email_address = self.upstream_email_address_widget.getInputValue()
             if email_address is None or len(email_address) == 0:
-                pass # XXX: ERROR
+                self.upstream_email_address_widget._error = (
+                    LaunchpadValidationError('Please enter an email address'))
+                raise self.upstream_email_address_widget._error
             bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
-                'mailto:%s' % email_address,
-                getUtility(ILaunchBag).user,
+                'mailto:%s' % email_address, getUtility(ILaunchBag).user,
                 BugTrackerType.EMAILADDRESS)
             return bugtracker
         elif form_value == "project":
@@ -158,7 +162,11 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if value == field.malone_marker:
             selected = malone_item_arguments
         elif value != self.context.missing_value:
-            if value.bugtrackertype == BugTrackerType.EMAILADDRESS:
+            # value will be 'external-email' if there was an error on
+            # upstream_email_address_widget.
+            if (value == 'external-email' or (
+                    IBugTracker.providedBy(value) and
+                    value.bugtrackertype == BugTrackerType.EMAILADDRESS)):
                 selected = external_bugtracker_email_arguments
             else:
                 selected = external_bugtracker_arguments
