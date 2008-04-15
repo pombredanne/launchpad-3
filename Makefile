@@ -2,7 +2,10 @@
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
 PYTHON_VERSION=2.4
-PYTHON=python${PYTHON_VERSION}
+# XXX sinzui 2008-04-15:
+# Filter all deprecation warnings during the transition period to
+# Zope 3.4. We want to remove the DeprecationWarning when we are done.
+PYTHON=python${PYTHON_VERSION} -Wi::DeprecationWarning
 IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 VERBOSITY=-vv
