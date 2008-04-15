@@ -8,12 +8,12 @@ CREATE TABLE CommercialSubscription (
     date_expires timestamp without time zone NOT NULL,
     status integer NOT NULL DEFAULT 10, -- UNSUBSCRIBED
     product integer NOT NULL,
-    registrant integer,
-    authorized_by integer,
+    registrant integer NOT NULL,  -- Who redeemed the voucher to register the project.
+    purchaser integer NOT NULL,   -- Who actually purchased the voucher.
     whiteboard text,
     sales_system integer,
-    sales_system_id text,
-    sales_method integer
+    sales_system_id text          -- Identifier in the sales system.  For Salesforce it will be the
+                                  -- voucher number.
 );
 
 -- Need indexes for people merge
