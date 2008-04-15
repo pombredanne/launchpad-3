@@ -124,7 +124,7 @@
       <p tal:condition="product/bugcontact">
         <a tal:attributes="href product/bugcontact/fmt:url"
            tal:content="product/bugcontact/displayname">Sample Person</a>,
-           the bug contact for 
+           the bug supervisor for 
            <tal:product tal:replace="product/displayname">Firefox</tal:product>,
            will be notified about this bug.
       </p>
@@ -139,7 +139,7 @@
         </p>
 
         <p tal:condition="not: product/official_malone">
-          There is no bug contact for
+          There is no bug supervisor for
           <tal:product tal:replace="product/displayname">Firefox</tal:product>.
           This means that there is nobody upstream we can notify about
           this issue.
@@ -155,7 +155,7 @@
         This is a private bug report,
         so <a tal:attributes="href product/bugcontact/fmt:url"
            tal:content="product/bugcontact/displayname">Sample Person</a>,
-         the bug contact for 
+         the bug supervisor for 
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
          won&rsquo;t be notified. You can also set up 
            <a href="+addsubscriber">additional contacts</a> to be notified.

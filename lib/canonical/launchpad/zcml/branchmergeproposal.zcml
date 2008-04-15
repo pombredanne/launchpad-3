@@ -14,9 +14,9 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
-                       root_message
+                       votes root_message
                        isPersonValidReviewer isMergable
-                       getCreationNotificationRecipients isValidTransition
+                       getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
         permission="launchpad.Edit"
@@ -24,14 +24,17 @@
         attributes="createMessage deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
-                    enqueue dequeue moveToFrontOfQueue
+                    enqueue dequeue moveToFrontOfQueue nominateReviewer
                     " />
   </content>
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
-
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"

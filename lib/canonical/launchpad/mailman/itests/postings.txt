@@ -32,11 +32,11 @@ Inject a message from a non-member into Mailman's incoming queue.
     ... """)
     >>> vette_watcher.wait()
 
-To prove that the message was never posted, the mbox file should either be
-non-existent or empty.
+Message from non-members who are in unknown standing do not get posted to the
+mailing list.
 
-    >>> smtpd.getMailboxSize() <= 0
-    True
+    >>> len(smtpd.getMessages())
+    0
 
 
 == Unvalidated member postings ==
@@ -98,22 +98,202 @@ or subscribed to its mailing list, she still can't post to it.
     >>> len(smtpd.getMessages())
     0
 
+The message is held for team owner approval, both in Launchpad and in Mailman.
+
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    1
+    >>> itest_helper.print_mailman_hold('itest-one', holds[0])
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Subject: An unsubscribed post
+    Message-ID: <third-injection>
+    <BLANKLINE>
+    Hi, I am not a member of this team's list (yet).
+    <BLANKLINE>
+    
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from zope.component import getUtility
+    >>> messages = getUtility(IMessageSet).get('<third-injection>')
+    >>> len(messages)
+    1
+    >>> print messages[0].text_contents
+    Hi, I am not a member of this team's list (yet).
+    <BLANKLINE>
+
+The team administrator can accept, decline or discard this posting.  By
+declining the message, Launchpad forgets about it, while Mailman sends a
+rejection notice to Anne.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMessageApprovalSet, IPersonSet)
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_one = person_set.getByName('itest-one')
+    >>> message_approval_set = getUtility(IMessageApprovalSet)
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<third-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.NEW, (0) New status>
+
+    >>> message_approval.reject(team_one.teamowner)
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<third-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.REJECTED, (50) Rejected>
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    0
+
+    >>> smtp_watcher.wait()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    MIME-Version: 1.0
+    ...
+    Subject: Request to mailing list Itest-one rejected
+    From: itest-one-bounces@lists.launchpad.dev
+    To: anne.person@example.com
+    ...
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Received: by smtp2mbox
+    <BLANKLINE>
+    Your request to the Itest-one mailing list
+    <BLANKLINE>
+        Posting of your message titled "An unsubscribed post"
+    <BLANKLINE>
+    has been rejected by the list moderator.  The moderator gave the
+    following reason for rejecting your request:
+    <BLANKLINE>
+    "[No reason given]"
+    <BLANKLINE>
+    Any questions or comments should be directed to the list administrator
+    at:
+    <BLANKLINE>
+        itest-one-owner@lists.launchpad.dev
+    <BLANKLINE>
+    <BLANKLINE>
+
+Anne posts another message to the mailing list that she is not subscribed to.
+This message is deemed to be spam and is discarded.  No rejection notice is
+sent to Anne.
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: Wanna buy something?
+    ... Message-ID: <fourteenth-injection>
+    ...
+    ... Hi, do you want to buy something?
+    ... """)
+
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
+
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourteenth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.NEW, (0) New status>
+    >>> message_approval.discard(team_one.teamowner)
+    >>> serial_watcher.resync()
+    >>> smtp_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourteenth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    0
+    >>> len(smtpd.getMessages())
+    0
+
+Now Anne posts another message to the mailing list she is not subscribed to.
+This time, her message is on topic and is accepted.
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: Another unsubscribed post
+    ... Message-ID: <fourth-injection>
+    ...
+    ... Hi, I am still not yet a member of this team's list.
+    ... """)
+
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
+
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.NEW, (0) New status>
+    >>> message_approval.approve(team_one.teamowner)
+    >>> serial_watcher.resync()
+    >>> smtp_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> message_approval = message_approval_set.getMessageByMessageID(
+    ...     '<fourth-injection>')
+    >>> message_approval.status
+    <DBItem PostedMessageStatus.APPROVED, (40) Approved>
+    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> len(holds)
+    0
+    >>> smtp_watcher.wait()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <fourth-injection>
+    X-Mailman-Approved-At: ...
+    Subject: [Itest-one] Another unsubscribed post
+    ...
+    List-Id: <itest-one.lists.launchpad.dev>
+    List-Help: <http://help.launchpad.dev/ListHelp>
+    List-Subscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Unsubscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Post: <mailto:itest-one@lists.launchpad.dev>
+    List-Archive: <http://lists.launchpad.dev/itest-one>
+    List-Owner: <http://launchpad.dev/~itest-one>
+    ...
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Received: by smtp2mbox
+    <BLANKLINE>
+    Hi, I am still not yet a member of this team's list.
+    _______________________________________________
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
+
 
 == Verified and registered member postings ==
 
 Anne now joins the team and subscribes to the mailing list.  She can now post
 to the mailing list.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-    >>> person_set = getUtility(IPersonSet)
-    >>> team_one = person_set.getByName('itest-one')
-
     # Subscribe Anne with her preferred address.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
+    >>> serial_watcher.resync()
     >>> commit()
     >>> serial_watcher.wait()
 
@@ -121,7 +301,6 @@ to the mailing list.
     anne.person@example.com Preferred Email Address
     >>> smtpd.reset()
     >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -190,7 +369,7 @@ In addition, the in-house MHonArc archiver has archived this message.
     >>> archive_watcher.wait()
     >>> from itest_helper import collect_archive_message_ids
     >>> collect_archive_message_ids('itest-one')
-    ['fifth&#45;injection']
+    ['fifth&#45;injection', 'fourth&#45;injection']
 
 Anne cannot post from her alternative email address because it has not been
 validated yet.
@@ -273,7 +452,7 @@ However, once she validates this address, she can post from it.
 There should also be no held requests pending.
 
     # Use a helper for complete safety.
-    >>> itest_helper.num_requests_pending('itest-one')
+    >>> len(itest_helper.pending_hold_ids('itest-one'))
     0
 
 

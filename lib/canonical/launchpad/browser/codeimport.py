@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'CodeImportEditView',
+    'CodeImportMachineView',
     'CodeImportNewView',
     'CodeImportSetView',
     'CodeImportView',
@@ -26,7 +27,8 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     branch_name_validator, CodeImportReviewStatus,
     CodeReviewNotificationLevel, IBranchSet, ICodeImport,
-    ICodeImportSet, ILaunchpadCelebrities, RevisionControlSystems)
+    ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -388,3 +390,16 @@ class CodeImportEditView(CodeImportBaseView):
                 data.get('svn_branch_url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
+
+
+class CodeImportMachineView(LaunchpadView):
+    """The view for the page that shows all the import machines."""
+
+    __used_for__ = ICodeImportSet
+
+    label = "Import machines for Launchpad"
+
+    @property
+    def machines(self):
+        """Get the machines, sorted alphabetically by hostname."""
+        return getUtility(ICodeImportMachineSet).getAll()

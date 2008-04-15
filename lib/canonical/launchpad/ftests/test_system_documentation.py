@@ -695,6 +695,11 @@ special = {
             setUp=manageChrootSetup,
             layer=LaunchpadZopelessLayer,
             ),
+    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
+            '../doc/build-estimated-dispatch-time.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer,
+            ),
     }
 
 

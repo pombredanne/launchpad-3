@@ -21,6 +21,7 @@ First up, can we get the builds out of the sample data?
 
     >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
     >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+    >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
 
 Let's check the complex properties of a build object.
 
@@ -45,6 +46,21 @@ Let's check the complex properties of a build object.
 
     >>> firefox_build.is_virtualized
     False
+
+The 'firefox_build' is already finished and requesting the estimated build
+start time makes no sense. Hence an exception is raised.
+
+    >>> firefox_build.getEstimatedBuildStartTime()
+    Traceback (most recent call last):
+    ...
+    AssertionError: The start time is only estimated for pending builds.
+
+The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
+hence ask for its estimated build start time. The latter will be
+undefined however because the corresponding build pool is empty.
+
+    >>> pending_build.getEstimatedBuildStartTime() is None
+    True
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -546,7 +562,7 @@ three additional private builds for cprov:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -562,7 +578,7 @@ Cprov can also see his own builds of course:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -598,7 +614,7 @@ Restore cprov to non-private:
 
 == AssertionErrors in IBuild ==
 
-Build records inserted by gina doesn't provide calculated_buildstart
+Build records inserted by gina don't provide calculated_buildstart
 value, since they miss fields used in its calculation.
 
     >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
@@ -710,6 +726,30 @@ A proper name for this "model" would be 'cross-component-dependency'.
     multiverse | main restricted universe multiverse
        partner | partner
 
+As reported in bug #198936, builds for the BACKPORTS pocket are
+allowed to use any component available, independently of the component they are
+currently published. This special-case is important because it
+avoids changes to accommodate the backported source in the already
+released series.
+
+    >>> release_pocket = build.pocket
+    >>> naked_build = removeSecurityProxy(build)
+    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
+    >>> syncUpdate(build)
+
+Ultimately, it means that a build targeted to the BACKPORTS pocket
+will behave as if it were published in the multiverse component,
+despite the component it is actually published in.
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main restricted universe multiverse
+    restricted | main restricted universe multiverse
+      universe | main restricted universe multiverse
+    multiverse | main restricted universe multiverse
+       partner | main restricted universe multiverse
+
 Restoring the original target component to the source used in this
 section, so there won't be any unexpected effects in subsequent
 tests.
@@ -717,6 +757,9 @@ tests.
     >>> main_component = getUtility(IComponentSet)['main']
     >>> source_pub.secure_record.component = main_component
     >>> syncUpdate(source_pub.secure_record)
+    >>> naked_build = removeSecurityProxy(build)
+    >>> naked_build.pocket = release_pocket
+    >>> syncUpdate(build)
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
@@ -880,7 +923,7 @@ Accessing the cprov builds when logged in as admin will see the records:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
 
 Likewise when logged in as cprov:
@@ -891,7 +934,7 @@ Likewise when logged in as cprov:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
 
 When logged in as anonymous this will generate a securtity exception
@@ -909,3 +952,108 @@ when accessing the builds:
     main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
+
+== Estimated Build Duration ==
+
+Newly created builds should have their 'estimated_build_duration' times
+set from previous builds' 'buildduration' values.
+
+We will use SoyuzTestPublisher to generate coherent publications to
+test this behaviour.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> login('foo.bar@canonical.com')
+    >>> test_publisher.prepareBreezyAutotest()
+
+Create oldest SourcePackageRelease instance.
+
+    >>> oldest_spr = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='ebdtest')
+
+Create oldest build instance.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> oldest_build = oldest_spr.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.UPDATES,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.FULLYBUILT)
+    >>> oldest_build.buildduration = timedelta(minutes=72)
+    >>> oldest_build.datebuilt = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
+
+Check that the oldest build instance's 'estimated_build_duration'
+is initialized based on its package size. Since the latter is very
+small (less than a KB) the 'estimated_build_duration' will be a
+minute.
+
+    >>> oldest_build.estimated_build_duration
+    datetime.timedelta(0, 60)
+
+Create intermediate SourcePackageRelease instance.
+
+    >>> medium_spr = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='ebdtest')
+
+Create intermediate build instance.
+
+    >>> medium_build = medium_spr.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.UPDATES,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.FULLYBUILT)
+    >>> medium_build.buildduration = timedelta(minutes=60)
+    >>> medium_build.datebuilt = datetime(2008, 4, 2, 11, 56, 33, tzinfo=UTC)
+
+Check whether the intermediate build instance's 'estimated_build_duration'
+value equals the oldest instance's 'buildduration'.
+
+    >>> medium_build.estimated_build_duration
+    datetime.timedelta(0, 4320)
+
+Create most recent SourcePackageRelease instance.
+
+    >>> recent_spr = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='ebdtest')
+
+Create most recent build instance. Please note: this one is in state
+NEEDSBUILD.
+
+    >>> recent_build = recent_spr.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.UPDATES,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.NEEDSBUILD)
+
+Check whether the most recent build instance's 'estimated_build_duration'
+value equals the intermediate instance's 'buildduration'.
+
+    >>> recent_build.estimated_build_duration
+    datetime.timedelta(0, 3600)
+
+Create a SourcePackageRelease instance in a PPA.
+
+    >>> ppa_spr = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='ebdtest')
+
+Create most recent build instance.
+
+    >>> ppa_build = ppa_spr.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.UPDATES,
+    ...         cprov.archive,
+    ...         status=BuildStatus.NEEDSBUILD)
+
+Check whether the PPA build instance's 'estimated_build_duration'
+value was set from the intermediate instance's 'buildduration' in
+the main archive.
+
+    >>> ppa_build.estimated_build_duration
+    datetime.timedelta(0, 3600)

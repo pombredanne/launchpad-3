@@ -1094,10 +1094,10 @@ A build in the backports pocket:
     ensurepresent called
     OkSlave BUILDING
     Archives:
-     deb http://ftpmaster.internal/ubuntu hoary main
-     deb http://ftpmaster.internal/ubuntu hoary-backports main
-     deb http://ftpmaster.internal/ubuntu hoary-security main
-     deb http://ftpmaster.internal/ubuntu hoary-updates main
+     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-backports main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
     Suite: hoary-backports
     Archive Purpose: PRIMARY
 

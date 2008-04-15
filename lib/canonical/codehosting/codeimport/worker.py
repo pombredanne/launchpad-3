@@ -15,8 +15,6 @@ import os
 import shutil
 import tempfile
 
-from zope.component import getUtility
-
 from bzrlib.branch import Branch
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.bzrdir import BzrDir
@@ -30,8 +28,6 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, ICodeImportJobSet, RevisionControlSystems)
 
 from cscvs.cmds import totla
 import cscvs
@@ -61,36 +57,27 @@ class BazaarBranchStore:
         """Construct a Bazaar branch store based at `transport`."""
         self.transport = transport
 
-    def _checkBranchIsImported(self, db_branch):
-        """Raise `BranchTypeError` if `db_branch` not an imported branch."""
-        if db_branch.branch_type != BranchType.IMPORTED:
-            raise BranchTypeError(
-                "Can only store imported branches: %r is of type %r."
-                % (db_branch, db_branch.branch_type))
-
-    def _getMirrorURL(self, db_branch):
+    def _getMirrorURL(self, db_branch_id):
         """Return the URL that `db_branch` is stored at."""
-        return urljoin(self.transport.base, '%08x' % db_branch.id)
+        return urljoin(self.transport.base, '%08x' % db_branch_id)
 
-    def pull(self, db_branch, target_path):
+    def pull(self, db_branch_id, target_path):
         """Pull down the Bazaar branch for `code_import` to `target_path`.
 
         :return: A Bazaar working tree for the branch of `code_import`.
         """
-        self._checkBranchIsImported(db_branch)
         try:
-            bzr_dir = BzrDir.open(self._getMirrorURL(db_branch))
+            bzr_dir = BzrDir.open(self._getMirrorURL(db_branch_id))
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(target_path)
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 
-    def push(self, db_branch, bzr_tree):
+    def push(self, db_branch_id, bzr_tree):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
-        self._checkBranchIsImported(db_branch)
         ensure_base(self.transport)
         branch_from = bzr_tree.branch
-        target_url = self._getMirrorURL(db_branch)
+        target_url = self._getMirrorURL(db_branch_id)
         try:
             branch_to = Branch.open(target_url)
         except NotBranchError:
@@ -117,15 +104,71 @@ def _download(transport, relpath, local_path):
         local_file.close()
 
 
+class CodeImportSourceDetails:
+    """The information needed to process an import.
+
+    As the worker doesn't talk to the database, we don't use
+    `CodeImport` objects for this.
+
+    The 'fromArguments' and 'asArguments' methods convert to and from a form
+    of the information suitable for passing around on executables' command
+    lines.
+
+    :ivar branch_id: The id of the branch associated to this code import, used
+        for locating the existing import and the foreign tree.
+    :ivar rcstype: 'svn' or 'cvs' as appropriate.
+    :ivar svn_branch_url: The branch URL if rcstype == 'svn', None otherwise.
+    :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
+    :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
+    """
+
+    def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
+                 cvs_module=None):
+        self.branch_id = branch_id
+        self.rcstype = rcstype
+        self.svn_branch_url = svn_branch_url
+        self.cvs_root = cvs_root
+        self.cvs_module = cvs_module
+
+    @classmethod
+    def fromArguments(cls, arguments):
+        """Convert command line-style arguments to an instance."""
+        branch_id = int(arguments[0])
+        rcstype = arguments[1]
+        if rcstype == 'svn':
+            [svn_branch_url] = arguments[2:]
+            cvs_root = cvs_module = None
+        elif rcstype == 'cvs':
+            svn_branch_url = None
+            [cvs_root, cvs_module] = arguments[2:]
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+
+    def asArguments(self):
+        """Return a list of arguments suitable for passing to a child process.
+        """
+        result = [str(self.branch_id), self.rcstype]
+        if self.rcstype == 'svn':
+            result.append(self.svn_branch_url)
+        elif self.rcstype == 'cvs':
+            result.append(self.cvs_root)
+            result.append(self.cvs_module)
+        else:
+            raise AssertionError("Unknown rcstype %r." % self.rcstype)
+        return result
+
+
 class ForeignTreeStore:
     """Manages retrieving and storing foreign working trees.
 
     The code import system stores tarballs of CVS and SVN working trees on
     another system. The tarballs are kept in predictable locations based on
-    the ID of their `CodeImport`.
+    the ID of the branch associated to the `CodeImport`.
 
     The tarballs are all kept in one directory. The filename of a tarball is
-    XXXXXXXX.tar.gz, where 'XXXXXXXX' is the ID of the `CodeImport` in hex.
+    XXXXXXXX.tar.gz, where 'XXXXXXXX' is the ID of the `CodeImport`'s branch
+    in hex.
     """
 
     def __init__(self, transport):
@@ -137,27 +180,26 @@ class ForeignTreeStore:
         """
         self.transport = transport
 
-    def _getForeignTree(self, code_import, target_path):
-        """Return a foreign tree object for `code_import`."""
-        if code_import.rcs_type == RevisionControlSystems.SVN:
+    def _getForeignTree(self, source_details, target_path):
+        """Return a foreign tree object for `source_details`."""
+        if source_details.rcstype == 'svn':
             return SubversionWorkingTree(
-                str(code_import.svn_branch_url), str(target_path))
-        elif code_import.rcs_type == RevisionControlSystems.CVS:
+                source_details.svn_branch_url, str(target_path))
+        elif source_details.rcstype == 'cvs':
             return CVSWorkingTree(
-                str(code_import.cvs_root), str(code_import.cvs_module),
+                source_details.cvs_root, source_details.cvs_module,
                 target_path)
         else:
             raise AssertionError(
-                "%r has an unknown RCS type: %r" %
-                (code_import, code_import.rcs_type))
+                "unknown RCS type: %r" % source_details.rcstype)
 
-    def _getTarballName(self, code_import):
+    def _getTarballName(self, branch_id):
         """Return the name of the tarball for the code import."""
-        return '%08x.tar.gz' % code_import.branch.id
+        return '%08x.tar.gz' % branch_id
 
-    def archive(self, code_import, foreign_tree):
+    def archive(self, source_details, foreign_tree):
         """Archive the foreign tree."""
-        tarball_name = self._getTarballName(code_import)
+        tarball_name = self._getTarballName(source_details.branch_id)
         create_tarball(foreign_tree.local_path, tarball_name)
         tarball = open(tarball_name, 'rb')
         ensure_base(self.transport)
@@ -166,32 +208,32 @@ class ForeignTreeStore:
         finally:
             tarball.close()
 
-    def fetch(self, code_import, target_path):
-        """Fetch the foreign branch for `code_import` to `target_path`.
+    def fetch(self, source_details, target_path):
+        """Fetch the foreign branch for `source_details` to `target_path`.
 
-        If there is no tarball archived for `code_import`, then try to
+        If there is no tarball archived for `source_details`, then try to
         download (i.e. checkout) the foreign tree from its source repository,
         generally on a third party server.
         """
         try:
-            return self.fetchFromArchive(code_import, target_path)
+            return self.fetchFromArchive(source_details, target_path)
         except NoSuchFile:
-            return self.fetchFromSource(code_import, target_path)
+            return self.fetchFromSource(source_details, target_path)
 
-    def fetchFromSource(self, code_import, target_path):
-        """Fetch the foreign tree for `code_import` to `target_path`."""
-        branch = self._getForeignTree(code_import, target_path)
+    def fetchFromSource(self, source_details, target_path):
+        """Fetch the foreign tree for `source_details` to `target_path`."""
+        branch = self._getForeignTree(source_details, target_path)
         branch.checkout()
         return branch
 
-    def fetchFromArchive(self, code_import, target_path):
-        """Fetch the foreign tree for `code_import` from the archive."""
-        tarball_name = self._getTarballName(code_import)
+    def fetchFromArchive(self, source_details, target_path):
+        """Fetch the foreign tree for `source_details` from the archive."""
+        tarball_name = self._getTarballName(source_details.branch_id)
         if not self.transport.has(tarball_name):
             raise NoSuchFile(tarball_name)
         _download(self.transport, tarball_name, tarball_name)
         extract_tarball(tarball_name, target_path)
-        tree = self._getForeignTree(code_import, target_path)
+        tree = self._getForeignTree(source_details, target_path)
         tree.update()
         return tree
 
@@ -211,11 +253,11 @@ class ImportWorker:
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
-    def __init__(self, job_id, foreign_tree_store, bazaar_branch_store,
-                 logger):
+    def __init__(self, source_details, foreign_tree_store,
+                 bazaar_branch_store, logger):
         """Construct an `ImportWorker`.
 
-        :param job_id: The database ID of the `CodeImportJob` to run.
+        :param source_details: A `CodeImportSourceDetails` object.
         :param foreign_tree_store: A `ForeignTreeStore`. The import worker
             uses this to fetch and store foreign branches.
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
@@ -223,7 +265,7 @@ class ImportWorker:
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         """
-        self.job = getUtility(ICodeImportJobSet).getById(job_id)
+        self.source_details = source_details
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
         self.working_directory = tempfile.mkdtemp()
@@ -239,7 +281,7 @@ class ImportWorker:
         if os.path.isdir(self._bazaar_working_tree_path):
             shutil.rmtree(self._bazaar_working_tree_path)
         return self.bazaar_branch_store.pull(
-            self.job.code_import.branch, self._bazaar_working_tree_path)
+            self.source_details.branch_id, self._bazaar_working_tree_path)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
@@ -250,7 +292,7 @@ class ImportWorker:
             shutil.rmtree(self._foreign_working_tree_path)
         os.mkdir(self._foreign_working_tree_path)
         return self.foreign_tree_store.fetch(
-            self.job.code_import, self._foreign_working_tree_path)
+            self.source_details, self._foreign_working_tree_path)
 
     def importToBazaar(self, foreign_tree, bazaar_tree):
         """Actually import `foreign_tree` into `bazaar_tree`.
@@ -315,8 +357,8 @@ class ImportWorker:
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
         self.bazaar_branch_store.push(
-            self.job.code_import.branch, bazaar_tree)
+            self.source_details.branch_id, bazaar_tree)
         self.foreign_tree_store.archive(
-            self.job.code_import, foreign_tree)
+            self.source_details, foreign_tree)
         shutil.rmtree(bazaar_tree.basedir)
         shutil.rmtree(foreign_tree.local_path)

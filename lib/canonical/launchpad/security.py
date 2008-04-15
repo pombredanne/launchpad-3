@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import (
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
+    ICodeImportMachine, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
@@ -907,17 +907,6 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportJobWorkflow
-
-
-class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImportMachine listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportMachineSet
 
 
 class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
