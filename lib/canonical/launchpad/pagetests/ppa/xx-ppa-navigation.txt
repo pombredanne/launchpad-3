@@ -96,7 +96,7 @@ displayed in batches.
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive?batch=1')
 
 Since he is on the first page, the 'First' and 'Previous' links are
-greyed out:
+inactive:
 
     >>> 'Previous' in anon_browser.contents
     True
@@ -121,7 +121,7 @@ next page.
 
     >>> anon_browser.getLink('Next').click()
 
-This is the last page, so the next and last links are greyed out.
+This is the last page, so the next and last links are inactive.
 
     >>> 'Next' in anon_browser.contents
     True
@@ -135,3 +135,11 @@ This is the last page, so the next and last links are greyed out.
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
+
+The 'First' and 'Previous' links, however, are now active.
+
+    >>> anon_browser.getLink('First').url
+    'http://launchpad.dev/%7Ecprov/+archive/+index?start=0&batch=1'
+
+    >>> anon_browser.getLink('Previous').url
+    'http://launchpad.dev/%7Ecprov/+archive/+index?start=1&batch=1'
