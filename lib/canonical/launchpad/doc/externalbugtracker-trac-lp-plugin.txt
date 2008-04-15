@@ -65,6 +65,18 @@ The generation of token is done outside the transaction.
     >>> test_transport.auth_cookie
     'trac_auth=random_token-...'
 
+Extracting the cookie.
+
+    >>> trac._extractAuthCookie(
+    ...     'trac_auth=some_token; expires=Some date; path=/some/path;'
+    ...     ' domain=some.name.example.com; secure')
+    'trac_auth=some_token'
+
+    >>> print trac._extractAuthCookie(
+    ...     'other_cookie=some_token; expires=Some date; path=/some/path;'
+    ...     ' domain=some.name.example.com; secure')
+    None
+
 The cookie is set by the transport used.
 
     >>> trac = TracLPPlugin('http://example.com/')

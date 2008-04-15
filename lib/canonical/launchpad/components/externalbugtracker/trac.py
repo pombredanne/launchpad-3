@@ -230,13 +230,21 @@ class TracLPPlugin(ExternalBugTracker):
             transport=self.internal_xmlrpc_transport)
         return internal_xmlrpc.newBugTrackerToken()
 
+    def _extractAuthCookie(self, cookie_header):
+        """Extract the Trac authentication cookie from the header."""
+        cookie = cookie_header.split(';')[0]
+        if cookie.startswith('trac_auth='):
+            return cookie
+        else:
+            return None
+
     def _authenticate(self):
         """Authenticate with the Trac instance."""
         token_text = self._generateAuthenticationToken()
         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
         auth_url = urlappend(base_auth_url, token_text)
         response = self.urlopen(auth_url)
-        auth_cookie = response.headers['Set-Cookie']
+        auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
         self.xmlrpc_transport.auth_cookie = auth_cookie
 
     @needs_authentication
