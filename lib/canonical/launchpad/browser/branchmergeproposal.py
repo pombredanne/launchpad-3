@@ -202,7 +202,7 @@ class BranchMergeProposalNavigation(Navigation):
 
     usedfor = IBranchMergeProposal
 
-    @stepthrough('+comment')
+    @stepthrough('comments')
     def traverse_comment(self, id):
         try:
             id = int(id)
