@@ -212,11 +212,8 @@ class TracLPPlugin(Trac):
 
         time_snapshot, remote_bugs = server.launchpad.bug_info(
             1, dict(bugs=bug_ids))
-        bugs = {}
         for remote_bug in remote_bugs:
-            bugs[int(remote_bug['id'])] = remote_bug
-
-        self.bugs = bugs
+            self.bugs[int(remote_bug['id'])] = remote_bug
 
     def _generateAuthenticationToken(self):
         """Create an authentication token an return it."""
