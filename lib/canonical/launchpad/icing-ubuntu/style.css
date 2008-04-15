@@ -1,0 +1,86 @@
+@import url(screen-6c-24-24-12.css?v=08032801);
+@import url(navigation.css?v=08032801);
+
+/* changing the screen-6c... import necessetates changing the
+ * values for #round
+ */
+
+body {
+	background: #d3caaa url(bg-page.png) repeat-x top;
+	margin: 20px;
+	font-size: 90%;
+}
+#round {
+	background: #fff url(bg-content.png) repeat-y top;
+	width: 876px;       /*
+    border: 1px solid #7A6747;
+	padding: 12px 0px;  */
+	margin: auto;
+	position: relative;
+}
+#round .sb-inner {
+	background-color: #fff;
+}
+img.rounded {
+    padding: 0;
+    margin: 0;
+}
+#topcap {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+#bottomcap {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	color: #5A3320;
+}
+#masthead h1 {
+	color: #CC0000;	
+	display: block;
+}
+h1 {font-size:2.5em}
+h2 {font-size:1.8em}
+h3 {font-size:1.3em}
+h4 {font-size:1.1em}
+h5 {font-size:1em}
+h6 {font-size:1em}
+
+a {
+	color: #D90D19;
+}
+div + p, p + p {
+	/* margin-top:-1.5em;
+	margin-top: inherit;
+	text-indent:2em; */
+}
+/*
+h1 + p, h2 + p, h3 +p {
+	text-indent:2em;
+}
+*/
+/* override drupal */
+.node-form textarea, .node-form .form-text {
+	width: 100%;
+}
+.mceEditorIframe {
+	width: 100% !important;
+}
+ul.primary-links li {
+	background-image:url(bullet-triangle.png);
+	background-position:left center;
+	background-repeat:no-repeat;
+	line-height:1.1em;
+	margin:0pt 4px 0pt 0pt;
+	padding-bottom:0pt;
+	text-indent:13px;
+}
+ul.links li {
+	display:inline;
+	list-style-type:none;
+	padding:0pt 0.5em;
+}
