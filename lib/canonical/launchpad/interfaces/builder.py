@@ -126,7 +126,7 @@ class IBuilder(IHasOwner):
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-    currentjob = Attribute("Build Job being processed")
+    currentjob = Attribute("BuildQueue instance for job being processed.")
     status = Attribute("Generated status information")
     pocket_dependencies = Attribute("""
         A dictionary of pocket to a tuple of pocket dependencies.
@@ -317,3 +317,6 @@ class IBuilderSet(Interface):
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
         """
+
+    def getBuildersForQueue(processor, virtualized):
+        """Return all builders for given processor/virtualization setting."""
