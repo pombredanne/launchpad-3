@@ -1523,7 +1523,6 @@ COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
 COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
 COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
 COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
-COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
 COMMENT ON COLUMN ShippingRequest.type IS 'The type of the request.';
 COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
 COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
@@ -1560,12 +1559,6 @@ COMMENT ON COLUMN StandardShipItRequest.quantityamd64 IS 'The quantity of AMD64 
 COMMENT ON COLUMN StandardShipItRequest.quantityppc IS 'The quantity of PowerPC CDs';
 COMMENT ON COLUMN StandardShipItRequest.isdefault IS 'Is this the order that is pre-selected in the options we give for the user?';
 COMMENT ON COLUMN StandardShipItRequest.description IS 'The description of this option.';
-
--- ShockAndAwe
-COMMENT ON TABLE ShockAndAwe IS 'Information about specific Shock And Awe programs.';
-COMMENT ON COLUMN ShockAndAwe.name IS 'The name of the Shock And Awe program';
-COMMENT ON COLUMN ShockAndAwe.title IS 'The title of the Shock And Awe program';
-COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And Awe program';
 
 -- ShipItSurvey*
 COMMENT ON TABLE ShipItSurvey IS 'A sequence of questions and their answers given by a ShipIt user.';
