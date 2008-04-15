@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 __metaclass__ = type
 __all__ = ['BadMessage',
@@ -19,11 +20,11 @@ import sys
 from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
 from twisted.python import failure, log
+from twisted.web.xmlrpc import Proxy
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
-from canonical.authserver.client.twistedclient import get_twisted_proxy
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
@@ -33,6 +34,7 @@ from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
+
 
 class BadMessage(Exception):
     """Raised when the protocol receives a message that we don't recognize."""
@@ -46,7 +48,7 @@ class BranchStatusClient:
     """Twisted client for the branch status methods on the authserver."""
 
     def __init__(self):
-        self.proxy = get_twisted_proxy(config.supermirror.authserver_url)
+        self.proxy = Proxy(config.supermirror.authserver_url)
 
     def getBranchPullQueue(self, branch_type):
         return self.proxy.callRemote('getBranchPullQueue', branch_type)
@@ -211,10 +213,10 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         on stderr, it's probably a traceback, so we use the last line of that
         as a failure reason."""
         if not self.reported_mirror_finished:
-            error = self._stderr.getvalue()
-            reason.error = error
+            stderr = self._stderr.getvalue()
+            reason.error = stderr
             if error:
-                errorline = error.splitlines()[-1]
+                errorline = stderr.splitlines()[-1]
             else:
                 errorline = str(reason.value)
             # The general policy when multiple errors occur is to report the

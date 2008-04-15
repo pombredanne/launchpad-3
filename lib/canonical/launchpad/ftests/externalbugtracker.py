@@ -16,8 +16,9 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
+    BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
+    ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
+    Trac, TracXMLRPCTransport)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -25,6 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.scripts import checkwatches, debbugs
+from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -412,12 +414,39 @@ class TestTrac(Trac):
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 
 
-class TestTracXMLRPCTransport:
+class TestTracInternalXMLRPCTransport:
+    """Test XML-RPC Transport for the internal XML-RPC server.
+
+    This transport executes all methods as the 'launchpad' db user, and
+    then switches back to the 'checkwatches' user.
+    """
+
+    def request(self, host, handler, request, verbose=None):
+        args, method_name = xmlrpclib.loads(request)
+        method = getattr(self, method_name)
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        result = method(*args)
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+        return result
+
+    def newBugTrackerToken(self):
+        token_api = ExternalBugTrackerTokenAPI(None, None)
+        print "Using XML-RPC to generate token."
+        return token_api.newBugTrackerToken()
+
+
+class TestTracXMLRPCTransport(TracXMLRPCTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
+    expired_cookie = None
+
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
+        self.expired_cookie = cookie
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -432,6 +461,12 @@ class TestTracXMLRPCTransport:
         prefix = 'launchpad.'
         assert method_name.startswith(prefix), (
             'All methods should be in the launchpad namespace')
+        if (self.auth_cookie is None or
+            self.auth_cookie == self.expired_cookie):
+            # All the Trac XML-RPC methods need authentication.
+            raise xmlrpclib.ProtocolError(
+                method_name, errcode=403, errmsg="Forbidden",
+                headers=None)
 
         method_name = method_name[len(prefix):]
         method = getattr(self, method_name)

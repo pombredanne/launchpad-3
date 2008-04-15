@@ -132,6 +132,14 @@ class IBuild(Interface):
         doc/build-notification.txt for further information.
         """
 
+    def getEstimatedBuildStartTime():
+        """Get the estimated build start time for a pending build job.
+
+        :return: a timestamp upon success or None on failure. None
+            indicates that an estimated start time is not available.
+        :raise: AssertionError when the build job is not in the
+            `BuildStatus.NEEDSBUILD` state.
+        """
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -149,7 +157,7 @@ class IBuildSet(Interface):
     def getPendingBuildsForArchSet(archseries):
         """Return all pending build records within a group of ArchSerieses
 
-        Pending means that buildstatus is NEEDSBUILDING.
+        Pending means that buildstate is NEEDSBUILD.
         """
 
     def getBuildsForBuilder(builder_id, status=None, name=None):
