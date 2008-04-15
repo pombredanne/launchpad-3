@@ -21,6 +21,7 @@ First up, can we get the builds out of the sample data?
 
     >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
     >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+    >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
 
 Let's check the complex properties of a build object.
 
@@ -45,6 +46,21 @@ Let's check the complex properties of a build object.
 
     >>> firefox_build.is_virtualized
     False
+
+The 'firefox_build' is already finished and requesting the estimated build
+start time makes no sense. Hence an exception is raised.
+
+    >>> firefox_build.getEstimatedBuildStartTime()
+    Traceback (most recent call last):
+    ...
+    AssertionError: The start time is only estimated for pending builds.
+
+The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
+hence ask for its estimated build start time. The latter will be
+undefined however because the corresponding build pool is empty.
+
+    >>> pending_build.getEstimatedBuildStartTime() is None
+    True
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current

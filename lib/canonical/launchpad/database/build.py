@@ -6,6 +6,7 @@ __all__ = ['Build', 'BuildSet']
 
 
 import apt_pkg
+from datetime import datetime, timedelta
 import logging
 
 from zope.interface import implements
@@ -21,6 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import cursor
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -31,12 +33,12 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, NotFoundError,
-    ILaunchpadCelebrities, PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, IBuild, IBuildSet, IBuilderSet,
+    NotFoundError, ILaunchpadCelebrities, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
 
 class Build(SQLBase):
     implements(IBuild)
@@ -243,6 +245,148 @@ class Build(SQLBase):
             return self.component_dependencies['multiverse']
 
         return self.component_dependencies[self.current_component.name]
+
+    def getEstimatedBuildStartTime(self):
+        """See `IBuild`.
+
+        The estimated dispatch time for the build job at hand is
+        calculated from the following ingredients:
+            * the start time for the head job (job at the
+              head of the respective build queue)
+            * the estimated build durations of all jobs that
+              precede the job at hand in the build queue
+              (divided by the number of machines in the respective
+              build pool)
+        If either of the above cannot be determined the estimated
+        dispatch is not known in which case the EPOCH time stamp
+        is returned.
+        """
+        # This method may only be invoked for pending jobs.
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise AssertionError(
+                "The start time is only estimated for pending builds.")
+
+        # A None value indicates that the estimated dispatch time is not
+        # available.
+        result = None
+
+        cur = cursor()
+        # For a given build job in position N in the build queue the
+        # query below sums up the estimated build durations for the
+        # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
+        sum_query = """
+            SELECT
+                EXTRACT(EPOCH FROM SUM(Build.estimated_build_duration))
+            FROM
+                Archive
+                JOIN Build ON
+                    Build.archive = Archive.id
+                JOIN BuildQueue ON
+                    Build.id = BuildQueue.build
+            WHERE
+                Build.buildstate = 0 AND
+                Build.processor = %s AND
+                Archive.require_virtualized = %s AND
+                ((BuildQueue.lastscore > %s) OR
+                 ((BuildQueue.lastscore = %s) AND
+                  (Build.id < %s)))
+             """ % sqlvalues(self.processor, self.is_virtualized,
+                      self.buildqueue_record.lastscore,
+                      self.buildqueue_record.lastscore, self)
+
+        cur.execute(sum_query)
+        # Get the sum of the estimated build time for jobs that are
+        # ahead of us in the queue.
+        [sum_of_delays] = cur.fetchone()
+
+        # Get build dispatch time for job at the head of the queue.
+        headjob_delay = self._getHeadjobDelay()
+
+        # Get the number of machines that are available in the build
+        # pool for this build job.
+        pool_size = getUtility(IBuilderSet).getBuildersForQueue(
+            self.processor, self.is_virtualized).count()
+
+        # The estimated dispatch time can only be calculated for
+        # non-zero-sized build pools.
+        if pool_size > 0:
+            # This is the estimated build job start time in seconds
+            # from now.
+            start_time = 0
+
+            if sum_of_delays is None:
+                # This job is the head job.
+                start_time = headjob_delay
+            else:
+                # There are jobs ahead of us. Divide the delay total by
+                # the number of machines available in the build pool.
+                # Please note: we need the pool size to be a floating
+                # pointer number for the purpose of the division below.
+                pool_size = float(pool_size)
+                start_time = headjob_delay + int(sum_of_delays/pool_size)
+            result = datetime.utcnow() + timedelta(seconds=start_time)
+
+        return result
+
+    def _getHeadjobDelay(self):
+        """Get estimated dispatch time for job at the head of the queue."""
+        cur = cursor()
+        # The query below yields the remaining build times (in seconds
+        # since EPOCH) for the jobs that are currently building on the
+        # machine pool of interest.
+        delay_query = """
+            SELECT
+                CAST (EXTRACT(EPOCH FROM
+                        (Build.estimated_build_duration -
+                        (NOW() - BuildQueue.buildstart))) AS INTEGER)
+                    AS remainder
+            FROM
+                Archive
+                JOIN Build ON
+                    Build.archive = Archive.id
+                JOIN BuildQueue ON
+                    Build.id = BuildQueue.build
+                JOIN Builder ON
+                    Builder.id = BuildQueue.builder
+            WHERE
+                Archive.require_virtualized = %s AND
+                Build.buildstate = %s AND
+                Builder.processor = %s
+            ORDER BY
+                remainder;
+            """ % sqlvalues(self.is_virtualized, BuildStatus.BUILDING,
+                    self.processor)
+
+        cur.execute(delay_query)
+        # Get the remaining build times for the jobs currently
+        # building on the respective machine pool (current build
+        # set).
+        remainders = cur.fetchall()
+        build_delays = set([int(row[0]) for row in remainders if row[0]])
+
+        # This is the head job delay in seconds. Initialize it here.
+        if len(build_delays):
+            headjob_delay = max(build_delays)
+        else:
+            headjob_delay = 0
+
+        # Did all currently building jobs overdraw their estimated
+        # time budget?
+        if headjob_delay < 0:
+            # Yes, this is the case. Reset the head job delay to two
+            # minutes.
+            headjob_delay = 120
+
+        for delay in reversed(sorted(build_delays)):
+            if delay < 0:
+                # This job is currently building and taking longer
+                # than estimated i.e. we don't have a clue when it
+                # will be finished. Make a wild guess (2 minutes?).
+                delay = 120
+            if delay < headjob_delay:
+                headjob_delay = delay
+
+        return headjob_delay
 
     def _parseDependencyToken(self, token):
         """Parse the given token.
@@ -744,4 +888,3 @@ class BuildSet:
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
-
