@@ -371,7 +371,9 @@ class PackageUpload(SQLBase):
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
-        return ",".join(names)
+        # Make sure the list items have a whitespace separator so
+        # that they can be wrapped in table cells in the UI.
+        return ", ".join(names)
 
     @cachedproperty
     def displayarchs(self):
