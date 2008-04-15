@@ -169,8 +169,8 @@ class MenuBox(LaunchpadView):
 
         navigation_menu_links = menuapi.navigation
         self.navigationmenuitems = sorted([
-            link for link in navigation_menu_links.values() if (
-                link.enabled or config.devmode)],
+            link for link in navigation_menu_links if (link.enabled or
+                                                       config.devmode)],
             key=operator.attrgetter('sort_key'))
 
     def render(self):

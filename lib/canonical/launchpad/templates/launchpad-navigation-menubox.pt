@@ -1,0 +1,20 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:condition="not:exists:body"
+  id="navigation">
+
+  <ul>
+    <li tal:repeat="link context/menu:navigation"
+        tal:content="structure link/@@+link">
+      Link
+    </li>
+  </ul>
+  <ul>
+    <li tal:repeat="link view/menu:navigation"
+        tal:content="structure link/@@+link">
+      Link
+    </li>
+  </ul>
+</div>

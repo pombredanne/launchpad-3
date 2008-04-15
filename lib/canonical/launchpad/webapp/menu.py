@@ -29,7 +29,7 @@ from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
-    IMenuBase, INavigationMenu, IStructuredString)
+    IMenuBase, INavigationMenu, INavigationMenuView, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator,
     get_current_browser_request, UserAttributeCache)
@@ -248,7 +248,15 @@ class MenuBase(UserAttributeCache):
             "The following names may not be links: %s" %
             ', '.join(self._forbiddenlinknames))
 
-        contexturlobj = URI(canonical_url(self.context))
+        if INavigationMenuView.providedBy(self.context):
+            # It's a navigation menu for a view instead of a db object. Views
+            # don't have a canonical URL, they use the db object one used as
+            # the context for that view.
+            context = self.context.context
+        else:
+            context = self.context
+
+        contexturlobj = URI(canonical_url(context))
 
         if self.enable_only is ALL_LINKS:
             enable_only = set(self.links)

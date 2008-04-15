@@ -133,6 +133,10 @@ class INavigationMenu(IMenuBase):
     """Navigation menu for an object."""
 
 
+class INavigationMenuView(Interface):
+    """Base class for view interfaces used to attach Navigation Menus."""
+
+
 class ILinkData(Interface):
     """An object with immutable attributes that represents the data a
     programmer provides about a link in a menu.
