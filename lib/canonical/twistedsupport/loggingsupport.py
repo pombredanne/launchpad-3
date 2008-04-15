@@ -8,9 +8,9 @@ __all__ = ['set_up_logging_for_script']
 
 from twisted.python import log
 
-from canonical.config import config
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.webapp import errorlog
+
 
 class OOPSLoggingObserver(log.PythonLoggingObserver):
     """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
@@ -32,11 +32,13 @@ class OOPSLoggingObserver(log.PythonLoggingObserver):
         else:
             log.PythonLoggingObserver.emit(self, eventDict)
 
+
 def set_up_logging_for_script(options, name):
+    """Create a `Logger` object and configure twisted to use it.
+
+    This also configures oops reporting to use the section named
+    'name'."""
     logger_object = logger(options, name)
-    config_section = getattr(config, name).errorreports
-    for attr in 'oops_prefix', 'errordir', 'copy_to_zlog':
-        value = getattr(config_section, attr)
-        setattr(config.launchpad.errorreports, attr, value)
+    errorlog.globalErrorUtility.configure(name)
     log.startLoggingWithObserver(OOPSLoggingObserver(loggerName=name).emit)
     return logger_object
