@@ -33,7 +33,7 @@ from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.mem import (
-    deltaCounts, mostRefs, printCounts, readCounts, resident)
+    countsByType, deltaCounts, mostRefs, printCounts, readCounts, resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
@@ -506,29 +506,41 @@ class LaunchpadBrowserPublication(
         """
         gc.collect()
         current_rss = resident()
+        current_garbage_count = len(gc.garbage)
         # Convert type to string, because that's what we get when reading
         # the old scoreboard.
         current_refs = [
             (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
+        # Add G as prefix to types on the garbage list.
+        current_garbage = [
+            (count, 'G%s' % str(ref_type))
+            for count, ref_type in countsByType(gc.garbage, n=0)]
         scoreboard_path = config.debug.references_scoreboard_file
 
         # Read in previous scoreboard if it exists.
         if os.path.exists(scoreboard_path):
             scoreboard = open(scoreboard_path, 'r')
             try:
-                prev_rss = int(scoreboard.readline().strip())
-                prev_refs = readCounts(scoreboard)
+                stats = scoreboard.readline().split()
+                prev_rss = int(stats[0].strip())
+                prev_garbage_count = int(stats[1].strip())
+                prev_refs = readCounts(scoreboard, '=== GARBAGE ===\n')
+                prev_garbage = readCounts(scoreboard)
             finally:
                 scoreboard.close()
             mem_leak = current_rss - prev_rss
-            delta_refs = deltaCounts(prev_refs, current_refs)
+            garbage_leak = current_garbage_count - prev_garbage_count
+            delta_refs = list(deltaCounts(prev_refs, current_refs))
+            delta_refs.extend(deltaCounts(prev_garbage, current_garbage))
             self.logReferencesLeak(request, mem_leak, delta_refs)
 
         # Save the current scoreboard.
         scoreboard = open(scoreboard_path, 'w')
         try:
-            scoreboard.write("%d\n" % current_rss)
+            scoreboard.write("%d %d\n" % (current_rss, current_garbage_count))
             printCounts(current_refs, scoreboard)
+            scoreboard.write('=== GARBAGE ===\n')
+            printCounts(current_garbage, scoreboard)
         finally:
             scoreboard.close()
 

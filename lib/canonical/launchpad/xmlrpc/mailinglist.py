@@ -75,8 +75,17 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         if len(modified) > 0:
             response['modify'] = modified
         # Handle unsynchronized lists.
-        unsynchronized = [mailing_list.team.name
-                          for mailing_list in list_set.unsynchronized_lists]
+        unsynchronized = []
+        for mailing_list in list_set.unsynchronized_lists:
+            name = mailing_list.team.name
+            if mailing_list.status == MailingListStatus.CONSTRUCTING:
+                unsynchronized.append((name, 'constructing'))
+            elif mailing_list.status == MailingListStatus.UPDATING:
+                unsynchronized.append((name, 'updating'))
+            else:
+                raise AssertionError(
+                    'Mailing list is neither CONSTRUCTING nor UPDATING: %s'
+                    % name)
         if len(unsynchronized) > 0:
             response['unsynchronized'] = unsynchronized
         return response

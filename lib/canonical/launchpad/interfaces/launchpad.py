@@ -59,6 +59,7 @@ __all__ = [
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
+    'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
     'IShipItApplication',
@@ -144,6 +145,10 @@ class IMaloneApplication(ILaunchpadApplication):
     latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""
+
+
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
@@ -198,6 +203,8 @@ class IPrivateApplication(ILaunchpadApplication):
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):
