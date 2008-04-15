@@ -1884,6 +1884,9 @@ class PersonLanguagesView(LaunchpadView):
 
 class PersonView(LaunchpadView, FeedsMixin):
     """A View class used in almost all Person's pages."""
+    # XXX CarlosPerelloMarin bug=213651: This class must be refactored into
+    # different classes to remove the action menu and split that into
+    # different navigation menus based on a common 'view context'.
     implements(ITeamMembershipView)
 
     @cachedproperty
