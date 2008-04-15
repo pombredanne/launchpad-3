@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
+    'ITeamMembershipView',
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
@@ -253,3 +254,10 @@ class ITeamParticipation(Interface):
     team = Int(title=_("The team"), required=True, readonly=False)
     person = Int(title=_("The member"), required=True, readonly=False)
 
+
+class ITeamMembershipView(Interface):
+    """Interface used to link a view with a navigation menu.
+
+    This interface is used to render all menu entries related with team
+    memberships.
+    """

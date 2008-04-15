@@ -49,7 +49,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     )
 from canonical.launchpad.webapp.interfaces import (
-    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+    IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
+    NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import (

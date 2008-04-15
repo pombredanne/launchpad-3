@@ -71,7 +71,9 @@ __all__ = [
     'TeamJoinView',
     'TeamLeaveView',
     'TeamListView',
+    'TeamMembershipNavigationMenu',
     'TeamNavigation',
+    'TeamOverviewNavigationMenu',
     'TeamOverviewMenu',
     'TeamReassignmentView',
     'TeamSpecsMenu',
@@ -115,11 +117,11 @@ from canonical.launchpad.interfaces import (
     IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
     ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, PersonVisibility, QuestionParticipation,
-    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    ITeamMembershipView, ITeamReassignment, IWikiNameSet, LoginTokenType,
+    NotFoundError, PersonCreationRationale, PersonVisibility,
+    QuestionParticipation, SSHKeyType, SpecificationFilter,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -147,9 +149,10 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
+    ApplicationMenu, ContextMenu, NavigationMenu, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission, smartquote,
+    stepthrough, stepto)
 
 from canonical.launchpad import _
 
@@ -972,12 +975,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
-             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'common_packages', 'related_projects',
-             'activate_ppa', 'show_ppa']
+    links = ['edit', 'branding', 'common_edithomepage', 'add_member',
+             'received_invitations', 'editemail', 'configure_mailing_list',
+             'editlanguages', 'add_poll', 'joinleave', 'add_my_teams',
+             'mentorships', 'reassign', 'common_packages', 'activate_ppa',
+             'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -999,12 +1001,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Show all members'
-        return Link(target, text, icon='people')
-
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
         target = '+invitations'
@@ -1022,11 +1018,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Add one of my teams'
         return Link(target, text, icon='add')
 
-    def memberships(self):
-        target = '+participation'
-        text = 'Show team participation'
-        return Link(target, text, icon='info')
-
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
@@ -1034,17 +1025,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
-
-    @enabled_with_permission('launchpad.View')
-    def mugshots(self):
-        target = '+mugshots'
-        text = 'Show group photo'
-        return Link(target, text, icon='people')
-
-    def polls(self):
-        target = '+polls'
-        text = 'Show polls'
-        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_poll(self):
@@ -1090,6 +1070,40 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
+
+
+class TeamOverviewNavigationMenu(NavigationMenu, CommonMenuLinks):
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['members', 'related_projects', 'polls',]
+
+    @enabled_with_permission('launchpad.View')
+    def members(self):
+        target = '+members'
+        text = 'Show all members'
+        return Link(target, text, icon='people')
+
+    def polls(self):
+        target = '+polls'
+        text = 'Show polls'
+        return Link(target, text, icon='info')
+
+
+class TeamMembershipNavigationMenu(NavigationMenu):
+    usedfor = ITeamMembershipView
+    facet = 'overview'
+    links = ['memberships', 'mugshots']
+
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.View')
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
+        return Link(target, text, icon='people')
 
 
 class BaseListView:
@@ -1870,6 +1884,7 @@ class PersonLanguagesView(LaunchpadView):
 
 class PersonView(LaunchpadView, FeedsMixin):
     """A View class used in almost all Person's pages."""
+    implements(ITeamMembershipView)
 
     @cachedproperty
     def recently_approved_members(self):

@@ -62,11 +62,16 @@
       />
   </content>
 
+  <content class="canonical.launchpad.browser.PersonView">
+    <allow interface="canonical.launchpad.interfaces.ITeamMembershipView"/>
+  </content>
+
   <browser:menus
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu"
+        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
+        TeamMembershipNavigationMenu TeamOverviewNavigationMenu"
     />
 
   <browser:url
