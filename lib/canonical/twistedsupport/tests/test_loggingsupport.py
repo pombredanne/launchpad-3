@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the integration between Twisted's logging and Launchpad's."""
 
 __metaclass__ = type
 
@@ -57,6 +57,7 @@ class LoggingSupportTests(TestCase):
 
     @suppress_stderr
     def test_oops_reporting(self):
+        # Calling log.err should result in an OOPS being logged.
         log.addObserver(self.observer.emit)
         self.addCleanup(log.removeObserver, self.observer.emit)
         error_time = datetime.datetime.now(UTC)
