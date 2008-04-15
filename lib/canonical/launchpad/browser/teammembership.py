@@ -20,10 +20,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag,
-    ILaunchpadCelebrities,
-    PersonVisibility,
-    TeamMembershipStatus,
+    ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
     UnexpectedFormData)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
