@@ -649,11 +649,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
-    # XXX Tom Berger 2008-02-14, 2008-04-14:
+    # XXX: TomBerger 2008-02-14, 2008-04-14 bug=191799:
     # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
     # rather than package bug supervisors.
-    # See bug #191799
     def getBugSubscriberPackages(self):
         """See `IPerson`."""
         packages = [sub.target for sub in self.structural_subscriptions
