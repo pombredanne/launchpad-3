@@ -90,3 +90,48 @@ or the PPA overview.
     >>> anon_browser.getLink('View PPA').url
     'http://launchpad.dev/~cprov/+archive'
 
+When the number of packages in the PPA is large the user will see them
+displayed in batches.
+
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive?batch=1')
+
+Since he is on the first page, the 'First' and 'Previous' links are
+greyed out:
+
+    >>> 'Previous' in anon_browser.contents
+    True
+    >>> anon_browser.getLink('Previous')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> 'First' in anon_browser.contents
+    True
+    >>> anon_browser.getLink('First')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+
+The user does not see the package he is looking for and proceeds to the
+next page.
+
+    >>> anon_browser.getLink('Next').click()
+
+The package of interest is not on this page either so he goes to the
+next page.
+
+    >>> anon_browser.getLink('Next').click()
+
+This is the last page, so the next and last links are greyed out.
+
+    >>> 'Next' in anon_browser.contents
+    True
+    >>> anon_browser.getLink('Next')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> 'Last' in anon_browser.contents
+    True
+    >>> anon_browser.getLink('Last')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
