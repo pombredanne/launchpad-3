@@ -12,6 +12,18 @@ installed implement.
     >>> server = xmlrpclib.ServerProxy(
     ...     'http://example.com/xmlrpc', transport=trac_transport)
 
+All the methods need an authentication cookie to be sent.
+
+    >>> server.launchpad.bugtracker_version()
+    Traceback (most recent call last):
+    ...
+    ProtocolError: <... 403 Forbidden>
+
+This test transport doesn't validate the cookie, it just ensures that
+some cookie is set.
+
+    >>> trac_transport.auth_cookie = 'auth-cookie'
+
 
 == launchpad.bugtracker_version() ==
 
