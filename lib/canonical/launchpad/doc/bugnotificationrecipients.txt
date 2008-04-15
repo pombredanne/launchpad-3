@@ -86,13 +86,13 @@ Then, subscribers of various types are added:
   >>> recipients.addAssignee(no_priv)
 
   >>> daf = personset.getByEmail("daf@canonical.com")
-  >>> recipients.addDistroBugContact(daf, debian)
+  >>> recipients.addDistroBugSupervisor(daf, debian)
 
   >>> carlos = personset.getByEmail("carlos@canonical.com")
   >>> recipients.addStructuralSubscriber(carlos, pmount)
 
   >>> marilize = personset.getByEmail("marilize@hbd.com")
-  >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
+  >>> recipients.addUpstreamBugSupervisor(marilize, alsa_utils)
 
   >>> testtest = personset.getByEmail("testtest@canonical.com")
   >>> recipients.addRegistrant(testtest, gnomebaker)
@@ -142,13 +142,13 @@ duplicate of).
   >>> recipients.addAssignee(no_priv)
 
   >>> daf = personset.getByEmail("daf@canonical.com")
-  >>> recipients.addDistroBugContact(daf, debian)
+  >>> recipients.addDistroBugSupervisor(daf, debian)
 
   >>> carlos = personset.getByEmail("carlos@canonical.com")
   >>> recipients.addStructuralSubscriber(carlos, pmount)
 
   >>> marilize = personset.getByEmail("marilize@hbd.com")
-  >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
+  >>> recipients.addUpstreamBugSupervisor(marilize, alsa_utils)
 
   >>> testtest = personset.getByEmail("testtest@canonical.com")
   >>> recipients.addRegistrant(testtest, gnomebaker)
@@ -199,7 +199,7 @@ Here's an example of this situation:
   >>> recipients.addStructuralSubscriber(name20, pmount)
 
   >>> name18 = personset.getByName("name18")
-  >>> recipients.addUpstreamBugContact(name18, alsa_utils)
+  >>> recipients.addUpstreamBugSupervisor(name18, alsa_utils)
 
   >>> vcs_imports = personset.getByName("vcs-imports")
   >>> recipients.addRegistrant(vcs_imports, gnomebaker)
@@ -208,7 +208,7 @@ Here's an example of this situation:
   >>> recipients.addDirectSubscriber(shipit_admins)
 
   >>> launchpad_buildd_admins = personset.getByName("launchpad-buildd-admins")
-  >>> recipients.addDistroBugContact(launchpad_buildd_admins, debian)
+  >>> recipients.addDistroBugSupervisor(launchpad_buildd_admins, debian)
 
 You'll notice that the rationales this time state clearly which team
 membership is causing us to send mail.

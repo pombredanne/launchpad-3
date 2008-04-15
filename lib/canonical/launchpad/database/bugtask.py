@@ -1243,7 +1243,7 @@ class BugTaskSet:
         # packages, following a conversion to use this object.
         # We know that the behaviour remains the same, but we
         # should change the terminology, or re-instate
-        # PackageBugContact, since the use of this relation here
+        # PackageBugSupervisor, since the use of this relation here
         # is not for subscription to notifications.
         # See bug #191809
         if params.bug_supervisor:

@@ -92,7 +92,7 @@
     <include file="milestone.zcml" />
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
-    <include file="packagebugcontact.zcml" />
+    <include file="packagebugsupervisor.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
