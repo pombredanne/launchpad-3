@@ -20,4 +20,9 @@ CREATE TABLE CommercialSubscription (
 CREATE INDEX commercialsubscription__product__idx
   ON CommercialSubscription(product);
 
+-- Add a new column to the Product table for administrative
+-- approval of an 'Other' license.
+ALTER TABLE Product
+    ADD COLUMN manually_approved_license boolean NOT NULL DEFAULT FALSE;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
