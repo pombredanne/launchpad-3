@@ -51,7 +51,7 @@ if __name__ == '__main__':
             'Expected one of %s, but got: %r'
             % (branch_type_map.keys(), which))
 
-    log = set_up_logging_for_script(options, 'branch-puller')
+    log = set_up_logging_for_script(options, 'supermirror_%s_puller' % which)
     manager = scheduler.JobScheduler(
         scheduler.BranchStatusClient(), log, branch_type)
 
