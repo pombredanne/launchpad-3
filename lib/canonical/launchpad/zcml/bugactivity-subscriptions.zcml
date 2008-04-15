@@ -8,7 +8,7 @@
 
     <subscriber
         for="canonical.launchpad.interfaces.IBug
-             zope.app.event.interfaces.IObjectCreatedEvent"
+             zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.bugactivity.record_bug_added" />
 
     <subscriber
@@ -18,7 +18,7 @@
 
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask
-             zope.app.event.interfaces.IObjectCreatedEvent"
+             zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.bugactivity.record_bug_task_added" />
 
      <subscriber
@@ -28,7 +28,7 @@
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugProductInfestation
-          zope.app.event.interfaces.IObjectCreatedEvent"
+          zope.lifecycleevent.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_product_infestation_added" />
 
   <subscriber
@@ -38,7 +38,7 @@
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugPackageInfestation
-          zope.app.event.interfaces.IObjectCreatedEvent"
+          zope.lifecycleevent.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_package_infestation_added" />
 
   <subscriber
@@ -48,7 +48,7 @@
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription
-          zope.app.event.interfaces.IObjectCreatedEvent"
+          zope.lifecycleevent.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_added" />
 
   <subscriber

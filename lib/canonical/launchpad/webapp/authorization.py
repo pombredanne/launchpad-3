@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.security.simplepolicies import ParanoidSecurityPolicy
 from zope.security.management import (
     system_user, checkPermission as zcheckPermission)
-from zope.app.security.permission import (
+from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
