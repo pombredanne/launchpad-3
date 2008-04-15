@@ -419,7 +419,11 @@ class TestTracInternalXMLRPCTransport:
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
-        return method(*args)
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        result = method(*args)
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+        return result
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)

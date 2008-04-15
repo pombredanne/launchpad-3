@@ -31,10 +31,13 @@ The generation of token is done outside the transaction.
 
 
     >>> import random
+    >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> class TestTracLPPlugin(TracLPPlugin):
     ...     def urlopen(self, url):
+    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
     ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
     ...         if not url.startswith(base_auth_url + '/'):
     ...             raise AssertionErrror("Unexpected URL: %s" % url)
@@ -50,6 +53,7 @@ The generation of token is done outside the transaction.
     ...         response = FakeResponse()
     ...         response.headers['Set-Cookie'] = (
     ...             'trac_auth=random_token-' + str(random.random()))
+    ...         LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     ...         return response
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
