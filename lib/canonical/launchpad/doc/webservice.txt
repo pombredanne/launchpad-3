@@ -699,11 +699,6 @@ will act as though you had performed a GET on the URL
 
     >>> def create_web_service_request(
     ...     path_info, method='GET', body=None, environ=None):
-    ...     if not path_info.startswith('/beta/'):
-    ...         prefix = '/beta'
-    ...         if not path_info.startswith('/'):
-    ...             prefix += '/'
-    ...         path_info = prefix + path_info
     ...     test_environ = {
     ...         'SERVER_URL': 'http://api.launchpad.dev',
     ...         'HTTP_HOST': 'api.launchpad.dev',
@@ -728,7 +723,7 @@ will act as though you had performed a GET on the URL
     >>> app = MyServiceRootResource()
     >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(app)
-    >>> request = create_web_service_request('/')
+    >>> request = create_web_service_request('/beta/')
     >>> ignore = request.traverse(app)
     >>> app(request)
     'This is a web service.'
@@ -756,7 +751,7 @@ The following example is equivalent to requesting
 CookbookSet published normally at '/cookbooks' and it will be wrapped
 into a CollectionResource.
 
-    >>> request = create_web_service_request('/cookbooks')
+    >>> request = create_web_service_request('/beta/cookbooks')
     >>> collection = request.traverse(app)
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
@@ -784,7 +779,7 @@ But if we ask for a page size of two, we can see how pagination
 works. Here's page one, with two cookbooks on it.
 
     >>> request = create_web_service_request(
-    ...     '/cookbooks', environ={'QUERY_STRING' : 'ws_size=2'})
+    ...     '/beta/cookbooks', environ={'QUERY_STRING' : 'ws_size=2'})
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
 
@@ -801,7 +796,8 @@ Follow the 'next_collection_link' and you'll end up at page two, which
 has the last cookbook on it.
 
     >>> request = create_web_service_request(
-    ...     '/cookbooks', environ={'QUERY_STRING' : 'ws_start=2&ws_size=2'})
+    ...     '/beta/cookbooks',
+    ...     environ={'QUERY_STRING' : 'ws_start=2&ws_size=2'})
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
 
@@ -821,7 +817,7 @@ GET. The cookbook collection exposes a custom GET operation called
 cookbooks.
 
     >>> request = create_web_service_request(
-    ...    'cookbooks',
+    ...    '/beta/cookbooks',
     ...    environ={'QUERY_STRING' :
     ...             'ws_op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
@@ -835,7 +831,7 @@ Custom operations may include custom error checking. Error messages
 are passed along to the client.
 
     >>> request = create_web_service_request(
-    ...    'cookbooks',
+    ...    '/beta/cookbooks',
     ...    environ={'QUERY_STRING' :
     ...             'ws_op=find_recipes&name=NoSuchRecipe'})
     >>> operation_resource = request.traverse(app)
@@ -849,7 +845,7 @@ existing author:
     >>> body = ("ws_op=create_cookbook&title=Beard%20on%20Bread&"
     ...         "author_name=James%20Beard")
     >>> request = create_web_service_request(
-    ...     'cookbooks', 'POST', body,
+    ...     '/beta/cookbooks', 'POST', body,
     ...     {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
     >>> operation_resource = request.traverse(app)
     >>> result = operation_resource()
@@ -864,7 +860,7 @@ Here we create a cookbook for a new author.
     >>> body = ("ws_op=create_cookbook&title=Everyday%20Greens&"
     ...         "author_name=Deborah%20Madison")
     >>> request = create_web_service_request(
-    ...     'cookbooks', 'POST', body,
+    ...     '/beta/cookbooks', 'POST', body,
     ...     {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
     >>> operation_resource = request.traverse(app)
     >>> result = operation_resource()
@@ -876,7 +872,8 @@ Here we create a cookbook for a new author.
 The new Author object is created implicitly and is published as a
 resource afterwards.
 
-    >>> request = create_web_service_request('/authors/Deborah%20Madison')
+    >>> path = '/beta/authors/Deborah%20Madison'
+    >>> request = create_web_service_request(path)
     >>> author = request.traverse(app)
     >>> simplejson.loads(author())['name']
     u'Deborah Madison'
@@ -889,7 +886,7 @@ associated information (like 'name'), a 'self_link' (the URL to the
 entry's resource), and possibly links to associated resources.
 
     >>> import operator
-    >>> request = create_web_service_request('/cookbooks')
+    >>> request = create_web_service_request('/beta/cookbooks')
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
     >>> entries = sorted(representation['entries'],
@@ -919,7 +916,7 @@ For instance, requesting "/cookbooks/The%20Joy%20of%20Cooking" will wrap
 the "Joy of Cooking" cookbook object into an EntryResource.
 
     >>> request = create_web_service_request(
-    ...     quote('/cookbooks/The Joy of Cooking'))
+    ...     quote('/beta/cookbooks/The Joy of Cooking'))
     >>> joy_resource = request.traverse(app)
     >>> joy_resource
     <canonical.lazr.rest.resource.EntryResource object ...>
@@ -939,7 +936,7 @@ the "Joy of Cooking" cookbook object into an EntryResource.
 You can also traverse from an entry to an item in a scoped collection:
 
     >>> request = create_web_service_request(
-    ...     quote('/cookbooks/The Joy of Cooking/recipes/Roast chicken'))
+    ...     quote('/beta/cookbooks/The Joy of Cooking/recipes/Roast chicken'))
     >>> chicken_recipe_resource = request.traverse(app)
     >>> chicken_recipe = simplejson.loads(chicken_recipe_resource())
     >>> sorted(chicken_recipe.items())
@@ -955,7 +952,7 @@ You can also traverse from an entry to an item in a scoped collection:
 Another example traversing to a comment:
 
     >>> roast_chicken_comments_url = quote(
-    ... '/cookbooks/The Joy of Cooking/recipes/Roast chicken/comments')
+    ... '/beta/cookbooks/The Joy of Cooking/recipes/Roast chicken/comments')
     >>> request = create_web_service_request(roast_chicken_comments_url)
     >>> comments_resource = request.traverse(app)
 
@@ -978,7 +975,7 @@ recipe entry exposes a custom GET operation called
 across cookbooks.
 
     >>> request = create_web_service_request(
-    ...     'cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken',
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken',
     ...     environ={'QUERY_STRING' : 'ws_op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
@@ -995,14 +992,14 @@ NotFound exception.
 
 Requesting a non-existent top-level collection:
 
-    >>> create_web_service_request('/nosuchcollection').traverse(app)
+    >>> create_web_service_request('/beta/nosuchcollection').traverse(app)
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'nosuchcollection'
 
 Requesting a non-existent cookbook:
 
-    >>> create_web_service_request('/cookbooks/104').traverse(app)
+    >>> create_web_service_request('/beta/cookbooks/104').traverse(app)
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'104'
@@ -1010,7 +1007,7 @@ Requesting a non-existent cookbook:
 Requesting an attribute which isn't exposed as a collection:
 
     >>> create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking/name').traverse(app)
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking/name').traverse(app)
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'name'
@@ -1018,7 +1015,7 @@ Requesting an attribute which isn't exposed as a collection:
 Requesting a non-existent comment:
 
     >>> create_web_service_request(
-    ...  '/cookbooks/The%20Joy%20of%20Cooking/comments/10').traverse(app)
+    ...  '/beta/cookbooks/The%20Joy%20of%20Cooking/comments/10').traverse(app)
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'10'
@@ -1037,7 +1034,7 @@ Here, we modify the name of one of the cookbooks.
     >>> body = '{"name" : "The Joy of Cooking (revised)"}'
 
     >>> patch_request = create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking', body=body,
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking', body=body,
     ...     environ=headers, method='PATCH')
     >>> joy_resource_patch = patch_request.traverse(app)
     >>> joy_resource_patch()
@@ -1050,7 +1047,7 @@ The new name is reflected in the cookbook's representation, and the
 cookbook's URL has changed as well.
 
     >>> request = create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29')
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29')
     >>> joy_resource = request.traverse(app)
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['name']
@@ -1067,7 +1064,7 @@ before. Note that we send the entire dictionary back to the server.
     >>> joy['name'] = 'The Joy of Cooking'
     >>> body = simplejson.dumps(joy)
     >>> put_request = create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29',
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29',
     ...     body=body, environ=headers, method='PUT')
 
     >>> joy_resource_put = put_request.traverse(app)
@@ -1084,7 +1081,7 @@ The cookbook's URL has changed back to what it was before.
 So has the cookbook's name.
 
     >>> joy_resource = create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['name']
     u'The Joy of Cooking'
@@ -1096,7 +1093,7 @@ their URLs, we make the change by modifying the cookbook's
 
     >>> joy['author_link'] = u'http://api.launchpad.dev/beta/authors/Julia%20Child'
     >>> resource = create_web_service_request(
-    ...     '/cookbooks/The%20Joy%20of%20Cooking',
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking',
     ...     body=simplejson.dumps(joy), environ=headers,
     ...     method='PUT').traverse(app)
     >>> resource()

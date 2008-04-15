@@ -18,7 +18,7 @@ GET request to the entry's URL.
 Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
-  >>> salgado = webservice.get('/~salgado').jsonBody()
+  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -30,7 +30,7 @@ representation of an entry, or a WADL description of the entry's
 capabilities.
 
   >>> def negotiated_type(accept_header):
-  ...     return webservice.get('/~salgado',
+  ...     return webservice.get('/beta/~salgado',
   ...                           accept_header).getHeader('Content-Type')
 
   >>> negotiated_type('application/json')
@@ -68,14 +68,14 @@ argument. You can get a list of a team's active members by specifying
 the 'members_by_status' operation.
 
   >>> active_members = webservice.get(
-  ...     "/~admins?ws_op=members_by_status&status=Approved").jsonBody()
+  ...     "/beta/~admins?ws_op=members_by_status&status=Approved").jsonBody()
   >>> sorted([m['name'] for m in active_members['entries']])
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'spiv']
 
 Some entries support custom operations through POST. You can change a
 bug's status by invoking a custom operation.
 
-  >>> bugtask_path = '/debian/+source/mozilla-firefox/+bug/1'
+  >>> bugtask_path = '/beta/debian/+source/mozilla-firefox/+bug/1'
   >>> webservice.get(bugtask_path).jsonBody()['status']
   u'Confirmed'
 
@@ -90,7 +90,7 @@ bug's status by invoking a custom operation.
 Custom operations may have error handling.
 
   >>> print webservice.get(
-  ...     "/~admins?ws_op=members_by_status&status=NoSuchStatus")
+  ...     "/beta/~admins?ws_op=members_by_status&status=NoSuchStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
@@ -110,7 +110,7 @@ Custom operations may have error handling.
 Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
-  ...     "/~admins?ws_op=no_such_operation")
+  ...     "/beta/~admins?ws_op=no_such_operation")
   HTTP/1.1 404 Not Found
   ...
 
@@ -126,7 +126,7 @@ entry's state, in which case the client should use PUT.
   >>> import simplejson
   >>> def modify_person(person, representation, method):
   ...     "A helper function to send a PUT or PATCH request to a person."
-  ...     return webservice('/~' + person, method,
+  ...     return webservice('/beta/~' + person, method,
   ...                       simplejson.dumps(representation),
   ...                       {'Content-type': 'application/json'})
 
@@ -139,7 +139,7 @@ display name is in uppercase.
   Content-Length: 0
   ...
 
-  >>> salgado = webservice.get('/~salgado').jsonBody()
+  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
@@ -181,7 +181,7 @@ less work than constructing a new document and sending it with PATCH.
   HTTP/1.1 200 Ok
   ...
 
-  >>> salgado = webservice.get('/~salgado').jsonBody()
+  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -206,7 +206,7 @@ might not be acceptable as the payload of a PUT request.
 
 A document that's not a valid JSON document is also unacceptable.
 
-  >>> print webservice.patch("/~salgado", "application/json", "{")
+  >>> print webservice.patch("/beta/~salgado", "application/json", "{")
   HTTP/1.1 400 Bad Request
   ...
   Entity-body was not a well-formed JSON document.
@@ -299,7 +299,7 @@ In addition to changing an object's data fields, you can change its
 relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
-  >>> admins = webservice.get('/~admins').jsonBody()
+  >>> admins = webservice.get('/beta/~admins').jsonBody()
   >>> admins['teamowner_link']
   u'http://api.launchpad.dev/beta/~sabdfl'
   >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~salgado'

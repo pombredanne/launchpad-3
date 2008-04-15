@@ -8,7 +8,7 @@ document shows some of the other features of a person.
 
 A person is linked to their team memberships.
 
-  >>> salgado = webservice.get("/~salgado").jsonBody()
+  >>> salgado = webservice.get("/beta/~salgado").jsonBody()
 
   >>> salgado['team_memberships_collection_link']
   u'http://api.launchpad.dev/beta/~salgado/team_memberships'
@@ -16,14 +16,14 @@ A person is linked to their team memberships.
 Similarly, a team is linked to the team memberships of its members.
 
   >>> landscape_developers = webservice.get(
-  ...     "/~landscape-developers").jsonBody()
+  ...     "/beta/~landscape-developers").jsonBody()
   >>> landscape_developers['member_memberships_collection_link']
   u'http://api.launchpad.dev/beta/~landscape-developers/member_memberships'
 
 Team memberships are first-class objects with their own URLs.
 
   >>> salgado_memberships = sorted(webservice.get(
-  ...     "/~salgado/team_memberships").jsonBody()['entries'])
+  ...     "/beta/~salgado/team_memberships").jsonBody()['entries'])
   >>> [m['self_link'] for m in salgado_memberships]
   [u'http://api.launchpad.dev/beta/~admins/+member/salgado',
    u'http://api.launchpad.dev/beta/~landscape-developers/+member/salgado']
@@ -58,9 +58,9 @@ possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
   >>> landscape_memberships = webservice.get(
-  ...     "/~landscape-developers/member_memberships").jsonBody()['entries']
+  ...     "/beta/~landscape-developers/member_memberships").jsonBody()
 
-  >>> [m['self_link'] for m in sorted(landscape_memberships)]
+  >>> [m['self_link'] for m in sorted(landscape_memberships['entries'])]
   [u'http://api.launchpad.dev/beta/~landscape-developers/+member/name12',
    u'http://api.launchpad.dev/beta/~landscape-developers/+member/salgado']
 
@@ -70,7 +70,7 @@ seen the memberships for the 'landscape-developers' team above; here
 are the members.
 
   >>> landscape_members = webservice.get(
-  ...     "/~landscape-developers/members").jsonBody()['entries']
-  >>> [m['self_link'] for m in sorted(landscape_members)]
+  ...     "/beta/~landscape-developers/members").jsonBody()
+  >>> [m['self_link'] for m in sorted(landscape_members['entries'])]
   [u'http://api.launchpad.dev/beta/~salgado',
    u'http://api.launchpad.dev/beta/~name12']

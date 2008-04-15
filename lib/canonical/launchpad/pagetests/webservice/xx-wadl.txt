@@ -3,7 +3,7 @@
 Let's get a WADL representation of a Launchpad resource (in this case,
 a bug task), and see what's inside.
 
-   >>> wadl = webservice.get('/debian/+source/mozilla-firefox/+bug/1',
+   >>> wadl = webservice.get('/beta/debian/+source/mozilla-firefox/+bug/1',
    ...                       'application/vd.sun.wadl+xml').getBody()
 
 It's an XML document.
