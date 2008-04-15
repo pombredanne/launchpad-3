@@ -472,6 +472,8 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if can_import_comments:
                         self.importBugComments(remotesystem, bug_watch)
+                    if ISupportsCommentPushing.providedBy(remotesystem):
+                        self.pushBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
