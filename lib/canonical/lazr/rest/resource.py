@@ -137,6 +137,7 @@ class HTTPResource(URLDereferencingMixin):
         """
         if value is None:
             return []
+
         values = value.split(',')
         # In the original getPreferredLanguages there was some language
         # code normalization here, which I removed.
@@ -164,9 +165,6 @@ class HTTPResource(URLDereferencingMixin):
 
             accepts.append((quality, l[0].strip()))
 
-        # Filter langs with q=0, which means
-        # unwanted lang according to the spec
-        # See: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
         accepts = [acc for acc in accepts if acc[0] > 0]
         accepts.sort()
         accepts.reverse()
@@ -417,16 +415,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             try:
                 wadl_pos = content_types.index(self.WADL_TYPE)
             except ValueError:
-                wadl_pos = None
+                wadl_pos = float("infinity")
             try:
                 json_pos = content_types.index(self.JSON_TYPE)
             except ValueError:
-                json_pos = None
+                json_pos = float("infinity")
 
             # If the client's desire for WADL outranks its desire for
             # JSON, serve WADL.  Otherwise, serve JSON.
-            if wadl_pos is not None and (json_pos is None or
-                                         wadl_pos < json_pos):
+            if wadl_pos < json_pos:
                 result = self.toWADL().encode("utf-8")
                 self.request.response.setHeader(
                     'Content-Type', self.WADL_TYPE)

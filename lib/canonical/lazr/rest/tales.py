@@ -33,7 +33,12 @@ class WadlResourceAPI:
         return canonical_url(self.context)
 
     def named_operations(self):
-        """Return all named operations registered on the resource."""
+        """Return all named operations registered on the resource.
+
+        :return: a dict containing 'name' and 'op' keys. 'name' is
+        the name of the operation and 'op' is the ResourceOperation
+        object.
+        """
         operations = getGlobalSiteManager().adapters.lookupAll(
             (providedBy(self.context), IHTTPApplicationRequest),
             IResourceOperation)
@@ -122,7 +127,7 @@ class WadlFieldAPI:
     def options(self):
         """An enumeration of acceptable values for this field.
 
-        :return: An iterable of Items if the field implemenats IChoice
+        :return: An iterable of Items if the field implements IChoice
           and its vocabulary implements IEnumeratedType. Otherwise, None.
         """
         if (IChoice.providedBy(self.field) and
@@ -146,3 +151,4 @@ class WadlOperationAPI:
             return "POST"
         else:
             raise AssertionError("Named operations must use GET or POST.")
+
