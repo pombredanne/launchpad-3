@@ -15,6 +15,10 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, append=True,
                         message=r'Module .*? is being added to sys.path')
 
+# XXX sinzui 2008-04-15:
+# Filter all deprecation warnings during the transition period to
+# Zope 3.4.
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
