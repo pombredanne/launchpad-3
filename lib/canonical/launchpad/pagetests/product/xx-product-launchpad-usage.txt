@@ -154,6 +154,22 @@ An Email Address bug tracker is automatically created.
     ...     find_tag_by_id(registrant_browser.contents, 'bugtracker-urls'))
     mailto:puff@magicdragon.com
 
+An error message is shown if the email address is not filled in.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.getControl(
+    ...     'By emailing an upstream bug contact').selected = True
+    >>> registrant_browser.getControl(
+    ...     name='field.bugtracker.upstream_email_address').value = ''
+    >>> registrant_browser.getControl('Change').click()
+    >>> registrant_browser.url
+    'http://launchpad.dev/firefox/+edit'
+    >>> for message in find_tags_by_class(
+    ...     registrant_browser.contents, 'message'):
+    ...     print extract_text(message)
+    There is 1 error.
+    Please enter an email address.
+
 
 == enable_bug_expiration and JavaScript ==
 
