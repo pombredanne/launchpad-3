@@ -145,7 +145,7 @@ class PackageBugReportData(BugReportData):
         if self.product:
             product_url = canonical_url(product)
             self.bugtracker = self.product.getExternalBugTracker()
-            self.bugcontact_url = product_url + "/+bugcontact"
+            self.bug_supervisor_url = product_url + "/+bugsupervisor"
             self.product_edit_url = product_url + "/+edit"
 
         # Note that the +edit-packaging page allows launchpad.AnyPerson

@@ -5,10 +5,10 @@
     i18n_domain="launchpad">
 
   <browser:page
-    name="+bugcontact"
+    name="+bugsupervisor"
     for="canonical.launchpad.interfaces.IHasBugSupervisor"
     facet="bugs"
-    class="canonical.launchpad.browser.BugContactEditView"
+    class="canonical.launchpad.browser.BugSupervisorEditView"
     permission="launchpad.Edit"
     template="../templates/edit-bugcontact.pt"
     />
