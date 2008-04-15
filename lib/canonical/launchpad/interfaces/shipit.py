@@ -6,6 +6,7 @@ __all__ = [
     'IShipItCountry',
     'IShipItReport',
     'IShipItReportSet',
+    'IShipItSurveySet',
     'IShipment',
     'IShipmentSet',
     'IShippingRequest',
@@ -22,18 +23,19 @@ __all__ = [
     'ShipItConstants',
     'ShipItDistroSeries',
     'ShipItFlavour',
+    'ShipItSurveySchema',
     'ShippingRequestPriority',
     'ShippingRequestStatus',
     'ShippingRequestType',
     'ShippingService',
     'SOFT_MAX_SHIPPINGRUN_SIZE']
 
-from zope.schema import Bool, Choice, Int, Datetime, TextLine
+from zope.schema import Bool, Choice, Int, Datetime, Set, TextLine
 from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -838,6 +840,158 @@ class IShipItReportSet(Interface):
 
     def getAll():
         """Return all ShipItReport objects."""
+
+
+class EnvironmentVocabulary(EnumeratedType):
+    HOME = Item("Home")
+    WORK = Item("Work")
+
+
+class EmployeeNumberVocabulary(EnumeratedType):
+    ONE = Item("1")
+    TWO_TO_FIVE = Item("2 - 5")
+    SIX_TO_TEN = Item("6 - 10")
+    ELEVEN_TO_THIRTY = Item("11 - 30")
+    THIRTYONE_TO_ONE_HUNDRED = Item("31 - 100")
+    HUNDRED_AND_ONE_TO_FIVE_HUNDRED = Item("101 - 500")
+    FIVE_HUNDRED_AND_ONE_TO_ONE_THOUSAND = Item("501 - 1000")
+    MORE_THAN_FIVE_THOUSAND = Item("5000+")
+
+
+class BusinessSectorVocabulary(EnumeratedType):
+    EDUCATION = Item("Education")
+    FINANCE = Item("Finance")
+    GOVERNMENT = Item("Government/Administration")
+    HEALTH = Item("Health")
+    INSURANCE = Item("Insurance")
+    MANUFACTURING = Item("Manufacturing")
+    NON_PROFIT = Item("Non profit")
+    PUBLISHING = Item("Publishing")
+    RETAIL = Item("Retail")
+    TECHNOLOGY_HARDWARE = Item("Technology (Hardware)")
+    TECHNOLOGY_SOFTWARE = Item("Technology (Software)")
+    TECHNOLOGY_SERVICE = Item("Technology (Service)")
+    TECHNOLOGY_OTHER = Item("Technology (Other)")
+    TRAVEL = Item("Travel/Transportation")
+    UTILITIES = Item("Utilities")
+    OTHER = Item("Other")
+
+
+class UserRoleInOrganisationVocabulary(EnumeratedType):
+    APPROVER = Item("I approve final purchasing/deployment decisions")
+    PURCHASER = Item("I make purchasing/deployment decisions")
+    INFLUENCER = Item("I influence purchasing/deployment decisions")
+    USER = Item("I am primarily a user of technology")
+    OTHER = Item("Other")
+
+
+class ServerNumberVocabulary(EnumeratedType):
+    ONE = Item("1")
+    TWO_TO_FIVE = Item("2 - 5")
+    SIX_TO_TEN = Item("6 - 10")
+    ELEVEN_TO_THIRTY = Item("11 - 30")
+    THIRTYONE_TO_ONE_HUNDRED = Item("31 - 100")
+    HUNDRED_AND_ONE_TO_FIVE_HUNDRED = Item("101 - 500")
+    FIVE_HUNDRED_AND_ONE_TO_ONE_THOUSAND = Item("501 - 1000")
+    MORE_THAN_FIVE_THOUSAND = Item("5000+")
+
+
+class EvaluatedUsesVocabulary(EnumeratedType):
+    BACKUPS = Item("Backups")
+    CLUSTERING = Item("Clustering")
+    CRM = Item("CRM")
+    DATA_MINING = Item("Data-mining/Analysis")
+    DATABASE = Item("Database")
+    DEVELOPMENT = Item("Development/Test")
+    ERP = Item("ERP")
+    FILE_SERVER = Item("File server")
+    MAIL_SERVER = Item("Mail Server")
+    MEDIA_STREAMING = Item("Media streaming/processing")
+    NETWORK_INFRASTRUCTURE = Item("Network infrastructure")
+    PRINT_SERVER = Item("Print server")
+    PROXY = Item("Proxy/Caching")
+    SECURITY = Item("Security")
+    SCIENTIFIC = Item("Scientific")
+    SYSTEM_MANAGEMENT = Item("System management")
+    TERMINAL_SERVER = Item("Terminal server")
+    VIRTUALIZATION = Item("Virtualization")
+    WEB_SERVER = Item("Web server (or web application server)")
+
+
+class UsedInVocabulary(EnumeratedType):
+    DEVELOPMENT = Item("Development")
+    TEST = Item("Test")
+    PRODUCTION = Item("Production ")
+
+
+class InterestedInSupportVocabulary(EnumeratedType):
+    YES = Item("Yes, please contact me about support")
+
+
+class ShipItSurveySchema(Interface):
+
+    environment = Set(
+        title=_('Where do you plan to use Ubuntu Server Edition?'),
+        description=_('Please tick both if applicable.'),
+        value_type=Choice(vocabulary=EnvironmentVocabulary), required=False)
+
+    employee_number = Choice(
+        title=_('How many employees work in your organization?'),
+        vocabulary=EmployeeNumberVocabulary, required=False)
+
+    business_sector = Choice(
+        title=_('In what business sector is your organisation primarily '
+                'involved?'),
+        vocabulary=BusinessSectorVocabulary, required=False)
+
+    user_role = Choice(
+        title=_('What is your role in the purchasing process within your '
+                'organization?'),
+        vocabulary=UserRoleInOrganisationVocabulary, required=False)
+
+    server_number = Choice(
+        title=_('How many servers does your organization have?'),
+        vocabulary=ServerNumberVocabulary, required=False)
+
+    evaluated_uses = Set(
+        title=_('For what use(s) are you evaluating or using Ubuntu Server '
+                'Edition?'),
+        description=_('Tick all that apply.'),
+        value_type=Choice(vocabulary=EvaluatedUsesVocabulary), required=False)
+
+    used_in = Set(
+        title=_('If you currently run Ubuntu Server Edition on some of your '
+                'servers, are they in'),
+        description=_('Tick all that apply.'),
+        value_type=Choice(vocabulary=UsedInVocabulary), required=False)
+
+    interested_in_paid_support = Set(
+        title=_('Ubuntu Server Edition is commercially supported by Canonical'
+                '. Would you like to get more information or to be contacted '
+                'by a salesperson?'),
+        description=_(
+            '<a target="_blank" href="http://www.ubuntu.com/support/paid">'
+            "Learn more about Canonical's commercial support offerings.</a>"),
+        value_type=Choice(vocabulary=InterestedInSupportVocabulary),
+        required=False)
+
+
+class IShipItSurveySet(Interface):
+    """The set of `ShipItSurvey`s."""
+
+    def personHasAnswered(person):
+        """Has the person answered the survey already?"""
+
+    def new(person, answers):
+        """Create and return a new `ShipItSurvey`.
+
+        :param answers: A dictionary mapping attribute names of
+            `ShipItSurveySchema` to the answers given by the user. Each of
+            these answers must be one or more lazr.Item objects or None.
+
+        If all answers are None or empty sequences no ShipItSurvey is created
+        and None is returned.
+        """
 
 
 class IShippingRequestQuantities(Interface):

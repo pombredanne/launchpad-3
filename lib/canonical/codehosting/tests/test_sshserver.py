@@ -23,7 +23,8 @@ from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
 from canonical.launchpad.daemons.sftp import getPublicKeyString
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import (
+    TwistedLaunchpadZopelessLayer, TwistedLayer)
 
 
 class MockRealm:
@@ -88,8 +89,7 @@ class UserAuthServerMixin:
         return userauth.messages[message_type]
 
     def assertMessageOrder(self, message_types):
-        """Assert that the given message types were sent in the order given.
-        """
+        """Assert that SSH messages were sent in the given order."""
         self.assertEqual(
             [userauth.messages[msg_type] for msg_type in message_types],
             [userauth.messages[packet_type]
@@ -188,7 +188,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     Section 5.4 for more information.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
