@@ -30,7 +30,7 @@
           attributes="setNew setUnapproved setRejected setAccepted setDone
                       realiseUpload addSource addBuild addCustom syncUpdate
                       notify acceptFromUploader acceptFromQueue
-		      rejectFromQueue"
+                      rejectFromQueue overrideSource overrideBinaries"
           set_attributes="status distroseries pocket changesfile archive"
           />
     </content>

@@ -897,6 +897,38 @@ class PackageUpload(SQLBase):
                 extra_headers
             )
 
+    def overrideSource(self, new_component, new_section):
+        """See `IPackageUpload`."""
+        if not self.contains_source:
+            return False
+
+        if new_component is None and new_section is None:
+            return False
+
+        for source in self.sources:
+            source.sourcepackagerelease.override(
+                component=new_component, section=new_section)
+
+        return True
+
+    def overrideBinaries(self, new_component, new_section, new_priority):
+        """See `IPackageUpload`."""
+        if not self.contains_build:
+            return False
+
+        if (new_component is None and new_section is None and
+            new_priority is None):
+            return False
+
+        for build in self.builds:
+            for binarypackage in build.build.binarypackages:
+                binarypackage.override(
+                    component=new_component,
+                    section=new_section,
+                    priority=new_priority)
+
+        return True
+
 
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""

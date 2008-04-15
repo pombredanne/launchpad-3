@@ -148,12 +148,12 @@
            <td colspan="4" style="text-align: right;
                                   vertical-align: bottom;
                                   padding-bottom: 5px">
-             <label>For selected uploads:</label>
+             <label>Override for selected uploads:</label>
            </td>
            <td style="vertical-align: bottom">
              <label>Component:</label><br/>
              <select name="component_override" size="1">
-               <option value="nochange" selected="selected">(no change)</option>
+               <option value="" selected="selected">(no change)</option>
                <option tal:repeat="option context/components"
                        tal:attributes="value option/name"
                        tal:content="option/name"/>
@@ -162,17 +162,18 @@
            <td style="vertical-align: bottom">
              <label>Section:</label><br/>
              <select name="section_override" size="1">
-               <option value="nochange" selected="selected">(no change)</option>
+               <option value="" selected="selected">(no change)</option>
                <option tal:repeat="option view/sortedSections"
                        tal:attributes="value option/name"
                        tal:content="option/name"/>
              </select>
+           </td>
            <td style="vertical-align: bottom">
-             <label>Priority:</label><br/>
+             <label>Priority (binary):</label><br/>
              <select name="priority_override" size="1">
-               <option value="nochange" selected="selected">(no change)</option>
+               <option value="" selected="selected">(no change)</option>
                <option tal:repeat="option view/priorities"
-                       tal:attributes="value option/value"
+                       tal:attributes="value option/title/lower"
                        tal:content="option/title/lower"/>
              </select>
            </td>
