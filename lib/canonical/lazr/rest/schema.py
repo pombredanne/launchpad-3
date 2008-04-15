@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'CollectionField',
+    'DateTimeFieldDeserializer',
     'IntFieldDeserializer',
     'ObjectLookupFieldDeserializer',
     'SimpleFieldDeserializer',
@@ -13,11 +14,14 @@ __all__ = [
     'VocabularyLookupFieldDeserializer',
     ]
 
-
+from datetime import datetime
+import pytz
 import urllib
 import urlparse
 from StringIO import StringIO
 
+from zope.app.datetimeutils import (
+    DateError, DateTimeError, DateTimeParser, SyntaxError)
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
@@ -129,6 +133,24 @@ class IntFieldDeserializer(SimpleFieldDeserializer):
         """Try to convert the value into an integer."""
         return int(value)
 
+class DateTimeFieldDeserializer(SimpleFieldDeserializer):
+    """A deserializer that transforms its value into an integer."""
+
+    def _deserialize(self, value):
+        try:
+            value = DateTimeParser().parse(value)
+            (year, month, day, hours, minutes, secondsAndMicroseconds,
+             timezone) = value
+            seconds = int(secondsAndMicroseconds)
+            microseconds = int(
+                round((secondsAndMicroseconds - seconds) * 1000000))
+            if timezone not in ['Z', '+0000', '-0000']:
+                raise ValueError("Time not in UTC.")
+            return datetime(year, month, day, hours, minutes,
+                            seconds, microseconds, pytz.utc)
+        except (DateError, DateTimeError, SyntaxError):
+            raise ValueError("Value doesn't look like a date.")
+
 
 def VocabularyLookupFieldDeserializer(field, request):
     """A deserializer that uses the underlying vocabulary.
@@ -138,14 +160,14 @@ def VocabularyLookupFieldDeserializer(field, request):
     in addition to the field type (presumably Choice) and the request.
     """
 
-    return getMultiAdapter((field, field.vocabulary, request),
+    return getMultiAdapter((field, request, field.vocabulary),
                            IFieldDeserializer)
 
 
 class SimpleVocabularyLookupFieldDeserializer(SimpleFieldDeserializer):
     """A deserializer for vocabulary lookup by title."""
 
-    def __init__(self, field, vocabulary, request):
+    def __init__(self, field, request, vocabulary):
         """Initialize the deserializer with the vocabulary it'll use."""
         super(SimpleVocabularyLookupFieldDeserializer, self).__init__(
             field, request)
@@ -165,7 +187,15 @@ class SimpleVocabularyLookupFieldDeserializer(SimpleFieldDeserializer):
 
 class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
                                     URLDereferencingMixin):
-    """A deserializer that turns URLs into data model objects."""
+    """A deserializer that turns URLs into data model objects.
+
+    This deserializer can be used with a IChoice field (initialized
+    with a vocabulary) or with an IObject field (no vocabulary).
+    """
+
+    def __init__(self, field, request, vocabulary=None):
+        super(ObjectLookupFieldDeserializer, self).__init__(
+            field, request, vocabulary)
 
     def _deserialize(self, value):
         """Look up the data model object by URL."""
@@ -174,6 +204,7 @@ class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
         except NotFound:
             # The URL doesn't correspond to any real object.
             raise ValueError('No such object "%s".' % value)
+
         # We looked up the URL and got the thing at the other end of
         # the URL: a resource. But internally, a resource isn't a
         # valid value for any schema field. Instead we want the object

@@ -97,6 +97,13 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.IDatetime
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.DateTimeFieldDeserializer"
+        />
+
+    <adapter
         for="zope.schema.interfaces.Int
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
@@ -121,6 +128,13 @@
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IObject
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
