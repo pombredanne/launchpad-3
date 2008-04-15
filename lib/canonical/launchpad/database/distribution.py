@@ -89,10 +89,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBuildRecords,
+        IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugSupervisor)
+        IQuestionTarget, IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'

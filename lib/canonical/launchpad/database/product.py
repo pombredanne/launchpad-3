@@ -67,9 +67,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IProduct, IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugSupervisor)
+        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     _table = 'Product'
 
