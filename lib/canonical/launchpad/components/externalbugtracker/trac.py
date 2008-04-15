@@ -12,6 +12,7 @@ import xmlrpclib
 
 import pytz
 
+from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
     UnknownRemoteStatusError)
@@ -225,7 +226,7 @@ class TracLPPlugin(ExternalBugTracker):
     def _generateAuthenticationToken(self):
         """Create an authentication token an return it."""
         internal_xmlrpc = xmlrpclib.ServerProxy(
-            'http://xmlrpc-private.launchpad.dev:8087/bugs',
+            config.checkwatches.xmlrpc_url,
             transport=self.internal_xmlrpc_transport)
         return internal_xmlrpc.newBugTrackerToken()
 
