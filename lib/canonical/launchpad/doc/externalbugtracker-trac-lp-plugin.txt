@@ -44,7 +44,7 @@ Trac to validate $token and return a Set-Cookie header.
     ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
     ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
     ...         if not url.startswith(base_auth_url + '/'):
-    ...             raise AssertionErrror("Unexpected URL: %s" % url)
+    ...             raise AssertionError("Unexpected URL: %s" % url)
     ...         token_text = url.split('/')[-1]
     ...         token = getUtility(ILoginTokenSet)[token_text]
     ...         if token.tokentype.name != 'BUGTRACKER':
