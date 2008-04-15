@@ -12,7 +12,7 @@ BugWatch, Message and BugMessage instances with which to work.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, CreateBugParams, IBugMessageSet, ...
+    ...     BugTrackerType, CreateBugParams, IBugMessageSet,
     ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
     >>> from canonical.testing import LaunchpadZopelessLayer
 
