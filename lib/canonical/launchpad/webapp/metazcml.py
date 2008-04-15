@@ -21,7 +21,7 @@ from zope.publisher.interfaces.browser import (
 from zope.app.component.metaconfigure import (
     handler, adapter, utility, view, PublicPermission)
 
-from zope.app.component.contentdirective import ContentDirective
+from zope.app.component.contentdirective import ClassDirective
 from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
@@ -31,8 +31,8 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages, page as original_page)
-from zope.app.security.permission import Permission
-from zope.app.security.metadirectives import IDefinePermissionDirective
+from zope.security.permission import Permission
+from zope.security.zcml import IPermissionDirective
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (
@@ -111,7 +111,7 @@ class SecuredUtilityDirective:
         self._context = _context
         self.provides = provides
         self.permission_collector = PermissionCollectingContext()
-        self.contentdirective = ContentDirective(
+        self.contentdirective = ClassDirective(
             self.permission_collector, class_)
 
     def require(self, _context, **kw):
@@ -794,7 +794,7 @@ class SchemaDisplayDirective(
             self)
 
 
-class IDefineLaunchpadPermissionDirective(IDefinePermissionDirective):
+class IDefineLaunchpadPermissionDirective(IPermissionDirective):
 
     access_level = TextLine(
         title=u"Access level", required=False,
