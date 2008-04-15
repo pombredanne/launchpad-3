@@ -1,0 +1,257 @@
+= Stub Packager Utility =
+
+
+    >>> import os
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IStubPackager
+
+
+== Setup and reset ==
+
+As all zope utilities, StubPackager is initialised when we look up for
+it.
+
+    >>> packager = getUtility(IStubPackager)
+
+    >>> print packager.sandbox_path
+    /tmp/stubpackager-...
+
+    >>> os.path.exists(packager.sandbox_path)
+    True
+
+    >>> initial_sandbox_path = packager.sandbox_path
+
+Next lookups will return the already initialised object.
+
+    >>> packager = getUtility(IStubPackager)
+
+    >>> packager.sandbox_path == initial_sandbox_path
+    True
+
+Source 'name' and 'version' and 'gpg_key_id' are empty.
+
+    >>> print packager.name
+    None
+
+    >>> print packager.version
+    None
+
+    >>> print packager.gpg_key_id
+    None
+
+
+The 'upstream_directory' can't be calculated since it depends on the
+upstream source name and version.
+
+    >>> print packager.upstream_directory
+    Traceback (most recent call last):
+    ...
+    AssertionError: Undefined name and version.
+
+We can define them via setSourceNameAndVersion method, so the
+upstream_directory path is known, but not yet created.
+
+    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
+
+    >>> print packager.upstream_directory
+    /tmp/stubpackager-.../biscuit-1.0
+
+    >>> os.path.exists(packager.upstream_directory)
+    False
+
+At this point we can also check the reset method, which purges the
+current sandbox directory and creates a new one. It also undefine
+StubPackager's 'name' and 'version'.
+
+    >>> previous_sandbox_path = packager.sandbox_path
+
+    >>> os.path.exists(previous_sandbox_path)
+    True
+
+    >>> packager.reset()
+
+    >>> os.path.exists(previous_sandbox_path)
+    False
+
+    >>> packager.sandbox_path != previous_sandbox_path
+    True
+
+    >>> os.path.exists(packager.sandbox_path)
+    True
+
+    >>> print packager.name
+    None
+
+    >>> print packager.version
+    None
+
+
+== Creating Packages ==
+
+Now let's check how StubPackager actually created packages.
+
+First we have to define a source upstream name and version.
+
+    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
+
+Then we create it on disk based on the StubPackager templates, which
+results in a buildable source package with version as '<version>-1'
+
+    >>> packager.buildUpstream(build_orig=False)
+
+    >>> os.path.exists(packager.upstream_directory)
+    True
+
+    >>> print sorted(os.listdir(packager.sandbox_path))
+    ['biscuit-1.0']
+
+    >>> print sorted(os.listdir(packager.debian_path))
+    ['changelog', 'control', 'copyright', 'rules']
+
+We will reset the packager so we can generate a new upstream directory
+with a corresponding original tarball.
+
+    >>> packager.reset()
+
+    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
+    >>> packager.buildUpstream()
+
+    >>> print sorted(os.listdir(packager.sandbox_path))
+    ['biscuit-1.0', 'biscuit_1.0.orig.tar.gz']
+
+Now we can build a source package using the generated tarball.
+
+    >>> packager.buildSource(signed=False)
+
+    >>> for changesfile in packager.listAvailableUploads():
+    ...     print changesfile
+    /tmp/stubpackager-.../biscuit_1.0-1_source.changes
+
+    >>> changesfile_path = packager.listAvailableUploads()[0]
+    >>> changesfile = open(changesfile_path)
+    >>> print changesfile.read()
+    Format: 1.7
+    Date: ...
+    Source: biscuit
+    Binary: biscuit
+    Architecture: source
+    Version: 1.0-1
+    Distribution: hardy
+    Urgency: low
+    Maintainer: Launchpad team <launchpad@lists.canonical.com>
+    Changed-By: Foo Bar <foo.bar@canonical.com>
+    Description:
+     biscuit    - Stuff for testing
+    Changes:
+     biscuit (1.0-1) hardy; urgency=low
+     .
+       * Initial Upstream package
+    Files:
+     ... devel optional biscuit_1.0-1.dsc
+     ... devel optional biscuit_1.0.orig.tar.gz
+     ... devel optional biscuit_1.0-1.diff.gz
+    <BLANKLINE>
+
+If the user tries to build an incompatible package version an error
+will be raised.
+
+    >>> packager.buildVersion('2.0-2', changelog_text="version on crack.")
+    Traceback (most recent call last):
+    ...
+    AssertionError: New versions should starts with the upstream version: 1.0
+
+Let's build a new version, but this time, signed.
+
+    >>> packager.buildVersion(
+    ...    '1.0-2', changelog_text="Waar ligt de sleutel ?")
+    >>> packager.buildSource(include_orig=True)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot build signed packages because the key is not set.
+
+The error was raised because not siging key was set.
+
+    >>> print packager.gpg_key_id
+    None
+
+A GPG key can be set using 'setGPGKey' method and it accepts a
+filename available in our test_keys directory (see
+launchpad/ftests/keys_for_tests.py)
+
+    >>> packager.setGPGKey('foo.bar@canonical.com-passwordless.sec')
+
+GPG key set, now we should be able to build a signed version.
+
+    >>> print packager.gpg_key_id
+    0x5D147547
+
+StubPackager also allow the user to include as many versions he needs
+before building the package. It helps when we need to populate the
+changelog.
+
+    >>> packager.buildVersion('1.0-2', changelog_text="cookies")
+    >>> packager.buildVersion('1.0-3', changelog_text="butter cookies")
+    >>> packager.buildSource(include_orig=False)
+
+Being overcareful, let's quickly verify the changesfile signature. All
+the job is done by `debuild` here, we are basically cheking we pass
+the right arguments to it.
+
+    >>> changesfile_path = packager.listAvailableUploads()[1]
+    >>> print os.path.basename(changesfile_path)
+    biscuit_1.0-3_source.changes
+
+    >>> content = open(changesfile_path).read()
+
+    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> gpghandler = getUtility(IGPGHandler)
+    >>> sig = gpghandler.verifySignature(content)
+
+The signature is fine and it is indeed signed by the key set in
+StubPackager.
+
+    >>> sig.fingerprint[-8:] == packager.gpg_key_id[2:]
+    True
+
+The user can also generate subsequent packages for the same upstream
+source in a sequence.
+
+    >>> packager.buildVersion('1.0-4', changelog_text="uhmmm, leker")
+    >>> packager.buildSource(include_orig=False)
+
+Or, at any time, change to another upstream source.
+
+    >>> packager.setSourceNameAndVersion('zeca', '1.0')
+    >>> packager.buildUpstream()
+    >>> packager.buildSource()
+
+    >>> packager.buildVersion('1.0-2', changelog_text="cookies")
+    >>> packager.buildSource(include_orig=False)
+
+And get back to the previous source.
+
+    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
+    >>> packager.buildVersion('1.0-5', changelog_text="we, together, again.")
+    >>> packager.buildSource(include_orig=False)
+
+All generated changesfile and their corresponding files are available
+in the sandbox directory.
+
+    >>> for changesfile in packager.listAvailableUploads():
+    ...     print changesfile
+    /tmp/stubpackager-.../biscuit_1.0-1_source.changes
+    /tmp/stubpackager-.../biscuit_1.0-3_source.changes
+    /tmp/stubpackager-.../biscuit_1.0-4_source.changes
+    /tmp/stubpackager-.../zeca_1.0-1_source.changes
+    /tmp/stubpackager-.../zeca_1.0-2_source.changes
+
+Finally, an error is raised if the user tries to build a source
+package before creating the upstream directory.
+
+    >>> packager.setSourceNameAndVersion('canjica', '1.0')
+    >>> packager.buildSource()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Selected upstream directory does not exist: canjica-1.0
+
+

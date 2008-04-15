@@ -148,6 +148,7 @@ from canonical.launchpad.interfaces.sprintattendance import *
 from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.structuralsubscription import *
+from canonical.launchpad.interfaces.stubpackager import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
