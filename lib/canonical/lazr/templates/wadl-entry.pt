@@ -38,8 +38,7 @@
         <representation
            tal:attributes="href context/wadl:full_representation_link" />
         <representation mediaType="application/vd.sun.wadl+xml"
-                        tal:attributes="id
-                                        string:${context/wadl:singular_type}-wadl" />
+           tal:attributes="id string:${context/wadl:singular_type}-wadl" />
       </response>
     </method>
 
@@ -60,9 +59,9 @@
     </method>
 
     <method tal:repeat="operation context/wadl:named_operations"
-            tal:attributes="id
-                            string:${context/wadl:singular_type}-${operation/name};
-                            name operation/op/wadl_operation:http_method">
+      tal:attributes="
+        id string:${context/wadl:singular_type}-${operation/name};
+        name operation/op/wadl_operation:http_method">
       <param name="ws_op" required="True"
              tal:attributes="fixed operation/name" />
       <param tal:repeat="field operation/op/params"
