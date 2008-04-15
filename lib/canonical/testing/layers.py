@@ -25,9 +25,8 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError',
-    'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
-    'TwistedLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
+    'ExperimentalLaunchpadZopelessLayer', 'TwistedLaunchpadZopelessLayer'
     ]
 
 import gc

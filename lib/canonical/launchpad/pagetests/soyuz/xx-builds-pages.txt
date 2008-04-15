@@ -295,7 +295,7 @@ failed-to-build builds.
     taking a minute &mdash; see the log
     ------------------------------
     Failed to build
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     Build started on 2007-07-07 and finished on 2007-07-08
     taking a minute &mdash; see the log
     ------------------------------
