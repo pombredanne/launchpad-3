@@ -11,11 +11,12 @@ __all__ = [
 from random import random
 from time import time
 
-from zope.interface import implements, classProvides
 
-from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
 from openid.store.sqlstore import PostgreSQLStore
+import psycopg2
+from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
+from zope.interface import implements, classProvides
 
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -141,6 +142,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
     """
     classProvides(ILaunchpadOpenIdStoreFactory)
 
+    exceptions = psycopg2
     settings_table = None
     associations_table = 'OpenIDAssociations'
     nonces_table = None
