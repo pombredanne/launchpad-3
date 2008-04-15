@@ -136,6 +136,9 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    def getMessage(self, id):
+        return CodeReviewMessage.get(id)
+
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
     votes = SQLMultipleJoin(

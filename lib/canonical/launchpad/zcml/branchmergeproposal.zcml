@@ -15,7 +15,7 @@
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
                        votes root_message
-                       isPersonValidReviewer isMergable
+                       isPersonValidReviewer isMergable getMessage
                        getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
@@ -44,6 +44,10 @@
   <browser:menus
       module="canonical.launchpad.browser"
       classes="BranchMergeProposalContextMenu" />
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="BranchMergeProposalNavigation" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

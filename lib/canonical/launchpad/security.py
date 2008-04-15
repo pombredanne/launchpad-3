@@ -13,16 +13,16 @@ from canonical.launchpad.interfaces import (
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportResult,
-    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
-    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
-    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISourcePackageRelease, ISpecification, ISpecificationBranch,
+    ICodeImportResultSet, ICodeImportSet, ICodeReviewMessage, IDistribution,
+    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
+    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMailingListSet, IMilestone, IOAuthAccessToken, IPOFile, IPOTemplate,
+    IPOTemplateSubset, IPackageUpload, IPackageUploadQueue, IPackaging,
+    IPerson, IPoll, IPollOption, IPollSubset, IProduct, IProductRelease,
+    IProductReleaseFile, IProductSeries, IQuestion, IQuestionTarget,
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, ISourcePackageRelease, ISpecification, ISpecificationBranch,
     ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
@@ -1313,6 +1313,24 @@ class BranchMergeProposalView(AuthorizationBase):
         return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
                 and
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
+
+
+class CodeReviewMessageView(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = ICodeReviewMessage
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
 
 
 class BranchMergeProposalEdit(AuthorizationBase):

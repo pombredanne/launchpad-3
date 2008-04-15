@@ -12,6 +12,7 @@ __all__ = [
     'BranchMergeProposalEnqueueView',
     'BranchMergeProposalInlineDequeueView',
     'BranchMergeProposalJumpQueueView',
+    'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
@@ -37,7 +38,7 @@ from canonical.launchpad.interfaces import (
     IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadView, action)
+    LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -195,6 +196,19 @@ class BranchMergeProposalRevisionIdMixin:
         """Return the number of the queued revision."""
         return self._getRevisionNumberForRevisionId(
             self.context.queued_revision_id)
+
+
+class BranchMergeProposalNavigation(Navigation):
+
+    usedfor = IBranchMergeProposal
+
+    @stepthrough('+comment')
+    def traverse_comment(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        return self.context.getMessage(id)
 
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,

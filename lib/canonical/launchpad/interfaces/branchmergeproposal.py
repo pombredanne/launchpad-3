@@ -196,6 +196,9 @@ class IBranchMergeProposal(Interface):
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
 
+    def getMessage(id):
+        pass
+
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
 

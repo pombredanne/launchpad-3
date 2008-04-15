@@ -14,4 +14,17 @@
         path_expression="string:+comment/${id}"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        name="+index" />
+    <browser:pages
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        class="canonical.launchpad.browser.CodeReviewMessageView"
+        facet="branches"
+        permission="launchpad.View">
+        <browser:page
+            name="+index"
+            template="../templates/codereviewmessage-index.pt"
+        />
+    </browser:pages>
 </configure>

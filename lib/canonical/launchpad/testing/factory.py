@@ -421,6 +421,10 @@ class LaunchpadObjectFactory:
             requesting_user, log_excerpt, log_file=None, status=status,
             date_job_started=started)
 
+    def makeCodeReviewMessage(self):
+        return self.makeBranchMergeProposal().createMessage(
+            self.makePerson(), self.getUniqueString(), self.getUniqueString())
+
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):
         """Create a new, arbitrary ProductSeries.
