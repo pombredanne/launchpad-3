@@ -50,6 +50,7 @@ GLOBAL_NAMES = set([
     'print_batch_header',
     'print_comments',
     'print_portlet_links',
+    'print_ppa_packages',
     'print_radio_button_field',
     'print_submit_buttons',
     'print_tab_links',

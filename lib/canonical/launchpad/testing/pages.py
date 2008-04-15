@@ -446,6 +446,15 @@ def print_batch_header(soup):
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
+def print_ppa_packages(contents):
+    packages = find_tags_by_class(contents, 'ppa_package_row')
+    for pkg in packages:
+        print extract_text(pkg)
+    empty_section = find_tag_by_id(contents, 'empty-result')
+    if empty_section is not None:
+        print extract_text(empty_section)
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -491,6 +500,7 @@ def setUpGlobs(test):
     test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
+    test.globs['print_ppa_packages'] = print_ppa_packages
 
 
 class PageStoryTestCase(unittest.TestCase):
