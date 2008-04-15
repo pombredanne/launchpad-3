@@ -6,7 +6,7 @@ using BeautifulStoneSoup instead of BSS or the helper functions.
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
     >>> from canonical.launchpad.ftests.feeds_helper import (
-    ...     parse_entries, parse_ids, parse_links, validate_feed)
+    ...     parse_entries, parse_links, validate_feed)
 
 Please note that when displaying the results of the feeds in a reader
 the order of entries may not be the same as generated.  Some readers
@@ -38,8 +38,8 @@ point to the bugs themselves.
     >>> for link in alternate_links:
     ...     print link
     <link rel="alternate" href="http://bugs.launchpad.dev/jokosher" />
-    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/12" />
-    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/11" />
+    <link rel="alternate" href="http://bugs.launchpad.dev/bugs/12" />
+    <link rel="alternate" href="http://bugs.launchpad.dev/bugs/11" />
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
@@ -57,7 +57,7 @@ point to the bugs themselves.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
     >>> print extract_text(entry.id)
-    tag:launchpad.net,2007-03-15:/+bug/12
+    tag:launchpad.net,2007-03-15:/bugs/12
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
@@ -67,7 +67,7 @@ point to the bugs themselves.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
     >>> print extract_text(entry.id)
-    tag:launchpad.net,2007-03-15:/+bug/11
+    tag:launchpad.net,2007-03-15:/bugs/11
 
 The Atom feed must have the content-type of "application/atom+xml".
 
@@ -125,6 +125,16 @@ as the latest bugs feed for a product.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name12
 
+Ensure the entries are in reverse chronological order by published date.
+
+    >>> def check_entries_order(entries):
+    ...     dates = [extract_text(entry.published)
+    ...              for entry in entries]
+    ...     return dates == sorted(dates, reverse=True)
+
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
+
 == Latest bugs for a distro ==
 
 This feed gets the latest bugs for a distribution, and has the same type
@@ -154,11 +164,15 @@ of content as the latest bugs feed for a product.
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
-    [10] another test bug
+    [9] Thunderbird crashes
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
+
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
+
 
 == Latest bugs for a source package ==
 
@@ -188,6 +202,9 @@ type of content as the latest bugs feed for a product.
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
+
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
 
 
 == Latest bugs for a distroseries ==
@@ -226,6 +243,10 @@ type of content as the latest bugs feed for a product.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name12
 
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
+
+
 == Latest bugs for a product series ==
 
 This feed gets the latest bugs for a product series, and has the same
@@ -262,6 +283,9 @@ type of content as the latest bugs feed for a product.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name12
 
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
+
 
 == Latest bugs for a person ==
 
@@ -291,7 +315,7 @@ This feed gets the latest bugs for a person.
 
     >>> entry = entries[0]
     >>> print extract_text(entry.title)
-    [3] Bug Title Test
+    [15] Nonsensical bugs are useless
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
@@ -299,11 +323,14 @@ This feed gets the latest bugs for a person.
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
-    [15] Nonsensical bugs are useless
+    [12] Copy, Cut and Delete operations should work on selections
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
+
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
 
 
 == Latest bugs for a team ==
@@ -313,7 +340,6 @@ First, make a team responsible for some bugs.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
     >>> one_mem_browser = setupBrowser(
     ...    auth='Basic one-membership@test.com:test')
     >>> personset = getUtility(IPersonSet)
@@ -359,6 +385,9 @@ some results.
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     3
+
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
 
 
 == General bug search ==
@@ -407,11 +436,11 @@ to True.
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    10
+    12
 
     >>> entry = entries[0]
     >>> print extract_text(entry.title)
-    [3] Bug Title Test
+    [15] Nonsensical bugs are useless
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
@@ -419,11 +448,11 @@ to True.
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
-    [15] Nonsensical bugs are useless
+    [13] Launchpad CSS and JS is not testible
     >>> print extract_text(entry.author('name')[0])
-    Foo Bar
+    Sample Person
     >>> print extract_text(entry.author('uri')[0])
-    http://bugs.launchpad.dev/~name16
+    http://bugs.launchpad.dev/~name12
 
 
 == Results for a single bug ==
@@ -454,9 +483,6 @@ overriding the Expires and Cache-Control headers so that the feeds
 will be cached longer by browsers and the reverse-proxy in front
 of the feeds servers.
 
-    >>> from canonical.launchpad.feed.bug import BugsFeedBase
-    >>> from canonical.lazr.feed.feed import FeedBase
-    >>> from zope.app.datetimeutils import rfc1123_date
     >>> import time
     >>> old_time = time.time
     >>> time.time = lambda: 17

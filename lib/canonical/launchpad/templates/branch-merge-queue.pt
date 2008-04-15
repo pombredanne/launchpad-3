@@ -1,0 +1,78 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Branch merge queue</h1>
+
+  <div id="merge-queue">
+
+  <table tal:condition="view/merge_queue" class="listing">
+    <thead>
+      <tr>
+        <th>Position</th>
+        <th>Branch details</th>
+        <th>Commit message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="proposal view/merge_queue">
+        <td>
+          <tal:position replace="repeat/proposal/number"/>
+          <tal:dequeue condition="proposal/required:launchpad.Edit|nothing">
+            <tal:button replace="structure proposal/@@+dequeue-inline"/>
+          </tal:dequeue>
+          <tal:show-button condition="not: repeat/proposal/start">
+          <tal:jump-queue condition="context/required:launchpad.Edit|nothing">
+            <tal:button replace="structure proposal/@@+jump-queue"/>
+          </tal:jump-queue>
+          </tal:show-button>
+        </td>
+        <td>
+          <tal:proposal condition="proposal"
+              define="mergeproposal proposal;
+                      branch proposal/source_branch;
+                      show_associations python:True;
+                      ">
+            <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+          </tal:proposal>
+          <tal:cant-see-proposal condition="not: proposal">
+            A merge either involving a branch you are not authorised to see.
+          </tal:cant-see-proposal>
+        </td>
+        <td class="commit_message">
+          <tal:commit-message condition="proposal"
+               content="structure proposal/commit_message/fmt:text-to-html">
+            The commit message.
+          </tal:commit-message>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p tal:condition="not: view/merge_queue">
+    The queue is empty.
+  </p>
+
+  </div>
+</div>
+
+</body>
+</html>

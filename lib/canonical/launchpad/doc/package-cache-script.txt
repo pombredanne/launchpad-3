@@ -47,7 +47,10 @@ distribution and respective distroseriess considered in stderr.
 
   >>> print stderr
   INFO    creating lockfile
-  INFO    ubuntu breezy-autotest starting
+  INFO    Updating ubuntu package counters
+  INFO    Updating ubuntu main archives
+  ...
+  INFO    Updating ubuntu PPAs
   ...
   INFO    redhat done
 

@@ -154,6 +154,9 @@ class SoyuzScript(LaunchpadScript):
     """
     location = None
     success_message = "Done."
+    published_status = [
+        PackagePublishingStatus.PENDING,
+        PackagePublishingStatus.PUBLISHED]
 
     def add_my_options(self):
         """Adds SoyuzScript default options.
@@ -240,7 +243,7 @@ class SoyuzScript(LaunchpadScript):
 
         published_sources = self.location.archive.getPublishedSources(
             name=name, version=self.options.version,
-            status=PackagePublishingStatus.PUBLISHED,
+            status=self.published_status,
             distroseries=self.location.distroseries,
             pocket=self.location.pocket,
             exact_match=True)
@@ -276,7 +279,7 @@ class SoyuzScript(LaunchpadScript):
         for architecture in architectures:
             binaries = self.location.archive.getAllPublishedBinaries(
                     name=name, version=self.options.version,
-                    status=PackagePublishingStatus.PUBLISHED,
+                    status=self.published_status,
                     distroarchseries=architecture,
                     pocket=self.location.pocket,
                     exact_match=True)

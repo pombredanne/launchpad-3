@@ -7,11 +7,10 @@ __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
     'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
-    'make_bazaar_branch_and_tree']
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
-import signal
 import threading
 import unittest
 
@@ -32,8 +31,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.tests.test_twisted import TwistedTestCase
+from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
@@ -41,10 +39,12 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 
 
-class AvatarTestCase(TwistedTestCase):
+class AvatarTestCase(TrialTestCase):
     """Base class for tests that need a LaunchpadAvatar with some basic sample
     data.
     """
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.tmpdir = self.mktemp()
@@ -196,16 +196,8 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
     def installServer(self, server):
         self.server = server
 
-    def setUpSignalHandling(self):
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
     def setUp(self):
         super(ServerTestCase, self).setUp()
-
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self.setUpSignalHandling()
 
         if self.server is None:
             self.installServer(self.getDefaultServer())
@@ -214,7 +206,6 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
 
     def tearDown(self):
         deferred1 = self.server.tearDown()
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
         deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
         return defer.gatherResults([deferred1, deferred2])
 
@@ -249,6 +240,21 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
+
+
+def deferToThread(f):
+    """Run the given callable in a separate thread and return a Deferred which
+    fires when the function completes.
+    """
+    def decorated(*args, **kwargs):
+        d = defer.Deferred()
+        def runInThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+
+        t = threading.Thread(target=runInThread)
+        t.start()
+        return d
+    return mergeFunctionMetadata(f, decorated)
 
 
 class FakeLaunchpad:

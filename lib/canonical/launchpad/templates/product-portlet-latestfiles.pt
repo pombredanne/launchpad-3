@@ -1,0 +1,33 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-projectfiles"
+  tal:define="release view/latest_release_with_download_files"
+  tal:condition="release">
+  <h2>Latest downloads</h2>
+  <div class="portletBody">
+    <h3 tal:content="string:Release ${release/version}:">Release 3.3:</h3>
+    <table>
+      <tbody>
+        <tr tal:repeat="file release/files">
+          <td>
+            <img alt="download icon" src="/@@/download" />
+            <a tal:attributes="href python:view.fileURL(file.libraryfile, release)"
+               tal:content="file/libraryfile/filename">filename</a>
+            (<a tal:attributes="href
+                python:view.md5URL(file.libraryfile,
+                release)">md5</a><tal:signature
+                condition="file/signature">,<a tal:attributes="href
+                python:view.fileURL(file.signature,release)">sig</a></tal:signature>)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br />
+    <a href="+download">&raquo; See all downloads&#8230;</a><br />
+  </div>
+</div>
+</tal:root>

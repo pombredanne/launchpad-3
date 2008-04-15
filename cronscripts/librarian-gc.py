@@ -79,6 +79,6 @@ class LibrarianGC(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = LibrarianGC('librarian-gc',
-                         dbuser=config.librarian.gc.dbuser)
+                         dbuser=config.librarian_gc.dbuser)
     script.lock_and_run()
 

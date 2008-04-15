@@ -21,24 +21,23 @@ from bzrlib.transport import get_transport, remote
 
 from twisted.enterprise.adbapi import ConnectionPool
 from twisted.internet import process
-
-from canonical.tests.test_twisted import TwistedTestCase
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import plugins
+from canonical.codehosting.tests.helpers import deferToThread
 from canonical.config import config
-from canonical.codehosting.tests.servers import NullAuthserverWithKeys
+from canonical.codehosting.tests.servers import Authserver
 
-from canonical.testing import TwistedLaunchpadZopelessLayer
-from canonical.twistedsupport import defer_to_thread
+from canonical.testing import TwistedLayer
 
 
 ROCKETFUEL_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(bzrlib.__file__)))
 
 
-class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
+class TestLaunchpadServerCommand(TrialTestCase, TestCaseInTempDir):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -52,7 +51,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         self._reapAllProcesses = process.reapAllProcesses
         process.reapAllProcesses = lambda: None
         self.make_empty_directory(config.codehosting.branches_root)
-        self._authserver = NullAuthserverWithKeys()
+        self._authserver = Authserver()
         self._authserver.setUp()
 
     def tearDown(self):
@@ -151,7 +150,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         self.assertIsInstance(
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
-    @defer_to_thread
+    @deferToThread
     def test_bzr_serve_inet_readwrite(self):
         # Test the server when running as an 'inet' service. That is,
         # listening on stdin and writing to stdout.
@@ -176,7 +175,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
         self.assertInetServerShutsdownCleanly(process)
 
-    @defer_to_thread
+    @deferToThread
     def test_bzr_serve_port_readwrite(self):
         # Test the server when running as an 'port' service. That is,
         # listening on a TCP port.

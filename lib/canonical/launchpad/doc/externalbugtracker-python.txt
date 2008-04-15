@@ -81,17 +81,10 @@ status and resolution, to make the test more readable.
     "Won't Fix"
 
 If the status isn't something that our Python ExternalBugTracker can
-understand, Unknown will be returned and a warning logged.
+understand an UnknownRemoteStatusError will be raised.
 
     >>> python.convertRemoteStatus('7:13').title
-    WARNING:...:Unknown remote status '7:13'.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't
-succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> python.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 

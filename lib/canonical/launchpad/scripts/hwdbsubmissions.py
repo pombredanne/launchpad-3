@@ -15,12 +15,20 @@ from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
+from tempfile import NamedTemporaryFile
 
-from lxml import etree
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
+
 import pytz
 
 from canonical.config import config
-
+from canonical.launchpad.helpers import simple_popen2
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -35,6 +43,74 @@ _time_regex = re.compile(r"""
     """,
     re.VERBOSE)
 
+ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
+
+
+class RelaxNGValidator:
+    """A validator for Relax NG schemas."""
+
+    def __init__(self, relax_ng_filename):
+        """Create a validator instance.
+
+        :param relax_ng_filename: The name of a file containing the schema.
+        """
+        self.relax_ng_filename = relax_ng_filename
+        self._errors = ''
+
+    def validate(self, xml):
+        """Validate the string xml
+
+        :return: True, if xml is valid, else False.
+        """
+        # XXX Abel Deuring, 2008-03-20
+        # The original implementation of the validation used the lxml
+        # package. Unfortunately, running lxml's Relax NG validator
+        # caused segfaults during PQM test runs, hence this class uses
+        # an external validator.
+
+        # Performance penalty of the external validator:
+        # Using the lxml validator, the tests in this module need ca.
+        # 3 seconds on a 2GHz Core2Duo laptop.
+        # If the xml data to be validated is passed to xmllint via
+        # canonical.launchpad.helpers.simple_popen2, the run time
+        # of the tests is 38..40 seconds; if the validation input
+        # is not passed via stdin but saved in a temporary file,
+        # the tests need 28..30 seconds.
+
+        xml_file = NamedTemporaryFile()
+        xml_file.write(xml)
+        xml_file.flush()
+        command = 'xmllint -noout -relaxng %s %s'% (self.relax_ng_filename,
+                                                    xml_file.name)
+        result = simple_popen2(command, '').strip()
+
+        # The output consists of lines describing possible errors; the
+        # last line is either "(file) fails to validate" or
+        # "(file) validates".
+        parts = result.rsplit('\n', 1)
+        if len(parts) > 1:
+            self._errors = parts[0]
+            status = parts[1]
+        else:
+            self._errors = ''
+            status = parts[0]
+        if status == xml_file.name + ' fails to validate':
+            return False
+        elif status == xml_file.name + ' validates':
+            return True
+        else:
+            raise AssertionError(
+                'Unexpected result of running xmllint: %s' % result)
+
+    @property
+    def error_log(self):
+        """A string with the errors detected by the validator.
+
+        Each line contains one error; if the validation was successful,
+        error_log is the empty string.
+        """
+        return self._errors
+
 
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
@@ -43,15 +119,14 @@ class SubmissionParser:
         if logger is None:
             logger = getLogger()
         self.logger = logger
-        self.doc_parser = etree.XMLParser(remove_comments=True)
+        self.doc_parser = etree.XMLParser()
 
         self.validator = {}
         directory = os.path.join(config.root, 'lib', 'canonical',
                                  'launchpad', 'scripts')
         for version, relax_ng_filename in _relax_ng_files.items():
             path = os.path.join(directory, relax_ng_filename)
-            relax_ng_doc = etree.parse(path)
-            self.validator[version] = etree.RelaxNG(relax_ng_doc)
+            self.validator[version] = RelaxNGValidator(path)
         self._setMainSectionParsers()
         self._setHardwareSectionParsers()
         self._setSoftwareSectionParsers()
@@ -68,10 +143,9 @@ class SubmissionParser:
         """
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
-        except etree.XMLSyntaxError, error_value:
+        except SyntaxError, error_value:
             self._logError(error_value, submission_key)
             return None
-        self.docinfo = tree.docinfo
 
         submission_doc = tree.getroot()
         if submission_doc.tag != 'system':
@@ -86,7 +160,7 @@ class SubmissionParser:
         self.submission_format_version = version
 
         validator = self.validator[version]
-        if not validator(tree):
+        if not validator.validate(submission):
             self._logError(
                 'Relax NG validation failed.\n%s' % validator.error_log,
                 submission_key)
@@ -286,6 +360,8 @@ class SubmissionParser:
                  dictionary with the properties of the device (see
                  _parseProperties for details).
         """
+        # The Relax NG validation ensures that the attributes "id" and
+        # "udi" exist; it also ensures that "id" contains an integer.
         device_data = {'id': int(device_node.get('id')),
                        'udi': device_node.get('udi')}
         parent = device_node.get('parent', None)
@@ -294,7 +370,7 @@ class SubmissionParser:
         device_data['parent'] = parent
         device_data['properties'] = self._parseProperties(device_node)
         return device_data
-    
+
     def _parseHAL(self, hal_node):
         """Parse the <hal> section of a submission.
 
@@ -332,6 +408,8 @@ class SubmissionParser:
                 'Parsing submission %s: Unexpected tag <%s> in <processors>'
                    % (self.submission_key, processors_node.tag))
             processor = {}
+            # The RelaxNG validation ensures that the attribute "id" exists
+            # and that it contains an integer.
             processor['id'] = int(processor_node.get('id'))
             processor['name'] = processor_node.get('name')
             processor['properties'] = self._parseProperties(processor_node)
@@ -355,6 +433,8 @@ class SubmissionParser:
             assert alias_node.tag == 'alias', (
                 'Parsing submission %s: Unexpected tag <%s> in <aliases>'
                     % (self.submission_key, alias_node.tag))
+            # The RelaxNG validation ensures that the attribute "target"
+            # exists and that it contains an integer.
             alias = {'target': int(alias_node.get('target'))}
             for sub_node in alias_node.getchildren():
                 # The Relax NG svalidation ensures that we have exactly
@@ -417,7 +497,11 @@ class SubmissionParser:
                 raise ValueError(
                     '<package name="%s"> appears more than once in <packages>'
                     % package_name)
-            packages[package_name] = self._parseProperties(package_node)
+            # The RelaxNG validation ensures that the attribute "id" exists
+            # and that it contains an integer.
+            package_data = {'id': int(package_node.get('id'))}
+            package_data['properties'] = self._parseProperties(package_node)
+            packages[package_name] = package_data
         return packages
 
     def _parseXOrg(self, xorg_node):
@@ -439,7 +523,7 @@ class SubmissionParser:
                 'Parsing submission %s: Unexpected tag <%s> in <xorg>'
                     % (self.submission_key, driver_node.tag))
             driver_info = dict(driver_node.attrib)
-            if driver_info.has_key('device'):
+            if 'device' in driver_info:
                 # The Relax NG validation ensures that driver_info['device']
                 # consists of only digits, if present.
                 driver_info['device'] = int(driver_info['device'])
@@ -606,7 +690,6 @@ class SubmissionParser:
             self._logError(value, self.submission_key)
             return None
         return submission_data
-        
 
     def parseSubmission(self, submission, submission_key):
         """Parse the data of a HWDB submission.
@@ -622,3 +705,222 @@ class SubmissionParser:
             return None
 
         return self.parseMainSections(submission_doc)
+
+    def _findDuplicates(self, all_ids, test_ids):
+        """Search for duplicate elements in test_ids.
+
+        :return: A set of those elements in the sequence test_ids that
+        are elements of the set all_ids or that appear more than once
+        in test_ids.
+
+        all_ids is updated with test_ids.
+        """
+        duplicates = set()
+        # Note that test_ids itself may contain an ID more than once.
+        for test_id in test_ids:
+            if test_id in all_ids:
+                duplicates.add(test_id)
+            else:
+                all_ids.add(test_id)
+        return duplicates
+
+    def findDuplicateIDs(self, parsed_data):
+        """Return the set of duplicate IDs.
+
+        The IDs of devices, processors and software packages should be
+        unique; this method returns a list of duplicate IDs found in a
+        submission.
+        """
+        all_ids = set()
+        duplicates = self._findDuplicates(
+            all_ids,
+            [device['id']
+             for device in parsed_data['hardware']['hal']['devices']])
+        duplicates.update(self._findDuplicates(
+            all_ids,
+            [processor['id']
+             for processor in parsed_data['hardware']['processors']]))
+        duplicates.update(self._findDuplicates(
+            all_ids,
+            [package['id']
+             for package in parsed_data['software']['packages'].values()]))
+        return duplicates
+
+    def _getIDMap(self, parsed_data):
+        """Return a dictionary ID -> devices, processors and packages."""
+        id_map = {}
+        hal_devices = parsed_data['hardware']['hal']['devices']
+        for device in hal_devices:
+            id_map[device['id']] = device
+
+        for processor in parsed_data['hardware']['processors']:
+            id_map[processor['id']] = processor
+
+        for package in parsed_data['software']['packages'].values():
+            id_map[package['id']] = package
+
+        return id_map
+
+    def findInvalidIDReferences(self, parsed_data):
+        """Return the set of invalid references to IDs.
+
+        The sub-tag <target> of <question> references a device, processor
+        of package node by its ID; the submission must contain a <device>,
+        <processor> or <software> tag with this ID. This method returns a
+        set of those IDs mentioned in <target> nodes that have no
+        corresponding device or processor node.
+        """
+        id_device_map = self._getIDMap(parsed_data)
+        known_ids = set(id_device_map.keys())
+        questions = parsed_data['questions']
+        target_lists = [question['targets'] for question in questions]
+        all_targets = []
+        for target_list in target_lists:
+            all_targets.extend(target_list)
+        all_target_ids = set(target['id'] for target in all_targets)
+        return all_target_ids.difference(known_ids)
+
+    def getUDIDeviceMap(self, devices):
+        """Return a dictionary which maps UDIs to HAL devices.
+
+        If a UDI is used more than once, a ValueError is raised.
+        """
+        udi_device_map = {}
+        for device in devices:
+            if device['udi'] in udi_device_map:
+                raise ValueError('Duplicate UDI: %s' % device['udi'])
+            else:
+                udi_device_map[device['udi']] = device
+        return udi_device_map
+
+    def _getIDUDIMaps(self, devices):
+        """Return two mappings describing the relation between IDs and UDIs.
+
+        :return: two dictionaries id_to_udi and udi_to_id, where
+                 id_2_udi has IDs as keys and UDI as values, and where
+                 udi_to_id has UDIs as keys and IDs as values.
+        """
+        id_to_udi = {}
+        udi_to_id = {}
+        for device in devices:
+            id = device['id']
+            udi = device['udi']
+            id_to_udi[id] = udi
+            udi_to_id[udi] = id
+        return id_to_udi, udi_to_id
+
+    def getUDIChildren(self, udi_device_map):
+        """Build lists of all children of a UDI.
+
+        :return: A dictionary that maps UDIs to lists of children.
+
+        If any info.parent property points to a non-existing existing
+        device, a ValueError is raised.
+        """
+        # Each HAL device references its parent device (HAL attribute
+        # info.parent), except for the "root node", which has no parent.
+        children = {}
+        known_udis = set(udi_device_map.keys())
+        for device in udi_device_map.values():
+            parent_property = device['properties'].get('info.parent', None)
+            if parent_property is not None:
+                parent = parent_property[0]
+                if not parent in known_udis:
+                    raise ValueError(
+                        'Unknown parent UDI %s in <device id="%s">'
+                        % (parent, device['id']))
+                if parent in children:
+                    children[parent].append(device)
+                else:
+                    children[parent] = [device]
+            else:
+                # A node without a parent is a root node. Only one root node
+                # is allowed, which must have the UDI
+                # "/org/freedesktop/Hal/devices/computer".
+                # Other nodes without a parent UDI indicate an error, as well
+                # as a non-existing root node.
+                if device['udi'] != ROOT_UDI:
+                    raise ValueError(
+                        'root device node found with unexpected UDI: '
+                        '<device id="%s" udi="%s">' % (device['id'],
+                                                       device['udi']))
+
+        if not ROOT_UDI in children:
+            raise ValueError('No root device found')
+        return children
+
+    def _removeChildren(self, udi, udi_test):
+        """Remove recursively all children of the device named udi."""
+        if udi in udi_test:
+            children = udi_test[udi]
+            for child in children:
+                self._removeChildren(child['udi'], udi_test)
+            del udi_test[udi]
+
+    def checkHALDevicesParentChildConsistency(self, udi_children):
+        """Ensure that HAL devices are represented in exactly one tree.
+
+        :return: A list of those UDIs that are not "connected" to the root
+                 node /org/freedesktop/Hal/devices/computer
+
+        HAL devices "know" their parent device; each device has a parent,
+        except the root element. This means that it is possible to traverse
+        all existing devices, beginning at the root node.
+
+        Several inconsistencies are possible:
+
+        (a) we may have more than one root device (i.e., one without a
+            parent)
+        (b) we may have no root element
+        (c) circular parent/child references may exist.
+
+        (a) and (b) are already checked in _getUDIChildren; this method
+        implements (c),
+        """
+        # If we build a copy of udi_children and if we remove, starting at
+        # the root UDI, recursively all children from this copy, we should
+        # get a dictionary, where all values are empty lists. Any remaining
+        # nodes must have circular parent references.
+
+        udi_test = {}
+        for udi, children in udi_children.items():
+            udi_test[udi] = children[:]
+        self._removeChildren(ROOT_UDI, udi_test)
+        return udi_test.keys()
+
+    def checkConsistency(self, parsed_data):
+        """Run consistency checks on the submitted data.
+
+        :return: True, if the data looks consistent, otherwise False.
+        :param: parsed_data: parsed submission data, as returned by
+                             parseSubmission
+        """
+        duplicate_ids = self.findDuplicateIDs(parsed_data)
+        if duplicate_ids:
+            self._logError('Duplicate IDs found: %s' % duplicate_ids,
+                           self.submission_key)
+            return False
+
+        invalid_id_references = self.findInvalidIDReferences(parsed_data)
+        if invalid_id_references:
+            self._logError(
+                'Invalid ID references found: %s' % invalid_id_references,
+                self.submission_key)
+            return False
+
+        try:
+            udi_device_map = self.getUDIDeviceMap(
+                parsed_data['hardware']['hal']['devices'])
+            udi_children = self.getUDIChildren(udi_device_map)
+        except ValueError, value:
+            self._logError(value, self.submission_key)
+            return False
+
+        circular = self.checkHALDevicesParentChildConsistency(udi_children)
+        if circular:
+            self._logError('Found HAL devices with circular parent/child '
+                           'relationship: %s' % circular,
+                           self.submission_key)
+            return False
+
+        return True

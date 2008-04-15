@@ -20,6 +20,9 @@ import urlparse
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+from bzrlib.branch import Branch
+from bzrlib.smtp_connection import SMTPConnection
+
 
 LAUNCHPAD_REVIEWS = 'Launchpad Reviews <launchpad-reviews@lists.canonical.com>'
 SLASH = '/'
@@ -67,13 +70,6 @@ lines, and let's say the file was 'script.txt'.  You'd send this review
 with the following command line:
 
     % utilities/review script.txt""")
-    parser.add_option('-s', '--smtp',
-                      type='string', default=None,
-                      action='callback', callback=server_callback,
-                      help="""\
-hostname:port for the SMTP server to use.  Both the hostname and the port part
-is optional, with localhost being the default hostname, and 25 being the
-default port.  If neither is given localhost:25 is used.""")
     parser.add_option('-f', '--from',
                       type='string', default=None, dest='sender',
                       help="""\
@@ -134,6 +130,12 @@ def get_branch_and_user(filename):
         return None, None
 
 
+def get_this_branch():
+    """Get the branch that this review script lives in."""
+    branch_root = os.path.dirname(os.path.dirname(__file__))
+    return Branch.open(branch_root)
+
+
 def main():
     parser, opts, args = parseargs()
     branch, user = get_branch_and_user(args[0])
@@ -186,15 +188,10 @@ def main():
         # We already have the SMTP recipients set up as expected, so there's
         # nothing more to do.
         pass
+
     # Send the message.
-    s = smtplib.SMTP()
-    if opts.smtp is None:
-        s.connect()
-    else:
-        host, port = opts.smtp
-        s.connect(host, port)
-    s.sendmail(envfrom, envto, str(msg))
-    s.quit()
+    branch = get_this_branch()
+    SMTPConnection(branch.get_config()).send_email(msg)
     return 0
 
 

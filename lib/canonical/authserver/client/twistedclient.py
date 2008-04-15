@@ -1,12 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Twisted client code."""
-
-__metaclass__ = type
-__all__ = ['TwistedAuthServer']
-
-from canonical.authserver.client.proxy import get_twisted_proxy
-
+from twisted.web.xmlrpc import Proxy
 
 class TwistedAuthServer:
     """Twisted client for the authserver.
@@ -16,7 +9,7 @@ class TwistedAuthServer:
     """
 
     def __init__(self, url):
-        self.proxy = get_twisted_proxy(url)
+        self.proxy = Proxy(url)
 
     def getUser(self, loginID):
         return self.proxy.callRemote('getUser', loginID)

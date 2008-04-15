@@ -18,10 +18,10 @@ from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -30,12 +30,13 @@ from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
     ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
-    UNRESOLVED_BUGTASK_STATUSES)
+    PackageDiffAlreadyRequested, PackagePublishingStatus, PackageUploadStatus,
+    NotFoundError, SourcePackageFileType, SourcePackageFormat,
+    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -63,7 +64,7 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
-    copyright = StringCol(dbName='copyright', notNull=True)
+    copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
@@ -93,6 +94,9 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+    package_diffs = SQLMultipleJoin(
+        'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
+
 
     @property
     def builds(self):
@@ -263,6 +267,39 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
+
+    def _getPackageSize(self):
+        """Get the size total (in KB) of files comprising this package.
+        
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
+        """
+        size_query = """
+            SELECT
+                SUM(LibraryFileContent.filesize)/1024.0
+            FROM
+                SourcePackagereLease
+                JOIN SourcePackageReleaseFile ON
+                    SourcePackageReleaseFile.sourcepackagerelease =
+                    SourcePackageRelease.id
+                JOIN LibraryFileAlias ON
+                    SourcePackageReleaseFile.libraryfile = 
+                    LibraryFileAlias.id
+                JOIN LibraryFileContent ON
+                    LibraryFileAlias.content = LibraryFileContent.id
+            WHERE
+                SourcePackageRelease.id = %s
+            """ % sqlvalues(self)
+
+        cur = cursor()
+        cur.execute(size_query)
+        results = cur.fetchone()
+
+        if len(results) == 1 and results[0] is not None:
+            return float(results[0])
+        else:
+            return 0.0
+
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
@@ -272,10 +309,57 @@ class SourcePackageRelease(SQLBase):
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
-        # force the current timestamp instead of the default
+        # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+
+        # Always include the primary archive when looking for
+        # past build times (just in case that none can be found
+        # in a PPA).
+        archives = [archive.id]
+        if archive.purpose != ArchivePurpose.PRIMARY:
+            archives.append(distroarchseries.main_archive.id)
+
+        # Look for all sourcepackagerelease instances that match the name.
+        matching_sprs = SourcePackageRelease.select("""
+            SourcePackageName.name = %s AND
+            SourcePackageRelease.sourcepackagename = SourcePackageName.id
+            """ % sqlvalues(self.name),
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+
+        # Get the (successfully built) build records for this package.
+        completed_builds = Build.select("""
+            sourcepackagerelease IN %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            buildstate = %s
+            """ % sqlvalues([spr.id for spr in matching_sprs],
+                            distroarchseries, archives,
+                            BuildStatus.FULLYBUILT),
+            orderBy=['-datebuilt', '-id'])
+
+        if completed_builds:
+            # Historic build data exists, use the most recent value.
+            most_recent_build = completed_builds[0]
+            estimated_build_duration = most_recent_build.buildduration
+        else:
+            # Estimate the build duration based on package size if no
+            # historic build data exists.
+
+            # Get the package size in KB.
+            package_size = self._getPackageSize()
+
+            if package_size > 0:
+                # Analysis of previous build data shows that a build rate
+                # of 6 KB/second is realistic. Furthermore we have to add
+                # another minute for generic build overhead.
+                estimate = int(package_size/6.0/60 + 1)
+            else:
+                # No historic build times and no package size available,
+                # assume a build time of 5 minutes.
+                estimate = 5
+            estimated_build_duration = datetime.timedelta(minutes=estimate)
 
         return Build(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
@@ -283,6 +367,7 @@ class SourcePackageRelease(SQLBase):
                      buildstate=status,
                      datecreated=datecreated,
                      pocket=pocket,
+                     estimated_build_duration=estimated_build_duration,
                      archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
@@ -454,10 +539,14 @@ class SourcePackageRelease(SQLBase):
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
+        # XXX CarlosPerelloMarin bug=213881: This should use generic
+        # translation file format infrastructure, so we don't need to keep
+        # this list of file extensions up to date here.
         filenames = [
             name for name in tarball.getnames()
             if name.startswith('source/') or name.startswith('./source/')
-            if name.endswith('.pot') or name.endswith('.po')]
+            if (name.endswith('.pot') or name.endswith('.po') or
+                name.endswith('.xpi'))]
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts
@@ -483,3 +572,20 @@ class SourcePackageRelease(SQLBase):
                 sourcepackagename=self.sourcepackagename,
                 distroseries=self.upload_distroseries)
 
+    def getDiffTo(self, to_sourcepackagerelease):
+        """See ISourcePackageRelease."""
+        return PackageDiff.selectOneBy(
+            from_source=self, to_source=to_sourcepackagerelease)
+
+    def requestDiffTo(self, requester, to_sourcepackagerelease):
+        """See ISourcePackageRelease."""
+        candidate = self.getDiffTo(to_sourcepackagerelease)
+
+        if candidate is not None:
+            raise PackageDiffAlreadyRequested(
+                "%s was already requested by %s"
+                % (candidate.title, candidate.requester.displayname))
+
+        return PackageDiff(
+            from_source=self, to_source=to_sourcepackagerelease,
+            requester=requester)

@@ -334,7 +334,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
-        text = 'Change bug contact'
+        text = 'Change bug supervisor'
         return Link('+bugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -494,7 +494,7 @@ class DistributionPPASearchView(LaunchpadView):
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
-        results = self.context.source_package_caches
+        results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
 
@@ -527,7 +527,8 @@ class DistributionAddView(LaunchpadFormView):
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "domainname", "members",
-                   "official_malone", "official_rosetta", "official_answers"]
+                   "official_malone", "official_blueprints",
+                   "official_rosetta", "official_answers"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -551,8 +552,8 @@ class DistributionEditView(LaunchpadEditFormView):
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'official_malone',
-                   'enable_bug_expiration', 'official_rosetta',
-                   'official_answers']
+                   'enable_bug_expiration', 'official_blueprints',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)

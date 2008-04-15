@@ -3,17 +3,21 @@
 __metaclass__ = type
 
 import unittest
+from datetime import datetime
+import pytz
 
 from zope.component import getUtility
 from sqlobject.include.validators import InvalidField
 
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import flush_database_updates, SQLBase
 from canonical.launchpad.ftests import login
-from canonical.launchpad.database import Person
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import (
+    ArchivePurpose, BranchType, CreateBugParams, IArchiveSet, IBranchSet,
+    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
+    ISpecificationSet, PersonVisibility)
 from canonical.launchpad.database import (
-    AnswerContact, Bug, BugTask, BugSubscription, Specification)
+    AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
 
 
 class TestPerson(unittest.TestCase):
@@ -23,7 +27,14 @@ class TestPerson(unittest.TestCase):
         login('foo.bar@canonical.com')
         self.person_set = getUtility(IPersonSet)
         self.myteam = self.person_set.getByName('myteam')
+        self.otherteam = self.person_set.getByName('otherteam')
         self.guadamen = self.person_set.getByName('guadamen')
+        self.product_set = getUtility(IProductSet)
+        self.bzr = self.product_set.getByName('bzr')
+        self.now = datetime.now(pytz.timezone('UTC'))
+
+    def tearDown(self):
+        SQLBase._connection._connection.rollback()
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -109,6 +120,119 @@ class TestPerson(unittest.TestCase):
             self.assertRaises(
                 InvalidField,
                 setattr, specification, attr_name, self.myteam)
+
+    def test_visibility_validator_announcement(self):
+        announcement = self.bzr.announce(
+            user = self.otherteam,
+            title = 'title foo',
+            summary = 'summary foo',
+            url = 'http://foo.com',
+            publication_date = self.now
+            )
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by'
+                ' an announcement.')
+
+    def test_visibility_validator_answer_contact(self):
+        answer_contact = AnswerContact(
+            person=self.otherteam,
+            product=self.bzr,
+            distribution=None,
+            sourcepackagename=None)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by'
+                ' an answercontact.')
+
+    def test_visibility_validator_archive(self):
+        archive = getUtility(IArchiveSet).new(
+            owner=self.otherteam,
+            description='desc foo',
+            purpose=ArchivePurpose.PPA)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by'
+                ' an archive.')
+
+    def test_visibility_validator_branch(self):
+        branch = getUtility(IBranchSet).new(
+            branch_type=BranchType.HOSTED,
+            name='namefoo',
+            creator=self.otherteam,
+            owner=self.otherteam,
+            author=self.otherteam,
+            product=self.bzr,
+            url=None)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by a'
+                ' branch.')
+
+    def test_visibility_validator_bug(self):
+        bug_params = CreateBugParams(
+            owner=self.otherteam,
+            title='title foo',
+            comment='comment foo',
+            description='description foo',
+            datecreated=self.now)
+        bug_params.setBugTarget(product=self.bzr)
+        bug = getUtility(IBugSet).createBug(bug_params)
+        bug.bugtasks[0].transitionToAssignee(self.otherteam)
+        flush_database_updates()
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by a'
+                ' bug, a bugsubscription, a bugtask and a message.')
+
+    def test_visibility_validator_product_subscription(self):
+        self.bzr.addSubscription(self.otherteam, self.guadamen)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by'
+                ' a project subscriber.')
+
+    def test_visibility_validator_specification_subscriber(self):
+        email = getUtility(IEmailAddressSet).new(
+            'otherteam@canonical.com', self.otherteam)
+        self.otherteam.setContactAddress(email)
+        specification = getUtility(ISpecificationSet).get(1)
+        specification.subscribe(self.otherteam, self.otherteam, True)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by a'
+                ' specificationsubscription.')
+
+    def test_visibility_validator_team_member(self):
+        self.guadamen.addMember(self.otherteam, self.guadamen)
+        try:
+            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        except InvalidField, info:
+            self.assertEqual(
+                info.msg,
+                'This team cannot be made private since it is referenced by a'
+                ' teammembership.')
 
 
 def test_suite():

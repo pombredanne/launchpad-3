@@ -1,5 +1,4 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0401
 
 """Client APIs for the authserver.
 
@@ -10,12 +9,4 @@ be reduced by putting common code in this package.
 # TODO:
 #   - refactor authserver client code in shipit to live here
 #   - Twisted XML-RPC client stuff for supermirror SFTP server.
-
-__all__ = [
-    'get_blocking_proxy',
-    'get_twisted_proxy',
-    'InMemoryBlockingProxy',
-    'InMemoryTwistedProxy']
-
-from canonical.authserver.client.proxy import *
 

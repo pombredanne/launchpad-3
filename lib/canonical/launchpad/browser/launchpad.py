@@ -73,7 +73,6 @@ from canonical.launchpad.interfaces import (
     IProductSet,
     IProjectSet,
     IQuestionSet,
-    IRegistryApplication,
     IRosettaApplication,
     ISourcePackageNameSet,
     ISpecificationSet,
@@ -460,7 +459,6 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
-        'registry': IRegistryApplication,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -590,7 +588,7 @@ class SoftTimeoutView(LaunchpadView):
             raise Unauthorized
 
         self.request.response.setHeader('content-type', 'text/plain')
-        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        soft_timeout = intOrZero(config.database.soft_request_timeout)
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 

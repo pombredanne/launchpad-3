@@ -115,10 +115,9 @@ date_created values from the database.
     >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
-    >>> home_page = "http://example.com/~ddaa/"
     >>> gterm_dev = branchset.new(
     ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
-    ...     title, summary=summary, home_page=home_page, date_created=now.next())
+    ...     title, summary=summary, date_created=now.next())
 
     >>> gterm_dev.name
     u'dev'
@@ -146,8 +145,8 @@ whereas the owner is.
     vcs-imports
     >>> gterm_dev.owner = ddaa
 
-Branch may or may not be associated to a product, and may have no home_page,
-no title, and no summary, and even no URL.
+Branch may or may not be associated to a product, and may have no title,
+and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
@@ -158,8 +157,6 @@ Branches with no URL are primarily hosted on the supermirror.
     >>> junkcode.name
     u'junkcode'
     >>> print repr(junkcode.product)
-    None
-    >>> print repr(junkcode.home_page)
     None
     >>> print repr(junkcode.title)
     None
@@ -451,7 +448,8 @@ Branches can be subscribed to and unsubscribed from by a Person.
 Branch subscriptions now have extra attributes associated with them.
 The notification_level is used to control what email is sent to the
 subscribed user, and max_diff_lines is used to control the size of
-any generated diffs between revisions that are emailed out.
+any generated diffs between revisions that are emailed out.  The review_level
+controls the amount of notification caused by code review activities.
 
 Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
@@ -459,14 +457,15 @@ BranchSubscriptionNotificationLevel.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ...     IBranchSubscription)
+    ...     CodeReviewNotificationLevel, IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
     >>> sabdfl.subscribed_branches.count()
     0
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.FULL)
     >>> verifyObject(IBranchSubscription, subscription)
     True
     >>> subscription.branch == gterm_dev and subscription.person == sabdfl
@@ -474,6 +473,8 @@ BranchSubscriptionNotificationLevel.
     >>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
     True
     >>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
+    True
+    >>> subscription.review_level == CodeReviewNotificationLevel.FULL
     True
     >>> gterm_dev.subscriptions[0] == subscription
     True
@@ -484,6 +485,24 @@ BranchSubscriptionNotificationLevel.
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
     http://code.launchpad.dev/~ddaa/gnome-terminal/dev/+subscription/sabdfl
+
+    The settings for a subscription can be changed by re-subscribing.
+
+    >>> subscription1 = gterm_dev.getSubscription(sabdfl)
+    >>> subscription1.review_level == CodeReviewNotificationLevel.FULL
+    True
+    >>> subscription2 = gterm_dev.subscribe(
+    ...     sabdfl,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
+    >>> subscription == subscription2
+    True
+    >>> subscription2.review_level == CodeReviewNotificationLevel.NOEMAIL
+    True
+
+    Unsubscribing is also supported.
+
     >>> gterm_dev.unsubscribe(sabdfl)
     >>> gterm_dev.subscribers.count()
     0
@@ -501,7 +520,8 @@ subscription to `gterm_dev`.
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
 
     >>> print_names(gterm_dev.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))
@@ -532,7 +552,8 @@ the branches registered, authored and subscribed to by this person.
     >>> junkcode.author = lifeless
     >>> syncUpdate(junkcode)
     >>> unused = gterm_dev.subscribe(lifeless,
-    ...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    ...            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...            CodeReviewNotificationLevel.NOEMAIL)
     >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
     True
 
@@ -1065,7 +1086,8 @@ canonical/launchpad/database/tests/test_branch.py.
 Adding a subscriber makes it not deletable.
 
     >>> ignored = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> branch.canBeDeleted()
     False
     >>> branch.destroySelf()
@@ -1089,7 +1111,8 @@ The requirements for deleting the branch can be discovered:
     ...     'http://example.com/branches/to-delete', 'A branch to delete',
     ...     date_created=now.next())
     >>> subscription = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the

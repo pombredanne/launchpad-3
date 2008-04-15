@@ -14,18 +14,27 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
-                       isPersonValidReviewer isMergable isValidTransition
+                       votes root_message
+                       isPersonValidReviewer isMergable
+                       getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message"
-        attributes="deleteProposal
+        attributes="createMessage deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
-                    enqueue dequeue moveToFrontOfQueue
+                    enqueue dequeue moveToFrontOfQueue nominateReviewer
                     " />
   </content>
-
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
@@ -40,13 +49,20 @@
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       name="+index" />
 
-  <browser:page
-      name="+index"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.BranchMergeProposalView"
-      facet="branches"
-      permission="launchpad.View"
-      template="../templates/branchmergeproposal-index.pt" />
+  <browser:pages
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalView"
+    facet="branches"
+    permission="launchpad.View">
+    <browser:page
+        name="+index"
+        template="../templates/branchmergeproposal-index.pt"
+        />
+    <browser:page
+        name="+pagelet-summary"
+        template="../templates/branchmergeproposal-pagelet-summary.pt"
+        />
+  </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
@@ -56,10 +72,6 @@
     <browser:page
         name="+edit"
         template="../templates/branchmergeproposal-edit.pt"
-        />
-    <browser:page
-        name="+pagelet-summary"
-        template="../templates/branchmergeproposal-pagelet-summary.pt"
         />
   </browser:pages>
 
@@ -102,6 +114,38 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branchmergeproposal-review.pt" />
+
+  <browser:page
+      name="+enqueue"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalEnqueueView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branchmergeproposal-enqueue.pt" />
+
+  <browser:page
+      name="+dequeue"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalDequeueView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branchmergeproposal-edit.pt" />
+
+  <browser:page
+      name="+dequeue-inline"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalInlineDequeueView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/inline-form-only-buttons.pt" />
+
+  <browser:page
+      name="+jump-queue"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalJumpQueueView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/inline-form-only-buttons.pt" />
 
   <browser:page
       name="+merged"

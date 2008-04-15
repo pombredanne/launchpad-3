@@ -6,8 +6,6 @@
 
 This is a dummy logger class to capture the export's log messages.
 
-    >>> import sys
-    >>> import traceback
     >>> from canonical.launchpad.ftests.logger import MockLogger
     >>> from canonical.launchpad.database import Person
     >>> person = Person.selectOneBy(name='name12')
@@ -20,7 +18,7 @@ consists of a series of requests for all templates and translations attached
 to the product series.
 
     >>> from canonical.launchpad.database import (
-    ...     POFile, POTemplate, Product, ProductSeries)
+    ...     POTemplate, Product, ProductSeries)
     >>> evolution_product = Product.selectOneBy(name='evolution')
     >>> evolution_trunk = ProductSeries.selectOneBy(
     ...     product=evolution_product, name='trunk')
@@ -47,6 +45,7 @@ Now we request that the queue be processed.
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in
     Evolution trunk
+    log> Stored file at http://.../launchpad-export.tar.gz
 
 We need to make sure the Librarian data has settled into place.
 

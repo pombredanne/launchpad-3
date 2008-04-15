@@ -5,8 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeHostingServer', 'SSHCodeHostingServer', 'make_bzr_ssh_server',
-    'make_launchpad_server', 'make_sftp_server', 'NullAuthserverWithKeys']
+    'Authserver', 'AuthserverWithKeys', 'CodeHostingServer',
+    'SSHCodeHostingServer', 'make_bzr_ssh_server', 'make_launchpad_server',
+    'make_sftp_server']
 
 
 import gc
@@ -20,19 +21,19 @@ from zope.component import getUtility
 from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
-from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import keys
-from twisted.internet import defer, process
-from twisted.python import components
+from twisted.internet import defer
+from twisted.internet.protocol import connectionDone
 from twisted.python.util import sibpath
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.daemons.sftp import SSHService
+from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.launchpad.daemons.sftp import (
+    getPrivateKeyObject, getPublicKeyString, SSHService)
+from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
-from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.transport import LaunchpadServer
@@ -46,14 +47,14 @@ def make_launchpad_server():
 
 
 def make_sftp_server():
-    authserver = NullAuthserverWithKeys('testuser', 'testteam')
+    authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
     return SFTPCodeHostingServer(authserver, branches_root, mirror_root)
 
 
 def make_bzr_ssh_server():
-    authserver = NullAuthserverWithKeys('testuser', 'testteam')
+    authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
     return BazaarSSHCodeHostingServer(authserver, branches_root, mirror_root)
@@ -94,6 +95,70 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
         while self._ssh_transports:
             connection = self._ssh_transports.pop()
             connection.close()
+
+
+class Authserver(Server):
+
+    def __init__(self):
+        Server.__init__(self)
+        self.authserver = None
+
+    def setUp(self):
+        self.authserver = AuthserverService()
+        self.authserver.startService()
+
+    def tearDown(self):
+        return self.authserver.stopService()
+
+    def get_url(self):
+        return config.codehosting.authserver
+
+
+class AuthserverTac(TacTestSetup):
+    """Handler for running the Authserver .tac file.
+
+    Used to run the authserver out-of-process.
+    """
+    def setUpRoot(self):
+        pass
+
+    @property
+    def root(self):
+        return ''
+
+    @property
+    def tacfile(self):
+        import canonical
+        return os.path.abspath(os.path.join(
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/authserver.tac'
+            ))
+
+    @property
+    def pidfile(self):
+        return '/tmp/authserver.pid'
+
+    @property
+    def logfile(self):
+        return '/tmp/authserver.log'
+
+
+class AuthserverOutOfProcess(Server):
+    """Server to run the authserver out-of-process."""
+
+    def __init__(self):
+        Server.__init__(self)
+        self.tachandler = AuthserverTac()
+
+    def setUp(self):
+        self.tachandler.setUp()
+
+    def tearDown(self):
+        self.tachandler.tearDown()
+        return defer.succeed(None)
+
+    def get_url(self):
+        return config.codehosting.authserver
 
 
 class AuthserverWithKeysMixin:
@@ -138,25 +203,35 @@ class AuthserverWithKeysMixin:
 
     def getPrivateKey(self):
         """Return the private key object used by 'testuser' for auth."""
-        return keys.getPrivateKeyObject(
+        return getPrivateKeyObject(
             data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
 
     def getPublicKey(self):
         """Return the public key string used by 'testuser' for auth."""
-        return keys.getPublicKeyString(
+        return getPublicKeyString(
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
 
 
-class NullAuthserverWithKeys(AuthserverWithKeysMixin):
+class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        AuthserverOutOfProcess.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
 
     def setUp(self):
         self.setUpTestUser()
+        AuthserverOutOfProcess.setUp(self)
 
-    def get_url(self):
-        return config.codehosting.authserver
 
-    def tearDown(self):
-        return defer.succeed(None)
+class AuthserverWithKeysInProcess(Authserver, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        Authserver.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
+
+    def setUp(self):
+        self.setUpTestUser()
+        Authserver.setUp(self)
 
 
 class FakeLaunchpadServer(LaunchpadServer):
@@ -194,7 +269,7 @@ class FakeLaunchpadServer(LaunchpadServer):
 class CodeHostingServer(Server):
 
     def __init__(self, authserver, branches_root, mirror_root):
-        super(CodeHostingServer, self).__init__(self)
+        Server.__init__(self)
         self.authserver = authserver
         self._branches_root = branches_root
         self._mirror_root = mirror_root
@@ -212,7 +287,7 @@ class CodeHostingServer(Server):
         shutil.rmtree(self._branches_root)
         return self.authserver.tearDown()
 
-    def getTransport(self, relpath):
+    def getTransport(self, relpath=None):
         """Return a new transport for 'relpath', adding necessary cleanup."""
         raise NotImplementedError()
 
@@ -305,62 +380,14 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
         SSHCodeHostingServer.__init__(
             self, 'bzr+ssh', authserver, branches_root, mirror_root)
 
-    def setUp(self):
-        SSHCodeHostingServer.setUp(self)
-        # XXX: JonathanLange 2007-06-25, Twisted definitely does not expect us
-        # to be calling waitpid in a child thread. The reactor's process
-        # cleanup goes a little haywire. Monkey-patching reapAllProcess
-        # disables the guts of Twisted's process monitoring / cleanup.
-        self._reapAllProcesses = process.reapAllProcesses
-        process.reapAllProcesses = lambda: None
-
-    def tearDown(self):
-        process.reapAllProcesses = self._reapAllProcesses
-        return SSHCodeHostingServer.tearDown(self)
-
-    def runWithFakeAdapter(self, (new_adapter, original, interface), function,
-                           *args, **kwargs):
-        """Run function with new_adapter as the adapter from original to
-        interface.
-        """
-        old_allow_duplicates = components.ALLOW_DUPLICATES
-        components.ALLOW_DUPLICATES = True
-        old_adapter = components.getAdapterFactory(original, interface, None)
-        components.registerAdapter(new_adapter, original, interface)
-        try:
-            return function(*args, **kwargs)
-        finally:
-            if old_adapter is not None:
-                components.registerAdapter(old_adapter, original, interface)
-            components.ALLOW_DUPLICATES = old_allow_duplicates
-
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
         server to acknowledge the end of the session.
         """
-        pids = []
-
-        def make_test_launchpad_server(avatar):
-            server = launch_smart_server(avatar)
-            real_exec_command = server.execCommand
-            def execCommand(protocol, command):
-                real_exec_command(protocol, command)
-                pids.append(server._transport.pid)
-            server.execCommand = execCommand
-            return server
-
         try:
-            return self.runWithFakeAdapter(
-                (make_test_launchpad_server, LaunchpadAvatar, ISession),
-                func, *args, **kwargs)
+            return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
-            for pid in pids:
-                try:
-                    os.waitpid(pid, 0)
-                except OSError:
-                    # Process has already been killed.
-                    pass
 
 
 class _TestSSHService(SSHService):
@@ -437,7 +464,7 @@ class _TestBazaarFileTransferServer(BazaarFileTransferServer):
         if event is not None:
             event.set()
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason=connectionDone):
         event = self.getConnectionLostEvent()
         if event is not None:
             event.set()

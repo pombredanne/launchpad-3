@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords,
+    ArchivePurpose, BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords,
     IStructuralHeaderPresentation, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
@@ -35,13 +35,12 @@ def build_to_structuralheading(build):
 class BuildUrl:
     """Dynamic URL declaration for IBuild.
 
-    When dealing with distribution builds ('trusted') we want to present them
+    When dealing with distribution builds we want to present them
     under IDistributionSourcePackageRelease url:
 
        /ubuntu/+source/foo/1.0/+build/1234
 
-    On the other hand, PPA builds ('untrusted') will be presented under the PPA
-    page:
+    On the other hand, PPA builds will be presented under the PPA page:
 
        /~cprov/+archive/+build/1235
     """
@@ -53,9 +52,10 @@ class BuildUrl:
 
     @property
     def inside(self):
-        if self.context.is_trusted:
+        if self.context.archive.purpose == ArchivePurpose.PPA:
+            return self.context.archive
+        else:
             return self.context.distributionsourcepackagerelease
-        return self.context.archive
 
     @property
     def path(self):
@@ -252,7 +252,7 @@ class BuildRecordsView(LaunchpadView):
         Raise UnexpectedFormData if no corresponding state for passed 'tag'
         was found.
         """
-        # default states map
+        # Default states map.
         state_map = {
             'built': BuildStatus.FULLYBUILT,
             'failed': BuildStatus.FAILEDTOBUILD,
@@ -262,7 +262,7 @@ class BuildRecordsView(LaunchpadView):
             'uploadfail': BuildStatus.FAILEDTOUPLOAD,
             'all': None,
             }
-        # include pristine (not yet assigned to a builder) builds
+        # Include pristine (not yet assigned to a builder) builds,
         # if requested.
         if self.show_builder_info:
             extra_state_map = {
@@ -271,18 +271,18 @@ class BuildRecordsView(LaunchpadView):
                 }
             state_map.update(**extra_state_map)
 
-        # lookup for the correspondent state or fallback to the default
+        # Lookup for the correspondent state or fallback to the default
         # one if tag is empty string.
         if tag:
             try:
                 self.state = state_map[tag]
-            except KeyError:
+            except (KeyError, TypeError):
                 raise UnexpectedFormData(
                     'No suitable state found for value "%s"' % tag)
         else:
             self.state = self.default_build_state
 
-        # build a dictionary with organized information for rendering
+        # Build a dictionary with organized information for rendering
         # the HTML <select> section.
         self.available_states = []
         for tag, state in state_map.items():

@@ -346,7 +346,7 @@ We can also specify that a bug is public via the same field.
     >>> filebug_view.added_bug.private
     False
 
-Since this bug is public, both the reporter and the bug contact have been
+Since this bug is public, both the reporter and the bug supervisor have been
 subscribed.
 
     >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():

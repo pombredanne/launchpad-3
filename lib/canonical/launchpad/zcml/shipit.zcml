@@ -20,7 +20,6 @@
         permission="zope.Public"
         />
 
-
     <browser:page
         for="*"
         permission="zope.Public"
@@ -128,10 +127,28 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItLoginForServerCDsView"
+        permission="zope.Public"
+        name="login-server"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        template="../templates/shipit-login.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"
         permission="launchpad.AnyPerson"
         attribute="renderStandardrequestForm"
         name="myrequest">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItRequestServerCDsView"
+        permission="launchpad.AnyPerson"
+        attribute="renderStandardrequestForm"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        name="myrequest-server">
     </browser:page>
 
     <browser:page
@@ -141,6 +158,24 @@
         attribute="renderCustomrequestForm"
         name="specialrequest">
     </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItRequestServerCDsView"
+        permission="launchpad.AnyPerson"
+        attribute="renderCustomrequestForm"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        name="specialrequest-server">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItSurveyView"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        permission="launchpad.AnyPerson"
+        name="survey"
+        template="../templates/shipit-survey.pt"
+        />
 
     <!-- XXX: Guilherme Salgado 2006-05-24:
          This needs to be moved into a normal browser:page declaration,
@@ -425,6 +460,12 @@
         class="canonical.launchpad.database.ShipItReportSet"
         provides="canonical.launchpad.interfaces.IShipItReportSet">
         <allow interface="canonical.launchpad.interfaces.IShipItReportSet" />
+    </securedutility>
+
+    <securedutility
+        class="canonical.launchpad.database.ShipItSurveySet"
+        provides="canonical.launchpad.interfaces.IShipItSurveySet">
+        <allow interface="canonical.launchpad.interfaces.IShipItSurveySet" />
     </securedutility>
 
 </configure>

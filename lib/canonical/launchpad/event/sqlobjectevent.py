@@ -13,7 +13,6 @@ from zope.interface import implements
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectCreatedEvent,
     ISQLObjectDeletedEvent)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 class SQLObjectEventBase:
@@ -24,6 +23,9 @@ class SQLObjectEventBase:
         if user is not None:
             self.user = user
         else:
+            # Prevent a circular import between launchpadform and
+            # this module.
+            from canonical.launchpad.webapp.interfaces import ILaunchBag
             self.user = getUtility(ILaunchBag).user
 
 

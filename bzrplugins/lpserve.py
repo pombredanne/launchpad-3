@@ -11,6 +11,7 @@ __all__ = ['cmd_launchpad_server']
 
 
 import sys
+import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
@@ -19,7 +20,6 @@ from bzrlib import urlutils, ui
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
 
-from canonical.authserver.client import get_blocking_proxy
 from canonical.config import config
 
 
@@ -125,7 +125,7 @@ class cmd_launchpad_server(Command):
 
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
-        authserver = get_blocking_proxy(authserver_url)
+        authserver = xmlrpclib.ServerProxy(authserver_url)
 
         lp_server = self.get_lp_server(
             authserver, user_id, upload_url, mirror_url)

@@ -10,15 +10,14 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
-
 from canonical.launchpad import helpers
-
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.database.pomsgid import POMsgID
@@ -36,7 +35,7 @@ class POTMsgSet(SQLBase):
     msgid_singular = ForeignKey(foreignKey='POMsgID', dbName='msgid_singular',
         notNull=True)
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
-        notNull=True)
+        notNull=False, default=DEFAULT)
     sequence = IntCol(dbName='sequence', notNull=True)
     potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
         notNull=True)

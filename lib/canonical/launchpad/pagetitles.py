@@ -189,9 +189,13 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
+branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
+
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_enqueue = 'Queue branch for merging'
 
 branchmergeproposal_index = 'Proposal to merge branch'
 
@@ -421,7 +425,13 @@ def codeimport(context, view):
     """Return the view's title."""
     return view.title
 
+codeimport_edit = 'Edit import details'
+
 codeimport_list = 'Code Imports'
+
+codeimport_machines = ViewLabel()
+
+codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
@@ -563,7 +573,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug contact for %s')
+edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -801,6 +811,8 @@ announcements_all = 'Announcements from all projects hosted in Launchpad'
 
 notification_test = 'Notification test'
 
+oauth_authorize = 'Authorize application to access Launchpad on your behalf'
+
 object_branding = ContextDisplayName('Change the images used to represent '
     '%s in Launchpad')
 
@@ -913,6 +925,8 @@ def person_index(context, view):
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
+
+person_oauth_tokens = "Applications you authorized to access Launchpad"
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
@@ -1189,6 +1203,8 @@ shipit_reports = 'ShipIt reports'
 
 shipit_requestcds = 'Your ShipIt Request'
 
+shipit_survey = 'ShipIt Survey'
+
 shipitrequests_index = 'ShipIt requests'
 
 shipitrequests_search = 'Search ShipIt requests'
@@ -1242,6 +1258,8 @@ def sourcepackages(context, view):
 sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
+
+sources_list = 'Available code imports'
 
 sourcesource_index = 'Upstream source import'
 
@@ -1409,6 +1427,8 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
+
+token_authorized = 'Almost finished ...'
 
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))

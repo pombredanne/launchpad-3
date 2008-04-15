@@ -11,7 +11,7 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.transport import SSHServerTransport
+from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 
 from twisted.python import failure
 from twisted.python.util import sibpath
@@ -20,9 +20,11 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
-from canonical.codehosting.tests.servers import NullAuthserverWithKeys
+from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from canonical.launchpad.daemons.sftp import getPublicKeyString
+from canonical.testing.layers import (
+    TwistedLaunchpadZopelessLayer, TwistedLayer)
 
 
 class MockRealm:
@@ -61,6 +63,10 @@ class MockSSHTransport(SSHServerTransport):
             return lambda: None
 
     def __init__(self, portal):
+        # In Twisted 8.0.1, Conch's transport starts referring to
+        # currentEncryptions where it didn't before. Provide a dummy value for
+        # it.
+        self.currentEncryptions = SSHCiphers('none', 'none', 'none', 'none')
         self.packets = []
         self.factory = self.Factory()
         self.factory.portal = portal
@@ -83,7 +89,7 @@ class UserAuthServerMixin:
         return userauth.messages[message_type]
 
     def assertMessageOrder(self, message_types):
-        """Assert the given message types were sent in the order given."""
+        """Assert that SSH messages were sent in the given order."""
         self.assertEqual(
             [userauth.messages[msg_type] for msg_type in message_types],
             [userauth.messages[packet_type]
@@ -182,7 +188,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     Section 5.4 for more information.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
@@ -195,10 +201,13 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def _makeKey(self):
         keydir = sibpath(__file__, 'keys')
-        public_key = keys.getPublicKeyString(
+        public_key = getPublicKeyString(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa.pub'), 'rb').read())
-        return chr(0) + NS('rsa') + NS(public_key)
+        if isinstance(public_key, str):
+            return chr(0) + NS('rsa') + NS(public_key)
+        else:
+            return chr(0) + NS('rsa') + NS(public_key.blob())
 
     def requestFailedAuthentication(self):
         return self.user_auth.ssh_USERAUTH_REQUEST(
@@ -314,19 +323,27 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
 
     def setUp(self):
         self.valid_login = 'testuser'
-        self.authserver = NullAuthserverWithKeys(self.valid_login, 'testteam')
+        self.authserver = AuthserverWithKeysInProcess(
+            self.valid_login, 'testteam')
         self.authserver.setUp()
         self.authserver_client = TwistedAuthServer(
             config.codehosting.authserver)
         self.checker = sshserver.PublicKeyFromLaunchpadChecker(
             self.authserver_client)
         self.public_key = self.authserver.getPublicKey()
+        if not isinstance(self.public_key, str):
+            self.public_key = self.public_key.blob()
         self.sigData = (
             NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
             + NS(self.valid_login) + NS('none') + NS('publickey') + '\xff'
             + NS('ssh-dss') + NS(self.public_key))
-        self.signature = keys.signData(
-            self.authserver.getPrivateKey(), self.sigData)
+        Key = getattr(keys, 'Key', None)
+        if Key is None:
+            self.signature = keys.signData(
+                self.authserver.getPrivateKey(), self.sigData)
+        else:
+            self.signature = self.authserver.getPrivateKey().sign(
+                self.sigData)
 
     def tearDown(self):
         return self.authserver.tearDown()

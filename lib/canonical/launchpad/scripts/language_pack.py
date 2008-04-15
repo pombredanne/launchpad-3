@@ -19,7 +19,8 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguagePackSet, IVPOExportSet, LanguagePackType)
+    IDistributionSet, ILanguagePackSet, IVPOExportSet, LanguagePackType,
+    TranslationFileFormat)
 from canonical.launchpad.translationformat.translation_export import (
     LaunchpadWriteTarFile)
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
@@ -81,6 +82,8 @@ def export(distroseries, component, update, force_utf8, logger):
     # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can unify
     # with the export-queue code?
     index = 0
+    xpi_templates_to_export = set()
+    path_prefix = 'rosetta-%s' % distroseries.name
     for pofile in export_set.get_distroseries_pofiles(
         distroseries, date, component, languagepack=True):
         logger.debug("Exporting PO file %d (%d/%d)" %
@@ -95,9 +98,13 @@ def export(distroseries, component, update, force_utf8, logger):
         else:
             code = language_code
 
-        path = os.path.join(
-            'rosetta-%s' % distroseries.name, code, 'LC_MESSAGES',
-            '%s.po' % domain)
+        if potemplate.source_file_format == TranslationFileFormat.XPI:
+            xpi_templates_to_export.add(potemplate)
+            path = os.path.join(
+                path_prefix, 'xpi', domain, '%s.po' % code)
+        else:
+            path = os.path.join(
+                path_prefix, code, 'LC_MESSAGES', '%s.po' % domain)
 
         try:
             # We don't want obsolete entries here, it makes no sense for a
@@ -112,6 +119,19 @@ def export(distroseries, component, update, force_utf8, logger):
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
         index += 1
+
+    logger.info("Exporting XPI template files.")
+    librarian_client = getUtility(ILibrarianClient)
+    for template in xpi_templates_to_export:
+        if template.source_file is None:
+            logger.warning(
+                "%s doesn't have source file registered." % potemplate.title)
+            continue
+        domain = template.translation_domain.encode('ascii')
+        archive.add_file(
+            os.path.join(path_prefix, 'xpi', domain, 'en-US.xpi'),
+            librarian_client.getFileByAlias(
+                template.source_file.id).read())
 
     logger.info("Adding timestamp file")
     # Is important that the timestamp contain the date when the export
