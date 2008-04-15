@@ -5,6 +5,7 @@
   omit-tag="">
 <script type="text/javascript"
         tal:condition="view/allow_pending_license">
+//<![CDATA[
   function unsetLicenses() {
     var checkboxes = document.getElementsByName('field.licenses');
     for (var i = 0; i < checkboxes.length; i++) {
@@ -16,6 +17,7 @@
     document.getElementById('license_pending').checked = pending;
     document.getElementById('license_complete').checked = !pending;
   }
+//]]>
 </script>
 <div style="color: black">
 
