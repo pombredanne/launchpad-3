@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 from zope.app.form.browser import DisplayWidget
-from zope.app.traversing.interfaces import IPathAdapter
+from zope.traversing.interfaces import IPathAdapter
 from zope.component import queryAdapter
 
 class LinkWidget(DisplayWidget):
