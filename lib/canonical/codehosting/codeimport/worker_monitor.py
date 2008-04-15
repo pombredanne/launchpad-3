@@ -194,25 +194,46 @@ class CodeImportWorkerMonitor:
         getUtility(ICodeImportJobWorkflow).updateHeartbeat(
             self.getJob(), tail)
 
+    def _createLibrarianFileAlias(self, name, size, file, contentType):
+        """Call `ILibraryFileAliasSet.create` with the given parameters.
+
+        This is a separate method that exists only to be patched in
+        tests.
+        """
+        return getUtility(ILibraryFileAliasSet).create(
+            name, size, file, contentType)
+
     @defer_to_thread
     @writing_transaction
     def finishJob(self, status):
-        """Call the finishJob method for the job we are working on."""
+        """Call the finishJob method for the job we are working on.
+
+        This method uploads the log file to the librarian first.  If this
+        fails, we still try to call finishJob, but return the librarian's
+        failure if finishJob succeeded (if finishJob fails, that exception
+        'wins').
+        """
         job = self.getJob()
         log_file_size = self._log_file.tell()
+        librarian_failure = None
         if log_file_size > 0:
             self._log_file.seek(0)
             branch = job.code_import.branch
             log_file_name = '%s-%s-log.txt' % (
                 branch.product.name, branch.name)
             # Watch out for this failing!!
-            log_file_alias = getUtility(ILibraryFileAliasSet).create(
-                log_file_name, log_file_size, self._log_file,
-                'text/plain')
+            try:
+                log_file_alias = self._createLibrarianFileAlias(
+                    log_file_name, log_file_size, self._log_file,
+                    'text/plain')
+            except:
+                log_file_alias = None
+                librarian_failure = failure.Failure()
         else:
             log_file_alias = None
         getUtility(ICodeImportJobWorkflow).finishJob(
             job, status, log_file_alias)
+        return librarian_failure
 
     def _launchProcess(self, source_details):
         """Launch the code-import-worker.py child process."""

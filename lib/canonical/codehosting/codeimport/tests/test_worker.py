@@ -362,6 +362,7 @@ class TestWorkerCore(WorkerTest):
                 worker.working_directory, worker.FOREIGN_WORKING_TREE_PATH),
             branch.local_path)
 
+
 def clean_up_default_stores_for_import(source_details):
     """Clean up default branch and foreign tree stores for an import.
 
@@ -372,6 +373,8 @@ def clean_up_default_stores_for_import(source_details):
     If there are tarballs or branches in the default stores that
     might conflict with working on our job, life gets very, very
     confusing.
+
+    :source_details: A `CodeImportSourceDetails` describing the import.
     """
     treestore = get_default_foreign_tree_store()
     tree_transport = treestore.transport
@@ -383,6 +386,7 @@ def clean_up_default_stores_for_import(source_details):
     branch_name = '%08x' % source_details.branch_id
     if branchstore.transport.has(branch_name):
         branchstore.transport.delete_tree(branch_name)
+
 
 class TestActualImportMixin:
     """Mixin for tests that check the actual importing."""

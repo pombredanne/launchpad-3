@@ -62,7 +62,7 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
             self.clock)
 
     def test_callsUpdateHeartbeatInConnectionMade(self):
-        # The protocol calls updateHeartbeat() when it is connected to the
+        # The protocol calls updateHeartbeat() as it is connected to the
         # process.
         # connectionMade() is called during setUp().
         self.assertEqual(
@@ -206,7 +206,7 @@ class TestWorkerMonitorUnit(TestCase):
         @read_only_transaction
         def check_no_file_uploaded(result):
             result = self.getOneResultForOurCodeImport()
-            self.assert_(result.log_file is None)
+            self.assertIdentical(result.log_file, None)
         return self.worker_monitor.finishJob(
             CodeImportResultStatus.SUCCESS).addCallback(
             check_no_file_uploaded)
@@ -218,11 +218,40 @@ class TestWorkerMonitorUnit(TestCase):
         @read_only_transaction
         def check_file_uploaded(result):
             result = self.getOneResultForOurCodeImport()
-            self.assert_(result.log_file is not None)
+            self.assertNotIdentical(result.log_file, None)
             self.assertEqual(result.log_file.read(), 'some text')
         return self.worker_monitor.finishJob(
             CodeImportResultStatus.SUCCESS).addCallback(
             check_file_uploaded)
+
+    def test_finishJobStillCreatesResultWhenLibrarianUploadFails(self):
+        # If the upload to the librarian fails for any reason, the worker
+        # monitor still calls the finishJob workflow method, but the call to
+        # finishJob is still deemed to have failed.
+        # Write some text so that we try to upload the log.
+        self.worker_monitor._log_file.write('some text')
+        # Make _createLibrarianFileAlias fail in a distinctive way.
+        self.worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
+        @read_only_transaction
+        def check_failure(exc):
+            self.assertIsInstance(exc, ZeroDivisionError)
+            self.assertEqual(
+                len(list(self.getResultsForOurCodeImport())), 1)
+        return self.assertFailure(
+            self.worker_monitor.finishJob(CodeImportResultStatus.SUCCESS),
+            ZeroDivisionError).addCallback(check_failure)
+
+    def test_finishJobFailureReportedOverUploadFailure(self):
+        # If the upload to the librarian fails for any reason, the worker
+        # monitor still calls the finishJob workflow method, and if *that*
+        # fails, then this is the failure that is reported.
+
+        # Write some text so that we try to upload the log.
+        self.worker_monitor._log_file.write('some text')
+        # Make _createLibrarianFileAlias fail in a distinctive way.
+        self.worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
+        # Not sure how to write this test :(
+        pass
 
     def patchOutFinishJob(self):
         calls = []
@@ -240,11 +269,13 @@ class TestWorkerMonitorUnit(TestCase):
         self.assertEqual(calls, [CodeImportResultStatus.SUCCESS])
 
     def test_callFinishJobCallsFinishJobFailure(self):
-        # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE if
-        # its argument is a Failure and swallows the failure.
+        # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE
+        # and swallows the failure if its argument is a Failure.
         calls = self.patchOutFinishJob()
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
         return ret
 
     def test_callFinishJobLogsTracebackOnFailure(self):
@@ -257,6 +288,8 @@ class TestWorkerMonitorUnit(TestCase):
 
     def test_callFinishJobRespects_call_finish_job(self):
         # callFinishJob does not call finishJob if _call_finish_job is False.
+        # This is to support exiting without fuss when the job we are working
+        # on is deleted in the web UI.
         calls = self.patchOutFinishJob()
         self.worker_monitor._call_finish_job = False
         self.worker_monitor.callFinishJob(None)
@@ -349,7 +382,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.factory = LaunchpadObjectFactory()
         self.nukeCodeImportSampleData()
         self.repo_path = tempfile.mkdtemp()
-        self.addCleanup(lambda : shutil.rmtree(self.repo_path))
+        self.addCleanup(shutil.rmtree, self.repo_path)
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeCVSCodeImport(self):
@@ -383,8 +416,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         """
         source_details = CodeImportSourceDetails.fromCodeImport(code_import)
         clean_up_default_stores_for_import(source_details)
-        self.addCleanup(
-            lambda : clean_up_default_stores_for_import(source_details))
+        self.addCleanup(clean_up_default_stores_for_import, source_details)
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
@@ -402,7 +434,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
         tree_path = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tree_path))
+        self.addCleanup(shutil.rmtree, tree_path)
 
         bazaar_tree = get_default_bazaar_branch_store().pull(
             code_import.branch.id, tree_path)
