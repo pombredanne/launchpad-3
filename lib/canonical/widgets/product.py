@@ -36,7 +36,9 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         LaunchpadRadioWidget.__init__(self, field, vocabulary, request)
 
         # Bug tracker widget.
-        self.bugtracker = Choice(vocabulary=WebBugTrackerVocabulary())
+        self.bugtracker = Choice(
+            vocabulary=WebBugTrackerVocabulary(),
+            __name__='bugtracker')
         self.bugtracker_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
         setUpWidget(
             self, 'bugtracker', self.bugtracker, IInputWidget,
