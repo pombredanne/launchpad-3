@@ -105,6 +105,7 @@ Baz Qux has proposed merging foo into bar.
         """Fixture method providing a mailer for a modified merge proposal"""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        merge_proposal.requestReview()
         merge_proposal.commit_message = 'new commit message'
         mailer = BMPMailer.forModification(
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
