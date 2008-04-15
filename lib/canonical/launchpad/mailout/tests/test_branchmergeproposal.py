@@ -121,6 +121,7 @@ Baz Qux has proposed merging foo into bar.
         """Ensure the right delta is filled out if there is a change."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual(
+            '    Status: Work in progress => Needs review\n'
             '    Commit Message: (not set) => new commit message',
             mailer.textDelta())
 
@@ -134,6 +135,7 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual("""\
 The proposal to merge foo into bar has been updated.
 
+    Status: Work in progress => Needs review
     Commit Message: (not set) => new commit message
 --
 %s
