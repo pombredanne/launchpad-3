@@ -249,7 +249,7 @@ class TracLPPlugin(ExternalBugTracker):
             'modified_since': last_checked_timestamp,
             'bugs': remote_bug_ids,}
         time_snapshot, modified_bugs = server.launchpad.bug_info(
-            level=0, criteria=criteria)
+            0, criteria)
 
         return [bug['id'] for bug in modified_bugs]
 
