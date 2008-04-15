@@ -333,13 +333,26 @@ An IBugBranch.
 
 == BranchMergeProposals ==
 
+Set up example Branch Merge Proposal
+
     >>> mainline = getUtility(IBranchSet).get(15)
     >>> release26 = getUtility(IBranchSet).get(16)
     >>> merge_proposal = mainline.addLandingTarget(mainline.owner, release26)
+
+Branch merge proposals should have a canonical URL.  (Based on their source
+branch.)
+
     >>> print canonical_url(merge_proposal)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/...
+
+Create example CodeReviewMessage.
+
     >>> message = merge_proposal.createMessage(
     ...     release26.owner, 'My subject', 'My content')
+
+CodeReviewMessage should have a canonical URL.  (It should extend the URL of
+the merge proposal)
+
     >>> print canonical_url(message)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../+comment/...
 
