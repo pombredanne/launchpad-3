@@ -3,7 +3,9 @@
 """Integration between the normal Launchpad logging and Twisted's."""
 
 __metaclass__ = type
-__all__ = ['set_up_logging_for_script']
+__all__ = [
+    'OOPSLoggingObserver',
+    'set_up_logging_for_script']
 
 
 from twisted.python import log
@@ -20,10 +22,11 @@ class OOPSLoggingObserver(log.PythonLoggingObserver):
         if eventDict.get('isError', False) and 'failure' in eventDict:
             try:
                 failure = eventDict['failure']
+                now = eventDict.get('error_time')
                 request = errorlog.ScriptRequest([])
                 errorlog.globalErrorUtility.raising(
                     (failure.type, failure.value, failure.getTraceback()),
-                    request,)
+                    request, now)
                 self.logger.info(
                     "Logged OOPS id %s: %s: %s",
                     request.oopsid, failure.type.__name__, failure.value)

@@ -18,7 +18,7 @@ from canonical.config import config
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
 from canonical.codehosting import sshserver
-from canonical.twistedsupport.loggingsupport import set_up_logging_for_service
+from canonical.codehosting.transport import set_up_logging
 
 
 def getPublicKeyString(data):
@@ -86,7 +86,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        set_up_logging_for_service('codehosting')
+        set_up_logging(configure_oops_reporting=True)
         service.Service.startService(self)
         self.service.startService()
 
