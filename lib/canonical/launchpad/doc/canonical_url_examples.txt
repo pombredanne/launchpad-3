@@ -354,7 +354,7 @@ CodeReviewMessage should have a canonical URL.  (It should extend the URL of
 the merge proposal)
 
     >>> print canonical_url(message)
-    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../+comment/...
+    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
 
 
 == POTemplates and so on ==
