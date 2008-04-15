@@ -710,6 +710,30 @@ A proper name for this "model" would be 'cross-component-dependency'.
     multiverse | main restricted universe multiverse
        partner | partner
 
+As reported in bug #198936, builds for the BACKPORTS pocket are
+allowed to use any component available, independently of the component they are
+currently published. This special-case is important because it
+avoids changes to accommodate the backported source in the already
+released series.
+
+    >>> release_pocket = build.pocket
+    >>> naked_build = removeSecurityProxy(build)
+    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
+    >>> syncUpdate(build)
+
+Ultimately, it means that a build targeted to the BACKPORTS pocket
+will behave as if it were published in the multiverse component,
+despite the component it is actually published in.
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main restricted universe multiverse
+    restricted | main restricted universe multiverse
+      universe | main restricted universe multiverse
+    multiverse | main restricted universe multiverse
+       partner | main restricted universe multiverse
+
 Restoring the original target component to the source used in this
 section, so there won't be any unexpected effects in subsequent
 tests.
@@ -717,6 +741,9 @@ tests.
     >>> main_component = getUtility(IComponentSet)['main']
     >>> source_pub.secure_record.component = main_component
     >>> syncUpdate(source_pub.secure_record)
+    >>> naked_build = removeSecurityProxy(build)
+    >>> naked_build.pocket = release_pocket
+    >>> syncUpdate(build)
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
