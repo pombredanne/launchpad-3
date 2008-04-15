@@ -56,6 +56,7 @@ class BranchListingItem(BranchBadges):
     def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus):
         BranchBadges.__init__(self, branch)
+        self.branch = branch
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge

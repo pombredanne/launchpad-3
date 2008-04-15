@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
-from canonical.lazr.interfaces import IObjectPrivacy
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -2432,5 +2431,5 @@ class GotoStructuralObject:
         return headercontext
 
     @property
-    def context_privacy(self):
-        return IObjectPrivacy(self.use_context)
+    def context_badges(self):
+        return IHasBadges(self.use_context)

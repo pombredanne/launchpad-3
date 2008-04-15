@@ -241,8 +241,8 @@
                       </tal:applicationtabs>
                       <div
                         id="container"
-                        tal:define="context_privacy CONTEXTS/lp:context_privacy"
-                        tal:attributes="class python:path('view/isPrivate | context_privacy/is_private | nothing') and 'private' or None"
+                        tal:define="context_badges CONTEXTS/lp:context_badges"
+                        tal:attributes="class python: context_badges.isPrivateBadgeVisible() and 'private' or None"
                       >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
@@ -262,11 +262,10 @@
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:privatebadge condition="view/isPrivate | context_privacy/is_private | nothing">
-                            <img tal:attributes="title context_privacy/privacy_info | nothing"
-                                alt="(Private)" id="privatebadge"
-                                src="/@@/private-large" style="float: right" />
-                          </tal:privatebadge>
+                          <div style="float: right">
+                            <tal:big-badges replace="structure context/badges:large"/>
+                          </div>
+
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">

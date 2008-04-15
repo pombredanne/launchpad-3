@@ -15,5 +15,3 @@ class IObjectPrivacy(Interface):
     """Privacy-related information about an object."""
 
     is_private = Bool(title=_("Whether access to the object is restricted."))
-    privacy_info = Text(
-        title=_("Optional description of the object privacy."))

@@ -11,6 +11,7 @@ __all__ = [
     'BugsBugTaskSearchListingView',
     'BugTargetTraversalMixin',
     'BugTargetView',
+    'BugTaskBadges',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
@@ -65,6 +66,7 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
+from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
@@ -2541,8 +2543,11 @@ class BugTaskPrivacyAdapter:
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
 
-    @property
-    def privacy_info(self):
+
+class BugTaskBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `IBugTask`."""
+
+    def getPrivateBadgeTitle(self):
         """Return info useful for a tooltip."""
         if self.context.bug.date_made_private is None:
             return "This bug report is private"

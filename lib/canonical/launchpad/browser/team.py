@@ -6,6 +6,7 @@ __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
     'TeamAddView',
+    'TeamBadges',
     'TeamBrandingView',
     'TeamContactAddressView',
     'TeamEditView',
@@ -34,6 +35,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
@@ -48,7 +50,7 @@ from canonical.lazr.interfaces import IObjectPrivacy
 
 
 class TeamPrivacyAdapter:
-    """Provides `IObjectPrivacy` for `IBugTask`."""
+    """Provides `IObjectPrivacy` for `ITeam`."""
 
     implements(IObjectPrivacy)
 
@@ -60,9 +62,12 @@ class TeamPrivacyAdapter:
         """Return True if the bug is private, otherwise False."""
         return self.context.visibility != PersonVisibility.PUBLIC
 
-    @property
-    def privacy_info(self):
-        """Return info useful for a tooltip."""
+
+class TeamBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `ITeam`."""
+
+    def getPrivateBadgeTitle(self):
+        """Return private badge info useful for a tooltip."""
         return "This is a %s team" % self.context.visibility.title
 
 

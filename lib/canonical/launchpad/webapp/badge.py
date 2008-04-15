@@ -16,6 +16,7 @@ __all__ = [
     ]
 
 from zope.interface import implements, Interface
+from canonical.lazr.interfaces import IObjectPrivacy
 
 
 class Badge:
@@ -32,6 +33,10 @@ class Badge:
         self.alt = alt
         self.title = title
         self.id = id
+
+    def copy(self):
+        return Badge(self.small_image, self.large_image, self.alt,
+                     self.title, self.id)
 
     def renderIconImage(self):
         """Render the small image as an HTML img tag."""
@@ -94,7 +99,16 @@ class HasBadgeBase:
     """
     implements(IHasBadges)
 
-    badges = None
+    # All private objects should show the private badge.
+    badges = 'private',
+
+    # This class is now a default adapter for IHasBadges.
+    def __init__(self, context):
+        self.context = context
+
+    def isPrivateBadgeVisible(self):
+        # Show a privacy badge.
+        return IObjectPrivacy(self.context).is_private
 
     def getVisibleBadges(self):
         """See `IHasBadges`."""
@@ -118,8 +132,24 @@ class HasBadgeBase:
         else:
             raise NotImplementedError(method_name)
 
+    def _getBadgeTitle(self, badge_name):
+        """Does the badge_name badge have a custom title?
+
+        Delegate the determination to a method based on the name
+        of the badge.
+        """
+        method_name = "get%sBadgeTitle" % badge_name.capitalize()
+        if hasattr(self, method_name):
+            return getattr(self, method_name)()
+        else:
+            return None
+
     def getBadge(self, badge_name):
         """Return the badge instance for the name specified."""
         # Can be overridden to provide non-standard badges.
-        return STANDARD_BADGES.get(badge_name)
-
+        badge = STANDARD_BADGES.get(badge_name)
+        badge_title = self._getBadgeTitle(badge_name)
+        if badge_title is not None:
+            badge = badge.copy()
+            badge.title = badge_title
+        return badge
