@@ -1,5 +1,7 @@
 = Stub Packager Utility =
 
+StubPackager allow us to easily create minimal debian packages to be
+used in tests.
 
     >>> import os
     >>> from zope.component import getUtility
@@ -9,7 +11,7 @@
 == Setup and reset ==
 
 As all zope utilities, StubPackager is initialised when we look up for
-it.
+it the first time.
 
     >>> packager = getUtility(IStubPackager)
 
@@ -39,17 +41,16 @@ Source 'name' and 'version' and 'gpg_key_id' are empty.
     >>> print packager.gpg_key_id
     None
 
-
-The 'upstream_directory' can't be calculated since it depends on the
-upstream source name and version.
+The 'upstream_directory' can't be calculated at this stage since it
+depends on the upstream source name and version.
 
     >>> print packager.upstream_directory
     Traceback (most recent call last):
     ...
     AssertionError: Undefined name and version.
 
-We can define them via setSourceNameAndVersion method, so the
-upstream_directory path is known, but not yet created.
+Defining them via setSourceNameAndVersion method, allow us to know
+the 'upstream_directory' path, but it is not yet created.
 
     >>> packager.setSourceNameAndVersion('biscuit', '1.0')
 
@@ -59,9 +60,9 @@ upstream_directory path is known, but not yet created.
     >>> os.path.exists(packager.upstream_directory)
     False
 
-At this point we can also check the reset method, which purges the
-current sandbox directory and creates a new one. It also undefine
-StubPackager's 'name' and 'version'.
+We can now play with the reset method. It purges the current sandbox
+directory and creates a new one. It also clears StubPackager's
+'name' and 'version', avoid inconsistent states.
 
     >>> previous_sandbox_path = packager.sandbox_path
 
@@ -88,16 +89,18 @@ StubPackager's 'name' and 'version'.
 
 == Creating Packages ==
 
-Now let's check how StubPackager actually created packages.
+Let see StubPackager actually creating stub packages.
 
-First we have to define a source upstream name and version.
+First we define a source upstream name and version.
 
     >>> packager.setSourceNameAndVersion('biscuit', '1.0')
 
-Then we create it on disk based on the StubPackager templates, which
-results in a buildable source package with version as '<version>-1'
+Then we create it on disk based on the StubPackager templates.
 
     >>> packager.buildUpstream(build_orig=False)
+
+It results in a buildable source package version '<version>-1' in the
+upstream_directory path.
 
     >>> os.path.exists(packager.upstream_directory)
     True
@@ -119,7 +122,10 @@ with a corresponding original tarball.
     >>> print sorted(os.listdir(packager.sandbox_path))
     ['biscuit-1.0', 'biscuit_1.0.orig.tar.gz']
 
-Now we can build a source package using the generated tarball.
+    >>> print sorted(os.listdir(packager.debian_path))
+    ['changelog', 'control', 'copyright', 'rules']
+
+Now we can build the source package using the generated tarball.
 
     >>> packager.buildSource(signed=False)
 
@@ -152,15 +158,16 @@ Now we can build a source package using the generated tarball.
      ... devel optional biscuit_1.0-1.diff.gz
     <BLANKLINE>
 
-If the user tries to build an incompatible package version an error
-will be raised.
+When we try to build an incompatible package version an error will be
+raised indication it could not created.
 
     >>> packager.buildVersion('2.0-2', changelog_text="version on crack.")
     Traceback (most recent call last):
     ...
     AssertionError: New versions should starts with the upstream version: 1.0
 
-Let's build a new version, but this time, signed.
+Using a proper version, let's build a new source package version, but
+now signing the DSC and the changesfile.
 
     >>> packager.buildVersion(
     ...    '1.0-2', changelog_text="Waar ligt de sleutel ?")
@@ -169,7 +176,7 @@ Let's build a new version, but this time, signed.
     ...
     AssertionError: Cannot build signed packages because the key is not set.
 
-The error was raised because not siging key was set.
+The error was raised because no siging key was set.
 
     >>> print packager.gpg_key_id
     None
@@ -180,22 +187,22 @@ launchpad/ftests/keys_for_tests.py)
 
     >>> packager.setGPGKey('foo.bar@canonical.com-passwordless.sec')
 
-GPG key set, now we should be able to build a signed version.
+GPG key set, now we are able to build a signed version.
 
     >>> print packager.gpg_key_id
     0x5D147547
 
-StubPackager also allow the user to include as many versions he needs
-before building the package. It helps when we need to populate the
-changelog.
+StubPackager also allows us to include as many versions he needs
+before building the package. It helps when the content of the
+changelog matters in the test context.
 
     >>> packager.buildVersion('1.0-2', changelog_text="cookies")
     >>> packager.buildVersion('1.0-3', changelog_text="butter cookies")
     >>> packager.buildSource(include_orig=False)
 
-Being overcareful, let's quickly verify the changesfile signature. All
-the job is done by `debuild` here, we are basically cheking we pass
-the right arguments to it.
+The generated changesfile contains a valid signature done by the
+preset GPG key. All the job is done by `debuild` here, we are
+basically checking we pass the right arguments to it.
 
     >>> changesfile_path = packager.listAvailableUploads()[1]
     >>> print os.path.basename(changesfile_path)
@@ -207,14 +214,11 @@ the right arguments to it.
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
 
-The signature is fine and it is indeed signed by the key set in
-StubPackager.
-
     >>> sig.fingerprint[-8:] == packager.gpg_key_id[2:]
     True
 
-The user can also generate subsequent packages for the same upstream
-source in a sequence.
+Continue in the same 'sandbox', we can generate subsequent packages
+for the same upstream source.
 
     >>> packager.buildVersion('1.0-4', changelog_text="uhmmm, leker")
     >>> packager.buildSource(include_orig=False)
@@ -245,13 +249,11 @@ in the sandbox directory.
     /tmp/stubpackager-.../zeca_1.0-1_source.changes
     /tmp/stubpackager-.../zeca_1.0-2_source.changes
 
-Finally, an error is raised if the user tries to build a source
-package before creating the upstream directory.
+Finally, an error is raised if we try to build a source package before
+creating the upstream directory.
 
     >>> packager.setSourceNameAndVersion('canjica', '1.0')
     >>> packager.buildSource()
     Traceback (most recent call last):
     ...
     AssertionError: Selected upstream directory does not exist: canjica-1.0
-
-

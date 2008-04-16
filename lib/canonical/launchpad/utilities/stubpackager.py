@@ -79,18 +79,8 @@ class StubPackager:
     gpg_key_id = None
 
     def __init__(self):
+        """Create a 'sandbox' directory."""
         self._createNewSandbox()
-
-    def _createNewSandbox(self):
-        self.sandbox_path = tempfile.mkdtemp(prefix='stubpackager-')
-        # Create a local atexit handler to remove the sandbox directory
-        # on normal termination.
-        def removeSandbox(sandbox):
-            """Remove GNUPGHOME directory."""
-            if os.path.exists(sandbox):
-                shutil.rmtree(sandbox)
-
-        atexit.register(removeSandbox, self.sandbox_path)
 
     def setSourceNameAndVersion(self, name, version):
         """See IStubPackager."""
@@ -123,38 +113,58 @@ class StubPackager:
 
     @property
     def debian_path(self):
-        """ """
+        """See IStubPackager."""
         return os.path.join(self.upstream_directory, 'debian')
 
     @property
     def changelog_path(self):
-        """ """
+        """Current debian/changelog path."""
         return os.path.join(self.debian_path, 'changelog')
 
     @property
     def copyright_path(self):
-        """ """
+        """Current debian/copyright path."""
         return os.path.join(self.debian_path, 'copyright')
 
     @property
     def rules_path(self):
-        """ """
+        """Current debian/rules path."""
         return os.path.join(self.debian_path, 'rules')
 
     @property
     def control_path(self):
-        """ """
+        """Current debian/control path."""
         return os.path.join(self.debian_path, 'control')
 
+    def _createNewSandbox(self):
+        """Create the 'sandbox' path as a temporary directory.
+
+        Also register an atexit handler to remove it on normal termination.
+        """
+        self.sandbox_path = tempfile.mkdtemp(prefix='stubpackager-')
+
+        def removeSandbox(sandbox):
+            """Remove GNUPGHOME directory."""
+            if os.path.exists(sandbox):
+                shutil.rmtree(sandbox)
+        atexit.register(removeSandbox, self.sandbox_path)
+
     def _appendContents(self, content):
-        """ """
+        """Append a given content in the upstream 'contents' file.
+
+        Use this method to add arbitrary content to this non-debian file.
+        """
         contents_file = open(
             os.path.join(self.upstream_directory, 'contents'), 'a')
         contents_file.write("%s\n" % content)
         contents_file.close()
 
     def _buildOrig(self):
-        """ """
+        """Build a gzip tarball of the current 'upstream_directory'.
+
+        The tarball will be named 'name_version.orig.tar.gz' and located
+        at the sandbox root.
+        """
         orig_filename = '%s_%s.orig.tar.gz' % (self.name, self.version)
         orig_path = os.path.join(self.sandbox_path, orig_filename)
         orig = tarfile.open(orig_path, 'w:gz')
@@ -162,17 +172,20 @@ class StubPackager:
         orig.close()
 
     def _touch(self, path, content=''):
-        """ """
+        """Create a file in the given path with the given content.
+
+        A new line is appended at the end of the file.
+        """
         fd = open(path, 'w')
         fd.write('%s\n' % content)
         fd.close()
 
     def _populateChangelog(self):
-        """ """
+        """Create an empty debian/changelog """
         self._touch(self.changelog_path)
 
     def _populateControl(self):
-        """ """
+        """Create the debian/control using 'control_file_template'."""
         replacements = {
             'source': self.name,
             'binary': self.name,
@@ -184,12 +197,12 @@ class StubPackager:
             self.control_path, control_file_template % replacements)
 
     def _populateCopyright(self):
-        """ """
+        """Create a placeholder debian/copyright."""
         self._touch(
             self.copyright_path, 'No ones land ...')
 
     def _populateRules(self):
-        """ """
+        """Create the debian/rules using 'rules_file_template'."""
         replacements = {
             'name': self.name,
             }
@@ -197,7 +210,7 @@ class StubPackager:
             self.rules_path, rules_file_template % replacements)
 
     def _populateDebian(self):
-        """ """
+        """Create and populate a minimal debian directory."""
         os.mkdir(self.debian_path)
         self._populateChangelog()
         self._populateControl()
@@ -205,7 +218,7 @@ class StubPackager:
         self._populateRules()
 
     def _prependChangelogEntry(self, changelog_replacements):
-        """ """
+        """Prepend a changelog entry in the current upstream directory."""
         changelog_file = open(self.changelog_path)
         previous_content = changelog_file.read()
         changelog_file.close()
@@ -217,7 +230,10 @@ class StubPackager:
         changelog_file.close()
 
     def _runSubProcess(self, script, extra_args=None):
-        """ """
+        """Run the given script and collects STDOUT and STDERR.
+
+        If the script returns a non-Zero value it will raise.
+        """
         if extra_args is None:
             extra_args = []
         args = [script]
@@ -355,4 +371,4 @@ if __name__ == '__main__':
     for changesfile in packager.listAvailableUploads():
         print changesfile
 
-    packager.cleanSandbox()
+    packager.reset()
