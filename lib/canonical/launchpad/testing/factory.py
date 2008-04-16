@@ -392,11 +392,13 @@ class LaunchpadObjectFactory:
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
 
-    def makeCodeImportJob(self, code_import):
+    def makeCodeImportJob(self, code_import=None):
         """Create and return a new code import job for the given import.
 
         This implies setting the import's review_status to REVIEWED.
         """
+        if code_import is None:
+            code_import = self.makeCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
