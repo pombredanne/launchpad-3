@@ -545,9 +545,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     # Note that NotificationResponse defines a 'redirect' method which
     # needs to override the 'redirect' method in BrowserResponse
     def __init__(self, header_output=None, http_transaction=None):
-        super(LaunchpadBrowserResponse, self).__init__(
-                header_output, http_transaction
-                )
+        super(LaunchpadBrowserResponse, self).__init__()
 
     def redirect(self, location, status=None, temporary_if_possible=False):
         """Do a redirect.
