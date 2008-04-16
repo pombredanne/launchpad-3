@@ -119,16 +119,16 @@
 
     <adapter
         for="zope.schema.interfaces.IChoice
-             canonical.lazr.enum.IEnumeratedType
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+             zope.publisher.interfaces.http.IHTTPApplicationRequest
+             canonical.lazr.enum.IEnumeratedType"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
-             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+             zope.publisher.interfaces.http.IHTTPApplicationRequest
+             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
         />
@@ -138,6 +138,13 @@
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.ICollectionField
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleFieldDeserializer"
         />
 
     <adapter

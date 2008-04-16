@@ -116,6 +116,8 @@ class SimpleFieldDeserializer:
 
     def deserialize(self, value):
         "Make sure the value is a string and then call _deserialize()."
+        if value is None:
+            return None
         assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._deserialize(value)
 
@@ -159,7 +161,6 @@ def VocabularyLookupFieldDeserializer(field, request):
     for a deserializer, one that can take into account the vocabulary
     in addition to the field type (presumably Choice) and the request.
     """
-
     return getMultiAdapter((field, request, field.vocabulary),
                            IFieldDeserializer)
 

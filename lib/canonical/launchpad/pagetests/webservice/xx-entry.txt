@@ -223,7 +223,7 @@ An entry's read-only attributes can't be modified.
   >>> print modify_person('salgado', {'datecreated' :
   ...                                 u'2001-01-01T01:01:01+00:00Z'}, 'PATCH')
   HTTP/1.1 400 Bad Request
-  Content-Length: 57
+  Content-Length: 55
   Content-Type: text/plain;charset=utf-8
   <BLANKLINE>
   datecreated: You tried to modify a read-only attribute.
@@ -243,7 +243,7 @@ You can't change the link to an entry's associated collection.
   ...                     'PATCH')
   HTTP/1.1 400 Bad Request
   ...
-  You tried to modify the collection link 'team_memberships_collection_link'.
+  team_memberships_collection_link: You tried to modify a collection attribute.
 
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
@@ -275,7 +275,7 @@ though it were the actual object:
   ...                     'salgado'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
-  You tried to modify the nonexistent attribute 'owner'
+  owner: You tried to modify a nonexistent attribute.
 
 You can't set values that violate Launchpad's data integrity rules.
 
@@ -314,8 +314,7 @@ string won't work.
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  Your value for the attribute 'teamowner_link' wasn't the URL to any
-  object published by this web service.
+  teamowner_link: No such object "A random string".
 
 But not just any URL will do. It has to identify an object in the web
 service.
@@ -324,25 +323,22 @@ service.
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  Your value for the attribute 'teamowner_link' wasn't the URL to any
-  object published by this web service.
+  teamowner_link: No such object "http://www.canonical.com/".
 
-  >>> admins['teamowner_link'] = u'http://www.canonical.com/people/admins'
+  >>> admins['teamowner_link'] = u'http://www.canonical.com/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  Your value for the attribute 'teamowner_link' wasn't the URL to any
-  object published by this web service.
+  teamowner_link: No such object "http://www.canonical.com/beta/~admins".
 
 This URL would be valid, but it uses the wrong protocol (HTTPS instead
 of HTTP).
 
-  >>> admins['teamowner_link'] = u'https://api.launchpad.dev/people/admins'
+  >>> admins['teamowner_link'] = u'https://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  Your value for the attribute 'teamowner_link' wasn't the URL to any
-  object published by this web service.
+  teamowner_link: No such object "https://api.launchpad.dev/beta/~admins".
 
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the kind of object that can own a team:
@@ -351,8 +347,7 @@ the object isn't the kind of object that can own a team:
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  Your value for the attribute 'teamowner_link' doesn't point to the
-  right kind of object.
+  teamowner_link: Expected a person.
 
 And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
@@ -360,9 +355,9 @@ owner.
 
   >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
-  HTTP/1.1 500 Internal Server Error
-  ...ERROR:  new row for relation "person" violates check constraint
-  "no_loops"...
+  HTTP/1.1 400 Bad Request
+  ...
+  teamowner_link: Constraint not satisfied.
 
 
 === Date formats ===
