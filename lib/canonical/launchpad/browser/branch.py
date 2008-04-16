@@ -453,26 +453,18 @@ class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
     def validate_branch_name(self, owner, product, branch_name):
-        if product is None:
-            product_name = None
-        else:
-            product_name = product.name
-
-        branch = owner.getBranch(product_name, branch_name)
-
-        # If the branch exists and isn't this branch, then we have a
-        # name conflict.
-        if branch is not None and branch != self.context:
-            self.setFieldError('name',
-                structured(
-                "Name already in use. You are the registrant of "
-                "<a href=\"%s\">%s</a>,  the unique identifier of that "
-                "branch is \"%s\". Change the name of that branch, or use "
-                "a name different from \"%s\" for this branch.",
-                canonical_url(branch),
-                branch.displayname,
-                branch.unique_name,
-                branch_name))
+        if not getUtility(IBranchSet).isBranchNameAvailable(
+            owner, product, branch_name):
+            # There is a branch that has the branch_name specified already.
+            if product is None:
+                message = (
+                    "You already have a junk branch called <em>%s</em>."
+                    % branch_name)
+            else:
+                message = (
+                    "There is already a branch for <em>%s</em> called "
+                    "<em>%s</em>." % (product.name, branch_name))
+            self.setFieldError('name', structured(message))
 
 
 class BranchEditFormView(LaunchpadEditFormView):

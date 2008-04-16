@@ -64,7 +64,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         # slashes from the end of the URL.
         branch_url = branch_url.rstrip('/')
 
-        existing_branch = getUtility(IBranchSet).getByUrl(branch_url)
+        branch_set = getUtility(IBranchSet)
+        existing_branch = branch_set.getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
@@ -91,20 +92,15 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.NoSuchPerson(
                 type="author", email_address=author_email)
 
-        if product is None:
-            unique_name = '~%s/+junk/%s' % (owner.name, branch_name)
-        else:
-            unique_name = '~%s/%s/%s' % (
-                owner.name, product.name, branch_name)
-        if getUtility(IBranchSet).getByUniqueName(unique_name) is not None:
-            return faults.BranchUniqueNameConflict(unique_name)
+        if not branch_set.isBranchNameAvailable(owner, product, branch_name):
+            return faults.BranchNameInUse(branch_name)
 
         try:
             if branch_url:
                 branch_type = BranchType.MIRRORED
             else:
                 branch_type = BranchType.HOSTED
-            branch = getUtility(IBranchSet).new(
+            branch = branch_set.new(
                 branch_type=branch_type,
                 name=branch_name, creator=owner, owner=owner, product=product,
                 url=branch_url, title=branch_title,

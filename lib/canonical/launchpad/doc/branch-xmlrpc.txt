@@ -2,7 +2,7 @@
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
-    >>> import pytz 
+    >>> import pytz
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(

@@ -930,8 +930,7 @@ class BranchSet:
                 params['context'] = product.name
             raise BranchCreationException(
                 'A ${maybe_junk}branch with the name "${name}" already '
-                'exists for "${context}".' % params
-                    % {'name': name, 'owner': owner.name})
+                'exists for "${context}".' % params)
 
         branch = Branch(
             registrant=creator,
@@ -1380,20 +1379,17 @@ class BranchSet:
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
 
-    def isBranchNameAvailable(owner, product, branch_name, branch=None):
+    def isBranchNameAvailable(self, owner, product, branch_name, branch=None):
         """See `IBranchSet`."""
         if product is None:
-            existing = Branch.selectBy(
-                owner=owner, product=None, name=name).count()
-            if existing > 0:
-                raise BranchCreationException(
-                    'A junk branch with the name "${name}" already exists '
-                    'for "${owner}".'
-                    % {'name': name, 'owner': owner.name})
+            results = Branch.selectBy(
+                owner=owner, product=None, name=branch_name)
         else:
-            existing = Branch.selectBy(product=product, name=name).count()
-            if existing > 0:
-                raise BranchCreationException(
-                    'A branch with the name "${name}" already exists '
-                    'for project "${project}".'
-                    % {'name': name, 'project': product.name})
+            results = Branch.selectBy(product=product, name=branch_name)
+
+        if branch is None:
+            return results.count() == 0
+        else:
+            branches = set(results)
+            branches.discard(branch)
+            return len(branches) == 0
