@@ -406,6 +406,7 @@ class BugWatchUpdater(object):
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.import_comments)
+        can_push_comments = ISupportsCommentPushing.providedBy(remotesystem)
         if can_import_comments and server_time is None:
             can_import_comments = False
             self.warning(
@@ -472,7 +473,7 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if can_import_comments:
                         self.importBugComments(remotesystem, bug_watch)
-                    if ISupportsCommentPushing.providedBy(remotesystem):
+                    if can_push_comments:
                         self.pushBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
@@ -608,15 +609,13 @@ class BugWatchUpdater(object):
             # We only push those comments that haven't been pushed
             # already. We don't push any comments not associated with
             # the bug watch.
-            if (bug_message.remote_comment_id is not None or
-                bug_message.bugwatch != bug_watch):
-                continue
+            if (bug_message.remote_comment_id is None and
+                bug_message.bugwatch == bug_watch):
+                bug_message.remote_comment_id = (
+                    external_bugtracker.addRemoteComment(
+                        bug_watch.remotebug, message))
 
-            remote_id = external_bugtracker.addRemoteComment(
-                bug_watch.remotebug, message)
-
-            bug_message.remote_comment_id = remote_id
-            pushed_comments += 1
+                pushed_comments += 1
 
         if pushed_comments > 0:
             self.log.info("Pushed %(count)i comments to remote bug "

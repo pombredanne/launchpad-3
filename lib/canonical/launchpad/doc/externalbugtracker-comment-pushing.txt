@@ -72,9 +72,9 @@ ISupportsCommentPushing interface.
     >>> external_bugtracker = CommentPushingExternalBugTracker(
     ...     'http://example.com/')
 
-The comment attached to the bug currently has not remote_comment_id set.
-This is because it originated in Launchpad and has not yet been pushed
-to the remote bugtracker.
+The comment attached to the bug currently does not have its
+remote_comment_id set.  This is because it originated in Launchpad and
+has not yet been pushed to the remote bugtracker.
 
     >>> print bug_message.remote_comment_id is None
     True

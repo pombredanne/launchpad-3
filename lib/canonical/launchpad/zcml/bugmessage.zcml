@@ -8,7 +8,7 @@
     <content class="canonical.launchpad.database.BugMessage">
         <allow interface="canonical.launchpad.interfaces.IBugMessage" />
         <require
-            permission="zope.Public"
+            permission="launchpad.Admin"
             set_attributes="remote_comment_id bugwatch" />
     </content>
 
