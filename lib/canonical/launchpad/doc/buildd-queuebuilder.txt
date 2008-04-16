@@ -22,8 +22,7 @@ Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
     ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
-    ...      PocketChroot, SecureSourcePackagePublishingHistory,
-    ...      SourcePackagePublishingHistory)
+    ...      PocketChroot, SecureSourcePackagePublishingHistory)
 
     >>> from canonical.launchpad.interfaces import (
     ...      PackagePublishingPocket, PackagePublishingStatus)
@@ -255,8 +254,6 @@ checks/counters within this test.
     >>> old_build_ids.append(ok_build.id)
 
     >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
 
 == Package Architecture Specific ==
 
