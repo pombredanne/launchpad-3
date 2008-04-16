@@ -326,7 +326,6 @@ subsystem.
     ...                                hoary, pas_verify)]
     [u'i386']
 
-
 == Binary PAS ==
 
 To check binary PAS listings we'll use a source publication for
@@ -418,15 +417,34 @@ corresponding architecture, since only linux is supported in ubuntu.
 
 == PPA architectures ==
 
-Only the architecture with established support for PPA will be
-considered when creating PPA builds. See distroarchseries.txt for
-further information.
+For virtualized archives only architectures with established support for
+PPA will be considered when creating PPA builds. See distroarchseries.txt
+for further information.
 
     >>> legal_archs = set(hoary.architectures)
+    >>> sorted([arch.architecturetag for arch in legal_archs])
+    [u'hppa', u'i386']
+
     >>> [arch.architecturetag for arch in
     ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
     [u'i386']
 
+Conversely, for non-virtual archives, build records are created for all
+architectures supported for the the distroseries.
+
+    >>> pub_hoary_ppa.archive.require_virtualized = False
+    >>> sorted([arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)])
+    [u'hppa', u'i386']
+
+Reset the virtualization flag.
+
+    >>> pub_hoary_ppa.archive.require_virtualized = True
+
+Abort the transaction in order to avoid the propagation of the
+virtualization flag to the database.
+
+    >>> transaction.abort()
 
 == Create and verify the new builds ==
 
