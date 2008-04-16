@@ -442,6 +442,15 @@ class IMailingList(Interface):
         :return: The IMessageApproval representing the held message.
         """
 
+    def getReviewableMessages():
+        """Return the set of all held messages for this list requiring review.
+
+        :return: A sequence of `IMessageApproval`s for this mailing list,
+            where the status is `PostedMessageStatus.NEW`.  The returned set
+            is ordered first by the date the message was posted, then by
+            Message-ID.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
