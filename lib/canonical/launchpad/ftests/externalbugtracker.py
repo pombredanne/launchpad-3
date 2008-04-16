@@ -485,7 +485,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             bugs: A list of bug IDs. If specified, only bugs whose IDs are in
                 this list will be returned.
 
-        Return a tuple of (ts, bugs) where ts is a time snapshot as
+        Return a list of [ts, bugs] where ts is a time snapshot as
         returned by `time_snapshot()` and bugs is a list of bug dicts.
         """
         # XXX 2008-04-12 gmb:
@@ -496,6 +496,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # We sort the list of bugs for the sake of testing.
         bug_ids = sorted([bug_id for bug_id in self.remote_bugs.keys()])
         bugs_to_return = []
+        missing_bugs = []
 
         for bug_id in bug_ids:
             bugs_to_return.append(self.remote_bugs[bug_id])
@@ -523,12 +524,24 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
                 bug for bug in bugs_to_return
                 if bug.id in criteria['bugs']]
 
+            # We make a separate list of bugs that don't exist so that
+            # we can return them with a status of 'missing' later.
+            missing_bugs = [
+                bug_id for bug_id in criteria['bugs']
+                if bug_id not in self.remote_bugs]
+
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
         if level == 0:
             bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
 
-        return (self.time_snapshot(), bugs_to_return)
+        # Tack the missing bugs onto the end of our list of bugs. These
+        # will always be returned in the same way, no matter what the
+        # value of the level argument.
+        missing_bugs = [
+            {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
+
+        return [self.time_snapshot(), bugs_to_return + missing_bugs]
 
 
 class TestRoundup(Roundup):
