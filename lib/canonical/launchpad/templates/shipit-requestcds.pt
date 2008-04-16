@@ -87,8 +87,8 @@
     <tal:prerelease condition="view/prerelease_mode">
     <span tal:replace="view/flavour/title" />
       <p class="informational message">
-        <span tal:replace="view/series/title" /> has not been released yet,
-        but we'll record your request and send you a CD as soon as that
+        Ubuntu <span tal:replace="view/series/title" /> has not been released
+        yet, but we'll record your request and send you a CD as soon as that
         happens. Note that delivery will take from six to ten weeks once
         it is sent.
       </p>

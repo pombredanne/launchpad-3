@@ -95,7 +95,7 @@
         </div>
         </div>
 
-      <div id="content" class="column span-16 append-1 last">
+      <div id="maincontent" class="column span-16 append-1 last">
         <div class="breadcrumb">
           <span class="right push-1">
             <tal:block condition="request/lp:person">

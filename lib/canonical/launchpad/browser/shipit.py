@@ -462,8 +462,8 @@ class ShipItRequestView(GeneralFormView):
                 kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
-                       'can take up to <strong>ten weeks<strong> to deliver. '
-                       'For quicker processing, choose a '
+                       'can take up to <strong>sixteen weeks<strong> to '
+                       'deliver. For quicker processing, choose a '
                        '<a href="%s">standard option</a> instead.'
                        % self.standard_order_page)
             else:
