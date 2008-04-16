@@ -129,7 +129,7 @@ class BranchPopupWidget(SinglePopupWidget):
                 # It's not an integer, so we don't care.
                 pass
 
-    def getBranchNameFromURL(self, url, MAXIMUM_TRIES=10):
+    def getBranchNameFromURL(self, url):
         """Return a branch name based on `url`.
 
         The name is based on the last path segment of the URL. If there is
@@ -157,5 +157,6 @@ class BranchPopupWidget(SinglePopupWidget):
 
     def makeBranchFromURL(self, url):
         owner = self.getPerson()
+        name = self.getBranchNameFromURL(url)
         return getUtility(IBranchSet).new(
-            BranchType.MIRRORED, 'foo', owner, owner, self.getProduct(), url)
+            BranchType.MIRRORED, name, owner, owner, self.getProduct(), url)

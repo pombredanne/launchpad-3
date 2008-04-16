@@ -132,21 +132,20 @@ class TestBranchPopupWidget(unittest.TestCase):
             product=self.factory.makeProduct())
         popup = self.makeBranchPopup()
         url = self.factory.getUniqueURL()
+        expected_name = popup.getBranchNameFromURL(url)
         branch = popup.makeBranchFromURL(url)
         self.assertEqual(BranchType.MIRRORED, branch.branch_type)
         self.assertEqual(url, branch.url)
         self.assertEqual(popup.getPerson(), branch.owner)
         self.assertEqual(popup.getPerson(), branch.registrant)
         self.assertEqual(popup.getProduct(), branch.product)
-
+        self.assertEqual(expected_name, branch.name)
 
 # TODO:
 # Behaviour when not logged in.
 # Behaviour when no product.
-# Make up the branch name
-# - what do we do when there's already a branch of that name.
-# Ensure that the branch is mentioned in the notice on the next page.
 # Check that branch is created when the user enters an unknown URL
+# Ensure that the branch is mentioned in the notice on the next page.
 
 
 def test_suite():
