@@ -5,7 +5,7 @@
   class="summary" id="table-details">
   <tbody>
     <tr>
-      <th>Bug contact:</th>
+      <th>Bug supervisor:</th>
       <td tal:condition="not:context/bugcontact">None</td>
       <td tal:condition="context/bugcontact">
         <a tal:replace="structure context/bugcontact/fmt:link" />

@@ -681,6 +681,62 @@ Clear existing mail stack:
   >>> rubbish = pop_notifications()
 
 
+== Overriding uploads ==
+
+Sources and binaries for the upload may be overridden via the methods
+overrideSource() and overrideBinaries().  The former allows overriding
+of component and section and the latter both those plus the section.
+
+The alsa-utils source is already in the queue with component "main"
+and section "base".
+
+    >>> [item] = breezy_autotest.getQueueItems(
+    ...     PackageUploadStatus.NEW, name='alsa-utils')
+    >>> [source] = item.sources
+    >>> print "%s/%s" % (
+    ...     source.sourcepackagerelease.component.name,
+    ...     source.sourcepackagerelease.section.name)
+    main/base
+
+We can override it to restricted/web.  overrideSource() returns
+True if it completed the task.
+
+    >>> restricted = getUtility(IComponentSet)['restricted']
+    >>> web = getUtility(ISectionSet)['web']
+    >>> print item.overrideSource(new_component=restricted, new_section=web)
+    True
+    >>> print "%s/%s" % (
+    ...     source.sourcepackagerelease.component.name,
+    ...     source.sourcepackagerelease.section.name)
+    restricted/web
+
+Similarly for binaries:
+
+    >>> [item] = breezy_autotest.getQueueItems(
+    ...     PackageUploadStatus.NEW, name='pmount')
+    >>> [build] = item.builds
+    >>> [binary_package] = build.build.binarypackages
+    >>> print "%s/%s/%s" % (
+    ...     binary_package.component.name,
+    ...     binary_package.section.name,
+    ...     binary_package.priority.title)
+    main/heaven/Important
+
+    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA)
+    True
+    >>> print "%s/%s/%s" % (
+    ...     binary_package.component.name,
+    ...     binary_package.section.name,
+    ...     binary_package.priority.title)
+    restricted/web/Extra
+
+
+== Queue Manipulation ==
+
 Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
 accept or reject the item and send an email respectively.
 

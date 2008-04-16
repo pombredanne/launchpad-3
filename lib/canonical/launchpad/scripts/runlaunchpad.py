@@ -230,12 +230,6 @@ def start_launchpad(argv=list(sys.argv)):
     global TWISTD_SCRIPT
     TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
 
-    # Disgusting hack to use our extended config file schema rather than the
-    # Z3 one. TODO: Add command line options or other to Z3 to enable
-    # overriding this -- StuartBishop 20050406
-    from zdaemon.zdoptions import ZDOptions
-    ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
-
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])

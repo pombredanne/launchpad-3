@@ -503,7 +503,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         builds = []
         for arch in build_architectures:
             build_candidate = self._createMissingBuildForArchitecture(
-                arch, logger=None)
+                arch, logger=logger)
             if build_candidate is not None:
                 builds.append(build_candidate)
         return builds

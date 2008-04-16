@@ -66,10 +66,11 @@ from canonical.launchpad.interfaces import (
     IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
     ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
     ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, PersonVisibility,
-    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    LoginTokenType, PackagePublishingStatus, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH,
+    SSHKeyType, ShipItConstants, ShippingRequestStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -1990,24 +1991,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
-        query_clause = " AND ".join(clauses)
+        query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
-                       sourcepackagerelease.id
-                  FROM sourcepackagerelease, archive
-                 WHERE %s
-              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
-                       dateuploaded DESC
+                    sourcepackagerelease.id
+                FROM sourcepackagerelease, archive,
+                    securesourcepackagepublishinghistory sspph
+                WHERE
+                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
+                    sspph.archive = archive.id AND
+                    sspph.status = %(pub_status)s AND
+                    %(more_query_clauses)s
+                ORDER BY upload_distroseries, sourcepackagename,
+                    upload_archive, dateuploaded DESC
               )
-              """ % (query_clause)
+              """ % dict(pub_status=quote(PackagePublishingStatus.PUBLISHED),
+                         more_query_clauses=query_clauses)
 
-        return SourcePackageRelease.select(
+        rset = SourcePackageRelease.select(
             query,
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+
+        return rset
 
     def isUploader(self, distribution):
         """See `IPerson`."""
@@ -2215,7 +2224,7 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text, orderBy=None):
+    def find(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations

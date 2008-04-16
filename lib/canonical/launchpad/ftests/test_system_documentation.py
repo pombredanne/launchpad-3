@@ -610,6 +610,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-trac-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'mailinglist-subscriptions-xmlrpc.txt': LayeredDocFileSuite(
             '../doc/mailinglist-subscriptions-xmlrpc.txt',
             setUp=mailingListXMLRPCInternalSetUp,
@@ -686,6 +693,11 @@ special = {
     'manage-chroot.txt': LayeredDocFileSuite(
             '../doc/manage-chroot.txt',
             setUp=manageChrootSetup,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
+            '../doc/build-estimated-dispatch-time.txt',
+            setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer,
             ),
     }

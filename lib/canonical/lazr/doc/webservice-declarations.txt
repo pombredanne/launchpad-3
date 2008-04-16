@@ -1,0 +1,446 @@
+= Web Service API Declarations =
+
+You can easily create a web service by tagging your content interfaces
+with some decorators. From this tagging the web service API will be
+created automatically.
+
+
+== Exporting the data model ==
+
+The LAZR Web Service data model consists of entries and collection (see
+webservice.txt for all the details). Entries support the IEntry
+interface and are basically a single resource exported. Think something
+like a bug, a person, an article, etc. Collections are a set of
+resources of the same types, think something like the set of bugs,
+persons, teams, articles, etc.
+
+
+== Exporting entries ==
+
+Only entries are exported as data. You can mark that one of your content
+interface is exported on the web service as an entry, by using the
+export_entry declaration.
+
+You can mark the fields that should be part of the entry data model by
+using the export_field directive. It takes an optional 'as' parameter
+that can be used to change the name under which the field will be
+exported.
+
+For example, here we declare that the IBook interface is exported as an
+entry on the  web service. It exports the title, author, and base_price
+field, but not the inventory_number field.
+
+    >>> from zope.interface import Interface
+    >>> from zope.schema import TextLine, Float
+    >>> from canonical.lazr.rest.declarations import (
+    ...     export_entry, export_field)
+    >>> class IBook(Interface):
+    ...     """A simple book data model."""
+    ...     export_entry()
+    ...
+    ...     title = TextLine(title=u'The book title')
+    ...     export_field(title)
+    ...
+    ...     author = TextLine(title=u"The book's author.")
+    ...     export_field(author)
+    ...
+    ...     base_price = Float(title=u"The regular price of the book.")
+    ...     export_field(base_price, as='price')
+    ...
+    ...     inventory_number = TextLine(title=u'The inventory part number.')
+
+These declarations adds tagged value to the original interface elements.
+The tags are in the lazr.webservice namespace and are dictionaries of
+elements.
+
+    >>> def print_dict_tag(element, name):
+    ...     tag = element.queryTaggedValue(name)
+    ...     if tag is None:
+    ...         print "tag '%s' is not present" % name
+    ...     else:
+    ...         print "\n".join(
+    ...             "%s: %r" %(key, value)
+    ...             for key, value in sorted(tag.items()))
+    >>> print_dict_tag(IBook, 'lazr.webservice.exported')
+    type: 'entry'
+    >>> print_dict_tag(IBook['title'], 'lazr.webservice.exported')
+    as: 'title'
+    type: 'field'
+    >>> print_dict_tag(IBook['author'], 'lazr.webservice.exported')
+    as: 'author'
+    type: 'field'
+    >>> print_dict_tag(IBook['base_price'], 'lazr.webservice.exported')
+    as: 'price'
+    type: 'field'
+    >>> print_dict_tag(IBook['inventory_number'], 'lazr.webservice.exported')
+    tag 'lazr.webservice.exported' is not present
+
+Only IField can be exported as entry fields.
+
+    >>> from zope.interface import Attribute
+    >>> class NotAField1(Interface):
+    ...     an_attribute = Attribute('A standard attribute')
+    ...     export_field(an_attribute)
+    Traceback (most recent call last):
+      ...
+    TypeError: export_field() can only be used on IFields.
+
+In the same vein, export_entry() can only be used on Interface.
+
+    >>> class NotAnInterface(object):
+    ...     export_entry()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_entry() can only be used on an interface.
+
+And from within a class declaration.
+
+    >>> export_entry()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_entry() can only be used from within an interface
+    definition.
+
+
+=== Exporting a collection ===
+
+Collections scoped to an entry are exported simply by using
+export_field() on the CollectionField containing the scoped collection
+items:
+
+    >>> class ISimpleComment(Interface):
+    ...     """A simple comment."""
+    ...     comment = TextLine(title=u'Comment')
+
+    >>> from zope.schema import Object
+    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> class IBookWithComments(IBook):
+    ...     """A book with some comments."""
+    ...     export_entry()
+    ...
+    ...     comments = CollectionField(
+    ...         value_type=Object(schema=ISimpleComment))
+    ...     export_field(comments)
+
+Top-level collections are different though, they are exported by using
+the export_collection() in the *Set class. The method that returns all
+of the collection items must be tagged with @collection_default_content
+decorator.
+
+    >>> from canonical.lazr.rest.declarations import (
+    ...     export_collection, collection_default_content)
+    >>> class IBookSet(Interface):
+    ...     """Set of all the books in the system."""
+    ...     export_collection()
+    ...
+    ...     @collection_default_content
+    ...     def getAllBooks():
+    ...         """Return an iterator over all the books."""
+
+Like for entries, this adds tagged value in the 'lazr.webservice'
+namespace.
+
+    >>> print_dict_tag(IBookSet, 'lazr.webservice.exported')
+    collection_default_content: 'getAllBooks'
+    type: 'collection'
+
+It's an error to try to export a collection without marking a method as
+exporting the default content.
+
+    >>> class MissingDefaultContent(Interface):
+    ...     export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() is missing a method tagged with
+    @collection_default_content.
+
+As it is an error, to mark more than one methods:
+
+    >>> class TwoDefaultContent(Interface):
+    ...     export_collection()
+    ...     @collection_default_content
+    ...     def getAll1():
+    ...         """A first getAll()."""
+    ...     @collection_default_content
+    ...     def getAll2():
+    ...         """Another getAll()."""
+    Traceback (most recent call last):
+      ...
+    TypeError: only one method should be marked with 
+    @collection_default_content.
+
+export_collection() can only be used on Interface.
+
+    >>> class NotAnInterface(object):
+    ...     export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() can only be used on an interface.
+
+And from within a class declaration.
+
+    >>> export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() can only be used from within an interface
+    definition.
+
+collection_default_content() can only be used from within an Interface
+declaration:
+
+    >>> @collection_default_content
+    ... def a_function(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: @collection_default_content can only be used from within
+    an interface definition.
+
+And the interface must have been exported as a collection:
+
+    >>> class NotExported(Interface):
+    ...     export_entry()
+    ...     @collection_default_content
+    ...     def a_function(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: @collection_default_content can only be used from within an
+    interface exported as a collection.
+
+
+== Generating the webservice ==
+
+=== Entry ==
+
+The webservice can be generated from tagged interfaces.
+generate_entry_interface() will create a subinterface of IEntry
+containing a copy of the IField definitions from the original interface
+that were tagged for export.
+
+    >>> from canonical.lazr.rest.declarations import generate_entry_interface
+    >>> entry_interface = generate_entry_interface(IBook)
+
+The created interface is named with 'Entry' appended to the original
+name, and is in the same module
+
+    >>> entry_interface.__module__
+    '__builtin__'
+    >>> entry_interface.__name__
+    'IBookEntry'
+
+It extends IEntry.
+
+    >>> from canonical.lazr.interfaces.rest import IEntry
+    >>> entry_interface.extends(IEntry)
+    True
+
+All fields tagged were copied to the new interface:
+
+    >>> for name, field in sorted(entry_interface.namesAndDescriptions()):
+    ...     print "%s: %s" % (name, field.__class__.__name__)
+    author: TextLine
+    price: Float
+    title: TextLine
+
+It's an error to use generate_entry_interface() on an interface that
+wasn't marked for export:
+
+    >>> class SimpleNotExported(Interface):
+    ...     """Interface not exported."""
+    >>> generate_entry_interface(SimpleNotExported)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'SimpleNotExported' isn't tagged for webservice export.
+
+The interface must also be exported as an entry:
+
+    >>> generate_entry_interface(IBookSet)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'IBookSet' isn't exported as an entry.
+
+The adapter can be generated using the generate_entry_adapter(). It
+takes the tagged content interface and the IEntry subinterface as
+parameters.
+
+    >>> from canonical.lazr.rest.declarations import generate_entry_adapter
+    >>> entry_adapter_factory = generate_entry_adapter(IBook, entry_interface)
+
+The resulting adapter provides the webservice interface:
+
+    >>> entry_interface.implementedBy(entry_adapter_factory)
+    True
+
+The resulting class is named based on the interface:
+
+    >>> entry_adapter_factory.__name__
+    'BookEntryAdapter'
+
+The resulting adapter has its schema attribute set to the exported
+interface, and proxies all attributes to the underlying object.
+
+    >>> from zope.interface import implements
+    >>> from zope.interface.verify import verifyObject
+
+    >>> class Book(object):
+    ...     """Simple IBook implementation."""
+    ...     implements(IBook)
+    ...     def __init__(self, author, title, base_price, inventory_number):
+    ...         self.author = author
+    ...         self.title = title
+    ...         self.base_price = base_price
+    ...         self.inventory_number = inventory_number
+
+    >>> entry_adapter = entry_adapter_factory(
+    ...     Book(u'Aldous Huxley', u'Island', 10.0, '12345'))
+
+    >>> entry_adapter.schema is entry_interface
+    True
+    >>> verifyObject(entry_interface, entry_adapter)
+    True
+    >>> entry_adapter.author
+    u'Aldous Huxley'
+    >>> entry_adapter.price
+    10.0
+    >>> entry_adapter.title
+    u'Island'
+
+It's an error to call this function on an interface not exported on the
+web service:
+
+    >>> generate_entry_adapter(SimpleNotExported, entry_interface)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'SimpleNotExported' isn't tagged for webservice export.
+
+Or exported as a collection:
+
+    >>> generate_entry_adapter(IBookSet, entry_interface)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'IBookSet' isn't exported as an entry.
+
+
+== Collection ==
+
+An ICollection adapter for content interface tagged as being exported as
+collections on the webservice can be generated by using the
+generate_collection_adapter() function.
+
+    >>> from canonical.lazr.interfaces.rest import ICollection
+    >>> from canonical.lazr.rest.declarations import (
+    ...     generate_collection_adapter)
+
+    >>> collection_adapter_factory = generate_collection_adapter(IBookSet)
+    >>> ICollection.implementedBy(collection_adapter_factory)
+    True
+
+The find() method will return the result of calling the method tagged
+with the @collection_default_content decorator.
+
+    >>> class BookSet(object):
+    ...     """Simple IBookSet implementation."""
+    ...     implements(IBookSet)
+    ...
+    ...     def __init__(self, books):
+    ...         self.books = books
+    ...
+    ...     def getAllBooks(self):
+    ...         return self.books
+
+    >>> collection_adapter = collection_adapter_factory(
+    ...     BookSet(['A book', 'Another book']))
+
+    >>> verifyObject(ICollection, collection_adapter)
+    True
+
+    >>> collection_adapter.find()
+    ['A book', 'Another book']
+
+It's an error to call this function on an interface not exported on the
+web service:
+
+    >>> generate_collection_adapter(SimpleNotExported)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'SimpleNotExported' isn't tagged for webservice export.
+
+Or exported as an entry.
+
+    >>> generate_collection_adapter(IBook)
+    Traceback (most recent call last):
+      ...
+    TypeError: 'IBook' isn't exported as a collection.
+
+
+=== Security ===
+
+The adapters have checkers defined for them that grant access to all
+attributes in the interface. (There is no reason to protect them since
+the underlying content security checker will still apply.)
+
+    >>> from canonical.lazr.debug import debug_proxy
+    >>> from zope.security.checker import ProxyFactory
+
+    # ProxyFactory wraps the content using the defined checker.
+    >>> print debug_proxy(ProxyFactory(entry_adapter))
+    zope.security._proxy._Proxy (using zope.security.checker.Checker)
+        public: author, price, schema, title
+        public (set): author, price, schema, title
+
+    >>> print debug_proxy(ProxyFactory(collection_adapter))
+    zope.security._proxy._Proxy (using zope.security.checker.Checker)
+        public: find
+
+
+== ZCML Registration ==
+
+There is a ZCML directive available that will inspect a given module and
+generate and register all the interfaces and adapters for all interfaces
+marked for export.
+
+(Put the interface in a module where it will be possible for the ZCML
+handler to inspect.)
+
+    >>> import sys
+    >>> from types import ModuleType
+    >>> bookexample = ModuleType('bookexample')
+    >>> sys.modules['canonical.lazr.bookexample'] = bookexample
+    >>> bookexample.IBook = IBook
+    >>> bookexample.IBookSet = IBookSet
+    >>> bookexample.ISimpleComment = ISimpleComment
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure
+    ...     xmlns:webservice="http://namespaces.canonical.com/webservice">
+    ...   <include file="lib/canonical/lazr/rest/meta.zcml" />
+    ...   <webservice:register module="canonical.lazr.bookexample" />
+    ... </configure>
+    ... """)
+
+After the registration, adapters from IBook to IEntry, and IBookSet to
+ICollection are available:
+
+    >>> from zope.component import getAdapter
+    >>> book = Book(u'George Orwell', u'1984', 10.0, u'12345-1984')
+    >>> bookset = BookSet([book])
+
+    >>> entry_adapter = getAdapter(book, IEntry)
+    >>> verifyObject(IEntry, entry_adapter)
+    True
+
+    >>> print entry_adapter.schema.__name__
+    IBookEntry
+    >>> verifyObject(entry_adapter.schema, entry_adapter)
+    True
+
+    >>> collection_adapter = getAdapter(bookset, ICollection)
+    >>> verifyObject(ICollection, collection_adapter)
+    True
+
+(Clean-up.)
+
+    >>> from zope.testing.cleanup import cleanUp
+    >>> cleanUp()
+    >>> del bookexample
+    >>> del sys.modules['canonical.lazr.bookexample']

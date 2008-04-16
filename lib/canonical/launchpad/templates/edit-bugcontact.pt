@@ -12,7 +12,7 @@
 <body>
 
 <metal:heading fill-slot="pageheading">
-  <h1>Change bug contact</h1>
+  <h1>Change bug supervisor</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -20,7 +20,7 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
-      The bug contact is a person or team that is responsible for bug
+      The bug supervisor is a person or team that is responsible for bug
       management in <tal:displayname replace="context/displayname" />.
     </p>
   </div>

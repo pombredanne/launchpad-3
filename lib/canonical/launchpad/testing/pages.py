@@ -82,7 +82,7 @@ class WebServiceCaller:
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:
-            full_url = 'http://api.launchpad.dev' + path
+            full_url = 'http://api.launchpad.dev/' + path
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
@@ -101,9 +101,12 @@ class WebServiceCaller:
         response = self.http_caller(request_string)
         return WebServiceResponseWrapper(response)
 
-    def get(self, path, headers=None):
+    def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
-        return self(path, 'GET', headers=headers)
+        full_headers = {'Accept' : media_type}
+        if headers is not None:
+            full_headers.update(headers)
+        return self(path, 'GET', headers=full_headers)
 
     def head(self, path, headers=None):
         """Make a HEAD request."""

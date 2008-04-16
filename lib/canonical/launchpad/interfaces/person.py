@@ -45,6 +45,8 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.rest.declarations import (
+   collection_default_content, export_collection)
 
 from canonical.launchpad import _
 
@@ -222,7 +224,7 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     USER_CREATED = DBItem(11, """
-        Created by a user to represent a person which does not uses Launchpad.
+        Created by a user to represent a person which does not use Launchpad.
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
@@ -1285,7 +1287,7 @@ class IPersonAdminWriteRestricted(Interface):
         title=_("Visibility"),
         description=_(
             "Public visibility is standard, and Private Membership"
-            "means that a team's members are hidden."),
+            " means that a team's members are hidden."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
 
@@ -1337,6 +1339,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
+    export_collection()
 
     title = Attribute('Title')
 
@@ -1452,7 +1455,8 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    def find(text, orderBy=None):
+    @collection_default_content
+    def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
 

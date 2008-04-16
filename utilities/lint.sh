@@ -180,6 +180,8 @@ sed_deletes="$sed_deletes /<lambda>] Using variable .* before assignment/d; "
 sed_deletes="$sed_deletes /Comma not followed by a space/{N;N};/,[])}]/d; "
 sed_deletes="$sed_deletes /Undefined variable.*valida/d; "
 sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,; "
+sed_deletes="$sed_deletes /ENABLED/d; "
+sed_deletes="$sed_deletes /BYUSER/d; "
 
 # Note that you can disable specific tests by placing pylint
 # instruction in a comment:

@@ -73,5 +73,6 @@ def email_validator(emailaddr):
     LaunchpadValidationError: Invalid email 'not-valid'.
     """
     if not valid_email(emailaddr):
-        raise LaunchpadValidationError(_("Invalid email '%s'."), emailaddr)
+        raise LaunchpadValidationError(_(
+                "Invalid email '${email}'.", mapping={'email': emailaddr}))
     return True

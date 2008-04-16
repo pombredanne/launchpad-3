@@ -16,7 +16,7 @@ Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
-LPCONFIG=default
+LPCONFIG=development
 CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 MINS_TO_SHUTDOWN=15
@@ -92,7 +92,7 @@ lint-verbose:
 	@bash ./utilities/lint.sh -v
 
 check-configs:
-	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
+	${PYTHON} utilities/check-configs.py
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -234,8 +234,8 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 
 install: reload-apache
 
-/etc/apache2/sites-available/local-launchpad: configs/default/local-launchpad-apache
-	cp configs/default/local-launchpad-apache $@
+/etc/apache2/sites-available/local-launchpad: configs/development/local-launchpad-apache
+	cp configs/development/local-launchpad-apache $@
 
 /etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
 	a2ensite local-launchpad

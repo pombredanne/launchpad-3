@@ -32,6 +32,8 @@ records to disk, including configuration and indexes.
     3
     >>> cprov_archive.binaries_cached
     3
+    >>> cprov_archive.is_ppa
+    True
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
