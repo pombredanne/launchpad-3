@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import CreatedBugWithNoBugTasksError
 
 def at_least_one_task(bug, event):

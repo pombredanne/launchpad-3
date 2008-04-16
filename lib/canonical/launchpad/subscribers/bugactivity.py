@@ -8,6 +8,7 @@ from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
@@ -65,6 +66,7 @@ def what_changed(sqlobject_modified_event):
 
     return changes
 
+@block_implicit_flushes
 def record_bug_added(bug, object_created_event):
     getUtility(IBugActivitySet).new(
         bug = bug.id,
@@ -73,6 +75,7 @@ def record_bug_added(bug, object_created_event):
         whatchanged = "bug",
         message = "added bug")
 
+@block_implicit_flushes
 def record_bug_edited(bug_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
 
@@ -97,6 +100,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 newvalue = newvalue,
                 message = "")
 
+@block_implicit_flushes
 def record_bug_task_added(bug_task, object_created_event):
     getUtility(IBugActivitySet).new(
         bug=bug_task.bug,
@@ -105,6 +109,7 @@ def record_bug_task_added(bug_task, object_created_event):
         whatchanged='bug',
         message='assigned to ' + bug_task.bugtargetname)
 
+@block_implicit_flushes
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
     changes = what_changed(sqlobject_modified_event)
@@ -135,6 +140,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
+@block_implicit_flushes
 def record_product_task_added(product_task, object_created_event):
     getUtility(IBugActivitySet).new(
         bug=product_task.bug,
@@ -143,6 +149,7 @@ def record_product_task_added(product_task, object_created_event):
         whatchanged='bug',
         message='assigned to product ' + product_task.product.name)
 
+@block_implicit_flushes
 def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
@@ -157,6 +164,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
+@block_implicit_flushes
 def record_package_infestation_added(package_infestation, object_created_event):
     package_release_name = "%s %s" % (
         package_infestation.sourcepackagerelease.sourcepackagename.name,
@@ -168,6 +176,7 @@ def record_package_infestation_added(package_infestation, object_created_event):
         whatchanged="bug",
         message="added infestation of package release " + package_release_name)
 
+@block_implicit_flushes
 def record_package_infestation_edited(package_infestation_edited,
                                       sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
@@ -186,6 +195,7 @@ def record_package_infestation_edited(package_infestation_edited,
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
+@block_implicit_flushes
 def record_product_infestation_added(product_infestation, object_created_event):
     product_release_name = "%s %s" % (
         product_infestation.productrelease.product.name,
@@ -197,6 +207,7 @@ def record_product_infestation_added(product_infestation, object_created_event):
         whatchanged="bug",
         message="added infestation of product release " + product_release_name)
 
+@block_implicit_flushes
 def record_product_infestation_edited(product_infestation_edited,
                                       sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
@@ -215,6 +226,7 @@ def record_product_infestation_edited(product_infestation_edited,
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
+@block_implicit_flushes
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
     getUtility(IBugActivitySet).new(
         bug=bugsubscription_added.bug,
@@ -224,6 +236,7 @@ def record_bugsubscription_added(bugsubscription_added, object_created_event):
         message='added subscriber %s' % (
             bugsubscription_added.person.browsername))
 
+@block_implicit_flushes
 def record_bugsubscription_edited(bugsubscription_edited,
                                   sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
@@ -240,6 +253,7 @@ def record_bugsubscription_edited(bugsubscription_edited,
                 newvalue=newvalue)
 
 
+@block_implicit_flushes
 def record_bug_attachment_added(attachment, created_event):
     """Record that an attachment was added."""
     getUtility(IBugActivitySet).new(
