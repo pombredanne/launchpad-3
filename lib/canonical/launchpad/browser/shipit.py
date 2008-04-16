@@ -263,22 +263,6 @@ class ShipItRequestView(GeneralFormView):
         return config.shipit.prerelease_mode
 
     @property
-    def dvds_section(self):
-        """Get the HTML containing links to DVD sales for this flavour."""
-        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
-        # amazon.com. -- Guilherme Salgado, 2007-09-24
-        return u''
-        if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-ubuntu-dvds.pt')(self)
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-kubuntu-dvds.pt')(self)
-        else:
-            # We don't have DVDs for Edubuntu. :-(
-            return u''
-
-    @property
     def _keyword_arguments(self):
         """All fields should be given as keyword arguments."""
         return self.fieldNames

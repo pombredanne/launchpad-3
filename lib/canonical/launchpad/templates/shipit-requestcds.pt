@@ -24,11 +24,6 @@
 
 <div metal:fill-slot="body">
 
-<table>
-<tbody>
-<tr>
-<td width="75%" style="vertical-align: top;" id="maincontent">
-
 <tal:shipit-is-open condition="view/is_open" define="user view/user">
 
   <p class="informational message"
@@ -53,7 +48,7 @@
     </ul>
     <div>
       <form name="cancelrequest" action="" method="post">
-        <input type="hidden" name="order" 
+        <input type="hidden" name="order"
                tal:attributes="value view/current_order/id" />
 
         <input type="submit" value="Cancel Request" name="cancel"
@@ -111,7 +106,7 @@
   </p>
 
   <p tal:condition="view/is_edubuntu">
-    Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
+    Edubuntu CDs are available only in the <strong>PC</strong> Edition.
     This runs on x86-based systems like Intel Pentium and AMD Athlon.
   </p>
 
@@ -278,15 +273,6 @@
   </tal:pastrequests>
 </tal:shipit-is-closed>
 
-</td>
-<td width="25%" style="vertical-align: top;" id="amazon-links"
-    tal:condition="view/is_open">
-  <span tal:content="structure view/dvds_section" />
-</td>
-</tr>
-</tbody>
-</table>  
-  
 </div>
 </body>
 </html>
