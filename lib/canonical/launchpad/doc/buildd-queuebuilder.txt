@@ -427,7 +427,7 @@ for further information.
     [u'i386']
 
 Conversely, for non-virtual archives, build records are created for all
-architectures supported for the the distroseries.
+architectures supported for the distroseries.
 
     >>> pub_hoary_ppa.archive.require_virtualized = False
     >>> sorted([arch.architecturetag for arch in
