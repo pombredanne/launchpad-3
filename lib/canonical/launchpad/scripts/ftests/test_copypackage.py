@@ -18,8 +18,9 @@ from canonical.launchpad.scripts.ftpmaster import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.interfaces import (
-    IPersonSet, PackagePublishingStatus)
+    IComponentSet, IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles, fillLibrarianFile)
 from canonical.testing import LaunchpadZopelessLayer
@@ -459,6 +460,32 @@ class TestCopyPackage(unittest.TestCase):
         binaries = cprov_ppa.getAllPublishedBinaries(name=binarypackagename)
         [source] = sources
 
+        # Now we fudge the published component in the main archive so
+        # we can check later to see if the ancestry override is working.
+        universe = getUtility(IComponentSet)['universe']
+        warty = getUtility(IDistributionSet)['ubuntu']['warty']
+        warty_i386 = warty['i386']
+        [iceweasel] = warty.main_archive.getPublishedSources(
+            name=sourcepackagename,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=warty,
+            exact_match=True)
+        removeSecurityProxy(iceweasel).secure_record.component = universe
+
+        # For the binary we'll unpublish it entirely and fudge the component
+        # on the binarypackagerelease.  This will make the ancestry check
+        # fall back to the binarypackagerelease to get the component.
+        firefox_pubs = warty.main_archive.getAllPublishedBinaries(
+            name=binarypackagename,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroarchseries=warty_i386,
+            exact_match=True)
+        for firefox in firefox_pubs:
+            firefox = removeSecurityProxy(firefox)
+            firefox.supersede()
+            firefox.binarypackagerelease.component = universe
+        self.layer.txn.commit()
+
         # Make the files look like they're in the restricted librarian
         # and add some fake content. fillLibrarianFile() helpfully doesn't
         # reset the filesize so we have to do it here.
@@ -506,8 +533,18 @@ class TestCopyPackage(unittest.TestCase):
 
         # Check that the librarian files are all unrestricted now.
         # We must commit the txn for SQL object to see the change.
+        # Also check that the published records are in universe, which
+        # shows that the ancestry override worked.
         self.layer.txn.commit()
         for published in copied:
+            # This is cheating a bit but it's fine.  The script updates
+            # the secure publishing record but this change does not
+            # get reflected in SQLObject's cache on the object that comes
+            # from the SQL View, the non-secure record.  No amount of
+            # syncUpdate and flushing seems to want to make it update :(
+            # So, I am checking the secure record in this test.
+            self.assertEqual(
+                published.secure_record.component.name, universe.name)
             for published_file in published.files:
                 self.assertFalse(published_file.libraryfilealias.restricted)
 

@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     IBinaryPackagePublishingHistory, IBinaryPackageReleaseSet,
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
     ISourcePackagePublishingHistory, NotFoundError, PackagePublishingPocket,
-    PackagePublishingPriority)
+    PackagePublishingPriority, PackagePublishingStatus)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.librarian.interfaces import (
@@ -1776,6 +1776,9 @@ class UnembargoSecurityPackage(PackageCopier):
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
 
+        # Do an ancestry check to override the component.
+        self.overrideFromAncestry(copies)
+
         # Now re-upload the files associated with the package.
         for pub_record in copies:
             self.copyPublishedFiles(pub_record, False)
@@ -1828,3 +1831,47 @@ class UnembargoSecurityPackage(PackageCopier):
 
             # Junk the temporary file.
             os.remove(filepath)
+
+    def overrideFromAncestry(self, pub_records):
+        """Set the right published component from publishing ancestry.
+
+        Start with the publishing records and fall back to the original
+        uploaded package if necessary.
+        """
+        for pub_record in pub_records:
+            archive = pub_record.archive
+            if ISourcePackagePublishingHistory.providedBy(pub_record):
+                is_source = True
+                source_package = pub_record.sourcepackagerelease
+                prev_published = archive.getPublishedSources(
+                    name=source_package.sourcepackagename.name,
+                    status=PackagePublishingStatus.PUBLISHED,
+                    distroseries=pub_record.distroseries,
+                    exact_match=True)
+            elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+                is_source = False
+                binary_package = pub_record.binarypackagerelease
+                prev_published = archive.getAllPublishedBinaries(
+                    name=binary_package.binarypackagename.name,
+                    status=PackagePublishingStatus.PUBLISHED,
+                    distroarchseries=pub_record.distroarchseries,
+                    exact_match=True)
+            else:
+                raise AssertionError(
+                    "pub_records contains something that's not one of "
+                    "SourcePackagePublishingHistory or "
+                    "BinaryPackagePublishingHistory")
+
+            if prev_published.count() > 0:
+                # Use the first record (the most recently published).
+                component = prev_published[0].component
+            else:
+                # It's not been published yet, check the original package.
+                if is_source:
+                    component = pub_record.sourcepackagerelease.component
+                else:
+                    component = pub_record.binarypackagerelease.component
+
+            # We don't want to use changeOverride here because it
+            # creates a new publishing record.
+            pub_record.secure_record.component = component
