@@ -67,5 +67,20 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(popup.getProduct(), branch.product)
 
 
+# TODO:
+# More thorough getProduct tests.
+# - ProductSeries
+# - Bug
+# - Spec
+# - Product
+# - Branch
+# - +junk ?!?!
+# Behaviour when not logged in.
+# Make up the branch name
+# - what do we do when there's already a branch of that name.
+# Ensure that the branch is mentioned in the notice on the next page.
+# Check that branch is created when the user enters an unknown URL
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
