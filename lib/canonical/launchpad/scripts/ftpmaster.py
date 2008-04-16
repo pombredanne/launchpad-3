@@ -18,6 +18,7 @@ __all__ = [
     'PubSourceChecker',
     'SyncSource',
     'SyncSourceError',
+    'UnembargoSecurityPackage',
     ]
 
 import apt_pkg
@@ -1720,3 +1721,109 @@ class ManageChrootScript(SoyuzScript):
             # Collect extra debug messages from chroot_manager.
             for debug_message in chroot_manager._messages:
                 self.logger.debug(debug_message)
+
+
+class UnembargoSecurityPackage(PackageCopier):
+    """`SoyuzScript` that unembargoes security packages and their builds.
+
+    Security builds are done in the ubuntu-security private PPA.
+    When they are ready to be unembargoed, this script will copy
+    them from the PPA to the Ubuntu archive and re-upload any files
+    from the restricted librarian into the non-restricted one.
+
+    This script simply wraps up PackageCopier with some nicer options,
+    and implements the file re-uploading.
+
+    An assumption is made, to reduce the number of command line options,
+    that packages are always copied between the same distroseries.
+    """
+
+    usage = ("%prog [-d <distribution>] [-s <series>] [--ppa <private ppa>] "
+             "<package(s)>")
+    description = ("Unembargo packages in a private PPA by copying to the "
+                   "specified location and re-uploading any files to the "
+                   "unrestricted librarian.")
+
+    def add_my_options(self):
+        """Add -d, -s, dry-run and confirmation options."""
+        SoyuzScript.add_distro_options(self)
+        SoyuzScript.add_transaction_options(self)
+
+        self.parser.add_option(
+            "-p", "--ppa", dest="archive_owner_name",
+            default="ubuntu-security", action="store",
+            help="Private PPA owner's name.")
+
+    def mainTask(self):
+        """Invoke PackageCopier to copy the package(s) and re-upload files."""
+
+        assert self.location, (
+            "location is not available, call SoyuzScript.setupLocation() "
+            "before calling mainTask().")
+
+        # Set up the options for PackageCopier that are needed in addition
+        # to the ones that this class sets up.
+        self.options.to_partner = False
+        self.options.to_ppa = False
+        self.options.partner_archive = None
+        self.options.include_binaries = True
+        self.options.to_distribution = self.options.distribution_name
+        self.options.to_suite = "-".join((self.options.suite, "security"))
+        self.options.version = None
+        self.options.component = None
+
+        # Invoke the package copy operation.
+        copies = PackageCopier.mainTask(self)
+
+        # Now re-upload the files associated with the package.
+        for pub_record in copies:
+            self.copyPublishedFiles(pub_record, False)
+
+        # Return this for the benefit of the test suite.
+        return copies
+
+    def copyPublishedFiles(self, pub_record, to_restricted):
+        """Move files for a publishing record between librarians.
+
+        :param pub_record: One of a SourcePackagePublishingHistory or
+            BinaryPackagePublishingHistory record.
+        :param to_restricted: True or False depending on whether the target
+            librarian to be used is the restricted one or not.
+        """
+        if hasattr(pub_record, "sourcepackagerelease"):
+            files = pub_record.sourcepackagerelease.files
+        elif hasattr(pub_record, "binarypackagerelease"):
+            files = pub_record.binarypackagerelease.files
+        else:
+            raise AssertionError(
+                "pub_record is not one of SourcePackagePublishingHistory "
+                "or BinaryPackagePublishingHistory")
+
+        for package_file in files:
+            # Open the old library file.
+            libfile = package_file.libraryfile
+            libfile.open()
+
+            # Make a temporary file to hold the download.  It's annoying
+            # having to download to a temp file but there are no guarantees
+            # how large the files are, so using StringIO would be dangerous.
+            filepath = tempfile.mktemp()
+            temp_file = open(filepath, "w")
+
+            # Read the old library file into the temp file.
+            copy_and_close(libfile, temp_file)
+
+            # Upload the file to the unrestricted librarian and make
+            # sure the publishing record points to it.
+            librarian = getUtility(ILibraryFileAliasSet)
+            new_lfa = librarian.create(
+                libfile.filename, libfile.content.filesize,
+                open(filepath, "rb"), libfile.mimetype,
+                restricted=to_restricted)
+            package_file.libraryfile = new_lfa
+            self.logger.info(
+                "Re-uploaded %s to the unrestricted librarian with ID %d" % (
+                    libfile.filename, new_lfa.id))
+
+            # Junk the temporary file.
+            os.remove(filepath)
