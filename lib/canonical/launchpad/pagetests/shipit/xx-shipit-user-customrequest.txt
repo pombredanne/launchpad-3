@@ -44,9 +44,11 @@ The quantities specified by the user must be positive integers.
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '-1'
   >>> browser.getControl('Submit Request').click()
 
-  >>> for message in get_feedback_messages(browser.contents):
-  ...     print message
-  Please fix the problems below and try again...
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> tags = BeautifulSoup(browser.contents).findAll(attrs={'class': 'error'})
+  >>> for tag in tags:
+  ...     print extract_text(tag)
+  Quantities must be greater than or equal 0.
 
   >>> from canonical.launchpad.interfaces import ShipItConstants
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = str(

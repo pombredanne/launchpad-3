@@ -157,14 +157,6 @@
     </div>
   </tal:custom-request>
 
-  <tal:standard-request condition="not: view/should_show_custom_request">
-    <p class="informational message" tal:condition="user/is_trusted_on_shipit">
-      The Ubuntu community would like to thank you for your
-      contributions to the Ubuntu project. In recognition of this, we
-      offer you an expanded set of options for your ShipIt request.
-    </p>
-  </tal:standard-request>
-
   <!-- Without using setTimeout() to disable the submit button it'll be
   disabled before the browser generates the request, which will cause the
   request to not contain the name/value of the button.
