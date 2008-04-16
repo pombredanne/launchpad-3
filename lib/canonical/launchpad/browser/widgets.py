@@ -107,24 +107,45 @@ class BranchPopupWidget(SinglePopupWidget):
 
     displayWidth = '35'
 
-    def _isBranchWithName(self, name):
-        product = self.getProduct()
-        results = getUtility(IBranchSet).getByProductAndName(product, name)
-        return results.count() > 0
+    def _getUsedNumbers(self, branch_set, product, name):
+        """Iterate over numbers that have previously been appended to name.
+
+        Finds all of the branches in `product` that have name like 'name-%'.
+        It iterates over all of those, yielding numbers that occur after the
+        final dash of such names.
+
+        This lets us easily pick a number that *hasn't* been used.
+        """
+        similar_branches = branch_set.getByProductAndNameStartsWith(
+            product, name + '-')
+        # 0 is always used, so that if there are no names like 'name-N', we
+        # will start with name-1.
+        yield 0
+        for branch in similar_branches:
+            last_token = branch.name.split('-')[-1]
+            try:
+                yield int(last_token)
+            except ValueError:
+                # It's not an integer, so we don't care.
+                pass
 
     def getBranchNameFromURL(self, url, MAXIMUM_TRIES=10):
         """Return a branch name based on `url`.
 
         The name is based on the last path segment of the URL. If there is
         already another branch of that name on the product, then we'll try to
-        find a unique name by appending numbers. Do this up to `MAXIMUM_TRIES`
-        times.
+        find a unique name by appending numbers.
         """
-        original_name = name = URI(url).path.split('/')[-1]
-        for i in range(1, MAXIMUM_TRIES+1):
-            if not self._isBranchWithName(name):
-                return name
-            name = '%s-%d' % (original_name, i)
+        name = URI(url).path.split('/')[-1]
+        product = self.getProduct()
+        branch_set = getUtility(IBranchSet)
+        if branch_set.getByProductAndName(product, name).count() == 0:
+            return name
+
+        # Get a unique name that's `name` plus a number.
+        next_number = max(self._getUsedNumbers(branch_set, product, name)) + 1
+        name = '%s-%s' % (name, next_number)
+        return name
 
     def getPerson(self):
         """Return the person in the context, if any."""
