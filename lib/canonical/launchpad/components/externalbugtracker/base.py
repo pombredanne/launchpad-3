@@ -137,6 +137,10 @@ class ExternalBugTracker:
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 
+    def probeBugTracker(self):
+        """See `IExternalBugTracker`."""
+        return self
+
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         # Returning None means that we don't know that the time is,

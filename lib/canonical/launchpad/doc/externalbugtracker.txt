@@ -45,6 +45,22 @@ transaction, since it doesn't need DB access.
     BEGIN
 
 
+=== Choosing another ExternalBugTracker instance ===
+
+Sometimes there are more than one ExternalBugTracker instance for a
+single bug tracker type. For example, for different versions, for
+intances having our Launchpad plugin installed, and so on. This is done
+with the probeBugTracker() method, which returns the correct instance.
+Usually there is only one version, so the default is to return itself.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     ExternalBugTracker)
+    >>> external_bugtracker = ExternalBugTracker('http://example.com/')
+    >>> chosen_external_bugtracker = external_bugtracker.probeBugTracker()
+    >>> chosen_external_bugtracker is external_bugtracker
+    True
+
+
 === Checking the server DB time ===
 
 Before initializeRemoteBugDB is called and we start importing
