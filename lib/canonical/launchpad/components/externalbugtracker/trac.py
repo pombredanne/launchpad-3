@@ -251,7 +251,18 @@ class TracLPPlugin(ExternalBugTracker):
         time_snapshot, modified_bugs = server.launchpad.bug_info(
             0, criteria)
 
-        return [bug['id'] for bug in modified_bugs]
+        bug_ids_to_return = []
+        for bug in modified_bugs:
+            # If we asked for a bug that doesn't exist on the remote
+            # server, the remote server will return it with a status of
+            # 'missing'. We ignore these since we can't do anything with
+            # them.
+            if 'status' in bug and bug['status'] == 'missing':
+                continue
+            else:
+                bug_ids_to_return.append(bug['id'])
+
+        return bug_ids_to_return
 
 
 class TracXMLRPCTransport(xmlrpclib.Transport):
