@@ -8,7 +8,8 @@ Also define utilities that manipulate layers.
 __metaclass__ = type
 
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest, IBrowserSkinType, IDefaultBrowserLayer)
 
 
 def setAdditionalLayer(request, layer):
@@ -19,7 +20,7 @@ def setFirstLayer(request, layer):
     directlyProvides(request, layer, directlyProvidedBy(request))
 
 
-class LaunchpadLayer(IDefaultBrowserLayer):
+class LaunchpadLayer(IBrowserRequest, IBrowserSkinType, IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
 
