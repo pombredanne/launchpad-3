@@ -85,7 +85,7 @@ may also include the odd case where the OOPS system has failed and a
 fallback error page is rendered by Zope3. There doesn't seem to be any
 particular need to differentiate these cases though:
 
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> class ErrorView(object):
     ...     """A broken view"""
     ...     def __call__(self, *args, **kw):

@@ -657,9 +657,8 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, `zope.i18n.Message`,
-        	`zope.confirmation.fields.MessageID`, or an instance of
-        	`IStructuredString`.
+        :param msg: This may be a string, an instance of
+        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
         	INFO, NOTICE, WARNING, ERROR.

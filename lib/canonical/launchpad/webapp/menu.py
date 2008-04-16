@@ -21,7 +21,6 @@ __all__ = [
 import cgi
 
 from zope.i18n import translate, Message
-from zope.configuration.fields import MessageID
 from zope.interface import implements
 from zope.component import getMultiAdapter
 
@@ -399,9 +398,8 @@ def escape(message):
     Zope internationalized message will cause the message to be
     translated, then santizied.
 
-    :param message: This may be a string, `zope.i18n.Message`,
-    	`zope.configuration.fields.MessageID`, or an instance of
-    	`IStructuredString`.
+    :param message: This may be a string, an instance of
+    	`zope.i18n.Message`, or an instance of `IStructuredString`.
     """
     if IStructuredString.providedBy(message):
         return message.escapedtext
@@ -419,7 +417,7 @@ def translate_if_i18n(obj_or_msgid):
 
     Returns any other type of object untouched.
     """
-    if isinstance(obj_or_msgid, (Message, MessageID)):
+    if isinstance(obj_or_msgid, Message):
         return translate(
             obj_or_msgid,
             context=get_current_browser_request())

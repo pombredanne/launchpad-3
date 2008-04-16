@@ -57,18 +57,15 @@ appropriate sections escaped and unescaped.
     u'<b>&lt;br/&gt;foo</b>'
 
 Passing an object to addNotification() that is an instance of
-zope.i18n.Message or zope.i18n.MessageID will be escaped in the same
+zope.i18n.Message will be escaped in the same
 manner as raw text.
 
     >>> import zope.i18n
     >>> msgtxt   = zope.i18n.Message(u'<br/>foo')
-    >>> msgidtxt = zope.i18n.MessageID(u'<br/>foo')
     >>> response = new_response()
     >>> response.addNotification(msgtxt)
-    >>> response.addNotification(msgidtxt)
     >>> for notification in response.notifications:
     ...     notification.message
-    u'&lt;br/&gt;foo'
     u'&lt;br/&gt;foo'
 
 To pass internationalized text that contains markup, one may call
