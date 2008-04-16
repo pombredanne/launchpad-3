@@ -224,7 +224,7 @@ def needs_authentication(func):
     return decorator
 
 
-class TracLPPlugin(ExternalBugTracker):
+class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
     def __init__(self, baseurl, xmlrpc_transport=None,
@@ -236,6 +236,7 @@ class TracLPPlugin(ExternalBugTracker):
         self.xmlrpc_transport = xmlrpc_transport
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
 
+    @needs_authentication
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}

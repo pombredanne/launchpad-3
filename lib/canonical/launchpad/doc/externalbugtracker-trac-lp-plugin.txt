@@ -239,7 +239,10 @@ be able to retrieve remote statuses.
     >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
     >>> bugs_to_update = trac.getModifiedRemoteBugs(
     ...     bug_ids_to_check, last_checked)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> trac.initializeRemoteBugDB(bugs_to_update)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
 
 Calling getRemoteStatus() on our example TracLPPlugin instance will
 return the status for whichever bug we request.
