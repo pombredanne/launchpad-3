@@ -268,7 +268,6 @@ class TracLPPlugin(Trac):
 
         return [bug['id'] for bug in modified_bugs]
 
-
 class TracXMLRPCTransport(xmlrpclib.Transport):
 
     auth_cookie = None

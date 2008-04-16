@@ -121,7 +121,7 @@ so we'll convert a datetime into one for the purposes of this test.
     [{'id': '1'}, {'id': '3'}]
 
 The bugs key in the criteria dict allows us to specify a list of bug IDs
-to return. Only the bugs whose IDs are in the list will be returned.
+to return.
 
     >>> criteria = {'bugs': ['1', '2']}
     >>> time_snapshot, bugs = trac_transport.bug_info(
@@ -129,6 +129,16 @@ to return. Only the bugs whose IDs are in the list will be returned.
 
     >>> print bugs
     [{'id': '1'}, {'id': '2'}]
+
+If a bug doesn't exist, it will be returned with a status of
+'missing'.
+
+    >>> criteria = {'bugs': ['11', '12']}
+    >>> time_snapshot, bugs = trac_transport.bug_info(
+    ...     level=0, criteria=criteria)
+
+    >>> print bugs
+    [{'status': 'missing', 'id': '11'}, {'status': 'missing', 'id': '12'}]
 
 Combining the bugs and modified_since fields in the criteria dict will
 result in only the bugs modified since the modified_since time whose IDs
