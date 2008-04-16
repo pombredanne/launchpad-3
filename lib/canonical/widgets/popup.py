@@ -129,11 +129,11 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
     def popupHref(self):
         template = (
-            '''javascript:'''
-            '''popup_window('@@%s?'''
-            '''vocabulary=%s&field=%s&search='''
-            ''''+escape(document.getElementById('%s').value),'''
-            ''''%s','300','420')'''
+            """javascript:"""
+            """popup_window('@@%s?"""
+            """vocabulary=%s&field=%s&search="""
+            """'+escape(document.getElementById('%s').value),"""
+            """'%s','300','420')"""
             ) % (self.popup_name, self.context.vocabularyName, self.name,
                  self.name, self.name)
         if self.onKeyPress:
