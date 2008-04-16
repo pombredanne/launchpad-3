@@ -56,9 +56,26 @@ Usually there is only one version, so the default is to return itself.
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     ExternalBugTracker)
     >>> external_bugtracker = ExternalBugTracker('http://example.com/')
-    >>> chosen_external_bugtracker = external_bugtracker.probeBugTracker()
-    >>> chosen_external_bugtracker is external_bugtracker
+    >>> chosen_bugtracker = external_bugtracker.probeBugTracker()
+    >>> chosen_bugtracker is external_bugtracker
     True
+
+BugWatchUpdater.updateBugWatches will call this method and replace the
+ExternalBugTracker used, before calling getCurrentDBTime(), and all the
+other methods.
+
+    >>> class MoreSpecificExternalBugTracker(TestExternalBugTracker):
+    ...     def getCurrentDBTime(self):
+    ...         print "Using more specific ExternalBugTracker implementation."
+
+    >>> class GeneralExternalBugTracker:
+    ...     def probeBugTracker(self):
+    ...         return MoreSpecificExternalBugTracker('http://example.com')
+
+    >>> bug_watch_updater.updateBugWatches(GeneralExternalBugTracker(), [])
+    COMMIT
+    Using more specific ExternalBugTracker implementation.
+    BEGIN
 
 
 === Checking the server DB time ===
