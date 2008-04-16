@@ -10,7 +10,8 @@ from date import DateWidget, DateTimeWidget, DatetimeDisplayWidget
 from image import GotchiTiedWithHeadingWidget, ImageChangeWidget
 from owner import IUserWidget, HiddenUserWidget
 from popup import (
-    ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget)
+    ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget,
+    BranchPopupWidget)
 from announcementdate import IAnnouncementDateWidget, AnnouncementDateWidget
 from context import IContextWidget, ContextWidget
 from itemswidgets import *

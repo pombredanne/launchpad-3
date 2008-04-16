@@ -576,8 +576,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     schema = IProductSeries
     field_names = ['user_branch']
 
-    custom_widget('user_branch', SinglePopupWidget, displayWidth=35)
-
     @property
     def next_url(self):
         return canonical_url(self.context)

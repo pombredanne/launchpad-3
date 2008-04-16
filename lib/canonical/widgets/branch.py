@@ -8,17 +8,15 @@ __all__ = [
     ]
 
 
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget, InputErrors
 from zope.app.form.utility import setUpWidget
-from zope.component import getUtility
+from zope.component import getMultiAdapter, getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.interfaces import IBranchSet, ILaunchBag
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SinglePopupWidget
 
 
 class TargetBranchWidget(LaunchpadRadioWidget):
@@ -45,8 +43,8 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         LaunchpadRadioWidget.__init__(
             self, field, self.branch_selector_vocab, request)
 
-        self.other_branch_widget = CustomWidgetFactory(
-            SinglePopupWidget, displayWidth=35)
+        self.other_branch_widget = getMultiAdapter(
+            (field, request), IInputWidget)
         setUpWidget(
             self, 'other_branch', field, IInputWidget,
             prefix=self.name, context=branch)
