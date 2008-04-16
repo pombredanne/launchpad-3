@@ -605,7 +605,7 @@
       for="zope.schema.interfaces.IChoice
         canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
-      factory="canonical.widgets.BranchPopupWidget"
+      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"
       />
 

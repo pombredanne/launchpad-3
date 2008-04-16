@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.enum import EnumeratedType, Item, use_template
-from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 

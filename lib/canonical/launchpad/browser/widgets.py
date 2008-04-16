@@ -13,7 +13,7 @@ __all__ = [
     'ShipItOrganizationWidget',
     'ShipItPhoneWidget',
     'ShipItProvinceWidget',
-    'ShipItQuantityWidget'
+    'ShipItQuantityWidget',
     'ShipItReasonWidget',
     'ShipItRecipientDisplaynameWidget',
     'SummaryWidget',
@@ -102,3 +102,7 @@ class BranchPopupWidget(SinglePopupWidget):
     """Custom popup widget for choosing branches."""
 
     displayWidth = '35'
+
+    def getProduct(self):
+        """Return the product in the context, if there is one."""
+        return self.vocabulary.context
