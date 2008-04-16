@@ -24,12 +24,11 @@ from twisted.internet import process
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import plugins
-from canonical.codehosting.tests.helpers import deferToThread
 from canonical.config import config
 from canonical.codehosting.tests.servers import Authserver
 
 from canonical.testing import TwistedLayer
-
+from canonical.twistedsupport import defer_to_thread
 
 ROCKETFUEL_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(bzrlib.__file__)))
@@ -150,7 +149,7 @@ class TestLaunchpadServerCommand(TrialTestCase, TestCaseInTempDir):
         self.assertIsInstance(
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
-    @deferToThread
+    @defer_to_thread
     def test_bzr_serve_inet_readwrite(self):
         # Test the server when running as an 'inet' service. That is,
         # listening on stdin and writing to stdout.
@@ -175,7 +174,7 @@ class TestLaunchpadServerCommand(TrialTestCase, TestCaseInTempDir):
 
         self.assertInetServerShutsdownCleanly(process)
 
-    @deferToThread
+    @defer_to_thread
     def test_bzr_serve_port_readwrite(self):
         # Test the server when running as an 'port' service. That is,
         # listening on a TCP port.
