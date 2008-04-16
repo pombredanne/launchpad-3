@@ -146,12 +146,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         return template
 
 
-class BranchPopupWidget(SinglePopupWidget):
-    """Custom popup widget for choosing branches."""
-
-    displayWidth = '35'
-
-
 class ISinglePopupView(Interface):
 
     batch = Attribute('The BatchNavigator of the current results to display')

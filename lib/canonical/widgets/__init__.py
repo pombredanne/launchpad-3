@@ -16,8 +16,7 @@ from canonical.widgets.image import (
 from canonical.widgets.itemswidgets import *
 from canonical.widgets.owner import IUserWidget, HiddenUserWidget
 from canonical.widgets.popup import (
-    ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget,
-    BranchPopupWidget)
+    ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget)
 from canonical.widgets.password import PasswordChangeWidget
 from canonical.widgets.textwidgets import (
     DelimitedListWidget, LocalDateTimeWidget, LowerCaseTextWidget,
