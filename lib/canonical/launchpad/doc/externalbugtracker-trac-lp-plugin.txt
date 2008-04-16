@@ -1,0 +1,30 @@
+= ExternalBugTracker: TracLPPlugin =
+
+This covers the implementation of the ExternalBugTracker class for Trac
+instances having the LP XML-RPC plugin installed.
+
+For testing purposes, a custom XML-RPC transport can be passed to it,
+so that we can avoid network traffic in tests.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     TracLPPlugin)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracXMLRPCTransport)
+    >>> test_transport = TestTracXMLRPCTransport()
+    >>> trac = TracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+
+== Current time ==
+
+The current time is always returned in UTC, no matter if the Trac
+instance returns another time zone.
+
+    >>> import time
+    >>> from datetime import datetime
+    >>> trac_time = datetime(2008, 4, 9, 3, 2, 1)
+    >>> test_transport.seconds_since_epoch = int(time.mktime(
+    ...     trac_time.timetuple()))
+    >>> test_transport.local_timezone = 'CET'
+    >>> test_transport.utc_offset = 60*60
+    >>> trac.getCurrentDBTime()
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)

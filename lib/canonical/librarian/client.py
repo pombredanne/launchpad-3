@@ -163,7 +163,7 @@ class FileUploadClient:
         return databaseName
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
-        """See canonical.librarian.interfaces.ILibrarianUploadClient"""
+        """See `IFileUploadClient`."""
         if file is None:
             raise TypeError('No data')
         if size <= 0:

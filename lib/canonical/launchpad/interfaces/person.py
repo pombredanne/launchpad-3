@@ -222,7 +222,7 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     USER_CREATED = DBItem(11, """
-        Created by a user to represent a person which does not uses Launchpad.
+        Created by a user to represent a person which does not use Launchpad.
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
