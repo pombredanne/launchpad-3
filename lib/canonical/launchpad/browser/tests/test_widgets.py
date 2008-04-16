@@ -11,6 +11,7 @@ from zope.schema import Choice
 from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import BranchPopupWidget
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies import BranchVocabulary
 from canonical.testing import LaunchpadFunctionalLayer
@@ -54,6 +55,16 @@ class TestBranchPopupWidget(unittest.TestCase):
     def test_getPerson(self):
         popup = self.makeBranchPopup(self.factory.makeProduct())
         self.assertEqual(self.user, popup.getPerson())
+
+    def test_makeBranch(self):
+        popup = self.makeBranchPopup(self.factory.makeProduct())
+        url = self.factory.getUniqueURL()
+        branch = popup.makeBranchFromURL(url)
+        self.assertEqual(BranchType.MIRRORED, branch.branch_type)
+        self.assertEqual(url, branch.url)
+        self.assertEqual(popup.getPerson(), branch.owner)
+        self.assertEqual(popup.getPerson(), branch.registrant)
+        self.assertEqual(popup.getProduct(), branch.product)
 
 
 def test_suite():

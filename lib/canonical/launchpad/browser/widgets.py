@@ -25,6 +25,7 @@ __all__ = [
 from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
@@ -112,3 +113,8 @@ class BranchPopupWidget(SinglePopupWidget):
     def getProduct(self):
         """Return the product in the context, if there is one."""
         return self.vocabulary.context
+
+    def makeBranchFromURL(self, url):
+        owner = self.getPerson()
+        return getUtility(IBranchSet).new(
+            BranchType.MIRRORED, 'foo', owner, owner, self.getProduct(), url)
