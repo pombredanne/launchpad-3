@@ -403,8 +403,8 @@ class BranchVisibilityPolicyTestCase(TestCase):
         login("foo.bar@canonical.com")
         # Our test product.
         person_set = getUtility(IPersonSet)
-
-        self.firefox = getUtility(IProductSet).getByName('firefox')
+        self.factory = LaunchpadObjectFactory()
+        self.firefox = self.factory.makeProduct()
         # Create some test people.
         self.albert, alberts_email = person_set.createPersonAndEmail(
             'albert@code.ninja.nz', PersonCreationRationale.USER_CREATED,
@@ -440,18 +440,16 @@ class BranchVisibilityPolicyTestCase(TestCase):
         self.albert.join(self.zulu)
         self.bob.join(self.yankee)
         self.charlie.join(self.zulu)
-        login(ANONYMOUS)
 
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""
         for team, rule in team_policies:
             self.firefox.setBranchVisibilityTeamPolicy(team, rule)
 
-    def assertBranchRule(self, creator, owner, expected_rule):
+    def assertBranchRule(self, registrant, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
-        branch = BranchSet().new(
-            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox,
-            None)
+        branch = self.factory.makeBranch(
+            registrant=registrant, owner=owner, product=self.firefox)
         rule = self.firefox.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,
                          'Wrong visibililty rule returned: '
@@ -911,7 +909,6 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
             (self.yankee, BranchVisibilityRule.PUBLIC),
             (self.zulu, BranchVisibilityRule.PRIVATE),
             ))
-        login(ANONYMOUS)
 
     def test_team_memberships(self):
         albert, bob, charlie, doug = self.people

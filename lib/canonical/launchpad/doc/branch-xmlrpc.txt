@@ -92,7 +92,7 @@ well:
     >>> print new_branch.product.displayname
     Evolution
 
-If we try to register a branch with a unique name that is already used:
+If we try to register a branch with a branch name that is already used:
 
     >>> yet_another_branch_url = 'http://foo.com/yet_another_branch'
     >>> branchset_api.register_branch(
@@ -100,7 +100,7 @@ If we try to register a branch with a unique name that is already used:
     ...      'branch description', 'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Unique name already in use: ~name16/evolution/branch_name'>
+    Fault: <Fault 220: 'Branch name already in use: branch_name'>
 
 This check must also detect branch name conflict for +junk branches:
 
@@ -108,8 +108,7 @@ This check must also detect branch name conflict for +junk branches:
     ...      yet_another_branch_url, 'branch', '', '', '', '')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Unique name already in use: ~name16/+junk/branch'>
-
+    Fault: <Fault 220: 'Branch name already in use: branch'>
 
 If we give a product name that doesn't exist, we get an error:
 

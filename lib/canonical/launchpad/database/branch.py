@@ -929,8 +929,8 @@ class BranchSet:
                 params['maybe_junk'] = ''
                 params['context'] = product.name
             raise BranchCreationException(
-                'A ${maybe_junk}branch with the name "${name}" already '
-                'exists for "${context}".' % params)
+                'A %(maybe_junk)sbranch with the name "%(name)s" already '
+                'exists for "%(context)s".' % params)
 
         branch = Branch(
             registrant=creator,
