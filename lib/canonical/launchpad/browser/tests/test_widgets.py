@@ -39,6 +39,9 @@ class TestBranchPopupWidget(unittest.TestCase):
     def setUp(self):
         login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
+        password = self.factory.getUniqueString()
+        self.user = self.factory.makePerson(password=password)
+        login(self.user.preferredemail.email)
 
     def tearDown(self):
         logout()
@@ -49,14 +52,8 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(product, popup.getProduct())
 
     def test_getPerson(self):
-        person = self.factory.makePerson(
-            password=self.factory.getUniqueString())
-        login(person.preferredemail.email)
-        try:
-            popup = self.makeBranchPopup(self.factory.makeProduct())
-            self.assertEqual(person, popup.getPerson())
-        finally:
-            logout()
+        popup = self.makeBranchPopup(self.factory.makeProduct())
+        self.assertEqual(self.user, popup.getPerson())
 
 
 def test_suite():
