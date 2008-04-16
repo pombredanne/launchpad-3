@@ -5,19 +5,22 @@
 __metaclass__ = type
 
 
+import os
 import shutil
 import StringIO
+import sys
 import tempfile
 import unittest
 
 from bzrlib.tests import TestCaseWithMemoryTransport
 
-from twisted.internet import defer
+from twisted.internet import defer, error, protocol, reactor
 from twisted.trial.unittest import TestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
 from canonical.codehosting.codeimport.worker_monitor import (
@@ -437,13 +440,16 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.assertCodeImportResultCreated(code_import)
         self.assertBranchImportedOKForCodeImport(code_import)
 
+    def performImport(self, job_id):
+        return CodeImportWorkerMonitor(job_id).run()
+
     def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         commit()
-        result = CodeImportWorkerMonitor(job_id).run()
+        result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
     def test_import_subversion(self):
@@ -452,8 +458,33 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         code_import_id = job.code_import.id
         job_id = job.id
         commit()
-        result = CodeImportWorkerMonitor(job_id).run()
+        result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
+
+
+class DeferredOnExit(protocol.ProcessProtocol):
+
+    def __init__(self, deferred):
+        self._deferred = deferred
+
+    def processEnded(self, reason):
+        if reason.check(error.ProcessDone):
+            self._deferred.callback(None)
+        else:
+            self._deferred.errback(reason)
+
+class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
+    """ """
+
+    def performImport(self, job_id):
+        script_path = os.path.join(
+            get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
+        process_end_deferred = defer.Deferred()
+        reactor.spawnProcess(
+            DeferredOnExit(process_end_deferred), sys.executable,
+            [sys.executable, script_path, str(job_id)],
+            childFDs={0:0, 1:1, 2:2})
+        return process_end_deferred
 
 
 def test_suite():
