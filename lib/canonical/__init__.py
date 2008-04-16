@@ -7,3 +7,8 @@
 #from zope.i18n.messageid import MessageFactory
 #_ = MessageFactory("canonical")
 
+# XXX mars 2008-04-15:
+# Filter all deprecation warnings during the transition period to
+# Zope 3.4.
+import warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)

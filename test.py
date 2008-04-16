@@ -97,11 +97,6 @@ warnings.filterwarnings(
         'ignore', 'bzrlib.*was deprecated', DeprecationWarning
 )
 
-# XXX sinzui 2008-04-15:
-# Filter all deprecation warnings during the transition period to
-# Zope 3.4.
-warnings.filterwarnings('ignore', category=DeprecationWarning)
-
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real
 # problem.
