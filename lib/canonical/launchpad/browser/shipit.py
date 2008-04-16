@@ -1172,13 +1172,12 @@ class ShipItSurveyView(LaunchpadFormView):
     """A survey that should be answered by people requesting server CDs."""
 
     schema = ShipItSurveySchema
-    label = 'About you'
     custom_widget('environment', LabeledMultiCheckBoxWidget)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)
 
-    @action(_("Continue to Request a Free CD"), name="continue")
+    @action(_("Continue to Complete CD Request"), name="continue")
     def continue_action(self, action, data):
         """Continue to the page where the user requests server CDs.
 

@@ -27,30 +27,20 @@
       <tr>
       <tal:no-prerelease condition="not: view/prerelease_mode">
         <td class="cdchoice" width="45%">
-          <a href="login">
-            Request a CD of
-            <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="series_name" /></a>
+          <a href="login">Request a CD of Ubuntu Desktop Edition</a>
         </td>
         <td width="10%">&nbsp;</td>
         <td class="cdchoice" width="45%">
-          <a href="login-server">
-            Request a CD of Ubuntu Server Edition
-            <span tal:replace="series_name" /></a>
+          <a href="login-server">Request a CD of Ubuntu Server Edition</a>
         </td>
       </tal:no-prerelease>
       <tal:prerelease condition="view/prerelease_mode">
         <td class="cdchoice" width="45%">
-          <a href="login">
-            Pre-order a CD of
-            <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="series_name" /></a>
+          <a href="login">Pre-order a CD of Ubuntu Desktop Edition</a>
         </td>
         <td width="10%">&nbsp;</td>
         <td class="cdchoice" width="45%">
-          <a href="login-server">
-            Pre-order a CD of Ubuntu Server Edition
-            <span tal:replace="series_name" /></a>
+          <a href="login-server">Pre-order a CD of Ubuntu Server Edition</a>
         </td>
       </tal:prerelease>
     </table>

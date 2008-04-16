@@ -10,7 +10,6 @@
 }
 .message {
   background: 5px 0.5em no-repeat;
-  font-weight: bold;
   margin: 1em 0 0.5em;
   padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
 }
