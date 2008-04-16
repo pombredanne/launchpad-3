@@ -1,18 +1,3 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
-Setup on launchpad.dev: Go to http://launchpad.dev/jokosher/+edit and
-say that "Bugs are tracked: In a registered bug tracker: Email
-bugtracker".
-
-* Don't show email address bug trackers in <project>/+edit, "Bugs are
-  tracked: In a registered bug tracker". Instead, add new radio option
-  beneath it, "By emailing an upstream bug contact:", with a text
-  field in which the user can enter the email address.
-
-* Change +filebug text:
-
-    On http://bugs.launchpad.dev/jokosher/+filebug the text currently
-    says: "Bugs in upstream Jokosher should be reported in its
-    official bug tracker, Email bugtracker." This should perhaps read
-    differently for email address trackers.
