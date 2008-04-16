@@ -43,6 +43,7 @@
           <a href="login-server">Pre-order a CD of Ubuntu Server Edition</a>
         </td>
       </tal:prerelease>
+      </tr>
     </table>
   
     <p><a href="login">Check the status of an existing request</a></p>
