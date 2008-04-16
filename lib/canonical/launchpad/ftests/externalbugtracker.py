@@ -485,7 +485,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             bugs: A list of bug IDs. If specified, only bugs whose IDs are in
                 this list will be returned.
 
-        Return a list of [ts, bugs] where ts is a time snapshot as
+        Return a list of [ts, bugs] where ts is a utc timestamp as
         returned by `time_snapshot()` and bugs is a list of bug dicts.
         """
         # XXX 2008-04-12 gmb:
@@ -541,7 +541,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         missing_bugs = [
             {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
 
-        return [self.time_snapshot(), bugs_to_return + missing_bugs]
+        return [self.time_snapshot()[2], bugs_to_return + missing_bugs]
 
 
 class TestRoundup(Roundup):
