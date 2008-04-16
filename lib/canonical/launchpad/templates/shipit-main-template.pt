@@ -118,6 +118,12 @@
           &#8250; <strong>Request a Free CD</strong>
         </div>
 
+        <tal:maintenance replace="structure context/@@+maintenancemessage" />
+        <tal:notifications define="notifications request/notifications"
+                           condition="notifications">
+          <metal:notifications
+            use-macro="context/@@+main-template-macros/notifications" />
+        </tal:notifications>
 
         <metal:block define-slot="body">
           PAGE CONTENT HERE
@@ -126,7 +132,7 @@
         <span class="clear"></span>
       </div> <!-- /.left-corner, /.right-corner, /#squeeze, /#center -->
 
-      <div id="footer" class="column span-24">&copy; 2008 Canonical Ltd</div>
+      <div id="footer" class="column span-24">&copy; 2008 Canonical Ltd.</div>
 
     </div> <!-- /layout -->
     <img id="bottomcap" alt=""
