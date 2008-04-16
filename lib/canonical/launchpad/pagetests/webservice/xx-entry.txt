@@ -23,6 +23,43 @@ Salgado'.
   u'Guilherme Salgado'
 
 
+== Content negotiation ==
+
+By varying the 'Accept' header, the client can request either a JSON
+representation of an entry, or a WADL description of the entry's
+capabilities.
+
+  >>> def negotiated_type(accept_header):
+  ...     return webservice.get('/~salgado',
+  ...                           accept_header).getHeader('Content-Type')
+
+  >>> negotiated_type('application/json')
+  'application/json'
+
+  >>> negotiated_type('application/vd.sun.wadl+xml')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type(None)
+  'application/json'
+
+  >>> negotiated_type('text/html')
+  'application/json'
+
+  >>> negotiated_type('application/json, application/vd.sun.wadl+xml')
+  'application/json'
+
+  >>> negotiated_type('application/vd.sun.wadl+xml, text/html, ' +
+  ...                 'application/json')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type('application/json;q=0.5, application/vd.sun.wadl+xml')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type('application/json;q=0,' +
+  ...                 'application/vd.sun.wadl+xml;q=0.1')
+  'application/vd.sun.wadl+xml'
+
+
 == Custom operations ==
 
 Some entries support custom operations through GET. The custom
@@ -126,9 +163,6 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   ...
   Location: http://api.launchpad.dev/~salgado
   <BLANKLINE>
-
-# XXX leonardr 2008-03-10 blueprint=modify-data-links:
-# A link between a person and a related object can be modified.
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH, and sometimes it's easier to GET a document,

@@ -36,7 +36,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
@@ -902,6 +902,7 @@ class PackageUploadBuild(SQLBase):
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
+        main_component = getUtility(IComponentSet)['main']
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
@@ -916,10 +917,16 @@ class PackageUploadBuild(SQLBase):
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
                 # What do we do about embargoed binaries here?
+                if self.packageupload.archive.is_ppa:
+                    # We override PPA to always publish in the main component.
+                    component = main_component
+                else:
+                    component = binary.component
+
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
-                    component=binary.component,
+                    component=component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
@@ -1030,10 +1037,16 @@ class PackageUploadSource(SQLBase):
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
+        if self.packageupload.archive.is_ppa:
+            # We override PPA to always publish in the main component.
+            component = getUtility(IComponentSet)['main']
+        else:
+            component = self.sourcepackagerelease.component
+
         sspph = SecureSourcePackagePublishingHistory(
             distroseries=self.packageupload.distroseries,
             sourcepackagerelease=self.sourcepackagerelease,
-            component=self.sourcepackagerelease.component,
+            component=component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,

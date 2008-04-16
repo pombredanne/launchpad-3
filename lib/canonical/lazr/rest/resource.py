@@ -22,9 +22,11 @@ import simplejson
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
+from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFields
@@ -43,6 +45,11 @@ from canonical.lazr.interfaces import (
     IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
 from canonical.lazr.rest.schema import URLDereferencingMixin
+
+
+class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
+    "A page template class for generating web service-related documents."
+    pass
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -91,6 +98,10 @@ class HTTPResource(URLDereferencingMixin):
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
+    # Some interesting media types.
+    WADL_TYPE = 'application/vd.sun.wadl+xml'
+    JSON_TYPE = 'application/json'
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -108,6 +119,56 @@ class HTTPResource(URLDereferencingMixin):
         adapters = getAdapters((self.context, self.request),
                                IResourcePOSTOperation)
         return len(adapters) > 0
+
+    def getPreferredContentTypes(self):
+        """Find which content types the client prefers to receive."""
+        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+
+    def _parseAcceptStyleHeader(self, value):
+        """Parse an HTTP header from the Accept-* family.
+
+        These headers contain a list of possible values, each with an
+        optional priority.
+
+        This code is modified from Zope's
+        BrowserLanguages#getPreferredLanguages.
+
+        :return: All values, in descending order of priority.
+        """
+        if value is None:
+            return []
+
+        values = value.split(',')
+        # In the original getPreferredLanguages there was some language
+        # code normalization here, which I removed.
+        values = [v for v in values if v != ""]
+
+        accepts = []
+        for index, value in enumerate(values):
+            l = value.split(';', 2)
+
+            # If not supplied, quality defaults to 1...
+            quality = 1.0
+
+            if len(l) == 2:
+                q = l[1]
+                if q.startswith('q='):
+                    q = q.split('=', 2)[1]
+                    quality = float(q)
+
+            if quality == 1.0:
+                # ... but we use 1.9 - 0.001 * position to
+                # keep the ordering between all items with
+                # 1.0 quality, which may include items with no quality
+                # defined, and items with quality defined as 1.
+                quality = 1.9 - (0.001 * index)
+
+            accepts.append((quality, l[0].strip()))
+
+        accepts = [acc for acc in accepts if acc[0] > 0]
+        accepts.sort()
+        accepts.reverse()
+        return [value for quality, value in accepts]
 
 
 class WebServiceBatchNavigator(BatchNavigator):
@@ -323,9 +384,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         appropriate HTTP response code.
         """
 
-        if media_type != 'application/json':
+        if media_type != self.JSON_TYPE:
             self.request.response.setStatus(415)
-            return None, 'Expected a media type of application/json.'
+            return None, 'Expected a media type of %s.' % self.JSON_TYPE
         try:
             h = simplejson.loads(unicode(representation))
         except ValueError:
@@ -337,7 +398,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return h, None
 
     def do_GET(self):
-        """Render the entry as JSON."""
+        """Render an appropriate representation of the entry."""
         # Handle a custom operation, probably a search.
         operation_name = self.request.form.pop('ws_op', None)
         if operation_name is not None:
@@ -347,12 +408,31 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # just needs this string served to the client.
                 return result
         else:
-            # No custom operation was specified. Implement a standard GET,
-            # which serves a JSON representation of the entry.
-            result = self
+            # No custom operation was specified. Implement a standard
+            # GET, which serves a JSON or WADL representation of the
+            # entry.
+            content_types = self.getPreferredContentTypes()
+            try:
+                wadl_pos = content_types.index(self.WADL_TYPE)
+            except ValueError:
+                wadl_pos = float("infinity")
+            try:
+                json_pos = content_types.index(self.JSON_TYPE)
+            except ValueError:
+                json_pos = float("infinity")
+
+            # If the client's desire for WADL outranks its desire for
+            # JSON, serve WADL.  Otherwise, serve JSON.
+            if wadl_pos < json_pos:
+                result = self.toWADL().encode("utf-8")
+                self.request.response.setHeader(
+                    'Content-Type', self.WADL_TYPE)
+                return result
+            else:
+                result = self
 
         # Serialize the result to JSON.
-        self.request.response.setHeader('Content-type', 'application/json')
+        self.request.response.setHeader('Content-Type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
     def do_PUT(self, media_type, representation):
@@ -397,6 +477,16 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         if error is not None:
             return error
         return self._applyChanges(changeset)
+
+    def toWADL(self):
+        """Represent this resource as a WADL application.
+
+        The WADL document describes the capabilities of this resource.
+        """
+        template = LazrPageTemplateFile('../templates/wadl-entry.pt')
+        namespace = template.pt_getContext()
+        namespace['context'] = self
+        return template.pt_render(namespace)
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -574,7 +664,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                 raise NotFound(self, self.collection_name)
             result = self.batch(entries, self.request)
 
-        self.request.response.setHeader('Content-type', 'application/json')
+        self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
 
 
