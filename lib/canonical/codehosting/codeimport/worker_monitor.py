@@ -157,11 +157,13 @@ class CodeImportWorkerMonitor:
         get_rocketfuel_root(),
         'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id):
+    def __init__(self, job_id, logger):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
+        :param logger: A `Logger` object.
         """
+        self._logger = logger
         self._job_id = job_id
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
@@ -173,8 +175,10 @@ class CodeImportWorkerMonitor:
 
         :raises ExitQuietly: if the job is not found.
         """
+        self._logger.info("getJob %d", self._job_id)
         job = getUtility(ICodeImportJobSet).getById(self._job_id)
         if job is None:
+            self._logger.info("Not found, exiting quietly")
             self._call_finish_job = False
             raise ExitQuietly
         else:

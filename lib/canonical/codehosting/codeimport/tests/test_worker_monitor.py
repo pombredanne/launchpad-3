@@ -420,7 +420,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         """Assert that a `CodeImportResult` was created for `code_import`."""
         results = list(getUtility(ICodeImportResultSet).getResultsForImport(
             code_import))
-        self.failUnless(len(results), 1)
+        self.failUnlessEqual(len(results), 1)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
@@ -483,7 +483,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         reactor.spawnProcess(
             DeferredOnExit(process_end_deferred), sys.executable,
             [sys.executable, script_path, str(job_id)],
-            childFDs={0:0, 1:1, 2:2})
+            childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
 
 
