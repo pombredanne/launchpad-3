@@ -48,6 +48,16 @@ class TestBranchPopupWidget(unittest.TestCase):
         popup = self.makeBranchPopup(product)
         self.assertEqual(product, popup.getProduct())
 
+    def test_getPerson(self):
+        person = self.factory.makePerson(
+            password=self.factory.getUniqueString())
+        login(person.preferredemail.email)
+        try:
+            popup = self.makeBranchPopup(self.factory.makeProduct())
+            self.assertEqual(person, popup.getPerson())
+        finally:
+            logout()
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

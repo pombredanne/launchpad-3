@@ -23,7 +23,9 @@ __all__ = [
 
 
 from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
+from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
 
@@ -102,6 +104,10 @@ class BranchPopupWidget(SinglePopupWidget):
     """Custom popup widget for choosing branches."""
 
     displayWidth = '35'
+
+    def getPerson(self):
+        """Return the person in the context, if any."""
+        return getUtility(ILaunchBag).user
 
     def getProduct(self):
         """Return the product in the context, if there is one."""
