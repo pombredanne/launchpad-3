@@ -67,11 +67,14 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
 
     assert hint_string, 'Missing arch_hint_list'
 
-    # For PPA publications exclude non-PPA architectures and ignore P-a-s.
+    # Ignore P-a-s for PPA publications.
     if pubrec.archive.purpose == ArchivePurpose.PPA:
+        pas_verify = None
+
+    # The 'PPA supported' flag only applies to virtualized archives
+    if pubrec.archive.require_virtualized:
         legal_archserieses = [
             arch for arch in legal_archserieses if arch.ppa_supported]
-        pas_verify = None
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
