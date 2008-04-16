@@ -137,7 +137,7 @@ class ExternalBugTracker:
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 
-    def probeBugTracker(self):
+    def getExternalBugTrackerToUse(self):
         """See `IExternalBugTracker`."""
         return self
 
