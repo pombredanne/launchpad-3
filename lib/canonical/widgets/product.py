@@ -79,7 +79,8 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             email_address = self.upstream_email_address_widget.getInputValue()
             if email_address is None or len(email_address) == 0:
                 self.upstream_email_address_widget._error = (
-                    LaunchpadValidationError('Please enter an email address.'))
+                    LaunchpadValidationError(
+                        'Please enter an email address.'))
                 raise self.upstream_email_address_widget._error
             bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                 'mailto:%s' % email_address, getUtility(ILaunchBag).user,
