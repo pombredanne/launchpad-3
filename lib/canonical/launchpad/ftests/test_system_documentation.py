@@ -617,6 +617,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-trac-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'mailinglist-subscriptions-xmlrpc.txt': LayeredDocFileSuite(
             '../doc/mailinglist-subscriptions-xmlrpc.txt',
             setUp=mailingListXMLRPCInternalSetUp,
