@@ -24,11 +24,11 @@
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
 
     <style type="text/css" media="all"
-      tal:content="string:@import url(${icingroot}/lp-extra.css);" />
-    <style type="text/css" media="all"
       tal:content="string:@import url(${icingroot}/style.css);" />
     <style type="text/css" media="print"
       tal:content="string:@import url(${icingroot}/print.css);" />
+    <style type="text/css" media="all"
+      tal:content="string:@import url(${icingroot}/lp-extra.css);" />
     <tal:comment condition="nothing">
       XXX: We cannot use tal inside the comment below (which is only
       interpreted by IE), so we have to use /+icing-ubuntu/ie.css rather

@@ -10,32 +10,6 @@
   i18n:domain="launchpad"
 >
 
-<head>
-  <style metal:fill-slot="head_epilogue" type="text/css">
-    #chooseLinks {
-      width:1000px;
-      margin:0;
-      padding:0;
-    }
-    #chooseLinks a 
-    {
-      width:20%;
-      display:block;
-      margin:1em;
-      float:left;
-      padding:1em;
-      border: .1em solid #DBA73A;
-      text-align:center;
-      font-size:115%;
-      text-decoration: none;
-      height: 4em;
-    }
-    #chooseLinks a:hover {
-      background-color: #FFE8BF;
-    }
-  </style>
-</head>
-
 <body>
   <div metal:fill-slot="body">
   <tal:block define="flavour_name view/flavour/title;
@@ -49,34 +23,37 @@
     downloading the CD image if you have a fast Internet connection.
     </p>
     
-    <div id="chooseLinks">
+    <table id="chooseLinks">
+      <tr>
       <tal:no-prerelease condition="not: view/prerelease_mode">
-        <div>
+        <td class="cdchoice" width="45%">
           <a href="login">
             Request a CD of
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
-        </div>
-        <div tal:condition="view/flavour/enumvalue:UBUNTU">
+        </td>
+        <td width="10%">&nbsp;</td>
+        <td class="cdchoice" width="45%">
           <a href="login-server">
             Request a CD of Ubuntu Server Edition
             <span tal:replace="series_name" /></a>
-        </div>
+        </td>
       </tal:no-prerelease>
       <tal:prerelease condition="view/prerelease_mode">
-        <div>
+        <td class="cdchoice" width="45%">
           <a href="login">
             Pre-order a CD of
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
-        </div>
-        <div tal:condition="view/flavour/enumvalue:UBUNTU">
+        </td>
+        <td width="10%">&nbsp;</td>
+        <td class="cdchoice" width="45%">
           <a href="login-server">
             Pre-order a CD of Ubuntu Server Edition
             <span tal:replace="series_name" /></a>
-        </div>
+        </td>
       </tal:prerelease>
-    </div>
+    </table>
   
     <p><a href="login">Check the status of an existing request</a></p>
 

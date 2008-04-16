@@ -41,3 +41,20 @@ td.error {
 .informational.message, .informational .message {
   background-image: url(/@@/info);
 }
+
+th {text-align: right;}
+td.cdchoice {
+  border: 2px solid #D3CAAA;
+  text-align: center;
+  font-size: 120%;
+}
+td.cdchoice a {
+  display: block;
+  background-color: #eeeced;
+  padding: 10px;
+  height: 90px;
+  font-weight: bold;
+}
+td.cdchoice a:hover {
+  background-color: #f0eee3;
+}
