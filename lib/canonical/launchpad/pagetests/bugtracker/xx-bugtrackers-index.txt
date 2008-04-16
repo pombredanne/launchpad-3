@@ -44,18 +44,22 @@ bugtrackers currently registered:
 
 Email addresses are obfuscated if the user is not logged-in:
 
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/bugs/bugtrackers/email/+edit')
+    >>> admin_browser.getControl('Title').value = (
+    ...     'an@email.address bug tracker')
+    >>> admin_browser.getControl('Change').click()
+
     >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers')
     >>> print_tracker_table(anon_browser)
     ------------------------
     ...
-    Email bugtracker
+    &lt;email address hidden&gt; bug tracker
     mailto:&lt;email address hidden&gt;
       --> None
     &mdash;
     Email Address
     0
-    ------------------------
-    ...
 
 The watch counts match the number of bugs listed, of course:
 
