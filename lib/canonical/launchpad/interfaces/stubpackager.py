@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-
+# pylint: disable-msg=E0211,E0213
 from zope.interface import Interface, Attribute
 
 __all__ = ['IStubPackager']

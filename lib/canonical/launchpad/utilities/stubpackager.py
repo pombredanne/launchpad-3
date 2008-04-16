@@ -338,8 +338,6 @@ class StubPackager:
 
 if __name__ == '__main__':
 
-    from zope.component import getUtility
-    from canonical.launchpad.interfaces import IStubPackager
     from canonical.launchpad import scripts
     from canonical.lp import initZopeless
 
