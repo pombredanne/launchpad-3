@@ -1631,17 +1631,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             WHERE subscriber=%d LIMIT 1
             """ % self.id)
 
-        row = cur.dictfetchone()
-        for column, warning in [
-            ('product_count', 'a project subscriber'),
-            ('productseries_count', 'a project series subscriber'),
-            ('project_count', 'a project subscriber'),
-            ('milestone_count', 'a milestone subscriber'),
-            ('distribution_count', 'a distribution subscriber'),
-            ('distroseries_count', 'a distroseries subscriber'),
-            ('sourcepackagename_count', 'a source package subscriber'),
-            ]:
-            if row[column] > 0:
+        row = cur.fetchone()
+        for count, warning in zip(row, [
+                'a project subscriber',
+                'a project series subscriber',
+                'a project subscriber',
+                'a milestone subscriber',
+                'a distribution subscriber',
+                'a distroseries subscriber',
+                'a source package subscriber']):
+            if count > 0:
                 warnings.add(warning)
 
         # Compose warning string.
