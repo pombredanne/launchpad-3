@@ -260,6 +260,7 @@ class TracLPPlugin(ExternalBugTracker):
         trac_time = datetime.fromtimestamp(utc_time)
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
 
+    @needs_authentication
     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
         """See `IExternalBugTracker`."""
         endpoint = urlappend(self.baseurl, 'xmlrpc')
