@@ -11,26 +11,14 @@
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <include package="canonical.librarian" />
 
-    <browser:skin
+    <interface
         name="launchpad"
-        interface="canonical.launchpad.layers.LaunchpadLayer"/>
-    <browser:skin
-        name="rosetta"
-        interface="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:skin
-        name="shipit"
-        interface="canonical.launchpad.layers.ShipItLayer"/>
-    <browser:skin
-        name="shipit-ubuntu"
-        interface="canonical.launchpad.layers.ShipItUbuntuLayer"/>
-    <browser:skin
-        name="shipit-kubuntu"
-        interface="canonical.launchpad.layers.ShipItKUbuntuLayer"/>
-    <browser:skin
-        name="shipit-edubuntu"
-        interface="canonical.launchpad.layers.ShipItEdUbuntuLayer"/>
+        interface="canonical.launchpad.layers.LaunchpadLayer"
+        type="zope.publisher.interfaces.browser.IBrowserSkinType"
+        />
 
     <!-- Set via overrides -->
+
     <browser:defaultSkin
         name="launchpad" />
 

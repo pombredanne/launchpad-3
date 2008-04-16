@@ -2,10 +2,10 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <content class="zope.app.error.RootErrorReportingUtility">
+    <content class="zope.error.error.RootErrorReportingUtility">
         <require
             permission="zope.Public"
-            interface="zope.app.error.interfaces.IErrorReportingUtility"
+            interface="zope.error.interfaces.IErrorReportingUtility"
             />
     </content>
 
@@ -16,7 +16,7 @@
     </content>
 
     <utility
-        provides="zope.app.error.interfaces.IErrorReportingUtility"
+        provides="zope.error.interfaces.IErrorReportingUtility"
         component="canonical.launchpad.webapp.errorlog.globalErrorUtility" 
         />
 
