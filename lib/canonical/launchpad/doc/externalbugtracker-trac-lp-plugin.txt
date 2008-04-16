@@ -20,16 +20,28 @@ so that we can avoid network traffic in tests.
 == Authentication ==
 
 Before any XML-RPC methods can be used, we need to authenticate with the
-Trac instance.
+Trac instance. To authenticate we create a special login token in
+Launchpad. We then give that token to the Trac instance, which checks
+whether the token is valid, and returns a cookie we can send with the
+XML-RPC requests.
+
+We give the token to Trac by issuing a HTTP request at
+$base_url/launchpad-auth/$token. A request to such an URL will cause
+Trac to validate $token and return a Set-Cookie header.
+
+    >>> import random
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.webapp.url import urlappend
+    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> class FakeResponse:
     ...     def __init__(self):
     ...         self.headers = {}
 
-    >>> from canonical.launchpad.webapp.url import urlappend
-    >>> from canonical.launchpad.interfaces import ILoginTokenSet
     >>> class TestTracLPPlugin(TracLPPlugin):
     ...     def urlopen(self, url):
+    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
     ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
     ...         if not url.startswith(base_auth_url + '/'):
     ...             raise AssertionError("Unexpected URL: %s" % url)
@@ -39,22 +51,55 @@ Trac instance.
     ...             raise AssertionError(
     ...                 'Invalid token type: %s' % token.tokentype.name)
     ...         if token.date_consumed is not None:
-    ...             raise AssertionError("Token as already been consumed.")
+    ...             raise AssertionError("Token has already been consumed.")
     ...         token.consume()
     ...         print "Successfully validated the token."
     ...         response = FakeResponse()
-    ...         response.headers['Set-Cookie'] = 'trac_auth=random_token'
+    ...         response.headers['Set-Cookie'] = (
+    ...             'trac_auth=random_token-' + str(random.random()))
+    ...         LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     ...         return response
 
+To generate the token, the internal XML-RPC server is used. By using the
+XML-RPC server rather than talking to the database directy means that we
+don't have to bother about commiting the transaction to make the token
+visible to Trac.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracInternalXMLRPCTransport)
+    >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TestTracLPPlugin(
-    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
+
+The method that authenticates with Trac is _authenticate().
+
     >>> trac._authenticate()
+    Using XML-RPC to generate token.
     Successfully validated the token.
 
-    >>> test_transport.auth_cookie
-    'trac_auth=random_token'
 
-The cookie is set by the transport used.
+After it has been called, the XML-RPC transport will have its
+auth_cookie attribute set.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token-...'
+
+There's another method, _extractAuthCookie(), which gets the cookie from
+the Set-Cookie header.
+
+    >>> trac._extractAuthCookie(
+    ...     'trac_auth=some_token; expires=Some date; path=/some/path;'
+    ...     ' domain=some.name.example.com; secure')
+    'trac_auth=some_token'
+
+    >>> print trac._extractAuthCookie(
+    ...     'other_cookie=some_token; expires=Some date; path=/some/path;'
+    ...     ' domain=some.name.example.com; secure')
+    None
+
+The XML-RPC transport will then take the auth_cookie and set the Cookie
+header in its requests.
 
     >>> trac = TracLPPlugin('http://example.com/')
     >>> transport = trac.xmlrpc_transport
@@ -67,13 +112,16 @@ The cookie is set by the transport used.
     Host: example.com
     Cookie: trac_auth=random_token
 
+
 == Current time ==
 
 The current time is always returned in UTC, no matter if the Trac
 instance returns another time zone.
 
+    >>> test_transport = TestTracXMLRPCTransport()
     >>> trac = TestTracLPPlugin(
-    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
 
     >>> import time
     >>> from datetime import datetime
@@ -83,6 +131,26 @@ instance returns another time zone.
     >>> test_transport.local_timezone = 'CET'
     >>> test_transport.utc_offset = 60*60
     >>> trac.getCurrentDBTime()
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+An authorization request was automatically sent, since the method needed
+authentication. Because the cookie is now set, other calls won't cause
+an authorization request.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token-...'
+    >>> trac.getCurrentDBTime()
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+If the cookie gets expired, an authorization request is automatically
+sent again.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.getCurrentDBTime()
+    Using XML-RPC to generate token.
+    Successfully validated the token.
     datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
 
 
@@ -111,24 +179,33 @@ of the IDs of the bugs which have been modified since that time.
 
     >>> bug_ids_to_check = ['1', '2', '3']
     >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> sorted(trac.getModifiedRemoteBugs(
     ...     bug_ids_to_check, last_checked))
+    Using XML-RPC to generate token.
+    Successfully validated the token.
     ['1', '3']
 
 Different last_checked times will result in different numbers of bugs
 being returned.
 
     >>> last_checked = datetime(2008, 2, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> trac.getModifiedRemoteBugs(
     ...     bug_ids_to_check, last_checked)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
     ['1']
 
 If no bugs have been updated since last_checked, getModifiedRemoteBugs()
 will return an empty list.
 
     >>> last_checked = datetime(2008, 5, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> trac.getModifiedRemoteBugs(
     ...     bug_ids_to_check, last_checked)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
     []
 
 If we ask for bug ids that don't exist on the remote server, they will
@@ -137,8 +214,11 @@ the missing bugs an error will be raised that we can then investigate.
 
     >>> bug_ids_to_check = ['1', '2', '3', '99', '100']
     >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
     >>> sorted(trac.getModifiedRemoteBugs(
     ...     bug_ids_to_check, last_checked))
+    Using XML-RPC to generate token.
+    Successfully validated the token.
     ['1', '100', '3', '99']
 
 
