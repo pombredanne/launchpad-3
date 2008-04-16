@@ -705,7 +705,6 @@ True if it completed the task.
     >>> web = getUtility(ISectionSet)['web']
     >>> print item.overrideSource(new_component=restricted, new_section=web)
     True
-
     >>> print "%s/%s" % (
     ...     source.sourcepackagerelease.component.name,
     ...     source.sourcepackagerelease.section.name)
