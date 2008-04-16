@@ -223,7 +223,7 @@ class ShipItDistroSeries(DBEnumeratedType):
         """)
 
     HARDY = DBItem(6, """
-        8.04 LTS (Gutsy Gibbon)
+        8.04 LTS (Hardy Heron)
 
         The Hardy Heron long-term-support release.
         """)
