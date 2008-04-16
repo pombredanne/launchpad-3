@@ -1347,6 +1347,10 @@ class BranchSet:
 
         return [branches[id] for id in branch_ids]
 
+    def getByProductAndName(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.selectBy(name=name, product=product.id)
+
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(

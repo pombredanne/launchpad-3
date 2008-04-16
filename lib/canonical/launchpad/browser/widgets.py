@@ -27,6 +27,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
 
@@ -106,13 +107,32 @@ class BranchPopupWidget(SinglePopupWidget):
 
     displayWidth = '35'
 
+    def _isBranchWithName(self, name):
+        product = self.getProduct()
+        results = getUtility(IBranchSet).getByProductAndName(product, name)
+        return results.count() > 0
+
+    def getBranchNameFromURL(self, url, MAXIMUM_TRIES=10):
+        """Return a branch name based on `url`.
+
+        The name is based on the last path segment of the URL. If there is
+        already another branch of that name on the product, then we'll try to
+        find a unique name by appending numbers. Do this up to `MAXIMUM_TRIES`
+        times.
+        """
+        original_name = name = URI(url).path.split('/')[-1]
+        for i in range(1, MAXIMUM_TRIES+1):
+            if not self._isBranchWithName(name):
+                return name
+            name = '%s-%d' % (original_name, i)
+
     def getPerson(self):
         """Return the person in the context, if any."""
         return getUtility(ILaunchBag).user
 
     def getProduct(self):
         """Return the product in the context, if there is one."""
-        return self.vocabulary.context
+        return getUtility(ILaunchBag).product
 
     def makeBranchFromURL(self, url):
         owner = self.getPerson()

@@ -711,6 +711,9 @@ class IBranchSet(Interface):
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
+    def getByProductAndName(product, name):
+        """Find all branches in a product with a given name."""
+
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
