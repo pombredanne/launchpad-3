@@ -24,9 +24,9 @@ IExternalBugTracker.
 == LP plugin ==
 
 Some Trac instances have a plugin installed to make it easier for us to
-communicate with it. getExternalBugTrackerToUse() probes the bug tracker
-for the special authentication mechanism the plugin uses, and returns a
-TracLPPlugin if it's found.
+communicate with them. getExternalBugTrackerToUse() probes the bug
+tracker for the special authentication mechanism the plugin uses, and
+returns a TracLPPlugin if it's found.
 
 If the LP plugin is installed, the URL will return 401, since it fails
 to validate the token.
