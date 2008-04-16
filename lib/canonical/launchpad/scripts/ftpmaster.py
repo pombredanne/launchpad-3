@@ -35,8 +35,9 @@ from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
-    IDistributionSet, IBinaryPackageReleaseSet, ILaunchpadCelebrities,
-    NotFoundError, ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
+    IBinaryPackagePublishingHistory, IBinaryPackageReleaseSet,
+    IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
+    ISourcePackagePublishingHistory, NotFoundError, PackagePublishingPocket,
     PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
@@ -1790,9 +1791,9 @@ class UnembargoSecurityPackage(PackageCopier):
         :param to_restricted: True or False depending on whether the target
             librarian to be used is the restricted one or not.
         """
-        if hasattr(pub_record, "sourcepackagerelease"):
+        if ISourcePackagePublishingHistory.providedBy(pub_record):
             files = pub_record.sourcepackagerelease.files
-        elif hasattr(pub_record, "binarypackagerelease"):
+        elif IBinaryPackagePublishingHistory.providedBy(pub_record):
             files = pub_record.binarypackagerelease.files
         else:
             raise AssertionError(
