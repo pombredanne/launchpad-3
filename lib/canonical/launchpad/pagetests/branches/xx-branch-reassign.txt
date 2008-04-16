@@ -37,45 +37,17 @@ in lib/canonical/launchpad/pagetests/standalone/xx-reassign-distroseries.txt;
 look for "Now we reassign it to a newly the GNOME Terminal Klingon support branch to SABDFL.
 create team: ubuntu2".
 
+
 == Branch name conflict ==
 
-Since the branch owner is part of the unique name of a branch, changing the
-owner can cause a conflict.
+Branch names are now unique across a project, and naming conficts no longer
+occur when moving the ownership of a branch to another person or team.
 
-We will setup a conflict with ~launchpad/gnome-terminal/launchpad. First, we
-need to rename one of the user branches to use the "launchpad" name, and then
-we will try to reassign to the "launchpad" team.
+XXX TimPenhey 2008-04-17:
+Remove the object reassignment view completely from branches
+and allow the +edit page to change the current branch owner
+to any of the teams that the logged in user is a member of.
 
-    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main/+edit')
-    >>> browser.getControl('Name').value = 'launchpad'
-    >>> browser.getControl('Change Branch').click()
-    >>> browser.url
-    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad'
-
-Now, try to reassign that branch to "launchpad", that should cause an error.
-
-    >>> browser.getLink('Change registrant').click()
-    >>> browser.url
-    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
-    >>> browser.getControl(name='field.owner').value = 'launchpad'
-    >>> browser.getControl('Change Registrant').click()
-    >>> browser.url
-    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
-
-That should have displayed an error message, with a link to the conflicting
-branch and a link to edit the details of this branch.
-
-XXX: Ideally, the +reassign form would have a name field to allow resolving the
-name conflict directly, but it is to difficult to do now because
-ObjectReassignmentView uses a custom form. -- David Allouche 2005-08-17
-
-XXX: Less ideally, the error message should include hyperlinks to the conflict
-branch and the +edit form of the context branch, but ObjectReassignmentView
-will not let us have even that. -- David Allouche 2005-08-17
-
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    Branch name conflict. ... try changing its registrant again.
 
 == Preventing the assignment of a +junk branch to a team ==
 

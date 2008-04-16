@@ -454,7 +454,7 @@ class BranchNameValidationMixin:
 
     def validate_branch_name(self, owner, product, branch_name):
         if not getUtility(IBranchSet).isBranchNameAvailable(
-            owner, product, branch_name):
+            owner, product, branch_name, self.context):
             # There is a branch that has the branch_name specified already.
             if product is None:
                 message = (
