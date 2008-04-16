@@ -966,7 +966,7 @@ the common case where the overview link is the default view name.
     >>> class IStreet(Interface):
     ...     """A street."""
     >>> directlyProvides(street, IStreet, IThingHavingFacets)
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> ztapi.setDefaultViewName(IStreet, '+baz', None)
 
     >>> request = DummyRequest(
