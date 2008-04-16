@@ -42,7 +42,9 @@ bugtrackers currently registered:
     ------------------------
     ...
 
-Email addresses are obfuscated if the user is not logged-in:
+Email addresses are obfuscated if the user is not logged-in. The title
+of the bug tracker might contain an email address - especially
+auto-created ones - so the title is also obfuscated.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/bugs/bugtrackers/email/+edit')
