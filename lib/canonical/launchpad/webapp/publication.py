@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
+import gc
+import os
 import thread
+from time import strftime
 import traceback
 import urllib
 
@@ -29,6 +32,8 @@ from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
+from canonical.mem import (
+    countsByType, deltaCounts, mostRefs, printCounts, readCounts, resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
@@ -465,6 +470,9 @@ class LaunchpadBrowserPublication(
         superclass.endRequest(self, request, object)
         da.clear_request_started()
 
+        if config.debug.references:
+            self.debugReferencesLeak(request)
+
         # Maintain operational statistics.
         OpStats.stats['requests'] += 1
 
@@ -485,3 +493,98 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
+
+    def debugReferencesLeak(self, request):
+        """See what kind of references are increasing.
+
+        This logs the current RSS and references count by types in a
+        scoreboard file. If that file exists, we compare the current stats
+        with the previous one and logs the increase along the current page id.
+
+        Note that this only provides reliable results when only one thread is
+        processing requests.
+        """
+        gc.collect()
+        current_rss = resident()
+        current_garbage_count = len(gc.garbage)
+        # Convert type to string, because that's what we get when reading
+        # the old scoreboard.
+        current_refs = [
+            (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
+        # Add G as prefix to types on the garbage list.
+        current_garbage = [
+            (count, 'G%s' % str(ref_type))
+            for count, ref_type in countsByType(gc.garbage, n=0)]
+        scoreboard_path = config.debug.references_scoreboard_file
+
+        # Read in previous scoreboard if it exists.
+        if os.path.exists(scoreboard_path):
+            scoreboard = open(scoreboard_path, 'r')
+            try:
+                stats = scoreboard.readline().split()
+                prev_rss = int(stats[0].strip())
+                prev_garbage_count = int(stats[1].strip())
+                prev_refs = readCounts(scoreboard, '=== GARBAGE ===\n')
+                prev_garbage = readCounts(scoreboard)
+            finally:
+                scoreboard.close()
+            mem_leak = current_rss - prev_rss
+            garbage_leak = current_garbage_count - prev_garbage_count
+            delta_refs = list(deltaCounts(prev_refs, current_refs))
+            delta_refs.extend(deltaCounts(prev_garbage, current_garbage))
+            self.logReferencesLeak(request, mem_leak, delta_refs)
+
+        # Save the current scoreboard.
+        scoreboard = open(scoreboard_path, 'w')
+        try:
+            scoreboard.write("%d %d\n" % (current_rss, current_garbage_count))
+            printCounts(current_refs, scoreboard)
+            scoreboard.write('=== GARBAGE ===\n')
+            printCounts(current_garbage, scoreboard)
+        finally:
+            scoreboard.close()
+
+    def logReferencesLeak(self, request, mem_leak, delta_refs):
+        """Log the time, pageid, increase in RSS and increase in references.
+        """
+        log = open(config.debug.references_leak_log, 'a')
+        try:
+            pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+            # It can happen that the pageid is ''?!?
+            if pageid == '':
+                pageid = 'Unknown'
+            leak_in_mb = float(mem_leak) / (1024*1024)
+            formatted_delta = "; ".join(
+                "%s=%d" % (ref_type, count)
+                for count, ref_type in delta_refs)
+            log.write('%s %s %.2fMb %s\n' % (
+                strftime('%Y-%m-%d:%H:%M:%S'),
+                pageid,
+                leak_in_mb,
+                formatted_delta))
+        finally:
+            log.close()
+
+
+class InvalidThreadsConfiguration(Exception):
+    """Exception thrown when the number of threads isn't set correctly."""
+
+
+def debug_references_startup_check(event):
+    """Event handler for IProcessStartingEvent.
+
+    If debug/references is set to True, we make sure that the number of
+    threads is configured to 1. We also delete any previous scoreboard file.
+    """
+    if not config.debug.references:
+        return
+
+    if config.threads != 1:
+        raise InvalidThreadsConfiguration(
+            "Number of threads should be one when debugging references.")
+
+    # Remove any previous scoreboard, the content is meaningless once
+    # the server is restarted.
+    if os.path.exists(config.debug.references_scoreboard_file):
+        os.remove(config.debug.references_scoreboard_file)
+

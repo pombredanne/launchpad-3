@@ -70,7 +70,6 @@ registerLaunchpadFunction(hookUpFilterSubmission);
         </th>
         <th>Last Modified</th>
         <th>Last Commit</th>
-        <th>Revision Author</th>
       </tr>
     </thead>
     <tbody>
@@ -152,18 +151,14 @@ registerLaunchpadFunction(hookUpFilterSubmission);
             </div>
             <div class="popupTitle"
                  tal:attributes="id string:branch-log-${branch/id};
-                                 onmouseover string:hide_commit(${branch/id});"
-                 tal:content="structure branch/revision_log/fmt:text-to-html">
-            </div>
-          </td>
-          <td>
-            <tal:known-person condition="branch/revision_author/person">
-              <tal:person-link
-                  replace="structure branch/revision_author/person/fmt:link"/>
-            </tal:known-person>
-            <tal:unknown-person
-                condition="not: branch/revision_author/person">
-              <strong>
+                                 onmouseover string:hide_commit(${branch/id});">
+              <p><strong>Author:</strong>
+              <tal:known-person condition="branch/revision_author/person">
+                <tal:person-link
+                    replace="structure branch/revision_author/person/fmt:link"/>
+              </tal:known-person>
+              <tal:unknown-person
+                  condition="not: branch/revision_author/person">
                 <tal:person-text
                     tal:replace="branch/revision_author/name_without_email">
                   John Doe
@@ -180,8 +175,12 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                     &lt;email address hidden&gt;
                   </tal:anonymous>
                 </tal:person-only-email>
-              </strong>
-            </tal:unknown-person>
+              </tal:unknown-person>
+              <br/>
+              <strong>Revision Date:</strong>
+              <tal:revision-date replace="branch/revision_date/fmt:datetime"/></p>
+              <tal:commit-msg replace="structure branch/revision_log/fmt:text-to-html"/>
+            </div>
           </td>
 
         </tal:has_commit>

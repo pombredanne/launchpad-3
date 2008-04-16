@@ -15,6 +15,7 @@ __all__ = [
     'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
+    'IPersonAdminWriteRestricted',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonEditRestricted',
@@ -44,6 +45,8 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.rest.declarations import (
+   collection_default_content, export_collection)
 
 from canonical.launchpad import _
 
@@ -221,7 +224,7 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     USER_CREATED = DBItem(11, """
-        Created by a user to represent a person which does not uses Launchpad.
+        Created by a user to represent a person which does not use Launchpad.
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
@@ -330,13 +333,6 @@ class PersonVisibility(DBEnumeratedType):
 
         Only launchpad admins and team members can view the
         membership list for this team.
-        """)
-
-    PRIVATE = DBItem(30, """
-        Private
-
-        Only launchpad admins and team members can see that
-        this team even exists in launchpad.
         """)
 
 
@@ -732,13 +728,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
-    visibility = Choice(
-        title=_("Teams may be Public, Private Membership, or Private."),
-        required=True, vocabulary=PersonVisibility,
-        default=PersonVisibility.PUBLIC)
-
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
+
+    visibility_consistency_warning = Attribute(
+        "Warning that a private team may leak membership info.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1258,9 +1252,48 @@ class IPersonEditRestricted(Interface):
         team.
         """
 
+    def deactivateAllMembers(comment, reviewer):
+        """Deactivate all the members of this team."""
+
+    def acceptInvitationToBeMemberOf(team, comment):
+        """Accept an invitation to become a member of the given team.
+
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to APPROVED.
+        """
+
+    def declineInvitationToBeMemberOf(team, comment):
+        """Decline an invitation to become a member of the given team.
+
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to INVITATION_DECLINED.
+        """
+
+    def renewTeamMembership(team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+
+class IPersonAdminWriteRestricted(Interface):
+    """IPerson attributes that require launchpad.Admin permission to set."""
+
+    visibility = Choice(
+        title=_("Visibility"),
+        description=_(
+            "Public visibility is standard, and Private Membership"
+            " means that a team's members are hidden."),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
+
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IHasStanding):
+              IPersonAdminWriteRestricted, IHasStanding):
     """A Person."""
 
 
@@ -1306,6 +1339,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
+    export_collection()
 
     title = Attribute('Title')
 
@@ -1421,7 +1455,8 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    def find(text, orderBy=None):
+    @collection_default_content
+    def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
 

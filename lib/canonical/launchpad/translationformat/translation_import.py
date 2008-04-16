@@ -474,7 +474,7 @@ class TranslationImporter:
                         "The msgid_plural field has changed since the"
                         " last time this file was generated, please"
                         " report this error to %s" % (
-                            config.rosetta.rosettaadmin.email))
+                            config.rosettaadmin.email))
                     }
 
                 errors.append(error)

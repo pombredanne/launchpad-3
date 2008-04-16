@@ -1,4 +1,4 @@
- # Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    CodeReviewNotificationLevel,
     CreateBugParams,
     EmailAddressStatus,
     IBranchSet,
@@ -30,14 +31,21 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
+    ICountrySet,
     IPersonSet,
     IProductSet,
+    IProjectSet,
     IRevisionSet,
+    IShippingRequestSet,
     ISpecificationSet,
+    IStandardShipItRequestSet,
     License,
     PersonCreationRationale,
     RevisionControlSystems,
+    ShipItFlavour,
+    ShippingRequestStatus,
     SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
 from canonical.launchpad.ftests import syncUpdate
@@ -149,7 +157,16 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeProduct(self, name=None):
+    def makeTeam(self, team_member, email=None, password=None,
+                 displayname=None):
+        team = self.makePerson(displayname=displayname, email=email,
+                               password=password)
+        team.teamowner = team_member
+        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+        team_member.join(team, team)
+        return team
+
+    def makeProduct(self, name=None, project=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
@@ -160,7 +177,21 @@ class LaunchpadObjectFactory:
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GPL])
+            licenses=[License.GPL], project=project)
+
+    def makeProject(self, name=None):
+        """Create and return a new, arbitrary Project."""
+        owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('project-name')
+        return getUtility(IProjectSet).new(
+            name,
+            self.getUniqueString('displayname'),
+            self.getUniqueString('title'),
+            None,
+            self.getUniqueString('summary'),
+            self.getUniqueString('description'),
+            owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
@@ -200,11 +231,15 @@ class LaunchpadObjectFactory:
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
+        product = None
+        if dependent_branch is not None:
+            product = dependent_branch.product
         if target_branch is None:
-            target_branch = self.makeBranch()
+            target_branch = self.makeBranch(product=product)
+        product = target_branch.product
         if registrant is None:
             registrant = self.makePerson()
-        source_branch = self.makeBranch(product=target_branch.product)
+        source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
 
@@ -246,7 +281,8 @@ class LaunchpadObjectFactory:
         person = self.makePerson(displayname=person_displayname,
             email_address_status=EmailAddressStatus.VALIDATED)
         return branch.subscribe(person,
-            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -333,7 +369,9 @@ class LaunchpadObjectFactory:
 
         product = self.makeProduct()
         branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        # The registrant gets emailed, so needs a preferred email.
+        registrant = self.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -354,23 +392,29 @@ class LaunchpadObjectFactory:
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
 
-    def makeCodeImportJob(self, code_import):
+    def makeCodeImportJob(self, code_import=None):
         """Create and return a new code import job for the given import.
 
         This implies setting the import's review_status to REVIEWED.
         """
+        if code_import is None:
+            code_import = self.makeCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
 
-    def makeCodeImportMachine(self):
+    def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
 
         The machine will be in the OFFLINE state."""
-        hostname = self.getUniqueString('machine-')
-        return getUtility(ICodeImportMachineSet).new(hostname)
+        if hostname is None:
+            hostname = self.getUniqueString('machine-')
+        machine = getUtility(ICodeImportMachineSet).new(hostname)
+        if set_online:
+            machine.setOnline()
+        return machine
 
     def makeCodeImportResult(self):
         """Create and return a new CodeImportResult."""
@@ -384,17 +428,47 @@ class LaunchpadObjectFactory:
             requesting_user, log_excerpt, log_file=None, status=status,
             date_job_started=started)
 
-    def makeSeries(self, user_branch=None, import_branch=None):
+    def makeSeries(self, user_branch=None, import_branch=None,
+                   name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
         :param user_branch: If supplied, the branch to set as
             ProductSeries.user_branch.
         :param import_branch: If supplied, the branch to set as
             ProductSeries.import_branch.
+        :param product: If supplied, the name of the series.
+        :param product: If supplied, the series is created for this product.
+            Otherwise, a new product is created.
         """
-        product = self.makeProduct()
-        series = product.newSeries(product.owner, self.getUniqueString(),
-            self.getUniqueString(), user_branch)
+        if product is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        series = product.newSeries(
+            product.owner, name, self.getUniqueString(), user_branch)
         series.import_branch = import_branch
         syncUpdate(series)
         return series
+
+    def makeShipItRequest(self, flavour=ShipItFlavour.UBUNTU):
+        """Create a `ShipItRequest` associated with a newly created person.
+
+        The request's status will be approved and it will contain an arbitrary
+        number of CDs of the given flavour.
+        """
+        brazil = getUtility(ICountrySet)['BR']
+        city = 'Sao Carlos'
+        addressline = 'Antonio Rodrigues Cajado 1506'
+        name = 'Guilherme Salgado'
+        phone = '+551635015218'
+        person = self.makePerson()
+        request = getUtility(IShippingRequestSet).new(
+            person, name, brazil, city, addressline, phone)
+        # We don't want to login() as the person used to create the request,
+        # so we remove the security proxy for changing the status.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
+        template = getUtility(IStandardShipItRequestSet).getByFlavour(
+            flavour)[0]
+        request.setQuantities({flavour: template.quantities})
+        return request

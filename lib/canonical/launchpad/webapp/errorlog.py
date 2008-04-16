@@ -199,12 +199,37 @@ class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
+    _default_config_section = 'error_reports'
 
     lasterrordir = None
     lastid = 0
 
+
     def __init__(self):
         self.lastid_lock = threading.Lock()
+        self.configure()
+
+    def configure(self, section_name=None):
+        """Configure the utility using the named section form the config.
+
+        The 'error_reports' section is used if section_name is None.
+        """
+        if section_name is None:
+            section_name = self._default_config_section
+        self.oops_prefix = config[section_name].oops_prefix
+        self.error_dir = config[section_name].error_dir
+        self.copy_to_zlog = config[section_name].copy_to_zlog
+        self.prefix = self.oops_prefix
+
+    def setOopsToken(self, token):
+        """Append a string to the oops prefix.
+
+        :param token: a string to append to a oops_prefix.
+            Scripts that run multiple processes can append a string to
+            the oops_prefix to create a unique identifier for each
+            process.
+        """
+        self.prefix = self.oops_prefix + token
 
     def _findLastOopsIdFilename(self, directory):
         """Find details of the last OOPS reported in the given directory.
@@ -215,7 +240,7 @@ class ErrorReportingUtility:
         :return: a tuple (oops_id, oops_filename), which will be (0,
             None) if no OOPS is found.
         """
-        prefix = config.launchpad.errorreports.oops_prefix
+        prefix = self.prefix
         lastid = 0
         lastfilename = None
         for filename in os.listdir(directory):
@@ -286,7 +311,7 @@ class ErrorReportingUtility:
         else:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
-        errordir = os.path.join(config.launchpad.errorreports.errordir, date)
+        errordir = os.path.join(self.error_dir, date)
         if errordir != self.lasterrordir:
             self.lastid_lock.acquire()
             try:
@@ -304,7 +329,7 @@ class ErrorReportingUtility:
 
     def getOopsFilename(self, oops_id, time):
         """Get the filename for a given OOPS id and time."""
-        oops_prefix = config.launchpad.errorreports.oops_prefix
+        oops_prefix = self.prefix
         error_dir = self.errordir(time)
         second_in_day = time.hour * 3600 + time.minute * 60 + time.second
         return os.path.join(
@@ -335,7 +360,7 @@ class ErrorReportingUtility:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
-        oops_prefix = config.launchpad.errorreports.oops_prefix
+        oops_prefix = self.prefix
         day_number = (now - epoch).days + 1
         oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
         filename = self.getOopsFilename(newid, now)
@@ -426,7 +451,7 @@ class ErrorReportingUtility:
             if request:
                 request.oopsid = oopsid
 
-            if config.launchpad.errorreports.copy_to_zlog:
+            if self.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None

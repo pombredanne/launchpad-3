@@ -48,7 +48,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
     Each email address registered in a BugNotificationRecipients is
     associated to a string and a header that explain why the address is
     being emailed. For instance, if the email address is that of a
-    distribution bug contact for a bug, the string and header will make
+    distribution bug supervisor for a bug, the string and header will make
     that fact clear.
 
     The string is meant to be rendered in the email footer. The header
@@ -132,18 +132,18 @@ class BugNotificationRecipients(NotificationRecipientSet):
         self._addReason(person, text, reason)
 
     def addDistroBugContact(self, person, distro):
-        """Registers a distribution bug contact for this bug."""
-        reason = "Bug Contact (%s)" % distro.displayname
+        """Registers a distribution bug supervisor for this bug."""
+        reason = "Bug Supervisor (%s)" % distro.displayname
         # All displaynames in these reasons should be changed to bugtargetname
         # (as part of bug 113262) once bugtargetname is finalized for packages
         # (bug 113258). Changing it before then would be excessively
         # disruptive.
         if person.isTeam():
-            text = ("are a member of %s, which is the bug contact for %s" %
+            text = ("are a member of %s, which is the bug supervisor for %s" %
                 (person.displayname, distro.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are the bug contact for %s" % distro.displayname
+            text = "are the bug supervisor for %s" % distro.displayname
         self._addReason(person, text, reason)
 
     def addStructuralSubscriber(self, person, target):
@@ -158,14 +158,14 @@ class BugNotificationRecipients(NotificationRecipientSet):
         self._addReason(person, text, reason)
 
     def addUpstreamBugContact(self, person, upstream):
-        """Registers an upstream bug contact for this bug."""
-        reason = "Bug Contact (%s)" % upstream.displayname
+        """Registers an upstream bug supervisor for this bug."""
+        reason = "Bug Supervisor (%s)" % upstream.displayname
         if person.isTeam():
-            text = ("are a member of %s, which is the bug contact for %s" %
+            text = ("are a member of %s, which is the bug supervisor for %s" %
                 (person.displayname, upstream.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are the bug contact for %s" % upstream.displayname
+            text = "are the bug supervisor for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
     def addRegistrant(self, person, upstream):
@@ -194,7 +194,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     if references is not None:
         msg['References'] = ' '.join(references)
-    msg['Sender'] = config.bounce_address
+    msg['Sender'] = config.canonical.bounce_address
     msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
@@ -354,14 +354,20 @@ def send_process_error_notification(to_address, subject, error_msg,
         :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
     """
-    if failing_command is not None:
-        failed_command_information = 'Failing command:\n    %s' % str(
-            failing_command)
+    if isinstance(failing_command, list):
+        failing_commands = failing_command
+    elif failing_command is None:
+        failing_commands = []
     else:
-        failed_command_information = ''
+        failing_commands = [failing_command]
+    failed_commands_information = ''
+    if len(failing_commands) > 0:
+        failed_commands_information = 'Failing command:'
+        for failing_command in failing_commands:
+            failed_commands_information += '\n    %s' % str(failing_command)
 
     body = get_email_template('email-processing-error.txt') % {
-            'failed_command_information': failed_command_information,
+            'failed_command_information': failed_commands_information,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)
     body = mailwrapper.format(body)
@@ -972,7 +978,8 @@ def notify_invitation_to_join_team(event):
 
     reviewer = membership.proposed_by
     admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address(team.displayname, config.noreply_from_address)
+    from_addr = format_address(
+        team.displayname, config.canonical.noreply_from_address)
     subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
@@ -1006,7 +1013,8 @@ def notify_team_join(event):
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN,
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
-    from_addr = format_address(team.displayname, config.noreply_from_address)
+    from_addr = format_address(
+        team.displayname, config.canonical.noreply_from_address)
 
     reviewer = membership.proposed_by
     if reviewer != person and membership.status in [approved, admin]:
@@ -1689,7 +1697,7 @@ def notify_mailinglist_activated(mailinglist, event):
 
     team = mailinglist.team
     from_address = format_address(
-        team.displayname, config.noreply_from_address)
+        team.displayname, config.canonical.noreply_from_address)
     headers = {}
     subject = "New Mailing List for %s" % team.displayname
     template = get_email_template('new-mailing-list.txt')

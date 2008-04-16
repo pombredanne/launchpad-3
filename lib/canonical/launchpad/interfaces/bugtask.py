@@ -166,7 +166,7 @@ class BugTaskStatus(DBEnumeratedType):
         Triaged
 
         This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug contact to
+        something needing fixing. The user must be a bug supervisor to
         set this status, so it carries more weight than merely
         Confirmed.
         """)
@@ -587,7 +587,7 @@ class IBugTaskSearchBase(Interface):
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
-        title=_('Bug contact'), vocabulary='ValidPersonOrTeam',
+        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
