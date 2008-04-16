@@ -106,6 +106,8 @@ class IArchive(IHasOwner):
 
     archive_url = Attribute("External archive URL.")
 
+    is_ppa = Attribute("True if this archive is a PPA.")
+
     title = Attribute("Archive Title.")
 
     series_with_sources = Attribute(
