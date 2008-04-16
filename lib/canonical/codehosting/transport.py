@@ -37,6 +37,7 @@ from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
+from canonical.twistedsupport.loggingsupport import OOPSLoggingObserver
 
 
 def split_with_padding(a_string, splitter, num_fields, padding=None):
@@ -81,21 +82,6 @@ def get_path_segments(path):
     ignored.
     """
     return path.strip('/').split('/')
-
-
-def oops_reporting_observer(args):
-    """A log observer for twisted's logging system that reports OOPSes."""
-    if args.get('isError', False) and 'failure' in args:
-        log = logging.getLogger('codehosting')
-        try:
-            failure = args['failure']
-            request = errorlog.ScriptRequest([])
-            errorlog.globalErrorUtility.raising(
-                (failure.type, failure.value, failure.getTraceback()),
-                request,)
-            log.info("Logged OOPS id %s."%(request.oopsid,))
-        except:
-            log.exception("Error reporting OOPS:")
 
 
 class _NotFilter(logging.Filter):
@@ -146,7 +132,7 @@ def set_up_logging(configure_oops_reporting=False):
 
     if configure_oops_reporting:
         errorlog.globalErrorUtility.configure('codehosting')
-        tplog.addObserver(oops_reporting_observer)
+        tplog.addObserver(OOPSLoggingObserver('codehosting').emit)
 
     return log
 
