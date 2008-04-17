@@ -150,9 +150,9 @@ class MenuBox(LaunchpadView):
     no applicationmenu items.
 
     If there is at least one item, the template is rendered.
-    """
 
-    usedfor = dict  # Really a TALES CONTEXTS object.
+    The context may be another view, or a content object.
+    """
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
