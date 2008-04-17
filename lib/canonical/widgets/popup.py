@@ -1,6 +1,7 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211
 
-"""Single selection widget using a popup to select one item from a huge number.
+"""Single selection widget using a popup to select one item from many.
 """
 
 __metaclass__ = type
@@ -11,7 +12,8 @@ from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
 from zope.schema import TextLine
 from zope.app.form.browser.interfaces import ISimpleInputWidget
-from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
+from zope.app.form.browser.itemswidgets import (
+    ItemsWidgetBase, SingleDataHelper)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.publisher.interfaces import NotFound
@@ -192,7 +194,8 @@ class SinglePopupView(object):
             factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
         except ComponentLookupError:
             # Couldn't find the vocabulary? Adios!
-            raise UnexpectedFormData('Unknown vocabulary %s' % vocabulary_name)
+            raise UnexpectedFormData(
+                'Unknown vocabulary %s' % vocabulary_name)
 
         vocabulary = factory(self.context)
 
