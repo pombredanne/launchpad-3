@@ -12,9 +12,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IDistributionSet)
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
@@ -51,17 +49,11 @@ class PackageCacheUpdater(LaunchpadCronScript):
             self.updateDistroSeriesCache(distroseries, archive)
 
         distribution.removeOldCacheItems(archive, log=self.logger)
-        self.txn.commit()
 
-        distribution.updateCompleteSourcePackageCache(
+        updates = distribution.updateCompleteSourcePackageCache(
             archive=archive, ztm=self.txn, log=self.logger)
-        self.txn.commit()
 
-        # Only PPAs package counters are cached in the Archive records,
-        # PRIMARY and PARTNER counter are already stored in DistroSeries
-        # and DistroArchSeries records.
-        if archive.purpose == ArchivePurpose.PPA:
-            archive.updateArchiveCache()
+        if updates > 0:
             self.txn.commit()
 
     def updateDistroSeriesCache(self, distroseries, archive):
@@ -70,17 +62,17 @@ class PackageCacheUpdater(LaunchpadCronScript):
             distroseries.distribution.name, distroseries.name, archive.title))
 
         distroseries.removeOldCacheItems(archive=archive, log=self.logger)
-        self.txn.commit()
 
-        distroseries.updateCompletePackageCache(
+        updates = distroseries.updateCompletePackageCache(
             archive=archive, ztm=self.txn, log=self.logger)
-        self.txn.commit()
+
+        if updates > 0:
+            self.txn.commit()
 
     def main(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         self.logger.debug('Starting the package cache update')
 
-        # Do the package counter and cache update.
+        # Do the package counter and cache update for each distribution.
         distroset = getUtility(IDistributionSet)
         for distribution in distroset:
             self.logger.info(
@@ -96,7 +88,10 @@ class PackageCacheUpdater(LaunchpadCronScript):
                 'Updating %s PPAs' % distribution.name)
             for archive in distribution.getAllPPAs():
                 self.updateDistributionCache(distribution, archive)
+                archive.updateArchiveCache()
 
+            # Commit any remaining update for a distribution.
+            self.txn.commit()
             self.logger.info('%s done' % distribution.name)
 
         self.logger.debug('Finished the package cache update')

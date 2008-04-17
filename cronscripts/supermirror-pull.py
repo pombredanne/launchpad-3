@@ -7,6 +7,7 @@ from optparse import OptionParser
 
 from twisted.internet import defer, reactor
 
+from canonical.codehosting.puller import mirror, scheduler
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options
 from canonical.twistedsupport.loggingsupport import set_up_logging_for_script
