@@ -721,7 +721,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_triaged = now
 
         # If the new status is equal to or higher
-        # than FIXCOMMITTED, we record a `date_triaged`
+        # than FIXCOMMITTED, we record a `date_fixcommitted`
         # to mark the fact that the task has passed
         # through this status.
         if (old_status < BugTaskStatus.FIXCOMMITTED and
@@ -730,7 +730,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_fix_committed = now
 
         # If the new status is equal to or higher
-        # than FIXRELEASED, we record a `date_triaged`
+        # than FIXRELEASED, we record a `date_fixreleased`
         # to mark the fact that the task has passed
         # through this status.
         if (old_status < BugTaskStatus.FIXRELEASED and
