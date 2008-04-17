@@ -121,7 +121,7 @@ We'll add some sample comments to demonstrate this.
     >>> for bug in bugs:
     ...     print "%s: %s" % (bug['id'], bug['comments'])
     1: ['1-1']
-    2: ['2-1', '3-1']
+    2: ['2-1', '2-2']
     3: []
 
 At level 3 the full list of comment dicts is returned along with the bug
@@ -136,7 +136,7 @@ metadata, but not including comment authors.
     {'comment': 'Hello, world!', 'type': 'comment', 'id': '1-1'}
     Comments for bug 2:
     {'comment': 'Hello again, world!', 'type': 'comment', 'id': '2-1'}
-    {'comment': 'More commentary.', 'type': 'comment', 'id': '3-1'}
+    {'comment': 'More commentary.', 'type': 'comment', 'id': '2-2'}
     Comments for bug 3:
 
 The criteria dict has two possible keys: modified_since and bugs.
@@ -194,8 +194,6 @@ are in the bugs list being returned.
 
 get_comments() returns a list of comment dicts. The comment dicts
 returned correspond to the comment IDs passed in the comments paramter.
-
-    >>> print [bug.comments for bug in trac_transport.remote_bugs.values()]
 
     >>> comments_to_retrieve = ['1-1', '2-1', '2-2']
     >>> comments = trac_transport.get_comments(comments_to_retrieve)

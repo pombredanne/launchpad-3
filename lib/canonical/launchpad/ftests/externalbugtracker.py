@@ -467,11 +467,10 @@ class TestTracInternalXMLRPCTransport:
 def strip_trac_comment(comment):
     """Tidy up a comment dict and return it as the Trac LP Plugin would."""
     # bug_info() doesn't return comment users, so we delete them.
-    stripped_comment = comment
-    if 'user' in stripped_comment:
-        del stripped_comment['user']
+    if 'user' in comment:
+        del comment['user']
 
-    return stripped_comment
+    return comment
 
 
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
@@ -605,7 +604,8 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         elif level == 3:
             bugs_to_return = [
                 dict(bug.asDict(), comments=[
-                    strip_trac_comment(comment) for comment in bug.comments])
+                    strip_trac_comment(dict(comment))
+                    for comment in bug.comments])
                 for bug in bugs_to_return]
 
         # Tack the missing bugs onto the end of our list of bugs. These
