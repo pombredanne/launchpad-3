@@ -305,6 +305,7 @@ of the same collection!
     >>> prev_type.attrib['type']
     '#collection-page'
 
+
 === Collection operations ===
 
 The "list of people" resource exposes a standard GET, as well as two
@@ -351,10 +352,11 @@ So does the 'people' custom operation.
     >>> ws_op.attrib['fixed']
     'people'
 
+
 === The resource ===
 
 As with an entry, a collection's WADL representation ends with a short
-'resources' stanza referencing the big definitions that preced it.
+'resources' stanza referencing the big definitions that precede it.
 
     >>> resources.attrib['href']
     'http://api.launchpad.dev/beta/people'

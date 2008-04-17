@@ -99,19 +99,20 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
     "Namespace for WADL functions that operate on collection resources."
 
     def __init__(self, collection_resource):
-        "Initialize with a collection resource."
+        """Initialize with a collection resource."""
         super(WadlCollectionResourceAPI, self).__init__(collection_resource)
         self.collection = self.resource.collection
 
     def collection_type(self):
+        """The name of this kind of resource."""
         return self.collection.__class__.__name__
 
     def collection_representation_link(self):
-        "The URL to the description of the collection's representation."
+        """The URL to the description of the collection's representation."""
         return "#collection-page"
 
     def type_link(self):
-        "The URL to the resource type for the object."
+        """The URL to the resource type for the object."""
         # Right now the resource type is defined in the same file
         # as the resource, so a relative link is fine. This won't
         # always be so.
@@ -134,7 +135,7 @@ class WadlFieldAPI:
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
-        "Initialize with a field."
+        """Initialize with a field."""
         self.field = field
 
     def name(self):
@@ -157,7 +158,7 @@ class WadlFieldAPI:
         return '["%s"]' % self.name()
 
     def is_link(self):
-        "Is this field a link to another resource?"
+        """Is this field a link to another resource?"""
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
 
@@ -177,11 +178,11 @@ class WadlOperationAPI:
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
-        "Initialize with an operation."
+        """Initialize with an operation."""
         self.operation = operation
 
     def http_method(self):
-        "The HTTP method used to invoke this operation."
+        """The HTTP method used to invoke this operation."""
         if IResourceGETOperation.implementedBy(self.operation):
             return "GET"
         elif IResourcePOSTOperation.implementedBy(self.operation):
