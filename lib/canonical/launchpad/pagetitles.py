@@ -1195,6 +1195,8 @@ shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
 
+shipit_index_ubuntu = 'Request an Ubuntu CD'
+
 shipit_login = 'ShipIt'
 
 shipit_myrequest = "Your ShipIt order"

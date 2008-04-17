@@ -401,6 +401,9 @@ class TestTrac(Trac):
     supports_single_exports = True
     trace_calls = False
 
+    def getExternalBugTrackerToUse(self):
+        return self
+
     def supportsSingleExports(self, bug_ids):
         """See `Trac`."""
         return self.supports_single_exports

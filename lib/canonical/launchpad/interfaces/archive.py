@@ -303,6 +303,12 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
+
     def new(distribution=None, purpose=None, owner=None, description=None):
         """Create a new archive.
 

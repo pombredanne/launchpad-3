@@ -119,6 +119,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitFrontPageView"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/shipit-index-ubuntu.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItLoginView"
         permission="zope.Public"
         name="login"
