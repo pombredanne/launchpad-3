@@ -21,8 +21,8 @@ from canonical.lazr.rest.schema import CollectionField
 from canonical.lazr.rest import ResourceGETOperation, ResourcePOSTOperation
 
 from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, NameAlreadyTaken, ILaunchBag, IPerson,
-    ITeamMembership, PersonCreationRationale, TeamMembershipStatus)
+    EmailAddressAlreadyTaken, ILaunchBag, IPerson, ITeamMembership,
+    NameAlreadyTaken, PersonCreationRationale, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr import decorates
@@ -149,9 +149,9 @@ class PersonFactoryOperation(ResourcePOSTOperation):
                 email_address,
                 PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
                 comment, name, display_name, password, registrant=user)
-        except (NameAlreadyTaken, EmailAddressAlreadyTaken), e:
+        except (NameAlreadyTaken, EmailAddressAlreadyTaken), error:
             self.request.response.setStatus(409) # Conflict
-            return str(e)
+            return str(error)
         self.request.response.setStatus(201)
         self.request.response.setHeader("Location",
                                         canonical_url(person))
