@@ -121,33 +121,6 @@ the person should look like this:
     u'when the ed package was imported into Ubuntu Breezy'
 
 
-In case of failure of creating a new person or email the method returns
-(None, None). Let's demonstrate this trying to create a person with
-an invalid email.
-
-    >>> p2, invalid_email = personset.createPersonAndEmail(
-    ...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
-    >>> p2, invalid_email
-    (None, None)
-
-And now with the same name of a existing account
-
-    >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN,
-    ...     name='name12')
-    >>> p3, invalid_email
-    (None, None)
-
-    >>> vcs_imports = personset.getByName('vcs-imports')
-    >>> vcs_imports.teamowner is None
-    False
-    >>> vcs_imports.is_valid_person # Not valid person because it is a team
-    False
-    >>> lifeless = personset.getByName('lifeless')
-    >>> lifeless.teamowner is None
-    True
-
-
 === Personal standing ===
 
 People have a property called 'personal standing', which affects for
@@ -156,6 +129,7 @@ It's a form of automatic moderation.  Most people have unknown standing,
 which is the default.
 
     >>> login('foo.bar@canonical.com')
+    >>> lifeless = personset.getByName('lifeless')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
@@ -419,6 +393,7 @@ when checking permissions.
 
     >>> ddaa.is_valid_person
     True
+    >>> vcs_imports = personset.getByName('vcs-imports')
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
     True
 
