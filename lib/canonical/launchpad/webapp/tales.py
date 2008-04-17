@@ -56,7 +56,7 @@ from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, nearest)
+    get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
@@ -80,21 +80,19 @@ class TraversalError(NotFoundError):
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       CONTEXTS/menu:facet       gives the facet menu of the nearest object
-                                 along the canonical url chain that has an
-                                 IFacetMenu adapter.
+    The facet menu can be accessed with an expression like:
 
+        tal:define="facetmenu view/menu:facet"
+
+    which gives the facet menu of the nearest object along the canonical url
+    chain that has an IFacetMenu adapter.
     """
 
     def __init__(self, context):
-        if zope_isinstance(context, dict):
-            # We have what is probably a CONTEXTS dict.
-            # We get the context out of here, and use that for self.context.
-            # We also want to see if the view has a __launchpad_facetname__
-            # attribute.
-            self._context = context['context']
-            view = context['view']
-            self._request = context['request']
+        if zope_isinstance(context, LaunchpadView):
+            view = context
+            self._context = view.context
+            self._request = view.request
             self._selectedfacetname = getattr(
                 view, '__launchpad_facetname__', None)
         else:
@@ -105,7 +103,7 @@ class MenuAPI:
     def __getattr__(self, attribute_name):
         """Return a dictionary for retrieval of individual Links.
 
-        It's used with expressions like context/menu:bugs/subscribe.
+        It's used with expressions like view/menu:bugs/subscribe.
         """
         for facet_entry in self.facet():
             if attribute_name == facet_entry.name:

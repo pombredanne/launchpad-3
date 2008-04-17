@@ -150,11 +150,11 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
           <tal:notlogin condition="python: '+login' not in request.getURL()">
               <tal:menu
                  condition="not:exists:body"
-                 replace="structure CONTEXTS/@@+menubox"
+                 replace="structure view/@@+menubox"
                  />
 
               <ul
-                 tal:define="facetmenu CONTEXTS/menu:facet"
+                 tal:define="facetmenu view/menu:facet"
                  tal:condition="facetmenu"
                  class="facets"
               >

@@ -154,7 +154,6 @@
     class="canonical.launchpad.browser.BugTargetBugsView"
     permission="zope.Public"
     facet="bugs"
-    layer="canonical.launchpad.layers.BugsLayer"
     template="../templates/bugtarget-bugs.pt"
     />
 

@@ -108,7 +108,7 @@
   </head>
   <body
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
+    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
       tal:condition="site_message">
@@ -138,7 +138,7 @@
             <th><h1 metal:define-slot="heading" /></th>
             <td
               tal:define="
-                facetname CONTEXTS/menu:selectedfacetname;
+                facetname view/menu:selectedfacetname;
                 facetname python:facetname == 'overview' and 'register' or facetname;
                 facetname python:facetname == 'branches' and 'code' or facetname;
                 facetname python:facetname == 'specifications' and 'blueprints' or facetname"
@@ -199,7 +199,7 @@
                         <ul
                           id="applicationchooser"
                           xml:lang="en" lang="en" dir="ltr"
-                          tal:define="facetmenu CONTEXTS/menu:facet"
+                          tal:define="facetmenu view/menu:facet"
                           tal:condition="facetmenu"
                         >
                           <tal:facet repeat="link facetmenu">
@@ -279,7 +279,7 @@
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:menu replace="structure CONTEXTS/@@+menubox" />
+                          <tal:menu replace="structure view/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
                           <metal:portlets define-slot="portlets_one" />
@@ -340,7 +340,7 @@
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
-              <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+              <tal:block tal:replace="view/menu:selectedfacetname" />
             </li>
             <li>Page type:
                <tal:pagetype replace="view/macro:pagetype" />
