@@ -6,14 +6,16 @@ __metaclass__ = type
 
 import unittest
 
+from zope.app.form.interfaces import ConversionError
 from zope.app.tests import ztapi
+from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import BranchPopupWidget
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies import BranchVocabulary
 from canonical.testing import LaunchpadFunctionalLayer
@@ -140,6 +142,40 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(popup.getPerson(), branch.registrant)
         self.assertEqual(popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
+
+    def test_toFieldValueFallsBackToMakingBranch(self):
+        """_toFieldValue falls back to making a branch if it's given a URL."""
+        url = self.factory.getUniqueURL()
+        # Check that there's no branch with this URL.
+        self.assertTrue(
+            getUtility(IBranchSet).getByUrl(url) is None,
+            "Branch exists with URL: %r" % (url,))
+
+        self.installLaunchBag(
+            user=self.factory.makePerson(),
+            product=self.factory.makeProduct())
+        popup = self.makeBranchPopup()
+        branch = popup._toFieldValue(url)
+        self.assertEqual(url, branch.url)
+
+    def test_toFieldValueFetchesTheExistingBranch(self):
+        """_toFieldValue returns the existing branch that has that URL."""
+        expected_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        self.installLaunchBag(
+            user=self.factory.makePerson(),
+            product=self.factory.makeProduct())
+        popup = self.makeBranchPopup()
+        branch = popup._toFieldValue(expected_branch.url)
+        self.assertEqual(expected_branch, branch)
+
+    def test_toFieldValueNonURL(self):
+        empty_search = 'doesntexist'
+        self.installLaunchBag(
+            user=self.factory.makePerson(),
+            product=self.factory.makeProduct())
+        popup = self.makeBranchPopup()
+        self.assertRaises(ConversionError, popup._toFieldValue, empty_search)
+
 
 # TODO:
 # Behaviour when not logged in.

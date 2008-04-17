@@ -21,13 +21,15 @@ __all__ = [
     'WhiteboardWidget',
     ]
 
+import sys
 
 from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
 
@@ -160,3 +162,24 @@ class BranchPopupWidget(SinglePopupWidget):
         name = self.getBranchNameFromURL(url)
         return getUtility(IBranchSet).new(
             BranchType.MIRRORED, name, owner, owner, self.getProduct(), url)
+
+    def _toFieldValue(self, form_input):
+        try:
+            return super(BranchPopupWidget, self)._toFieldValue(form_input)
+        except ConversionError, exception:
+            # XXX - what if form_input is a URL that already exists?
+            #   It can happen when vocab restricted by product.
+            # XXX - what happens if something else on the form fails to
+            #   validate? We shouldn't do anything until the form is
+            #   submitted successfully.
+            exc_class, exc_obj, exc_tb = sys.exc_info()
+            try:
+                return self.makeBranchFromURL(form_input)
+            except InvalidURIError:
+                # If it's not a URL, then we re-raise the initial error.
+                raise exc_class, exc_obj, exc_tb
+
+
+# <jamesh> you'll probably want to override getInputValue() for that
+#  or maybe _toFieldValue()
+#  or maybe applyChanges() ...
