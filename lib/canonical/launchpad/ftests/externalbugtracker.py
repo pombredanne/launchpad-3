@@ -422,9 +422,18 @@ class TestTrac(Trac):
 class MockTracRemoteBug:
     """A mockup of a remote Trac bug."""
 
-    def __init__(self, id, last_modified):
+    def __init__(self, id, last_modified=None, status=None, resolution=None):
         self.id = id
         self.last_modified = last_modified
+        self.status = status
+        self.resolution = resolution
+
+    def asDict(self):
+        """Return the bug's metadata, but not its comments, as a dict."""
+        return {
+            'id': self.id,
+            'status': self.status,
+            'resolution': self.resolution,}
 
 
 class TestTracInternalXMLRPCTransport:
@@ -566,6 +575,9 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # For level 0, only IDs are returned.
         if level == 0:
             bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
+        # For level 1, we return the bug's metadata, too.
+        elif level == 1:
+            bugs_to_return = [bug.asDict() for bug in bugs_to_return]
 
         # Tack the missing bugs onto the end of our list of bugs. These
         # will always be returned in the same way, no matter what the

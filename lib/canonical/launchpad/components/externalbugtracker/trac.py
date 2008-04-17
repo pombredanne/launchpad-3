@@ -224,7 +224,7 @@ def needs_authentication(func):
     return decorator
 
 
-class TracLPPlugin(ExternalBugTracker):
+class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
     def __init__(self, baseurl, xmlrpc_transport=None,
@@ -235,6 +235,22 @@ class TracLPPlugin(ExternalBugTracker):
             xmlrpc_transport = TracXMLRPCTransport()
         self.xmlrpc_transport = xmlrpc_transport
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
+
+    @needs_authentication
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        self.bugs = {}
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        time_snapshot, remote_bugs = server.launchpad.bug_info(
+            1, dict(bugs=bug_ids))
+        for remote_bug in remote_bugs:
+            # We only import bugs whose status isn't 'missing', since
+            # those bugs don't exist on the remote system.
+            if remote_bug['status'] != 'missing':
+                self.bugs[int(remote_bug['id'])] = remote_bug
 
     def _generateAuthenticationToken(self):
         """Create an authentication token and return it."""
