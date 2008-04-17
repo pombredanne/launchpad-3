@@ -110,6 +110,18 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         return '; '.join(err for err in errors if len(err) > 0)
 
     def renderItems(self, value):
+        """Custom-render the radio-buttons and dependent widgets.
+
+        Some of the radio options have dependent widgets: the bug
+        tracker drop-down box, and the email address text field. To
+        render these in the correct place we must override the default
+        rendering of `LaunchpadRadioWidget`.
+
+        We must also make sure that these dependent widgets are
+        populated with the correct information, specifically the bug
+        tracker selected, or the email address where bugs must be
+        reported.
+        """
         field = self.context
         product = field.context
         if value == self._missing:
@@ -184,6 +196,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
                 render = self.renderItem
             yield render(**arguments)
 
+
 class LicenseWidget(CheckBoxMatrixWidget):
     """A CheckBox widget with a custom template.
 
@@ -197,4 +210,3 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
-
