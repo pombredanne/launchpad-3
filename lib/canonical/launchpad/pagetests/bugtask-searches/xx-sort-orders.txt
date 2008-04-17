@@ -5,7 +5,7 @@ demonstrate this functionality on each +bugs page.
 
 Default view:
 
-    >>> anon_browser.open("http://localhost:9000/firefox/+bugs")
+    >>> anon_browser.open("http://launchpad.dev/firefox/+bugs")
 
     >>> print anon_browser.contents
     <!DOCTYPE...
@@ -28,7 +28,7 @@ Newest:
 
 Default view:
 
-    >>> anon_browser.open("http://localhost:9000/debian/+bugs")
+    >>> anon_browser.open("http://launchpad.dev/debian/+bugs")
     >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
@@ -48,7 +48,7 @@ By recently changed:
 
 By status:
 
-    >>> anon_browser.open("http://localhost:9000/ubuntu/+bugs")
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> anon_browser.getControl(name="orderby").displayValue = ["by status"]
     >>> anon_browser.getControl("Search").click()
     >>> print anon_browser.contents
@@ -62,7 +62,7 @@ By status:
 
 Default view:
 
-    >>> anon_browser.open("http://localhost:9000/debian/woody/+bugs")
+    >>> anon_browser.open("http://launchpad.dev/debian/woody/+bugs")
     >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
@@ -82,7 +82,7 @@ Newest:
 Default view:
 
     >>> anon_browser.open(
-    ...     "http://localhost:9000/debian/+source/mozilla-firefox/+bugs")
+    ...     "http://launchpad.dev/debian/+source/mozilla-firefox/+bugs")
     >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
