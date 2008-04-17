@@ -5,9 +5,9 @@ demonstrate this functionality on each +bugs page.
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/firefox/+bugs")
+    >>> anon_browser.open("http://localhost:9000/firefox/+bugs")
 
-    >>> print browser.contents
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Firefox install instructions should be complete...
     ...Reflow problems with complex page layouts...
@@ -15,10 +15,10 @@ Default view:
 
 Newest:
 
-    >>> browser.getControl(name="orderby").displayValue = ["newest"]
-    >>> browser.getControl("Search").click()
+    >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
+    >>> anon_browser.getControl("Search").click()
 
-    >>> print browser.contents
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Firefox install instructions should be complete...
     ...Reflow problems with complex page layouts...
@@ -28,8 +28,8 @@ Newest:
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/debian/+bugs")
-    >>> print browser.contents
+    >>> anon_browser.open("http://localhost:9000/debian/+bugs")
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
     ...Firefox does not support SVG...
@@ -37,9 +37,10 @@ Default view:
 
 By recently changed:
 
-    >>> browser.getControl(name="orderby").displayValue = ["recently changed"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "recently changed"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
     ...Blackhole Trash folder...
@@ -47,10 +48,10 @@ By recently changed:
 
 By status:
 
-    >>> browser.open("http://localhost:9000/ubuntu/+bugs")
-    >>> browser.getControl(name="orderby").displayValue = ["by status"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
+    >>> anon_browser.open("http://localhost:9000/ubuntu/+bugs")
+    >>> anon_browser.getControl(name="orderby").displayValue = ["by status"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Firefox does not support SVG...
     ...another test bug...
@@ -61,17 +62,17 @@ By status:
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/debian/woody/+bugs")
-    >>> print browser.contents
+    >>> anon_browser.open("http://localhost:9000/debian/woody/+bugs")
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
     ...Blackhole Trash folder...
 
 Newest:
 
-    >>> browser.getControl(name="orderby").displayValue = ["newest"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
+    >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Blackhole Trash folder...
     ...Bug Title Test...
@@ -80,9 +81,9 @@ Newest:
 
 Default view:
 
-    >>> browser.open(
+    >>> anon_browser.open(
     ...     "http://localhost:9000/debian/+source/mozilla-firefox/+bugs")
-    >>> print browser.contents
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
     ...Firefox does not support SVG...
@@ -90,9 +91,10 @@ Default view:
 
 Sort by importance:
 
-    >>> browser.getControl(name="orderby").displayValue = ["by importance"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "by importance"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print anon_browser.contents
     <!DOCTYPE...
     ...Bug Title Test...
     ...Firefox does not support SVG...
