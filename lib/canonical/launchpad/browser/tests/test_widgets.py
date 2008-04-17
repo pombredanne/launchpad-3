@@ -143,6 +143,12 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(self.popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
 
+    def test_makeBranchRequestsMirror(self):
+        """makeBranch requests a mirror on the branch it creates."""
+        url = self.factory.getUniqueURL()
+        branch = self.popup.makeBranchFromURL(url)
+        self.assertNotEqual('None', str(branch.next_mirror_time))
+
     def test_makeBranchNoProduct(self):
         """makeBranch(url) returns None if there's no product in LaunchBag.
 

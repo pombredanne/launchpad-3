@@ -170,6 +170,15 @@ class BranchPopupWidget(SinglePopupWidget):
         return getUtility(ILaunchBag).product
 
     def makeBranchFromURL(self, url):
+        """Make a mirrored branch for `url`.
+
+        The product and owner of the branch are derived from information in
+        the launchbag. The name of the branch is derived from the last segment
+        of the URL and is guaranteed to be unique for the product.
+
+        :param url: The URL to mirror.
+        :return: An `IBranch`.
+        """
         url = str(URI(url).ensureNoSlash())
         if getUtility(IBranchSet).getByUrl(url) is not None:
             raise AlreadyRegisteredError('Already a branch for %r' % (url,))
@@ -180,6 +189,7 @@ class BranchPopupWidget(SinglePopupWidget):
         name = self.getBranchNameFromURL(url)
         branch = getUtility(IBranchSet).new(
             BranchType.MIRRORED, name, owner, owner, self.getProduct(), url)
+        branch.requestMirror()
         self.request.response.addNotification(
             structured('Registered %s' %
                        BranchFormatterAPI(branch).link(None)))
