@@ -29,12 +29,10 @@ from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFields
 from zope.schema.interfaces import ConstraintNotSatisfied, IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
-from zope.schema.interfaces import RequiredMissing, ValidationError
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url and BatchNavigator code should be moved into lazr.
-from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -521,8 +519,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # The self link isn't part of the schema, so it's
                 # handled separately.
                 if value != canonical_url(self.context):
-                    errors.append("self_link: "
-                                  "You tried to modify a read-only attribute.")
+                    errors.append("self_link: You tried to modify "
+                                  "a read-only attribute.")
                 continue
 
             change_this_field = True
