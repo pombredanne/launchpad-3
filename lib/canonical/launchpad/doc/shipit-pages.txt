@@ -27,18 +27,17 @@ StandardShipItRequests.
     >>> shipit = ShipItApplication()
     >>> myrequest_view = create_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
-    >>> html = myrequest_view.renderStandardrequestForm()
-    >>> 'Request CDs' in html
-    True
-    >>> 'ShipIt is currently closed' in html
-    False
-
     >>> myrequest_view.is_open = False
     >>> html = myrequest_view.renderStandardrequestForm()
-    >>> 'How many CDs would you like?' in html
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> print BeautifulSoup(html).findAll('h1')[-1].renderContents()
+    ShipIt is currently closed
+
+    >>> myrequest_view.is_open = True
+    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> headers = BeautifulSoup(html).findAll('h1')
+    >>> 'ShipIt is currently closed' in headers
     False
-    >>> 'ShipIt is currently closed' in html
-    True
 
 
 /shipit/requests/$request.id
