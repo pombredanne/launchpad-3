@@ -146,7 +146,7 @@ probe javascripts events.
 Inspect the ACCEPTED queue:
 
   >>> anon_browser.getControl(
-  ...     name="queue_state", index=0).displayValue=['Accepted']
+  ...     name="queue_state", index=0).displayValue = ['Accepted']
   >>> anon_browser.getControl("Update").click()
   >>> for message in get_feedback_messages(anon_browser.contents):
   ...     print message
@@ -181,7 +181,7 @@ Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['15']
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['15']
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> print_queue(upload_manager_browser.contents)
   Package                         Version         Pocket  When       Changes
@@ -220,7 +220,7 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['1']
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['1']
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
@@ -230,7 +230,7 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
 The item is moved to the ACCEPTED queue:
 
   >>> upload_manager_browser.getControl(
-  ...    name="queue_state", index=0).displayValue=['Accepted']
+  ...    name="queue_state", index=0).displayValue = ['Accepted']
   >>> upload_manager_browser.getControl("Update").click()
   >>> print_queue(upload_manager_browser.contents)
   Package                         Version         Pocket  When       Changes
@@ -239,7 +239,7 @@ The item is moved to the ACCEPTED queue:
 Going back to the "new" queue, we can see our item has gone:
 
   >>> upload_manager_browser.getControl(
-  ...    name="queue_state", index=0).displayValue=['New']
+  ...    name="queue_state", index=0).displayValue = ['New']
   >>> upload_manager_browser.getControl("Update").click()
   >>> print_queue(upload_manager_browser.contents)
   Package                         Version         Pocket  When       Changes
@@ -254,7 +254,7 @@ unapproved list after the items are accepted, to allow piecemeal
 selection and acceptance.
 
     >>> upload_manager_browser.getControl(
-    ...    name="queue_state", index=0).displayValue=['Unapproved']
+    ...    name="queue_state", index=0).displayValue = ['Unapproved']
     >>> upload_manager_browser.getControl("Update").click()
 
 Accept "cnews" source:
@@ -275,7 +275,7 @@ And the page is still on the Unapproved list:
 Move back to the New queue:
 
     >>> upload_manager_browser.getControl(
-    ...     name="queue_state", index=0).displayValue=['New']
+    ...     name="queue_state", index=0).displayValue = ['New']
     >>> upload_manager_browser.getControl("Update").click()
 
 
