@@ -6,22 +6,20 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
 
-  <representation mediaType="application/json"
-                  tal:attributes="id
-                                  string:${context/wadl:collection_type}-page">
+  <representation mediaType="application/json" id="collection-page">
     <param name="total_size" path="[&quot;total_size&quot;]"
            required="True" />
 
     <param name="next_collection_link"
            path="[&quot;next_collection_link&quot;]">
-      <link tal:attributes="
-        type context/wadl:collection_representation_link" />
+      <link tal:attributes="type
+                            context/wadl:collection_representation_link" />
     </param>
 
     <param name="prev_collection_link"
            path="[&quot;prev_collection_link&quot;]">
-      <link tal:attributes="
-        type context/wadl:collection_representation_link" />
+      <link tal:attributes="type
+                            context/wadl:collection_representation_link" />
     </param>
 
     <param name="entries" path="[&quot;entries&quot;]" required="True" />

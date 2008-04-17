@@ -754,6 +754,3 @@ class ScopedCollection:
     def find(self):
         """See `ICollection`."""
         return self.collection
-
-    def url(self):
-        

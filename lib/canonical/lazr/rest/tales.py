@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import urllib
+
 from zope.app.zapi import getGlobalSiteManager
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
@@ -16,7 +18,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollectionField, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation)
+    IResourcePOSTOperation, IScopedCollection)
 
 
 class WadlResourceAPI:
@@ -106,7 +108,7 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
 
     def collection_representation_link(self):
         "The URL to the description of the collection's representation."
-        return "#" + self.collection_type() + "-page"
+        return "#collection-page"
 
     def type_link(self):
         "The URL to the resource type for the object."
@@ -114,6 +116,18 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         # as the resource, so a relative link is fine. This won't
         # always be so.
         return "#" + self.collection_type()
+
+    def url(self):
+        """The full URL to the resource.
+
+        Scoped collections don't know their own URLs, so we have to
+        figure it out for them here.
+        """
+        if IScopedCollection.providedBy(self.context):
+            return (canonical_url(self.context.context) + '/' +
+                    urllib.quote(self.context.relationship.__name__))
+        else:
+            return super(WadlCollectionResourceAPI, self).url()
 
 
 class WadlFieldAPI:
