@@ -190,7 +190,7 @@
                 </span>
                 <tal:action
                     define="via_email
-                            python:bugtracker.baseurl.startswith('mailto:')">
+                            bugtracker/bugtrackertype/enumvalue:EMAILADDRESS">
                   <tal:via-email condition="via_email">
                     should be sent to
                     <a tal:replace="structure bugtracker/fmt:external-link" />

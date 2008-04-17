@@ -127,7 +127,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         else:
             project_bugtracker_caption = (
                 'In the %s bug tracker (<a href="%s">%s</a>)</label>' % (
-                    project.displayname,canonical_url(project.bugtracker),
+                    project.displayname, canonical_url(project.bugtracker),
                     cgi.escape(project.bugtracker.title)))
         project_bugtracker_arguments = dict(
             index=1, text=self._renderLabel(project_bugtracker_caption, 1),
