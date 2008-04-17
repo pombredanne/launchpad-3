@@ -12,7 +12,10 @@
     <metal:extra-head fill-slot="extra-head">
       <link rel="shortcut icon" href="/@@/kubuntu-favicon.png" />
 
-      <style type="text/css" media="screen"> @import url(/@@/kubuntu-masthead2.css);</style>
+      <style type="text/css" media="screen">
+        @import url(/@@/kubuntu-masthead2.css);</style>
+      <style type="text/css" media="screen">
+        @import url(/+icing/shipit.css);</style>
 
       <style type="text/css">
         <!-- 

@@ -105,6 +105,8 @@ class IArchive(IHasOwner):
 
     archive_url = Attribute("External archive URL.")
 
+    is_ppa = Attribute("True if this archive is a PPA.")
+
     title = Attribute("Archive Title.")
 
     series_with_sources = Attribute(
@@ -290,6 +292,12 @@ class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
+
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
 
     def new(distribution=None, purpose=None, owner=None, description=None):
         """Create a new archive.

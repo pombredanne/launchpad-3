@@ -35,6 +35,13 @@ class IExternalBugTrackerTokenAPI(Interface):
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
+    def getExternalBugTrackerToUse():
+        """Return the `ExternalBugTracker` instance to use.
+
+        Probe the remote bug tracker and choose the right
+        `ExternalBugTracker` instance to use further on.
+        """
+
     def getCurrentDBTime():
         """Return the current time of the bug tracker's DB server.
 
