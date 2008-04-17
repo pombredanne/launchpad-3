@@ -13,12 +13,15 @@ import xmlrpclib
 
 import pytz
 
+from zope.interface import implements
+
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
     UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+    BugTaskStatus, BugTaskImportance, ISupportsCommentImport,
+    UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -227,6 +230,8 @@ def needs_authentication(func):
 class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
+    implements(ISupportsCommentImport)
+
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
         super(TracLPPlugin, self).__init__(baseurl)
@@ -245,7 +250,7 @@ class TracLPPlugin(Trac):
             endpoint, transport=self.xmlrpc_transport)
 
         time_snapshot, remote_bugs = server.launchpad.bug_info(
-            1, dict(bugs=bug_ids))
+            3, dict(bugs=bug_ids))
         for remote_bug in remote_bugs:
             # We only import bugs whose status isn't 'missing', since
             # those bugs don't exist on the remote system.
@@ -308,6 +313,15 @@ class TracLPPlugin(Trac):
             0, criteria)
 
         return [bug['id'] for bug in modified_bugs]
+
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        try:
+            bug = self.bugs[int(bug_watch.remotebug)]
+            return [comment['id'] for comment in bug['comments']]
+        except KeyError:
+            raise BugNotFound(bug_watch.remotebug)
+
 
 class TracXMLRPCTransport(xmlrpclib.Transport):
     """XML-RPC Transport for Trac bug trackers.

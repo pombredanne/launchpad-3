@@ -78,7 +78,6 @@ The method that authenticates with Trac is _authenticate().
     Using XML-RPC to generate token.
     Successfully validated the token.
 
-
 After it has been called, the XML-RPC transport will have its
 auth_cookie attribute set.
 
@@ -261,4 +260,90 @@ last_checked time.
     Traceback (most recent call last):
       ...
     BugNotFound: 2
+
+
+== Importing Comments ==
+
+The TracLPPlugin class allows Launchpad to import comments from remote
+systems that have the Launchpad plugin installed.
+
+TracLPPlugin implements the ISupportsCommentImport interface, providing
+three methods: getCommentIds(), getPosterForComment() and
+getMessageForComment().
+
+    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> ISupportsCommentImport.providedBy(trac)
+    True
+
+We'll add some comments to our example bugs in order to demonstrate the
+comment importing functionality.
+
+    >>> test_transport.remote_bugs['1'].comments = [
+    ...     {'id': '1', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello, world!'}]
+    >>> test_transport.remote_bugs['2'].comments = [
+    ...     {'id': '2', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello again, world!'},
+    ...     {'id': '3', 'type': 'comment', 'user': 'foo.bar@canonical.com',
+    ...      'comment': 'More commentary.'}]
+
+We also need an example Bug, BugTracker and BugWatch.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, CreateBugParams, IBugMessageSet,
+    ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> bug = firefox.createBug(
+    ...     CreateBugParams(sample_person, "Yet another test bug",
+    ...         "Yet another test description.",
+    ...         subscribe_reporter=False))
+
+    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    >>> bug_watch_three = bug.addWatch(bug_tracker, '3', sample_person)
+    >>> bug_watch_broken = bug.addWatch(bug_tracker, '123', sample_person)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+getCommentIds() returns all the comment IDs for a given bug watch.
+bug_watch is against remote bug 1, which has one comment.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> bugs_to_update = ['1', '2', '3']
+    >>> trac.initializeRemoteBugDB(bugs_to_update)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+    >>> trac.getCommentIds(bug_watch)
+    ['1']
+
+bug_watch_two is against remote bug 2, which has two comments.
+
+    >>> trac.getCommentIds(bug_watch_two)
+    ['2', '3']
+
+bug_watch_three is against bug 3, which has no comments.
+
+    >>> trac.getCommentIds(bug_watch_three)
+    []
+
+Trying to call getCommentIds() on a bug that doesn't exist will raise a
+BugNotFound error.
+
+    >>> trac.getCommentIds(bug_watch_broken)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 123
 
