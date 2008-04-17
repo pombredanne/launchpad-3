@@ -3,7 +3,7 @@
 Let's get a WADL representation of a Launchpad resource (in this case,
 a bug task), and see what's inside.
 
-    >>> wadl = webservice.get('/debian/+source/mozilla-firefox/+bug/1',
+    >>> wadl = webservice.get('/beta/debian/+source/mozilla-firefox/+bug/1',
     ...                       'application/vd.sun.wadl+xml').getBody()
 
 It's an XML document.
@@ -232,7 +232,7 @@ serve. But we haven't defined any actual bug task resources! This
 happens in the final tag under consideration.
 
     >>> resources.attrib['href']
-    'http://api.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
+    'http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/1'
 
 The tag is called 'resources' but only one resource is defined. That's
 because this WADL document is a representation of a specific resource:

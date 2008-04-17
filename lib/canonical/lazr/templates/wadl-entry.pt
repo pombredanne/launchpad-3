@@ -79,3 +79,4 @@
               tal:attributes="type context/wadl:type_link" />
   </resources>
 </application>
+
