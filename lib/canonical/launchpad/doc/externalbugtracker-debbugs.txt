@@ -327,9 +327,9 @@ ISupportsCommentImport interface.
     >>> ISupportsCommentImport.providedBy(external_debbugs)
     True
 
-ISupportsCommentImport defines three methods: getCommentIds(),
-getPosterForComment() and getMessageForComment(). DebBugs implements
-all of these.
+ISupportsCommentImport defines four methods: getCommentIds(),
+fetchComments(), getPosterForComment() and getMessageForComment().
+DebBugs implements all of these.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
@@ -347,6 +347,13 @@ bug. DebBugs comment IDs are RFC822 message IDs.
     >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
     >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
+
+fetchComments() will load up the comments whose IDs are specified in the
+comment_ids parameter so that they can then be imported. This allows us
+to import only the comments that are necessary - i.e. only those which
+we haven't already imported. We ask it to load all of them for us here.
+
+    >>> external_debbugs.fetchComments(comment_ids)
 
 getPosterForComment() will return a tuple of displayname, email for a
 given comment ID.
