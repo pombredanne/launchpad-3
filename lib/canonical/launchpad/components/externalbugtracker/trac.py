@@ -1,9 +1,9 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Trac ExternalBugTracker utiltiy."""
+"""Trac ExternalBugTracker implementation."""
 
 __metaclass__ = type
-__all__ = ['Trac', 'TracLPPlugin']
+__all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
 
 import csv
 from datetime import datetime
@@ -12,6 +12,7 @@ import xmlrpclib
 
 import pytz
 
+from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
     UnknownRemoteStatusError)
@@ -26,6 +27,18 @@ class Trac(ExternalBugTracker):
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
     batch_query_threshold = 10
+
+    def getExternalBugTrackerToUse(self):
+        """See `IExternalBugTracker`."""
+        base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+        # Any token will do.
+        auth_url = urlappend(base_auth_url, 'check')
+        try:
+            self.urlopen(auth_url)
+        except urllib2.HTTPError, error:
+            if error.code != 401:
+                return self
+        return TracLPPlugin(self.baseurl)
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
@@ -192,13 +205,61 @@ class Trac(ExternalBugTracker):
             raise UnknownRemoteStatusError()
 
 
+def needs_authentication(func):
+    """Decorator for automatically authenticating if needed.
+
+    If an `xmlrpclib.ProtocolError` with error code 403 is raised by the
+    function, we'll try to authenticate and call the function again.
+    """
+    def decorator(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except xmlrpclib.ProtocolError, error:
+            # Catch authentication errors only.
+            if error.errcode != 403:
+                raise
+            self._authenticate()
+            return func(self, *args, **kwargs)
+    return decorator
+
+
 class TracLPPlugin(ExternalBugTracker):
     """A Trac instance having the LP plugin installed."""
 
-    def __init__(self, baseurl, xmlrpc_transport=None):
+    def __init__(self, baseurl, xmlrpc_transport=None,
+                 internal_xmlrpc_transport=None):
         super(TracLPPlugin, self).__init__(baseurl)
-        self.xmlrpc_transport = xmlrpc_transport
 
+        if xmlrpc_transport is None:
+            xmlrpc_transport = TracXMLRPCTransport()
+        self.xmlrpc_transport = xmlrpc_transport
+        self.internal_xmlrpc_transport = internal_xmlrpc_transport
+
+    def _generateAuthenticationToken(self):
+        """Create an authentication token and return it."""
+        internal_xmlrpc = xmlrpclib.ServerProxy(
+            config.checkwatches.xmlrpc_url,
+            transport=self.internal_xmlrpc_transport)
+        return internal_xmlrpc.newBugTrackerToken()
+
+    def _extractAuthCookie(self, cookie_header):
+        """Extract the Trac authentication cookie from the header."""
+        cookie = cookie_header.split(';')[0]
+        if cookie.startswith('trac_auth='):
+            return cookie
+        else:
+            return None
+
+    def _authenticate(self):
+        """Authenticate with the Trac instance."""
+        token_text = self._generateAuthenticationToken()
+        base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+        auth_url = urlappend(base_auth_url, token_text)
+        response = self.urlopen(auth_url)
+        auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
+        self.xmlrpc_transport.auth_cookie = auth_cookie
+
+    @needs_authentication
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         endpoint = urlappend(self.baseurl, 'xmlrpc')
@@ -209,3 +270,18 @@ class TracLPPlugin(ExternalBugTracker):
         # zone for now.
         trac_time = datetime.fromtimestamp(utc_time)
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
+
+
+class TracXMLRPCTransport(xmlrpclib.Transport):
+    """XML-RPC Transport for Trac bug trackers.
+
+    It sends a cookie header as authentication.
+    """
+
+    auth_cookie = None
+
+    def send_host(self, connection, host):
+        """Send the host and cookie headers."""
+        xmlrpclib.Transport.send_host(self, connection, host)
+        if self.auth_cookie is not None:
+            connection.putheader('Cookie', self.auth_cookie)
