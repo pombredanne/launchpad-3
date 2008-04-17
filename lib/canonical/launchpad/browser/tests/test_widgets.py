@@ -17,7 +17,8 @@ from canonical.launchpad.browser.widgets import BranchPopupWidget
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.vocabularies import BranchVocabulary
+from canonical.launchpad.vocabularies import (
+    BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -42,13 +43,14 @@ class TestBranchPopupWidget(unittest.TestCase):
         ztapi.provideUtility(ILaunchBag, bag)
         return bag
 
-    def makeBranchPopup(self, context=None):
-        if context is None:
-            # Pick a random, semi-appropriate context.
-            context = self.factory.makeProduct()
-        vocab = BranchVocabulary(None)
+    def makeBranchPopup(self, vocabulary=None):
+        # Pick a random, semi-appropriate context.
+        context = self.factory.makeProduct()
+        if vocabulary is None:
+            vocabulary = BranchVocabulary(context)
+        request = self.makeRequest()
         return BranchPopupWidget(
-            self.makeField(context, vocab), vocab, self.makeRequest())
+            self.makeField(context, vocabulary), vocabulary, request)
 
     def makeField(self, context, vocabulary):
         field = Choice(
@@ -158,6 +160,25 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertRaises(
             ConversionError, self.popup._toFieldValue, empty_search)
 
+    def test_branchInRestrictedProduct(self):
+        # There are two reasons for a URL not being in the vocabulary. One
+        # reason is that it's there's no registered branch with that URL. The
+        # other is that the vocabulary on this form is restricted to one
+        # product, and there *is* a branch with that URL, but it's registered
+        # on a different product.
+
+        # Make a popup restricted to a particular product.
+        vocab = BranchRestrictedOnProductVocabulary(self.launch_bag.product)
+        self.assertEqual(vocab.product, self.launch_bag.product)
+        popup = self.makeBranchPopup(vocab)
+
+        # Make a branch on a different product.
+        branch = self.factory.makeBranch(BranchType.MIRRORED)
+        self.assertNotEqual(self.launch_bag.product, branch.product)
+
+        # Trying to make a branch with that URL will fail.
+        self.assertRaises(
+            ConversionError, popup._toFieldValue, branch.url)
 
 # TODO:
 # Behaviour when not logged in.

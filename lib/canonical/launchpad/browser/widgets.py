@@ -167,12 +167,21 @@ class BranchPopupWidget(SinglePopupWidget):
         try:
             return super(BranchPopupWidget, self)._toFieldValue(form_input)
         except ConversionError, exception:
-            # XXX - what if form_input is a URL that already exists?
-            #   It can happen when vocab restricted by product.
             # XXX - what happens if something else on the form fails to
             #   validate? We shouldn't do anything until the form is
             #   submitted successfully.
+
+            # Save the initial error so we can re-raise it later.
             exc_class, exc_obj, exc_tb = sys.exc_info()
+
+            # It's possible that `form_input` is the URL of a branch that
+            # already is registered. In that case, re-raise the initial error.
+            # That is, we pass on the reason why that URL is not allowed in
+            # this circumstance.
+            if getUtility(IBranchSet).getByUrl(form_input) is not None:
+                raise
+
+            # Try to register a branch, assuming form_input is a URL.
             try:
                 return self.makeBranchFromURL(form_input)
             except InvalidURIError:
