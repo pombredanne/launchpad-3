@@ -7,7 +7,6 @@ __all__ = [
     'GetMembersByStatusOperation',
     'GetPeopleOperation',
     'IPersonEntry',
-    'PersonCollection',
     'PersonEntry',
     'PersonFactoryOperation'
     ]
@@ -15,12 +14,13 @@ __all__ = [
 from zope.component import adapts, getUtility
 from zope.schema import Choice, Object, TextLine
 
-from canonical.lazr.rest import Collection, Entry
+from canonical.lazr.rest import Entry
 from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 from canonical.lazr.rest import ResourceGETOperation, ResourcePOSTOperation
 
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     EmailAddressAlreadyTaken, IPerson, ILaunchBag, ITeamMembership,
     PersonCreationRationale, TeamMembershipStatus)
@@ -33,7 +33,9 @@ class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
     use_template(IPerson, include=["name", "displayname", "datecreated"])
 
-    teamowner = Object(schema=IPerson, title=u"Team owner")
+    teamowner = PublicPersonChoice(
+        title=u'Team owner', required=False, readonly=False,
+        vocabulary='ValidTeamOwner')
 
     members = CollectionField(value_type=Object(schema=IPerson))
     team_memberships = CollectionField(
@@ -88,16 +90,6 @@ class GetMembersByStatusOperation(ResourceGETOperation):
         the given status.
         """
         return self.context.getMembersByStatus(status.value)
-
-
-class PersonCollection(Collection):
-    """A collection of people."""
-
-    def find(self):
-        """Return all the people and teams on the site."""
-        # Pass an empty query into find() to get all people
-        # and teams.
-        return self.context.find("")
 
 
 class GetPeopleOperation(ResourceGETOperation):

@@ -17,11 +17,8 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 import simplejson
 
-from zope.app.datetimeutils import (
-    DateError, DateTimeError, DateTimeParser, SyntaxError)
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
@@ -30,9 +27,8 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFields
-from zope.schema.interfaces import IDatetime, IObject
+from zope.schema.interfaces import ConstraintNotSatisfied, IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
-
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
@@ -42,8 +38,10 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IHTTPResource, IJSONPublishable, IResourceGETOperation,
-    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+    IEntryResource, IFieldDeserializer, IHTTPResource, IJSONPublishable,
+    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
+    IServiceRootResource)
+from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.rest.schema import URLDereferencingMixin
 
 
@@ -68,7 +66,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
             # We have a security-proxied version of a built-in
             # type. We create a new version of the type by copying the
             # proxied version's content. That way the container is not
-            # security proxied (and simplejson will now what do do
+            # security proxied (and simplejson will know what do do
             # with it), but the content will still be security
             # wrapped.
             underlying_object = removeSecurityProxy(obj)
@@ -153,6 +151,25 @@ class HTTPResource(URLDereferencingMixin):
     def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
         return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+
+
+    def _fieldValueIsObject(self, field):
+        """Does the given field expect a data model object as its value?
+
+        Obviously an IObject field is expected to have a data model
+        object as its value. But an IChoice field might also have a
+        vocabulary drawn from the set of data model objects.
+        """
+        if IObject.providedBy(field):
+            return True
+        if IChoice.providedBy(field):
+            # Find out whether the field's vocabulary is made of
+            # database objects (which correspond to resources that
+            # need to be linked to) or regular objects (which can
+            # be serialized to JSON).
+            field = field.bind(self.context)
+            return isinstance(field.vocabulary, SQLObjectVocabularyBase)
+        return False
 
     def _parseAcceptStyleHeader(self, value):
         """Parse an HTTP header from the Accept-* family.
@@ -381,6 +398,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['self_link'] = canonical_url(self.context)
         for name, field in getFields(self.entry.schema).items():
             value = getattr(self.entry, name)
+
             if ICollectionField.providedBy(field):
                 # The field is a collection; include a link to the
                 # collection resource.
@@ -390,7 +408,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     # so we can get the URL of a scoped collection
                     # from elsewhere.
                     data[key] = "%s/%s" % (data['self_link'], name)
-            elif IObject.providedBy(field):
+            elif self._fieldValueIsObject(field):
                 # The field is an entry; include a link to the
                 # entry resource.
                 if value is not None:
@@ -478,7 +496,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # read-only), or is marked read-only. It's okay for
                 # the client to omit a value for this attribute.
                 continue
-            if IObject.providedBy(field):
+            if self._fieldValueIsObject(field):
                 repr_name = name + '_link'
             else:
                 repr_name = name
@@ -514,16 +532,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         representation.
         """
         validated_changeset = {}
+        errors = []
         for repr_name, value in changeset.items():
             if repr_name == 'self_link':
                 # The self link isn't part of the schema, so it's
                 # handled separately.
-                if value == canonical_url(self.context):
-                    continue
-                else:
-                    self.request.response.setStatus(400)
-                    return ("You tried to modify the read-only attribute "
-                            "'self_link'.")
+                if value != canonical_url(self.context):
+                    errors.append("self_link: You tried to modify "
+                                  "a read-only attribute.")
+                continue
 
             change_this_field = True
 
@@ -551,50 +568,32 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # (Of course, you also can't change
                 # 'foo_collection_link', but that's taken care of
                 # below.)
-                self.request.response.setStatus(400)
-                return ("You tried to modify the nonexistent attribute '%s'"
-                        % repr_name)
+                errors.append("%s: You tried to modify a nonexistent "
+                              "attribute." % repr_name)
+                continue
 
             # Around this point the specific value provided by the client
-            # becomes relevant, so we pre-process it if necessary.
+            # becomes relevant, so we deserialize it.
+            element = element.bind(self.context)
+            deserializer = getMultiAdapter((element, self.request),
+                                           IFieldDeserializer)
+            try:
+                value = deserializer.deserialize(value)
+            except (ValueError, ValidationError), e:
+                errors.append("%s: %s" % (repr_name, e))
+                continue
+
             if (IObject.providedBy(element)
                 and not ICollectionField.providedBy(element)):
-                # 'value' is the URL to an object. Dereference the URL
-                # to find the actual object.
-                try:
-                    value = self.dereference_url(value)
-                except NotFound:
-                    self.request.response.setStatus(400)
-                    return ("Your value for the attribute '%s' wasn't "
-                            "the URL to any object published by this web "
-                            "service." % repr_name)
-                underlying_object = removeSecurityProxy(value)
-                value = underlying_object.context
-                # The URL points to an object, but is it an object of the
-                # right type?
+                # TODO leonardr 2008-15-04
+                # blueprint=api-wadl-description: This should be moved
+                # into the ObjectLookupFieldDeserializer, once we make
+                # it possible for Vocabulary fields to specify a
+                # schema class the way IObject fields can.
                 if not element.schema.providedBy(value):
-                    self.request.response.setStatus(400)
-                    return ("Your value for the attribute '%s' doesn't "
-                            "point to the right kind of object." % repr_name)
-            elif IDatetime.providedBy(element):
-                try:
-                    value = DateTimeParser().parse(value)
-                    (year, month, day, hours, minutes, secondsAndMicroseconds,
-                     timezone) = value
-                    seconds = int(secondsAndMicroseconds)
-                    microseconds = int(
-                        round((secondsAndMicroseconds - seconds) * 1000000))
-                    if timezone not in ['Z', '+0000', '-0000']:
-                        self.request.response.setStatus(400)
-                        return ("You set the attribute '%s' to a time "
-                                "that's not UTC."
-                                % repr_name)
-                    value = datetime(year, month, day, hours, minutes,
-                                     seconds, microseconds, pytz.utc)
-                except (DateError, DateTimeError, SyntaxError):
-                    self.request.response.setStatus(400)
-                    return ("You set the attribute '%s' to a value "
-                            "that doesn't look like a date." % repr_name)
+                    errors.append("%s: Your value points to the "
+                                  "wrong kind of object" % repr_name)
+                    continue
 
             # The current value of the attribute also becomes
             # relevant, so we obtain that. If the attribute designates
@@ -616,30 +615,47 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             if ICollectionField.providedBy(element):
                 change_this_field = False
                 if value != current_value:
-                    self.request.response.setStatus(400)
-                    return ("You tried to modify the collection link '%s'"
-                            % repr_name)
+                    errors.append("%s: You tried to modify a collection "
+                                  "attribute." % repr_name)
+                    continue
 
             if element.readonly:
                 change_this_field = False
                 if value != current_value:
-                    self.request.response.setStatus(400)
-                    return ("You tried to modify the read-only attribute '%s'"
-                            % repr_name)
+                    errors.append("%s: You tried to modify a read-only "
+                                  "attribute." % repr_name)
+                    continue
 
             if change_this_field is True and value != current_value:
                 if not IObject.providedBy(element):
                     try:
                         # Do any field-specific validation.
-                        field = element.bind(self.context)
-                        field.validate(value)
-                    except ValidationError, e:
-                        self.request.response.setStatus(400)
+                        element.validate(value)
+                    except ConstraintNotSatisfied, e:
+                        # Try to get a string error message out of
+                        # the exception; otherwise use a generic message
+                        # instead of whatever object the raise site
+                        # thought would be a good idea.
+                        if (len(e.args) > 0 and
+                            isinstance(e.args[0], basestring)):
+                            error = e.args[0]
+                        else:
+                            error = "Constraint not satisfied."
+                        errors.append("%s: %s" % (repr_name, error))
+                        continue
+                    except (ValueError, ValidationError), e:
                         error = str(e)
                         if error == "":
                             error = "Validation error"
-                        return error
+                        errors.append("%s: %s" % (repr_name, error))
+                        continue
                 validated_changeset[name] = value
+
+        # If there were errors, display them and send a status of 400.
+        if len(errors) > 0:
+            self.request.response.setStatus(400)
+            self.request.response.setHeader('Content-type', 'text/plain')
+            return "\n".join(errors)
 
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context)

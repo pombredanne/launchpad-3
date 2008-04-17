@@ -663,6 +663,32 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
+    @property
+    def number_of_ppa_sources(self):
+        cur = cursor()
+        q = """
+             SELECT SUM(sources_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(q)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
+
+    @property
+    def number_of_ppa_binaries(self):
+        cur = cursor()
+        q = """
+             SELECT SUM(binaries_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(q)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         query = """

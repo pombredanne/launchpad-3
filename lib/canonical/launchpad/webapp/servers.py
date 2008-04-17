@@ -920,6 +920,15 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     root_object_interface = IWebServiceApplication
 
+    def getApplication(self, request):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Always use the web service application to serve web service
+        resources, no matter what application is normally used to serve
+        the underlying objects.
+        """
+        return getUtility(IWebServiceApplication)
+
     def traverseName(self, request, ob, name):
         """See `zope.publisher.interfaces.IPublication`.
 
@@ -1067,8 +1076,8 @@ class WebServiceRequestTraversal:
         """
         stack = self.getTraversalStack()
         # Only accept versioned URLs.
-        first_component = stack.pop()
-        if first_component == 'beta':
+        last_component = stack.pop()
+        if last_component == 'beta':
             self.setTraversalStack(stack)
             self.setVirtualHostRoot(names=('beta', ))
         else:

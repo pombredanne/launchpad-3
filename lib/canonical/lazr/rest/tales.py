@@ -37,9 +37,9 @@ class WadlResourceAPI:
     def named_operations(self):
         """Return all named operations registered on the resource.
 
-        :return: a dict containing 'name' and 'op' keys. 'name' is
-        the name of the operation and 'op' is the ResourceOperation
-        object.
+        :return: a dict containing 'name' and 'op' keys. 'name' is the
+            name of the operation and 'op' is the ResourceOperation
+            object.
         """
         operations = getGlobalSiteManager().adapters.lookupAll(
             (providedBy(self.context), IHTTPApplicationRequest),
@@ -165,7 +165,7 @@ class WadlFieldAPI:
         """An enumeration of acceptable values for this field.
 
         :return: An iterable of Items if the field implements IChoice
-          and its vocabulary implements IEnumeratedType. Otherwise, None.
+            and its vocabulary implements IEnumeratedType. Otherwise, None.
         """
         if (IChoice.providedBy(self.field) and
             IEnumeratedType.providedBy(self.field.vocabulary)):

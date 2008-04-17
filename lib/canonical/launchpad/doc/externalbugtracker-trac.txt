@@ -21,11 +21,71 @@ IExternalBugTracker.
     True
 
 
+== LP plugin ==
+
+Some Trac instances have a plugin installed to make it easier for us to
+communicate with them. getExternalBugTrackerToUse() probes the bug
+tracker for the special authentication mechanism the plugin uses, and
+returns a TracLPPlugin if it's found.
+
+If the LP plugin is installed, the URL will return 401, since it fails
+to validate the token.
+
+    >>> import urllib2
+    >>> class TracHavingLPPlugin401(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         raise urllib2.HTTPError(
+    ...             url, 401, "Unauthorized", None, None)
+    >>> trac = TracHavingLPPlugin401('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     TracLPPlugin)
+    >>> isinstance(chosen_trac, TracLPPlugin)
+    True
+    >>> chosen_trac.baseurl
+    'http://example.com'
+
+In the unlikely case where the token would be valid, a 200 would be
+returned. This also causes a TracLPPlugin to be used.
+
+    >>> from StringIO import StringIO
+    >>> class TracHavingLPPlugin200(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         return StringIO('')
+    >>> trac = TracHavingLPPlugin401('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> isinstance(chosen_trac, TracLPPlugin)
+    True
+    >>> chosen_trac.baseurl
+    'http://example.com'
+
+If a 404 is returned, the normal Trac instance is returned.
+
+    >>> class TracNotHavingLPPlugin(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         raise urllib2.HTTPError(
+    ...             url, 404, "Not found", None, None)
+    >>> trac = TracNotHavingLPPlugin('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> chosen_trac is trac
+    True
+
+
 == Status Conversion ==
 
 The basic Trac ticket statuses map to Launchpad bug statuses.
 Trac.convertRemoteStatus() handles the conversion.
 
+    >>> trac = Trac('http://example.com/')
     >>> trac.convertRemoteStatus('open').title
     'New'
     >>> trac.convertRemoteStatus('new').title

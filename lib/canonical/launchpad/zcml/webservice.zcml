@@ -1,6 +1,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -83,12 +84,6 @@
        />
 
     <adapter
-        for="canonical.launchpad.interfaces.IPersonSet"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.PersonCollection"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.IPersonSet
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IResourceGETOperation"
@@ -101,6 +96,13 @@
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IDatetime
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.DateTimeFieldDeserializer"
         />
 
     <adapter
@@ -119,18 +121,32 @@
 
     <adapter
         for="zope.schema.interfaces.IChoice
-             canonical.lazr.enum.IEnumeratedType
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+             zope.publisher.interfaces.http.IHTTPApplicationRequest
+             canonical.lazr.enum.IEnumeratedType"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
-             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase
+             zope.publisher.interfaces.http.IHTTPApplicationRequest
+             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IObject
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.ICollectionField
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleFieldDeserializer"
         />
 
     <adapter
@@ -148,14 +164,8 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IMessage"
-        provides="canonical.launchpad.rest.IMessageEntry"
-        factory="canonical.launchpad.rest.MessageEntry"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.IBugComment"
-        provides="canonical.launchpad.rest.IMessageEntry"
+        provides="canonical.lazr.interfaces.rest.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"
         />
 
@@ -172,5 +182,7 @@
        factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
        name="change_status"
        />
+
+   <webservice:register module="canonical.launchpad.interfaces" />
 
 </configure>
