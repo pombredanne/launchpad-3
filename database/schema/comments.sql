@@ -39,6 +39,8 @@ COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to 
 COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
 COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
+COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format name';
+COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format name';
 
 -- BranchMergeProposal
 
