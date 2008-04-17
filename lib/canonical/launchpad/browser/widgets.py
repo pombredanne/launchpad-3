@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AlreadyRegisteredError',
     'BranchPopupWidget',
     'DescriptionWidget',
     'NoProductError',
@@ -32,6 +33,10 @@ from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
+
+
+class AlreadyRegisteredError(Exception):
+    """Raised when we try to register an already-registered branch."""
 
 
 class NoProductError(Exception):
@@ -164,6 +169,8 @@ class BranchPopupWidget(SinglePopupWidget):
 
     def makeBranchFromURL(self, url):
         url = str(URI(url).ensureNoSlash())
+        if getUtility(IBranchSet).getByUrl(url) is not None:
+            raise AlreadyRegisteredError('Already a branch for %r' % (url,))
         product = self.getProduct()
         if product is None:
             raise NoProductError("Could not find product in LaunchBag.")
@@ -183,22 +190,11 @@ class BranchPopupWidget(SinglePopupWidget):
             # Save the initial error so we can re-raise it later.
             exc_class, exc_obj, exc_tb = sys.exc_info()
 
-            # It's possible that `form_input` is the URL of a branch that
-            # already is registered. In that case, re-raise the initial error.
-            # That is, we pass on the reason why that URL is not allowed in
-            # this circumstance.
-            if getUtility(IBranchSet).getByUrl(form_input) is not None:
-                raise
-
             # Try to register a branch, assuming form_input is a URL.
             try:
                 return self.makeBranchFromURL(form_input)
-            except (InvalidURIError, NoProductError):
+            except (InvalidURIError, NoProductError, AlreadyRegisteredError):
                 # If it's not a URL or we can't figure out a product, then we
                 # re-raise the initial error.
                 raise exc_class, exc_obj, exc_tb
 
-
-# <jamesh> you'll probably want to override getInputValue() for that
-#  or maybe _toFieldValue()
-#  or maybe applyChanges() ...
