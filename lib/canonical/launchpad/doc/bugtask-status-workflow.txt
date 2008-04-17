@@ -273,7 +273,10 @@ setting an assignee has "side effects".
 == date_xxx and the UNKNOWN status ==
 
 When an IBugTask is set to status UNKNOWN, the date_confirmed,
-date_closed, and date_inprogress fields are all set to None.
+date_closed, date_inprogress, date_triaged, date_fixcommitted
+and date_fix_released fields are all set to None, since UNKNOWN
+is the lowest status, and the task didn't yet progress through
+these statuses.
 
     >>> ubuntu_firefox_task.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
@@ -287,6 +290,15 @@ date_closed, and date_inprogress fields are all set to None.
     >>> ubuntu_firefox_task.date_closed
     datetime.datetime...
 
+    >>> ubuntu_firefox_task.date_triaged
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.date_fix_committed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.date_fix_released
+    datetime.datetime...
+
     >>> ubuntu_firefox_task.transitionToStatus(
     ...     BugTaskStatus.UNKNOWN, getUtility(ILaunchBag).user)
 
@@ -297,4 +309,13 @@ date_closed, and date_inprogress fields are all set to None.
     True
 
     >>> ubuntu_firefox_task.date_closed is None
+    True
+
+    >>> ubuntu_firefox_task.date_triaged is None
+    True
+
+    >>> ubuntu_firefox_task.date_fix_committed is None
+    True
+
+    >>> ubuntu_firefox_task.date_fix_released is None
     True

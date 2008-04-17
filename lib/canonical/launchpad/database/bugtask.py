@@ -679,6 +679,9 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_inprogress = None
             self.date_closed = None
             self.date_incomplete = None
+            self.date_triaged = None
+            self.date_fix_committed = None
+            self.date_fix_released = None
 
             return
 
@@ -708,16 +711,28 @@ class BugTask(SQLBase, BugTaskMixin):
             # This task is leaving the NEW status for the first time
             self.date_left_new = now
 
+        # If the new status is equal to or higher
+        # than TRIAGED, we record a `date_triaged`
+        # to mark the fact that the task has passed
+        # through this status.
         if (old_status < BugTaskStatus.TRIAGED and
             new_status >= BugTaskStatus.TRIAGED):
             # This task is now marked as TRIAGED
             self.date_triaged = now
 
+        # If the new status is equal to or higher
+        # than FIXCOMMITTED, we record a `date_triaged`
+        # to mark the fact that the task has passed
+        # through this status.
         if (old_status < BugTaskStatus.FIXCOMMITTED and
             new_status >= BugTaskStatus.FIXCOMMITTED):
             # This task is now marked as FIXCOMMITTED
             self.date_fix_committed = now
 
+        # If the new status is equal to or higher
+        # than FIXRELEASED, we record a `date_triaged`
+        # to mark the fact that the task has passed
+        # through this status.
         if (old_status < BugTaskStatus.FIXRELEASED and
             new_status >= BugTaskStatus.FIXRELEASED):
             # This task is now marked as FIXRELEASED

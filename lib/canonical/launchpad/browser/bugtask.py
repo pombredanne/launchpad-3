@@ -30,6 +30,7 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
+    'get_visible_comments',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     ]
