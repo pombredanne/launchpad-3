@@ -209,8 +209,11 @@ class TestBranchPopupWidget(unittest.TestCase):
         # Trying to make a branch with that URL will fail.
         self.assertRaises(ConversionError, popup._toFieldValue, branch.url)
 
+    # XXX: JonathanLange 2008-04-17: Not sure how to test what happens when
+    # this widget has a good value but other fields have bad values. The
+    # correct behavior is to *not* create the branch.
+
 # TODO:
-# Behaviour when not logged in.
 # Ensure that the branch is mentioned in the notice on the next page.
 
 

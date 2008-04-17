@@ -183,10 +183,6 @@ class BranchPopupWidget(SinglePopupWidget):
         try:
             return super(BranchPopupWidget, self)._toFieldValue(form_input)
         except ConversionError, exception:
-            # XXX - what happens if something else on the form fails to
-            #   validate? We shouldn't do anything until the form is
-            #   submitted successfully.
-
             # Save the initial error so we can re-raise it later.
             exc_class, exc_obj, exc_tb = sys.exc_info()
 
