@@ -83,7 +83,7 @@ registered in Launchpad, the user will be prompted to register it first.
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> print get_feedback_messages(user_browser.contents)[0]
-    The bugtracker with the given URL is not registered in Launchpad.
+    The bug tracker with the given URL is not registered in Launchpad.
     Would you like to register it now?
 
 Now the user confirms he wants us to register the bug tracker for him and we
