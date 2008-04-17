@@ -317,8 +317,9 @@ custom operations, 'create_person' (POST) and 'people' (GET).
     ['GET', 'POST', 'GET']
 
     >>> [method.attrib['id'] for method in methods]
-    ['PersonCollection-get', 'PersonCollection-create_person',
-     'PersonCollection-people']
+    ['PersonSetCollectionAdapter-get',
+     'PersonSetCollectionAdapter-create_person',
+     'PersonSetCollectionAdapter-people']
 
     >>> (get, create_person, people) = methods
 
@@ -332,7 +333,7 @@ document we're working on right now.
     {'href': '#collection-page'}
     >>> wadl_rep.attrib
     {'mediaType': 'application/vd.sun.wadl+xml',
-     'id': 'PersonCollection-wadl'}
+     'id': 'PersonSetCollectionAdapter-wadl'}
 
 The 'create_person' custom operation takes a number of parameters.
 
@@ -363,7 +364,7 @@ As with an entry, a collection's WADL representation ends with a short
 
     >>> resource, = resources
     >>> resource.attrib
-    {'path': '', 'type': '#PersonCollection'}
+    {'path': '', 'type': '#PersonSetCollectionAdapter'}
 
 
 == Scoped collection resources ==
