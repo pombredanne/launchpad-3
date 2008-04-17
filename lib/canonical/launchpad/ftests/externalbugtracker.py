@@ -422,11 +422,17 @@ class TestTrac(Trac):
 class MockTracRemoteBug:
     """A mockup of a remote Trac bug."""
 
-    def __init__(self, id, last_modified=None, status=None, resolution=None):
+    def __init__(self, id, last_modified=None, status=None, resolution=None,
+        comments=None):
         self.id = id
         self.last_modified = last_modified
         self.status = status
         self.resolution = resolution
+
+        if comments is not None:
+            self.comments = comments
+        else:
+            self.comments = []
 
     def asDict(self):
         """Return the bug's metadata, but not its comments, as a dict."""
@@ -515,7 +521,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             requested. This can be one of:
             0: Return IDs only.
             1: Return Metadata only.
-            2: Return Metadata + comments.
+            2: Return Metadata + comment IDs.
             3: Return all data about each bug.
 
         :param criteria: The selection criteria by which bugs will be
@@ -578,6 +584,18 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # For level 1, we return the bug's metadata, too.
         elif level == 1:
             bugs_to_return = [bug.asDict() for bug in bugs_to_return]
+        # At level 2 we also return comment IDs for each bug.
+        elif level == 2:
+            bugs_to_return = [
+                dict(bug.asDict(), comments=[
+                    comment['id'] for comment in bug.comments])
+                for bug in bugs_to_return]
+        # At level 3 we return the full comment dicts along with the bug
+        # metadata.
+        elif level == 3:
+            bugs_to_return = [
+                dict(bug.asDict(), comments=bug.comments)
+                for bug in bugs_to_return]
 
         # Tack the missing bugs onto the end of our list of bugs. These
         # will always be returned in the same way, no matter what the

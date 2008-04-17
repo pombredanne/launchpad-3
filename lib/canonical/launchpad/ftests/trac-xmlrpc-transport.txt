@@ -103,6 +103,45 @@ its last modified time.
     2: closed.
     3: fixed.
 
+Specifiying a level of 2 will return each bug's metadata and a list of
+comment IDs for each bug.
+
+We'll add some sample comments to demonstrate this.
+
+    >>> trac_transport.remote_bugs['1'].comments = [
+    ...     {'id': '1', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello, world!'}]
+    >>> trac_transport.remote_bugs['2'].comments = [
+    ...     {'id': '2', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello again, world!'},
+    ...     {'id': '3', 'type': 'comment', 'user': 'foo.bar@canonical.com',
+    ...      'comment': 'More commentary.'}]
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=2)
+    >>> for bug in bugs:
+    ...     print "%s: %s" % (bug['id'], bug['comments'])
+    1: ['1']
+    2: ['2', '3']
+    3: []
+
+At level 3 the full list of comment dicts is returned along with the bug
+metadata.
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=3)
+    >>> for bug in bugs:
+    ...     print "Comments for bug %s:" % bug['id']
+    ...     for comment in bug['comments']:
+    ...         print comment
+    Comments for bug 1:
+    {'comment': 'Hello, world!', 'type': 'comment', 'id': '1',
+     'user': 'test@canonical.com'}
+    Comments for bug 2:
+    {'comment': 'Hello again, world!', 'type': 'comment', 'id': '2',
+     'user': 'test@canonical.com'}
+    {'comment': 'More commentary.', 'type': 'comment', 'id': '3',
+     'user': 'foo.bar@canonical.com'}
+    Comments for bug 3:
+
 The criteria dict has two possible keys: modified_since and bugs.
 Specifying a value for modified_since will cause only the bugs modified
 since that time to be returned. modified_since is an integer timestamp,
