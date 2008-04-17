@@ -21,7 +21,7 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 
-QUEUE_SIZE = 20
+QUEUE_SIZE = 75
 
 
 class QueueItemsView(LaunchpadView):
@@ -177,6 +177,20 @@ class QueueItemsView(LaunchpadView):
                 new_component, new_section)
             binary_overridden = queue_item.overrideBinaries(
                 new_component, new_section, new_priority)
+
+            feedback_interpolations = {
+                "name"      : queue_item.displayname,
+                "component" : "(unchanged)",
+                "section"   : "(unchanged)",
+                "priority"  : "(unchanged)",
+                }
+            if new_component:
+                feedback_interpolations['component'] = new_component.name
+            if new_section:
+                feedback_interpolations['section'] = new_section.name
+            if new_priority:
+                feedback_interpolations['priority'] = new_priority.title.lower()
+
             try:
                 getattr(self, 'queue_action_' + action)(queue_item)
             except QueueInconsistentStateError, info:
@@ -184,16 +198,12 @@ class QueueItemsView(LaunchpadView):
                                (queue_item.displayname, info))
             else:
                 if source_overridden:
-                    success.append("OK: %s(%s/%s)" %
-                                   (queue_item.displayname,
-                                    new_component.name,
-                                    new_section.name))
+                    success.append("OK: %(name)s(%(component)s/%(section)s)" %
+                                   feedback_interpolations)
                 elif binary_overridden:
-                    success.append("OK: %s(%s/%s/%s)" %
-                                   (queue_item.displayname,
-                                    new_component.name,
-                                    new_section.name,
-                                    new_priority.title.lower()))
+                    success.append(
+                        "OK: %(name)s(%(component)s/%(section)s/%(priority)s)"
+                            % feedback_interpolations)
                 else:
                     success.append('OK: %s' % queue_item.displayname)
 
