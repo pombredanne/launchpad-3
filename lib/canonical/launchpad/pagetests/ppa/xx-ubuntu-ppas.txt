@@ -30,7 +30,7 @@ supported for PPA.
     (official)
 
 The sample data contains three PPAs.  Only Celso's and Mark's have
-packages (are active). Altogether there 4 sources and 4 binaries
+packages (the active ones). Altogether there 4 sources and 4 binaries
 published across all ubuntu PPAs.
 
     >>> print extract_text(

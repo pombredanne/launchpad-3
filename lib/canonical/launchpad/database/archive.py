@@ -663,7 +663,7 @@ class ArchiveSet:
         cur = cursor()
         q = """
              SELECT SUM(sources_cached) FROM Archive
-             WHERE purpose = %s AND private = False
+             WHERE purpose = %s AND private = FALSE
         """ % sqlvalues(ArchivePurpose.PPA)
         cur.execute(q)
         size = cur.fetchall()[0][0]
@@ -676,7 +676,7 @@ class ArchiveSet:
         cur = cursor()
         q = """
              SELECT SUM(binaries_cached) FROM Archive
-             WHERE purpose = %s AND private = False
+             WHERE purpose = %s AND private = FALSE
         """ % sqlvalues(ArchivePurpose.PPA)
         cur.execute(q)
         size = cur.fetchall()[0][0]

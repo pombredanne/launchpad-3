@@ -1039,7 +1039,7 @@ ArchiveSet utility also offers counters for:
  * The number of published binaries in public PPAs
    (number_of_ppa_binaries)
 
-Those counter are obtained from the cached package counters for each
+Those counters are obtained from the cached package counters for each
 PPA, so they will change when the caches get updated.
 
 Those counters explicity exclude packages in private PPAs.
