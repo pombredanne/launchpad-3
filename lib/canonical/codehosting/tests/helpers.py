@@ -7,10 +7,11 @@ __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
     'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
-    'make_bazaar_branch_and_tree']
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
+import threading
 import unittest
 
 import transaction
@@ -32,7 +33,8 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
 
-from twisted.internet import defer
+from twisted.internet import defer, threads
+from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 
@@ -238,6 +240,21 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
+
+
+def deferToThread(f):
+    """Run the given callable in a separate thread and return a Deferred which
+    fires when the function completes.
+    """
+    def decorated(*args, **kwargs):
+        d = defer.Deferred()
+        def runInThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+
+        t = threading.Thread(target=runInThread)
+        t.start()
+        return d
+    return mergeFunctionMetadata(f, decorated)
 
 
 class FakeLaunchpad:
