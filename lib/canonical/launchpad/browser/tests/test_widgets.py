@@ -13,7 +13,8 @@ from zope.interface import implements
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.widgets import BranchPopupWidget
+from canonical.launchpad.browser.widgets import (
+    BranchPopupWidget, NoProductError)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -151,8 +152,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         """
         self.installLaunchBag(product=None, user=self.factory.makePerson())
         url = self.factory.getUniqueURL()
-        branch = self.popup.makeBranchFromURL(url)
-        self.assertIs(None, branch)
+        self.assertRaises(NoProductError, self.popup.makeBranchFromURL, url)
 
     def test_toFieldValueFallsBackToMakingBranch(self):
         """_toFieldValue falls back to making a branch if it's given a URL."""
@@ -174,6 +174,12 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertRaises(
             ConversionError, self.popup._toFieldValue, empty_search)
 
+    def test_toFieldValueNoProduct(self):
+        self.installLaunchBag(product=None, user=self.factory.makePerson())
+        self.assertRaises(
+            ConversionError, self.popup._toFieldValue,
+            self.factory.getUniqueURL())
+
     def test_branchInRestrictedProduct(self):
         # There are two reasons for a URL not being in the vocabulary. One
         # reason is that it's there's no registered branch with that URL. The
@@ -191,12 +197,10 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertNotEqual(self.launch_bag.product, branch.product)
 
         # Trying to make a branch with that URL will fail.
-        self.assertRaises(
-            ConversionError, popup._toFieldValue, branch.url)
+        self.assertRaises(ConversionError, popup._toFieldValue, branch.url)
 
 # TODO:
 # Behaviour when not logged in.
-# Behaviour when no product.
 # Ensure that the branch is mentioned in the notice on the next page.
 
 

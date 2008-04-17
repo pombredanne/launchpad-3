@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchPopupWidget',
     'DescriptionWidget',
+    'NoProductError',
     'ShipItAddressline1Widget',
     'ShipItAddressline2Widget',
     'ShipItCityWidget',
@@ -31,6 +32,10 @@ from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
+
+
+class NoProductError(Exception):
+    """Raised when we need a product and can't find one."""
 
 
 class TitleWidget(StrippedTextWidget):
@@ -160,7 +165,7 @@ class BranchPopupWidget(SinglePopupWidget):
     def makeBranchFromURL(self, url):
         product = self.getProduct()
         if product is None:
-            return None
+            raise NoProductError("Could not find product in LaunchBag.")
         owner = self.getPerson()
         name = self.getBranchNameFromURL(url)
         return getUtility(IBranchSet).new(
@@ -187,8 +192,9 @@ class BranchPopupWidget(SinglePopupWidget):
             # Try to register a branch, assuming form_input is a URL.
             try:
                 return self.makeBranchFromURL(form_input)
-            except InvalidURIError:
-                # If it's not a URL, then we re-raise the initial error.
+            except (InvalidURIError, NoProductError):
+                # If it's not a URL or we can't figure out a product, then we
+                # re-raise the initial error.
                 raise exc_class, exc_obj, exc_tb
 
 
