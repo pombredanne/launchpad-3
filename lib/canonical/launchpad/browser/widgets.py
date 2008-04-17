@@ -31,6 +31,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import BranchFormatterAPI
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
@@ -176,8 +178,12 @@ class BranchPopupWidget(SinglePopupWidget):
             raise NoProductError("Could not find product in LaunchBag.")
         owner = self.getPerson()
         name = self.getBranchNameFromURL(url)
-        return getUtility(IBranchSet).new(
+        branch = getUtility(IBranchSet).new(
             BranchType.MIRRORED, name, owner, owner, self.getProduct(), url)
+        self.request.response.addNotification(
+            structured('Registered %s' %
+                       BranchFormatterAPI(branch).link(None)))
+        return branch
 
     def _toFieldValue(self, form_input):
         try:
