@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 """Single selection widget using a popup to select one item from a huge number.
 """
@@ -129,11 +129,11 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
     def popupHref(self):
         template = (
-            '''javascript:'''
-            '''popup_window('@@%s?'''
-            '''vocabulary=%s&field=%s&search='''
-            ''''+escape(document.getElementById('%s').value),'''
-            ''''%s','300','420')'''
+            """javascript:"""
+            """popup_window('@@%s?"""
+            """vocabulary=%s&field=%s&search="""
+            """'+escape(document.getElementById('%s').value),"""
+            """'%s','300','420')"""
             ) % (self.popup_name, self.context.vocabularyName, self.name,
                  self.name, self.name)
         if self.onKeyPress:

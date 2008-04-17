@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -166,19 +166,18 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        branch_set = BranchSet()
-        branch = branch_set.getByUniqueName(token)
+        branch = self._getExactMatch(token)
         # fall back to interpreting the token as a branch URL
-        if branch is None:
-            url = token.rstrip('/')
-            branch = branch_set.getByUrl(url)
         if branch is None:
             raise LookupError(token)
         return self.toTerm(branch)
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        return BranchSet().getByUniqueName(query)
+        branch = BranchSet().getByUniqueName(query)
+        if branch is not None:
+            return branch
+        return BranchSet().getByUrl(query.rstrip('/'))
 
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
@@ -309,7 +308,7 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        branch = BranchSet().getByUniqueName(query)
+        branch = super(BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
         if branch is not None:
             if branch.product == self.product:
                 return branch
