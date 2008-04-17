@@ -63,65 +63,62 @@ class TestBranchPopupWidget(unittest.TestCase):
     def setUp(self):
         login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
+        self.launch_bag = self.installLaunchBag(
+            user=self.factory.makePerson(),
+            product=self.factory.makeProduct())
+        self.popup = self.makeBranchPopup()
 
     def tearDown(self):
         logout()
 
     def test_getProduct(self):
         """getProduct() returns the product in the LaunchBag."""
-        bag = self.installLaunchBag(product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
-        self.assertEqual(bag.product, popup.getProduct())
+        self.assertEqual(self.launch_bag.product, self.popup.getProduct())
 
     def test_getPerson(self):
         """getPerson() returns the logged-in user."""
-        bag = self.installLaunchBag(user=self.factory.makePerson())
-        popup = self.makeBranchPopup()
-        self.assertEqual(bag.user, popup.getPerson())
+        self.assertEqual(self.launch_bag.user, self.popup.getPerson())
 
     def test_getBranchNameFromURL(self):
         """getBranchNameFromURL() gets a branch name from a url.
 
         In general, the name is the last path segment of the URL.
         """
-        bag = self.installLaunchBag(product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
         url = self.factory.getUniqueURL()
-        name = popup.getBranchNameFromURL(url)
+        name = self.popup.getBranchNameFromURL(url)
         self.assertEqual(URI(url).path.split('/')[-1], name)
 
     def test_getBranchNameFromURLWhenAlreadyTaken(self):
         """getBranchNameFromURL() returns a name that isn't already taken."""
-        bag = self.installLaunchBag(product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
-
         # Make sure that the branch name for `url` is already taken.
         url = self.factory.getUniqueURL()
         branch = self.factory.makeBranch(
-            product=bag.product, name=popup.getBranchNameFromURL(url))
+            product=self.launch_bag.product,
+            name=self.popup.getBranchNameFromURL(url))
 
         # Now that the name is taken for this product, getBranchNameFromURL
         # returns the same name with '-1' at the end.
-        self.assertEqual(branch.name + '-1', popup.getBranchNameFromURL(url))
+        self.assertEqual(
+            branch.name + '-1', self.popup.getBranchNameFromURL(url))
 
     def test_getBranchNameFromURLWhenAlreadyTakenProgressive(self):
         """getBranchNameFromURL() returns a name that isn't already taken.
 
         It does this by looping until it finds one that isn't.
         """
-        bag = self.installLaunchBag(product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
-
         # Make sure that the branch name for `url` is already taken.
         url = self.factory.getUniqueURL()
         branch = self.factory.makeBranch(
-            product=bag.product, name=popup.getBranchNameFromURL(url))
+            product=self.launch_bag.product,
+            name=self.popup.getBranchNameFromURL(url))
         self.factory.makeBranch(
-            product=bag.product, name=popup.getBranchNameFromURL(url))
+            product=self.launch_bag.product,
+            name=self.popup.getBranchNameFromURL(url))
 
         # Now that the name is taken for this product, getBranchNameFromURL
         # returns the same name with '-2' at the end.
-        self.assertEqual(branch.name + '-2', popup.getBranchNameFromURL(url))
+        self.assertEqual(
+            branch.name + '-2', self.popup.getBranchNameFromURL(url))
 
     def test_makeBranch(self):
         """makeBranch(url) creates a mirrored branch at `url`.
@@ -129,18 +126,14 @@ class TestBranchPopupWidget(unittest.TestCase):
         The owner and registrant are the currently logged-in user, as given by
         getPerson(), and the product is the product in the LaunchBag.
         """
-        self.installLaunchBag(
-            user=self.factory.makePerson(),
-            product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
         url = self.factory.getUniqueURL()
-        expected_name = popup.getBranchNameFromURL(url)
-        branch = popup.makeBranchFromURL(url)
+        expected_name = self.popup.getBranchNameFromURL(url)
+        branch = self.popup.makeBranchFromURL(url)
         self.assertEqual(BranchType.MIRRORED, branch.branch_type)
         self.assertEqual(url, branch.url)
-        self.assertEqual(popup.getPerson(), branch.owner)
-        self.assertEqual(popup.getPerson(), branch.registrant)
-        self.assertEqual(popup.getProduct(), branch.product)
+        self.assertEqual(self.popup.getPerson(), branch.owner)
+        self.assertEqual(self.popup.getPerson(), branch.registrant)
+        self.assertEqual(self.popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
 
     def test_toFieldValueFallsBackToMakingBranch(self):
@@ -151,30 +144,19 @@ class TestBranchPopupWidget(unittest.TestCase):
             getUtility(IBranchSet).getByUrl(url) is None,
             "Branch exists with URL: %r" % (url,))
 
-        self.installLaunchBag(
-            user=self.factory.makePerson(),
-            product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
-        branch = popup._toFieldValue(url)
+        branch = self.popup._toFieldValue(url)
         self.assertEqual(url, branch.url)
 
     def test_toFieldValueFetchesTheExistingBranch(self):
         """_toFieldValue returns the existing branch that has that URL."""
         expected_branch = self.factory.makeBranch(BranchType.MIRRORED)
-        self.installLaunchBag(
-            user=self.factory.makePerson(),
-            product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
-        branch = popup._toFieldValue(expected_branch.url)
+        branch = self.popup._toFieldValue(expected_branch.url)
         self.assertEqual(expected_branch, branch)
 
     def test_toFieldValueNonURL(self):
         empty_search = 'doesntexist'
-        self.installLaunchBag(
-            user=self.factory.makePerson(),
-            product=self.factory.makeProduct())
-        popup = self.makeBranchPopup()
-        self.assertRaises(ConversionError, popup._toFieldValue, empty_search)
+        self.assertRaises(
+            ConversionError, self.popup._toFieldValue, empty_search)
 
 
 # TODO:
