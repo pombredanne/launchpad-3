@@ -753,13 +753,10 @@ class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
 
     schema = IAddBugTaskWithUpstreamLinkForm
     _next_view = ProductBugTaskCreationStep
-    _field_names = ['product', 'bug_url', 'link_upstream_how',
-                    'upstream_email_address_done']
+    _field_names = ['product', 'bug_url', 'link_upstream_how']
     custom_widget('product', DropdownWidget, visible=False)
     custom_widget('link_upstream_how',
                   LaunchpadRadioWidget, visible=False)
-    custom_widget('upstream_email_address_done',
-                  StrippedTextWidget, visible=False)
     label = "Confirm project"
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
