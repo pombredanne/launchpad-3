@@ -380,7 +380,7 @@ class ProductBugsMenu(ApplicationMenu):
     links = ['bugcontact', 'securitycontact', 'cve']
 
     def cve(self):
-        return Link('+cve', 'CVE reports', icon='cve')
+        return Link('+cve', 'CVE reports')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):

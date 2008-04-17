@@ -215,7 +215,7 @@ class DistroSeriesBugsMenu(ApplicationMenu):
     links = ['cve', 'nominations']
 
     def cve(self):
-        return Link('+cve', 'CVE reports', icon='cve')
+        return Link('+cve', 'CVE reports')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')

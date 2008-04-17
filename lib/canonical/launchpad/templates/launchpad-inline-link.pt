@@ -1,14 +1,4 @@
-<tal:ns
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-  <tal:link-enabled condition="context/enabled">
-    <span class="action">
-      <img alt=""
+<tal:link-enabled xmlns:tal="http://xml.zope.org/namespaces/tal"
+                  condition="context/enabled"><span class="action"><img alt=""
 	   tal:condition="context/icon"
-	   tal:attributes="src context/icon_url" />
-      <tal:link replace="structure context/@@+link" />
-    </span>
-  </tal:link-enabled>
-</tal:ns>
+	   tal:attributes="src context/icon_url" /><tal:link replace="structure context/@@+link" /></span></tal:link-enabled>

@@ -326,11 +326,11 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve_list']
+    links = ['bugcontact', 'securitycontact', 'cve']
 
-    def cve_list(self):
+    def cve(self):
         text = 'CVE reports'
-        return Link('+cve', text, icon='cve')
+        return Link('+cve', text)
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
