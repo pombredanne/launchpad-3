@@ -464,6 +464,16 @@ class TestTracInternalXMLRPCTransport:
         return token_api.newBugTrackerToken()
 
 
+def strip_trac_comment(comment):
+    """Tidy up a comment dict and return it as the Trac LP Plugin would."""
+    # bug_info() doesn't return comment users, so we delete them.
+    stripped_comment = comment
+    if 'user' in stripped_comment:
+        del stripped_comment['user']
+
+    return stripped_comment
+
+
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
@@ -594,7 +604,8 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # metadata.
         elif level == 3:
             bugs_to_return = [
-                dict(bug.asDict(), comments=bug.comments)
+                dict(bug.asDict(), comments=[
+                    strip_trac_comment(comment) for comment in bug.comments])
                 for bug in bugs_to_return]
 
         # Tack the missing bugs onto the end of our list of bugs. These
@@ -604,6 +615,34 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
 
         return [self.time_snapshot()[2], bugs_to_return + missing_bugs]
+
+    def get_comments(self, comments):
+        """Return a list of comment dicts.
+
+        :param comments: The IDs of the comments to return. Comments
+            that don't exist will be returned with a type value of
+            'missing'.
+        """
+        # It's a bit tedious having to loop through all the bugs and
+        # their comments like this, but it's easier than creating a
+        # horribly complex implementation for the sake of testing.
+        comments_to_return = []
+
+        for bug in self.remote_bugs.values():
+            for comment in bug.comments:
+                if comment['id'] in comments:
+                    comments_to_return.append(comment)
+
+        # For each of the missing ones, return a dict with a type of
+        # 'missing'.
+        comment_ids_to_return = sorted([
+            comment['id'] for comment in comments_to_return])
+        missing_comments = [
+            {'id': comment_id, 'type': 'missing'}
+            for comment_id in comments
+            if comment_id not in comment_ids_to_return]
+
+        return comments_to_return + missing_comments
 
 
 class TestRoundup(Roundup):
