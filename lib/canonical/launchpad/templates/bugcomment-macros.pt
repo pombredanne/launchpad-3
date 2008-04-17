@@ -2,9 +2,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
-  class="boardComment">
+  tal:define="remote_bug_comment_class
+              python: comment.bugwatch and 'remoteBugComment' or ''"
+  tal:attributes="class string:boardComment ${remote_bug_comment_class}">
 
-  <div class="boardCommentDetails">
+  <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
@@ -14,12 +16,26 @@
       tal:content="comment/datecreated/fmt:displaydate">
       7 minutes ago
     </span>:
-    <span tal:condition="comment/bugwatch">
-      imported from
-      <a tal:attributes="href comment/bugwatch/url">
-        <tal:block replace="comment/bugwatch/title" />
-      </a>
-    </span>
+    <a tal:attributes="href comment/fmt:url">
+      <strong tal:condition="comment/display_title"
+              tal:content="comment/title" />
+      (permalink)
+    </a>
+  </div>
+
+  <div class="boardCommentDetails" tal:condition="comment/bugwatch">
+    <img tal:replace="structure comment/bugtask/target/image:icon" />
+    In
+    <a tal:attributes="href comment/bugwatch/url"><tal:block replace="comment/bugwatch/title" /></a>,
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure comment/owner/fmt:link" />
+    </tal:comment_has_owner>
+    wrote
+    <span
+      tal:attributes="title comment/datecreated/fmt:datetime"
+      tal:content="comment/datecreated/fmt:displaydate">
+      7 minutes ago
+    </span>:
     <a tal:attributes="href comment/fmt:url">
       <strong tal:condition="comment/display_title"
               tal:content="comment/title" />
