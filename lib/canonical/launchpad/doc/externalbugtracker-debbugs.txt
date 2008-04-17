@@ -348,12 +348,12 @@ bug. DebBugs comment IDs are RFC822 message IDs.
     >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
 
-fetchComments() will load up the comments whose IDs are specified in the
-comment_ids parameter so that they can then be imported. This allows us
-to import only the comments that are necessary - i.e. only those which
-we haven't already imported. We ask it to load all of them for us here.
+The debbugs implementation of fetchComments() doesn't actually do
+anything, since DebBugs comments are stored locally and there is no need
+to pre-fetch them. It exists, nevertheless, so that
+BugWatchUpdater.importBugComments() can call it.
 
-    >>> external_debbugs.fetchComments(comment_ids)
+    >>> external_debbugs.fetchComments(bug_watch, comment_ids)
 
 getPosterForComment() will return a tuple of displayname, email for a
 given comment ID.
