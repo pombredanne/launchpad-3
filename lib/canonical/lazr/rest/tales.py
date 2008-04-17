@@ -151,3 +151,4 @@ class WadlOperationAPI:
             return "POST"
         else:
             raise AssertionError("Named operations must use GET or POST.")
+

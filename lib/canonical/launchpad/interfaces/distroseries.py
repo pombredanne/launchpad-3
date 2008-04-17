@@ -501,12 +501,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         DEBUG level messages.
         """
 
-    def updateCompletePackageCache(archive, log, ztm):
+    def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
         Consider all binary package names published in this distro series.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        :param archive: target `IArchive`;
+        :param log: logger object for printing debug level information;
+        :param ztm:  transaction used for partial commits, every chunk of
+            'commit_chunk' updates is committed;
+        :param commit_chunk: number of updates before commit, defaults to 500.
+
+        :return the number of packages updated.
         """
 
     def updatePackageCache(binarypackagename, archive, log):

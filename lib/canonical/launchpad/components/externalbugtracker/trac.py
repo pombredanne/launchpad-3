@@ -28,6 +28,18 @@ class Trac(ExternalBugTracker):
     batch_url = 'query?%s&order=resolution&format=csv'
     batch_query_threshold = 10
 
+    def getExternalBugTrackerToUse(self):
+        """See `IExternalBugTracker`."""
+        base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+        # Any token will do.
+        auth_url = urlappend(base_auth_url, 'check')
+        try:
+            self.urlopen(auth_url)
+        except urllib2.HTTPError, error:
+            if error.code != 401:
+                return self
+        return TracLPPlugin(self.baseurl)
+
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
         tickets, False otherwise.
