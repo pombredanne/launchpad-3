@@ -600,7 +600,8 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
                     comment['id'] for comment in bug.comments])
                 for bug in bugs_to_return]
         # At level 3 we return the full comment dicts along with the bug
-        # metadata.
+        # metadata. Tne comment dicts do not include the user field,
+        # however.
         elif level == 3:
             bugs_to_return = [
                 dict(bug.asDict(), comments=[

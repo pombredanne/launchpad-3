@@ -279,12 +279,13 @@ We'll add some comments to our example bugs in order to demonstrate the
 comment importing functionality.
 
     >>> test_transport.remote_bugs['1'].comments = [
-    ...     {'id': '1', 'type': 'comment', 'user': 'test@canonical.com',
+    ...     {'id': '1-1', 'type': 'comment',
+    ...      'user': 'Test <test@canonical.com>',
     ...      'comment': 'Hello, world!'}]
     >>> test_transport.remote_bugs['2'].comments = [
-    ...     {'id': '2', 'type': 'comment', 'user': 'test@canonical.com',
+    ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
     ...      'comment': 'Hello again, world!'},
-    ...     {'id': '3', 'type': 'comment', 'user': 'foo.bar@canonical.com',
+    ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar',
     ...      'comment': 'More commentary.'}]
 
 We also need an example Bug, BugTracker and BugWatch.
@@ -327,12 +328,12 @@ bug_watch is against remote bug 1, which has one comment.
     Successfully validated the token.
 
     >>> trac.getCommentIds(bug_watch)
-    ['1']
+    ['1-1']
 
 bug_watch_two is against remote bug 2, which has two comments.
 
     >>> trac.getCommentIds(bug_watch_two)
-    ['2', '3']
+    ['2-1', '2-2']
 
 bug_watch_three is against bug 3, which has no comments.
 
@@ -347,3 +348,10 @@ BugNotFound error.
       ...
     BugNotFound: 123
 
+getPosterForComment() returns a tuple of (displayname, emailaddress) for
+the poster of a given comment.
+
+    >>> trac.getPosterForComment(bug_watch, '1')
+    ('Test', 'test@canonical.com')
+
+getPosterForComment() hand

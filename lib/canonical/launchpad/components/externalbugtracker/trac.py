@@ -250,7 +250,7 @@ class TracLPPlugin(Trac):
             endpoint, transport=self.xmlrpc_transport)
 
         time_snapshot, remote_bugs = server.launchpad.bug_info(
-            3, dict(bugs=bug_ids))
+            2, dict(bugs=bug_ids))
         for remote_bug in remote_bugs:
             # We only import bugs whose status isn't 'missing', since
             # those bugs don't exist on the remote system.
@@ -318,9 +318,13 @@ class TracLPPlugin(Trac):
         """See `ISupportsCommentImport`."""
         try:
             bug = self.bugs[int(bug_watch.remotebug)]
-            return [comment['id'] for comment in bug['comments']]
+            return [comment_id for comment_id in bug['comments']]
         except KeyError:
             raise BugNotFound(bug_watch.remotebug)
+
+    @needs_authentication
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
 
 
 class TracXMLRPCTransport(xmlrpclib.Transport):
