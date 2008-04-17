@@ -312,7 +312,7 @@ class BugTrackerSet:
                 name_increment += 1
 
         if title is None:
-            title = quote('Bug tracker at %s' % baseurl)
+            title = 'Bug tracker at %s' % baseurl
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,
