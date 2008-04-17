@@ -38,6 +38,10 @@ class TestBranchPopupWidget(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
+    def assertIs(self, first, second):
+        """Assert `first` is `second`."""
+        self.assertTrue(first is second, "%r is not %r" % (first, second))
+
     def installLaunchBag(self, user=None, product=None):
         bag = DummyLaunchBag(user, product)
         ztapi.provideUtility(ILaunchBag, bag)
@@ -138,13 +142,23 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(self.popup.getProduct(), branch.product)
         self.assertEqual(expected_name, branch.name)
 
+    def test_makeBranchNoProduct(self):
+        """makeBranch(url) returns None if there's no product in LaunchBag.
+
+        Not all contexts for branch registration have products. In particular,
+        a bug can be on a source package. When we link a branch to that bug,
+        there's no clear product to choose, so we don't choose any.
+        """
+        self.installLaunchBag(product=None, user=self.factory.makePerson())
+        url = self.factory.getUniqueURL()
+        branch = self.popup.makeBranchFromURL(url)
+        self.assertIs(None, branch)
+
     def test_toFieldValueFallsBackToMakingBranch(self):
         """_toFieldValue falls back to making a branch if it's given a URL."""
         url = self.factory.getUniqueURL()
         # Check that there's no branch with this URL.
-        self.assertTrue(
-            getUtility(IBranchSet).getByUrl(url) is None,
-            "Branch exists with URL: %r" % (url,))
+        self.assertIs(None, getUtility(IBranchSet).getByUrl(url))
 
         branch = self.popup._toFieldValue(url)
         self.assertEqual(url, branch.url)

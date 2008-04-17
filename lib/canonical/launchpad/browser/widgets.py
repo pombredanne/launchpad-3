@@ -158,6 +158,9 @@ class BranchPopupWidget(SinglePopupWidget):
         return getUtility(ILaunchBag).product
 
     def makeBranchFromURL(self, url):
+        product = self.getProduct()
+        if product is None:
+            return None
         owner = self.getPerson()
         name = self.getBranchNameFromURL(url)
         return getUtility(IBranchSet).new(
