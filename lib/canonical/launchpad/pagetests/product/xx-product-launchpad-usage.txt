@@ -142,17 +142,17 @@ email address where bug reports should be sent.
     ...     'By emailing an upstream bug contact').selected = True
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.upstream_email_address').value = (
-    ...         'puff@magicdragon.com')
+    ...         'puff@magicdragon.example.com')
     >>> registrant_browser.getControl('Change').click()
 
 An Email Address bug tracker is automatically created.
 
     >>> registrant_browser.open('http://launchpad.dev/bugs/bugtrackers')
     >>> registrant_browser.getLink(
-    ...     "'Bug tracker at mailto:puff@magicdragon.com'").click()
+    ...     "'Bug tracker at mailto:puff@magicdragon.example.com'").click()
     >>> print extract_text(
     ...     find_tag_by_id(registrant_browser.contents, 'bugtracker-urls'))
-    mailto:puff@magicdragon.com
+    mailto:puff@magicdragon.example.com
 
 An error message is shown if the email address is not filled in.
 

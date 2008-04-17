@@ -1,6 +1,6 @@
 = When Launchpad Bugs is not used to track bugs =
 
-We do some special-handling of the cases where upstream doesn't use
+We do some special handling of the cases where upstream doesn't use
 Launchpad as their official bugtracker. In this situation, we want to
 tell people what their options are.
 
@@ -57,7 +57,7 @@ actually an email address.
     ...     'By emailing an upstream bug contact').selected = True
     >>> admin_browser.getControl(
     ...     name='field.bugtracker.upstream_email_address').value = (
-    ...         'puff@magicdragon.com')
+    ...         'puff@magicdragon.example.com')
     >>> admin_browser.getControl('Change').click()
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+filebug')
@@ -65,10 +65,10 @@ actually an email address.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bugtarget-upstream-bugtracker-info'))
     Bugs in upstream Jokosher should be sent to
-    mailto:puff@magicdragon.com
+    mailto:puff@magicdragon.example.com
 
-    >>> user_browser.getLink("mailto:puff@magicdragon.com").url
-    'mailto:puff@magicdragon.com'
+    >>> user_browser.getLink("mailto:puff@magicdragon.example.com").url
+    'mailto:puff@magicdragon.example.com'
 
 
 === Advanced Filebug ===
