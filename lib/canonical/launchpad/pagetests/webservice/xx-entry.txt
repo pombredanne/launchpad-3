@@ -341,13 +341,23 @@ of HTTP).
   teamowner_link: No such object "https://api.launchpad.dev/beta/~admins".
 
 Even a URL that identifies an object in the web service won't work, if
-the object isn't the kind of object that can own a team:
+the object isn't the right kind of object. A bug can't own a team:
 
   >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
   teamowner_link: Expected a person.
+
+And a bug can't be a duplicate of a person:
+
+  >>> representation = { 'duplicate_of_link' :
+  ...                    'http://api.launchpad.dev/beta/~sabdfl' }
+  >>> print webservice.patch('/beta/bugs/1', 'application/json',
+  ...                        simplejson.dumps(representation))
+  HTTP/1.1 400 Bad Request
+  ...
+  duplicate_of_link: Your value points to the wrong kind of object
 
 And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own

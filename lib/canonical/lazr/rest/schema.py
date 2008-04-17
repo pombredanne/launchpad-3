@@ -205,7 +205,6 @@ class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
         except NotFound:
             # The URL doesn't correspond to any real object.
             raise ValueError('No such object "%s".' % value)
-
         # We looked up the URL and got the thing at the other end of
         # the URL: a resource. But internally, a resource isn't a
         # valid value for any schema field. Instead we want the object

@@ -573,7 +573,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # into the ObjectLookupFieldDeserializer, once we make
                 # it possible for Vocabulary fields to specify a
                 # schema class the way IObject fields can.
-                if not self.field.schema.providedBy(value):
+                if not element.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue
