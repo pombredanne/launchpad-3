@@ -154,6 +154,16 @@ class TestBranchPopupWidget(unittest.TestCase):
         url = self.factory.getUniqueURL()
         self.assertRaises(NoProductError, self.popup.makeBranchFromURL, url)
 
+    def test_makeBranchTrailingSlash(self):
+        """makeBranch creates a mirrored branch even if the URL ends with /.
+        """
+        uri = URI(self.factory.getUniqueURL())
+        expected_name = self.popup.getBranchNameFromURL(
+            str(uri.ensureNoSlash()))
+        branch = self.popup.makeBranchFromURL(str(uri.ensureSlash()))
+        self.assertEqual(str(uri.ensureNoSlash()), branch.url)
+        self.assertEqual(expected_name, branch.name)
+
     def test_toFieldValueFallsBackToMakingBranch(self):
         """_toFieldValue falls back to making a branch if it's given a URL."""
         url = self.factory.getUniqueURL()

@@ -143,7 +143,7 @@ class BranchPopupWidget(SinglePopupWidget):
         already another branch of that name on the product, then we'll try to
         find a unique name by appending numbers.
         """
-        name = URI(url).path.split('/')[-1]
+        name = URI(url).ensureNoSlash().path.split('/')[-1]
         product = self.getProduct()
         branch_set = getUtility(IBranchSet)
         if branch_set.getByProductAndName(product, name).count() == 0:
@@ -163,6 +163,7 @@ class BranchPopupWidget(SinglePopupWidget):
         return getUtility(ILaunchBag).product
 
     def makeBranchFromURL(self, url):
+        url = str(URI(url).ensureNoSlash())
         product = self.getProduct()
         if product is None:
             raise NoProductError("Could not find product in LaunchBag.")
