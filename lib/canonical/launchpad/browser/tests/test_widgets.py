@@ -183,7 +183,6 @@ class TestBranchPopupWidget(unittest.TestCase):
 # TODO:
 # Behaviour when not logged in.
 # Behaviour when no product.
-# Check that branch is created when the user enters an unknown URL
 # Ensure that the branch is mentioned in the notice on the next page.
 
 

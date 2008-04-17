@@ -295,22 +295,15 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def __init__(self, context=None):
         BranchVocabularyBase.__init__(self, context)
-
-        if self.product is None:
+        if IProduct.providedBy(self.context):
+            self.product = self.context
+        elif IProductSeries.providedBy(self.context):
+            self.product = self.context.product
+        elif IBranch.providedBy(self.context):
+            self.product = self.context.product
+        else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')
-
-    @property
-    def product(self):
-        """The product in the context."""
-        if IProduct.providedBy(self.context):
-            return self.context
-        elif IProductSeries.providedBy(self.context):
-            return self.context.product
-        elif IBranch.providedBy(self.context):
-            return self.context.product
-        else:
-            return None
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
