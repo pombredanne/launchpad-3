@@ -90,6 +90,7 @@ class ICollectionResource(IHTTPResource):
         :return: A string representation.
         """
 
+
 class IResourceOperation(Interface):
     """A one-off operation invokable on a resource."""
 

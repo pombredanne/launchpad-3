@@ -404,9 +404,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # collection resource.
                 if value is not None:
                     key = name + '_collection_link'
-                    # XXXXXXXXX This code needs to be refactored
-                    # so we can get the URL of a scoped collection
-                    # from elsewhere.
                     data[key] = "%s/%s" % (data['self_link'], name)
             elif self._fieldValueIsObject(field):
                 # The field is an entry; include a link to the
@@ -447,7 +444,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.request.response.setStatus(400)
             return None, 'Expected a JSON hash.'
         return h, None
-
 
     def do_GET(self):
         """Render an appropriate representation of the entry."""
