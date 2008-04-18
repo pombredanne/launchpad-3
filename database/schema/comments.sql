@@ -41,6 +41,7 @@ COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot s
 COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
 COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format name';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format name';
+COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format name';
 
 COMMENT ON TABLE BzrFormat IS 'The names of the branch and repository formats stored in the Branch table.';
 COMMENT ON COLUMN BzrFormat.name IS 'A distinct format name as defined by bzrlib.';

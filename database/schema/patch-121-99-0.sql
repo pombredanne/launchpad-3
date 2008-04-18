@@ -12,6 +12,9 @@ ALTER TABLE Branch
 ALTER TABLE Branch
   ADD COLUMN repository_format integer REFERENCES BzrFormat;
 
+ALTER TABLE Branch
+  ADD COLUMN metadir_format integer REFERENCES BzrFormat;
+
 -- We may want to aggregate these for statistics, but unlikely
 -- to need to do this for normal UI interaction.
 
