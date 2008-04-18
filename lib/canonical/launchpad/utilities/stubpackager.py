@@ -1,8 +1,10 @@
-#!/usr/bin/env python
-
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-""" ... """
+"""StubPackager utility.
+
+It build small and fully functional packages to be used in launchpad test
+suite.
+"""
 
 __metaclass__ = type
 __all__ = ['StubPackager']
@@ -70,7 +72,7 @@ binary: binary-arch
 
 
 class StubPackager:
-    """See IStubPackager."""
+    """See `IStubPackager`."""
 
     implements(IStubPackager)
 
@@ -83,12 +85,12 @@ class StubPackager:
         self._createNewSandbox()
 
     def setSourceNameAndVersion(self, name, version):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         self.name = name
         self.version = version
 
     def setGPGKey(self, key_path=None):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         gpghandler = getUtility(IGPGHandler)
 
         if key_path is None:
@@ -101,7 +103,7 @@ class StubPackager:
 
     @property
     def upstream_directory(self):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         assert self.sandbox_path is not None, (
             "Sandbox directory path is not set.")
 
@@ -113,7 +115,7 @@ class StubPackager:
 
     @property
     def debian_path(self):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         return os.path.join(self.upstream_directory, 'debian')
 
     @property
@@ -144,7 +146,7 @@ class StubPackager:
         self.sandbox_path = tempfile.mkdtemp(prefix='stubpackager-')
 
         def removeSandbox(sandbox):
-            """Remove GNUPGHOME directory."""
+            """Remove sandbox directory if it exists."""
             if os.path.exists(sandbox):
                 shutil.rmtree(sandbox)
         atexit.register(removeSandbox, self.sandbox_path)
@@ -249,7 +251,7 @@ class StubPackager:
         return (stdout, stderr)
 
     def buildUpstream(self, build_orig=True):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         assert not os.path.exists(self.upstream_directory), (
             'Selected upstream directory already exists: %s' % (
                 os.path.basename(self.upstream_directory)))
@@ -269,9 +271,9 @@ class StubPackager:
                      suite=None, author='Foo Bar',
                      email='foo.bar@canonical.com',
                      timestamp=None):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         assert version.startswith(self.version), (
-            'New versions should starts with the upstream version: %s ' % (
+            'New versions should start with the upstream version: %s ' % (
                 self.version))
 
         if suite is None:
@@ -294,7 +296,7 @@ class StubPackager:
         self._appendContents(version)
 
     def buildSource(self, include_orig=True, signed=True):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         assert os.path.exists(self.upstream_directory), (
             'Selected upstream directory does not exist: %s' % (
                 os.path.basename(self.upstream_directory)))
@@ -319,7 +321,7 @@ class StubPackager:
         os.chdir(current_path)
 
     def listAvailableUploads(self):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         changes = [os.path.join(self.sandbox_path, filename)
                    for filename in os.listdir(self.sandbox_path)
                    if filename.endswith('.changes')]
@@ -327,7 +329,7 @@ class StubPackager:
         return sorted(changes)
 
     def reset(self):
-        """See IStubPackager."""
+        """See `IStubPackager`."""
         shutil.rmtree(self.sandbox_path)
 
         self.name = None
@@ -335,38 +337,3 @@ class StubPackager:
 
         self._createNewSandbox()
 
-
-if __name__ == '__main__':
-
-    from canonical.launchpad import scripts
-    from canonical.lp import initZopeless
-
-    scripts.execute_zcml_for_scripts(use_web_security=True)
-    initZopeless(dbuser='ro')
-
-    packager = getUtility(IStubPackager)
-
-    packager.setSourceNameAndVersion('biscuit', '1.0')
-    packager.setGPGKey('foo.bar@canonical.com-passwordless.sec')
-
-    packager.buildUpstream(build_orig=True)
-    packager.buildSource(include_orig=True)
-
-    packager.buildVersion('1.0-2', changelog_text="cookies")
-    packager.buildVersion('1.0-3', changelog_text="butter cookies")
-    packager.buildSource(include_orig=False)
-
-    packager.buildVersion('1.0-4', changelog_text="uhmmm, leker")
-    packager.buildSource(include_orig=False)
-
-    packager.setSourceNameAndVersion('zeca', '1.0')
-    packager.buildUpstream(build_orig=True)
-    packager.buildSource(include_orig=True)
-
-    packager.buildVersion('1.0-2', changelog_text="cookies")
-    packager.buildSource(include_orig=False)
-
-    for changesfile in packager.listAvailableUploads():
-        print changesfile
-
-    packager.reset()

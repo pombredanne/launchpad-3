@@ -41,25 +41,25 @@ class IStubPackager(Interface):
     def buildUpstream(build_orig=True):
         """Build a stub source upstream version.
 
-        'build_orig' indicates whether or now to prepare a orig.tar.gz
-        containing the pristine upstream code. If generated it will be
-        used for subsequent versions.
+        param: build_orig: boolean indicating whether or not to prepare
+            a orig.tar.gz containing the pristine upstream code. If
+            generated it can be used for subsequent versions.
         """
 
     def buildVersion(version, changelog_text="nicht !",
                      suite=None, author='Foo Bar',
                      email='foo.bar@canonical.com',
                      timestamp=None):
-        """Intialise a new version of extracted package."""
+        """Initialise a new version of extracted package."""
 
     def buildSource(include_orig=True, key_id=None):
         """Build a new version of the source package.
 
-        'include_orig' controls whether or not the upstream tarball should
-        be included in the changesfile.
-        'key_id' if not passed will result in unsigned sources, if a signed
-        package is wanted it should be the key ID (in '0xAABBCCDD' form) of
-        a password less GPG key.
+        :param  include_orig: boolean, controls whether or not the
+             upstream tarball should be included in the changesfile.
+        :param key_id: if not passed will result in unsigned sources,
+             if a signed package is wanted it should be the key ID
+             (in '0xAABBCCDD' form) of a password-less GPG key.
         """
 
     def listAvailableUploads():

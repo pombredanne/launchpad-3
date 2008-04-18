@@ -89,8 +89,6 @@ directory and creates a new one. It also clears StubPackager's
 
 == Creating Packages ==
 
-Let see StubPackager actually creating stub packages.
-
 First we define a source upstream name and version.
 
     >>> packager.setSourceNameAndVersion('biscuit', '1.0')
@@ -99,8 +97,8 @@ Then we create it on disk based on the StubPackager templates.
 
     >>> packager.buildUpstream(build_orig=False)
 
-It results in a buildable source package version '<version>-1' in the
-upstream_directory path.
+It results in a buildable source package the suffix '-1' appended to
+the upstream version in the upstream_directory path.
 
     >>> os.path.exists(packager.upstream_directory)
     True
@@ -159,12 +157,12 @@ Now we can build the source package using the generated tarball.
     <BLANKLINE>
 
 When we try to build an incompatible package version an error will be
-raised indication it could not created.
+raised indicating it could not created.
 
     >>> packager.buildVersion('2.0-2', changelog_text="version on crack.")
     Traceback (most recent call last):
     ...
-    AssertionError: New versions should starts with the upstream version: 1.0
+    AssertionError: New versions should start with the upstream version: 1.0
 
 Using a proper version, let's build a new source package version, but
 now signing the DSC and the changesfile.
@@ -176,7 +174,7 @@ now signing the DSC and the changesfile.
     ...
     AssertionError: Cannot build signed packages because the key is not set.
 
-The error was raised because no siging key was set.
+The error was raised because no signing key was set.
 
     >>> print packager.gpg_key_id
     None
@@ -192,7 +190,7 @@ GPG key set, now we are able to build a signed version.
     >>> print packager.gpg_key_id
     0x5D147547
 
-StubPackager also allows us to include as many versions he needs
+StubPackager also allows us to include as many versions it needs
 before building the package. It helps when the content of the
 changelog matters in the test context.
 
@@ -217,7 +215,7 @@ basically checking we pass the right arguments to it.
     >>> sig.fingerprint[-8:] == packager.gpg_key_id[2:]
     True
 
-Continue in the same 'sandbox', we can generate subsequent packages
+Continuing in the same 'sandbox', we can generate subsequent packages
 for the same upstream source.
 
     >>> packager.buildVersion('1.0-4', changelog_text="uhmmm, leker")
