@@ -803,6 +803,12 @@ archive.purpose (e.g. PRIMARY or PPA).  These latter two arguments are
 used in the chroot to determine whether it needs to turn on some features
 or not (like pkgstriptranslations and pkgmaintainermangler).
 
+Furthermore, the 'archive_private' flag is passed to the slave builder.
+It is True for private archives and False otherwise.
+For builds in private archives the build slaves need to sanitize the URLs
+in the buildlog file i.e. remove any authentication credentials that may
+be embedded in these URLs.
+
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> a_builder.is_available
     True
