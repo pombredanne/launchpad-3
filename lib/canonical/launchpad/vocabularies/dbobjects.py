@@ -86,11 +86,11 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch,
-    IBugTask, IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget,
-    ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
+    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch, IBugTask,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
+    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProductSeries, IProductSeriesBugTask, IProject,
     ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
     MailingListStatus, PersonVisibility)
 
@@ -1227,6 +1227,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
+        elif IProductSeriesBugTask.providedBy(milestone_context):
+            target = milestone_context.productseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
