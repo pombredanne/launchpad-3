@@ -468,3 +468,6 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no ProductSeries with the
         given details.
         """
+
+    def getSeriesForBranches(branches):
+        """Return the ProductSeries associated with a branch in branches."""
