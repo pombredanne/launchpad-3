@@ -389,6 +389,51 @@ All parameters definitions must be schema fields:
     provide IField: <object...>
 
 
+=== Export and inheritance ===
+
+A child interface inherits the markup of its ancestors, even when the
+base interface isn't exported itself.
+
+    >>> class IHasName(Interface):
+    ...     name = TextLine()
+    ...     export_field(name)
+    ...
+    ...     @export_write_operation(new_name=TextLine())
+    ...     def rename(new_name):
+    ...         """Rename the object."""
+
+    >>> class IUser(IHasName):
+    ...     export_entry()
+    ...
+    ...     nickname = TextLine()
+    ...     export_field(nickname)
+    ...
+    ...     @export_write_operation(to=Object(IHasName), msg=TextLine())
+    ...     def talk_to(to, msg):
+    ...         """Sends a message to another named object."""
+
+    >>> for name in sorted(IUser.names(True)):
+    ...     print '== %s ==' % name
+    ...     print_export_tag(IUser[name])
+    == name ==
+    as: 'name'
+    type: 'field'
+    == nickname ==
+    as: 'nickname'
+    type: 'field'
+    == rename ==
+    as: 'rename'
+    call_with: {}
+    params: {'new_name': <...TextLine...>}
+    type: 'write_operation'
+    == talk_to ==
+    as: 'talk_to'
+    call_with: {}
+    params: {'msg': <...TextLine...>,
+        'to': <...Object...>}
+    type: 'write_operation'
+
+
 == Generating the webservice ==
 
 === Entry ==

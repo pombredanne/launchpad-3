@@ -29,7 +29,7 @@ import sys
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor, isClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
-from zope.interface.interfaces import IInterface
+from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
 from zope.schema.interfaces import IField
 from zope.security.checker import CheckerPublic
@@ -93,8 +93,8 @@ def export_entry():
         # parameter in export_field. This must be done here, because the
         # field's __name__ attribute is only set when the interface is
         # created.
-        for name in interface.names(False):
-            tag = interface[name].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        for name, field in getFields(interface).items():
+            tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
             if tag is None:
                 continue
             if tag['type'] != FIELD_TYPE:
@@ -190,11 +190,10 @@ class _method_annotator:
 
     def __call__(self, f):
         """Annotates the function with the fixed arguments."""
-        tags = _get_interface_tags()
-        annotations = tags.setdefault(
-            'lazr.webservice.exported_methods_annotations', {})
-        method_annotations = annotations.setdefault(f.__name__, {})
-        self.annotate_method(f, method_annotations)
+        # Everything in the function dictionary ends up as tagged value
+        # in the interface method specification.
+        annotations = f.__dict__.setdefault(LAZR_WEBSERVICE_EXPORTED, {})
+        self.annotate_method(f, annotations)
         return f
 
     def annotate_method(self, f, annotations):
@@ -214,13 +213,12 @@ class _method_annotator:
 def annotate_exported_methods(interface):
     """Sets the 'lazr.webservice.exported' tag on exported method."""
 
-    exported_methods = interface.queryTaggedValue(
-        'lazr.webservice.exported_methods_annotations')
-    if exported_methods is None:
-        return
-
-    for name, annotations in exported_methods.items():
-        method = interface.get(name)
+    for name, method in interface.namesAndDescriptions(True):
+        if not IMethod.providedBy(method):
+            continue
+        annotations = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        if not annotations:
+            continue
 
         # Method is exported under its own name by default.
         if 'as' not in annotations:
@@ -251,8 +249,6 @@ def annotate_exported_methods(interface):
                 'method "%s" needs more parameters definitions to be '
                 'exported: %s' % (
                     method.__name__, ", ".join(sorted(missing_params))))
-
-        method.setTaggedValue(LAZR_WEBSERVICE_EXPORTED, annotations)
 
 
 class call_with(_method_annotator):
