@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
     ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.validators.email import valid_email
 
 
 class Trac(ExternalBugTracker):
