@@ -699,3 +699,8 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
+
+    def getBuildersForQueue(self, processor, virtualized):
+        """See `IBuilderSet`."""
+        return Builder.selectBy(builderok=True, processor=processor,
+                                virtualized=virtualized)

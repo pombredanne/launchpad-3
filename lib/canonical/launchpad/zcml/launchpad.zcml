@@ -410,6 +410,14 @@ these URLs in Apache.
   attribute="__call__"
   permission="zope.Public"
   />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-ubuntu"
+  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
 
 
 <adapter

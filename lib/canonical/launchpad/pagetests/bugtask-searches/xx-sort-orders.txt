@@ -5,96 +5,116 @@ demonstrate this functionality on each +bugs page.
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/firefox/+bugs")
+    >>> anon_browser.open("http://launchpad.dev/firefox/+bugs")
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Firefox install instructions should be complete...
-    ...Reflow problems with complex page layouts...
-    ...Firefox does not support SVG...
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+    Critical New
+    4 Reflow problems with complex page layouts
+    Medium New
+    1 Firefox does not support SVG
+    Low New
 
 Newest:
 
-    >>> browser.getControl(name="orderby").displayValue = ["newest"]
-    >>> browser.getControl("Search").click()
+    >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
+    >>> anon_browser.getControl("Search").click()
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Firefox install instructions should be complete...
-    ...Reflow problems with complex page layouts...
-    ...Firefox does not support SVG...
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+    Critical New
+    4 Reflow problems with complex page layouts
+    Medium New
+    1 Firefox does not support SVG
+    Low New
 
 2. The distro +bugs page.
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/debian/+bugs")
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Bug Title Test...
-    ...Firefox does not support SVG...
-    ...Blackhole Trash folder...
+    >>> anon_browser.open("http://launchpad.dev/debian/+bugs")
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    mozilla-firefox Unknown New
+    1 Firefox does not support SVG
+    mozilla-firefox Low Confirmed
+    2 Blackhole Trash folder
+    mozilla-firefox Low Confirmed
 
 By recently changed:
 
-    >>> browser.getControl(name="orderby").displayValue = ["recently changed"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Bug Title Test...
-    ...Blackhole Trash folder...
-    ...Firefox does not support SVG...
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "recently changed"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    mozilla-firefox Unknown New
+    2 Blackhole Trash folder
+    mozilla-firefox Low Confirmed
+    1 Firefox does not support SVG
+    mozilla-firefox Low Confirmed
 
 By status:
 
-    >>> browser.open("http://localhost:9000/ubuntu/+bugs")
-    >>> browser.getControl(name="orderby").displayValue = ["by status"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Firefox does not support SVG...
-    ...another test bug...
-    ...Blackhole Trash folder...
-    ...Thunderbird crashes...
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+bugs")
+    >>> anon_browser.getControl(name="orderby").displayValue = ["by status"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    mozilla-firefox Medium New
+    10 another test bug
+    linux-source-2.6.15 Medium New
+    2 Blackhole Trash folder
+    &mdash; Medium New
+    9 Thunderbird crashes
+    thunderbird Medium Confirmed
 
 3. The distroseries +bugs page.
 
 Default view:
 
-    >>> browser.open("http://localhost:9000/debian/woody/+bugs")
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Bug Title Test...
-    ...Blackhole Trash folder...
+    >>> anon_browser.open("http://launchpad.dev/debian/woody/+bugs")
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    mozilla-firefox Medium New
+    2 Blackhole Trash folder
+    mozilla-firefox Medium New
 
 Newest:
 
-    >>> browser.getControl(name="orderby").displayValue = ["newest"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Blackhole Trash folder...
-    ...Bug Title Test...
+    >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print_bugtasks(anon_browser.contents)
+    2 Blackhole Trash folder
+    mozilla-firefox Medium New
+    3 Bug Title Test
+    mozilla-firefox Medium New
 
 4. The distro sourcepackage +bugs page.
 
 Default view:
 
-    >>> browser.open(
-    ...     "http://localhost:9000/debian/+source/mozilla-firefox/+bugs")
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Bug Title Test...
-    ...Firefox does not support SVG...
-    ...Blackhole Trash folder...
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/debian/+source/mozilla-firefox/+bugs")
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    Unknown New
+    1 Firefox does not support SVG
+    Low Confirmed
+    2 Blackhole Trash folder
+    Low Confirmed
 
 Sort by importance:
 
-    >>> browser.getControl(name="orderby").displayValue = ["by importance"]
-    >>> browser.getControl("Search").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...Bug Title Test...
-    ...Firefox does not support SVG...
-    ...Blackhole Trash folder...
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "by importance"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print_bugtasks(anon_browser.contents)
+    3 Bug Title Test
+    Unknown New
+    1 Firefox does not support SVG
+    Low Confirmed
+    2 Blackhole Trash folder
+    Low Confirmed
 

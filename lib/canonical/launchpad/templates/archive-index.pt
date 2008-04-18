@@ -101,7 +101,6 @@
       <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
-           condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
       <table class="listing" id="packages_list" tal:condition="batch">
@@ -124,7 +123,6 @@
       </table>
 
       <tal:navigation_bottom
-           condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
         <div id="empty-result"

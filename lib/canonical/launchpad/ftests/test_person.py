@@ -168,7 +168,7 @@ class TestPerson(unittest.TestCase):
         branch = getUtility(IBranchSet).new(
             branch_type=BranchType.HOSTED,
             name='namefoo',
-            creator=self.otherteam,
+            registrant=self.otherteam,
             owner=self.otherteam,
             author=self.otherteam,
             product=self.bzr,

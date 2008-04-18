@@ -11,6 +11,7 @@ __all__ = [
     'ShipItReportsView',
     'ShipItRequestServerCDsView',
     'ShipItRequestView',
+    'ShipItSurveyView',
     'ShipItUnauthorizedView',
     'ShippingRequestAdminView',
     'ShippingRequestApproveOrDenyView',
@@ -32,9 +33,12 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
+from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -43,11 +47,11 @@ from canonical.launchpad.webapp import (
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
-    IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
-    ILaunchpadCelebrities, IShippingRunSet, IShipItApplication,
-    IShipItReportSet, UnexpectedFormData, IShippingRequestUser,
-    ShipItConstants, ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
-    ShippingRequestStatus)
+    ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
+    IShipItSurveySet, IShippingRequestSet, IShippingRequestUser,
+    IShippingRunSet, IStandardShipItRequestSet, ShipItArchitecture,
+    ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
+    ShippingRequestStatus, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -151,12 +155,35 @@ class ShipItLoginView(LoginOrRegister):
 class ShipItLoginForServerCDsView(ShipItLoginView):
     """The login page used when users want Server CDs."""
 
-    standard_order_page = '/myrequest-server'
-    custom_order_page = '/specialrequest-server'
-
     def __init__(self, context, request):
         super(ShipItLoginForServerCDsView, self).__init__(context, request)
         self.flavour = ShipItFlavour.SERVER
+
+    @property
+    def custom_order_page(self):
+        """Return the page where users make custom requests for server CDs.
+
+        If the user hasn't answered the survey yet, we return the /survey page
+        instead.
+        """
+        user = getUtility(ILaunchBag).user
+        if getUtility(IShipItSurveySet).personHasAnswered(user):
+            return '/specialrequest-server'
+        else:
+            return '/survey'
+
+    @property
+    def standard_order_page(self):
+        """Return the page where users make standard requests for server CDs.
+
+        If the user hasn't answered the survey yet, we return the /survey page
+        instead.
+        """
+        user = getUtility(ILaunchBag).user
+        if getUtility(IShipItSurveySet).personHasAnswered(user):
+            return '/myrequest-server'
+        else:
+            return '/survey'
 
 
 def _get_flavour_from_layer(request):
@@ -234,22 +261,6 @@ class ShipItRequestView(GeneralFormView):
     @property
     def prerelease_mode(self):
         return config.shipit.prerelease_mode
-
-    @property
-    def dvds_section(self):
-        """Get the HTML containing links to DVD sales for this flavour."""
-        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
-        # amazon.com. -- Guilherme Salgado, 2007-09-24
-        return u''
-        if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-ubuntu-dvds.pt')(self)
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-kubuntu-dvds.pt')(self)
-        else:
-            # We don't have DVDs for Edubuntu. :-(
-            return u''
 
     @property
     def _keyword_arguments(self):
@@ -451,8 +462,8 @@ class ShipItRequestView(GeneralFormView):
                 kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
-                       'can take up to <strong>ten weeks<strong> to deliver. '
-                       'For quicker processing, choose a '
+                       'can take up to <strong>sixteen weeks<strong> to '
+                       'deliver. For quicker processing, choose a '
                        '<a href="%s">standard option</a> instead.'
                        % self.standard_order_page)
             else:
@@ -1156,3 +1167,31 @@ class StandardShipItRequestSetNavigation(Navigation):
     def traverse(self, name):
         return self.context.get(name)
 
+
+class ShipItSurveyView(LaunchpadFormView):
+    """A survey that should be answered by people requesting server CDs."""
+
+    schema = ShipItSurveySchema
+    custom_widget('environment', LabeledMultiCheckBoxWidget)
+    custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
+    custom_widget('used_in', LabeledMultiCheckBoxWidget)
+    custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)
+
+    @action(_("Continue to Complete CD Request"), name="continue")
+    def continue_action(self, action, data):
+        """Continue to the page where the user requests server CDs.
+
+        Also stores the answered questions in the database.
+
+        If the user has an existing request with custom quantities of server
+        CDs, he'll be sent to /specialrequest-server, otherwise he's sent to
+        /myrequest-server.
+        """
+        getUtility(IShipItSurveySet).new(self.user, data)
+        current_order = self.user.currentShipItRequest()
+        server = ShipItFlavour.SERVER
+        if (current_order is not None and
+            current_order.containsCustomQuantitiesOfFlavour(server)):
+            self.next_url = '/specialrequest-server'
+        else:
+            self.next_url = '/myrequest-server'

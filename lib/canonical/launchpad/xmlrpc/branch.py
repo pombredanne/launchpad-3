@@ -106,8 +106,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type = BranchType.HOSTED
             branch = getUtility(IBranchSet).new(
                 branch_type=branch_type,
-                name=branch_name, creator=owner, owner=owner, product=product,
-                url=branch_url, title=branch_title,
+                name=branch_name, registrant=owner, owner=owner,
+                product=product, url=branch_url, title=branch_title,
                 summary=branch_description, author=author)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()
