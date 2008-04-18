@@ -9,39 +9,34 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
-from optparse import OptionParser
-
 from twisted.internet import defer, reactor
 from twisted.python import log
 
 from canonical.codehosting.codeimport.worker_monitor import (
     CodeImportWorkerMonitor)
-from canonical.launchpad import scripts
-from canonical.lp import initZopeless
+from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
-class CodeImportWorker:
+class CodeImportWorker(LaunchpadScript):
 
-    def __init__(self):
-        parser = OptionParser()
-        scripts.logger_options(parser)
-        options, self.args = parser.parse_args()
-        self.logger = scripts.logger(options, 'code-import-worker')
+    def __init__(self, name, dbuser=None, test_args=None):
+        LaunchpadScript.__init__(self, name, dbuser, test_args)
+        set_up_oops_reporting(name)
 
     def main(self):
-        def go():
-            initZopeless(implicitBegin=False)
-            scripts.execute_zcml_for_scripts()
-            arg, = self.args
-            return CodeImportWorkerMonitor(int(arg), self.logger).run()
-        def wrap():
-            defer.maybeDeferred(go).addErrback(
-                log.err).addCallback(
-                lambda ignored: reactor.stop())
-        reactor.callWhenRunning(wrap)
+        reactor.callWhenRunning(self._run_reactor)
         reactor.run()
 
+    def _run_reactor(self):
+        defer.maybeDeferred(self._main).addErrback(
+            log.err).addCallback(
+            lambda ignored: reactor.stop())
+
+    def _main(self):
+        arg, = self.args
+        return CodeImportWorkerMonitor(int(arg), self.logger).run()
 
 if __name__ == '__main__':
-    script = CodeImportWorker()
-    script.main()
+    script = CodeImportWorker('codeimportworker')
+    script.run()

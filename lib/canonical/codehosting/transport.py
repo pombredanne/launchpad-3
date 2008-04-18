@@ -36,8 +36,7 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.twistedsupport.loggingsupport import OOPSLoggingObserver
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 def split_with_padding(a_string, splitter, num_fields, padding=None):
@@ -131,8 +130,7 @@ def set_up_logging(configure_oops_reporting=False):
     log.setLevel(logging.DEBUG)
 
     if configure_oops_reporting:
-        errorlog.globalErrorUtility.configure('codehosting')
-        tplog.addObserver(OOPSLoggingObserver('codehosting').emit)
+        set_up_oops_reporting('codehosting')
 
     return log
 

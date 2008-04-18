@@ -27,7 +27,7 @@ from canonical.codehosting.codeimport.worker_monitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
-    CVSServer, SubversionServer)
+    CVSServer, SubversionServer, _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.database.sqlbase import commit
@@ -124,6 +124,11 @@ class TestWorkerMonitorUnit(TestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    class WorkerMonitor(CodeImportWorkerMonitor):
+
+        def _logOopsFromFailure(self, failure):
+            self._failures.append(failure)
+
     def getResultsForOurCodeImport(self):
         """Return the `CodeImportResult`s for the `CodeImport` we created.
         """
@@ -141,6 +146,12 @@ class TestWorkerMonitorUnit(TestCase):
         self.failUnlessEqual(len(results), 1)
         return results[0]
 
+    def assertOopsesLogged(self, exc_types):
+        self.assertEqual(len(exc_types), len(self.worker_monitor._failures))
+        for failure, exc_type in zip(self.worker_monitor._failures,
+                                     exc_types):
+            self.assert_(failure.check(exc_type))
+
     def setUp(self):
         self.factory = LaunchpadObjectFactory()
         job = self.factory.makeCodeImportJob()
@@ -148,7 +159,9 @@ class TestWorkerMonitorUnit(TestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = CodeImportWorkerMonitor(job.id)
+        self.worker_monitor = self.WorkerMonitor(
+            job.id, _make_silent_logger())
+        self.worker_monitor._failures = []
         commit()
 
     def test_getJob(self):
@@ -228,21 +241,20 @@ class TestWorkerMonitorUnit(TestCase):
             check_file_uploaded)
 
     def test_finishJobStillCreatesResultWhenLibrarianUploadFails(self):
-        # If the upload to the librarian fails for any reason, the worker
-        # monitor still calls the finishJob workflow method, but the call to
-        # finishJob is still deemed to have failed.
+        # If the upload to the librarian fails for any reason, the
+        # worker monitor still calls the finishJob workflow method,
+        # but an OOPS is logged to indicate there was a problem.
         # Write some text so that we try to upload the log.
         self.worker_monitor._log_file.write('some text')
         # Make _createLibrarianFileAlias fail in a distinctive way.
         self.worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
-        @read_only_transaction
-        def check_failure(exc):
-            self.assertIsInstance(exc, ZeroDivisionError)
+        def check_oops_logged_and_result_created(ignored):
+            self.assertOopsesLogged([ZeroDivisionError])
             self.assertEqual(
                 len(list(self.getResultsForOurCodeImport())), 1)
-        return self.assertFailure(
-            self.worker_monitor.finishJob(CodeImportResultStatus.SUCCESS),
-            ZeroDivisionError).addCallback(check_failure)
+        return self.worker_monitor.finishJob(
+            CodeImportResultStatus.SUCCESS).addCallback(
+            check_oops_logged_and_result_created)
 
     def patchOutFinishJob(self):
         calls = []
@@ -265,6 +277,7 @@ class TestWorkerMonitorUnit(TestCase):
         calls = self.patchOutFinishJob()
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
+        self.assertOopsesLogged([RuntimeError])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
@@ -315,7 +328,8 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(job.id)
+        self.worker_monitor = self.WorkerMonitor(
+            job.id, _make_silent_logger())
         self.worker_monitor.result_status = None
         commit()
 
@@ -441,7 +455,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.assertBranchImportedOKForCodeImport(code_import)
 
     def performImport(self, job_id):
-        return CodeImportWorkerMonitor(job_id).run()
+        return CodeImportWorkerMonitor(job_id, _make_silent_logger()).run()
 
     def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
@@ -482,7 +496,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         process_end_deferred = defer.Deferred()
         reactor.spawnProcess(
             DeferredOnExit(process_end_deferred), sys.executable,
-            [sys.executable, script_path, str(job_id)],
+            [sys.executable, script_path, str(job_id), '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
 
