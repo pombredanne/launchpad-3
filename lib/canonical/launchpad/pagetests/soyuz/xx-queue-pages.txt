@@ -1,5 +1,6 @@
 = Upload Queue Pages =
 
+
 Upload queue pages are designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 
@@ -41,7 +42,8 @@ Viewing the current queue, by default the NEW queue.
   ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
   >>> anon_browser.getLink("Show uploads").click()
 
-  >>> anon_browser.getControl(name="queue_state").displayValue
+  >>> anon_browser.getControl(
+  ...     name="queue_state", index=0).displayValue
   ['New']
 
   >>> def print_queue(contents):
@@ -77,7 +79,7 @@ We grant public access to all available queues, including the
 UNAPPROVED one.
 
   >>> anon_browser.getControl(
-  ...     name="queue_state").displayValue = ['Unapproved']
+  ...     name="queue_state", index=0).displayValue = ['Unapproved']
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Pocket   When
@@ -104,7 +106,7 @@ custom-upload filename.
   netapplet...ddtp... -                                     Backp... 2005-04-07
 
   >>> anon_browser.getControl(
-  ...     name="queue_state").displayValue = ['New']
+  ...     name="queue_state", index=0).displayValue = ['New']
   >>> anon_browser.getControl(name="queue_text").value = 'pmount'
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
@@ -119,7 +121,7 @@ toggled via javascript by clicking in the 'expand' arrow
 image:
 
   >>> anon_browser.getControl(
-  ...     name="queue_state").displayValue = ['New']
+  ...     name="queue_state", index=0).displayValue = ['New']
   >>> anon_browser.getControl(name="queue_text").value = ''
   >>> anon_browser.getControl("Update").click()
 
@@ -164,7 +166,8 @@ probe javascripts events.
 
 Inspect the ACCEPTED queue:
 
-  >>> anon_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> anon_browser.getControl(
+  ...     name="queue_state", index=0).displayValue = ['Accepted']
   >>> anon_browser.getControl("Update").click()
   >>> for message in get_feedback_messages(anon_browser.contents):
   ...     print message
@@ -199,7 +202,7 @@ Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['15']
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['15']
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -238,7 +241,7 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['1']
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['1']
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
@@ -248,7 +251,7 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
 The item is moved to the ACCEPTED queue:
 
   >>> upload_manager_browser.getControl(
-  ...    name="queue_state").displayValue=['Accepted']
+  ...    name="queue_state", index=0).displayValue = ['Accepted']
   >>> upload_manager_browser.getControl("Update").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -257,7 +260,7 @@ The item is moved to the ACCEPTED queue:
 Going back to the "new" queue, we can see our item has gone:
 
   >>> upload_manager_browser.getControl(
-  ...    name="queue_state").displayValue=['New']
+  ...    name="queue_state", index=0).displayValue = ['New']
   >>> upload_manager_browser.getControl("Update").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -266,6 +269,35 @@ Going back to the "new" queue, we can see our item has gone:
   alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-04-07
   netapplet (source)  0.99.6-1    main      web     low      Release 2005-04-07
   pmount (i386)       0.1-1                                  Release 2005-04-07
+
+When accepting items from the unapproved queue, the page will remain on the
+unapproved list after the items are accepted, to allow piecemeal
+selection and acceptance.
+
+    >>> upload_manager_browser.getControl(
+    ...    name="queue_state", index=0).displayValue = ['Unapproved']
+    >>> upload_manager_browser.getControl("Update").click()
+
+Accept "cnews" source:
+
+    >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['9']
+    >>> upload_manager_browser.getControl(name="Accept").click()
+    >>> for message in get_feedback_messages(upload_manager_browser.contents):
+    ...     print message
+    Accepting Results:
+    OK: cnews
+
+And the page is still on the Unapproved list:
+
+    >>> upload_manager_browser.getControl(
+    ...     name="queue_state", index=0).displayValue
+    ['Unapproved']
+
+Move back to the New queue:
+
+    >>> upload_manager_browser.getControl(
+    ...     name="queue_state", index=0).displayValue = ['New']
+    >>> upload_manager_browser.getControl("Update").click()
 
 
 == Overriding items ==

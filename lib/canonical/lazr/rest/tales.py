@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import urllib
+
 from zope.app.zapi import getGlobalSiteManager
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
@@ -16,7 +18,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollectionField, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation)
+    IResourcePOSTOperation, IScopedCollection)
 
 
 class WadlResourceAPI:
@@ -93,11 +95,47 @@ class WadlEntryResourceAPI(WadlResourceAPI):
                 if (not ICollectionField.providedBy(field)
                     or field.readonly)]
 
+class WadlCollectionResourceAPI(WadlResourceAPI):
+    "Namespace for WADL functions that operate on collection resources."
+
+    def __init__(self, collection_resource):
+        """Initialize with a collection resource."""
+        super(WadlCollectionResourceAPI, self).__init__(collection_resource)
+        self.collection = self.resource.collection
+
+    def collection_type(self):
+        """The name of this kind of resource."""
+        return self.collection.__class__.__name__
+
+    def collection_representation_link(self):
+        """The URL to the description of the collection's representation."""
+        return "#collection-page"
+
+    def type_link(self):
+        """The URL to the resource type for the object."""
+        # Right now the resource type is defined in the same file
+        # as the resource, so a relative link is fine. This won't
+        # always be so.
+        return "#" + self.collection_type()
+
+    def url(self):
+        """The full URL to the resource.
+
+        Scoped collections don't know their own URLs, so we have to
+        figure it out for them here.
+        """
+        if IScopedCollection.providedBy(self.context):
+            return (canonical_url(self.context.context) + '/' +
+                    urllib.quote(self.context.relationship.__name__))
+        else:
+            return super(WadlCollectionResourceAPI, self).url()
+
+
 class WadlFieldAPI:
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
-        "Initialize with a field."
+        """Initialize with a field."""
         self.field = field
 
     def name(self):
@@ -120,7 +158,7 @@ class WadlFieldAPI:
         return '["%s"]' % self.name()
 
     def is_link(self):
-        "Is this field a link to another resource?"
+        """Is this field a link to another resource?"""
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
 
@@ -140,14 +178,15 @@ class WadlOperationAPI:
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
-        "Initialize with an operation."
+        """Initialize with an operation."""
         self.operation = operation
 
     def http_method(self):
-        "The HTTP method used to invoke this operation."
+        """The HTTP method used to invoke this operation."""
         if IResourceGETOperation.implementedBy(self.operation):
             return "GET"
         elif IResourcePOSTOperation.implementedBy(self.operation):
             return "POST"
         else:
             raise AssertionError("Named operations must use GET or POST.")
+

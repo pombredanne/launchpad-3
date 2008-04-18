@@ -53,7 +53,7 @@
 
       uploads with names like:
 
-      <input size="10" type="text" name="queue_text"
+      <input size="20" type="text" name="queue_text"
                        tal:attributes="value view/name_filter" />
 
       <input type="submit" value="Update" />
@@ -66,6 +66,9 @@
         replace="structure view/batchnav/@@+navigation-links-upper" />
 
      <form name="queue_items_action" action="" method="POST">
+     <input tal:attributes="type string:hidden;
+                            name string:queue_state;
+                            value view/state/value"/>
      <table class="listing sortable" tal:condition="batch"
             id="distroseriesqueue">
        <thead>
