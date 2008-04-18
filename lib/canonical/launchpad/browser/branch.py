@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Branch views."""
 
@@ -759,7 +759,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.branch = getUtility(IBranchSet).new(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
-                creator=self.user,
+                registrant=self.user,
                 owner=data['owner'],
                 author=self.getAuthor(data),
                 product=data['product'],

@@ -1,22 +1,30 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Customized widgets used in Launchpad."""
 
 __metaclass__ = type
 
-__all__ = ['TitleWidget', 'SummaryWidget', 'DescriptionWidget',
-           'WhiteboardWidget',
-           'ShipItRecipientDisplaynameWidget', 'ShipItOrganizationWidget',
-           'ShipItCityWidget', 'ShipItProvinceWidget',
-           'ShipItAddressline1Widget', 'ShipItAddressline2Widget',
-           'ShipItPhoneWidget', 'ShipItReasonWidget', 'ShipItQuantityWidget']
+__all__ = [
+    'DescriptionWidget',
+    'ShipItAddressline1Widget',
+    'ShipItAddressline2Widget',
+    'ShipItCityWidget',
+    'ShipItOrganizationWidget',
+    'ShipItPhoneWidget',
+    'ShipItProvinceWidget',
+    'ShipItQuantityWidget',
+    'ShipItReasonWidget',
+    'ShipItRecipientDisplaynameWidget',
+    'SummaryWidget',
+    'TitleWidget',
+    'WhiteboardWidget',
+    ]
 
-from zope.interface import implements
 
-from zope.schema.interfaces import IText
 from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
 
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets import StrippedTextWidget
+
 
 class TitleWidget(StrippedTextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""
