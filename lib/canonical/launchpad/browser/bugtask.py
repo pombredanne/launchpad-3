@@ -634,9 +634,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def reportBugInContext(self):
         """Report the bug affects the current context."""
-        form = self.request.form
         fake_task = self.context
-        if form.get("reportbug"):
+        if self.request.form.get("reportbug"):
             if self.isReportedInContext():
                 self.notices.append(
                     "The bug is already reported in this context.")

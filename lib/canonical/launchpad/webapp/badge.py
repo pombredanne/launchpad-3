@@ -42,7 +42,8 @@ class Badge:
         """Render the small image as an HTML img tag."""
         if self.small_image:
             return ('<img alt="%s" width="14" height="14" src="%s"'
-                    ' title="%s"/>' % (self.alt, self.small_image, self.title))
+                    ' title="%s"/>'
+                    % (self.alt, self.small_image, self.title))
         else:
             return ''
 
@@ -68,7 +69,8 @@ STANDARD_BADGES = {
     'blueprint': Badge('/@@/blueprint', None,
                        '(Linked to a blueprint)', 'Linked to a blueprint'),
     'branch': Badge('/@@/branch', '/@@/branch-large',
-                    '(Linked to a branch)', 'Linked to a branch', 'branchbadge'),
+                    '(Linked to a branch)', 'Linked to a branch',
+                    'branchbadge'),
     'private': Badge('/@@/private', '/@@/private-large',
                      '(Private)', 'Private', 'privatebadge'),
     'security': Badge('/@@/security', '/@@/security-large',
@@ -91,7 +93,8 @@ class IHasBadges(Interface):
     """
 
     def getVisibleBadges():
-        """Return a list of `Badge` objects that the logged in user can see."""
+        """Return a list of `Badge` objects that the logged in user can see.
+        """
 
 
 class HasBadgeBase:
