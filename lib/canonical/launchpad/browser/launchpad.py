@@ -87,7 +87,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link,
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
-from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
+from canonical.launchpad.webapp.interfaces import (
+    POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -168,16 +169,8 @@ class MenuBox(LaunchpadView):
                                                        config.devmode)],
             key=operator.attrgetter('sort_key'))
 
-        navigation_menu_links = menuapi.navigation_list
-        self.navigationmenuitems = sorted([
-            link for link in navigation_menu_links if (link.enabled or
-                                                       config.devmode)],
-            key=operator.attrgetter('sort_key'))
-
     def render(self):
-        if (not self.contextmenuitems and
-            not self.applicationmenuitems and
-            not self.navigationmenuitems):
+        if (not self.contextmenuitems and not self.applicationmenuitems):
             return ''
         else:
             return self.template()
@@ -200,8 +193,10 @@ class NavigationMenuTabs(LaunchpadView):
 
         # We are only interested on enabled links in non development mode.
         menu.request = self.request
-        self.links = [link for link in menu.iterlinks() if (link.enabled or
-                                                            config.devmode)]
+        self.links = sorted([
+            link for link in menu.iterlinks() if (link.enabled or
+                                                  config.devmode)],
+            key=operator.attrgetter('sort_key'))
 
     def render(self):
         if not self.links:

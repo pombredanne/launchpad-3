@@ -18,10 +18,5 @@
         Link
       </li>
     </tal:block>
-    <tal:block repeat="link view/navigationmenuitems">
-      <li tal:content="structure link/@@+link">
-        Link
-      </li>
-    </tal:block>
   </ul>
 </div>
