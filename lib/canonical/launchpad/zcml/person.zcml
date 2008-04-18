@@ -199,10 +199,6 @@
       template="../templates/person-participation.pt"
       />
     <browser:page
-      name="+navigation-test"
-      template="../templates/launchpad-navigation-menubox.pt"
-      />
-    <browser:page
       name="+karma"
       template="../templates/person-karma.pt"
       />

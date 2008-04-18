@@ -174,7 +174,36 @@ class MenuBox(LaunchpadView):
             key=operator.attrgetter('sort_key'))
 
     def render(self):
-        if not self.contextmenuitems and not self.applicationmenuitems:
+        if (not self.contextmenuitems and
+            not self.applicationmenuitems and
+            not self.navigationmenuitems):
+            return ''
+        else:
+            return self.template()
+
+
+class NavigationMenuTabs(LaunchpadView):
+    """View class that helps its template render the navigation menu tabs.
+
+    Nothing at all is rendered if there are navigation menu items.
+    """
+
+    usedfor = dict  # Really a navigation menu object.
+
+    def initialize(self):
+        menu = INavigationMenu(self.context)
+        if menu is None:
+            # There are no menu entries.
+            self.links = []
+            return
+
+        # We are only interested on enabled links in non development mode.
+        menu.request = self.request
+        self.links = [link for link in menu.iterlinks() if (link.enabled or
+                                                            config.devmode)]
+
+    def render(self):
+        if not self.links:
             return ''
         else:
             return self.template()
