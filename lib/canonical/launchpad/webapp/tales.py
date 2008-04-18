@@ -2337,7 +2337,8 @@ class PageMacroDispatcher:
             pageheading=True,
             portlets=False,
             structuralheaderobject=False,
-            pagetypewasset=True
+            pagetypewasset=True,
+            actionsmenu=True
             ):
             self.elements = vars()
 
@@ -2360,6 +2361,14 @@ class PageMacroDispatcher:
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True),
+        'defaultnomenu':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
+                actionsmenu=False),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
