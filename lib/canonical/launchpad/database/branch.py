@@ -35,7 +35,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreationException, BranchCreationForbidden,
+    BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -917,6 +918,20 @@ class BranchSet:
         # relation "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
+        # Make sure that the new branch has a unique name if not a junk
+        # branch.
+        if not self.isBranchNameAvailable(owner, product, name):
+            params = {'name': name}
+            if product is None:
+                params['maybe_junk'] = 'junk '
+                params['context'] = owner.name
+            else:
+                params['maybe_junk'] = ''
+                params['context'] = product.name
+            raise BranchCreationException(
+                'A %(maybe_junk)sbranch with the name "%(name)s" already '
+                'exists for "%(context)s".' % params)
+
         branch = Branch(
             registrant=registrant,
             name=name, owner=owner, author=author, product=product, url=url,
@@ -1363,3 +1378,13 @@ class BranchSet:
             """ % sqlvalues(user, product),
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
+
+    def isBranchNameAvailable(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        if product is None:
+            results = Branch.selectBy(
+                owner=owner, product=None, name=branch_name)
+        else:
+            results = Branch.selectBy(product=product, name=branch_name)
+
+        return results.count() == 0

@@ -1031,6 +1031,15 @@ class IBranchSet(Interface):
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targetted before."""
 
+    def isBranchNameAvailable(owner, product, branch_name):
+        """Is the specified branch_name valid for the owner and product.
+
+        :param owner: A `Person` who may be an individual or team.
+        :param product: A `Product` or None for a junk branch.
+        :param branch_name: The proposed branch name.
+        """
+
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered.

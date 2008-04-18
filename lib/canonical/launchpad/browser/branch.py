@@ -453,26 +453,18 @@ class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
     def validate_branch_name(self, owner, product, branch_name):
-        if product is None:
-            product_name = None
-        else:
-            product_name = product.name
-
-        branch = owner.getBranch(product_name, branch_name)
-
-        # If the branch exists and isn't this branch, then we have a
-        # name conflict.
-        if branch is not None and branch != self.context:
-            self.setFieldError('name',
-                structured(
-                "Name already in use. You are the registrant of "
-                "<a href=\"%s\">%s</a>,  the unique identifier of that "
-                "branch is \"%s\". Change the name of that branch, or use "
-                "a name different from \"%s\" for this branch.",
-                canonical_url(branch),
-                branch.displayname,
-                branch.unique_name,
-                branch_name))
+        if not getUtility(IBranchSet).isBranchNameAvailable(
+            owner, product, branch_name):
+            # There is a branch that has the branch_name specified already.
+            if product is None:
+                message = (
+                    "You already have a junk branch called <em>%s</em>."
+                    % branch_name)
+            else:
+                message = (
+                    "There is already a branch for <em>%s</em> called "
+                    "<em>%s</em>." % (product.name, branch_name))
+            self.setFieldError('name', structured(message))
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -705,9 +697,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 'product',
                 "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
-            self.validate_branch_name(self.context.owner,
-                                      data['product'],
-                                      data['name'])
+            # Only validate if the name has changed, or the product has
+            # changed.
+            if ((data['product'] != self.context.product) or
+                (data['name'] != self.context.name)):
+                self.validate_branch_name(self.context.owner,
+                                          data['product'],
+                                          data['name'])
 
         # If the branch is a MIRRORED branch, then the url
         # must be supplied, and if HOSTED the url must *not*
