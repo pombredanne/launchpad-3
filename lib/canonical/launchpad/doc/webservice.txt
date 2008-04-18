@@ -689,12 +689,16 @@ root of the object tree.
     ...     implements(IMyWebServiceApplication)
     >>> register_navigation(RootNavigation, IMyWebServiceApplication)
 
+    >>> from canonical.launchpad.webapp.servers import WebServicePublication
+    >>> class MyWebServicePublication(WebServicePublication):
+    ...    def getApplication(self, request):
+    ...        return MyServiceRootResource()
+
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
 'http://api.launchpad.net/'.
 
     >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
-    >>> from canonical.launchpad.webapp.servers import WebServicePublication
     >>> from cStringIO import StringIO
 
     >>> def create_web_service_request(
@@ -714,7 +718,7 @@ will act as though you had performed a GET on the URL
     ...     request = WebServiceTestRequest(
     ...         body_instream=body_instream, environ=test_environ,
     ...         method=method)
-    ...     request.setPublication(WebServicePublication(None))
+    ...     request.setPublication(MyWebServicePublication(None))
     ...     # Set the "current" request.
     ...     login(ANONYMOUS, request)
     ...     request.processInputs()
