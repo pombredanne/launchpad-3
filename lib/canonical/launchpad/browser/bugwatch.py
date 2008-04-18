@@ -86,11 +86,12 @@ class BugWatchEditView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView.`"""
-        try:
-            bugtracker, bug = getUtility(
-                IBugWatchSet).extractBugTrackerAndBug(data['url'])
-        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
-            self.setFieldError('url', 'Invalid bug tracker URL.')
+        if 'url' in data:
+            try:
+                bugtracker, bug = getUtility(
+                    IBugWatchSet).extractBugTrackerAndBug(data['url'])
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
+                self.setFieldError('url', 'Invalid bug tracker URL.')
 
     @action('Change', name='change')
     def change_action(self, action, data):
