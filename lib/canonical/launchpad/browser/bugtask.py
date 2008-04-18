@@ -2577,10 +2577,6 @@ class BugTaskBadges(HasBadgeBase):
 class BugTaskSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBugTask`."""
 
-    def isPrivate(self):
-        """Return True if the bug is private, otherwise False."""
-        return self.context.bug.private
-
     def getIntroHeading(self):
         """Return None."""
         return None

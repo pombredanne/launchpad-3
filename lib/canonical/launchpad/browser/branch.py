@@ -84,9 +84,6 @@ def quote(text):
 class BranchSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranch`."""
 
-    def isPrivate(self):
-        return self.context.private
-
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername

@@ -112,12 +112,6 @@ class ArchiveContextMenu(ContextMenu):
 class ArchiveViewBase:
     """Common features for Archive view classes."""
 
-    def isPrivate(self):
-        """Return whether the archive is private or not."""
-        # This is used by the main container template to decide whether
-        # to render the privacy graphics or not.
-        return self.context.private
-
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
