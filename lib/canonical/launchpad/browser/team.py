@@ -1,15 +1,15 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 __metaclass__ = type
-
 __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
     'TeamAddView',
     'TeamBrandingView',
     'TeamContactAddressView',
-    'TeamMailingListConfigurationView',
     'TeamEditView',
+    'TeamMailingListConfigurationView',
+    'TeamMailingListModerationView',
     'TeamMemberAddView',
     ]
 
@@ -563,6 +563,28 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         The list must exist and be in the INACTIVE state.
         """
         return self.getListInState(MailingListStatus.INACTIVE) is not None
+
+
+class TeamMailingListModerationView(MailingListTeamBaseView):
+    """A view for moderating the held messages of a mailing list."""
+
+    schema = IMailingList
+    field_names = []
+    label = 'Mailing list moderation'
+
+    def __init__(self, context, request):
+        """Set feedback messages for users who want to edit the mailing list.
+
+        There are a number of reasons why your changes to the mailing
+        list might not take effect immediately. First, the mailing
+        list may not actually be set as the team contact
+        address. Second, the mailing list may be in a transitional
+        state: from MODIFIED to UPDATING to ACTIVE can take a while.
+        """
+        super(TeamMailingListModerationView, self).__init__(
+            context, request)
+        list_set = getUtility(IMailingListSet)
+        self.mailing_list = list_set.get(self.context.name)
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):

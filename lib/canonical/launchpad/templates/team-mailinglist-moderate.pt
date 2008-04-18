@@ -1,0 +1,97 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div class="actions" metal:fill-slot="buttons">
+
+      3 messages have been posted to your mailing list, but are being held
+      pending your review for appropriateness and topicality.  For each
+      message you can take one of these actions:
+
+      <ul>
+        <li><strong>Approve</strong> - Accept the message, post it to the
+        mailing list, and credit the original author for his or her on-topic
+        posting.
+        <li><strong>Decline</strong> - Reject the message, sending a bounce
+        message back to the original author and giving no credit for the
+        posting.  Use this action for off-topic non-spam messages.
+        <li><strong>Discard</strong> - Throw the message away.  Use this
+        action for obvious spam.
+        <li><strong>Hold</strong> - Continue to hold the message, deferring
+        your decision until later.
+      </ul>
+
+      <table class="listing">
+        <thead><tr>
+          <th>Message details</th>
+          <th>Approve</th><th>Decline</th><th>Discard</th><th>Hold</th>
+        </tr></thead>
+        <tr>
+          <td><tt><strong>Subject:</strong>Is this a bug or a feature?</tt>
+            <div><tt><strong>Author:</strong>James Kirk</tt></div>
+            <div><tt><strong>Date:</strong>Wed, 16 Apr 2008 15:02:28 -0000</tt></div>
+            <span class="foldable-quoted">
+            <br>I tried to use gnome-pilot for my recent starship upgrade,
+            <span class="foldable">
+            but I found out something that surprised me.  When I told
+            my friend Scotty to 'make it so', nothing happened, but when I
+            told him to 'engage', my Palm finally went into warp drive.  Is
+            this a bug or a feature and would it make sense to translate this
+            into Klingon?
+            </span></span>
+          </td>
+          <td><input type="radio" value="approve" name="one"/></td>
+          <td><input type="radio" value="decline" name="one"/></td>
+          <td><input type="radio" value="discard" name="one"/></td>
+          <td><input type="radio" value="hold" name="one" checked="checked"/></td>
+        </tr>
+        <tr>
+          <td><tt><strong>Subject:</strong>Men, be more guada!</tt>
+            <div><tt><strong>Author:</strong>John Q. Spammer</tt></div>
+            <div><tt><strong>Date:</strong>Wed, 16 Apr 2008 15:02:28 -0000</tt></div>
+            <span class="foldable-quoted">
+            <br>Men, have you ever wanted to be guada?  Well, now you can
+            <span class="foldable">
+            with new and improved GuadaMen.  It's all natural and guaranteed
+            to improve with age.  Free with your money back.
+            </span></span>
+          </td>
+          <td><input type="radio" value="approve" name="two"/></td>
+          <td><input type="radio" value="decline" name="two"/></td>
+          <td><input type="radio" value="discard" name="two"/></td>
+          <td><input type="radio" value="hold" name="two" checked="checked"/></td>
+        </tr>
+        <tr>
+          <td><tt><strong>Subject:</strong>Can you help me?</tt>
+            <div><tt><strong>Author:</strong>Bob X. Hammer</tt></div>
+            <div><tt><strong>Date:</strong>Wed, 14 Apr 2008 15:02:28 -0000</tt></div>
+            
+            <span class="foldable-quoted">
+            <br>I am having some real problems with this package and I wonder
+            <span class="foldable">
+            if you can help me.  First, the frobnicator button doesn't have a
+            hoozeewhat and second even if I manually frobnicate it, all I get
+            is a whirling sound.
+            </span></span>
+          </td>
+          <td><input type="radio" value="approve" name="three"/></td>
+          <td><input type="radio" value="decline" name="three"/></td>
+          <td><input type="radio" value="discard" name="three"/></td>
+          <td><input type="radio" value="hold" name="three" checked="checked"/></td>
+        </tr>
+        </table>
+
+        [Submit button goes here]
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
