@@ -18,9 +18,46 @@ GET request to the entry's URL.
 Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
-  >>> salgado = webservice.get('/~salgado').jsonBody()
+  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
+
+
+== Content negotiation ==
+
+By varying the 'Accept' header, the client can request either a JSON
+representation of an entry, or a WADL description of the entry's
+capabilities.
+
+  >>> def negotiated_type(accept_header):
+  ...     return webservice.get('/beta/~salgado',
+  ...                           accept_header).getHeader('Content-Type')
+
+  >>> negotiated_type('application/json')
+  'application/json'
+
+  >>> negotiated_type('application/vd.sun.wadl+xml')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type(None)
+  'application/json'
+
+  >>> negotiated_type('text/html')
+  'application/json'
+
+  >>> negotiated_type('application/json, application/vd.sun.wadl+xml')
+  'application/json'
+
+  >>> negotiated_type('application/vd.sun.wadl+xml, text/html, '
+  ...                 'application/json')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type('application/json;q=0.5, application/vd.sun.wadl+xml')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type('application/json;q=0,'
+  ...                 'application/vd.sun.wadl+xml;q=0.1')
+  'application/vd.sun.wadl+xml'
 
 
 == Custom operations ==
@@ -31,14 +68,14 @@ argument. You can get a list of a team's active members by specifying
 the 'members_by_status' operation.
 
   >>> active_members = webservice.get(
-  ...     "/~admins?ws_op=members_by_status&status=Approved").jsonBody()
+  ...     "/beta/~admins?ws_op=members_by_status&status=Approved").jsonBody()
   >>> sorted([m['name'] for m in active_members['entries']])
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'spiv']
 
 Some entries support custom operations through POST. You can change a
 bug's status by invoking a custom operation.
 
-  >>> bugtask_path = '/debian/+source/mozilla-firefox/+bug/1'
+  >>> bugtask_path = '/beta/debian/+source/mozilla-firefox/+bug/1'
   >>> webservice.get(bugtask_path).jsonBody()['status']
   u'Confirmed'
 
@@ -53,7 +90,7 @@ bug's status by invoking a custom operation.
 Custom operations may have error handling.
 
   >>> print webservice.get(
-  ...     "/~admins?ws_op=members_by_status&status=NoSuchStatus")
+  ...     "/beta/~admins?ws_op=members_by_status&status=NoSuchStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
@@ -73,7 +110,7 @@ Custom operations may have error handling.
 Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
-  ...     "/~admins?ws_op=no_such_operation")
+  ...     "/beta/~admins?ws_op=no_such_operation")
   HTTP/1.1 404 Not Found
   ...
 
@@ -89,7 +126,7 @@ entry's state, in which case the client should use PUT.
   >>> import simplejson
   >>> def modify_person(person, representation, method):
   ...     "A helper function to send a PUT or PATCH request to a person."
-  ...     return webservice('/~' + person, method,
+  ...     return webservice('/beta/~' + person, method,
   ...                       simplejson.dumps(representation),
   ...                       {'Content-type': 'application/json'})
 
@@ -102,7 +139,7 @@ display name is in uppercase.
   Content-Length: 0
   ...
 
-  >>> salgado = webservice.get('/~salgado').jsonBody()
+  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
@@ -112,7 +149,7 @@ use the web service to change the person's name to 'salgado2'.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/~salgado2
+  Location: http://api.launchpad.dev/beta/~salgado2
   <BLANKLINE>
 
 At this point we can no longer manipulate the 'salgado' Person by
@@ -124,11 +161,8 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   >>> print modify_person('salgado2', {'name' : 'salgado'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/~salgado
+  Location: http://api.launchpad.dev/beta/~salgado
   <BLANKLINE>
-
-# XXX leonardr 2008-03-10 blueprint=modify-data-links:
-# A link between a person and a related object can be modified.
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH, and sometimes it's easier to GET a document,
@@ -147,7 +181,7 @@ less work than constructing a new document and sending it with PATCH.
   HTTP/1.1 200 Ok
   ...
 
-  >>> salgado = webservice.get('/~salgado').jsonBody()
+  >>> salgado = webservice.get('/beta/~salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
@@ -172,7 +206,7 @@ might not be acceptable as the payload of a PUT request.
 
 A document that's not a valid JSON document is also unacceptable.
 
-  >>> print webservice.patch("/~salgado", "application/json", "{")
+  >>> print webservice.patch("/beta/~salgado", "application/json", "{")
   HTTP/1.1 400 Bad Request
   ...
   Entity-body was not a well-formed JSON document.
@@ -214,7 +248,7 @@ You can't change the link to an entry's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/~salgado/team_memberships'
+  >>> link = 'http://api.launchpad.dev/beta/~salgado/team_memberships'
   >>> print modify_person('salgado',
   ...                    {'team_memberships_collection_link' : link },
   ...                    'PATCH')
@@ -265,10 +299,10 @@ In addition to changing an object's data fields, you can change its
 relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
-  >>> admins = webservice.get('/~admins').jsonBody()
+  >>> admins = webservice.get('/beta/~admins').jsonBody()
   >>> admins['teamowner_link']
-  u'http://api.launchpad.dev/~sabdfl'
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/~salgado'
+  u'http://api.launchpad.dev/beta/~sabdfl'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~salgado'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -313,7 +347,7 @@ of HTTP).
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the kind of object that can own a team:
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/bugs/1'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
@@ -324,7 +358,7 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/~admins'
+  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 500 Internal Server Error
   ...ERROR:  new row for relation "person" violates check constraint

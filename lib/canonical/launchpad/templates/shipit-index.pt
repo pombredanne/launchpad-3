@@ -77,11 +77,6 @@
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
         </div>
-        <div tal:condition="view/flavour/enumvalue:UBUNTU">
-          <a href="login-server">
-            I want to <span>request CDs of Ubuntu Server Edition</span>
-            <span tal:replace="series_name" /></a>
-        </div>
       </tal:no-prerelease>
       <tal:prerelease condition="view/prerelease_mode">
         <div>
@@ -93,11 +88,6 @@
           <a href="login">
             I want to <span>pre-order CDs</span> of
             <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="series_name" /></a>
-        </div>
-        <div tal:condition="view/flavour/enumvalue:UBUNTU">
-          <a href="login-server">
-            I want to <span>pre-order CDs of Ubuntu Server Edition</span>
             <span tal:replace="series_name" /></a>
         </div>
       </tal:prerelease>

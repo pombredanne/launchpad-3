@@ -15,6 +15,7 @@ __all__ = [
     'SoftTimeoutView',
     'OneZeroTemplateStatus',
     'IcingFolder',
+    'UbuntuIcingFolder',
     'StructuralHeaderPresentationView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
@@ -703,6 +704,13 @@ class IcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
+
+
+class UbuntuIcingFolder(ExportedFolder):
+    """Export the Ubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):
