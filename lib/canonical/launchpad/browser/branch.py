@@ -454,7 +454,7 @@ class BranchNameValidationMixin:
 
     def validate_branch_name(self, owner, product, branch_name):
         if not getUtility(IBranchSet).isBranchNameAvailable(
-            owner, product, branch_name, self.context):
+            owner, product, branch_name):
             # There is a branch that has the branch_name specified already.
             if product is None:
                 message = (
@@ -697,9 +697,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 'product',
                 "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
-            self.validate_branch_name(self.context.owner,
-                                      data['product'],
-                                      data['name'])
+            # Only validate if the name has changed, or the product has
+            # changed.
+            if ((data['product'] != self.context.product) or
+                (data['name'] != self.context.name)):
+                self.validate_branch_name(self.context.owner,
+                                          data['product'],
+                                          data['name'])
 
         # If the branch is a MIRRORED branch, then the url
         # must be supplied, and if HOSTED the url must *not*

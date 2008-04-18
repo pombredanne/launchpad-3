@@ -1379,7 +1379,7 @@ class BranchSet:
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
 
-    def isBranchNameAvailable(self, owner, product, branch_name, branch=None):
+    def isBranchNameAvailable(self, owner, product, branch_name):
         """See `IBranchSet`."""
         if product is None:
             results = Branch.selectBy(
@@ -1387,9 +1387,4 @@ class BranchSet:
         else:
             results = Branch.selectBy(product=product, name=branch_name)
 
-        if branch is None:
-            return results.count() == 0
-        else:
-            branches = set(results)
-            branches.discard(branch)
-            return len(branches) == 0
+        return results.count() == 0

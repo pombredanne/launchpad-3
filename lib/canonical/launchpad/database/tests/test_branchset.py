@@ -404,7 +404,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
         # Our test product.
         person_set = getUtility(IPersonSet)
         self.factory = LaunchpadObjectFactory()
-        self.firefox = self.factory.makeProduct()
+        self.product = self.factory.makeProduct()
         # Create some test people.
         self.albert, alberts_email = person_set.createPersonAndEmail(
             'albert@code.ninja.nz', PersonCreationRationale.USER_CREATED,
@@ -444,13 +444,13 @@ class BranchVisibilityPolicyTestCase(TestCase):
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""
         for team, rule in team_policies:
-            self.firefox.setBranchVisibilityTeamPolicy(team, rule)
+            self.product.setBranchVisibilityTeamPolicy(team, rule)
 
     def assertBranchRule(self, registrant, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
         branch = self.factory.makeBranch(
-            registrant=registrant, owner=owner, product=self.firefox)
-        rule = self.firefox.getBranchVisibilityRuleForBranch(branch)
+            registrant=registrant, owner=owner, product=self.product)
+        rule = self.product.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,
                          'Wrong visibililty rule returned: '
                          'expected %s, got %s'
@@ -479,7 +479,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
         """
         create_private, implicit_subscription_team = (
             BranchSet()._checkVisibilityPolicy(
-            creator=creator, owner=owner, product=self.firefox))
+            creator=creator, owner=owner, product=self.product))
         self.assertEqual(
             create_private, private,
             "Branch privacy doesn't match. Expected %s, got %s"
@@ -517,7 +517,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
         self.assertRaises(
             error,
             BranchSet()._checkVisibilityPolicy,
-            creator=creator, owner=owner, product=self.firefox)
+            creator=creator, owner=owner, product=self.product)
 
 
 class TestTeamMembership(BranchVisibilityPolicyTestCase):
@@ -995,7 +995,7 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         """Override the product used for the visibility checks."""
         BranchVisibilityPolicyTestCase.setUp(self)
         # Override the product that is used in the check tests.
-        self.firefox = None
+        self.product = None
 
     def test_junk_branches_public(self):
         """Branches created by anyone that has no product defined are created
