@@ -14,7 +14,7 @@ are only visible to the owner of the branch, and the subscribers.
 
     >>> proxied_branch = getUtility(IBranchSet).new(
     ...     branch_type=BranchType.HOSTED,
-    ...     name='test-branch', creator=no_priv_person, owner=no_priv_person,
+    ...     name='test-branch', registrant=no_priv_person, owner=no_priv_person,
     ...     product=None, url=None, title='Test branch')
 
 Since many of the examples here are testing the ability of various users

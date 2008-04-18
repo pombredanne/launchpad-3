@@ -11,6 +11,7 @@ __all__ = [
     'BadStatus',
     'BranchAlreadyRegistered',
     'BranchCreationForbidden',
+    'BranchNameInUse',
     'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
@@ -283,3 +284,13 @@ class NoSuchCodeImportMachine(LaunchpadFault):
 
     def __init__(self, hostname):
         LaunchpadFault.__init__(self, hostname=hostname)
+
+
+class BranchNameInUse(LaunchpadFault):
+    """There is already a branch with this name for this product."""
+
+    error_code = 220
+    msg_template = "Branch name already in use: %(branch_name)s"
+
+    def __init__(self, branch_name):
+        LaunchpadFault.__init__(self, branch_name=branch_name)
