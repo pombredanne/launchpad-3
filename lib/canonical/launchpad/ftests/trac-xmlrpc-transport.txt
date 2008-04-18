@@ -108,14 +108,19 @@ comment IDs for each bug.
 
 We'll add some sample comments to demonstrate this.
 
+    >>> import time
+    >>> comment_datetime = datetime(2008, 4, 18, 16, 0, 0)
+    >>> comment_timestamp = int(time.mktime(comment_datetime.timetuple()))
+
     >>> trac_transport.remote_bugs['1'].comments = [
     ...     {'id': '1-1', 'type': 'comment', 'user': 'test@canonical.com',
-    ...      'comment': 'Hello, world!'}]
+    ...      'comment': 'Hello, world!', 'time': comment_timestamp}]
     >>> trac_transport.remote_bugs['2'].comments = [
     ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
-    ...      'comment': 'Hello again, world!'},
+    ...      'comment': 'Hello again, world!',
+    ...      'time': comment_timestamp},
     ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar@canonical.com',
-    ...      'comment': 'More commentary.'}]
+    ...      'comment': 'More commentary.', 'time': comment_timestamp}]
 
     >>> time_snapshot, bugs = trac_transport.bug_info(level=2)
     >>> for bug in bugs:
@@ -133,10 +138,13 @@ metadata, but not including comment authors.
     ...     for comment in bug['comments']:
     ...         print comment
     Comments for bug 1:
-    {'comment': 'Hello, world!', 'type': 'comment', 'id': '1-1'}
+    {'comment': 'Hello, world!', 'timestamp': 1208514600,
+     'type': 'comment', 'id': '1-1'}
     Comments for bug 2:
-    {'comment': 'Hello again, world!', 'type': 'comment', 'id': '2-1'}
-    {'comment': 'More commentary.', 'type': 'comment', 'id': '2-2'}
+    {'comment': 'Hello again, world!', 'timestamp': 1208514600,
+     'type': 'comment', 'id': '2-1'}
+    {'comment': 'More commentary.', 'timestamp': 1208514600,
+     'type': 'comment', 'id': '2-2'}
     Comments for bug 3:
 
 The criteria dict has two possible keys: modified_since and bugs.
@@ -196,13 +204,14 @@ get_comments() returns a list of comment dicts. The comment dicts
 returned correspond to the comment IDs passed in the comments paramter.
 
     >>> comments_to_retrieve = ['1-1', '2-1', '2-2']
-    >>> comments = trac_transport.get_comments(comments_to_retrieve)
+    >>> time_snapshot, comments = trac_transport.get_comments(
+    ...     comments_to_retrieve)
     >>> for comment in comments:
     ...     print comment
-    {'comment': 'Hello, world!', 'type': 'comment', 'id': '1-1',
-     'user': 'test@canonical.com'}
-    {'comment': 'Hello again, world!', 'type': 'comment', 'id': '2-1',
-     'user': 'test@canonical.com'}
-    {'comment': 'More commentary.', 'type': 'comment', 'id': '2-2',
-     'user': 'foo.bar@canonical.com'}
+    {'comment': 'Hello, world!', 'time': 1208514600,
+     'type': 'comment', 'id': '1-1', 'user': 'test@canonical.com'}
+    {'comment': 'Hello again, world!', 'time': 1208514600,
+     'type': 'comment', 'id': '2-1', 'user': 'test@canonical.com'}
+    {'comment': 'More commentary.', 'time': 1208514600,
+     'type': 'comment', 'id': '2-2', 'user': 'foo.bar@canonical.com'}
 
