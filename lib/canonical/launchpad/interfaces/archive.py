@@ -286,7 +286,7 @@ class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
 
     include_binaries = Bool(
         title=_("Copy binaries"), required=False, default=False,
-        description=_("Whether or not to copy also the binary packages for "
+        description=_("Whether or not to copy the binary packages for "
                       "the selected sources."))
 
 

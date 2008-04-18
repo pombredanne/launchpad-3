@@ -266,10 +266,10 @@ initial/empty state.
 
 == ArchivePackageCopyingView ==
 
-This class extends ArchiveSourceSelectionFormView, an thus uses the
+This class extends ArchiveSourceSelectionFormView, and thus uses the
 same mechanisms for presenting and filtering available sources for
 copying, the 'selected_sources' widget. Related features don't need to
-be retested.
+be re-tested.
 
     >>> login('celso.providelo@canonical.com')
 
@@ -286,26 +286,27 @@ different 'source' provider, which includes deleted sources.
     >>> [pub.status.name for pub in view.sources]
     ['DELETED', 'DELETED', 'DELETED']
 
-This view also contens a property providing the PPA in which the
-current user has upload/copy rights, see `IArchiveSet.getPPAsForUser`.
+This view contains three properties. The first is a list of the PPAs
+in which the current user has upload/copy rights (see
+`IArchiveSet.getPPAsForUser`).
 
     >>> [ppa.owner.name for ppa in view.ppas_for_user]
     [u'cprov']
 
-Also whether or not the user is allowed to perform copies, which is
-essentially: participates, at least, in one PPA.
+The second shows whether or not the current user is allowed to perform
+copies. They must participate in at least one PPA for this to be True.
 
     >>> view.can_copy
     True
 
-And finaly if the user has the right to upload/copy to the context
+And finally if the user has the right to upload/copy to the context
 PPA.
 
     >>> view.can_copy_to_context_ppa
     True
 
-Lets exercise the properties. No priveleged user has his own PPA, thus
-he can copy to it, but not to the Celso's PPA.
+Lets exercise the properties. 'No Privileges Person' user has his own
+PPA, thus he can copy to it, but not to Celso's PPA.
 
     >>> login('no-priv@canonical.com')
     >>> view = getView(cprov.archive, "+copy-packages", empty_request)
@@ -320,7 +321,7 @@ he can copy to it, but not to the Celso's PPA.
     >>> view.can_copy_to_context_ppa
     False
 
-Foo bar user has no PPA, so he cannot perform copies at all.
+'Foo Bar' user has no PPA, so he cannot perform copies at all.
 
     >>> login('foo.bar@canonical.com')
     >>> view = getView(cprov.archive, "+copy-packages", empty_request)
@@ -335,7 +336,7 @@ Foo bar user has no PPA, so he cannot perform copies at all.
     >>> view.can_copy_to_context_ppa
     False
 
-When we activate the Ubuntu team PPA, in which Celso's participates,
+When we activate the Ubuntu team PPA, in which Celso participates,
 he will be able to copy not only to his PPA but also to the PPA for a
 team he is member of.
 
@@ -369,7 +370,7 @@ We will prepare a empty POST and inspect the default form values.
     >>> view = getView(cprov.archive, "+copy-packages", empty_post)
     >>> view.initialize()
 
-The 'destination_archive' widget contents is directly based on the
+The 'destination_archive' widget contents are directly based on the
 'ppas_for_user', but it excludes the context PPA from the list of
 options making it the default option, 'This PPA' rendered option.
 

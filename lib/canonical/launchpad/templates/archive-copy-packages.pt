@@ -22,10 +22,10 @@
   <h1>Copy packages from <tal:title replace="context/title" /></h1>
 
     <tal:cannot_copy condition="not: view/can_copy">
-      <p>For copying packages you have to participate at least of one
+      <p>To be able to copy packages you have to participate in at least one
          PPA. <a tal:attributes="href
          string:${view/user/fmt:url}/+activate-ppa">Activate your own PPA</a>
-         or join a team with a active PPA.</p>
+         or join a team with an active PPA.</p>
     </tal:cannot_copy>
 
     <tal:can_copy condition="view/can_copy">
@@ -111,7 +111,7 @@
 
   <p>Source-only copies, when you do not copy binaries, will
     immediately result in the corresponding build records, ready to be
-    dispatched.<p>
+    dispatched.</p>
 
   <p>Copies are new publications, as so, they will be processed
     periodically and will be materialised in disk during the next

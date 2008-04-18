@@ -1,9 +1,9 @@
 = PPA Package Copying =
 
-We allow uses to copy packages from PPAs they can view to another that
-they upload packages to.
+We allow users to copy packages from PPAs they can view to another
+that they upload packages to.
 
-A package is copied by accessing a special PPA page that allows user
+A package is copied by accessing a special PPA page that allows a user
 to select:
 
  * One or more source packages from the current PPA;
@@ -49,8 +49,8 @@ PPA in order to be able to copy packages.
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
     Copy packages from PPA for Celso Providelo
-    For copying packages you have to participate at least of one
-    PPA. Activate your own PPA or join a team with a active PPA.
+    To be able to copy packages you have to participate in at least one
+    PPA. Activate your own PPA or join a team with an active PPA.
 
 James will follow the advice and activate his PPA by clicking in the
 provided link.
@@ -134,7 +134,7 @@ source, thus he expands the hidden details-section area below the
     Files
       No files published for this package.
 
-James is absolutely that's the package he wants, he selects it.
+James is absolutely sure that's the package he wants, he selects it.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [str(pmount_pub_id)]
@@ -182,7 +182,7 @@ is presented.
     Packages copied to PPA for James Blackwell:
     pmount 0.1-1 in hoary
 
-James uses the link in the copy summary to got straight to the target
+James uses the link in the copy summary to go straight to the target
 PPA, his own. There he can see the just copied package as PENDING and
 also marked as pending build for i386.
 
@@ -196,7 +196,7 @@ also marked as pending build for i386.
 
 Expanding the details area, James can see that the source copied is
 indeed the same by checking the changelog, also that the binaries
-were not copied and intead a build was already created in his PPA context.
+were not copied and instead a build was already created in his PPA context.
 
     >>> login('foo.bar@canonical.com')
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
@@ -220,7 +220,7 @@ were not copied and intead a build was already created in his PPA context.
     Files
       No files published for this package.
 
-James quickly goes to the build page and certifies himself that the
+James quickly goes to the build page and confirms for himself that the
 build created during the copy is ready to be dispatched.
 
     >>> jblack_browser.getLink('i386').click()
@@ -239,7 +239,7 @@ build created during the copy is ready to be dispatched.
     Build log: not available
     Finished: not available
 
-Very nice, but now James got really excited about the possibilities ...
+Very nice, but now James gets really excited about the possibilities ...
 
 
 === Copying packages within the PPA ===
@@ -290,7 +290,7 @@ Then selects pmount in hoary.
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [str(pmount_pub_id)]
 
-Let the Destination PPA alone, because it defaults to 'This PPA'.
+Leave the Destination PPA alone, because it defaults to 'This PPA'.
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').displayValue
@@ -465,7 +465,7 @@ together.
     PPA for James Blackwell Friends
 
 PPA created, now James want to populate it with the finest packages he
-have ever seem. He goes to Celso's PPA copy interface.
+have ever seen. He goes to Celso's PPA copy interface.
 
     >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
@@ -497,7 +497,7 @@ selects that.
     >>> jblack_browser.getControl(
     ...     'Destination PPA').value = ['jblack-friends']
 
-James decides that 'hoary' is where the action will be in for his friends.
+James decides that 'hoary' is where the action will be for his friends.
 
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['hoary']
@@ -617,7 +617,7 @@ tests.
     PPA for James Blackwell Sandbox
 
 James now goes to to his PPA and copy all sources to his Sandbox PPA
-for a mass rebulid, including the deleted source. James is getting
+for a mass rebuild, including the deleted source. James is going
 insane because PPA-copy-ui is so cool.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
@@ -701,7 +701,7 @@ it to 'This PPA', 'The same series'.
 
 When he submits the form, he can a pending publication of his selected
 source in the wanted destination. So, done, in the next cycle the
-deleted files will be re-published in his archive disk.
+deleted files will be re-published in his archive.
 
     >>> jblack_browser.getControl("Copy Packages").click()
     >>> messages = get_feedback_messages(jblack_browser.contents)
@@ -718,5 +718,5 @@ deleted files will be re-published in his archive disk.
     pmount - 0.1-1              Deleted    Hoary            Editors  i386
 
 
-That's all folks, someone has to stop James craziness.
+That's all folks, someone has to stop James' craziness.
 

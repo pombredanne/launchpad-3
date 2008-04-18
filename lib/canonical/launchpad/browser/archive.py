@@ -360,6 +360,11 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
 
     def getSources(self, name=None):
+        """Return all undeleted sources in the context PPA.
+
+        Filters the results using the given 'name'.
+        See `IArchive.getSourcesForDeletion`.
+        """
         return self.context.getSourcesForDeletion(name=name)
 
     @action(_("Update"), name="update")
@@ -506,8 +511,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""
         terms = []
-        # XXX cprov 20080408: this code uses the context PPA series intead of
-        # targetted or all series available in Launchpad. It might become
+        # XXX cprov 20080408: this code uses the context PPA series instead
+        # of targeted or all series available in Launchpad. It might become
         # a problem when we support PPAs for other distribution. If we do
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
@@ -526,6 +531,11 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             render_context=self.render_context)
 
     def getSources(self, name=None):
+        """Return all sources ever published in the context PPA.
+
+        Filters the results using the given 'name'.
+        See `IArchive.getPublishedSources`.
+        """
         return self.context.getPublishedSources(name=name)
 
     @action(_("Update"), name="update")
@@ -536,7 +546,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     def _checkCopyDestination(self, source, series, pocket, archive):
         """Whether or not the given destination is allowed for copy.
 
-        It always ok to copy a DELETED publication.
+        It is always ok to copy a DELETED publication.
 
         Return False if the given destination is the current location
         package, True otherwise.
