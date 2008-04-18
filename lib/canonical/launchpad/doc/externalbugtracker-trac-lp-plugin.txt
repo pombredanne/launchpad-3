@@ -394,3 +394,13 @@ raised, thus avoiding invalid data being imported into Launchpad.
 
     >>> trac.getPosterForComment(bug_watch_two, '2-2')
     (None, 'foo.bar')
+
+Finally, getMessageForComment() will return a Message instance for a
+given comment. For the sake of brevity we'll use test@canonical.com as
+the comment's poster.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.testing import IPersonSet
+    >>> poster = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> message_one = trac.getMessageForComment(bug_watch, '1-1', poster)
+
