@@ -6,13 +6,13 @@ __metaclass__ = type
 __all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
 
 import csv
-from datetime import datetime
+import pytz
 import time
 import urllib2
 import xmlrpclib
 
-import pytz
-
+from datetime import datetime
+from email.Utils import parseaddr
 from zope.interface import implements
 
 from canonical.config import config
@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.validators.email import valid_email
 
 
 class Trac(ExternalBugTracker):
@@ -325,6 +326,37 @@ class TracLPPlugin(Trac):
     @needs_authentication
     def fetchComments(self, bug_watch, comment_ids):
         """See `ISupportsCommentImport`."""
+        bug_comments = {}
+
+        # Use the get_comments() method on the remote server to get the
+        # comments specified.
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        timestamp, remote_comments = server.launchpad.get_comments(
+            comment_ids)
+        for remote_comment in remote_comments:
+            bug_comments[remote_comment['id']] = remote_comment
+
+        # Finally, we overwrite the bug's comments field with the
+        # bug_comments dict. The nice upshot of this is that we can
+        # still loop over the dict and get IDs back.
+        self.bugs[int(bug_watch.remotebug)]['comments'] = bug_comments
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        bug = self.bugs[int(bug_watch.remotebug)]
+
+        comment = bug['comments'][comment_id]
+        display_name, email = parseaddr(comment['user'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if display_name is '':
+            display_name = None
+
+        return (display_name, email)
 
 
 class TracXMLRPCTransport(xmlrpclib.Transport):

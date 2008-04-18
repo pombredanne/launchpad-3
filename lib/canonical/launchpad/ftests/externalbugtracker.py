@@ -643,7 +643,8 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             for comment_id in comments
             if comment_id not in comment_ids_to_return]
 
-        return comments_to_return + missing_comments
+        return [self.time_snapshot()[2],
+            comments_to_return + missing_comments]
 
 
 class TestRoundup(Roundup):

@@ -348,10 +348,49 @@ BugNotFound error.
       ...
     BugNotFound: 123
 
+The fetchComments() method is used to pre-load a given set of comments
+for a given bug before they are parsed.
+
+Before fetchComments() is called for a given remote bug, that remote
+bug's 'comments' field will be a list of comment IDs.
+
+    >>> trac.bugs[1]['comments']
+    ['1-1']
+
+After fetchComments() is called the bug's 'comments' field will contain
+a dict in the form {<comment_id>: <comment_dict>}, which can then be
+parsed.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.fetchComments(bug_watch, ['1-1'])
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+    >>> trac.bugs[1]['comments']
+    {'1-1': {'comment': 'Hello, world!', 'type': 'comment', 'id': '1-1',
+             'user': 'Test <test@canonical.com>'}}
+
 getPosterForComment() returns a tuple of (displayname, emailaddress) for
 the poster of a given comment.
 
-    >>> trac.getPosterForComment(bug_watch, '1')
+    >>> trac.getPosterForComment(bug_watch, '1-1')
     ('Test', 'test@canonical.com')
 
-getPosterForComment() hand
+getPosterForComment() handles situations in which only an email address
+is supplied for the 'user' field by returning None as the user's
+displayname. When this is passed to IPersonSet.ensurePerson() a display name
+will be generated for the user from their email address.
+
+    >>> trac.fetchComments(bug_watch_two, ['2-1', '2-2'])
+    >>> trac.getPosterForComment(bug_watch_two, '2-1')
+    (None, 'test@canonical.com')
+
+getPosterForComment() will also return displayname, email tuples in
+cases where the 'user' field is set to a plain username (e.g. 'foo').
+This is to avoid having to add unnecessary error checking to
+BugWatchUpdater.importBugComments(), however, when the contents of the
+tuple are passed to ensurePerson() an InvalidEmailAddress error will be
+raised, thus avoiding invalid data being imported into Launchpad.
+
+    >>> trac.getPosterForComment(bug_watch_two, '2-2')
+    (None, 'foo.bar')
