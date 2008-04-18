@@ -662,3 +662,27 @@ subscriptions themselves, rather than the subscribers.
     ...         subscription.display_subscribed_by)
     Foo Bar (Subscribed by Robert Collins)
     Scott James Remnant (Subscribed themselves)
+
+
+== Email notification ==
+
+When a user is subscribed to a bug by someone other than themselves,
+they receive an email notification.
+
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails = []
+    >>> ff_bug.subscribe(sabdfl, lifeless)
+    <BugSubscription at ...>
+    >>> transaction.commit()
+    >>> print stub.test_emails[-1][2]
+    MIME-Version: 1.0
+    ...
+    From: Robert Collins <robertc@robertcollins.net>
+    To: foo.bar@canonical.com
+    Reply-To: Bug ... <...@bugs.launchpad.net>
+    ...
+    X-Launchpad-Message-Rationale: Subscriber
+    ...
+    You have been subscribed to a bug in Launchpad.
+    ...
+    http://bugs.launchpad.dev/bugs/...
