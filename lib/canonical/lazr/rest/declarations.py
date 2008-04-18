@@ -27,7 +27,7 @@ __all__ = [
 import sys
 
 from zope.interface import classImplements
-from zope.interface.advice import addClassAdvisor
+from zope.interface.advice import addClassAdvisor, isClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
@@ -185,7 +185,7 @@ class _method_annotator:
 
     def __init__(self, **params):
         """All operation specify their parameters using schema fields."""
-        #_check_called_from_interface_def('%s()' % self.__class__.__name__)
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
         self.params = params
 
     def __call__(self, f):
@@ -221,15 +221,37 @@ def annotate_exported_methods(interface):
 
     for name, annotations in exported_methods.items():
         method = interface.get(name)
+
         # Method is exported under its own name by default.
         if 'as' not in annotations:
             annotations['as'] = method.__name__
         annotations.setdefault('call_with', {})
 
-        # Set the __name__ attribute on all parameters.
+        # __name__ will be missing for those exported under the same name.
         for name, param in annotations['params'].items():
             if not param.__name__:
                 param.__name__ = name
+
+        # Make sure that all parameters exists and that we miss none.
+        info = method.getSignatureInfo()
+        defined_params= set(info['optional'])
+        defined_params.update(info['required'])
+        exported_params = set(annotations['params'])
+        exported_params.update(annotations['call_with'])
+        undefined_params = exported_params.difference(defined_params)
+        if undefined_params and info['kwargs'] is None:
+            raise TypeError(
+                'method "%s" doesn\'t have the following exported '
+                'parameters: %s.' % (
+                    method.__name__, ", ".join(sorted(undefined_params))))
+        missing_params = set(
+            info['required']).difference(exported_params)
+        if missing_params:
+            raise TypeError(
+                'method "%s" needs more parameters definitions to be '
+                'exported: %s' % (
+                    method.__name__, ", ".join(sorted(missing_params))))
+
         method.setTaggedValue(LAZR_WEBSERVICE_EXPORTED, annotations)
 
 
@@ -246,7 +268,7 @@ class export_as(_method_annotator):
 
     def __init__(self, name):
         # pylint: disable-msg=W0231
-        #_check_called_from_interface_def('export_as()')
+        _check_called_from_interface_def('export_as()')
         self.name = name
 
     def annotate_method(self, f, annotations):
@@ -262,6 +284,11 @@ class _export_operation(_method_annotator):
 
     def annotate_method(self, f, annotations):
         """See `_method_annotator`."""
+        for name, param in self.params.items():
+            if not IField.providedBy(param):
+                raise TypeError(
+                    'export definition of "%s" in method "%s" must '
+                    'provide IField: %r' % (name, f.__name__, param))
         annotations['type'] = self.type
         annotations['params'] = self.params
 

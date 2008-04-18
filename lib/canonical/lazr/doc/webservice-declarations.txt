@@ -318,7 +318,7 @@ method.
     params: {}
     type: 'write_operation'
 
-Parameterse for which the exported __name__ wasn't specified are
+Parameters for which the exported __name__ wasn't specified are
 exported under the same name:
 
     >>> for name, param in sorted(IBookSetOnSteroids['new'].getTaggedValue(
@@ -327,6 +327,66 @@ exported under the same name:
     author: author
     base_price: price
     title: title
+
+These decorators can only be used from within an interface definition:
+
+    >>> @export_as('test')
+    ... def a_method(self): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: export_as() can only be used from within an interface
+    definition.
+
+    >>> @export_read_operation()
+    ... def a_method(self): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: export_read_operation() can only be used from within an
+    interface definition.
+
+An error is also reported, if not enough parameters are defined as
+exported:
+
+    >>> class MissingParameter(Interface):
+    ...     export_entry()
+    ...     @call_with(param1=1)
+    ...     @export_read_operation(param2=TextLine())
+    ...     def a_method(param1, param2, param3, param4): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: method "a_method" needs more parameters definitions to be
+    exported: param3, param4
+
+Defining a parameter not available on the method also results in an
+error:
+
+    >>> class BadParameter(Interface):
+    ...     export_entry()
+    ...     @export_read_operation(no_such_param=TextLine())
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: method "a_method" doesn't have the following exported
+    parameters: no_such_param.
+
+But that's not a problem if the exported method actually takes arbitrary
+keyword parameters:
+
+    >>> class AnyParameter(Interface):
+    ...     export_entry()
+    ...     @export_read_operation(param1=TextLine())
+    ...     def a_method(**kwargs): pass
+
+All parameters definitions must be schema fields:
+
+    >>> class BadParameterDefinition(Interface):
+    ...     export_entry()
+    ...     @export_read_operation(a_param=object())
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: export definition of "a_param" in method "a_method" must
+    provide IField: <object...>
 
 
 == Generating the webservice ==
