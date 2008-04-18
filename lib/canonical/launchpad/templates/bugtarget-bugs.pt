@@ -126,11 +126,11 @@
               <tal:cve-reports
                   condition="context/menu:bugs/cve|nothing"
                   omit-tag="">
-                (<a tal:define="link context/menu:bugs/cve"
-                    tal:replace="structure link/render"
-                    tal:condition="link/enabled">
+                -<a tal:define="link context/menu:bugs/cve"
+                   tal:replace="structure link/render"
+                   tal:condition="link/enabled">
                   CVE reports
-                </a>)
+                </a>
               </tal:cve-reports>
             </li>
             <li tal:define="pending_bugwatches view/pending_bugwatches_info"

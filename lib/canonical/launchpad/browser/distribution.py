@@ -330,7 +330,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     def cve(self):
         text = 'CVE reports'
-        return Link('+cve', text)
+        return Link('+cve', text, icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
