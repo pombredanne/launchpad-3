@@ -364,9 +364,11 @@ class TracLPPlugin(Trac):
         bug = self.bugs[int(bug_watch.remotebug)]
         comment = bug['comments'][comment_id]
 
-        comment_time = datetime.fromtimestamp(comment['time'])
+        comment_datecreated = datetime.fromtimestamp(
+            comment['time'], pytz.timezone('UTC'))
         message = getUtility(IMessageSet).fromText(
-            subject='', content=comment['comment'], datecreated=comment_time)
+            subject='', content=comment['comment'],
+            datecreated=comment_datecreated)
 
         return message
 

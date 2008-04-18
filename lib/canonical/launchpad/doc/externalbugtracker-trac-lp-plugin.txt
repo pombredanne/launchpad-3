@@ -278,15 +278,22 @@ getMessageForComment().
 We'll add some comments to our example bugs in order to demonstrate the
 comment importing functionality.
 
+    >>> import time
+    >>> comment_datetime = datetime(2008, 4, 18, 17, 0, 0)
+    >>> comment_timestamp = int(time.mktime(comment_datetime.timetuple()))
+
     >>> test_transport.remote_bugs['1'].comments = [
     ...     {'id': '1-1', 'type': 'comment',
     ...      'user': 'Test <test@canonical.com>',
-    ...      'comment': 'Hello, world!'}]
+    ...      'comment': 'Hello, world!',
+    ...      'time': comment_timestamp}]
     >>> test_transport.remote_bugs['2'].comments = [
     ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
-    ...      'comment': 'Hello again, world!'},
+    ...      'comment': 'Hello again, world!',
+    ...      'time': comment_timestamp},
     ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar',
-    ...      'comment': 'More commentary.'}]
+    ...      'comment': 'More commentary.',
+    ...      'time': comment_timestamp}]
 
 We also need an example Bug, BugTracker and BugWatch.
 
@@ -367,7 +374,8 @@ parsed.
     Successfully validated the token.
 
     >>> trac.bugs[1]['comments']
-    {'1-1': {'comment': 'Hello, world!', 'type': 'comment', 'id': '1-1',
+    {'1-1': {'comment': 'Hello, world!', 'time': 1208518200,
+             'type': 'comment', 'id': '1-1',
              'user': 'Test <test@canonical.com>'}}
 
 getPosterForComment() returns a tuple of (displayname, emailaddress) for
@@ -400,7 +408,12 @@ given comment. For the sake of brevity we'll use test@canonical.com as
 the comment's poster.
 
     >>> from zope.component import getUtility
-    >>> from canonical.testing import IPersonSet
     >>> poster = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> message_one = trac.getMessageForComment(bug_watch, '1-1', poster)
+
+The Message returned by getMessageForComment() contains the full text of
+the original comment.
+
+    >>> print message_one.text_contents
+    Hello, world!
 
