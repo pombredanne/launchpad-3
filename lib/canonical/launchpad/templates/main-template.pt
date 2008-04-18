@@ -242,7 +242,7 @@
                       <div
                         id="container"
                         tal:define="context_badges CONTEXTS/lp:context_badges"
-                        tal:attributes="class python: context_badges.isPrivateBadgeVisible() and 'private' or None"
+                        tal:attributes="class python: path('view/isPrivate | context_badges/isPrivateBadgeVisible') and 'private' or None"
                       >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
@@ -262,7 +262,7 @@
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <div style="float: right">
+                          <div id="big-badges" style="float: right">
                             <tal:big-badges replace="structure context/badges:large"/>
                           </div>
 

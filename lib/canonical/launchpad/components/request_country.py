@@ -19,7 +19,8 @@ def request_country(request):
     """
     ipaddress = ipaddress_from_request(request)
     if ipaddress is not None:
-        return getUtility(IGeoIP).country_by_addr(ipaddress)
+        x = getUtility(IGeoIP).country_by_addr(ipaddress)
+        return x
     return None
 
 _ipaddr_re = re.compile('\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?')

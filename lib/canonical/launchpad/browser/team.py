@@ -67,7 +67,7 @@ class TeamBadges(HasBadgeBase):
 
     def getPrivateBadgeTitle(self):
         """Return private badge info useful for a tooltip."""
-        return "This is a %s team" % self.context.visibility.title
+        return "This is a %s team" % self.context.visibility.title.lower()
 
 
 class HasRenewalPolicyMixin:

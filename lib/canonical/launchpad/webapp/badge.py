@@ -66,11 +66,17 @@ STANDARD_BADGES = {
     # XXX: TimPenhey 2007-10-10
     # No big blueprint exists, see bug 151171
     'blueprint': Badge('/@@/blueprint', None,
-                       'blueprint', 'Linked to a blueprint'),
+                       '(Linked to a blueprint)', 'Linked to a blueprint'),
     'branch': Badge('/@@/branch', '/@@/branch-large',
-                    'branch', 'Linked to a branch', 'branchbadge'),
+                    '(Linked to a branch)', 'Linked to a branch', 'branchbadge'),
     'private': Badge('/@@/private', '/@@/private-large',
-                     'private', 'Private', 'privatebadge'),
+                     '(Private)', 'Private', 'privatebadge'),
+    'security': Badge('/@@/security', '/@@/security-large',
+                      '(Security vulnerability)', 'Security vulnerability',
+                      'securitybadge'),
+    'mentoring': Badge('/@@/mentoring', '/@@/mentoring-large',
+                       '(Mentoring available)', 'Mentoring available',
+                       'mentoringbadge'),
     }
 
 

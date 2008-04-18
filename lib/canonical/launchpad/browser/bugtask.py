@@ -2546,6 +2546,22 @@ class BugTaskPrivacyAdapter:
 class BugTaskBadges(HasBadgeBase):
     """Provides `IHasBadges` for `IBugTask`."""
 
+    badges = 'security', 'private', 'mentoring', 'branch'
+
+    def isBranchBadgeVisible(self):
+        return self.context.bug.bug_branches.count()
+
+    def isMentoringBadgeVisible(self):
+        return self.context.bug.mentoring_offers.count()
+
+    def isSecurityBadgeVisible(self):
+        return self.context.bug.security_related
+
+    def getSecurityBadgeTitle(self):
+        """Return info useful for a tooltip."""
+        return "This bug report is about a security vulnerability"
+
+    # HasBadgeBase supplies isPrivateBadgeVisible().
     def getPrivateBadgeTitle(self):
         """Return info useful for a tooltip."""
         if self.context.bug.date_made_private is None:

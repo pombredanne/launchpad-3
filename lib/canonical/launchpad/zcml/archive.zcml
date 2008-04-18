@@ -24,6 +24,13 @@
       factory="canonical.launchpad.browser.archive_to_structualheading"
       />
 
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.ArchiveBadges"
+      permission="zope.Public"
+      />
+
   <browser:menus
     module="canonical.launchpad.browser"
     classes="ArchiveContextMenu"
@@ -51,14 +58,6 @@
    permission="zope.Public"
    template="../templates/archive-form-macros.pt"
    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IArchive"
-    permission="zope.Public"
-    facet="overview"
-    template="../templates/archive-privacy-icon.pt"
-    name="+privacy-icon"
-    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"

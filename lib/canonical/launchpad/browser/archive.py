@@ -8,6 +8,7 @@ __all__ = [
     'archive_to_structualheading',
     'ArchiveAdminView',
     'ArchiveActivateView',
+    'ArchiveBadges',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -40,10 +41,19 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
+from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+class ArchiveBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `IArchive`."""
+
+    def getPrivateBadgeTitle(self):
+        """Return private badge info useful for a tooltip."""
+        return "This archive is private."
 
 
 class ArchiveNavigation(Navigation):
