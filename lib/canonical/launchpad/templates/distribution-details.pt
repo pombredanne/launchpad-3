@@ -5,7 +5,7 @@
   class="summary" id="table-details">
   <tbody>
     <tr>
-      <th>Bug contact:</th>
+      <th>Bug supervisor:</th>
       <td tal:condition="not:context/bugcontact">None</td>
       <td tal:condition="context/bugcontact">
         <a tal:replace="structure context/bugcontact/fmt:link" />
@@ -42,10 +42,15 @@
           <tal:malone condition="context/official_malone">
             Bug tracking<br />
           </tal:malone>
+          <tal:blueprints condition="context/official_blueprints">
+            Blueprints<br />
+          </tal:blueprints>
           <tal:rosetta condition="context/official_rosetta">
             Translations<br />
           </tal:rosetta>
-        <tal:neither condition="python:(not context.official_malone and not context.official_rosetta)">&mdash;</tal:neither>
+        <tal:none condition="python:(not context.official_anything)">
+          &mdash;
+        </tal:none>
       </td>
     </tr>
     <tr>

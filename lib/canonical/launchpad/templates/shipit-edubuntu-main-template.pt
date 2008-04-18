@@ -9,9 +9,14 @@
   <head>
     <metal:extra-head fill-slot="extra-head">
       <link rel="icon" href="/@@/edubuntu-icon" />
-      <style type="text/css" media="screen"> @import url(/@@/edubuntu-common.css);</style>
-      <style type="text/css" media="screen"> @import url(/@@/edubuntu-screen.css);</style>
-      <style type="text/css" media="screen"> @import url(/@@/edubuntu.css);</style>
+      <style type="text/css" media="screen">
+        @import url(/@@/edubuntu-common.css);</style>
+      <style type="text/css" media="screen">
+        @import url(/@@/edubuntu-screen.css);</style>
+      <style type="text/css" media="screen">
+        @import url(/@@/edubuntu.css);</style>
+      <style type="text/css" media="screen">
+        @import url(/+icing/shipit.css);</style>
 
       <style type="text/css">
         <!-- 
@@ -57,6 +62,7 @@
             color: white;
         }
         h1, h2 {
+            clear: both;
             margin: 1em 0 0.5em 0;
         }
         -->

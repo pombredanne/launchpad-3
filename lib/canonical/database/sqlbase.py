@@ -108,7 +108,7 @@ class RandomiseOrderDescriptor:
     to the ORDER BY clause of queries that do not use DISTINCT or SET.
 
         >>> from canonical.config import config
-        >>> config.randomise_select_results
+        >>> config.database.randomise_select_results
         True
 
     The SelectResults class decides whether to randomise the order by
@@ -129,14 +129,14 @@ class RandomiseOrderDescriptor:
     When the config setting is False, that value is passed to
     randomiseOrder when the descriptor is accessed.
 
-        >>> config.randomise_select_results = False
+        >>> config.database.randomise_select_results = False
         >>> randomiseOrder = SQLBase._randomiseOrder
         >>> randomiseOrder
         False
     """
     def __get__(self, obj, type=None):
         from canonical.config import config
-        return config.randomise_select_results
+        return config.database.randomise_select_results
 
 
 class SQLBase(SQLOS):
@@ -709,11 +709,11 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     Default database name is the one specified in the main configuration file.
     """
     from canonical.config import config
-    con_str = 'dbname=%s' % (dbname or config.dbname)
+    con_str = 'dbname=%s' % (dbname or config.database.dbname)
     if user:
         con_str += ' user=%s' % user
-    if config.dbhost:
-        con_str += ' host=%s' % config.dbhost
+    if config.database.dbhost:
+        con_str += ' host=%s' % config.database.dbhost
     con = psycopg.connect(con_str)
     con.set_isolation_level(isolation)
     return con

@@ -163,7 +163,7 @@ class FileUploadClient:
         return databaseName
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
-        """See canonical.librarian.interfaces.ILibrarianUploadClient"""
+        """See `IFileUploadClient`."""
         if file is None:
             raise TypeError('No data')
         if size <= 0:
@@ -174,7 +174,7 @@ class FileUploadClient:
         try:
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendHeader('Database-Name', config.dbname)
+            self._sendHeader('Database-Name', config.database.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())
@@ -268,22 +268,17 @@ class FileDownloadClient:
 
         :raises: DownloadFailed if the alias is invalid
         """
+        from canonical.launchpad.database import LibraryFileAlias
+        from sqlobject import SQLObjectNotFound
         aliasID = int(aliasID)
-        q = """
-            SELECT filename, deleted
-            FROM LibraryFileAlias, LibraryFileContent
-            WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND LibraryFileAlias.id = %d
-            """ % aliasID
-        cur = cursor()
-        cur.execute(q)
-        row = cur.fetchone()
-        if row is None:
+        try:
+            # Use SQLObjects to maximize caching benefits
+            lfa = LibraryFileAlias.get(aliasID)
+        except SQLObjectNotFound:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        filename, deleted = row
-        if deleted:
+        if lfa.content.deleted:
             return None
-        return '/%d/%s' % (aliasID, quote(filename.encode('utf-8')))
+        return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
     def getURLForAlias(self, aliasID, is_buildd=False):
         """Returns the url for talking to the librarian about the given

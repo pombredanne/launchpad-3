@@ -13,37 +13,37 @@ that link to a distributionsourcepackage, distroseriessourcepackage and
 distrosourcepackagerelease respectively.
 
 Following a link on any item in the name column will take us to a
-distribution source package page.  We'll use "foobar" on the second line here
-as it has working links in the sample data:
+distribution source package page.  We'll use "cnews" on the third
+line here as it has working links in the sample data:
 
-    >>> link = browser.getLink("foobar")
+    >>> link = browser.getLink("cnews")
     >>> print link
-    <Link text='foobar' url='http://launchpad.dev/ubuntu/+source/foobar'>
+    <Link text='cnews' url='http://launchpad.dev/ubuntu/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    'Source Package "foobar" in Ubuntu Linux'
+    'Source Package "cnews" in Ubuntu Linux'
 
 Same process for the second column should take us to a distribution series 
 source package page:
 
     >>> browser.open("http://launchpad.dev/~name16/+packages")
-    >>> link = browser.getLink(url="/ubuntu/breezy-autotest/+source/foobar")
+    >>> link = browser.getLink(url="/ubuntu/hoary/+source/cnews")
     >>> print link
-    <Link text='Ubuntu Breezy-autotest' url='http://launchpad.dev/ubuntu/breezy-autotest/+source/foobar'>
+    <Link text='Ubuntu Hoary' url='http://launchpad.dev/ubuntu/hoary/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    'Breezy Badger Autotest source packages'
+    'The Hoary Hedgehog Release source packages'
 
 Same again for the third column should take us to a distribution source 
 package release page:
 
     >>> browser.open("http://launchpad.dev/~name16/+packages")
-    >>> link = browser.getLink(url="/ubuntu/+source/foobar/1.0")
+    >>> link = browser.getLink(url="/ubuntu/+source/cnews/cr.g7-37")
     >>> print link
-    <Link text='1.0' url='http://launchpad.dev/ubuntu/+source/foobar/1.0'>
+    <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    'foobar 1.0 (source) in Ubuntu'
+    'cnews cr.g7-37 (source) in Ubuntu'
 
 
 == Private PPA packages ==
@@ -76,6 +76,7 @@ And another helper function to set the private flag on a PPA:
     ...         name))
     ...     admin_browser.getLink("Administer archive").click()
     ...     admin_browser.getControl(name="field.private").value = private
+    ...     admin_browser.getControl(name="field.buildd_secret").value = "x"
     ...     admin_browser.getControl("Save").click()
 
 We will also amend some packages so that they belong to "cprov" and will
@@ -113,8 +114,6 @@ PPA section:
     >>> print_ppa_rows(user_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
-        2006-04-11 None - -
 
 Now, let's make the PPA for "No Privileges Person" private:
 
@@ -146,14 +145,10 @@ both packages:
     >>> print_ppa_rows(nopriv_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
-        2006-04-11 None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(admin_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 Let's make sabdfl's archive private and check the page again.
@@ -162,12 +157,12 @@ Let's make sabdfl's archive private and check the page again.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(user_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(anon_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 Notice that this iceweasel package in sabdfl's PPA is still appearing
@@ -183,7 +178,7 @@ It still shows up:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(user_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 Now we'll unpublish it in the primary archive.
@@ -214,12 +209,52 @@ applicable:
 
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(nopriv_browser)
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
-        2006-04-11 None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
     >>> print_ppa_rows(admin_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
-    iceweasel   PPA for No Privileges Person - Ubuntu Warty 1.0
+
+
+== Packages deleted from a PPA ==
+
+When a package is deleted from a PPA it should not appear in the
+packages list any more.
+
+First list the packages in the PPA.
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> print_ppa_rows(admin_browser)
+    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
+
+Then delete the 'iceweasel' package.
+
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+delete-packages")
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['31']
+    >>> admin_browser.getControl(
+    ...     "Deletion comment").value = "Bug 184490"
+    >>> admin_browser.getControl("Request Deletion").click()
+
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Source and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in breezy-autotest
+    Deletion comment: Bug 184490
+
+    >>> def print_ppa_packages(contents):
+    ...     packages = find_tags_by_class(contents, 'ppa_package_row')
+    ...     for pkg in packages:
+    ...         print extract_text(pkg)
+    ...     empty_section = find_tag_by_id(contents, 'empty-result')
+    ...     if empty_section is not None:
+    ...         print extract_text(empty_section)
+    >>> print_ppa_packages(admin_browser.contents)
+
+Now re-list the PPA's packages, 'iceweasel' was deleted above and should
+not show again.
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> print_ppa_rows(admin_browser)

@@ -23,7 +23,6 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
-from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -33,10 +32,11 @@ from canonical.encoding import (
     guess as guess_encoding, ascii_smash)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SecureBinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
@@ -196,9 +196,27 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def _closeBugs(self, changesfile_path, logger=None):
+        """Close bugs for a just-accepted source.
+
+        :param changesfile_path: path to the context changesfile.
+        :param logger: optional context Logger object (used on DEBUG level);
+
+        It does not close bugs for PPA sources.
+        """
+        if self.isPPA():
+            debug(logger, "Not closing bugs for PPA source.")
+            return
+
+        debug(logger, "Closing bugs.")
+        changesfile_object = open(changesfile_path, 'r')
+        close_bugs_for_queue_item(
+            self, changesfile_object=changesfile_object)
+        changesfile_object.close()
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
-        logger.debug("Setting it to ACCEPTED")
+        debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
         # If it is a pure-source upload we can further process it
@@ -208,31 +226,10 @@ class PackageUpload(SQLBase):
         if not self._isSingleSourceUpload():
             return
 
-        logger.debug("Creating PENDING publishing record.")
+        debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-
-        if self.isPPA():
-            # Create a Build record.
-            ppa_archs = [das for das in self.distroseries.ppa_architectures]
-            build_archs = determineArchitecturesToBuild(
-                pub_source, ppa_archs, self.distroseries)
-            for arch in build_archs:
-                logger.debug(
-                    "Creating PENDING build for %s." % arch.architecturetag)
-                build = pub_source.sourcepackagerelease.createBuild(
-                    distroarchseries=arch, archive=self.archive,
-                    pocket=self.pocket)
-                build_queue = build.createBuildQueueEntry()
-                build_queue.score()
-            # Do not even try to close bugs for PPA uploads
-            return
-
-        # Closing bugs.
-        logger.debug("Closing bugs.")
-        changesfile_object = open(changesfile_path, 'r')
-        close_bugs_for_queue_item(
-            self, changesfile_object=changesfile_object)
-        changesfile_object.close()
+        pub_source.createMissingBuilds(logger=logger)
+        self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -246,7 +243,8 @@ class PackageUpload(SQLBase):
         # wait for a publisher cycle (which calls process-accepted
         # to do this).
         if self._isSingleSourceUpload():
-            self.realiseUpload()
+            [pub_source] = self.realiseUpload()
+            pub_source.createMissingBuilds(ignore_pas=True)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -860,6 +858,40 @@ class PackageUpload(SQLBase):
                 extra_headers
             )
 
+    def overrideSource(self, new_component, new_section):
+        """See `IPackageUpload`."""
+        if not self.contains_source:
+            return False
+
+        if new_component is None and new_section is None:
+            # Nothing needs overriding, bail out.
+            return False
+
+        for source in self.sources:
+            source.sourcepackagerelease.override(
+                component=new_component, section=new_section)
+
+        return self.sources.count() > 0
+
+    def overrideBinaries(self, new_component, new_section, new_priority):
+        """See `IPackageUpload`."""
+        if not self.contains_build:
+            return False
+
+        if (new_component is None and new_section is None and
+            new_priority is None):
+            # Nothing needs overriding, bail out.
+            return False
+
+        for build in self.builds:
+            for binarypackage in build.build.binarypackages:
+                binarypackage.override(
+                    component=new_component,
+                    section=new_section,
+                    priority=new_priority)
+
+        return self.builds.count() > 0
+
 
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
@@ -904,6 +936,7 @@ class PackageUploadBuild(SQLBase):
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
+        main_component = getUtility(IComponentSet)['main']
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
@@ -918,10 +951,16 @@ class PackageUploadBuild(SQLBase):
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
                 # What do we do about embargoed binaries here?
+                if self.packageupload.archive.is_ppa:
+                    # We override PPA to always publish in the main component.
+                    component = main_component
+                else:
+                    component = binary.component
+
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
-                    component=binary.component,
+                    component=component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
@@ -930,7 +969,8 @@ class PackageUploadBuild(SQLBase):
                     embargo=False,
                     archive=self.packageupload.archive
                     )
-                published_binaries.append(sbpph)
+                bpph = BinaryPackagePublishingHistory.get(sbpph.id)
+                published_binaries.append(bpph)
         return published_binaries
 
 
@@ -1031,16 +1071,23 @@ class PackageUploadSource(SQLBase):
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
-        return SecureSourcePackagePublishingHistory(
+        if self.packageupload.archive.is_ppa:
+            # We override PPA to always publish in the main component.
+            component = getUtility(IComponentSet)['main']
+        else:
+            component = self.sourcepackagerelease.component
+
+        sspph = SecureSourcePackagePublishingHistory(
             distroseries=self.packageupload.distroseries,
             sourcepackagerelease=self.sourcepackagerelease,
-            component=self.sourcepackagerelease.component,
+            component=component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.packageupload.pocket,
             embargo=False,
             archive=self.packageupload.archive)
+        return SourcePackagePublishingHistory.get(sspph.id)
 
 
 class PackageUploadCustom(SQLBase):

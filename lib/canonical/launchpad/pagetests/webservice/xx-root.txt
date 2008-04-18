@@ -1,13 +1,10 @@
 = Introduction =
 
-The service root (/) is a resource that responds to GET by describing
-the web service. Right now, it just sends a simple string description.
-you get a string.
+The service root (/[version]/) is a resource that responds to GET by
+describing the web service. Right now, it just sends a simple string
+description.  you get a string.
 
-  >>> print http(r"""
-  ... GET / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
+  >>> print webservice.get("/beta/")
   HTTP/1.1 200 Ok
   ...
   This is a web service.
@@ -17,10 +14,7 @@ particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.
 
   >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
-  ...     print http(r"""
-  ... %s / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % method)
+  ...     print webservice("/beta/", method)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...

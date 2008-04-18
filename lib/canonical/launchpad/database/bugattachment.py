@@ -12,7 +12,8 @@ from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.event.sqlobjectevent import SQLObjectDeletedEvent
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.interfaces import (
     BugAttachmentType, IBugAttachmentSet, IBugAttachment, NotFoundError)
 
@@ -58,12 +59,14 @@ class BugAttachmentSet:
         return item
 
     def create(self, bug, filealias, title, message,
-               attach_type=None):
-        """See IBugAttachmentSet."""
+               attach_type=None, send_notifications=False):
+        """See `IBugAttachmentSet`."""
         if attach_type is None:
             # XXX kiko 2005-08-03 bug=1659: this should use DEFAULT.
             attach_type = IBugAttachment['type'].default
-        return BugAttachment(
+        attachment = BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
-
+        if send_notifications:
+            notify(SQLObjectCreatedEvent(attachment))
+        return attachment

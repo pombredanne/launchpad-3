@@ -42,9 +42,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
-    IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
-    MirrorContent, MirrorSpeed, NotFoundError)
+    DistroSeriesStatus, IArchiveSet, IDistributionMirrorSet,
+    IDistributionSet, IDistribution, ILaunchBag, ILaunchpadCelebrities,
+    IPublishedPackageSet, MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -334,7 +334,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
-        text = 'Change bug contact'
+        text = 'Change bug supervisor'
         return Link('+bugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -479,6 +479,12 @@ class DistributionPPASearchView(LaunchpadView):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
 
+    @property
+    def search_results(self):
+        """Process search form request."""
+        if self.name_filter is None:
+            return None
+
         # Preserve self.show_inactive state because it's used in the
         # template and build a boolean field to be passed for
         # searchPPAs.
@@ -489,12 +495,38 @@ class DistributionPPASearchView(LaunchpadView):
             user=self.user)
 
         self.batchnav = BatchNavigator(ppas, self.request)
-        self.search_results = self.batchnav.currentBatch()
+        return self.batchnav.currentBatch()
+
+    @property
+    def number_of_registered_ppas(self):
+        """The number of archives with PPA purpose.
+
+        It doesn't include private PPAs.
+        """
+        return self.context.searchPPAs(show_inactive=True).count()
+
+    @property
+    def number_of_active_ppas(self):
+        """The number of PPAs with at least one source publication.
+
+        It doesn't include private PPAs.
+        """
+        return self.context.searchPPAs(show_inactive=False).count()
+
+    @property
+    def number_of_ppa_sources(self):
+        """The number of sources published across all PPAs."""
+        return getUtility(IArchiveSet).number_of_ppa_sources
+
+    @property
+    def number_of_ppa_binaries(self):
+        """The number of binaries published across all PPAs."""
+        return getUtility(IArchiveSet).number_of_ppa_binaries
 
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
-        results = self.context.source_package_caches
+        results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
 
 
@@ -527,7 +559,8 @@ class DistributionAddView(LaunchpadFormView):
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
                    "domainname", "members",
-                   "official_malone", "official_rosetta", "official_answers"]
+                   "official_malone", "official_blueprints",
+                   "official_rosetta", "official_answers"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -551,8 +584,8 @@ class DistributionEditView(LaunchpadEditFormView):
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'official_malone',
-                   'enable_bug_expiration', 'official_rosetta',
-                   'official_answers']
+                   'enable_bug_expiration', 'official_blueprints',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)

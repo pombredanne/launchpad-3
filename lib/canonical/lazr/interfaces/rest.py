@@ -1,4 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# Pylint doesn't grok zope interfaces.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for different kinds of HTTP resources."""
 
@@ -11,15 +13,21 @@ __all__ = [
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
+    'IResourceOperation',
+    'IResourceGETOperation',
+    'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource'
     ]
 
-from zope.interface import Interface, Attribute
-from zope.publisher.interfaces import IPublishTraverse
-from zope.schema import List
-from zope.schema.interfaces import IObject
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from zope.interface import Attribute, Interface
+# These two should really be imported from zope.interface, but
+# the import fascist complains because they are not in __all__ there.
+from zope.interface.interface import invariant
+from zope.interface.exceptions import Invalid
+from zope.schema import List, Object
+from zope.schema.interfaces import IObject, IField
+
 
 class ICollectionField(IObject):
     """A collection associated with an entry.
@@ -28,7 +36,7 @@ class ICollectionField(IObject):
     """
 
 
-class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
+class IHTTPResource(Interface):
     """An object published through HTTP."""
 
     def __call__():
@@ -50,10 +58,7 @@ class IServiceRootResource(IHTTPResource):
 
 
 class IEntryResource(IHTTPResource):
-    """A resource that represents an individual Launchpad object."""
-
-    def path():
-        """Find the URL fragment the entry uses for itself."""
+    """A resource that represents an individual object."""
 
     def do_GET():
         """Retrieve this entry.
@@ -61,15 +66,23 @@ class IEntryResource(IHTTPResource):
         :return: A string representation.
         """
 
+    def do_PATCH(representation):
+        """Update this entry.
 
-class ICollectionResource(IHTTPResource, IPublishTraverse):
+        Try to update the entry to the field and values sent by the client.
+
+        :param representation: A JSON representation of the field and values
+            that should be modified.
+        :return: None or an error message describing validation errors. The
+            HTTP status code should be set appropriately.
+        """
+
+    def getContext():
+        """Return the underlying entry for this resource."""
+
+
+class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
-
-    def path():
-        """Find the URL fragment that names this collection."""
-
-    def getEntryPath(entry):
-        """Find the URL fragment that names the given entry."""
 
     def do_GET():
         """Retrieve this collection.
@@ -77,52 +90,54 @@ class ICollectionResource(IHTTPResource, IPublishTraverse):
         :return: A string representation.
         """
 
-    def makeEntryResource(entry, request):
-        """Construct an entry resource for the given entry.
 
-        The entry is presumed to be have this collection as its
-        parent.
+class IResourceOperation(Interface):
+    """A one-off operation invokable on a resource."""
 
-        :param entry: The entry that needs to be made into a resource.
-        :param request: The HTTP request that's being processed.
+    params = List(value_type=Object(schema=IField))
+
+    def __call__(**kwargs):
+        """Invoke the operation and create the HTTP response.
+
+        :param kwargs: Arguments validated based on `params`.
+
+        :returns: If the result is a string, it's assumed that the
+        Content-Type was set appropriately, and the result is returned
+        as is. Otherwise, the result is serialized to JSON and served
+        as application/json.
         """
 
+class IResourceGETOperation(IResourceOperation):
+    """A one-off operation invoked through GET.
 
-class IEntry(IJSONPublishable):
+    This might be a search or lookup operation.
+    """
+
+
+class IResourcePOSTOperation(IResourceOperation):
+    """A one-off operation invoked through POST.
+
+    This should be an operation that modifies the data set.
+    """
+
+
+class IEntry(Interface):
     """An entry, exposed as a resource by an IEntryResource."""
 
-    # Soon, Launchpad's existing Navigation classes will substitute for
-    # web service-specific path information, and this will be removed.
-    _parent_collection_path = List(
-        title=u"Instructions for traversing to the parent collection",
-        description=u"This is an alternating list of strings and callables. "
-            "The first element in the list, a string, designates one of the "
-            "web service's top-level collections. The second element (if "
-            "there is one) is a callable which takes the IEntry "
-            "implementation as its only argument. It's expected to return one "
-            "of the entries in the top-level collection. The third element "
-            "(if there is one) is a string which designates one of the scoped "
-            "collections associated with that entry. And so on. Strings and "
-            "callables alternate, traversing the object graph. The list must "
-            "end with a string.")
+    schema = Attribute(
+        'The schema describing the data fields on this entry.')
 
-    def fragment():
-        """Return a URI fragment that uniquely identifies this entry.
-
-        This might be the entry's unique ID or some other unique identifier.
-        It must be possible to use this fragment to find the entry again
-        in a collection of all such entries.
-        """
+    @invariant
+    def schemaIsProvided(value):
+        """Make sure that the entry also provides its schema."""
+        if not value.schema.providedBy(value):
+            raise Invalid(
+                "%s doesn't provide its %s schema." % (
+                    type(value).__name__, value.schema.__name__))
 
 
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
-
-    def lookupEntry(name):
-        """Look up an entry in the collection by unique identifier.
-
-        :return: An IEntry object.
-        """
 
     def find():
         """Retrieve all entries in the collection under the given scope.
@@ -130,13 +145,9 @@ class ICollection(Interface):
         :return: A list of IEntry objects.
         """
 
-    def getEntryPath(child):
-        """Choose a URL fragment for one of this collection's entries."""
-
 
 class IScopedCollection(ICollection):
 
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
-

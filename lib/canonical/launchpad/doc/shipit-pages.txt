@@ -27,18 +27,17 @@ StandardShipItRequests.
     >>> shipit = ShipItApplication()
     >>> myrequest_view = create_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
-    >>> html = myrequest_view.renderStandardrequestForm()
-    >>> 'Request CDs' in html
-    True
-    >>> 'ShipIt is currently closed' in html
-    False
-
     >>> myrequest_view.is_open = False
     >>> html = myrequest_view.renderStandardrequestForm()
-    >>> 'How many CDs would you like?' in html
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> print BeautifulSoup(html).findAll('h1')[-1].renderContents()
+    ShipIt is currently closed
+
+    >>> myrequest_view.is_open = True
+    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> headers = BeautifulSoup(html).findAll('h1')
+    >>> 'ShipIt is currently closed' in headers
     False
-    >>> 'ShipIt is currently closed' in html
-    True
 
 
 /shipit/requests/$request.id
@@ -57,7 +56,7 @@ class.
     >>> review_request_view = create_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
-    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Server']
+    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Ubuntu Server Edition']
 
     >>> [arch.title for arch in review_request_view.ordered_architectures]
     ['PC', '64-bit PC']
@@ -76,7 +75,7 @@ And this is the order we use when generating the widgets matrix.
     ['Ubuntu', u'PC', u'64-bit PC']
     ['Kubuntu', u'PC', u'64-bit PC']
     ['Edubuntu', u'PC', None]
-    ['Server', u'PC', u'64-bit PC']
+    ['Ubuntu Server Edition', u'PC', u'64-bit PC']
 
 Similarly to the quantity widgets, we use a table to display the quantities
 requested by the user. But in this case, the shipit admins are not supposed to

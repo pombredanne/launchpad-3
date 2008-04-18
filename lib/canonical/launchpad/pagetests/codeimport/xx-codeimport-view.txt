@@ -109,32 +109,12 @@ imports appear again.
 
 If we create a lot of imports, the listing view will be batched.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
-    ...     IPersonSet, IProductSet, BranchType)
-    >>> from canonical.launchpad.interfaces import (
-    ...     License, RevisionControlSystems)
-
-    >>> login('david.allouche@canonical.com')
-
-    >>> code_import_set = getUtility(ICodeImportSet)
-    >>> svn = RevisionControlSystems.SVN
-    >>> svn_url = 'svn://svn.example.com/trunk-%s'
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
-    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> def import_branch_for_new_product(name):
-    ...     product = getUtility(IProductSet).createProduct(
-    ...         nopriv, name, name, name, name, name, licenses=[License.GPL])
-    ...     return getUtility(IBranchSet).new(
-    ...         BranchType.IMPORTED, 'trunk', vcs_imports, vcs_imports,
-    ...         product, None, 'Import branch')
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
     >>> for i in range(10):
-    ...     new_branch = import_branch_for_new_product('import-%s' % i)
-    ...     svn_import = code_import_set.new(
-    ...         registrant=nopriv, branch=new_branch,
-    ...         rcs_type=svn, svn_branch_url=svn_url % i)
+    ...     new_import = factory.makeCodeImport()
 
     >>> logout()
 

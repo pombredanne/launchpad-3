@@ -2,8 +2,8 @@
 searching for dupes.)
 
 Filing a public bug on a distribution source package subscribes the bug
-reporter, the distribution contact, if there is one, and all the package
-bug contacts, if there are any.
+reporter, the distribution bug supervisor, if there is one, and all the
+package subscribers, if there are any.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
@@ -21,8 +21,8 @@ bug contacts, if there are any.
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
 
 We should have four subscribers now. The bug reporter (also a package
-contact), sabdfl, the distro contact, ubuntu-team, and carlos and foobar,
-who are subscribed to the distribution.
+subscriber), sabdfl, the distro bug supervisor, ubuntu-team, and carlos
+and foobar, who are subscribed to the distribution.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet

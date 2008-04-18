@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, IMessageApproval,
     IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -39,21 +40,26 @@ class MessageApproval(SQLBase):
 
     implements(IMessageApproval)
 
-    message_id = StringCol()
+    message_id = StringCol(notNull=True)
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator,
+        notNull=True)
 
     posted_message = ForeignKey(
-        dbName='posted_message', foreignKey='LibraryFileAlias')
+        dbName='posted_message', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     posted_date = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     status = EnumCol(enum=PostedMessageStatus,
-                     default=PostedMessageStatus.NEW)
+                     default=PostedMessageStatus.NEW,
+                     notNull=True)
 
     disposed_by = ForeignKey(
         dbName='disposed_by', foreignKey='Person',
@@ -74,12 +80,20 @@ class MessageApproval(SQLBase):
         self.disposal_date = UTC_NOW
         self.status = PostedMessageStatus.REJECTION_PENDING
 
+    def discard(self, reviewer):
+        """See `IMessageApproval`."""
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.DISCARD_PENDING
+
     def acknowledge(self):
         """See `IMessageApproval`."""
         if self.status == PostedMessageStatus.APPROVAL_PENDING:
             self.status = PostedMessageStatus.APPROVED
         elif self.status == PostedMessageStatus.REJECTION_PENDING:
             self.status = PostedMessageStatus.REJECTED
+        elif self.status == PostedMessageStatus.DISCARD_PENDING:
+            self.status = PostedMessageStatus.DISCARDED
         else:
             raise AssertionError('Not an acknowledgeable state: %s' %
                                  self.status)
@@ -99,11 +113,12 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator,
+        notNull=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator, notNull=True)
 
     date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
@@ -116,14 +131,19 @@ class MailingList(SQLBase):
     date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED)
+                     default=MailingListStatus.REGISTERED,
+                     notNull=True)
 
-    welcome_message_text = StringCol(default=None)
+    # Use a trailing underscore because SQLObject/importfascist doesn't like
+    # the typical leading underscore.
+    welcome_message_ = StringCol(default=None, dbName='welcome_message')
 
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
+        return '%s@%s' % (
+            self.team.name,
+            configure_hostname(config.mailman.build_host_name))
 
     @property
     def archive_url(self):
@@ -248,9 +268,6 @@ class MailingList(SQLBase):
 
     def reactivate(self):
         """See `IMailingList`."""
-        # XXX: The Mailman side of this is not yet implemented, although it
-        # will be implemented soon. -- Guilherme Salgado, 2007-10-08
-        # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
         assert self.status == MailingListStatus.INACTIVE, (
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
@@ -261,15 +278,15 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
-    def _get_welcome_message(self):
-        return self.welcome_message_text
-
     def isUsable(self):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,
                                MailingListStatus.MOD_FAILED]
+
+    def _get_welcome_message(self):
+        return self.welcome_message_
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
@@ -287,7 +304,7 @@ class MailingList(SQLBase):
         else:
             raise AssertionError(
                 'Only registered or usable mailing lists may be modified')
-        self.welcome_message_text = text
+        self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
@@ -298,15 +315,12 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.status == MailingListStatus.ACTIVE:
-            raise CannotSubscribe('Mailing list is not active: %s' %
+        if not self.isUsable():
+            raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if not person.hasParticipationEntryFor(self.team):
-            raise CannotSubscribe('%s is not a member of team %s' %
-                                  (person.displayname, self.team.displayname))
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
@@ -482,6 +496,12 @@ class MailingListSet:
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
 
+    @property
+    def unsynchronized_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.select('status IN %s' % sqlvalues(
+            (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
+
 
 class MailingListSubscription(SQLBase):
     """A mailing list subscription."""
@@ -490,9 +510,12 @@ class MailingListSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator)
+        validator=public_person_validator,
+        notNull=True)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     date_joined = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 

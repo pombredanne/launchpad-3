@@ -1,0 +1,67 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
+<div metal:fill-slot="body">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      Please tell us more about your interest in Ubuntu Server Edition so that
+      we can better meet your needs.  Data collected from this survey will be
+      handled in accordance with the Canonical
+      <a href="http://www.ubuntu.com/legal">privacy policy.</a>
+    </div>
+
+    <metal:widgets metal:fill-slot="widgets">
+      <table class="form">
+        <tal:block define="widgets view/widgets"
+                   repeat="widget widgets">
+
+        <tal:widget
+            tal:define="field_name widget/context/__name__;
+                        error python:view.getFieldError(field_name);
+                        error_class python:error and 'error' or None">
+          <tr>
+            <th colspan="2" style="text-align: left"><label
+                tal:attributes="for widget/name"
+                tal:content="widget/label">Label</label>
+            </th>
+          </tr>
+          <tr>
+            <td colspan="2" tal:attributes="class error_class">
+              <div tal:content="structure widget">
+                <input type="text" style="width: 100%" />
+              </div>
+              <div class="message" tal:condition="error"
+                   tal:content="structure error">Error message</div>
+              <p class="formHelp"
+                 tal:condition="widget/hint"
+                 tal:content="structure widget/hint">Some Help Text
+              </p>
+            </td>
+          </tr>
+        </tal:widget>
+        </tal:block>
+      </table>
+    </metal:widgets>
+
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,11 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
+# We like global statements!
+# pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.management import queryInteraction, endInteraction
+from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
+
 
 __all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
 
@@ -24,26 +26,27 @@ def login(email, participation=None):
     If the canonical.launchpad.ftests.ANONYMOUS constant is supplied
     as the email, you'll be logged in as the anonymous user.
 
-    You can optionally pass in a participation to be used.  If no participation
-    is given, a MockParticipation is used.
+    You can optionally pass in a participation to be used.  If no
+    participation is given, a MockParticipation is used.
 
-    The participation passed in must allow setting of its principal.
+    If the participation provides IPublicationRequest, it must implement
+    setPrincipal(), otherwise it must allow setting its principal attribute.
     """
     global _logged_in
     _logged_in = True
     authutil = getUtility(IPlacelessAuthUtility)
 
-    # Login in anonymously even if we're going to log in as a user. We
-    # need to do this because there is a check that the email address
-    # is valid. This check goes via a security proxy, so we need an
-    # interaction in order to log in with an email address.
-    setupInteraction(
-        authutil.unauthenticatedPrincipal(), participation=participation)
-
     if email != ANONYMOUS:
+        # Create an anonymous interaction first because this calls
+        # IPersonSet.getByEmail() and since this is security wrapped, it needs
+        # an interaction available.
+        setupInteraction(authutil.unauthenticatedPrincipal())
         principal = authutil.getPrincipalByLogin(email)
         assert principal is not None, "Invalid login"
-        setupInteraction(principal, login=email, participation=participation)
+    else:
+        principal = authutil.unauthenticatedPrincipal()
+
+    setupInteraction(principal, login=email, participation=participation)
 
 
 def logout():

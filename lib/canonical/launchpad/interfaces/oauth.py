@@ -1,68 +1,38 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0211,E0213
 
 """OAuth interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'OAUTH_REALM',
+    'OAUTH_CHALLENGE',
     'IOAuthAccessToken',
     'IOAuthConsumer',
-    'IOAuthConsumerSet', 
+    'IOAuthConsumerSet',
     'IOAuthNonce',
     'IOAuthRequestToken',
+    'IOAuthRequestTokenSet',
+    'NonceAlreadyUsed',
     'OAuthPermission']
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
 from zope.interface import Interface
 
-from canonical.lazr import DBEnumeratedType, DBItem
-
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
 
 
-class OAuthPermission(DBEnumeratedType):
-    """The permission granted by the user to the OAuth consumer."""
-
-    UNAUTHORIZED = DBItem(10, """
-        Not authorized
-
-        The user didn't authorize the consumer to act on his behalf.
-        """)
-
-    READ_PUBLIC = DBItem(20, """
-        Read public data
-
-        The consumer can act on the user's behalf but only for reading public
-        data.
-        """)
-
-    WRITE_PUBLIC = DBItem(30, """
-        Read and write public data
-
-        The consumer can act on the user's behalf but only for reading and
-        writing public data.
-        """)
-
-    READ_PRIVATE = DBItem(40, """
-        Read public and private data
-
-        The consumer can act on the user's behalf but only for reading
-        public and private data.
-        """)
-
-    WRITE_PRIVATE = DBItem(50, """
-        Read and write public and private data
-
-        The consumer can act on the user's behalf for reading and writing
-        public and private data.
-        """)
+# The challenge included in responses with a 401 status.
+OAUTH_REALM = 'https://api.launchpad.net'
+OAUTH_CHALLENGE = 'OAuth realm="%s"' % OAUTH_REALM
 
 
 class IOAuthConsumer(Interface):
     """An application which acts on behalf of a Launchpad user."""
-    
+
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     disabled = Bool(
@@ -77,6 +47,30 @@ class IOAuthConsumer(Interface):
         title=_('Secret'), required=False, readonly=False,
         description=_('The secret which, if not empty, should be used by the '
                       'consumer to sign its requests.'))
+
+    def newRequestToken():
+        """Return a new `IOAuthRequestToken` with a random key and secret.
+
+        Also sets the token's date_expires to `REQUEST_TOKEN_VALIDITY` hours
+        from the creation date (now).
+
+        The other attributes of the token are supposed to be set whenever the
+        user logs into Launchpad and grants (or not) access to this consumer.
+        """
+
+    def getAccessToken(key):
+        """Return the `IOAuthAccessToken` with the given key.
+
+        If the token with the given key does not exist or is associated with
+        another consumer, return None.
+        """
+
+    def getRequestToken(key):
+        """Return the `IOAuthRequestToken` with the given key.
+
+        If the token with the given key does not exist or is associated with
+        another consumer, return None.
+        """
 
 
 class IOAuthConsumerSet(Interface):
@@ -96,8 +90,6 @@ class IOAuthConsumerSet(Interface):
             consumer.
         :param secret: A secret which should be used by the consumer to sign
             its requests.
-        :raises AssertionError: When `key` is already in use by another
-            consumer.
         """
 
     def getByKey(key):
@@ -107,11 +99,11 @@ class IOAuthConsumerSet(Interface):
 
         :param key: The unique key associated with a consumer.
         """
-    
+
 
 class IOAuthToken(Interface):
     """Base class for `IOAuthRequestToken` and `IOAuthAccessToken`.
-    
+
     This class contains the commonalities of the two token classes we actually
     care about and shall not be used on its own.
     """
@@ -123,10 +115,6 @@ class IOAuthToken(Interface):
     person = Object(
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
-    permission = Choice(
-        title=_('Permission'), required=False, readonly=False,
-        vocabulary=OAuthPermission,
-        description=_('The permission granted by the user to this consumer.'))
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     date_expires = Datetime(
@@ -150,6 +138,24 @@ class IOAuthAccessToken(IOAuthToken):
     consumer.  The consumer then exchanges an `IOAuthRequestToken` for it.
     """
 
+    permission = Choice(
+        title=_('Access level'), required=True, readonly=False,
+        vocabulary=AccessLevel,
+        description=_('The level of access given to the application acting '
+                      'on your behalf.'))
+
+    def ensureNonce(nonce, timestamp):
+        """Ensure the nonce hasn't been used with a different timestamp.
+
+        :raises NonceAlreadyUsed: If the nonce has been used before with a
+            timestamp not in the accepted range (+/- `NONCE_TIME_WINDOW`
+            seconds from the timestamp stored in the database).
+
+        If the nonce has never been used together with this token before,
+        we store it in the database with the given timestamp and associated
+        with this token.
+        """
+
 
 class IOAuthRequestToken(IOAuthToken):
     """A token used by a consumer to ask the user to authenticate on LP.
@@ -158,15 +164,54 @@ class IOAuthRequestToken(IOAuthToken):
     request token is exchanged for an access token and is then destroyed.
     """
 
+    permission = Choice(
+        title=_('Permission'), required=True, readonly=False,
+        vocabulary=OAuthPermission,
+        description=_('The permission you give to the application which may '
+                      'act on your behalf.'))
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
                       'consumer to access his protected resources on '
                       'Launchpad.'))
+    is_reviewed = Bool(
+        title=_('Has this token been reviewed?'),
+        required=False, readonly=True,
+        description=_('A reviewed request token can only be exchanged for an '
+                      'access token (in case the user granted access).'))
+
+    def review(user, permission):
+        """Grant `permission` as `user` to this token's consumer.
+
+        Set this token's person, permission and date_reviewed.  This will also
+        cause this token to be marked as used, meaning it can only be
+        exchanged for an access token with the same permission, consumer and
+        person.
+        """
+
+    def createAccessToken():
+        """Create an `IOAuthAccessToken` identical to this request token.
+
+        After the access token is created, this one is deleted as it can't be
+        used anymore.
+
+        You must not attempt to create an access token if the request token
+        hasn't been reviewed or if its permission is UNAUTHORIZED.
+        """
+
+
+class IOAuthRequestTokenSet(Interface):
+    """The set of `IOAuthRequestToken`s."""
+
+    def getByKey(key):
+        """Return the IOAuthRequestToken with the given key.
+
+        If it doesn't exist, return None.
+        """
 
 
 class IOAuthNonce(Interface):
-    """The unique (nonce,timestamp) for requests from a given consumer.
+    """The unique (nonce,timestamp) for requests using a given access token.
 
     The nonce value (which is unique for all requests with that timestamp)
     is generated by the consumer and included, together with the timestamp,
@@ -175,5 +220,9 @@ class IOAuthNonce(Interface):
 
     request_timestamp = Datetime(
         title=_('Date issued'), required=True, readonly=True)
-    consumer = Object(schema=IOAuthConsumer, title=_('The consumer.'))
+    access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
+
+
+class NonceAlreadyUsed(Exception):
+    """Nonce has been used together with same token but another timestamp."""

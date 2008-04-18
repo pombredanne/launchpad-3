@@ -127,6 +127,7 @@ class ExistingPOFileInDatabase:
             is_fuzzy,
             is_current,
             is_imported,
+            was_fuzzy_in_last_import,
             %s
           FROM TranslationMessage
             JOIN POFile ON
@@ -150,44 +151,50 @@ class ExistingPOFileInDatabase:
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
-             is_imported, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
+             is_imported, was_fuzzy_in_last_import,
+             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
              msgstr5) in rows:
-            if is_current:
-                look_at = self.messages
-            elif is_imported:
-                look_at = self.imported
-            else:
+
+            if not is_current and not is_imported:
                 # We don't care about non-current and non-imported messages
                 # yet.  To be part of super-fast-imports-phase2.
                 continue
 
-            if (msgid, context) in look_at:
-                message = look_at[(msgid, context)]
-            else:
-                message = TranslationMessageData()
-                look_at[(msgid, context)] = message
+            update_caches = []
+            if is_current:
+                update_caches.append(self.messages)
+            if is_imported:
+                update_caches.append(self.imported)
+                is_fuzzy = was_fuzzy_in_last_import
 
-                message.msgid_singular = msgid
-                message.context = context
-                message.msgid_plural = msgid_plural
+            for look_at in update_caches:
+                if (msgid, context) in look_at:
+                    message = look_at[(msgid, context)]
+                else:
+                    message = TranslationMessageData()
+                    look_at[(msgid, context)] = message
 
-            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-                "Change this code to support %d plural forms"
-                % TranslationConstants.MAX_PLURAL_FORMS)
-            if msgstr0 is not None:
-                message.addTranslation(0, msgstr0)
-            if msgstr1 is not None:
-                message.addTranslation(1, msgstr1)
-            if msgstr2 is not None:
-                message.addTranslation(2, msgstr2)
-            if msgstr3 is not None:
-                message.addTranslation(3, msgstr3)
-            if msgstr4 is not None:
-                message.addTranslation(4, msgstr4)
-            if msgstr5 is not None:
-                message.addTranslation(5, msgstr5)
+                    message.msgid_singular = msgid
+                    message.context = context
+                    message.msgid_plural = msgid_plural
 
-            message.fuzzy = is_fuzzy
+                assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
+                    "Change this code to support %d plural forms"
+                    % TranslationConstants.MAX_PLURAL_FORMS)
+                if msgstr0 is not None:
+                    message.addTranslation(0, msgstr0)
+                if msgstr1 is not None:
+                    message.addTranslation(1, msgstr1)
+                if msgstr2 is not None:
+                    message.addTranslation(2, msgstr2)
+                if msgstr3 is not None:
+                    message.addTranslation(3, msgstr3)
+                if msgstr4 is not None:
+                    message.addTranslation(4, msgstr4)
+                if msgstr5 is not None:
+                    message.addTranslation(5, msgstr5)
+
+                message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
@@ -356,6 +363,8 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
+            self.potemplate.source_file = (
+                translation_import_queue_entry.content)
             if importer.uses_source_string_msgids:
                 # We use the special 'en' language as the way to store the
                 # English strings to show instead of the msgids.
@@ -407,16 +416,11 @@ class TranslationImporter:
 
         count = 0
 
-        if self.pofile is not None or english_pofile is not None:
-            if self.pofile is None:
-                last_translator = translation_import_queue_entry.importer
-                pofile_in_db = ExistingPOFileInDatabase(
-                    english_pofile,
-                    is_imported=translation_import_queue_entry.is_published)
-            else:
-                pofile_in_db = ExistingPOFileInDatabase(
-                    self.pofile,
-                    is_imported=translation_import_queue_entry.is_published)
+        pofile_in_db = None
+        if self.pofile is not None:
+            pofile_in_db = ExistingPOFileInDatabase(
+                self.pofile,
+                is_imported=translation_import_queue_entry.is_published)
         errors = []
         use_pofile = self.pofile
         for message in translation_file.messages:
@@ -425,11 +429,17 @@ class TranslationImporter:
                 # message.
                 continue
 
-            if self.pofile is not None or english_pofile is not None:
+            if self.pofile is not None:
                 # Mark this message as seen in the import
                 pofile_in_db.markMessageAsSeen(message)
-                if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
-                    pofile_in_db.isAlreadyImportedTheSame(message)):
+                if translation_import_queue_entry.is_published:
+                    same_translation = pofile_in_db.isAlreadyImportedTheSame(
+                        message)
+                else:
+                    same_translation = (
+                        pofile_in_db.isAlreadyTranslatedTheSame(message))
+
+                if same_translation:
                     count += 1
                     continue
 
@@ -471,7 +481,7 @@ class TranslationImporter:
                         "The msgid_plural field has changed since the"
                         " last time this file was generated, please"
                         " report this error to %s" % (
-                            config.rosetta.rosettaadmin.email))
+                            config.rosettaadmin.email))
                     }
 
                 errors.append(error)
@@ -555,6 +565,9 @@ class TranslationImporter:
                 }
 
                 errors.append(error)
+                if logger is not None:
+                    logger.info(
+                        "Conflicting updates on message %d." % potmsgset.id)
                 continue
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but
@@ -587,7 +600,7 @@ class TranslationImporter:
 
 
         # Finally, retire messages that we have not seen in the new upload.
-        if use_pofile is not None:
+        if pofile_in_db is not None:
             unseen = pofile_in_db.getUnseenMessages()
             for unseen_message in unseen:
                 (msgid, context) = unseen_message

@@ -1,7 +1,8 @@
 #!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# This module uses relative imports.
+# pylint: disable-msg=W0403
 
-__metaclass__ = type
 
 """
 Gina launcher script. Handles commandline options and makes the proper
@@ -13,17 +14,20 @@ The callstack is essentially:
                 -> import_binarypackages -> do_one_binarypackage
 """
 
+
+__metaclass__ = type
+
+
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
 
 import _pythonpath
 
+from optparse import OptionParser
 import os
+import psycopg
 import sys
 import time
-import psycopg
-from optparse import OptionParser
-from datetime import timedelta
 
 from zope.component import getUtility
 
@@ -72,7 +76,7 @@ def main():
             help="Run all sections defined in launchpad.conf (in order)",
             dest="all", default=False)
 
-    parser.add_option( "-l", "--lockfile", 
+    parser.add_option( "-l", "--lockfile",
             default="/var/lock/launchpad-gina.lock",
             help="Ensure only one process is running that locks LOCKFILE",
             metavar="LOCKFILE"
@@ -80,8 +84,8 @@ def main():
 
     (options, targets) = parser.parse_args()
 
-    possible_targets = [target.getSectionName() for target
-                        in config.gina.target]
+    possible_targets = [target.category_and_section_names[1]
+                        for target in config.getByCategory('gina_target')]
 
     if options.all:
         targets = possible_targets[:]
@@ -103,11 +107,8 @@ def main():
     ztm = initZopeless(dbuser=config.gina.dbuser)
     try:
         for target in targets:
-            target_sections = [section for section in config.gina.target
-                               if section.getSectionName() == target]
-            # XX kiko, 2005-10-18X: should be a proper exception.
-            assert len(target_sections) == 1
-            run_gina(options, ztm, target_sections[0])
+            target_section = config['gina_target.%s' % target]
+            run_gina(options, ztm, target_section)
     finally:
         lockfile.release()
 
@@ -129,8 +130,8 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = config.dbname
-    LPDB_HOST = config.dbhost
+    LPDB = config.database.dbname
+    LPDB_HOST = config.database.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
@@ -179,7 +180,8 @@ def run_gina(options, ztm, target_section):
                                                      pocket_distroseries,
                                                      components, archs)
     except MangledArchiveError:
-        log.exception("Failed to analyze archive for %s" % pocket_distroseries)
+        log.exception(
+            "Failed to analyze archive for %s" % pocket_distroseries)
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
@@ -240,7 +242,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
                                      importer_handler)
         except (InvalidVersionError, MissingRequiredArguments,
                 DisplayNameDecodingError):
-            log.exception("Unable to create SourcePackageData for %s" % 
+            log.exception("Unable to create SourcePackageData for %s" %
                           package_name)
             continue
         except (PoolFileNotFound, ExecutionError):
@@ -284,7 +286,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
     for archtag in packages_map.bin_map.keys():
         count = 0
         npacks = len(packages_map.bin_map[archtag])
-        log.info('%i Binary Packages to be imported for %s' % 
+        log.info('%i Binary Packages to be imported for %s' %
                  (npacks, archtag))
         # Go over binarypackages importing them for this architecture
         for binary in sorted(packages_map.bin_map[archtag].values(),
@@ -304,7 +306,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
             except (InvalidVersionError, MissingRequiredArguments):
-                log.exception("Unable to create BinaryPackageData for %s" % 
+                log.exception("Unable to create BinaryPackageData for %s" %
                               package_name)
                 continue
             except (PoolFileNotFound, ExecutionError):
@@ -322,7 +324,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 importer_handler.abort()
                 continue
             except NoSourcePackageError:
-                log.exception("Failed to create Binary Package for %s" % 
+                log.exception("Failed to create Binary Package for %s" %
                               package_name)
                 nosource.append(binary)
                 continue

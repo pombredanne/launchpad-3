@@ -104,14 +104,14 @@ If we print out the recipients and rationales, here's what we get:
       Subscriber (pmount in debian)
       You received this bug notification because you are subscribed to pmount in debian.
   daf@canonical.com
-      Bug Contact (Debian)
-      You received this bug notification because you are the bug contact for Debian.
+      Bug Supervisor (Debian)
+      You received this bug notification because you are the bug supervisor for Debian.
   foo.bar@canonical.com
       Subscriber of Duplicate
       You received this bug notification because you are a direct subscriber of a duplicate bug.
   marilize@hbd.com
-      Bug Contact (alsa-utils)
-      You received this bug notification because you are the bug contact for alsa-utils.
+      Bug Supervisor (alsa-utils)
+      You received this bug notification because you are the bug supervisor for alsa-utils.
   no-priv@canonical.com
       Assignee
       You received this bug notification because you are a bug assignee.
@@ -120,7 +120,7 @@ If we print out the recipients and rationales, here's what we get:
       You received this bug notification because you are a direct subscriber of the bug.
 
 Note how we account for every important variation in bug subscriptions
-here: bug contacts, subscribers, dupe subscribers and more.
+here: bug supervisors, subscribers, dupe subscribers and more.
 
 == A duplicate bug modification notifies its main bug ==
 
@@ -163,14 +163,14 @@ themselves why the hell they are getting email for bug 1.
       Subscriber (pmount in debian) via Bug 2
       You received this bug notification because you are subscribed to pmount in debian (via bug 2).
   daf@canonical.com
-      Bug Contact (Debian) via Bug 2
-      You received this bug notification because you are the bug contact for Debian (via bug 2).
+      Bug Supervisor (Debian) via Bug 2
+      You received this bug notification because you are the bug supervisor for Debian (via bug 2).
   foo.bar@canonical.com
       Subscriber of Duplicate via Bug 2
       You received this bug notification because you are a direct subscriber of a duplicate bug (via bug 2).
   marilize@hbd.com
-      Bug Contact (alsa-utils) via Bug 2
-      You received this bug notification because you are the bug contact for alsa-utils (via bug 2).
+      Bug Supervisor (alsa-utils) via Bug 2
+      You received this bug notification because you are the bug supervisor for alsa-utils (via bug 2).
   no-priv@canonical.com
       Assignee via Bug 2
       You received this bug notification because you are a bug assignee (via bug 2).
@@ -215,14 +215,14 @@ membership is causing us to send mail.
 
   >>> print_rationales(recipients)
     andrew.bennetts@ubuntulinux.com
-        Bug Contact (alsa-utils) @name18
-        You received this bug notification because you are a member of Ubuntu Gnome Team, which is the bug contact for alsa-utils.
+        Bug Supervisor (alsa-utils) @name18
+        You received this bug notification because you are a member of Ubuntu Gnome Team, which is the bug supervisor for alsa-utils.
     carlos@canonical.com
         Subscriber of Duplicate @testing-spanish-team
         You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     celso.providelo@canonical.com
-        Bug Contact (Debian) @launchpad-buildd-admins
-        You received this bug notification because you are a member of Launchpad Buildd Admins, which is the bug contact for Debian.
+        Bug Supervisor (Debian) @launchpad-buildd-admins
+        You received this bug notification because you are a member of Launchpad Buildd Admins, which is the bug supervisor for Debian.
     david.allouche@canonical.com
         Registrant (gnomebaker) @vcs-imports
         You received this bug notification because you are a member of VCS imports, which is the registrant for gnomebaker.

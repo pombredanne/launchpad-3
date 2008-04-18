@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 class IHasBugContact(IStructuralSubscriptionTarget):
 
     bugcontact = Choice(
-        title=_("Bug Contact"),
+        title=_("Bug Supervisor"),
         description=_(
             "The person or team responsible for bug management."),
         required=False, vocabulary='ValidPersonOrTeam')

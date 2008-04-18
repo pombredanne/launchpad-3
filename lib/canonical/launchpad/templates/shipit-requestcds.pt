@@ -24,11 +24,6 @@
 
 <div metal:fill-slot="body">
 
-<table>
-<tbody>
-<tr>
-<td width="75%" style="vertical-align: top;" id="maincontent">
-
 <tal:shipit-is-open condition="view/is_open" define="user view/user">
 
   <p class="informational message"
@@ -53,7 +48,7 @@
     </ul>
     <div>
       <form name="cancelrequest" action="" method="post">
-        <input type="hidden" name="order" 
+        <input type="hidden" name="order"
                tal:attributes="value view/current_order/id" />
 
         <input type="submit" value="Cancel Request" name="cancel"
@@ -74,43 +69,41 @@
     </h1>
 
     <h1 tal:condition="not: view/currentOrderContainsCDsOfThisFlavour">
-      Request more CDs
+      Request an extra CD
     </h1>
   </tal:has-current-order>
 
   <tal:no-current-order condition="not: view/current_order">
-    <h1 tal:condition="not: view/current_order">
-      <span tal:condition="view/prerelease_mode">Pre-order</span>
-      <span tal:condition="not: view/prerelease_mode">Request</span>
-      <span tal:replace="view/flavour/title" />
-      <span tal:replace="view/series/title" /> CDs
-    </h1>
-
-    <p class="informational message">
-      <tal:no-prerelease condition="not: view/prerelease_mode">
-        We can send you CDs free of charge, but it will take from
+    <tal:no-prerelease condition="not: view/prerelease_mode">
+      <tal:standard-request condition="not:view/should_show_custom_request">
+        <p class="informational message">
+        We can send you a CD free of charge, but it will take from
         six to ten weeks to deliver, so you may prefer to
-        <a tal:attributes="href view/download_url">download the CD images</a>
-        and record them yourself.
-      </tal:no-prerelease>
-      <tal:prerelease condition="view/prerelease_mode">
-      <span tal:replace="view/flavour/title" />
-        <span tal:replace="view/series/title" /> has not been released yet,
-        but we'll record your request and send you the CDs as soon as that
+        <a tal:attributes="href view/download_url">download the CD image</a>
+        and record it yourself.
+        </p>
+      </tal:standard-request>
+    </tal:no-prerelease>
+    <tal:prerelease condition="view/prerelease_mode">
+    <span tal:replace="view/flavour/title" />
+      <p class="informational message">
+        Ubuntu <span tal:replace="view/series/title" /> has not been released
+        yet, but we'll record your request and send you a CD as soon as that
         happens. Note that delivery will take from six to ten weeks once
-        they are sent.
-      </tal:prerelease>
-    </p>
+        it is sent.
+      </p>
+    </tal:prerelease>
   </tal:no-current-order>
 
   <p tal:condition="view/should_show_custom_request">
-    Delivery of special requests can take up to
-    <strong>ten weeks</strong>. For quicker processing, choose a
-    <a href="/myrequest">standard option</a> instead.
+    Delivery of special requests can take from
+    <strong>twelve to sixteen weeks</strong>. For quicker processing, choose a
+    <a tal:attributes="href view/standard_order_page">standard option</a>
+    instead.
   </p>
 
   <p tal:condition="view/is_edubuntu">
-    Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
+    Edubuntu CDs are available only in the <strong>PC</strong> Edition.
     This runs on x86-based systems like Intel Pentium and AMD Athlon.
   </p>
 
@@ -120,17 +113,29 @@
       for different types of computer:
     </p>
 
-    <ul>
+    <ul tal:condition="not:view/flavour/enumvalue:SERVER">
       <li>
-        <strong>PC</strong> Edition, for almost all PCs,
+        <strong>Desktop</strong> Edition, for almost all PCs,
         including x86-based systems like Intel Pentium and AMD
         Athlon. Choose this if you are unsure.
       </li>
 
       <li>
-        <strong>64-bit PC</strong> Edition, for computers
-        based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
-        EM64T Xeon).
+        <strong>64-bit Desktop</strong> Edition, for computers
+        based on the AMD64 or Intel64 architectures (e.g., AMD Athlon 64,
+        and Intel Core 2).
+      </li>
+    </ul>
+
+    <ul tal:condition="view/flavour/enumvalue:SERVER">
+      <li>
+        <strong>Server</strong> Edition for x86 based servers (including
+        Intel Pendium, Intel Xeon and AMD Athlon).
+      </li>
+
+      <li>
+        <strong>64-bit Server</strong> Edition for AMD64 and Intel64 based
+        servers (including AMD Opteron and Intel EM64T Xeon).
       </li>
     </ul>
   </tal:not-edubuntu>
@@ -144,20 +149,13 @@
         your request altogether.
       </p>
       <p>
-        Requesting a smaller number of CDs or a <a href="/myrequest">standard
-        option</a> will increase your chances of having the request approved.
+        Requesting a smaller number of CDs or a
+        <a tal:attributes="href view/standard_order_page">standard option</a>
+        will increase your chances of having the request approved.
         Remember, you can reuse the CDs!
       </p>
     </div>
   </tal:custom-request>
-
-  <tal:standard-request condition="not: view/should_show_custom_request">
-    <p class="informational message" tal:condition="user/is_trusted_on_shipit">
-      The Ubuntu community would like to thank you for your
-      contributions to the Ubuntu project. In recognition of this, we
-      offer you an expanded set of options for your ShipIt request.
-    </p>
-  </tal:standard-request>
 
   <!-- Without using setTimeout() to disable the submit button it'll be
   disabled before the browser generates the request, which will cause the
@@ -184,12 +182,10 @@
           </label>
         </div>
 
-        <p>You can make a <a href="/specialrequest">special request</a>
+        <p>You can make a <a tal:attributes="href view/custom_order_page">
+        special request</a>
         for different quantities, but note this will take longer to process
         and may not be approved at all.
-        We will consider special requests if you are a teacher giving CDs to
-        your students, or if you are distributing CDs at a conference or other
-        organized event.
         </p>
       </div>
 
@@ -246,7 +242,7 @@
       </tal:current_request>
 
       <tal:no_current_request condition="not: view/current_order">
-        <input type="submit" value="Request CDs" name="FORM_SUBMIT"
+        <input type="submit" value="Submit Request" name="FORM_SUBMIT"
                class="formControls"/>
       </tal:no_current_request>
 
@@ -275,15 +271,6 @@
   </tal:pastrequests>
 </tal:shipit-is-closed>
 
-</td>
-<td width="25%" style="vertical-align: top;" id="amazon-links"
-    tal:condition="view/is_open">
-  <span tal:content="structure view/dvds_section" />
-</td>
-</tr>
-</tbody>
-</table>  
-  
 </div>
 </body>
 </html>

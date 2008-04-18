@@ -54,9 +54,7 @@ class CommandLineArgumentProcessing(unittest.TestCase):
                                               '--bar=baz']))
 
     def test_run_with_only_zope_params(self):
-        """If no `-r` option is given, then all of the options should be passed
-        straight through to Zope.
-        """
+        """Pass all the options to zope when the `-r` option is not given."""
         self.assertEqual(
             ([], ['-o', 'foo', '--bar=baz']),
             split_out_runlaunchpad_arguments(['-o', 'foo', '--bar=baz']))
@@ -66,7 +64,7 @@ class ServersToStart(unittest.TestCase):
     def setUp(self):
         """Make sure that only the Librarian is configured to launch."""
         unittest.TestCase.setUp(self)
-        self.configs = [config.librarian.server,
+        self.configs = [config.librarian_server,
                         config.buildsequencer,
                         config.authserver,
                         config.codehosting]
@@ -82,8 +80,7 @@ class ServersToStart(unittest.TestCase):
         unittest.TestCase.tearDown(self)
 
     def test_nothing_explictly_requested(self):
-        """When no service is explicitly requested, start services based on the
-        config.launch property.
+        """Implicitly start services based on the config.launch property.
         """
         services = sorted(get_services_to_run([]))
         expected = [SERVICES['librarian']]

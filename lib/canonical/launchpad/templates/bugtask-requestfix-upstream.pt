@@ -67,7 +67,55 @@
           Launchpad will keep track of its status for you.
         </p>
 
-       <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+        <table class="form" style="width: auto"
+               tal:define="link_items view/link_upstream_how_items">
+          <tr>
+            <td tal:content="structure link_items/LINK_UPSTREAM" />
+            <td tal:define="widget nocall:view/widgets/bug_url;
+                            field_name widget/context/__name__;
+                            error python:view.getFieldError(field_name);
+                            error_class python:error and 'error' or None"
+                tal:attributes="class error_class">
+              <div>
+                <input tal:replace="structure widget" />
+              </div>
+              <div class="message" tal:condition="error"
+                   tal:content="structure error">Error message</div>
+              <p class="formHelp" tal:condition="widget/hint"
+                 tal:content="widget/hint">Some Help Text
+              </p>
+            </td>
+          </tr>
+          <tal:comment replace="nothing">
+            XXX: GavinPanella 2008-02-13 bug=201793: This will be
+            uncommented in a later branch.
+            <tr>
+              <td colspan="2"
+                  tal:content="structure link_items/EMAIL_UPSTREAM" />
+            </tr>
+          </tal:comment>
+          <tr>
+            <td tal:content="structure link_items/EMAIL_UPSTREAM_DONE" />
+            <td tal:define="widget nocall:view/widgets/upstream_email_address_done;
+                            field_name widget/context/__name__;
+                            error python:view.getFieldError(field_name);
+                            error_class python:error and 'error' or None"
+                tal:attributes="class error_class">
+              <div>
+                <input tal:replace="structure widget" />
+              </div>
+              <div class="message" tal:condition="error"
+                   tal:content="structure error">Error message</div>
+              <p class="formHelp" tal:condition="widget/hint"
+                 tal:content="widget/hint">Some Help Text
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2"
+                tal:content="structure link_items/UNLINKED_UPSTREAM" />
+          </tr>
+        </table>
 
       </div>
 
@@ -76,7 +124,7 @@
       <p tal:condition="product/bugcontact">
         <a tal:attributes="href product/bugcontact/fmt:url"
            tal:content="product/bugcontact/displayname">Sample Person</a>,
-           the bug contact for 
+           the bug supervisor for 
            <tal:product tal:replace="product/displayname">Firefox</tal:product>,
            will be notified about this bug.
       </p>
@@ -91,7 +139,7 @@
         </p>
 
         <p tal:condition="not: product/official_malone">
-          There is no bug contact for
+          There is no bug supervisor for
           <tal:product tal:replace="product/displayname">Firefox</tal:product>.
           This means that there is nobody upstream we can notify about
           this issue.
@@ -107,7 +155,7 @@
         This is a private bug report,
         so <a tal:attributes="href product/bugcontact/fmt:url"
            tal:content="product/bugcontact/displayname">Sample Person</a>,
-         the bug contact for 
+         the bug supervisor for 
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
          won&rsquo;t be notified. You can also set up 
            <a href="+addsubscriber">additional contacts</a> to be notified.

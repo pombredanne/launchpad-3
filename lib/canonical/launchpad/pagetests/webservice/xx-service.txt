@@ -3,44 +3,51 @@
 Some standard behavior is defined by the web service itself, not by
 the individual resources.
 
+
 == Nonexistent resources ==
 
 An attempt to access a nonexistent resource yields a 404 error.
 
-  >>> print http(r"""
-  ... GET /no-such-resource HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
+  >>> print webservice.get("/beta/no-such-resource")
   HTTP/1.1 404 Not Found
   ...
+
+An attempt to access an existing resource without versioning the URL
+yields a 404 error.
+
+  >>> print webservice.get("/people")
+  HTTP/1.1 404 Not Found
+  ...
+
 
 == Nonexistent methods ==
 
 An attempt to use an unsupported or nonexistent HTTP method on a
 resource yields a 405 error.
 
-  >>> print http(r"""
-  ... COPY / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
+  >>> print webservice("/beta/", method="COPY")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET HEAD POST PATCH PUT DELETE OPTIONS
   ...
 
-  >>> print http(r"""
-  ... DELETE /people HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
+  >>> print webservice.delete("/beta/bugs")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
 
-  >>> print http(r"""
-  ... DELETE /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
+  >>> print webservice.delete("/beta/people")
   HTTP/1.1 405 Method Not Allowed
-  Allow: GET PATCH
+  Allow: GET POST
+  ...
+
+  >>> print webservice.delete("/beta/~salgado")
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET PUT PATCH
+  ...
+
+  >>> print webservice.delete("/beta/debian/+source/mozilla-firefox/+bug/1")
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET POST PUT PATCH
   ...
 
 
@@ -49,12 +56,17 @@ resource yields a 405 error.
 An attempt to PATCH a document with unsupported media type to a
 resource yields a 415 error.
 
-  >>> print http(r"""
-  ... PATCH /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... Content-type: text/plain 
-  ...
-  ... Foo
-  ... """)
+  >>> print webservice.patch("/beta/~salgado", 'text/plain', "Foo")
   HTTP/1.1 415 Unsupported Media Type
   ...
+
+
+== Resources not exposed on the web service ==
+
+Soyuz build set (exposed on the web at +builds) are not available on the
+web service:
+
+    >>> print webservice.get("/beta/+builds")
+    HTTP/1.1 404 Not Found
+    ...
+

@@ -6,11 +6,12 @@ Ubuntu is using Launchpad for translations
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'table-details'))
-    Bug contact:
+    Bug supervisor:
     ...
     Uses Launchpad for:
     Answers
     Bug tracking
+    Blueprints
     Translations
     ...
 

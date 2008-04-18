@@ -187,15 +187,8 @@
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
 
-    <tal:comment condition="nothing">
-      We want this here to make sure that whatever is in shipit.css overrides
-      things coming from ubuntu.com's css.
-    </tal:comment>
     <metal:extra-head define-slot="extra-head" />
     <metal:block define-slot="head_epilogue"></metal:block>
-
-    <style type="text/css" media="screen" >
-      @import url(/+icing/shipit.css);</style>
 </head>
 
   <body>
@@ -224,7 +217,7 @@
       </div>
     </div>
 
-    <div class="visualClear body">
+    <div class="body">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <tal:notifications define="notifications request/notifications"
                          condition="notifications">

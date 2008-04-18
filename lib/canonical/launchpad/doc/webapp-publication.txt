@@ -12,15 +12,15 @@ The configuration defines a number of domains, one for the main
 Launchpad site and one for the sites of the various applications.
 
     >>> from canonical.config import config
-    >>> config.launchpad.vhosts.mainsite.hostname
+    >>> config.vhost.mainsite.hostname
     'launchpad.dev'
-    >>> config.launchpad.vhosts.blueprints.hostname
+    >>> config.vhost.blueprints.hostname
     'blueprints.launchpad.dev'
 
 It also says whether we use http or https (although this setting can be
 overridden for the root URL of a particular host).
 
-    >>> config.launchpad.vhosts.use_https
+    >>> config.vhosts.use_https
     False
 
 These are parsed into webapp.vhost.allvhosts.
@@ -38,7 +38,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     api @ api.launchpad.dev
-    rooturl: http://api.launchpad.dev/
+    rooturl: http://api.launchpad.dev/beta/
     althosts:
     ----
     blueprints @ blueprints.launchpad.dev
@@ -460,16 +460,21 @@ production. -- Leonard Richardson 2008-01-04
 (https://launchpad.net/launchpad/+spec/api-bugs-remote)
 
     >>> from canonical.config import config
-    >>> config.launchpad.vhosts.expose_webservice
+    >>> config.vhosts.expose_webservice
     True
 
-    >>> config.launchpad.vhosts.expose_webservice = False
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [vhosts]
+    ...     expose_webservice: false
+    ...     """)
+    >>> config.push('test', test_data)
 
     >>> print_request_and_publication('api.launchpad.dev', method='GET')
     ProtocolErrorRequest
     ProtocolErrorPublication: status=404
 
-    >>> config.launchpad.vhosts.expose_webservice = True
+    >>> test_config_data = config.pop('test')
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -935,13 +940,22 @@ read-only (GET and HEAD) don't change anything in the database.
 (Actually, if the published method calls transaction.commit() itself,
 that assumption won't hold.)
 
-Again this is handled by the afterCall() publication hook.
+This is handled by the finishReadOnlyRequest() hook, which is called by
+afterCall().  For example, this publication subclass will simply print
+some string in its finishReadOnlyRequest().
 
-For example, the following database modification will be automatically
-reverted in a GET request.
+    >>> class MyPublication(LaunchpadBrowserPublication):
+    ...	      def finishReadOnlyRequest(self, txn):
+    ...	      	  print "booo!"
+
+    >>> publication = MyPublication(None)
+    >>> publication.afterCall(request, None)
+    booo!
+
+In the default implementation, the following database modification will
+be automatically reverted in a GET request.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -982,6 +996,54 @@ But not if the request uses POST, the changes will be preserved.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
     Montreal
+
+
+=== GET requests on api.launchpad.net ===
+
+In the case of WebServicePublication, though, we have to commit the
+transaction after GET requests in order to persist new entries added to
+the OAuthNonce table.
+
+    >>> import time
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> access_token = token.createAccessToken()
+    >>> transaction.commit()
+    >>> form = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_token=access_token.key,
+    ...     oauth_version='1.0',
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='1234572616e48616d6d65724c61686176')
+    >>> test_request, publication = get_request_and_publication(
+    ...     'api.launchpad.dev', 'GET',
+    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
+    >>> test_request.processInputs()
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+    # Our afterCall() implementation expects to find a
+    # _publicationticks_start in its request, which is set by
+    # callObject(). Since we don't want to callObject() here, we'll
+    # have to change the request manually.
+    >>> test_request._publicationticks_start = 1345
+    >>> publication.afterCall(test_request, None)
+
+    >>> form['oauth_timestamp'] += 500
+    >>> test_request, publication = get_request_and_publication(
+    ...     'api.launchpad.dev', 'GET',
+    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
+    >>> test_request.processInputs()
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
 
 
 == HEAD requests have empty body ==
@@ -1039,7 +1101,7 @@ will get associated with the request after the beforeTraversal() hook.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
 
-    # We need close the previous interaction.
+    # We need to close the previous interaction.
     >>> from zope.security.management import endInteraction
     >>> endInteraction()
 
@@ -1071,8 +1133,98 @@ The feeds implementation always returns the anonymous user.
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 
+The webservice implementation returns the principal for the person
+associated with the access token specified in the request.  The
+principal's access_level will be the one specified in the token.
+
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> access_token = token.createAccessToken()
+    >>> form = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_token=access_token.key,
+    ...     oauth_version='1.0',
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> test_request, publication = get_request_and_publication(
+    ...     'api.launchpad.dev', 'GET',
+    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
+    >>> test_request.processInputs()
+    >>> principal = publication.getPrincipal(test_request)
+    >>> print principal.title
+    Guilherme Salgado
+    >>> principal.access_level
+    <DBItem AccessLevel.WRITE_PUBLIC...
+
+If the token is expired or doesn't exist, an Unauthorized exception is
+raised, though.
+
+    # Must login in order to edit the token.
+    >>> login('salgado@ubuntu.com')
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> access_token.date_expires = now - timedelta(days=1)
+    >>> syncUpdate(access_token)
+    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Expired token...
+    >>> access_token.date_expires = now + timedelta(days=1)
+    >>> syncUpdate(access_token)
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_token'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unknown access token...
+
+The consumer must be registered as well, and the signature must be
+correct.
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_consumer_key'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unknown consumer (foobar123451432z).
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_signature'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid signature.
+
+Last but not least, the nonce specified in the request must either have
+not been used before (in a request with this same token) or its
+timestamp must be +/- 60 seconds of the timestamp associated with the
+OAuthNonce in our database.
+
+    >>> from canonical.launchpad.database.oauth import NONCE_TIME_WINDOW
+    >>> form2 = form.copy()
+    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW - 1
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW + 1
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp...
+
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
 
     >>> publication.endRequest(request, None)
-

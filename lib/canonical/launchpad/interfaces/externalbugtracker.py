@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IExternalBugTracker',
+    'IExternalBugTrackerTokenAPI',
     'ISupportsCommentImport',
     'ISupportsBugImport',
     'UNKNOWN_REMOTE_IMPORTANCE',
@@ -24,8 +25,38 @@ UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 
 
+class IExternalBugTrackerTokenAPI(Interface):
+    """A class used to generate external bugtracker `LoginToken`s."""
+
+    def newBugTrackerToken():
+        """Create a new bugtracker `LoginToken` and return its ID."""
+
+
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
+
+    def getExternalBugTrackerToUse():
+        """Return the `ExternalBugTracker` instance to use.
+
+        Probe the remote bug tracker and choose the right
+        `ExternalBugTracker` instance to use further on.
+        """
+
+    def getCurrentDBTime():
+        """Return the current time of the bug tracker's DB server.
+
+        The local time should be returned, as a timezone-aware datetime
+        instance.
+        """
+
+    def getModifiedRemoteBugs(remote_bug_ids, last_checked):
+        """Return the bug ids that have been modified.
+
+        Return all ids if the modified bugs can't be determined.
+        """
+
+    def initializeRemoteBugDB(remote_bug_ids):
+        """Do any initialization before each bug watch is updated."""
 
     def convertRemoteStatus(remote_status):
         """Convert a remote status string to a BugTaskStatus item."""
@@ -36,6 +67,15 @@ class IExternalBugTracker(Interface):
 
 class ISupportsCommentImport(IExternalBugTracker):
     """A an external bug tracker that supports comment imports."""
+
+    def getCommentIds(bug_watch):
+        """Return all the comment IDs for a given remote bug."""
+
+    def getPosterForComment(bug_watch, comment_id):
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
+
+    def getMessageForComment(bug_watch, comment_id, poster):
+        """Return an `IMessage` instance for a comment."""
 
 
 class ISupportsBugImport(IExternalBugTracker):

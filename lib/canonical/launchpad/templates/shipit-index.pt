@@ -13,20 +13,20 @@
 <head>
   <style metal:fill-slot="head_epilogue" type="text/css">
     #chooseLinks {
-      width:700px;
+      width:1000px;
       margin:0;
       padding:0;
     }
     #chooseLinks a 
     {
-      width:35%;
+      width:25%;
       display:block;
       margin:1em;
-      float:right;
+      float:left;
       padding:1em;
       border: .1em solid #DBA73A;
       text-align:center;
-      font-size:125%;
+      font-size:85%;
       text-decoration: none;
       height: 4em;
     }
@@ -42,7 +42,7 @@
       text-decoration:underline;
     }
     #chooseLinks a strong {
-      font-size:120%;
+      font-size:100%;
     }
     #downloadOptions li {
       margin: .4em 0;
@@ -52,12 +52,13 @@
 
 <body>
   <div metal:fill-slot="body">
-  <tal:block define="flavour_name view/flavour/title">
+  <tal:block define="flavour_name view/flavour/title;
+                     series_name view/series/title">
   
     <h1>Requesting CDs from ShipIt</h1>
 
     <p>Ubuntu is available free of charge and we can send you CDs of the
-    latest version (<span tal:replace="view/series/title" />) with no extra
+    latest version (<span tal:replace="series_name" />) with no extra
     cost, but the delivery may take up to ten weeks, so you should consider
     downloading the CD images if you have a fast Internet connection.
     </p>
@@ -68,26 +69,26 @@
           <a tal:attributes="href view/download_or_buy_link">
             I want to <span>download</span>
             <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="view/series/title" /></a>
+            <span tal:replace="series_name" /></a>
         </div>
         <div>
           <a href="login">
             I want to <span>request CDs</span> of
             <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="view/series/title" /></a>
+            <span tal:replace="series_name" /></a>
         </div>
       </tal:no-prerelease>
       <tal:prerelease condition="view/prerelease_mode">
         <div>
           <a tal:attributes="href view/beta_download_link">
             I want to <span>download and test</span> the beta version of
-            <span tal:replace="view/series/title" /></a>
+            <span tal:replace="series_name" /></a>
         </div>
-        <div tal:condition="view/prerelease_mode">
+        <div>
           <a href="login">
             I want to <span>pre-order CDs</span> of
             <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="view/series/title" /></a>
+            <span tal:replace="series_name" /></a>
         </div>
       </tal:prerelease>
     </div>

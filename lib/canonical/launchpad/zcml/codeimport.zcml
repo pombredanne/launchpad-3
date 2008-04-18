@@ -9,8 +9,7 @@
 
   <content class="canonical.launchpad.database.CodeImport">
     <implements interface="canonical.launchpad.interfaces.ICodeImport" />
-    <require
-      permission="launchpad.View"
+    <allow
       attributes="id date_created branch registrant owner assignee
                   product series review_status
                   rcs_type cvs_root cvs_module svn_branch_url
@@ -19,61 +18,87 @@
                   import_job" />
     <require
       permission="launchpad.Edit"
-      attributes="updateFromData" />
+      attributes="approve invalidate suspend updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when
       appropriate. -->
   </content>
 
-  <browser:url
-    for="canonical.launchpad.interfaces.ICodeImport"
-    path_expression="string:+code-import"
-    attribute_to_parent="branch"
-    rootsite="code" />
+  <subscriber
+      for="canonical.launchpad.interfaces.ICodeImport
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.mailout.codeimport.new_import" />
 
-  <browser:defaultView
-    for="canonical.launchpad.interfaces.ICodeImport"
-    name="+index"
-    layer="canonical.launchpad.layers.CodeLayer"
-    />
+  <facet facet="branches">
 
-  <browser:page
-    for="canonical.launchpad.interfaces.ICodeImport"
-    class="canonical.launchpad.browser.CodeImportView"
-    name="+index"
-    template="../templates/codeimport.pt"
-    permission="launchpad.View"
-    />
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeImport"
+        path_expression="string:+code-import"
+        attribute_to_parent="branch"
+        rootsite="code" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeImport"
+        name="+index"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImport"
+        class="canonical.launchpad.browser.CodeImportView"
+        name="+index"
+        template="../templates/codeimport.pt"
+        permission="zope.Public"
+        />
+
+  </facet>
 
   <!-- CodeImportSet -->
 
   <securedutility
     class="canonical.launchpad.database.CodeImportSet"
     provides="canonical.launchpad.interfaces.ICodeImportSet" >
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImportSet" />
+    <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
 
-  <browser:url
-    for="canonical.launchpad.interfaces.ICodeImportSet"
-    path_expression="string:+code-imports"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    rootsite="code" />
+  <facet facet="branches">
 
-  <browser:defaultView
-    for="canonical.launchpad.interfaces.ICodeImportSet"
-    name="+index"
-    layer="canonical.launchpad.layers.CodeLayer"
-    />
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeImportSet"
+        path_expression="string:+code-imports"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="code" />
 
-  <browser:page
-    for="canonical.launchpad.interfaces.ICodeImportSet"
-    class="canonical.launchpad.browser.CodeImportSetView"
-    name="+index"
-    template="../templates/codeimport-list.pt"
-    permission="launchpad.View"
-    />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeImportSet"
+        name="+index"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImportSet"
+        class="canonical.launchpad.browser.CodeImportSetView"
+        name="+index"
+        template="../templates/codeimport-list.pt"
+        permission="launchpad.View"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImportSet"
+        class="canonical.launchpad.browser.CodeImportNewView"
+        name="+new"
+        template="../templates/codeimport-new.pt"
+        permission="launchpad.AnyPerson"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImportSet"
+        class="canonical.launchpad.browser.CodeImportMachineView"
+        name="+machines"
+        template="../templates/codeimport-machines.pt"
+        permission="launchpad.AnyPerson"
+        />
+  </facet>
 
 </configure>

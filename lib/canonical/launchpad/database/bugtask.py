@@ -43,35 +43,14 @@ from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
-    BUG_CONTACT_BUGTASK_STATUSES,
-    BugNominationStatus,
-    BugTaskImportance,
-    BugTaskSearchParams,
-    BugTaskStatus,
-    BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
-    IBugTask,
-    IBugTaskDelta,
-    IBugTaskSet,
-    IDistribution,
-    IDistributionSourcePackage,
-    IDistroBugTask,
-    IDistroSeries,
-    IDistroSeriesBugTask,
-    ILaunchpadCelebrities,
-    INullBugTask,
-    IProduct,
-    IProductSeries,
-    IProductSeriesBugTask,
-    IProject,
-    IProjectMilestone,
-    ISourcePackage,
-    IUpstreamBugTask,
-    NotFoundError,
-    PackagePublishingStatus,
-    RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
-    )
+    BUG_CONTACT_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
+    IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
+    ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -131,9 +110,10 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 status=None, importance=None, assignee=None,
-                 milestone=None, statusexplanation=None, bugwatch=None):
+    def __init__(self, bugtask, product=None,
+                 sourcepackagename=None, status=None, importance=None,
+                 assignee=None, milestone=None, statusexplanation=None,
+                 bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -606,14 +586,6 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-        # We use the forbidden underscore attributes below because, with
-        # SQLObject, hitting self.product means querying and
-        # instantiating an object; prejoining doesn't help because this
-        # happens when the bug task is being instantiated -- too early
-        # in cases where we prejoin other things in.
-        # XXX: kiko 2006-03-21:
-        # we should use a specific SQLObject API here to avoid the
-        # privacy violation.
         if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
         elif self.productseriesID is not None:
@@ -684,7 +656,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:
@@ -784,7 +756,7 @@ class BugTask(SQLBase, BugTaskMixin):
             component = self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
             # Pull the component from the package published in the
-            # latest distribution series. 
+            # latest distribution series.
             packages = self.target.get_distroseries_packages()
             if packages:
                 component = packages[0].latest_published_component
@@ -1504,8 +1476,8 @@ class BugTaskSet:
             bugtasks = bugtasks.union(BugTask.select(
                 query, clauseTables=clauseTables), orderBy=orderby,
                 joins=joins)
-        bugtasks.prejoin(['sourcepackagename', 'product'])
-        bugtasks.prejoinClauseTables(['Bug'])
+        bugtasks = bugtasks.prejoin(['sourcepackagename', 'product'])
+        bugtasks = bugtasks.prejoinClauseTables(['Bug'])
         return bugtasks
 
     # XXX: salgado 2007-03-19:
@@ -1651,13 +1623,14 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
+                    AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(min_days_old),
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
@@ -1856,7 +1829,7 @@ class BugTaskSet:
 
         return orderby_arg
 
+
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
         return BugTask.select(orderBy='id')
-

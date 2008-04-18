@@ -16,7 +16,7 @@ Check that the Bazaar home page works.
     >>> print extract_text(footer)
     30 branches registered in
     6 projects
-    3 imported branches
+    0 imported branches
     2 branches associated with bug reports
     Launchpad uses Bazaar 0.92.0.
 
@@ -69,7 +69,12 @@ registered is the ordering, the registered date is also shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.fetch('tr'):
     ...     print extract_text(row)
-    Name      Status    Registered    Project     Last Commit
+    Name
+    Status
+    Registered
+    Project
+    Last Modified
+    Last Commit
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links.renderContents()
     '...1...&rarr;...6...of...28 results...'
@@ -93,7 +98,12 @@ recent commits first.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.fetch('tr'):
     ...     print extract_text(row)
-    Name      Status   Registered    Project    Last Commit
+    Name
+    Status
+    Registered
+    Project
+    Last Modified
+    Last Commit
 
     >>> browser.goBack()
 
@@ -118,4 +128,9 @@ imported branch listings.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.fetch('tr'):
     ...     print extract_text(row)
-    Name     Status  Registered   Project    Last Commit
+    Name
+    Status
+    Registered
+    Project
+    Last Modified
+    Last Commit

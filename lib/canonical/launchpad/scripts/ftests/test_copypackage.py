@@ -169,9 +169,6 @@ class TestCopyPackage(unittest.TestCase):
         binaries_pending_ids = excludeOlds(
             binaries_pending, self.binaries_pending_ids)
 
-        # We have to compare IDs because the copied list is actually a
-        # list of Secure*PublishingHistory records and the lookups are
-        # the records from the correspondent DB view *PackagePublishingHistory.
         copied_ids = [pub.id for pub in copied]
         pending_ids = sources_pending_ids + binaries_pending_ids
 
@@ -225,8 +222,8 @@ class TestCopyPackage(unittest.TestCase):
         time they were released.
         """
         copy_helper = self.getCopier(
-            sourcename='commercialpackage', from_partner=True, to_partner=True,
-            from_suite='breezy-autotest', to_suite='hoary')
+            sourcename='commercialpackage', from_partner=True,
+            to_partner=True, from_suite='breezy-autotest', to_suite='hoary')
         copied = copy_helper.mainTask()
 
         self.assertEqual(
@@ -245,8 +242,7 @@ class TestCopyPackage(unittest.TestCase):
         """Check the copy operation from PPA to PRIMARY Archive.
 
         That's the preliminary workflow for 'syncing' sources from PPA to
-        the ubuntu PRIMARY archive. Note that copying binaries it not allowed,
-        see testBinaryCopyFromPpaToPrimaryIsDenied.
+        the ubuntu PRIMARY archive.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
@@ -421,21 +417,25 @@ class TestCopyPackage(unittest.TestCase):
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
-    def testBinaryCopyFromPpaToPrimaryIsDenied(self):
-        """Check if copying binaries from PPA to PRIMARY archive is denied.
-
-        SoyuzScriptError is raised if the user tries to copy binaries from
-        a PPA to PRIMARY archive.
+    def testBinaryCopyFromPpaToPrimaryWorks(self):
+        """Check whether copying binaries from PPA to PRIMARY archive works.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
             from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
 
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cannot copy binaries from PPA to PRIMARY archive.",
-            copy_helper.mainTask)
+        self.assertEqual(
+            str(copy_helper.location),
+            'cprov: warty-RELEASE')
+        self.assertEqual(
+            str(copy_helper.destination),
+            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
 
+        # 'iceweasel' has only one binary built for it
+        # The source and the binary got copied.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
