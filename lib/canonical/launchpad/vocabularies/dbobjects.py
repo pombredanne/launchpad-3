@@ -307,7 +307,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        branch = super(BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
+        branch = super(
+            BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
         if branch is not None:
             if branch.product == self.product:
                 return branch
