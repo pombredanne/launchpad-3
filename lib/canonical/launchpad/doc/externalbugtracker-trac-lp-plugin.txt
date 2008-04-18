@@ -298,13 +298,10 @@ comment importing functionality.
 We also need an example Bug, BugTracker and BugWatch.
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, CreateBugParams, IBugMessageSet,
-    ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
+    ...     BugTrackerType, CreateBugParams, IPersonSet, IProductSet)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
