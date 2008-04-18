@@ -5,16 +5,20 @@
   tal:condition="not:exists:body"
   id="navigation">
 
-  <ul>
-    <li tal:repeat="link context/menu:navigation"
-        tal:content="structure link/@@+link">
-      Link
-    </li>
-  </ul>
-  <ul>
-    <li tal:repeat="link view/menu:navigation"
-        tal:content="structure link/@@+link">
-      Link
-    </li>
-  </ul>
+  <div id="context_navigation_menu">
+    [&nbsp;<tal:link repeat="link context/menu:navigation_list">
+       <tal:link-content replace="structure link/@@+link">
+        Link
+       </tal:link-content>
+     </tal:link>
+    &nbsp;]<br />
+  </div>
+  <div id="view_navigation_menu">
+    [&nbsp;<tal:link repeat="link view/menu:navigation_list">
+       <tal:link-content replace="structure link/@@+link">
+        Link
+       </tal:link-content>
+     </tal:link>
+    &nbsp;]<br />
+  </div>
 </div>
