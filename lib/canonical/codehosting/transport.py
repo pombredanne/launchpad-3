@@ -27,7 +27,6 @@ from bzrlib.transport import (
     )
 
 from twisted.web.xmlrpc import Fault
-from twisted.python import log as tplog
 
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)

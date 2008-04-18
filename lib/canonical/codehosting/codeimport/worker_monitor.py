@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Code to talk to the database about what the worker script is doing."""
 
@@ -11,7 +12,7 @@ import sys
 import tempfile
 
 from twisted.internet import defer, reactor, task
-from twisted.python import failure, log
+from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility

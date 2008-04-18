@@ -1,7 +1,14 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-""" """
+"""When passed a CodeImportJob id on the command line, process that job.
+
+The actual work of processing a job is done by the code-import-worker.py
+script which this process runs as a child process and updates the database on
+its progress and result.
+
+This script is usually run by the code-import-dispatcher cronscript.
+"""
 
 __metaclass__ = type
 
