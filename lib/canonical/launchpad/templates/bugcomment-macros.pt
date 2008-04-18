@@ -26,7 +26,8 @@
   <div class="boardCommentDetails" tal:condition="comment/bugwatch">
     <img tal:replace="structure comment/bugtask/target/image:icon" />
     In
-    <a tal:attributes="href comment/bugwatch/url"><tal:block replace="comment/bugwatch/title" /></a>,
+    <a tal:attributes="href comment/bugwatch/url"
+       content="comment/bugwatch/title" />,
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
