@@ -839,8 +839,10 @@ are as we expect.
     enabled: True
     escapedtext: First navigation menu item
     icon: None
+    icon_url: None
     linked: True
     name: first
+    render: <bound method MenuLink.render...
     site: None
     sort_key: 0
     summary: None
