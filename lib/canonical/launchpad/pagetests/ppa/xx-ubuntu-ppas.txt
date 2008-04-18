@@ -152,6 +152,7 @@ access.
     Change details (disabled)
     View build records
     Delete packages (disabled)
+    Copy packages (disabled)
     Edit dependencies (disabled)
 
 The PPA page contains a portlet listing all series and architectures
