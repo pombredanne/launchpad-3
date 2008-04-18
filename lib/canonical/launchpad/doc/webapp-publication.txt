@@ -38,7 +38,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     api @ api.launchpad.dev
-    rooturl: http://api.launchpad.dev/
+    rooturl: http://api.launchpad.dev/beta/
     althosts:
     ----
     blueprints @ blueprints.launchpad.dev

@@ -263,22 +263,6 @@ class ShipItRequestView(GeneralFormView):
         return config.shipit.prerelease_mode
 
     @property
-    def dvds_section(self):
-        """Get the HTML containing links to DVD sales for this flavour."""
-        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
-        # amazon.com. -- Guilherme Salgado, 2007-09-24
-        return u''
-        if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-ubuntu-dvds.pt')(self)
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-kubuntu-dvds.pt')(self)
-        else:
-            # We don't have DVDs for Edubuntu. :-(
-            return u''
-
-    @property
     def _keyword_arguments(self):
         """All fields should be given as keyword arguments."""
         return self.fieldNames
@@ -478,8 +462,8 @@ class ShipItRequestView(GeneralFormView):
                 kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
-                       'can take up to <strong>ten weeks<strong> to deliver. '
-                       'For quicker processing, choose a '
+                       'can take up to <strong>sixteen weeks<strong> to '
+                       'deliver. For quicker processing, choose a '
                        '<a href="%s">standard option</a> instead.'
                        % self.standard_order_page)
             else:
@@ -1188,13 +1172,12 @@ class ShipItSurveyView(LaunchpadFormView):
     """A survey that should be answered by people requesting server CDs."""
 
     schema = ShipItSurveySchema
-    label = 'About you'
     custom_widget('environment', LabeledMultiCheckBoxWidget)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)
 
-    @action(_("Continue to Request a Free CD"), name="continue")
+    @action(_("Continue to Complete CD Request"), name="continue")
     def continue_action(self, action, data):
         """Continue to the page where the user requests server CDs.
 
