@@ -15,7 +15,7 @@ resources of the same types, think something like the set of bugs,
 persons, teams, articles, etc.
 
 
-== Exporting entries ==
+=== Exporting entries ===
 
 Only entries are exported as data. You can mark that one of your content
 interface is exported on the web service as an entry, by using the
@@ -53,26 +53,34 @@ These declarations adds tagged value to the original interface elements.
 The tags are in the lazr.webservice namespace and are dictionaries of
 elements.
 
-    >>> def print_dict_tag(element, name):
-    ...     tag = element.queryTaggedValue(name)
+    >>> def print_export_tag(element):
+    ...     """Print the content of the 'lazr.webservice.exported' tag."""
+    ...     def format_value(value):
+    ...         if isinstance(value, dict):
+    ...             return "{%s}" % ",\n    ".join(
+    ...                 "'%s': %s" % (key, value)
+    ...                 for key, value  in sorted(value.items()))
+    ...         else:
+    ...             return repr(value)
+    ...     tag = element.queryTaggedValue('lazr.webservice.exported')
     ...     if tag is None:
-    ...         print "tag '%s' is not present" % name
+    ...         print "tag 'lazr.webservice.exported' is not present"
     ...     else:
     ...         print "\n".join(
-    ...             "%s: %r" %(key, value)
+    ...             "%s: %s" %(key, format_value(value))
     ...             for key, value in sorted(tag.items()))
-    >>> print_dict_tag(IBook, 'lazr.webservice.exported')
+    >>> print_export_tag(IBook)
     type: 'entry'
-    >>> print_dict_tag(IBook['title'], 'lazr.webservice.exported')
+    >>> print_export_tag(IBook['title'])
     as: 'title'
     type: 'field'
-    >>> print_dict_tag(IBook['author'], 'lazr.webservice.exported')
+    >>> print_export_tag(IBook['author'])
     as: 'author'
     type: 'field'
-    >>> print_dict_tag(IBook['base_price'], 'lazr.webservice.exported')
+    >>> print_export_tag(IBook['base_price'])
     as: 'price'
     type: 'field'
-    >>> print_dict_tag(IBook['inventory_number'], 'lazr.webservice.exported')
+    >>> print_export_tag(IBook['inventory_number'])
     tag 'lazr.webservice.exported' is not present
 
 Only IField can be exported as entry fields.
@@ -140,7 +148,7 @@ decorator.
 Like for entries, this adds tagged value in the 'lazr.webservice'
 namespace.
 
-    >>> print_dict_tag(IBookSet, 'lazr.webservice.exported')
+    >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
     type: 'collection'
 
@@ -166,7 +174,7 @@ As it is an error, to mark more than one methods:
     ...         """Another getAll()."""
     Traceback (most recent call last):
       ...
-    TypeError: only one method should be marked with 
+    TypeError: only one method should be marked with
     @collection_default_content.
 
 export_collection() can only be used on Interface.
@@ -205,6 +213,120 @@ And the interface must have been exported as a collection:
       ...
     TypeError: @collection_default_content can only be used from within an
     interface exported as a collection.
+
+
+=== Exporting methods ===
+
+Entries and collections can support operations on the webservice. The
+operations supported are defined by tagging methods in the content
+interface with special decorators.
+
+Three different decorators are used based on the kind of method
+exported.
+
+1. @export_read_operation
+
+This will mark the method as available as a GET operation on the
+exported resource.
+
+2. @export_write_operation
+
+This will mark the method as available as a POST operation on the
+exported resource.
+
+3. @export_factory_operation
+
+Like the @export_write_operation decorator, this will mark the method as
+available as a POST operation on the exported resource, with the
+addition that the result of the method is a new object and the HTTP
+status code will be set appropriately.
+
+All these decorators will interpret their keyword parameters as a
+specification of the parameters that the operation supports. The
+parameter names is the name of the parameter in the underlying method,
+and the value should be an IField describing the parameter type.
+
+    >>> from canonical.lazr.rest.declarations import (
+    ...     export_as, export_factory_operation, export_read_operation)
+    >>> class IBookSetOnSteroids(IBookSet):
+    ...     """IBookSet supporting some methods."""
+    ...     export_collection()
+    ...
+    ...     @collection_default_content
+    ...     @export_read_operation(
+    ...         text=TextLine(title=u'Text to search for.'))
+    ...     def searchBooks(text):
+    ...         """Return list of books containing 'text'."""
+    ...
+    ...     @export_as('create_book')
+    ...     @export_factory_operation(
+    ...         author=TextLine(title=u"The author's name."),
+    ...         base_price=Float(__name__='price', title=u"The price."),
+    ...         title=TextLine(title=u"The title."))
+    ...     def new(author, base_price, title):
+    ...         """Create a new book."""
+
+In the above example, the exported new() method demonstrates two
+features to support having different names on the web service than in
+the internal API.  It is possible to export a method under a different
+name by using the @export_as decorator which takes the name under which
+the method should be exported.
+
+Also when the name of the parameter as exported on the web
+service should be different than in the underlying method,
+you can set the __name__ of the Field to the name as it should be exported
+on the webservice. In the example, the 'base_price' parameter will be
+called 'price' when exported on the web service.
+
+When some required parameters of the method should not be provided by
+the webservice client, it is possible to use the @call_with decorator to
+specify the value to use. There is a special REQUEST_USER marker that
+can be used to specify that this parameter should contain the logged in
+user.
+
+    >>> from canonical.lazr.rest.declarations import (
+    ...     call_with, export_write_operation, REQUEST_USER)
+    >>> class IBookOnSteroids(IBook):
+    ...     """IBook with some methods."""
+    ...     export_entry()
+    ...
+    ...     @call_with(who=REQUEST_USER)
+    ...     @export_write_operation()
+    ...     def checkout(who):
+    ...         """Check this book out."""
+
+Like other declarations, these will add tagged value on the interface
+method.
+
+    >>> print_export_tag(IBookSetOnSteroids['new'])
+    as: 'create_book'
+    call_with: {}
+    params: {'author': <...TextLine...>,
+        'base_price': <...Float...>,
+        'title': <...TextLine...>}
+    type: 'factory'
+
+    >>> print_export_tag(IBookSetOnSteroids['searchBooks'])
+    as: 'searchBooks'
+    call_with: {}
+    params: {'text': <...TextLine...>}
+    type: 'read_operation'
+
+    >>> print_export_tag(IBookOnSteroids['checkout'])
+    as: 'checkout'
+    call_with: {'who': <object...>}
+    params: {}
+    type: 'write_operation'
+
+Parameterse for which the exported __name__ wasn't specified are
+exported under the same name:
+
+    >>> for name, param in sorted(IBookSetOnSteroids['new'].getTaggedValue(
+    ...     'lazr.webservice.exported')['params'].items()):
+    ...     print "%s: %s" % (name, param.__name__)
+    author: author
+    base_price: price
+    title: title
 
 
 == Generating the webservice ==

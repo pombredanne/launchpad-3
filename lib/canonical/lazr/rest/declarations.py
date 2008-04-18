@@ -9,10 +9,16 @@ __all__ = [
     'FIELD_TYPE',
     'LAZR_WEBSERVICE_EXPORTED',
     'LAZR_WEBSERVICE_NS',
+    'REQUEST_USER',
+    'call_with',
     'collection_default_content',
+    'export_as',
     'export_collection',
     'export_entry',
+    'export_factory_operation',
     'export_field',
+    'export_read_operation',
+    'export_write_operation',
     'generate_collection_adapter',
     'generate_entry_adapter',
     'generate_entry_interface',
@@ -39,6 +45,9 @@ LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
 COLLECTION_TYPE = 'collection'
 ENTRY_TYPE = 'entry'
 FIELD_TYPE = 'field'
+
+# Marker to specify that a parameter should contain the request user.
+REQUEST_USER = object()
 
 
 def _check_called_from_interface_def(name):
@@ -93,6 +102,7 @@ def export_entry():
             if tag['as'] is None:
                 tag['as'] = name
 
+        annotate_exported_methods(interface)
         return interface
     addClassAdvisor(mark_entry)
 
@@ -123,8 +133,8 @@ def export_collection():
     tags = _get_interface_tags()
     tags[LAZR_WEBSERVICE_EXPORTED] = dict(type=COLLECTION_TYPE)
 
-    def verify_collection(interface):
-        """Class advisor verifying the collection export requirements."""
+    def mark_collection(interface):
+        """Class advisor that tags the interface once it is created."""
         _check_interface('export_collection()', interface)
 
         tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
@@ -132,9 +142,11 @@ def export_collection():
             raise TypeError(
                 "export_collection() is missing a method tagged with "
                 "@collection_default_content.")
+
+        annotate_exported_methods(interface)
         return interface
 
-    addClassAdvisor(verify_collection)
+    addClassAdvisor(mark_collection)
 
 
 def collection_default_content(f):
@@ -160,6 +172,113 @@ def collection_default_content(f):
     tag['collection_default_content'] = f.__name__
 
     return f
+
+
+class _method_annotator:
+    """Base class for decorator annotating a method.
+
+    The actual method will be wrapped in IMethod specification, only once the
+    Interface is complete. So we save the annotations in a tag value of the
+    interface, and the class advisor invoked by export_entry() and
+    export_collection(), will do the final tagging.
+    """
+
+    def __init__(self, **params):
+        """All operation specify their parameters using schema fields."""
+        #_check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
+
+    def __call__(self, f):
+        """Annotates the function with the fixed arguments."""
+        tags = _get_interface_tags()
+        annotations = tags.setdefault(
+            'lazr.webservice.exported_methods_annotations', {})
+        method_annotations = annotations.setdefault(f.__name__, {})
+        self.annotate_method(f, method_annotations)
+        return f
+
+    def annotate_method(self, f, annotations):
+        """Add annotations for method f.
+
+        This method must be implemented by subclasses.
+
+        :param f: the method being annotated.
+        :param annotations: the dict containing the method annotations.
+
+        The annotations will copied to the lazr.webservice.exported tag
+        by a class advisor.
+        """
+        raise NotImplemented
+
+
+def annotate_exported_methods(interface):
+    """Sets the 'lazr.webservice.exported' tag on exported method."""
+
+    exported_methods = interface.queryTaggedValue(
+        'lazr.webservice.exported_methods_annotations')
+    if exported_methods is None:
+        return
+
+    for name, annotations in exported_methods.items():
+        method = interface.get(name)
+        # Method is exported under its own name by default.
+        if 'as' not in annotations:
+            annotations['as'] = method.__name__
+        annotations.setdefault('call_with', {})
+
+        # Set the __name__ attribute on all parameters.
+        for name, param in annotations['params'].items():
+            if not param.__name__:
+                param.__name__ = name
+        method.setTaggedValue(LAZR_WEBSERVICE_EXPORTED, annotations)
+
+
+class call_with(_method_annotator):
+    """Decorator specifying fixed parameters for exported methods."""
+
+    def annotate_method(self, f, annotations):
+        """See `_method_annotator`."""
+        annotations['call_with'] = self.params
+
+
+class export_as(_method_annotator):
+    """Decorator specifying the name to export the method as."""
+
+    def __init__(self, name):
+        # pylint: disable-msg=W0231
+        #_check_called_from_interface_def('export_as()')
+        self.name = name
+
+    def annotate_method(self, f, annotations):
+        """See `_method_annotator`."""
+        annotations['as'] = self.name
+
+
+class _export_operation(_method_annotator):
+    """Basic implementation for the webservice operation method decorators."""
+
+    # Should be overriden in subclasses with the string to use as 'type'.
+    type = None
+
+    def annotate_method(self, f, annotations):
+        """See `_method_annotator`."""
+        annotations['type'] = self.type
+        annotations['params'] = self.params
+
+
+class export_factory_operation(_export_operation):
+    """Decorator marking a method as being a factory on the webservice."""
+    type = 'factory'
+
+
+class export_read_operation(_export_operation):
+    """Decorator marking a method for export as a read operation."""
+    type = 'read_operation'
+
+
+class export_write_operation(_export_operation):
+    """Decorator marking a method for export as a write operation."""
+    type = "write_operation"
 
 
 def _check_tagged_interface(interface, type):
