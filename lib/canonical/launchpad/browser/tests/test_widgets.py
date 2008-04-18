@@ -28,6 +28,7 @@ from canonical.launchpad.webapp.uri import URI
 
 class DummyLaunchBag:
     """Dummy LaunchBag that we can easily control in our tests."""
+
     implements(ILaunchBag)
 
     def __init__(self, user=None, product=None):
@@ -36,6 +37,7 @@ class DummyLaunchBag:
 
 
 class TestBranchPopupWidget(unittest.TestCase):
+    """Tests for the branch popup widget."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -218,9 +220,6 @@ class TestBranchPopupWidget(unittest.TestCase):
     # XXX: JonathanLange 2008-04-17: Not sure how to test what happens when
     # this widget has a good value but other fields have bad values. The
     # correct behavior is to *not* create the branch.
-
-# TODO:
-# Ensure that the branch is mentioned in the notice on the next page.
 
 
 def test_suite():
