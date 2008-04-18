@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd"
+  xmlns="http://research.sun.com/wadl/2006/10"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+>
+
+  <representation mediaType="application/json"
+                  tal:attributes="id
+                                  string:${context/wadl:singular_type}-full">
+    <param tal:repeat="field context/wadl:all_fields" required="True"
+           tal:attributes="name field/wadl:name;
+                           path field/wadl:path">
+      <link tal:condition="field/wadl:is_link" />
+      <option tal:repeat="option field/wadl:options"
+              tal:attributes="value option/title" />
+    </param>
+  </representation>
+
+  <representation mediaType="application/json"
+                  tal:attributes="id
+                                  string:${context/wadl:singular_type}-diff">
+    <param tal:repeat="field context/wadl:all_writable_fields"
+           required="False"
+           tal:attributes="name field/wadl:name;
+                           path field/wadl:path">
+      <link tal:condition="field/wadl:is_link" />
+      <option tal:repeat="option field/wadl:options"
+              tal:attributes="value option/title" />
+    </param>
+  </representation>
+
+  <resource_type tal:attributes="id context/wadl:singular_type">
+    <method name="GET"
+            tal:attributes="id string:${context/wadl:singular_type}-get">
+      <response>
+        <representation
+           tal:attributes="href context/wadl:full_representation_link" />
+        <representation mediaType="application/vd.sun.wadl+xml"
+           tal:attributes="id string:${context/wadl:singular_type}-wadl" />
+      </response>
+    </method>
+
+    <method name="PUT"
+            tal:attributes="id string:${context/wadl:singular_type}-put">
+      <request>
+        <representation
+           tal:attributes="href context/wadl:full_representation_link" />
+      </request>
+    </method>
+
+    <method name="PATCH"
+            tal:attributes="id string:${context/wadl:singular_type}-patch">
+      <request>
+        <representation
+           tal:attributes="href context/wadl:patch_representation_link" />
+      </request>
+    </method>
+
+    <method tal:repeat="operation context/wadl:named_operations"
+      tal:attributes="
+        id string:${context/wadl:singular_type}-${operation/name};
+        name operation/op/wadl_operation:http_method">
+      <param name="ws_op" required="True"
+             tal:attributes="fixed operation/name" />
+      <param tal:repeat="field operation/op/params"
+             tal:attributes="name field/__name__;
+                             required field/required">
+        <link tal:condition="field/wadl:is_link" />
+        <option tal:repeat="option field/wadl:options"
+                tal:attributes="value option/title" />
+      </param>
+    </method>
+  </resource_type>
+
+  <resources tal:attributes="href context/wadl:url">
+    <resource path=""
+              tal:attributes="type context/wadl:type_link" />
+  </resources>
+</application>
+
