@@ -119,6 +119,30 @@ attributes of builder instance as: builderok and trust.
     u'dummy'
     u'frog'
 
+'getBuildQueueSizeForProcessor' returns the number of pending builds
+for a given Processor. The callsites can also control which build-farm
+they are interested via the 'virtualized' argument.
+
+    >>> from canonical.launchpad.database.processor import Processor
+    >>> p386 = Processor.selectOneBy(name='386')
+    >>> amd64 = Processor.selectOneBy(name='amd64')
+
+'virtualized' defaults to False, so if not passed, it will return the
+size of the non-virtualized (trusted) build queue.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386)
+    1
+
+The 'amd64' build queue is empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(amd64)
+    0
+
+The virtualized build queue for 386 is also empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
+    0
+
 
 == Resuming buildd slaves ==
 

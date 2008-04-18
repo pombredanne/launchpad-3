@@ -143,6 +143,42 @@ class ICodeImport(Interface):
         description=_(
             "The current job for this import, either pending or running."))
 
+    def approve(data, user):
+        """Approve the import.
+
+        Additional attributes can also be updated.
+        A code import job will be created for the import.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
+    def suspend(data, user):
+        """Suspend the import.
+
+        Additional attributes can also be updated.
+        If there was a pending job, it will be removed.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
+    def invalidate(data, user):
+        """Invalidate the import.
+
+        Additional attributes can also be updated.
+        If there was a pending job, it will be removed.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 

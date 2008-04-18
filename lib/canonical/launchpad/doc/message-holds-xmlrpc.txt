@@ -95,14 +95,36 @@ the list administrator rejects it.
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
 
-Now there are two messages waiting for Mailman to handle.
+Cris sends spam to the mailing list, which is simply discarded.
+
+    >>> cris = new_person('Cris')
+    >>> message_cris = message_from_string("""\
+    ... From: cris.person@example.com
+    ... To: team-one@lists.launchpad.dev
+    ... Subject: Snakes and Arrows
+    ... Message-ID: <third-post>
+    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
+    ...
+    ... Would you like to buy some snakes or arrows?
+    ... """)
+
+    >>> mailinglist_api.holdMessage('team-one', message_cris.as_string())
+    True
+    >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
+    >>> held_message_cris.discard(team_one.teamowner)
+    >>> syncUpdate(held_message_cris)
+    >>> held_message_cris.status
+    <DBItem PostedMessageStatus.DISCARD_PENDING, (60) Discard pending>
+
+Now there are three messages waiting for Mailman to handle.
 
     >>> waiting = mailinglist_api.getMessageDispositions()
     >>> for message_id in sorted(waiting):
     ...     list_name, action = waiting[message_id]
     ...     print message_id, list_name, action
-    <first-post>  team-one accept
+    <first-post> team-one accept
     <second-post> team-one decline
+    <third-post> team-one discard
 
 Now that Mailman's received the dispositions, the messages have been
 transitioned to their permanent states.
@@ -113,3 +135,6 @@ transitioned to their permanent states.
     >>> held_message_bart = message_set.getMessageByMessageID('<second-post>')
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTED, (50) Rejected>
+    >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
+    >>> held_message_cris.status
+    <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>

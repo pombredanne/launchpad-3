@@ -151,14 +151,19 @@ Details portlet.
     True
     >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name16')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    >>> admin_browser.open('http://launchpad.dev/~name16')
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'contact-details'))
     Contact details
     ...
     OpenID login:
     (What's this?)
     http://openid.launchpad.dev/+id/name16_oid
+
+Foo Bar can learn about OpenID from the 'What's this?' link.
+
+    >>> admin_browser.getLink(u"What's\xa0this?").url
+    'https://help.launchpad.net/OpenID'
 
 Other users who visit the page do not see the URL.
 

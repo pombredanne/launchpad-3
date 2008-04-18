@@ -213,6 +213,11 @@ def translationMessageDestroyTearDown(test):
     """Tear down the TranslationMessage.destroySelf() test."""
     tearDown(test)
 
+def manageChrootSetup(test):
+    """Set up the manage-chroot.txt test."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser("fiera")
+
 
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
@@ -408,6 +413,11 @@ special = {
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
+            '../doc/distroarchseriesbinarypackage.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'script-monitoring.txt': LayeredDocFileSuite(
             '../doc/script-monitoring.txt',
             setUp=setUp, tearDown=tearDown,
@@ -600,6 +610,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-trac-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'mailinglist-subscriptions-xmlrpc.txt': LayeredDocFileSuite(
             '../doc/mailinglist-subscriptions-xmlrpc.txt',
             setUp=mailingListXMLRPCInternalSetUp,
@@ -672,6 +689,16 @@ special = {
             setUp=translationMessageDestroySetUp,
             tearDown=translationMessageDestroyTearDown,
             layer=LaunchpadZopelessLayer
+            ),
+    'manage-chroot.txt': LayeredDocFileSuite(
+            '../doc/manage-chroot.txt',
+            setUp=manageChrootSetup,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
+            '../doc/build-estimated-dispatch-time.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer,
             ),
     }
 

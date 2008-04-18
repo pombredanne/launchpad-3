@@ -329,6 +329,26 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Pocket, ordered by architecturetag.
         """
 
+    def getBuilds():
+        """Return `IBuild` objects in this SourcePackageRelease` context.
+
+        The builds are ordered by `DistroArchSeries.architecturetag`.
+        """
+
+    def createMissingBuilds(ignore_pas=False, logger=None):
+        """Create missing Build records for a published source.
+
+        P-a-s should be only initialised and considered when accepting
+        sources to the PRIMARY archive (in drescher). It explicitly ignores
+        P-a-s for sources targeted to PPAs.
+
+        :param ignore_pas: whether or not to initialise and respect
+             Package-architecture-specific (P-a-s) for creating builds;
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        :return: a list of `Builds` created for this source publication.
+        """
+
     def getSourceAndBinaryLibraryFiles():
         """Return LibraryFileAlias records for all source and binaries.
 

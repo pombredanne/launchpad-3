@@ -5,12 +5,9 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
-    get_email_template)
-from canonical.launchpad.interfaces import IPersonSet
+    contactEmailAddresses, get_email_template)
 from canonical.launchpad.mailnotification import (
     generate_bug_add_email, MailWrapper, construct_bug_notification,
     get_bugmail_from_address)
@@ -32,7 +29,12 @@ def construct_email_notifications(bug_notifications):
     comment = None
     references = []
     text_notifications = []
-    recipients = bug.getBugNotificationRecipients()
+
+    recipients = {}
+    for notification in bug_notifications:
+        for recipient in notification.recipients:
+            for address in contactEmailAddresses(recipient.person):
+                recipients[address] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
@@ -82,8 +84,9 @@ def construct_email_notifications(bug_notifications):
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
     from_address = get_bugmail_from_address(person, bug)
-    for address in recipients.getEmails():
-        reason, rationale_header = recipients.getReason(address)
+    for address, recipient in recipients.items():
+        reason = recipient.reason_body
+        rationale_header = recipient.reason_header
 
         body_data = {
             'content': mail_wrapper.format(content),
@@ -94,7 +97,7 @@ def construct_email_notifications(bug_notifications):
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
         # footer.
-        person = getUtility(IPersonSet).getByEmail(address)
+        person = recipient.person
         if person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
@@ -110,8 +113,9 @@ def construct_email_notifications(bug_notifications):
             email_template = 'bug-notification.txt'
 
         body = get_email_template(email_template) % body_data
-        msg = construct_bug_notification(bug, from_address, address, body,
-                subject, email_date, rationale_header, references, msgid)
+        msg = construct_bug_notification(
+            bug, from_address, address, body,
+            subject, email_date, rationale_header, references, msgid)
         messages.append(msg)
 
     return bug_notifications, messages

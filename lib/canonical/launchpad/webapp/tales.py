@@ -63,6 +63,14 @@ from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
 
+def escape(text, quote=True):
+    """Escape text for insertion into HTML.
+
+    Wraps `cgi.escape` to make the default to escape double-quotes.
+    """
+    return cgi.escape(text, quote)
+
+
 class TraversalError(NotFoundError):
     """Remove this when we upgrade to a more recent Zope x3."""
     # XXX: Steve Alexander 2004-12-14:
@@ -817,22 +825,26 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
 class CustomizableFormatter(ObjectFormatterExtendedAPI):
     """A ObjectFormatterExtendedAPI that is easy to customize.
 
-    This provides fmt:url and fmt:link support for the object it adapts.
+    This provides fmt:url and fmt:link support for the object it
+    adapts.
 
-    For most object types, only the _link_summary_template class variable and
-    _link_summary_values method need to be overridden.  This assumes that:
-    1. canonical_url produces appropriate urls for this type
-    2. the launchpad.View permission alone is required to view this object's
-       url
-    3. if there is an icon for this object type, image:icon is implemented
-       and appropriate.
+    For most object types, only the _link_summary_template class
+    variable and _link_summary_values method need to be overridden.
+    This assumes that:
 
-    For greater control over the summary, overrride _make_link_summary.
+      1. canonical_url produces appropriate urls for this type,
+      2. the launchpad.View permission alone is required to view this
+         object's url, and,
+      3. if there is an icon for this object type, image:icon is
+         implemented and appropriate.
 
-    If image:icon does not provide a suitable icon, override _get_icon.
+    For greater control over the summary, overrride
+    _make_link_summary.
 
-    If a different permission is required, override _link_permission.  If the
-    permission logic is more complicated than this, override _should_link.
+    If image:icon does not provide a suitable icon, override
+    _get_icon.
+
+    If a different permission is required, override _link_permission.
     """
 
     _link_permission = 'launchpad.View'
@@ -1085,6 +1097,119 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
         """Provide the icon of the linked spec"""
         formatter = SpecificationFormatterAPI(self._context.specification)
         return formatter._get_icon()
+
+
+class BugTrackerFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IBugTracker` objects to a formatted string."""
+
+    implements(ITraversable)
+
+    def external_link(self):
+        """Return an HTML link to the external bugtracker.
+
+        If the user is not logged-in, and the URL of the bugtracker
+        contains an email address, this returns the obfuscated URL as
+        text (i.e. no <a/> link).
+        """
+        url = self._context.baseurl
+        if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
+            return escape(u'mailto:<email address hidden>')
+        else:
+            href = escape(url)
+            return u'<a class="link-external" href="%s">%s</a>' % (href, href)
+
+    def aliases(self):
+        """Generate alias URLs, obfuscating where necessary.
+
+        If the user is not logged-in, email addresses should be
+        hidden.
+        """
+        anonymous = getUtility(ILaunchBag).user is None
+        for alias in self._context.aliases:
+            if anonymous and alias.startswith('mailto:'):
+                yield escape(u'mailto:<email address hidden>')
+            else:
+                yield alias
+
+    def traverse(self, name, furtherPath):
+        """See `ITraversable`.
+
+        Names supported:
+          url: As for `ObjectFormatterAPI`.
+          external-link: See `external_link`.
+          aliases: See `aliases`.
+        """
+        if name == 'url':
+            return self.url()
+        elif name == 'external-link':
+            return self.external_link()
+        elif name == 'aliases':
+            return self.aliases()
+        else:
+            raise TraversalError(name)
+
+
+class BugWatchFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IBugWatch` objects to a formatted string."""
+
+    implements(ITraversable)
+
+    def _make_external_link(self, summary=None):
+        """Return an external HTML link to the target of the bug watch.
+
+        If a summary is not specified or empty, an em-dash is used as
+        the content of the link.
+
+        If the user is not logged in and the URL of the bug watch is
+        an email address, only the summary is returned (i.e. no link).
+        """
+        if summary is None or len(summary) == 0:
+            summary = u'&mdash;'
+        else:
+            summary = escape(summary)
+        url = self._context.url
+        if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
+            return summary
+        else:
+            return u'<a class="link-external" href="%s">%s</a>' % (
+                escape(url), summary)
+
+    def external_link(self):
+        """Return an HTML link with a detailed link text.
+
+        The link text is formed from the bug tracker name and the
+        remote bug number.
+        """
+        summary = self._context.bugtracker.name
+        remotebug = self._context.remotebug
+        if remotebug is not None and len(remotebug) > 0:
+            summary = u'%s #%s' % (summary, remotebug)
+        return self._make_external_link(summary)
+
+    def external_link_short(self):
+        """Return an HTML link with a short link text.
+
+        The link text is formed from the bug tracker name and the
+        remote bug number.
+        """
+        return self._make_external_link(self._context.remotebug)
+
+    def traverse(self, name, furtherPath):
+        """See `ITraversable`.
+
+        Names supported:
+          url: As for `ObjectFormatterAPI`.
+          external-link: See `external_link`.
+          external-link-short: See `external_link_short`.
+        """
+        if name == 'url':
+            return self.url()
+        elif name == 'external-link':
+            return self.external_link()
+        elif name == 'external-link-short':
+            return self.external_link_short()
+        else:
+            raise TraversalError(name)
 
 
 class NumberFormatterAPI:
@@ -2212,7 +2337,8 @@ class PageMacroDispatcher:
             pageheading=True,
             portlets=False,
             structuralheaderobject=False,
-            pagetypewasset=True
+            pagetypewasset=True,
+            actionsmenu=True
             ):
             self.elements = vars()
 
@@ -2235,6 +2361,14 @@ class PageMacroDispatcher:
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True),
+        'defaultnomenu':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
+                actionsmenu=False),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(

@@ -213,6 +213,20 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+oauth-authorize"
+      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      template="../templates/oauth-authorize.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+token-authorized"
+      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
+      template="../templates/token-authorized.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+access-token"
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
@@ -331,8 +345,22 @@
       template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+code-import-list"
+      class="canonical.launchpad.browser.ProductSeriesSourceListView"
+      template="../templates/sources-list.pt"
+      permission="zope.Public"
+      />
 
 </facet>
+
+<adapter
+  provides="canonical.lazr.interfaces.IObjectPrivacy"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  permission="zope.Public"
+  />
 
 <!--
 Operational statistics. Note that these are publicly available,
@@ -372,6 +400,14 @@ these URLs in Apache.
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
   class="canonical.launchpad.browser.launchpad.IcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-ubuntu"
+  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
   attribute="__call__"
   permission="zope.Public"
   />

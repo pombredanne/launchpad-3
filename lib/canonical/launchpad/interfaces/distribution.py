@@ -255,13 +255,18 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def removeOldCacheItems(archive, log):
         """Delete any cache records for removed packages."""
 
-    def updateCompleteSourcePackageCache(archive, log, ztm):
+    def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
         Consider every non-REMOVED sourcepackage.
-        'log' is required an only prints debug level information.
-        'ztm' is required for partial commits, every chunk of 50 updates
-        are committed.
+
+        :param archive: target `IArchive`;
+        :param log: logger object for printing debug level information;
+        :param ztm:  transaction used for partial commits, every chunk of
+            'commit_chunk' updates is committed;
+        :param commit_chunk: number of updates before commit, defaults to 500.
+
+        :return the number packages updated done
         """
 
     def updateSourcePackageCache(sourcepackagename, archive, log):

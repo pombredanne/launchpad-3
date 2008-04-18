@@ -126,7 +126,7 @@ class IBuilder(IHasOwner):
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-    currentjob = Attribute("Build Job being processed")
+    currentjob = Attribute("BuildQueue instance for job being processed.")
     status = Attribute("Generated status information")
     pocket_dependencies = Attribute("""
         A dictionary of pocket to a tuple of pocket dependencies.
@@ -292,9 +292,14 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueDepthByArch():
-        """Return a list of architectures and the number of Builds that are
-        in the NEEDSBUILD state for each of them.
+    def getBuildQueueSizeForProcessor(processor, virtualized=False):
+        """Return the number of pending builds for a given processor.
+
+        :param processor: IProcessor;
+        :param virtualized: boolean, controls which queue to check,
+            'virtualized' means PPA.
+
+        :return the size of the queue, integer.
         """
 
     def pollBuilders(logger, txn):
@@ -312,3 +317,6 @@ class IBuilderSet(Interface):
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
         """
+
+    def getBuildersForQueue(processor, virtualized):
+        """Return all builders for given processor/virtualization setting."""

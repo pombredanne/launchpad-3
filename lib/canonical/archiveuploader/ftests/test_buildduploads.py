@@ -75,8 +75,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Publish build part of the given queue item."""
         queue_item.setAccepted()
         pubrec = queue_item.builds[0].publish(self.log)[0]
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
+        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
+        pubrec.secure_record.datepublished = UTC_NOW
         queue_item.setDone()
 
     def _setupUploadProcessorForBuild(self, build_candidate):
