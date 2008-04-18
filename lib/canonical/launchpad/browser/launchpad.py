@@ -182,8 +182,6 @@ class NavigationMenuTabs(LaunchpadView):
     Nothing at all is rendered if there are navigation menu items.
     """
 
-    usedfor = dict  # Really a navigation menu object.
-
     def initialize(self):
         menu = INavigationMenu(self.context)
         if menu is None:

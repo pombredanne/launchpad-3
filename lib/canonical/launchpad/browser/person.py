@@ -975,11 +975,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'add_member',
-             'received_invitations', 'editemail', 'configure_mailing_list',
-             'editlanguages', 'add_poll', 'joinleave', 'add_my_teams',
-             'mentorships', 'reassign', 'common_packages', 'activate_ppa',
-             'show_ppa']
+    links = ['edit', 'branding', 'common_edithomepage', 'members',
+             'add_member', 'memberships', 'received_invitations', 'mugshots',
+             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
+             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
+             'reassign', 'common_packages', 'related_projects',
+             'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1001,6 +1002,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.View')
+    def members(self):
+        target = '+members'
+        text = 'Show all members'
+        return Link(target, text, icon='people')
+
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
         target = '+invitations'
@@ -1018,6 +1025,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Add one of my teams'
         return Link(target, text, icon='add')
 
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
@@ -1025,6 +1037,17 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
+
+    @enabled_with_permission('launchpad.View')
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
+        return Link(target, text, icon='people')
+
+    def polls(self):
+        target = '+polls'
+        text = 'Show polls'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_poll(self):
