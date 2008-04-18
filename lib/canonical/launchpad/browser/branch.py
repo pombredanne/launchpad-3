@@ -72,7 +72,6 @@ from canonical.launchpad.webapp.uri import URI
 
 from canonical.lazr import decorates
 
-from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
