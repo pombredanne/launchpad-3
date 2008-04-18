@@ -188,15 +188,27 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.assertEqual(expected_branch, branch)
 
     def test_toFieldValueNonURL(self):
+        """When the input isn't a URL, fall back to the original error."""
         empty_search = 'doesntexist'
         self.assertRaises(
             ConversionError, self.popup._toFieldValue, empty_search)
 
     def test_toFieldValueNoProduct(self):
+        """When there's no product, fall back to the original error."""
         self.installLaunchBag(product=None, user=self.factory.makePerson())
         self.assertRaises(
             ConversionError, self.popup._toFieldValue,
             self.factory.getUniqueURL())
+
+    def test_toFieldBadURL(self):
+        """When the input is a bad URL, fall back to the original error.
+
+        There are many valid URLs that are inappropriate for a mirrored
+        branch. We don't want to register a mirrored branch when someone
+        enters such a URL.
+        """
+        bad_url = 'svn://svn.example.com/repo/trunk'
+        self.assertRaises(ConversionError, self.popup._toFieldValue, bad_url)
 
     def test_branchInRestrictedProduct(self):
         # There are two reasons for a URL not being in the vocabulary. One

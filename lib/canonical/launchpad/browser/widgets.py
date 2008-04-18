@@ -29,7 +29,8 @@ from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.interfaces import BranchType, IBranch, IBranchSet
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import BranchFormatterAPI
@@ -179,9 +180,11 @@ class BranchPopupWidget(SinglePopupWidget):
         :param url: The URL to mirror.
         :return: An `IBranch`.
         """
-        url = str(URI(url).ensureNoSlash())
+        url = unicode(URI(url).ensureNoSlash())
         if getUtility(IBranchSet).getByUrl(url) is not None:
             raise AlreadyRegisteredError('Already a branch for %r' % (url,))
+        # Make sure the URL is valid.
+        IBranch['url'].validate(url)
         product = self.getProduct()
         if product is None:
             raise NoProductError("Could not find product in LaunchBag.")
@@ -205,7 +208,8 @@ class BranchPopupWidget(SinglePopupWidget):
             # Try to register a branch, assuming form_input is a URL.
             try:
                 return self.makeBranchFromURL(form_input)
-            except (InvalidURIError, NoProductError, AlreadyRegisteredError):
+            except (InvalidURIError, NoProductError, AlreadyRegisteredError,
+                    LaunchpadValidationError):
                 # If it's not a URL or we can't figure out a product, then we
                 # re-raise the initial error.
                 raise exc_class, exc_obj, exc_tb
