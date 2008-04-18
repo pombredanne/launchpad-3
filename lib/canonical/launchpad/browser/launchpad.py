@@ -186,7 +186,7 @@ class LinkView(LaunchpadView):
         if self.context.enabled or config.devmode:
             # XXX: TomBerger 2008-04-16 bug=218706:
             # We strip the result of the template rendering
-            # since ZPT seems to always insert a a line break
+            # since ZPT seems to always insert a line break
             # at the end of an embedded template.
             return self.template().strip()
         else:
