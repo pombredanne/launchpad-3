@@ -164,11 +164,14 @@ class MessageSet:
         bits = email.Header.decode_header(header)
         # Re-encode the header parts using utf-8, replacing undecodable
         # characters with question marks.
-        bits = [
-            (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8')
-            for bytes, charset in bits]
+        re_encoded_bits = []
+        for bytes, charset in bits:
+            if charset is None:
+                charset = 'us-ascii'
+            re_encoded_bits.append(
+                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
 
-        return unicode(email.Header.make_header(bits))
+        return unicode(email.Header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
