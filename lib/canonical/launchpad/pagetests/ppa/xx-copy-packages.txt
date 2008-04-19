@@ -7,9 +7,12 @@ A package is copied by accessing a special PPA page that allows a user
 to select:
 
  * One or more source packages from the current PPA;
+
  * A destination PPA amongst the ones he has access to, including the
    current one;
+
  * A destination series amongst all ubuntu series;
+
  * Whether or not to copy the binaries published by the selected
    sources in the current PPA.
 
@@ -18,6 +21,7 @@ packages copied will be visible in the destination PPA page as
 PENDING. The files will be published in the destination PPA archive
 disk during the next publishing cycle, see `publishing.txt` for more
 information.
+
 
 == Who can copy packages ? ==
 
@@ -105,17 +109,27 @@ James is intrigued and wants to see more information about this
 source, thus he expands the hidden details-section area below the
 'pmount' row to read its changelog.
 
+In order to be able to get the details section for a specific package
+in a PPA page, we have to retrieve the source publication ID. This
+helper function will do this job in this test.
+
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
 
-    >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> [pmount_pub] = cprov.archive.getPublishedSources(name='pmount')
-    >>> pmount_pub_id = pmount_pub.id
-    >>> logout()
+    >>> def getPPAPubIDsFor(owner_name, source_name=None, status=None):
+    ...     login('foo.bar@canonical.com')
+    ...     owner = getUtility(IPersonSet).getByName(owner_name)
+    ...     pubs = owner.archive.getPublishedSources(
+    ...          name=source_name, status=status)
+    ...     pub_ids = [str(pub.id) for pub in pubs]
+    ...     logout()
+    ...     return pub_ids
 
-    >>> pmount_details_id = 'pub%d' % pmount_pub_id
+The page section id is built using "pub$ID" notation.
+
+    >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
+    >>> pmount_details_id = "pub%s" % pmount_pub_id
     >>> pmount_details = find_tag_by_id(
     ...     jblack_browser.contents, pmount_details_id)
     >>> print extract_text(pmount_details)
@@ -137,7 +151,7 @@ source, thus he expands the hidden details-section area below the
 James is absolutely sure that's the package he wants, he selects it.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+    ...    name='field.selected_sources').value = [pmount_pub_id]
 
 Currently, James only has access to his just created PPA, which is the
 default form value for 'Destination PPA'.
@@ -196,15 +210,11 @@ also marked as pending build for i386.
 
 Expanding the details area, James can see that the source copied is
 indeed the same by checking the changelog, also that the binaries
-were not copied and instead a build was already created in his PPA context.
+were not copied and instead a build was already created in his PPA
+context.
 
-    >>> login('foo.bar@canonical.com')
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
-    >>> [pmount_pub] = jblack.archive.getPublishedSources(name='pmount')
-    >>> pmount_pub_id = pmount_pub.id
-    >>> logout()
-
-    >>> pmount_details_id = 'pub%d' % pmount_pub_id
+    >>> pmount_pub_id = getPPAPubIDsFor('jblack', 'pmount')[0]
+    >>> pmount_details_id = "pub%s" % pmount_pub_id
     >>> pmount_details = find_tag_by_id(
     ...     jblack_browser.contents, pmount_details_id)
     >>> print extract_text(pmount_details)
@@ -250,7 +260,7 @@ and shine ubuntu series.
 
 He is aware that the PPA system would not allow him to download pmount
 and simply re-upload it to another series, because the it's files are
-already in pool and can't be overridden.
+already in the pool and can't be overridden.
 
 James, thinks for a minute and realises that he could copy the
 'pmount' source already in his PPA from hoary to grumpy.
@@ -263,6 +273,7 @@ for packages. This is certainly not part of the doctest story.
     >>> from canonical.launchpad.database.processor import ProcessorFamily
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> grumpy = ubuntu.getSeries('grumpy')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> grumpy_i386 = grumpy.newArch(
     ...     'i386', ProcessorFamily.get(1), False, cprov,
     ...     ppa_supported=True)
@@ -288,7 +299,7 @@ James goes straight to the copy interface of his PPA.
 Then selects pmount in hoary.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+    ...    name='field.selected_sources').value = [pmount_pub_id]
 
 Leave the Destination PPA alone, because it defaults to 'This PPA'.
 
@@ -322,7 +333,7 @@ Without thinking much James erroneously selects 'hoary' series and
 pushes the copy button. The same error is raised.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+    ...    name='field.selected_sources').value = [pmount_pub_id]
 
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['hoary']
@@ -339,7 +350,7 @@ Darn, now James being more careful and re-selects the 'pmount' source
 and 'grumpy' as Destination Series.
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+    ...    name='field.selected_sources').value = [pmount_pub_id]
 
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['grumpy']
@@ -389,7 +400,7 @@ James uses the 'delete-packages' interface in his PPA to delete the
 
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+    ...    name='field.selected_sources').value = [pmount_pub_id]
     >>> jblack_browser.getControl(
     ...    "Deletion comment").value = "Deleted packages can be copied."
     >>> jblack_browser.getControl("Request Deletion").click()
@@ -418,7 +429,7 @@ still able to copy the deleted source to the warty series.
     pmount - 0.1-1              Deleted    Hoary            Editors  i386
 
     >>> jblack_browser.getControl(
-    ...    name='field.selected_sources').value = [str(pmount_pub_id)]
+    ...    name='field.selected_sources').value = [pmount_pub_id]
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['warty']
     >>> jblack_browser.getControl("Copy Packages").click()
@@ -473,16 +484,11 @@ have ever seen. He goes to Celso's PPA copy interface.
 James would like to re-distribute Celso's 'pmount' and 'iceweasel'
 packages, thus he selects both.
 
-    >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> [pmount_pub] = cprov.archive.getPublishedSources(name='pmount')
-    >>> pmount_pub_id = pmount_pub.id
-    >>> [iceweasel_pub] = cprov.archive.getPublishedSources(name='iceweasel')
-    >>> iceweasel_pub_id = iceweasel_pub.id
-    >>> logout()
+    >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
+    >>> iceweasel_pub_id = getPPAPubIDsFor('cprov', 'iceweasel')[0]
 
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
-    ...     [str(iceweasel_pub_id), str(pmount_pub_id)])
+    ...     [iceweasel_pub_id, pmount_pub_id])
 
 Now that James have access to more than one PPA, the copy-package form
 allows him to select one of them.
@@ -539,17 +545,8 @@ sources and binaries are copied to their PPA.
 James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
 
-    >>> login('foo.bar@canonical.com')
-    >>> jblack_friends = getUtility(IPersonSet).getByName('jblack-friends')
-    >>> [pmount_pub] = jblack_friends.archive.getPublishedSources(
-    ...     name='pmount')
-    >>> pmount_pub_id = pmount_pub.id
-    >>> [iceweasel_pub] = jblack_friends.archive.getPublishedSources(
-    ...     name='iceweasel')
-    >>> iceweasel_pub_id = iceweasel_pub.id
-    >>> logout()
-
-    >>> pmount_details_id = 'pub%d' % pmount_pub_id
+    >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', 'pmount')[0]
+    >>> pmount_details_id = "pub%s" % pmount_pub_id
     >>> pmount_details = find_tag_by_id(
     ...     jblack_browser.contents, pmount_details_id)
     >>> print extract_text(pmount_details)
@@ -559,7 +556,8 @@ sources to ensure the binaries are really there.
       pmount
     ...
 
-    >>> iceweasel_details_id = 'pub%d' % iceweasel_pub_id
+    >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', 'iceweasel')[0]
+    >>> iceweasel_details_id = "pub%s" % iceweasel_pub_id
     >>> iceweasel_details = find_tag_by_id(
     ...     jblack_browser.contents, iceweasel_details_id)
     >>> print extract_text(iceweasel_details)
@@ -579,7 +577,7 @@ plural error message.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [
-    ...    str(pmount_pub_id), str(iceweasel_pub_id)]
+    ...    pmount_pub_id, iceweasel_pub_id]
 
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['hoary']
@@ -616,7 +614,7 @@ tests.
     >>> print jblack_browser.title
     PPA for James Blackwell Sandbox
 
-James now goes to to his PPA and copy all sources to his Sandbox PPA
+James now goes to his PPA and copy all sources to his Sandbox PPA
 for a mass rebuild, including the deleted source. James is going
 insane because PPA-copy-ui is so cool.
 
@@ -629,11 +627,7 @@ insane because PPA-copy-ui is so cool.
     pmount - 0.1-1              Published  Grumpy           Editors  i386
     pmount - 0.1-1              Deleted    Hoary            Editors  i386
 
-    >>> login('foo.bar@canonical.com')
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
-    >>> jblack_sources = jblack.archive.getPublishedSources()
-    >>> jblack_pub_ids = [str(pub.id) for pub in jblack_sources]
-    >>> logout()
+    >>> jblack_pub_ids = getPPAPubIDsFor('jblack')
 
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
     ...     jblack_pub_ids)
@@ -675,19 +669,14 @@ interface can be used to resurrect deleted packages.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
 
-    >>> login('foo.bar@canonical.com')
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> [deleted_pub] = jblack.archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.DELETED)
-    >>> deleted_pub_id = deleted_pub.id
-    >>> logout()
+    >>> deleted_pub_id = getPPAPubIDsFor(
+    ...     'jblack', status=PackagePublishingStatus.DELETED)[0]
 
 James select the deleted pmount_1.0-1 publication in Hoary and target
 it to 'This PPA', 'The same series'.
 
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
-    ...     [str(deleted_pub_id)])
+    ...     [deleted_pub_id])
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').displayValue

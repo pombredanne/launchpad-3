@@ -253,20 +253,6 @@ archive index.
     PENDING
     PENDING
 
-Before checking getPublishedBinaries in the copied publications we
-have to make them PUBLISHED emulating what would have been done by the
-publisher.
-
-    >>> def publish(pub):
-    ...     pub.secure_record.status = PackagePublishingStatus.PUBLISHED
-
-    >>> publish(copied_source)
-    >>> for bin in copied_binaries:
-    ...     publish(bin)
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
 Let's retrieve the 'insecure' corresponding publishing records since
 only they provide the API we are interested in.
 
@@ -280,14 +266,62 @@ related only with their corresponding binaries, see bug #181834 for
 previous broken implementation in this area.
 
     >>> for bin in source.getPublishedBinaries():
-    ...     print bin.displayname, bin.pocket.name
-    foo-bin 666 in breezy-autotest hppa PROPOSED
-    foo-bin 666 in breezy-autotest i386 PROPOSED
+    ...     print bin.displayname, bin.pocket.name, bin.status.name
+    foo-bin 666 in breezy-autotest hppa PROPOSED PUBLISHED
+    foo-bin 666 in breezy-autotest i386 PROPOSED PUBLISHED
 
     >>> for bin in copied_source.getPublishedBinaries():
-    ...     print bin.displayname, bin.pocket.name
-    foo-bin 666 in breezy-autotest hppa UPDATES
-    foo-bin 666 in breezy-autotest i386 UPDATES
+    ...     print bin.displayname, bin.pocket.name, bin.status.name
+    foo-bin 666 in breezy-autotest hppa UPDATES PENDING
+    foo-bin 666 in breezy-autotest i386 UPDATES PENDING
+
+Note that even PENDING binary publications are returned by
+getPublishedBinaries, it considers both PENDING and PUBLISHED status
+as active, SUPERSEDED, DELETED and OBSOLETE are excluded.
+
+    >>> source.getPublishedBinaries().count()
+    2
+
+When we supersede one of the original binary publications, it gets
+excluded from the getPublishedBinaries results.
+
+    >>> superseded = source.getPublishedBinaries()[0].supersede()
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> source.getPublishedBinaries().count()
+    1
+
+The same happens when we delete the i386 binary, so no binaries are
+published in the original location.
+
+    >>> deleted = source.getPublishedBinaries()[0].requestDeletion(
+    ...     sabdfl, "go")
+    >>> flush_database_updates()
+
+    >>> source.getPublishedBinaries().count()
+    0
+
+Finally we will mark both copied binary publication as obsolete and
+verify that the getPublishedBinaries result is also empty after that.
+
+    >>> copied_source.getPublishedBinaries().count()
+    2
+
+    >>> for bin in copied_source.getPublishedBinaries():
+    ...     obsoleted = bin.requestObsolescence()
+    >>> flush_database_updates()
+
+    >>> copied_source.getPublishedBinaries().count()
+    0
+
+We have to re-publish the superseded and the deleted publications above
+because it's used below.
+
+    >>> superseded.status = PackagePublishingStatus.PUBLISHED
+    >>> deleted.status = PackagePublishingStatus.PUBLISHED
+    >>> flush_database_updates()
 
 
 == getSourceAndBinaryLibraryFiles ==

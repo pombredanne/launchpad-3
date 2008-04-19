@@ -1,6 +1,6 @@
 = Archive View Classes and Pages =
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 Let's use Celso's PPA for the tests.
@@ -28,7 +28,8 @@ Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
     >>> empty_request = LaunchpadTestRequest(form={})
-    >>> view = getView(cprov.archive, "+delete-packages", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+delete-packages")
     >>> view.initialize()
 
 We query the available PUBLISHED sources and use them to build the
@@ -91,8 +92,8 @@ filtered results.
 
     >>> name_filter_request = LaunchpadTestRequest(
     ...     form={'field.name_filter': 'pmount'})
-    >>> view = getView(
-    ...    cprov.archive, "+delete-packages", name_filter_request)
+    >>> view = getMultiAdapter(
+    ...    (cprov.archive, name_filter_request), name="+delete-packages")
     >>> view.initialize()
 
     >>> for pub in view.sources:
@@ -110,7 +111,8 @@ which the available options already exclude the deleted items.
     ...          'field.selected_sources-empty-marker': 1})
     >>> delete_all_request.method = 'POST'
 
-    >>> view = getView(cprov.archive, "+delete-packages", delete_all_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, delete_all_request), name="+delete-packages")
     >>> view.initialize()
 
     >>> view.available_sources_size
@@ -125,7 +127,8 @@ If by any chance, the form containing already deleted items, is
 re-POSTed to the page, the code is able to identify such invalid
 situation and ignore it. See bug #185922 for reference.
 
-    >>> view = getView(cprov.archive, "+delete-packages", delete_all_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, delete_all_request), name="+delete-packages")
     >>> view.initialize()
     >>> view.available_sources_size
     0
@@ -153,7 +156,8 @@ Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
     >>> empty_request = LaunchpadTestRequest(form={})
-    >>> view = getView(cprov.archive, "+edit-dependencies", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+edit-dependencies")
     >>> view.initialize()
 
 There is a property indicating whether or not the context PPA has
@@ -189,8 +193,9 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...         'field.actions.add': 'Add Dependency',
     ...         })
     >>> add_dependency_request.method = 'POST'
-    >>> view = getView(
-    ...    cprov.archive, "+edit-dependencies", add_dependency_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, add_dependency_request),
+    ...     name="+edit-dependencies")
     >>> view.initialize()
 
 Now we can see that the view properties correctly indicates the
@@ -231,8 +236,8 @@ We simply let the zope infrastructure raise FormError on malformed requests.
     >>> broken_request = LaunchpadTestRequest(
     ...     form={'field.actions.remove': 'Remove Dependencies',})
     >>> broken_request.method = 'POST'
-    >>> view = getView(
-    ...    cprov.archive, "+edit-dependencies", broken_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, broken_request), name="+edit-dependencies")
     >>> view.initialize()
     Traceback (most recent call last):
     ...
@@ -248,8 +253,9 @@ initial/empty state.
     ...         'field.actions.remove': 'Remove Dependencies',
     ...         })
     >>> remove_dependency_request.method = 'POST'
-    >>> view = getView(
-    ...    cprov.archive, "+edit-dependencies", remove_dependency_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, remove_dependency_request),
+    ...     name="+edit-dependencies")
     >>> view.initialize()
 
     >>> view.has_dependencies
@@ -276,8 +282,8 @@ be re-tested.
 Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
-    >>> empty_request = LaunchpadTestRequest(form={})
-    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
     >>> view.initialize()
 
 The main difference for ArchivePackageDeletionView  is that this uses a
@@ -309,7 +315,8 @@ Lets exercise the properties. 'No Privileges Person' user has his own
 PPA, thus he can copy to it, but not to Celso's PPA.
 
     >>> login('no-priv@canonical.com')
-    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
     >>> view.initialize()
 
     >>> [ppa.owner.name for ppa in view.ppas_for_user]
@@ -324,7 +331,8 @@ PPA, thus he can copy to it, but not to Celso's PPA.
 'Foo Bar' user has no PPA, so he cannot perform copies at all.
 
     >>> login('foo.bar@canonical.com')
-    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
     >>> view.initialize()
 
     >>> [ppa.owner.name for ppa in view.ppas_for_user]
@@ -349,7 +357,8 @@ team he is member of.
     ...     description="Don't we have a distribution ?")
 
     >>> login('celso.providelo@canonical.com')
-    >>> view = getView(cprov.archive, "+copy-packages", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
     >>> view.initialize()
 
     >>> [ppa.owner.name for ppa in view.ppas_for_user]
@@ -367,7 +376,8 @@ We will prepare a empty POST and inspect the default form values.
     ...    form={'field.destination_archive': '',
     ...          'field.destination_series': ''})
     >>> empty_post.method = 'POST'
-    >>> view = getView(cprov.archive, "+copy-packages", empty_post)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_post), name="+copy-packages")
     >>> view.initialize()
 
 The 'destination_archive' widget contents are directly based on the
@@ -421,7 +431,8 @@ value is submitted.
 
     >>> login('no-priv@canonical.com')
 
-    >>> view = getView(cprov.archive, "+copy-packages", empty_post)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_post), name="+copy-packages")
     >>> view.initialize()
 
     >>> archive_widget = view.widgets['destination_archive']
