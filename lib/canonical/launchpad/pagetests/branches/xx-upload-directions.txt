@@ -127,11 +127,11 @@ which is owned by Sample Person.
 
 Reassign the branch to the team.
 
-  >>> name12_browser.open(branch_page)
-  >>> name12_browser.getLink('Change registrant').click()
-  >>> name12_browser.getControl(name='field.owner').value = (
-  ...     'landscape-developers')
-  >>> name12_browser.getControl('Change Registrant').click()
+    >>> name12_browser.open(branch_page)
+    >>> name12_browser.getLink('Change branch details').click()
+    >>> name12_browser.getControl('Owner').displayValue = [
+    ...     'Landscape Developers']
+    >>> name12_browser.getControl('Change Branch').click()
 
 This changes the URL of the branch. Save the new URL.
 

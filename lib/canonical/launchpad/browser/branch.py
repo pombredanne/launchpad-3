@@ -13,7 +13,6 @@ __all__ = [
     'BranchDeletionView',
     'BranchEditView',
     'BranchEditWhiteboardView',
-    'BranchReassignmentView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -40,8 +39,6 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.objectreassignment import (
-    ObjectReassignmentView)
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
@@ -179,7 +176,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
              'browse_revisions',
-             'reassign', 'subscription', 'add_subscriber', 'associations',
+             'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates', 'merge_queue',
              'link_bug', 'link_blueprint',
              ]
@@ -215,11 +212,6 @@ class BranchContextMenu(ContextMenu):
                + self.context.unique_name
                + '/changes')
         return Link(url, text, icon='info', enabled=enabled)
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        text = 'Change registrant'
-        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
@@ -483,6 +475,24 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
+        # If the owner or product has changed, add an explicit notification.
+        if 'owner' in data:
+            new_owner = data['owner']
+            if new_owner != self.context.owner:
+                self.request.response.addNotification(
+                    "The branch owner has been changed to %s (%s)"
+                    % (new_owner.displayname, new_owner.name))
+        if 'product' in data:
+            new_product = data['product']
+            if new_product != self.context.product:
+                if new_product is None:
+                    # Branch has been made junk.
+                    self.request.response.addNotification(
+                        "This branch is no longer associated with a project.")
+                else:
+                    self.request.response.addNotification(
+                        "The project for this branch has been changed to %s "
+                        "(%s)" % (new_product.displayname, new_product.name))
         if self.updateContextFromData(data):
             # Only specify that the context was modified if there
             # was in fact a change.
@@ -657,8 +667,9 @@ class BranchDeletionView(LaunchpadFormView):
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
-    field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'author']
+    field_names = [
+        'owner', 'product', 'name', 'private', 'url', 'title', 'summary',
+        'lifecycle_status', 'whiteboard']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -709,6 +720,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                                       data['product'],
                                       data['name'])
 
+        owner = data['owner']
+        if owner.isTeam() and data.get('product') is None:
+            error = self.getFieldError('product')
+            if not error:
+                self.setFieldError('product',
+                                   'Teams cannot have junk branches.')
+
         # If the branch is a MIRRORED branch, then the url
         # must be supplied, and if HOSTED the url must *not*
         # be supplied.
@@ -732,8 +750,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
-                   'summary', 'lifecycle_status', 'whiteboard',
-                   'author']
+                   'summary', 'lifecycle_status', 'whiteboard']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
@@ -741,8 +758,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     @property
     def initial_values(self):
-        return {'author': self.user,
-                'branch_type': UICreatableBranchType.MIRRORED}
+        return {'branch_type': UICreatableBranchType.MIRRORED}
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for url."""
@@ -761,7 +777,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 creator=self.user,
                 owner=data['owner'],
-                author=self.getAuthor(data),
+                author=None, # Until BranchSet.new modified to remove it.
                 product=data['product'],
                 url=data.get('url'),
                 title=data['title'],
@@ -784,10 +800,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             'product',
             "You are not allowed to create branches in %s." %
             product.displayname)
-
-    def getAuthor(self, data):
-        """A method that is overridden in the derived classes."""
-        return data['author']
 
     def validate(self, data):
         if 'name' in data:
@@ -844,8 +856,7 @@ class PersonBranchAddView(BranchAddView):
 
     @property
     def initial_values(self):
-        return {'author': self.context,
-                'owner': self.context,
+        return {'owner': self.context,
                 'branch_type': UICreatableBranchType.MIRRORED}
 
 
@@ -856,57 +867,9 @@ class ProductBranchAddView(BranchAddView):
 
     @property
     def initial_values(self):
-        return {'author': self.user,
-                'owner' : self.user,
+        return {'owner' : self.user,
                 'branch_type': UICreatableBranchType.MIRRORED,
                 'product': self.context}
-
-
-class BranchReassignmentView(ObjectReassignmentView):
-    """Reassign branch to a new owner."""
-
-    # XXX: David Allouche 2006-08-16:
-    # This view should have a "name" field to allow the user to resolve a
-    # name conflict without going to another page, but this is hard to do
-    # because ObjectReassignmentView uses a custom form.
-
-    @property
-    def nextUrl(self):
-        return canonical_url(self.context)
-
-    def isValidOwner(self, new_owner):
-        if self.context.product is None:
-            product_name = None
-            if new_owner.isTeam():
-                self.errormessage = (
-                    "You cannot assign a +junk branch to a team. Create a "
-                    "project first.")
-                return False
-        else:
-            product_name = self.context.product.name
-        branch_name = self.context.name
-        branch = new_owner.getBranch(product_name, branch_name)
-        if branch is None:
-            # No matching branch, reassignation is possible.
-            return True
-        elif branch == self.context:
-            # That should only happen if the owner has not changed.
-            # In any case, a branch does not conflict with itself.
-            return True
-        else:
-            # Here we have a name conflict.
-            self.errormessage = (
-                "Branch name conflict."
-                " There is already a branch registered by %s in %s"
-                " with the name %s."
-                " You can edit this branch details to change its name,"
-                " and try changing its registrant again."
-                % (quote(new_owner.browsername),
-                   quote(branch.product.displayname),
-                   branch.name))
-            # XXX 2007-08-07 MichaelHudson, branch.product can be None in the
-            # lines above.  See bug 133126.
-            return False
 
 
 class DecoratedSubscription:

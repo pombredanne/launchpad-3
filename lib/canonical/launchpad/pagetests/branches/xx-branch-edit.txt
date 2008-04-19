@@ -149,6 +149,12 @@ canonical URL
     >>> browser.url
     'http://code.launchpad.dev/~name12/tomcat/junk.dev'
 
+A notification is also shown as moving a branch between projects is a big deal.
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...    print extract_text(message)
+    The project for this branch has been changed to Tomcat (tomcat)
+
 In the same way, the edit form allows changing the name of a branch, and must
 correctly redirect to the new branch page.
 
@@ -179,6 +185,12 @@ branch was moved back to its original location.
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/+junk/junk.dev'
+
+A message is also shown when the branch has the project association removed.
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...    print extract_text(message)
+    This branch is no longer associated with a project.
 
 However, we cannot detach a team-owned branch from a product, for the
 reasons given in xx-branch-reassign.txt.
@@ -356,3 +368,21 @@ that someone else has modified the details of the branch.
     <BLANKLINE>
     You are getting this email as you are the owner of the branch and someone h=
     as edited the details.
+
+
+== Changing the branch owner ==
+
+The user is able to change the owner of the branch using the edit details
+page.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Owner').displayValue = ['Landscape Developers']
+    >>> browser.getControl('Change Branch').click()
+
+When the owner is changed a notification is shown.
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...    print extract_text(message)
+    The branch owner has been changed to Landscape Developers (landscape-developers)
+
