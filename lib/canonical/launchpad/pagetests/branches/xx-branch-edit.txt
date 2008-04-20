@@ -224,7 +224,7 @@ This should have displayed an error message next to the name field.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    Name already in use. ...
+    There is already a branch for firefox called main.
 
 Since we are clearly in a substance-induced state of altered consciousness, we
 will now try to rename this branch in a way that conflicts with an existing
@@ -233,8 +233,6 @@ junk branch.
 That tests two interesting corner cases: trying to turn a branch into a junk
 branch, and changing the product and the branch name at the same time.
 
-    >>> browser.open('http://launchpad.dev'
-    ...     '/~name12/+junk/junk.dev')
     >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/main/+edit')
     >>> browser.getControl('Project').value = ''
@@ -245,7 +243,7 @@ branch, and changing the product and the branch name at the same time.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    Name already in use. ...
+    You already have a junk branch called junk.dev.
 
 Finally, let's try just to change the name of the branch to the name of some
 branch we already own in the same product. So we have tested all the
@@ -260,7 +258,7 @@ combinations of changing name and product that can cause an error.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    Name already in use. ...
+    There is already a branch for gnome-terminal called 2.6.
 
 If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't

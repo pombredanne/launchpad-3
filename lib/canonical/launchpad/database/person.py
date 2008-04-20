@@ -62,15 +62,15 @@ from canonical.launchpad.interfaces import (
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
-    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
-    ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
-    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PackagePublishingStatus, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH,
-    SSHKeyType, ShipItConstants, ShippingRequestStatus,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress, InvalidName,
+    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
+    IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
+    PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
+    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -103,6 +103,8 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (
     public_person_validator, visibility_validator)
 
@@ -2119,14 +2121,21 @@ class PersonSet:
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
+        if not valid_email(email):
+            raise InvalidEmailAddress(
+                "%s is not a valid email address." % email)
+
         if name is None:
-            try:
-                name = nickname.generate_nick(email)
-            except nickname.NicknameGenerationError:
-                return None, None
+            name = nickname.generate_nick(email)
+        elif not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a person." % name)
         else:
-            if self.getByName(name, ignore_merged=False) is not None:
-                return None, None
+            # The name should be okay, move on...
+            pass
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
 
         if not passwordEncrypted and password is not None:
             password = getUtility(IPasswordEncryptor).encrypt(password)

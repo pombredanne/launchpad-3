@@ -6,6 +6,7 @@ import _pythonpath
 from optparse import OptionParser
 
 from twisted.internet import defer, reactor
+from twisted.python import log as tplog
 
 from canonical.codehosting.puller import mirror, scheduler
 from canonical.launchpad.interfaces import BranchType
@@ -17,7 +18,7 @@ def clean_shutdown(ignored):
 
 
 def shutdown_with_errors(failure):
-    log.err(failure)
+    tplog.err(failure)
     failure.printTraceback()
     reactor.stop()
 
