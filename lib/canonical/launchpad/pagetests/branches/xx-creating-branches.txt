@@ -273,9 +273,10 @@ That should give us the form back with an error message.
 
     >>> browser.url
     'http://launchpad.dev/gnome-terminal/+addbranch'
-    >>> soup = find_main_content(browser.contents)
-    >>> print soup('div', {'class': 'message'})[0].renderContents()
-    Name already in use. ...
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    There is already a branch for gnome-terminal called main.
 
 Trying to add a conflicting branch from person/+addbranch should produce the
 same error message.
@@ -291,9 +292,10 @@ same error message.
     >>> browser.getControl('Register Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+addbranch'
-    >>> soup = find_main_content(browser.contents)
-    >>> print soup('div', {'class': 'message'})[0].renderContents()
-    Name already in use. ...
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    There is already a branch for gnome-terminal called main.
 
 
 If the user enters an invalid product name they will get an error

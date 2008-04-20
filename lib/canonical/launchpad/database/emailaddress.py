@@ -56,7 +56,7 @@ class EmailAddressSet:
         email = email.strip()
         if self.getByEmail(email) is not None:
             raise EmailAddressAlreadyTaken(
-                "The email address %s is already registered." % email)
+                "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=person)
 

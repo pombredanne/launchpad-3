@@ -1033,6 +1033,69 @@ including the *main_archives*:
     >>> main_archives, ppas
     (9, 5)
 
+ArchiveSet utility also offers counters for:
+
+ * The number of published sources in public PPAs
+   (number_of_ppa_sources);
+
+ * The number of published binaries in public PPAs
+   (number_of_ppa_binaries)
+
+Those counters are obtained from the cached package counters for each
+PPA, so they will change when the caches get updated.
+
+Those counters explicity exclude packages in private PPAs.
+
+The current counters says we only have 1 source and 1 binary published
+in public PPAs.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> archive_set.number_of_ppa_sources
+    1
+    >>> archive_set.number_of_ppa_binaries
+    1
+
+As mentioned caches for private PPAs are not considered.
+
+    >>> print cprov.archive.private
+    True
+
+    >>> cprov.archive.sources_cached
+    3
+    >>> cprov.archive.binaries_cached
+    3
+    >>> naked_cprov_archive = removeSecurityProxy(cprov.archive)
+    >>> naked_cprov_archive.sources_cached = 1000
+    >>> naked_cprov_archive.binaries_cached = 2000
+    >>> flush_database_updates()
+
+    >>> archive_set.number_of_ppa_sources
+    1
+    >>> archive_set.number_of_ppa_binaries
+    1
+
+On the other hand, changes in the a public PPA are immediately
+considered.
+
+    >>> print no_priv.archive.private
+    False
+
+    >>> no_priv.archive.sources_cached
+    0
+    >>> no_priv.archive.binaries_cached
+    0
+    >>> naked_no_priv_archive = removeSecurityProxy(no_priv.archive)
+    >>> naked_no_priv_archive.sources_cached = 10
+    >>> naked_no_priv_archive.binaries_cached = 2
+    >>> flush_database_updates()
+
+    >>> archive_set.number_of_ppa_sources
+    11
+    >>> archive_set.number_of_ppa_binaries
+    3
+
 'getPPAsForUser' returns all the PPAs a given user participates in. It
 uses `TeamParticipation` relationships to calculate all the PPAs the
 user is allowed to upload or copy packages to.
