@@ -165,6 +165,14 @@ However, searching for plural forms other than the first one doesn't work.
     >>> len(found_potmsgsets)
     0
 
+One can find a message by looking for a suggestion (non-current translation).
+
+    >>> found_potmsgsets = list(
+    ...     pofile.findPOTMsgSetsContaining(u"tarjetas"))
+    >>> len(found_potmsgsets)
+    1
+    >>> print_potmsgsets(found_potmsgsets, pofile)
+     5.  cards                 None                    caratas
 
 == path ==
 
