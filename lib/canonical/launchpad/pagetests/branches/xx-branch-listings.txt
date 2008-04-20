@@ -389,10 +389,20 @@ are comma separated and in alphabetical order.
     ...     '~name12/gnome-terminal/main')
     >>> admin_browser.getControl('Register Series').click()
 
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
+    >>> admin_browser.getLink('Register a series').click()
+    >>> admin_browser.getControl('Name').value = 'alpha'
+    >>> admin_browser.getControl('Summary').value = 'summary'
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> admin_browser.getControl('Register Series').click()
+
+The current development focus is shown first though.
+
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> print extract_text(table.tbody.fetch('tr')[1])
-    ~name12/gnome-terminal/main  Series: pre-1.0, trunk  ...
+    ~name12/gnome-terminal/main  Series: trunk, alpha, pre-1.0  ...
 
 
 == Hidden dormant branches ==

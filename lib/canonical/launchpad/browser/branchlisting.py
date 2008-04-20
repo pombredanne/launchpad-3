@@ -168,11 +168,27 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             result.setdefault(series.series_branch.id, []).append(series)
         return result
 
+    def getProductSeries(self, branch):
+        """Get the associated product series for the branch.
+
+        If the branch has more than one associated product series
+        they are listed in alphabetical order, unless one of them is
+        the current development focus, in which case that comes first.
+        """
+        series = self.product_series_map.get(branch.id, [])
+        if len(series) > 1:
+            # Check for development focus.
+            dev_focus = branch.product.development_focus
+            if dev_focus is not None and dev_focus in series:
+                series.remove(dev_focus)
+                series.insert(0, dev_focus)
+        return series
+
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
-        associated_product_series = self.product_series_map.get(branch.id)
+        associated_product_series = self.getProductSeries(branch)
         # XXX thumper 2007-11-14
         # We can't do equality checks here due to BranchWithSortKeys
         # being constructed from the BranchSet queries, and the development
