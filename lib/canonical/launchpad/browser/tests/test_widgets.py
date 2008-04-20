@@ -71,6 +71,7 @@ class TestBranchPopupWidget(unittest.TestCase):
 
     def setUp(self):
         login(ANONYMOUS)
+        self._original_launch_bag = getUtility(ILaunchBag)
         self.factory = LaunchpadObjectFactory()
         self.launch_bag = self.installLaunchBag(
             user=self.factory.makePerson(),
@@ -78,6 +79,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.popup = self.makeBranchPopup()
 
     def tearDown(self):
+        ztapi.provideUtility(ILaunchBag, self._original_launch_bag)
         logout()
 
     def test_getProduct(self):
