@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'CodeImportController',
+    'CodeImportDispatcher',
     ]
 
 import os
@@ -14,20 +14,17 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-import canonical
+from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     CodeImportMachineState, ICodeImportJobSet, ICodeImportMachineSet)
 
 
-class CodeImportController:
+class CodeImportDispatcher:
     """XXX."""
 
-    # XXX Note that this script does not exist yet :-)
     path_to_script = os.path.join(
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(canonical.__file__))),
-        'scripts/code-import-worker.py')
+        get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
 
     def __init__(self, logger):
         """XXX."""
@@ -37,12 +34,19 @@ class CodeImportController:
 
     def getHostname(self):
         """XXX."""
-        return socket.gethostname()
+        if config.codeimportdispatcher.forced_hostname:
+            return config.codeimportdispatcher.forced_hostname
+        else:
+            return socket.gethostname()
 
     def dispatchJob(self, job_id):
         """XXX."""
         # Just launch the process and forget about it.
-        subprocess.Popen([self.worker_script, str(job_id)])
+        log_file = os.path.join(
+            config.codeimportdispatcher.worker_log_dir,
+            'code-import-worker-%d.log' % (job_id,))
+        subprocess.Popen(
+            [self.worker_script, str(job_id), '-vv', '--log-file', log_file])
 
     def getJobId(self):
         """XXX."""
