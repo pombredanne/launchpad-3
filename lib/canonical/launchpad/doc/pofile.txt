@@ -65,6 +65,106 @@ Get the set of POTMsgSets that are untranslated.
     >>> len(potmsgsets)
     13
 
+We need a helper method to better display test results.
+
+    >>> def print_potmsgsets(potmsgsets, pofile=None):
+    ...     for potmsgset in potmsgsets:
+    ...         singular = plural = None
+    ...         translation = ""
+    ...         if potmsgset.singular_text:
+    ...             singular = potmsgset.singular_text
+    ...             if len(singular)>20:
+    ...                singular = singular[:17] + "..."
+    ...         if potmsgset.plural_text:
+    ...             plural = potmsgset.plural_text
+    ...             if len(plural)>20:
+    ...                plural = plural[:17] + "..."
+    ...         if pofile is not None:
+    ...             translation = potmsgset.getCurrentTranslationMessage(
+    ...                 pofile.language, pofile.variant).translations[0]
+    ...             if len(translation) > 20:
+    ...                 translation = translation[:17] + "..."
+    ...         print "%2d. %-20s   %-20s   %-20s" % (
+    ...             potmsgset.sequence, singular, plural, translation)
+
+
+== findPOTMsgSetsContaining ==
+
+It is common to want to find those POTMsgSets which contain a certain
+substring in their original English string.
+
+    >>> found_potmsgsets = list(
+    ...     dummy_pofile.findPOTMsgSetsContaining(u"contact"))
+    >>> len(found_potmsgsets)
+    4
+    >>> print_potmsgsets(found_potmsgsets)
+     7. contact's header:      None
+    14. The location and ...   None
+    15. %d contact             %d contacts
+    16. Opening %d contac...   Opening %d contac...
+
+Search is case-insensitive.
+
+    >>> found_potmsgsets = list(
+    ...     dummy_pofile.findPOTMsgSetsContaining(u"CONTact"))
+    >>> len(found_potmsgsets)
+    4
+    >>> print_potmsgsets(found_potmsgsets)
+     7. contact's header:      None
+    14. The location and ...   None
+    15. %d contact             %d contacts
+    16. Opening %d contac...   Opening %d contac...
+
+Search will look through plural msgids as well.
+
+    >>> found_potmsgsets = list(
+    ...     dummy_pofile.findPOTMsgSetsContaining(u"contacts"))
+    >>> len(found_potmsgsets)
+    2
+    >>> print_potmsgsets(found_potmsgsets)
+    15. %d contact             %d contacts
+    16. Opening %d contac...   Opening %d contac...
+
+Looking for a non-existing string returns an empty SelectResults.
+
+    >>> found_potmsgsets = list(
+    ...     dummy_pofile.findPOTMsgSetsContaining(u"non-existing-string"))
+    >>> len(found_potmsgsets)
+    0
+
+Trying to find a string shorter than two characters doesn't work.
+
+    >>> found_potmsgsets = list(
+    ...     dummy_pofile.findPOTMsgSetsContaining(u"a"))
+    Traceback (most recent call last):
+    ...
+    AssertionError: You can not search for strings shorter than 2 characters.
+
+In a Spanish translation, you will also get matching translations.
+
+    >>> found_potmsgsets = list(
+    ...     pofile.findPOTMsgSetsContaining(u"ventana"))
+    >>> len(found_potmsgsets)
+    1
+    >>> print_potmsgsets(found_potmsgsets, pofile)
+    16. Opening %d contac...   Opening %d contac...   Abrir %d contacto...
+
+Searching for translations is case insensitive.
+
+    >>> found_potmsgsets = list(
+    ...     pofile.findPOTMsgSetsContaining(u"VENTANA"))
+    >>> len(found_potmsgsets)
+    1
+    >>> print_potmsgsets(found_potmsgsets, pofile)
+    16. Opening %d contac...   Opening %d contac...   Abrir %d contacto...
+
+However, searching for plural forms other than the first one doesn't work.
+
+    >>> found_potmsgsets = list(
+    ...     pofile.findPOTMsgSetsContaining(u"estos"))
+    >>> len(found_potmsgsets)
+    0
+
 
 == path ==
 
