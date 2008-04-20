@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
 class CodeImportDispatcher:
     """XXX."""
 
-    path_to_script = os.path.join(
+    worker_script = os.path.join(
         get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
 
     def __init__(self, logger):
@@ -51,7 +51,8 @@ class CodeImportDispatcher:
     def getJobId(self):
         """XXX."""
         server_proxy = xmlrpclib.ServerProxy(
-            config.codeimport.codeimportscheduler_url)
+            'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler')
+            #config.codeimport.codeimportscheduler_url)
         return server_proxy.getJobForMachine(self.machine.hostname)
 
     def dispatchJobs(self):
@@ -62,8 +63,8 @@ class CodeImportDispatcher:
                 "Machine is in OFFLINE state, not looking for jobs.")
             return
 
-        job_set = getUtility(ICodeImportJobSet).getUtility()
-        job_count = job_set.getJobsRunningOnMachine().count()
+        job_set = getUtility(ICodeImportJobSet)
+        job_count = job_set.getJobsRunningOnMachine(self.machine).count()
 
         if self.machine.state == CodeImportMachineState.QUIESCING:
             if job_count == 0:

@@ -21,7 +21,7 @@ class CodeImportDispatcherScript(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = CodeImportDispatcher(
+    script = CodeImportDispatcherScript(
         "codeimportdispatcher", dbuser=config.codeimportdispatcher.dbuser)
     script.lock_and_run()
 
