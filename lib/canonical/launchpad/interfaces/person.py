@@ -56,12 +56,14 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import (
-    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.mailinglist import (
+    MailingListAutoSubscribePolicy)
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
@@ -699,6 +701,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "notify them and"),
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
+
+    mailinglist_autosubscription_policy = Choice(
+        title=_('Mailing List Auto-subscription Policy'),
+        required=True,
+        vocabulary=MailingListAutoSubscribePolicy,
+        default=MailingListAutoSubscribePolicy.ON_REGISTRATION,
+        description=_(
+            "This attribute determines whether a person is "
+            "automatically subscribed to a team's mailing list when the "
+            "person joins said team."))
 
     merged = Int(
         title=_('Merged Into'), required=False, readonly=True,
