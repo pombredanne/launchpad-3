@@ -121,6 +121,17 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.ArchivePackageCopyingView">
+    <browser:page
+      template="../templates/archive-copy-packages.pt"
+      facet="overview"
+      name="+copy-packages"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
     permission="launchpad.Edit"
     class="canonical.launchpad.browser.ArchiveEditDependenciesView">
     <browser:page
