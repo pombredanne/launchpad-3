@@ -32,7 +32,8 @@
     <content class="canonical.launchpad.database.HWSubmission">
         <require 
             permission="launchpad.View" 
-            interface="canonical.launchpad.interfaces.IHWSubmission" />
+            interface="canonical.launchpad.interfaces.IHWSubmission" 
+            attributes="id" />
     </content>
 
     <browser:url
@@ -138,6 +139,45 @@
         provides="canonical.launchpad.interfaces.IHWDeviceNameVariantSet">
         <allow interface=
             "canonical.launchpad.interfaces.IHWDeviceNameVariantSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.HWDriver">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDriver" />
+        <allow attributes="id" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDriverSet"
+        provides="canonical.launchpad.interfaces.IHWDriverSet">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDriverSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.HWDeviceDriverLink">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDeviceDriverLink" />
+        <allow attributes="id" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDeviceDriverLinkSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceDriverLinkSet">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDeviceDriverLinkSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.HWSubmissionDevice">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWSubmissionDevice" />
+        <allow attributes="id" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSubmissionDeviceSet"
+        provides="canonical.launchpad.interfaces.IHWSubmissionDeviceSet">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWSubmissionDeviceSet" />
     </securedutility>
 
 </configure>

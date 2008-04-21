@@ -12,11 +12,17 @@ __all__ = [
     'HWSubmissionProcessingStatus',
     'IHWDevice',
     'IHWDeviceSet',
+    'IHWDeviceDriverLink',
+    'IHWDeviceDriverLinkSet',
     'IHWDeviceNameVariant',
     'IHWDeviceNameVariantSet',
+    'IHWDriver',
+    'IHWDriverSet',
     'IHWSubmission',
     'IHWSubmissionForm',
     'IHWSubmissionSet',
+    'IHWSubmissionDevice',
+    'IHWSubmissionDeviceSet',
     'IHWSystemFingerprint',
     'IHWSystemFingerprintSet',
     'IHWVendorID',
@@ -33,6 +39,7 @@ from zope.schema import (
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -363,3 +370,74 @@ class IHWDeviceNameVariantSet(Interface):
         :param vendor_name: The alternative vendor name for the device
         :param product_name: The alternative product name for the device
         """
+
+
+class IHWDriver(Interface):
+    """Information about a device driver."""
+
+    package_name = TextLine(title=u'Package Name', required=False)
+
+    name = TextLine(title=u'Driver Name', required=True)
+
+    license = Choice(title=u'License of the Driver',
+                     required=False, vocabulary=License)
+
+
+class IHWDriverSet(Interface):
+    """The set of device drivers."""
+
+    def create(package_name, name, license):
+        """Create a new IHWDriver instance.
+
+        :return: The new IHWDriver instance
+        :param package_name: The name of the packages containing the driver
+        :param name: The name of the driver
+        :param license: The licnse of the driver
+        """
+
+
+class IHWDeviceDriverLink(Interface):
+    """Link a device with a driver."""
+
+    device = Attribute(u'The Device')
+
+    driver = Attribute(u'The Driver')
+
+
+class IHWDeviceDriverLinkSet(Interface):
+    """The set of device driver links."""
+
+    def create(device, driver):
+        """Create a new IHWDeviceDriver instance.
+
+        :return: The new IHWDeviceDriver instance
+        :param device: The IHWDevice instance to be linked
+        :param driver: The IHWDriver instnace to be linked
+        """
+
+class IHWSubmissionDevice(Interface):
+    """Link a submission to a IHWDeviceDriver row."""
+
+    device_driver_link = Attribute(u'A device and driver appearing in a '
+                                    'submission.')
+
+    submission = Attribute(u'The submission the device and driver are '
+                            'mentioned in.')
+
+    parent = Attribute(u'The parent IHWSubmissionDevice entry of this '
+                        ' device.')
+
+class IHWSubmissionDeviceSet(Interface):
+    """The set of IHWSubmissionDevices."""
+
+    def create(device_driver_link, submission, parent):
+        """Create a new IHWSubmissionDevice instance.
+
+        :return: The new IHWSubmissionDevice instance
+        :param device_driver_link: An IHWDeviceDriverLink instance
+        :param submission: The submission the device/driver combination
+                           is mentioned in.
+        :param parent: The parent of this device in the device tree in
+                       the submission.
+        """
+

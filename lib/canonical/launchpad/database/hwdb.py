@@ -5,10 +5,16 @@
 
 __all__ = ['HWDevice',
            'HWDeviceSet',
+           'HWDeviceDriverLink',
+           'HWDeviceDriverLinkSet',
            'HWDeviceNameVariant',
            'HWDeviceNameVariantSet',
+           'HWDriver',
+           'HWDriverSet',
            'HWSubmission',
            'HWSubmissionSet',
+           'HWSubmissionDevice',
+           'HWSubmissionDeviceSet',
            'HWSystemFingerprint',
            'HWSystemFingerprintSet',
            'HWVendorID',
@@ -31,11 +37,13 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceNameVariant,
-    IHWDeviceNameVariantSet, IHWDeviceSet, IHWSubmission, IHWSubmissionSet,
-    IHWSystemFingerprint, IHWSystemFingerprintSet, IHWVendorID,
-    IHWVendorIDSet, IHWVendorName, IHWVendorNameSet, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IPersonSet)
+    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceDriverLink,
+    IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
+    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
+    IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
+from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -424,3 +432,70 @@ class HWDeviceNameVariantSet:
                                    vendor_name=vendor_name_record,
                                    product_name=product_name,
                                    submissions=0)
+
+
+class HWDriver(SQLBase):
+    """See `IHWDriver`."""
+
+    implements(IHWDriver)
+    _table = 'HWDriver'
+
+    package_name = StringCol(notNull=False)
+    name = StringCol(notNull=True)
+    license = EnumCol(enum=License, notNull=False)
+
+
+class HWDriverSet:
+    """See `IHWDriver`."""
+
+    implements(IHWDriverSet)
+
+    def create(self, package_name, name, license):
+        """See `IHWDriverSet`."""
+        return HWDriver(package_name=package_name, name=name, license=license)
+
+
+class HWDeviceDriverLink(SQLBase):
+    """See `IHWDeviceDriverLinkSet`."""
+
+    implements(IHWDeviceDriverLink)
+    _table = 'HWDeviceDriverLink'
+
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    driver = ForeignKey(dbName='driver', foreignKey='HWDriver', notNull=False)
+
+
+class HWDeviceDriverLinkSet:
+    """The set of device driver links."""
+
+    implements(IHWDeviceDriverLinkSet)
+
+    def create(self, device, driver):
+        """See `IHWDeviceDriverLinkSet`."""
+        return HWDeviceDriverLink(device=device, driver=driver)
+
+
+class HWSubmissionDevice(SQLBase):
+    """See `IHWSubmissionDevice`."""
+
+    implements(IHWSubmissionDevice)
+    _table = 'HWSubmissionDevice'
+
+    device_driver_link = ForeignKey(dbName='device_driver_link',
+                                    foreignKey='HWDeviceDriverLink',
+                                    notNull=True)
+    submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
+                            notNull=True)
+    parent = ForeignKey(dbName='parent', foreignKey='HWSubmissionDevice',
+                        notNull=False)
+
+class HWSubmissionDeviceSet:
+    """See `IHWSubmissionDeviceSet`."""
+
+    implements(IHWSubmissionDeviceSet)
+
+    def create(self, device_driver_link, submission, parent):
+        """See `IHWSubmissionDeviceSet`."""
+        return HWSubmissionDevice(device_driver_link=device_driver_link,
+                                  submission=submission,
+                                  parent=parent)

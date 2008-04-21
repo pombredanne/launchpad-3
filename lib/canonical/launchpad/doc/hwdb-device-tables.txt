@@ -621,3 +621,248 @@ IntegrityError error.
     constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
+
+
+== HWDriver ==
+
+If a device is reported to have problems under Ubuntu or Linux in
+general, we are often more interested in the question, which drivers
+are involved in the problem that the fact that there are problems.
+The table HWDriver stores minimal data about drivers: its package
+name, the driver name itself and the driver's license. This data is
+linked to HWDevice records via the table HWDeviceDriverLink (see below).
+
+The driver is not in every case a kernel driver, it may also be for
+example a Ghostscript driver of a printer or a Sane scanner backend.
+
+    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> from canonical.launchpad.interfaces.product import License
+    >>> driver_set = getUtility(IHWDriverSet)
+    >>> usb_driver = driver_set.create(package_name='linux-image-generic',
+    ...                                name='usb',
+    ...                                license=License.GPL)
+    >>> print usb_driver.name
+    usb
+    >>> print usb_driver.package_name
+    linux-image-generic
+    >>> print usb_driver.license.title
+    GPL
+
+The submitted data does not need to contain package information for all
+drivers, hence the field package_name may be None.
+
+    >>> driver2 = driver_set.create(package_name=None,
+    ...                             name='whatever',
+    ...                             license=License.GPL)
+    >>> print driver2.name
+    whatever
+    >>> print driver2.package_name
+    None
+    >>> print driver2.license.title
+    GPL
+
+Since we also do not always know the license of a driver, the license
+may too be None.
+
+    >>> driver3 = driver_set.create(package_name=None,
+    ...                             name='something_else',
+    ...                             license=None)
+    >>> print driver3.name
+    something_else
+    >>> print driver3.package_name
+    None
+    >>> print driver3.license
+    None
+
+The tuple (driver name, package name) must be unique.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> driver = driver_set.create(package_name='linux-image-generic',
+    ...                            name='usb',
+    ...                            license=License.GPL)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdriver__package_name__name__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> driver = driver_set.create(package_name=None,
+    ...                            name='whatever',
+    ...                            license=License.GPL)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdriver__name__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+== HWDeviceDriverLink ==
+
+This table links devices and drivers.
+
+    >>> from canonical.launchpad.interfaces import IHWDeviceDriverLinkSet
+    >>> device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+    >>> usb_controller_usb_link = device_driver_link_set.create(
+    ...     device=usb_controller, driver=usb_driver)
+    >>> print usb_controller_usb_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print usb_controller_usb_link.driver.name
+    usb
+
+A device may be linked to more than one driver. A USB2 host controller
+for example has two drivers, the "generic" USB driver and the ehci-hcd
+driver.
+
+    >>> ehci_hcd_driver = driver_set.create(
+    ...     package_name='linux-image-generic', name='ehci_hcd',
+    ...     license=License.GPL)
+    >>> usb_controller_ehci_hcd_link = device_driver_link_set.create(
+    ...     device=usb_controller, driver=ehci_hcd_driver)
+    >>> print usb_controller_ehci_hcd_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print usb_controller_ehci_hcd_link.driver.name
+    ehci_hcd
+
+A scanner can be linked to the kernel driver for the physical interface
+and to its Sane backend.
+
+    >>> scanner_usb_driver_link = device_driver_link_set.create(
+    ...     device=optic_pro_ut12, driver=usb_driver)
+    >>> print scanner_usb_driver_link.device.name
+    OpticPro UT12
+    >>> print scanner_usb_driver_link.driver.name
+    usb
+
+    >>> sane_plustek_driver = driver_set.create(package_name='libsane',
+    ...                                         name='plustek',
+    ...                                         license=License.GPL)
+    >>> scanner_sane_plustek_link = device_driver_link_set.create(
+    ...     device=optic_pro_ut12, driver=sane_plustek_driver)
+    >>> print scanner_sane_plustek_link.device.name
+    OpticPro UT12
+    >>> print scanner_sane_plustek_link.driver.name
+    plustek
+
+Devices can have alternative drivers. Let's assume that Plustek provides
+a closed-source driver for its scanners.
+
+    >>> closed_driver = driver_set.create(package_name='plustek-scanner',
+    ...                                   name='ut12',
+    ...                                   license=License.OTHER_PROPRIETARY)
+
+Now we can link the OpticPro UT12 to the closed-source driver too.
+
+    >>> link3 = device_driver_link_set.create(device=optic_pro_ut12,
+    ...                                         driver=closed_driver)
+    >>> print link3.device.name
+    OpticPro UT12
+    >>> print link3.driver.name
+    ut12
+
+We have two cases, where we do not (or can not) store driver information
+for a HWDevice record:
+  - it does not make much sense to assign drivers to an entire system;
+  - HAL can list a device without providing driver information. This is
+    for example the case for an unsupported device.
+
+Since the tables HWSubmissionDevice, HWTestAnswer and HWTestAnswerCount
+(see below) link to HWDeviceDriverLink, we need a record in the latter
+table, even when we do not know about a driver of a device or system.
+Thus we can create a HWDeviceDriverLink record, where driver is None.
+
+    >>> tuffbook_2600_device_driver_link = device_driver_link_set.create(
+    ...     device=tuffbook_2600, driver=None)
+
+The tuple (device, driver) must be unique.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> device_driver_link_set.create(device=optic_pro_ut12,
+    ...                               driver=closed_driver)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevicedriverlink__device__driver__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> device_driver_link_set.create(device=tuffbook_2600, driver=None)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevicedriverlink__device__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+
+== HWSubmissionDevice ==
+
+This table links devices listed in a submission to the HWDeviceDriverLink
+table. Additionally it links a device of a submission to its parent device,
+as modeled by HAL.
+
+We need a submission to which we can link HWSubmissionDevice entries.
+
+    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> sample_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'test_submission_id_1')
+
+A HWSubmissionDevice record for a system does not have any parent...
+
+    >>> from canonical.launchpad.interfaces import IHWSubmissionDeviceSet
+    >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
+    >>> submitted_tuffbook_2600 = submission_device_set.create(
+    ...     device_driver_link=tuffbook_2600_device_driver_link,
+    ...     submission=sample_submission, parent=None)
+    >>> print submitted_tuffbook_2600.device_driver_link.device.name
+    Tuffbook 2600
+    >>> print submitted_tuffbook_2600.submission.submission_key
+    test_submission_id_1
+    >>> print submitted_tuffbook_2600.parent
+    None
+
+...while ordinary device entries have the attribute parent set. The
+parent/child relationsship may extend to several "generations". For
+example, our Inspiron 1234 has a USB host controller; its parent
+is the system itself.
+
+    >>> submitted_usb_ehci_hcd_controller = submission_device_set.create(
+    ...      device_driver_link=usb_controller_ehci_hcd_link,
+    ...      submission=sample_submission,
+    ...      parent=submitted_tuffbook_2600)
+
+For the "output aspect" of the USB controller, we have
+usb_controller_usb_link; its parent is submitted_usb_ehci_hcd_controller
+that we just have created.
+
+    >>> submitted_usb_controller = submission_device_set.create(
+    ...      device_driver_link=usb_controller_usb_link,
+    ...      submission=sample_submission,
+    ...      parent=usb_controller_ehci_hcd_link)
+
+The USB controller is connected to an (often internal) USB hub. We don't
+have yet HWDevice and HWDeviceDriverLink records for this hub, so let's
+create them first.
+
+    >>> usb_hub = device_set.create(bus=HWBus.USB,
+    ...                             vendor_id='0x8086',
+    ...                             product_id='0x1234',
+    ...                             product_name='Intel USB hub')
+    >>> usb_hub_driver_link = device_driver_link_set.create(
+    ...     device=usb_hub, driver=usb_driver)
+    >>> submitted_usb_hub = submission_device_set.create(
+    ...     device_driver_link=usb_hub_driver_link,
+    ...     submission=sample_submission,
+    ...     parent=submitted_usb_controller)
+
+Finally, a scanner may be connected to the USB hub.
+
+    >>> submitted_scanner_usb = submission_device_set.create(
+    ...     device_driver_link=scanner_usb_driver_link,
+    ...     submission=sample_submission,
+    ...     parent=submitted_usb_hub)
+
+    >>> submitted_scanner_sane = submission_device_set.create(
+    ...     device_driver_link=scanner_sane_plustek_link,
+    ...     submission=sample_submission,
+    ...     parent=submitted_scanner_usb)
