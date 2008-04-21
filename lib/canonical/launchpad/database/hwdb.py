@@ -3,7 +3,11 @@
 
 """Hardware database related table classes."""
 
-__all__ = ['HWSubmission',
+__all__ = ['HWDevice',
+           'HWDeviceSet',
+           'HWDeviceNameVariant',
+           'HWDeviceNameVariantSet',
+           'HWSubmission',
            'HWSubmissionSet',
            'HWSystemFingerprint',
            'HWSystemFingerprintSet',
@@ -18,7 +22,7 @@ import re
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, StringCol
+from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,7 +31,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWSubmission, IHWSubmissionSet,
+    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceNameVariant,
+    IHWDeviceNameVariantSet, IHWDeviceSet, IHWSubmission, IHWSubmissionSet,
     IHWSystemFingerprint, IHWSystemFingerprintSet, IHWVendorID,
     IHWVendorIDSet, IHWVendorName, IHWVendorNameSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet)
@@ -340,3 +345,82 @@ class HWVendorIDSet:
         vendor_name = HWVendorName.selectOneBy(name=vendor_name.name)
         return HWVendorID(bus=bus, vendor_id_for_bus=vendor_id,
                           vendor_name=vendor_name)
+
+class HWDevice(SQLBase):
+    """See `IHWDevice.`"""
+
+    implements(IHWDevice)
+    _table = 'HWDevice'
+
+    bus_vendor = ForeignKey(dbName='bus_vendor_id', foreignKey='HWVendorID',
+                            notNull=True)
+    bus_product_id = StringCol(notNull=True, dbName='bus_product_id')
+    variant = StringCol(notNull=False)
+    name = StringCol(notNull=True)
+    submissions = IntCol(notNull=True)
+
+    def _create(self, id, bus_vendor, bus_product_id, variant, name,
+                submissions):
+        if not isValidProductID(bus_vendor.bus, bus_product_id):
+            raise ValueError('%s is not a valid product ID for %s'
+                             % (repr(bus_product_id), bus_vendor.bus.title))
+        SQLBase._create(self, id, bus_vendor=bus_vendor,
+                         bus_product_id=bus_product_id, variant=variant,
+                         name=name, submissions=submissions)
+
+
+class HWDeviceSet:
+    """See `IHWDeviceSet`."""
+
+    implements(IHWDeviceSet)
+
+    def create(self, bus, vendor_id, product_id, product_name, variant=None):
+        """See `IHWDeviceSet`."""
+        vendor_id_record = HWVendorID.selectOneBy(bus=bus,
+                                                  vendor_id_for_bus=vendor_id)
+        if vendor_id_record is None:
+            # The vendor ID may be yet unknown for two reasons:
+            #   - we do not have anything like a subscription to newly
+            #     assigned PCI or USB vendor IDs, so we may get submissions
+            #     with IDs we don't know about yet.
+            #   - we may get submissions with invalid IDs.
+            # In both cases, we create a new HWVendorID entry with the
+            # vendor name 'Unknown'.
+            unknown_vendor = HWVendorName.selectOneBy(name=UNKNOWN)
+            if unknown_vendor is None:
+                unknown_vendor = HWVendorName(name=UNKNOWN)
+            vendor_id_record = HWVendorID(bus=bus,
+                                          vendor_id_for_bus=vendor_id,
+                                          vendor_name=unknown_vendor)
+        return HWDevice(bus_vendor=vendor_id_record,
+                        bus_product_id=product_id, name=product_name,
+                        variant=variant, submissions=0)
+
+
+class HWDeviceNameVariant(SQLBase):
+    """See `IHWDeviceNameVariant`."""
+
+    implements(IHWDeviceNameVariant)
+    _table = 'HWDeviceNameVariant'
+
+    vendor_name = ForeignKey(dbName='vendor_name', foreignKey='HWVendorName',
+                             notNull=True)
+    product_name = StringCol(notNull=True)
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    submissions = IntCol(notNull=True)
+
+
+class HWDeviceNameVariantSet:
+    """See `IHWDeviceNameVariantSet`."""
+
+    implements(IHWDeviceNameVariantSet)
+
+    def create(self, device, vendor_name, product_name):
+        """See `IHWDeviceNameVariantSet`."""
+        vendor_name_record = HWVendorName.selectOneBy(name=vendor_name)
+        if vendor_name_record is None:
+            vendor_name_record = HWVendorName(name=vendor_name)
+        return HWDeviceNameVariant(device=device,
+                                   vendor_name=vendor_name_record,
+                                   product_name=product_name,
+                                   submissions=0)

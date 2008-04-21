@@ -117,4 +117,27 @@
         <allow interface="canonical.launchpad.interfaces.IHWVendorIDSet" />
     </securedutility>
 
+    <content class="canonical.launchpad.database.HWDevice">
+        <allow interface="canonical.launchpad.interfaces.IHWDevice" />
+        <allow attributes="id" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDeviceSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceSet">
+        <allow interface="canonical.launchpad.interfaces.IHWDeviceSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.HWDeviceNameVariant">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDeviceNameVariant" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDeviceNameVariantSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceNameVariantSet">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDeviceNameVariantSet" />
+    </securedutility>
+
 </configure>

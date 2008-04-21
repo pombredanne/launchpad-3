@@ -10,6 +10,10 @@ __all__ = [
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
+    'IHWDevice',
+    'IHWDeviceSet',
+    'IHWDeviceNameVariant',
+    'IHWDeviceNameVariantSet',
     'IHWSubmission',
     'IHWSubmissionForm',
     'IHWSubmissionSet',
@@ -24,7 +28,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    ASCIILine, Bool, Bytes, Choice, Datetime, Object, TextLine)
+    ASCIILine, Bool, Bytes, Choice, Datetime, Int, Object, TextLine)
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
@@ -291,4 +295,71 @@ class IHWVendorIDSet(Interface):
                           are represented as a hexadecimal string,
                           prepended by '0x'
         :param name: The IHWVendorName instance with the vendor name.
+        """
+
+
+class IHWDevice(Interface):
+    """Core information to identify a device."""
+    bus_vendor = Attribute(u'Ths bus and vendor of the device')
+
+    bus_product_id = TextLine(title=u'The product identifier of the device',
+                              required=True)
+
+    variant = TextLine(title=u'A string that distiguishes different '
+                              'devices with identical vendor/product IDs',
+                       required=True)
+
+    name = TextLine(title=u'The human readable name of the device.',
+                    required=True)
+
+    submissions = Int(title=u'The number of submissions with the device',
+                      required=True)
+
+
+class IHWDeviceSet(Interface):
+    """The set of devices."""
+
+    def create(bus, vendor_id, product_id, product_name, variant=None):
+        """Create a new device entry.
+
+        :return: A new IHWDevice instance.
+        :param bus: A bus name as enumerated in HWBus
+        :param vendor_id: The vendor ID for the bus.
+        :param product_id: The product ID.
+        :param name: The human readable product name.
+        :param variant: A string that allows to distinguish different devices
+                        with identical product/vendor IDs.
+        """
+
+
+class IHWDeviceNameVariant(Interface):
+    """Variants of a device name.
+
+    We identify devices by (bus, vendor_id, product_id[, variant]),
+    but many OEM products are sold by different vendors under different
+    names. Users might want to look up device data by giving the
+    vendor and product name as seen in a store; this table provides
+    the "alias names" required for such a lookup.
+    """
+    vendor_name = Attribute(u'Vendor Name')
+
+    product_name = TextLine(title=u'Product Name', required=True)
+
+    device = Attribute(u'The device which has this name')
+
+    submissions = Int(
+        title=u'The number of submissions with this name variant',
+        required=True)
+
+
+class IHWDeviceNameVariantSet(Interface):
+    """The set of device name variants."""
+
+    def create(device, vendor_name, product_name):
+        """Create a new IHWDeviceNameVariant instance.
+
+        :return: The new IHWDeviceNameVariant
+        :param device: An IHWDevice instance
+        :param vendor_name: The alternative vendor name for the device
+        :param product_name: The alternative product name for the device
         """
