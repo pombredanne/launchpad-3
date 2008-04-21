@@ -10,6 +10,7 @@ __all__ = [
     'MaintenanceMessage',
     'MenuBox',
     'MaloneContextMenu',
+    'NavigationMenuTabs',
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
@@ -179,11 +180,11 @@ class MenuBox(LaunchpadView):
 class NavigationMenuTabs(LaunchpadView):
     """View class that helps its template render the navigation menu tabs.
 
-    Nothing at all is rendered if there are navigation menu items.
+    Nothing at all is rendered if there are no navigation menu items.
     """
 
     def initialize(self):
-        menu = INavigationMenu(self.context)
+        menu = INavigationMenu(self.context, None)
         if menu is None:
             # There are no menu entries.
             self.links = []

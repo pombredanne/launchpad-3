@@ -29,10 +29,10 @@ from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
-    IMenuBase, INavigationMenu, INavigationMenuView, IStructuredString)
+    IMenuBase, INavigationMenu, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator,
-    get_current_browser_request, UserAttributeCache)
+    canonical_url, canonical_url_iterator, get_current_browser_request,
+    LaunchpadView, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -248,7 +248,7 @@ class MenuBase(UserAttributeCache):
             "The following names may not be links: %s" %
             ', '.join(self._forbiddenlinknames))
 
-        if INavigationMenuView.providedBy(self.context):
+        if isinstance(self.context, LaunchpadView):
             # It's a navigation menu for a view instead of a db object. Views
             # don't have a canonical URL, they use the db object one used as
             # the context for that view.

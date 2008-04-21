@@ -822,14 +822,12 @@ part of the test, we won't worry about that.
     ...         text = 'First navigation menu item'
     ...         return Link(target, text)
 
-Now, we can make an instance of this MyNavigationMenu class.  We should
-really be using some link text that shows that its methods can access
-`self.context`. That's a minor TODO item.
+Now, we can make an instance of this MyNavigationMenu class.
 
     >>> housefoonavigationmenu = MyNavigationMenu(house)
 
 We can go through each attribute of each of the links, checking that they
-are as we expect.
+are as we expect, what we defined in MyNavigationMenu class.
 
     >>> for link in housefoonavigationmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
@@ -849,6 +847,20 @@ are as we expect.
     target: +firstnavigation
     text: First navigation menu item
     url: http://launchpad.dev/sesamestreet/number73/+firstnavigation
+
+There is a helper view class to retrieve all links to render for the
+navigationmenu attached to an object, however, if the object doesn't have
+a navigation menu we get an empty list of links.
+
+    >>> from canonical.launchpad.browser import NavigationMenuTabs
+    >>> request = DummyRequest('http://launchpad.dev/sesamestreet/+bar')
+    >>> class NoMenuObject:
+    ...     pass
+    >>> object_without_menu = NoMenuObject()
+    >>> view = NavigationMenuTabs(object_without_menu, request)
+    >>> view.initialize()
+    >>> view.links
+    []
 
 
 == Registering menus in ZCML ==
