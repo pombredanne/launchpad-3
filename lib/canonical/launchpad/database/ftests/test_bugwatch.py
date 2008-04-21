@@ -159,7 +159,7 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
     bugtracker_type = BugTrackerType.SOURCEFORGE
     bug_url = (
-        'http://sf.net/tracker/index.php'
+        'http://sourceforge.net/tracker/index.php'
         '?func=detail&aid=1568562&group_id=84122&atid=575154')
     base_url = 'http://sourceforge.net/'
     bug_id = '1568562'
@@ -170,11 +170,11 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         pass
 
 
-class GForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with GForge URLs.
+class XForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure extractBugTrackerAndBug works with SourceForge-like URLs.
     """
 
-    bugtracker_type = BugTrackerType.GFORGE
+    bugtracker_type = BugTrackerType.SOURCEFORGE
     bug_url = (
         'http://gforge.example.com/tracker/index.php'
         '?func=detail&aid=90812&group_id=84122&atid=575154')
@@ -253,6 +253,7 @@ def test_suite():
     suite.addTest(
         unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(XForgeExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))

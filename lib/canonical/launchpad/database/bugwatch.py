@@ -240,7 +240,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
             BugTrackerType.SAVANE: self.parseSavaneURL,
-            BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
+            BugTrackerType.SOURCEFORGE: self.parseSourceForgeLikeURL,
             BugTrackerType.TRAC: self.parseTracURL,
         }
 
@@ -418,13 +418,16 @@ class BugWatchSet(BugSetBase):
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
-    def parseSourceForgeURL(self, scheme, host, path, query):
-        """Extract the SourceForge base URL and bug ID.
+    def parseSourceForgeLikeURL(self, scheme, host, path, query):
+        """Extract the SourceForge-like base URLs and bug IDs.
 
-        Only the path is considered. If it looks like a SF URL, we
-        return the global SF instance. This makes it possible for people
-        to use alternative host names, like sf.net.
+        Both path and hostname are considered. If the hostname
+        corresponds to one of the aliases for the SourceForge celebrity,
+        that celebrity will be returned (there can be only one
+        SourceForge instance in Launchpad).
         """
+        # We're only interested in URLs that look like they come from a
+        # *Forge bugtracker.
         if (not path.startswith('/support/tracker.php') and
             not path.startswith('/tracker/index.php')):
             return None
@@ -432,10 +435,17 @@ class BugWatchSet(BugSetBase):
             return None
 
         remote_bug = query['aid']
-        # There's only one global SF instance registered in Launchpad.
-        sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 
-        return sf_tracker.baseurl, remote_bug
+        # There's only one global SF instance registered in Launchpad,
+        # so we return that if the hostnames match.
+        sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
+        sf_hosts = [urlsplit(alias)[1] for alias in sf_tracker.aliases]
+        sf_hosts.append(urlsplit(sf_tracker.baseurl)[2])
+        if host in sf_hosts:
+            return sf_tracker.baseurl, remote_bug
+        else:
+            base_url = urlunsplit((scheme, host, '/', '', ''))
+            return base_url, remote_bug
 
     def parseSavaneURL(self, scheme, host, path, query):
         """Extract Savame base URL and bug ID."""
