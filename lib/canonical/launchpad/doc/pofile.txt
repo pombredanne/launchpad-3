@@ -340,7 +340,6 @@ This method determines if someone is allowed to edit translations.
 Do some needed imports.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.interfaces import ITranslationGroupSet
     >>> from canonical.launchpad.interfaces import TranslationPermission
