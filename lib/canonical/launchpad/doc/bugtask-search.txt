@@ -172,7 +172,7 @@ If the search_comments config option is False, no bugs are found.
     >>> found_bugtasks.count()
     0
 
-    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS 
+    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS
 
 == Searching using bug full-text index ==
 
@@ -449,7 +449,7 @@ will not be included in the results returned by the bug commenter search.
 
 == Search for BugTasks assigned to milestones ==
 
-BugTaskSet.search() can return bugtasks associated with milestones. 
+BugTaskSet.search() can return bugtasks associated with milestones.
 No BugTask is associated yet with firefox milestone 1.0.
 
     >>> product_milestone = firefox.getMilestone('1.0')
@@ -491,7 +491,7 @@ This BugTask is also a BugTask of the milestone of the mozilla project.
 
 If a bug has one bugtask associated with a product and another bugtask
 associated with a product series, and if both tasks are assigned to the
-same milestone... 
+same milestone...
 
     >>> firefox_1_0 = firefox.getSeries("1.0")
     >>> productseries_task = bugtask_set.createTask(
