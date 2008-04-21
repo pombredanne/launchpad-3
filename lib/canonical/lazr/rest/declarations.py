@@ -189,16 +189,16 @@ class _method_annotator:
         _check_called_from_interface_def('%s()' % self.__class__.__name__)
         self.params = params
 
-    def __call__(self, f):
+    def __call__(self, method):
         """Annotates the function with the fixed arguments."""
         # Everything in the function dictionary ends up as tagged value
         # in the interface method specification.
-        annotations = f.__dict__.setdefault(LAZR_WEBSERVICE_EXPORTED, {})
-        self.annotate_method(f, annotations)
-        return f
+        annotations = method.__dict__.setdefault(LAZR_WEBSERVICE_EXPORTED, {})
+        self.annotate_method(method, annotations)
+        return method
 
-    def annotate_method(self, f, annotations):
-        """Add annotations for method f.
+    def annotate_method(self, method, annotations):
+        """Add annotations for method.
 
         This method must be implemented by subclasses.
 
@@ -255,7 +255,7 @@ def annotate_exported_methods(interface):
 class call_with(_method_annotator):
     """Decorator specifying fixed parameters for exported methods."""
 
-    def annotate_method(self, f, annotations):
+    def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         annotations['call_with'] = self.params
 
@@ -268,7 +268,7 @@ class export_as(_method_annotator):
         _check_called_from_interface_def('export_as()')
         self.name = name
 
-    def annotate_method(self, f, annotations):
+    def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         annotations['as'] = self.name
 
@@ -276,12 +276,12 @@ class export_as(_method_annotator):
 class export_parameters_as(_method_annotator):
     """Decorator specifying the name to export the method parameters as."""
 
-    def annotate_method(self, f, annotations):
+    def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         param_defs = annotations.get('params')
         if param_defs is None:
             raise TypeError(
-                '"%s" isn\'t exported on the webservice.' % f.__name__)
+                '"%s" isn\'t exported on the webservice.' % method.__name__)
         for name, export_as in self.params.items():
             if name not in param_defs:
                 raise TypeError(
@@ -296,13 +296,13 @@ class _export_operation(_method_annotator):
     # Should be overriden in subclasses with the string to use as 'type'.
     type = None
 
-    def annotate_method(self, f, annotations):
+    def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         for name, param in self.params.items():
             if not IField.providedBy(param):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
-                    'provide IField: %r' % (name, f.__name__, param))
+                    'provide IField: %r' % (name, method.__name__, param))
         annotations['type'] = self.type
         annotations['params'] = self.params
 
