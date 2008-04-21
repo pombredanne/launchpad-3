@@ -71,9 +71,7 @@ __all__ = [
     'TeamJoinView',
     'TeamLeaveView',
     'TeamListView',
-    'TeamMembershipNavigationMenu',
     'TeamNavigation',
-    'TeamOverviewNavigationMenu',
     'TeamOverviewMenu',
     'TeamReassignmentView',
     'TeamSpecsMenu',
@@ -117,11 +115,11 @@ from canonical.launchpad.interfaces import (
     IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
     ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamMembershipView, ITeamReassignment, IWikiNameSet, LoginTokenType,
-    NotFoundError, PersonCreationRationale, PersonVisibility,
-    QuestionParticipation, SSHKeyType, SpecificationFilter,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, PersonVisibility, QuestionParticipation,
+    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -149,10 +147,9 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, NavigationMenu, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission, smartquote,
-    stepthrough, stepto)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
 
@@ -1095,40 +1092,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu, CommonMenuLinks):
-    usedfor = ITeam
-    facet = 'overview'
-    links = ['members', 'related_projects', 'polls',]
-
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Show all members'
-        return Link(target, text, icon='people')
-
-    def polls(self):
-        target = '+polls'
-        text = 'Show polls'
-        return Link(target, text, icon='info')
-
-
-class TeamMembershipNavigationMenu(NavigationMenu):
-    usedfor = ITeamMembershipView
-    facet = 'overview'
-    links = ['memberships', 'mugshots']
-
-    def memberships(self):
-        target = '+participation'
-        text = 'Show team participation'
-        return Link(target, text, icon='info')
-
-    @enabled_with_permission('launchpad.View')
-    def mugshots(self):
-        target = '+mugshots'
-        text = 'Show group photo'
-        return Link(target, text, icon='people')
-
-
 class BaseListView:
 
     header = ""
@@ -1907,10 +1870,6 @@ class PersonLanguagesView(LaunchpadView):
 
 class PersonView(LaunchpadView, FeedsMixin):
     """A View class used in almost all Person's pages."""
-    # XXX CarlosPerelloMarin bug=213651: This class must be refactored into
-    # different classes to remove the action menu and split that into
-    # different navigation menus based on a common 'view context'.
-    implements(ITeamMembershipView)
 
     @cachedproperty
     def recently_approved_members(self):

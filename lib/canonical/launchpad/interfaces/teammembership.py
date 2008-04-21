@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
-    'ITeamMembershipView',
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
@@ -20,7 +19,6 @@ from zope.interface import Attribute, Interface
 from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import INavigationMenuView
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team
@@ -255,10 +253,3 @@ class ITeamParticipation(Interface):
     team = Int(title=_("The team"), required=True, readonly=False)
     person = Int(title=_("The member"), required=True, readonly=False)
 
-
-class ITeamMembershipView(INavigationMenuView):
-    """Interface used to link a view with a navigation menu.
-
-    This interface is used to render all menu entries related with team
-    memberships.
-    """
