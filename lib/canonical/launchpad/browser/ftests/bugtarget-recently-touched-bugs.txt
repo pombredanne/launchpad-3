@@ -5,7 +5,7 @@ bugs (i.e bugs that have been recently modified/created).
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> portlet_view = getView(
+    >>> portlet_view = getMultiAdapter(
     ...     (bugtarget, LaunchpadTestRequest()),
     ...     name='+portlet-recently-touched-bugs')
     >>> portlet_view.initialize()

@@ -53,7 +53,7 @@ BugTaskView.getCommentForDisplay does not return the first comment.
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_11_bugtask = bug_11.bugtasks[0]
     >>> bug_11_view = getMultiAdapter(
-    ...     (bug_11_bugtask, LaunchpadTestRequest(), name='+index')
+    ...     (bug_11_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_11_view.initialize()
     >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
     >>> [bug_comment.index for bug_comment in rendered_comments]

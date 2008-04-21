@@ -272,7 +272,8 @@ Next, a functional/integration test of the overridden directive.
     ... </configure>
     ... """)
 
-    >>> whatever2_view = queryMultiAdapter(fooobject, '+whatever2', request)
+    >>> whatever2_view = queryMultiAdapter(
+    ...     (fooobject, request), name='+whatever2')
     >>> print whatever2_view.__class__.__name__
     FooView
     >>> print whatever2_view.__launchpad_facetname__
