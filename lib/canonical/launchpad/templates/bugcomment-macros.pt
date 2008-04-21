@@ -2,9 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
-  tal:define="remote_bug_comment_class
-              python: comment.bugwatch and 'remoteBugComment' or ''"
-  tal:attributes="class string:boardComment ${remote_bug_comment_class}">
+  tal:attributes="class comment/css_class">
 
   <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
     <tal:comment_has_owner>
@@ -27,7 +25,7 @@
     <img tal:replace="structure comment/bugtask/target/image:icon" />
     In
     <a tal:attributes="href comment/bugwatch/url"
-       content="comment/bugwatch/title" />,
+       tal:content="comment/bugwatch/title" />,
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
