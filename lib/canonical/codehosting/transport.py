@@ -165,7 +165,7 @@ class LaunchpadServer(Server):
         self.logger.info('Requesting mirror for: %r', branch_id)
         self.authserver.requestMirror(self.user_id, branch_id)
 
-    def make_branch_dir(self, virtual_path):
+    def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
 
         If the request is to make a user or a product directory, fail
@@ -455,7 +455,7 @@ class LaunchpadTransport(Transport):
         try:
             return self._call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.make_branch_dir(self._abspath(relpath))
+            return self.server.createBranch(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)
