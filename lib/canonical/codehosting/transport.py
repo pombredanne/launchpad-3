@@ -402,22 +402,23 @@ class LaunchpadTransport(Transport):
         :raise TransportNotPossible: If trying to do a write operation on a
             read-only path.
         """
-        transport, path, permissions = self._get_transport_and_path(relpath)
+        transport, path, permissions = self._get_transport_and_path(
+            self._abspath(relpath))
         self.server.logger.info(
             '%s(%r -> %r, args=%r, kwargs=%r)',
             methodname, relpath, (path, permissions), args, kwargs)
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
-    def _get_transport_and_path(self, relpath):
-        path, permissions = self._translate_virtual_path(relpath)
+    def _get_transport_and_path(self, abspath):
+        path, permissions = self._translate_virtual_path(abspath)
         if permissions == READ_ONLY:
             transport = self.server.mirror_transport
         else:
             transport = self.server.backing_transport
         return transport, path, permissions
 
-    def _translate_virtual_path(self, relpath):
+    def _translate_virtual_path(self, abspath):
         """Translate a virtual path into a path on the backing transport.
 
         :raise NoSuchFile: If there is not way to map the given relpath to the
@@ -426,9 +427,9 @@ class LaunchpadTransport(Transport):
         :return: A valid path on the backing transport.
         """
         try:
-            return self.server.translate_virtual_path(self._abspath(relpath))
+            return self.server.translate_virtual_path(abspath)
         except (UntranslatablePath, TransportNotPossible):
-            raise NoSuchFile(relpath)
+            raise NoSuchFile(abspath)
 
     # Transport methods
     def abspath(self, relpath):
@@ -460,12 +461,14 @@ class LaunchpadTransport(Transport):
 
     def iter_files_recursive(self):
         self.server.logger.debug('iter_files_recursive()')
-        transport, path, permissions = self._get_transport_and_path('.')
+        transport, path, permissions = self._get_transport_and_path(
+            self._abspath('.'))
         return transport.clone(path).iter_files_recursive()
 
     def listable(self):
         self.server.logger.debug('listable()')
-        transport, path, permissions = self._get_transport_and_path('.')
+        transport, path, permissions = self._get_transport_and_path(
+            self._abspath('.'))
         return transport.listable()
 
     def list_dir(self, relpath):
@@ -490,7 +493,8 @@ class LaunchpadTransport(Transport):
         return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        path, permissions = self._translate_virtual_path(rel_to)
+        path, permissions = self._translate_virtual_path(
+            self._abspath(rel_to))
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
         abs_from = self._abspath(rel_from)
