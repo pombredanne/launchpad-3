@@ -42,12 +42,10 @@ Default view:
     2 Blackhole Trash folder
     mozilla-firefox Low Confirmed
 
-By recently changed:
+By most recently changed:
 
-    >>> anon_browser.getControl(name="orderby").value = [
-    ...     "-date_last_updated"]
-    >>> anon_browser.getControl(name="orderby").displayValue
-    ['recently changed']
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     'most recently changed']
     >>> anon_browser.getControl("Search").click()
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test

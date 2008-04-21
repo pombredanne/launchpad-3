@@ -45,7 +45,7 @@
     <option
       value="-date_last_updated"
       tal:attributes="selected python:orderby == '-date_last_updated'"
-    >recently changed</option>
+    >most recently changed</option>
     <option
       value="-number_of_duplicates"
       tal:attributes="selected python:orderby == '-number_of_duplicates'"
