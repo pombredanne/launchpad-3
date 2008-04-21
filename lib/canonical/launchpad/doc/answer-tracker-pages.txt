@@ -3,7 +3,6 @@
 Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet)

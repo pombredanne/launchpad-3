@@ -4,7 +4,7 @@ The view class for IBinaryPackageRelease is exposed via a traversal of
 a IBuild, i.e, by traversing a 'name' in an IBuild you can access an
 raw (may be unpublished) IBinaryPackageRelease.
 
-  >>> from zope.component import getUtility, queryMultiAdapter
+  >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.database import BinaryPackageRelease
 

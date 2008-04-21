@@ -598,7 +598,7 @@ and the bug will have been edited.
 Emails are sent out by adding entries to the bugnotification table. We
 need to know how many messages are currently in that table.
 
-    >>> from canonical.launchpad.database import BugNotification, Bug
+    >>> from canonical.launchpad.database import BugNotification
     >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
     >>> start_bugnotification_count = bn_set.count()
 

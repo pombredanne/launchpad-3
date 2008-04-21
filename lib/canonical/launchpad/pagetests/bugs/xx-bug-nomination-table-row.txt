@@ -10,8 +10,7 @@ have the launchpad.Driver permission.
     >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IDistributionSet, ILaunchBag, IPersonSet)
+    >>> from canonical.launchpad.interfaces import IBugSet, IDistributionSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
     >>> login("no-priv@canonical.com")

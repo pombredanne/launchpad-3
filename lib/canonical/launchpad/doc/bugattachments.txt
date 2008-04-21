@@ -11,8 +11,7 @@ Let's look at a bug that has no attachments:
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet,
-    ...     IMessageSet, IPersonSet)
+    ...     IBugSet, IBugAttachment, IMessageSet, IPersonSet)
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -111,7 +110,6 @@ context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
 and work with that:
 
     >>> bugtask = bug_one.bugtasks[0]
-    >>> from canonical.launchpad.browser import BugMessageAddFormView
 
     >>> add_comment_view = getMultiAdapter(
     ...     (bugtask, add_request), name='+addcomment-form')

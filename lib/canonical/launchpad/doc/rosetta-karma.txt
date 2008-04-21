@@ -365,7 +365,6 @@ product from where the IPOTemplate is and he has rights to change the
 description.
 
     >>> from canonical.launchpad.layers import TranslationsLayer
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
     >>> form = {

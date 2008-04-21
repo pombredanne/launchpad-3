@@ -2,8 +2,7 @@
 This tests GPG-related pages of an IPerson.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPerson, IPersonSet)
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getMultiAdapter, getUtility
 
 Set up the key server:

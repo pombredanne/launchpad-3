@@ -2,8 +2,7 @@
 
   >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, PackagePublishingPocket)
+  >>> from canonical.launchpad.interfaces import IDistributionSet
 
 Empty request.
 
