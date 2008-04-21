@@ -130,7 +130,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = self.getUniqueString('email')
+            email = "%s@example.com" % self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
