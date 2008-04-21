@@ -27,7 +27,7 @@ __all__ = [
 import sys
 
 from zope.interface import classImplements
-from zope.interface.advice import addClassAdvisor, isClassAdvisor
+from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
@@ -175,11 +175,11 @@ def collection_default_content(f):
 
 
 class _method_annotator:
-    """Base class for decorator annotating a method.
+    """Base class for decorators annotating a method.
 
     The actual method will be wrapped in IMethod specification, only once the
-    Interface is complete. So we save the annotations in a tag value of the
-    interface, and the class advisor invoked by export_entry() and
+    Interface is complete. So we save the annotations in an attribute of the
+    method, and the class advisor invoked by export_entry() and
     export_collection(), will do the final tagging.
     """
 
@@ -232,7 +232,7 @@ def annotate_exported_methods(interface):
 
         # Make sure that all parameters exists and that we miss none.
         info = method.getSignatureInfo()
-        defined_params= set(info['optional'])
+        defined_params = set(info['optional'])
         defined_params.update(info['required'])
         exported_params = set(annotations['params'])
         exported_params.update(annotations['call_with'])
