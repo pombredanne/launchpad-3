@@ -657,6 +657,8 @@ accepted by the operation.
     >>> request = MockRequest()
     >>> read_method_adapter = read_method_adapter_factory(
     ...     BookSetOnSteroids(), request)
+    >>> verifyObject(IResourceGETOperation, read_method_adapter)
+    True
 
     >>> for param in read_method_adapter.params:
     ...     print "%s: %s" % (param.__name__, param.__class__.__name__)
@@ -699,6 +701,9 @@ IResourcePOSTOperation.
     ...     Book('Noam Chomsky', 10.0, 'Perspectives on Power', 'unknown'),
     ...     MockRequest())
 
+    >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
+    True
+
 Methods exported as a factory also generates an adapter providing
 IResourcePOSTOperation.
 
@@ -709,6 +714,9 @@ IResourcePOSTOperation.
 
     >>> factory_method_adapter = factory_method_adapter_factory(
     ...     BookSetOnSteroids(), MockRequest())
+    >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
+    True
+
 
 The generate_operation_adapter() function can only be called on IMethod
 marked for export:
