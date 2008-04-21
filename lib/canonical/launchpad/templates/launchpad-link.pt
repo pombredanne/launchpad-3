@@ -3,7 +3,9 @@
     style="display:none;"
     tal:condition="not: context/enabled"
     tal:attributes="class string:menu-link-${context/name}-disabled;"><tal:link-text
-    replace="structure context/escapedtext">Disabled text</tal:link-text>(disabled)</strong><tal:link-enabled
+    replace="structure context/escapedtext">Disabled text</tal:link-text>
+  (disabled)
+</strong><tal:link-enabled
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     condition="context/enabled"><a
     tal:condition="context/linked"
