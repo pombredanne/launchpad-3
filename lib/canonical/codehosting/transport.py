@@ -15,7 +15,7 @@ import logging
 import os
 
 from bzrlib.errors import (
-    BzrError, FileExists, InProcessTransport, NoSuchFile, PermissionDenied,
+    BzrError, InProcessTransport, NoSuchFile, PermissionDenied,
     TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
@@ -33,6 +33,7 @@ from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.bzrutils import makedirs
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
@@ -49,30 +50,6 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
     tokens = a_string.split(splitter, num_fields - 1)
     tokens.extend([padding] * max(0, num_fields - len(tokens)))
     return tokens
-
-
-# XXX: JonathanLange 2007-06-13 bugs=120135:
-# This should probably be part of bzrlib.
-def makedirs(base_transport, path, mode=None):
-    """Create 'path' on 'base_transport', even if parents of 'path' don't
-    exist yet.
-    """
-    need_to_create = []
-    transport = base_transport.clone(path)
-    while True:
-        try:
-            transport.mkdir('.', mode)
-        except NoSuchFile:
-            need_to_create.append(transport)
-        except FileExists:
-            # Nothing to do. Directory made.
-            return
-        else:
-            break
-        transport = transport.clone('..')
-    while need_to_create:
-        transport = need_to_create.pop()
-        transport.mkdir('.', mode)
 
 
 def get_path_segments(path):
