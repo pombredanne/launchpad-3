@@ -351,7 +351,7 @@ linked to the new bug watch.
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
-    'Bug tracker at http://bugzilla.somewhere.org/bugs/': 84
+    http://bugzilla.somewhere.org/bugs/: 84
 
 If we specify a URL of an already registered bug tracker, both the task
 and the bug watch will be added without any confirmation needed:
@@ -377,7 +377,7 @@ and the bug watch will be added without any confirmation needed:
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
     GnomeGBug GTracker: 84
-    'Bug tracker at http://bugzilla.somewhere.org/bugs/': 84
+    http://bugzilla.somewhere.org/bugs/: 84
 
 The bug watch got linked to the created task, and all the bug task's
 attributes got initialised to Unknown. The bugtask will be synced with
