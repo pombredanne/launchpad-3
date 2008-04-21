@@ -33,9 +33,6 @@ class TestPerson(unittest.TestCase):
         self.bzr = self.product_set.getByName('bzr')
         self.now = datetime.now(pytz.timezone('UTC'))
 
-    #def tearDown(self):
-    #    SQLBase._connection._connection.rollback()
-
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 
