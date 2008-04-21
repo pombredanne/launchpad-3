@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -246,7 +246,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -294,7 +294,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -423,7 +423,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def getPublishedBinaries(self):
@@ -746,7 +746,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property

@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import Processor
@@ -47,7 +47,7 @@ class DistroArchSeries(SQLBase):
     official = BoolCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
     ppa_supported = BoolCol(notNull=False, default=False)
 

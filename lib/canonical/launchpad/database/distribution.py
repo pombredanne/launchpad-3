@@ -52,7 +52,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -112,24 +112,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     domainname = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     members = ForeignKey(
         dbName='members', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     translationgroup = ForeignKey(
         dbName='translationgroup', foreignKey='TranslationGroup',
         notNull=False, default=None)
@@ -142,7 +142,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='upload_sender', notNull=False, default=None)
     upload_admin = ForeignKey(
         dbName='upload_admin', foreignKey='Person',
-        validator=public_person_validator, default=None,
+        storm_validator=validate_public_person, default=None,
         notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
@@ -180,7 +180,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     language_pack_admin = ForeignKey(
         dbName='language_pack_admin', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):

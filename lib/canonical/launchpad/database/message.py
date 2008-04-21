@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
     InvalidEmailMessage, NotFoundError, PersonCreationRationale,
     UnknownSender)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -47,7 +47,7 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',

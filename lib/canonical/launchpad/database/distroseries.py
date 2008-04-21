@@ -49,7 +49,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -106,10 +106,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(

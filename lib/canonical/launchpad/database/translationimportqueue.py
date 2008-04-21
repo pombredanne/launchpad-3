@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -57,7 +57,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',

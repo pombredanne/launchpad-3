@@ -57,7 +57,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -156,7 +156,7 @@ class Bug(SQLBase):
                             default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -165,7 +165,7 @@ class Bug(SQLBase):
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins

@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
     UserNotBranchReviewer)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 VALID_TRANSITION_GRAPH = {
@@ -72,7 +72,7 @@ class BranchMergeProposal(SQLBase):
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     source_branch = ForeignKey(
         dbName='source_branch', foreignKey='Branch', notNull=True)
@@ -91,7 +91,7 @@ class BranchMergeProposal(SQLBase):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
     reviewed_revision_id = StringCol(default=None)
 
@@ -109,7 +109,7 @@ class BranchMergeProposal(SQLBase):
 
     merge_reporter = ForeignKey(
         dbName='merge_reporter', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
 
     @property

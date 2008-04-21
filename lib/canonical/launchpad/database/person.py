@@ -1234,9 +1234,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             tm.dateexpires = expires
             tm.setStatus(status, reviewer, comment)
         else:
-            TeamMembershipSet().new(
+            tm = TeamMembershipSet().new(
                 person, self, status, reviewer, dateexpires=expires,
                 comment=comment)
+            # Accessing the id attribute ensures that the team
+            # creation has been flushed to the database.
+            tm_id = tm.id
             notify(event(person, self))
 
     # The three methods below are not in the IPerson interface because we want

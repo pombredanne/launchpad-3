@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -57,10 +57,10 @@ class DistributionMirror(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(

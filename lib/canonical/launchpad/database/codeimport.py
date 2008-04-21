@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
 from canonical.launchpad.mailout.codeimport import code_import_status_updated
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class CodeImport(SQLBase):
@@ -48,13 +48,13 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def product(self):

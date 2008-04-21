@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
@@ -63,7 +63,7 @@ class BugWatch(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',

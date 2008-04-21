@@ -25,7 +25,7 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
     IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
@@ -45,19 +45,19 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     proposed_by = ForeignKey(
         dbName='proposed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     acknowledged_by = ForeignKey(
         dbName='acknowledged_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     reviewed_by = ForeignKey(
         dbName='reviewed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     # XXX: salgado, 2008-03-06: Need to rename datejoined and dateexpires to

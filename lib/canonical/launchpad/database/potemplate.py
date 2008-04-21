@@ -29,7 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -89,7 +89,7 @@ class POTemplate(SQLBase, RosettaStats):
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',

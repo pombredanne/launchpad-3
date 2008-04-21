@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IMailingListSet, IMailingListSubscription, IMessageApproval,
     IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.mailman.config import configure_hostname
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -44,7 +44,7 @@ class MessageApproval(SQLBase):
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=True)
 
     posted_message = ForeignKey(
@@ -63,7 +63,7 @@ class MessageApproval(SQLBase):
 
     disposed_by = ForeignKey(
         dbName='disposed_by', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         default=None)
 
     disposal_date = UtcDateTimeCol(default=None)
@@ -113,18 +113,18 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
@@ -510,7 +510,7 @@ class MailingListSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=True)
 
     mailing_list = ForeignKey(

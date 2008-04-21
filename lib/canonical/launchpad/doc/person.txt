@@ -501,9 +501,9 @@ The PublicPersonChoice for interface classes and the public_person_validator
 for SQLObject classes only allow public teams to be assigned to the
 specified field.
 
-The SQLObject validators will raise an InvalidField exception if an 
-invalid team is passed to the constructor or is used to set one of 
-the attributes.
+The validators will raise an PrivatePersonLinkageError exception if an
+invalid team is passed to the constructor or is used to set one of the
+attributes.
 
 myteam is a private-membership team, so public_person_validator
 will reject it for the BugSubscription.person and 
@@ -520,14 +520,14 @@ BugSubscription.subscribed_by attributes.
     >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
-    InvalidField: Cannot link person
+    PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
     ...                                    subscribed_by=guadamen)
     >>> bug_subscription.person = myteam
     Traceback (most recent call last):
     ...
-    InvalidField: Cannot link person
+    PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
 == Latest Team Memberships ==
