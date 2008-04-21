@@ -35,6 +35,13 @@ class IExternalBugTrackerTokenAPI(Interface):
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
+    def getExternalBugTrackerToUse():
+        """Return the `ExternalBugTracker` instance to use.
+
+        Probe the remote bug tracker and choose the right
+        `ExternalBugTracker` instance to use further on.
+        """
+
     def getCurrentDBTime():
         """Return the current time of the bug tracker's DB server.
 
@@ -60,6 +67,13 @@ class IExternalBugTracker(Interface):
 
 class ISupportsCommentImport(IExternalBugTracker):
     """A an external bug tracker that supports comment imports."""
+
+    def fetchComments(bug_watch, comment_ids):
+        """Load a given set of remote comments, ready for parsing.
+
+        :param bug_watch: The bug watch for which to fetch the comments.
+        :param comment_ids: A list of the IDs of the comments to load.
+        """
 
     def getCommentIds(bug_watch):
         """Return all the comment IDs for a given remote bug."""

@@ -81,9 +81,14 @@ class Archive(SQLBase):
     buildd_secret = StringCol(dbName='buildd_secret', default=None)
 
     @property
+    def is_ppa(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PPA
+
+    @property
     def title(self):
         """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PPA:
+        if self.is_ppa:
             title = 'PPA for %s' % self.owner.displayname
             if self.private:
                 title = "Private %s" % title
@@ -119,7 +124,7 @@ class Archive(SQLBase):
     def expanded_archive_dependencies(self):
         """See `IArchive`."""
         archives = []
-        if self.purpose == ArchivePurpose.PPA:
+        if self.is_ppa:
             archives.append(self.distribution.main_archive)
         archives.append(self)
         archives.extend(
@@ -134,7 +139,7 @@ class Archive(SQLBase):
             ArchivePurpose.PARTNER : '-partner',
         }
 
-        if self.purpose == ArchivePurpose.PPA:
+        if self.is_ppa:
             if self.private:
                 url = config.personalpackagearchive.private_base_url
             else:
@@ -157,7 +162,7 @@ class Archive(SQLBase):
 
         if self.purpose == ArchivePurpose.PRIMARY:
             pass
-        elif self.purpose == ArchivePurpose.PPA:
+        elif self.is_ppa:
             if self.private:
                 pubconf.distroroot = ppa_config.private_root
             else:
@@ -595,7 +600,7 @@ class Archive(SQLBase):
             raise ArchiveDependencyError(
                 "An archive should not depend on itself.")
 
-        if dependency.purpose != ArchivePurpose.PPA:
+        if not dependency.is_ppa:
             raise ArchiveDependencyError(
                 "Archive dependencies only applies to PPAs.")
 
@@ -657,6 +662,32 @@ class ArchiveSet:
     def __iter__(self):
         """See `IArchiveSet`."""
         return iter(Archive.select())
+
+    @property
+    def number_of_ppa_sources(self):
+        cur = cursor()
+        q = """
+             SELECT SUM(sources_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(q)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
+
+    @property
+    def number_of_ppa_binaries(self):
+        cur = cursor()
+        q = """
+             SELECT SUM(binaries_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(q)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""

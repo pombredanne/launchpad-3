@@ -423,23 +423,26 @@ class SourcePackageRelease(SQLBase):
         parent_architectures = []
         archtag = distroarchseries.architecturetag
 
-        # XXX cprov 20070720: this code belongs to IDistroSeries content
-        # class as 'parent_series' property. Other parts of the system
-        # can benefit of this, like SP.packagings, for instance.
-        parent_series = []
-        candidate = distroarchseries.distroseries
-        while candidate is not None:
-            parent_series.append(candidate)
-            candidate = candidate.parent_series
+        if archive.purpose != ArchivePurpose.PPA:
+            # XXX cprov 20070720: this code belongs to IDistroSeries content
+            # class as 'parent_series' property. Other parts of the system
+            # can benefit of this, like SP.packagings, for instance.
+            parent_series = []
+            candidate = distroarchseries.distroseries
+            while candidate is not None:
+                parent_series.append(candidate)
+                candidate = candidate.parent_series
 
-        for series in parent_series:
-            try:
-                candidate = series[archtag]
-            except NotFoundError:
-                pass
-            else:
-                parent_architectures.append(candidate)
-        # end-of-XXX.
+            for series in parent_series:
+                try:
+                    candidate = series[archtag]
+                except NotFoundError:
+                    pass
+                else:
+                    parent_architectures.append(candidate)
+            # end-of-XXX.
+        else:
+            parent_architectures.append(distroarchseries)
 
         architectures = [
             architecture.id for architecture in parent_architectures]
