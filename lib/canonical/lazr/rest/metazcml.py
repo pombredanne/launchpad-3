@@ -15,10 +15,12 @@ from zope.interface.interfaces import IInterface
 
 
 from canonical.lazr.rest.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, generate_collection_adapter,
-    generate_entry_adapter, generate_entry_interface)
-from canonical.lazr.interfaces.rest import ICollection, IEntry
-
+    LAZR_WEBSERVICE_EXPORTED, OPERATION_TYPES, generate_collection_adapter,
+    generate_entry_adapter, generate_entry_interface,
+    generate_operation_adapter)
+from canonical.lazr.interfaces.rest import (
+    ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation,
+    WebServiceLayer)
 
 class IRegisterDirective(Interface):
     """Directive to hook up webservice based on the declarations in a module.
@@ -69,3 +71,29 @@ def register_webservice(context, module):
             args=('provideAdapter',
                    (interface, ), provides, '', factory, context.info),
             )
+        register_webservice_operations(context, interface)
+
+
+def register_webservice_operations(context, interface):
+    """Create and register adapters for all exported methods."""
+
+    for name, method in interface.namesAndDescriptions(True):
+        tag = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        if tag is None or tag['type'] not in OPERATION_TYPES:
+            continue
+        if tag['type'] == 'read_operation':
+            provides = IResourceGETOperation
+        elif tag['type'] in ['factory', 'write_operation']:
+            provides = IResourcePOSTOperation
+        else:
+            raise AssertionError('Unknown operation type: %s' % tag['type'])
+        factory = generate_operation_adapter(method)
+        context.action(
+            discriminator=(
+                'adapter', (interface, WebServiceLayer), provides, tag['as']),
+            callable=handler,
+            args=('provideAdapter',
+                   (interface, WebServiceLayer), provides, tag['as'],
+                   factory, context.info),
+            )
+

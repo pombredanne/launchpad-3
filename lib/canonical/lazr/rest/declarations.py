@@ -9,6 +9,7 @@ __all__ = [
     'FIELD_TYPE',
     'LAZR_WEBSERVICE_EXPORTED',
     'LAZR_WEBSERVICE_NS',
+    'OPERATION_TYPES',
     'REQUEST_USER',
     'call_with',
     'collection_default_content',
@@ -22,6 +23,7 @@ __all__ = [
     'generate_collection_adapter',
     'generate_entry_adapter',
     'generate_entry_interface',
+    'generate_operation_adapter',
     ]
 
 import sys
@@ -36,8 +38,11 @@ from zope.security.checker import CheckerPublic
 
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
-from canonical.lazr.interfaces.rest import ICollection, IEntry
+from canonical.lazr.interfaces.rest import (
+    ICollection, IEntry, IResourceOperation)
 from canonical.lazr.rest.resource import Collection, Entry
+from canonical.lazr.rest.operation import (
+    ResourceGETOperation, ResourcePOSTOperation)
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -45,6 +50,7 @@ LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
 COLLECTION_TYPE = 'collection'
 ENTRY_TYPE = 'entry'
 FIELD_TYPE = 'field'
+OPERATION_TYPES = ('factory', 'read_operation', 'write_operation')
 
 # Marker to specify that a parameter should contain the request user.
 REQUEST_USER = object()
@@ -376,3 +382,39 @@ def generate_collection_adapter(interface):
 
     protect_schema(factory, ICollection)
     return factory
+
+
+class BaseGETOperationAdapter(ResourceGETOperation):
+    """Base for generated GET operation adapters."""
+
+
+class BasePOSTOperationAdapter(ResourcePOSTOperation):
+    """Base for generated GET operation adapters."""
+
+
+def generate_operation_adapter(method):
+    """Create an IResourceOperation adapter for the exported method."""
+
+    if not IMethod.providedBy(method):
+        raise TypeError("%r doesn't provide IMethod." % method)
+    tag = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    if tag is None:
+        raise TypeError(
+            "'%s' isn't tagged for webservice export." % method.__name__)
+
+    if tag['type'] == 'read_operation':
+        bases = (BaseGETOperationAdapter,)
+        prefix = 'GET'
+    elif tag['type'] in ('factory', 'write_operation'):
+        bases = (BasePOSTOperationAdapter,)
+        prefix = 'POST'
+    else:
+        raise AssertionError('Unknown method export type: %s' % tag['type'])
+
+    name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
+    cdict = {}
+    factory = type(name, bases, cdict)
+    protect_schema(factory, IResourceOperation)
+
+    return factory
+
