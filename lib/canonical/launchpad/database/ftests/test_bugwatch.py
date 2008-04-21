@@ -192,7 +192,7 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Savannah URLs.
     """
 
-    bugtracker_type = BugTrackerType.SAVANNAH
+    bugtracker_type = BugTrackerType.SAVANE
     bug_url = 'http://savannah.gnu.org/bugs/?22003'
     base_url = 'http://savannah.gnu.org/'
     bug_id = '22003'
@@ -201,6 +201,16 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         # The Savannah tracker is always registered, so this test
         # doesn't make sense for Savannah URLs.
         pass
+
+
+class SavaneExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Savane URLs.
+    """
+
+    bugtracker_type = BugTrackerType.SAVANE
+    bug_url = 'http://savane.example.com/bugs/?12345'
+    base_url = 'http://savane.example.com/'
+    bug_id = '12345'
 
 
 class EmailAddressExtractBugTrackerAndBugTest(
@@ -235,6 +245,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(SavannahExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(SavaneExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
     return suite
 

@@ -43,7 +43,7 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.RT:          'Ticket/Display.html?id=%s',
     BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
     BugTrackerType.TRAC:        'ticket/%s',
-    BugTrackerType.SAVANNAH:    'bugs/?%s',
+    BugTrackerType.SAVANE:    'bugs/?%s',
     }
 
 
@@ -239,7 +239,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
-            BugTrackerType.SAVANNAH: self.parseSavannahURL,
+            BugTrackerType.SAVANE: self.parseSavaneURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
         }
@@ -437,9 +437,9 @@ class BugWatchSet(BugSetBase):
 
         return sf_tracker.baseurl, remote_bug
 
-    def parseSavannahURL(self, scheme, host, path, query):
-        """Extract GNU Savannah base URL and bug ID."""
-        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+    def parseSavaneURL(self, scheme, host, path, query):
+        """Extract Savame base URL and bug ID."""
+        # Savane bugs URLs are in the form /bugs/?<bug-id>, so we
         # exclude any path that isn't '/bugs/'. We also exclude query
         # string that have a length of more or less than one, since in
         # such cases we'd be taking a guess at the bug ID, which would
@@ -447,16 +447,24 @@ class BugWatchSet(BugSetBase):
         if path != '/bugs/' or len(query) != 1:
             return None
 
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad, so we return that one if the hostname matches.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+        savannah_hosts = [
+            urlsplit(alias)[1] for alias in savannah_tracker.aliases
+            ]
+        savannah_hosts.append(urlsplit(savannah_tracker.baseurl)[1])
+
         # The remote bug is actually a key in the query dict rather than
         # a value, so we simply use the first and only key we come
         # across as a best-effort guess.
         remote_bug = query.popitem()[0]
 
-        # There's only one global Savannah bugtracker registered with
-        # Launchpad.
-        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
-
-        return savannah_tracker.baseurl, remote_bug
+        if host in savannah_hosts:
+            return savannah_tracker.baseurl, remote_bug
+        else:
+            base_url = urlunsplit((scheme, host, '/', '', ''))
+            return base_url, remote_bug
 
     def parseEmailAddressURL(self, scheme, host, path, query):
         """Extract an email address from a bug URL.

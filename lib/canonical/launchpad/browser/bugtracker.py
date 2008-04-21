@@ -43,7 +43,6 @@ from canonical.widgets import DelimitedListWidget
 # tracker.
 SINGLE_INSTANCE_TRACKERS = (
     BugTrackerType.DEBBUGS,
-    BugTrackerType.SAVANNAH,
     BugTrackerType.SOURCEFORGE,
     )
 

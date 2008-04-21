@@ -120,10 +120,10 @@ class BugTrackerType(DBEnumeratedType):
         Bugs are tracked by email, perhaps on a mailing list.
         """)
 
-    SAVANNAH = DBItem(9, """
-        GNU / NoGNU Savannah
+    SAVANE = DBItem(9, """
+        Savane
 
-        Savannah is a web-based project hosting system which includes
+        Savane is a web-based project hosting system which includes
         bug, support and request tracking.
         """)
 
