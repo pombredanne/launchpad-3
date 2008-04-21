@@ -159,12 +159,6 @@ class LaunchpadServer(Server):
         self.logger = logging.getLogger(
             'codehosting.lpserve.%s' % self.user_name)
 
-    def requestMirror(self, virtual_path):
-        """Request that the branch that owns 'virtual_path' be mirrored."""
-        branch_id, ignored, path = self._translate_path(virtual_path)
-        self.logger.info('Requesting mirror for: %r', branch_id)
-        self.authserver.requestMirror(self.user_id, branch_id)
-
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
 
@@ -185,6 +179,24 @@ class LaunchpadServer(Server):
                 'Cannot create branch: %s' % (virtual_path,))
         ensure_base(
             self.backing_transport.clone(branch_id_to_path(branch_id)))
+
+    def requestMirror(self, virtual_path):
+        """Request that the branch that owns 'virtual_path' be mirrored."""
+        branch_id, ignored, path = self._translate_path(virtual_path)
+        self.logger.info('Requesting mirror for: %r', branch_id)
+        self.authserver.requestMirror(self.user_id, branch_id)
+
+    def translateVirtualPath(self, virtual_path):
+        """Translate 'virtual_path' into a transport and sub-path."""
+        try:
+            path, permissions = self.translate_virtual_path(virtual_path)
+        except (UntranslatablePath, TransportNotPossible):
+            raise NoSuchFile(virtual_path)
+        if permissions == READ_ONLY:
+            transport = self.mirror_transport
+        else:
+            transport = self.backing_transport
+        return transport, path, permissions
 
     def _make_branch(self, user, product, branch):
         """Create a branch in the database for the given user and product.
@@ -244,17 +256,6 @@ class LaunchpadServer(Server):
                 self.user_id, user, product, branch)
             self._branch_info_cache[(user, product, branch)] = branch_info
         return branch_info
-
-    def translateVirtualPath(self, abspath):
-        try:
-            path, permissions = self.translate_virtual_path(abspath)
-        except (UntranslatablePath, TransportNotPossible):
-            raise NoSuchFile(abspath)
-        if permissions == READ_ONLY:
-            transport = self.mirror_transport
-        else:
-            transport = self.backing_transport
-        return transport, path, permissions
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions
