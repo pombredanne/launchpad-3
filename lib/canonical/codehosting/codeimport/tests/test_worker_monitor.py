@@ -125,6 +125,7 @@ class TestWorkerMonitorUnit(TestCase):
     layer = TwistedLaunchpadZopelessLayer
 
     class WorkerMonitor(CodeImportWorkerMonitor):
+        """A subclass of CodeImportWorkerMonitor that stubs logging OOPSes."""
 
         def _logOopsFromFailure(self, failure):
             self._failures.append(failure)
@@ -459,7 +460,8 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
         Return a Deferred that fires when it the job is done.
 
-        This implementation does it in-process."""
+        This implementation does it in-process.
+        """
         return CodeImportWorkerMonitor(job_id, _make_silent_logger()).run()
 
     def test_import_cvs(self):
@@ -500,7 +502,8 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
 
         Return a Deferred that fires when it the job is done.
 
-        This implementation does it in a child process."""
+        This implementation does it in a child process.
+        """
         script_path = os.path.join(
             get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
         process_end_deferred = defer.Deferred()
