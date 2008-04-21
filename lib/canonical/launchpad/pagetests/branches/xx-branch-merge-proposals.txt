@@ -3,10 +3,27 @@
 Branch merge proposals are where you show the intent of merging
 the code from one branch into another.
 
+In order to test notifications, we need a subscriber for the branch.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel, IBranchSet, IPersonSet)
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/klingon')
+    >>> subscriber = getUtility(IPersonSet).getByEmail(
+    ...     'foo.bar@canonical.com')
+    >>> _unused = branch.subscribe(subscriber,
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.FULL)
+    >>> logout()
+
+
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
 is `Propose for merging`.
-
 
 == Registering a merge proposal ==
 
@@ -37,6 +54,14 @@ main page for the source branch.
 
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon
+
+An email notification is emitted when the merge proposal is created.
+
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> [notification] = pop_notifications()
+    >>> print notification['Subject']
+    Merge of Klingon support in GNOME Terminal into GNOME Terminal Mainline
+    proposed
 
 Most of the time the merge proposal is looked at from the point
 of view of either the source branch or the target branch.
@@ -226,6 +251,10 @@ On update, the user is taken back to the proposal details page.
     ...      sample_browser.contents, 'branch-whiteboard-value'))
     This is the updated whiteboard.
     Demo url: http://launchpad.dev/+foo
+
+A mail notification is sent out.
+
+    >>> [notification] = pop_notifications()
 
 
 == Deleting merge proposals ==
