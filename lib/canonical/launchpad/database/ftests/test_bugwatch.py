@@ -170,6 +170,18 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         pass
 
 
+class GForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with GForge URLs.
+    """
+
+    bugtracker_type = BugTrackerType.GFORGE
+    bug_url = (
+        'http://gforge.example.com/tracker/index.php'
+        '?func=detail&aid=90812&group_id=84122&atid=575154')
+    base_url = 'http://gforge.example.com/'
+    bug_id = '90812'
+
+
 class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with RT URLs."""
 
