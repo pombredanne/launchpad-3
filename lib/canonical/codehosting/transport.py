@@ -187,7 +187,10 @@ class LaunchpadServer(Server):
         self.authserver.requestMirror(self.user_id, branch_id)
 
     def translateVirtualPath(self, virtual_path):
-        """Translate 'virtual_path' into a transport and sub-path."""
+        """Translate 'virtual_path' into a transport and sub-path.
+
+        :return: (transport, path_on_transport)
+        """
         try:
             path, permissions = self.translate_virtual_path(virtual_path)
         except (UntranslatablePath, TransportNotPossible):
@@ -196,7 +199,7 @@ class LaunchpadServer(Server):
             transport = self.mirror_transport
         else:
             transport = self.backing_transport
-        return transport, path, permissions
+        return transport, path
 
     def _make_branch(self, user, product, branch):
         """Create a branch in the database for the given user and product.
@@ -392,11 +395,8 @@ class LaunchpadTransport(Transport):
         :raise TransportNotPossible: If trying to do a write operation on a
             read-only path.
         """
-        transport, path, permissions = self.server.translateVirtualPath(
+        transport, path = self.server.translateVirtualPath(
             self._abspath(relpath))
-        self.server.logger.info(
-            '%s(%r -> %r, args=%r, kwargs=%r)',
-            methodname, relpath, (path, permissions), args, kwargs)
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
@@ -430,14 +430,12 @@ class LaunchpadTransport(Transport):
 
     def iter_files_recursive(self):
         self.server.logger.debug('iter_files_recursive()')
-        transport, path, permissions = self.server.translateVirtualPath(
-            self._abspath('.'))
+        transport, path = self.server.translateVirtualPath(self._abspath('.'))
         return transport.clone(path).iter_files_recursive()
 
     def listable(self):
         self.server.logger.debug('listable()')
-        transport, path, permissions = self.server.translateVirtualPath(
-            self._abspath('.'))
+        transport, path = self.server.translateVirtualPath(self._abspath('.'))
         return transport.listable()
 
     def list_dir(self, relpath):
@@ -462,9 +460,11 @@ class LaunchpadTransport(Transport):
         return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        transport, path, permissions = self.server.translateVirtualPath(
-            self._abspath(rel_to))
-        if permissions == READ_ONLY:
+        abs_to = self._abspath(rel_to)
+        transport, path = self.server.translateVirtualPath(abs_to)
+        # This is a horrible lie. What we should check is that the transport
+        # of rel_to is the same as the transport of rel_from.
+        if transport.is_readonly():
             raise TransportNotPossible('readonly transport')
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
