@@ -298,7 +298,7 @@ Foo Bar to subscribe the appropriate team at a later date.
     >>> from canonical.launchpad.interfaces import BranchType
     >>> branch = branch_set.new(
     ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-1", creator=foo_bar, owner=foo_bar,
+    ...     name="testing-1", registrant=foo_bar, owner=foo_bar,
     ...     product=evolution, url=None)
     >>> branch.private
     True
@@ -318,7 +318,7 @@ and are subscribed to by the Ubuntu Gnome Team.
 
     >>> branch = branch_set.new(
     ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-2", creator=stevea, owner=stevea,
+    ...     name="testing-2", registrant=stevea, owner=stevea,
     ...     product=evolution, url=None)
     >>> branch.private
     True
@@ -338,7 +338,7 @@ teams that have private branches, David's branch will be public.
 
     >>> branch = branch_set.new(
     ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-3", creator=ddaa, owner=ddaa,
+    ...     name="testing-3", registrant=ddaa, owner=ddaa,
     ...     product=evolution, url=None)
     >>> branch.private
     False
@@ -359,7 +359,7 @@ visibility policy, which for this product is Forbidden.
 
     >>> branch = branch_set.new(
     ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-4", creator=no_priv, owner=no_priv,
+    ...     name="testing-4", registrant=no_priv, owner=no_priv,
     ...     product=evolution, url=None)
     Traceback (most recent call last):
     ...

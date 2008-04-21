@@ -10,6 +10,7 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
@@ -278,6 +279,15 @@ class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
         description=_("The reason why the package is being deleted."))
+
+
+class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
+    """Schema used to copy packages across archive."""
+
+    include_binaries = Bool(
+        title=_("Copy binaries"), required=False, default=False,
+        description=_("Whether or not to copy the binary packages for "
+                      "the selected sources."))
 
 
 class IArchiveEditDependenciesForm(Interface):
