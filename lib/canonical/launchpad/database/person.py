@@ -103,8 +103,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.validators.person import (
-    public_person_validator, visibility_validator)
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -114,6 +113,15 @@ class ValidPersonOrTeamCache(SQLBase):
     database triggers.
     """
     # Look Ma, no columns! (apart from id)
+
+
+def validate_person_visibility(person, attr, value):
+    """Prevent teams with inconsistent connections from being made private."""
+    if value != PersonVisibility.PUBLIC:
+        warning = person.visibility_consistency_warning
+        if warning is not None:
+            raise ValueError(warning)
+    return value
 
 
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
@@ -178,7 +186,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None,
-                           validator=public_person_validator)
+                           storm_validator=validate_public_person)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -200,7 +208,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None,
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
@@ -235,7 +243,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC,
-        ) # validator=visibility_validator)
+        storm_validator=validate_person_visibility)
 
     personal_standing = EnumCol(
         enum=PersonalStanding, default=PersonalStanding.UNKNOWN,

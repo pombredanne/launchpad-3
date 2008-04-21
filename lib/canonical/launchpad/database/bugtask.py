@@ -41,7 +41,7 @@ from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     BUG_CONTACT_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
@@ -304,6 +304,53 @@ def BugTaskToBugAdapter(bugtask):
     return bugtask.bug
 
 
+class PassthroughValue:
+    """A wrapper to allow setting values on conjoined bug tasks."""
+    def __init__(self, value):
+        self.value = value
+
+
+def validate_conjoined_attribute(self, attr, value):
+    # If the value has been wrapped in a _PassthroughValue instance,
+    # then we are being updated by our conjoined master: pass the
+    # value through without any checking.
+    if isinstance(value, PassthroughValue):
+        return value.value
+
+    if self._isConjoinedBugTask():
+        raise ConjoinedBugTaskEditError(
+            "This task cannot be edited directly, it should be"
+            " edited through its conjoined_master.")
+    # The conjoined slave is updated before the master one because,
+    # for distro tasks, conjoined_slave does a comparison on
+    # sourcepackagename, and the sourcepackagenames will not match
+    # if the conjoined master is altered before the conjoined slave!
+    conjoined_bugtask = self.conjoined_slave
+    if conjoined_bugtask:
+        setattr(conjoined_bugtask, attr, PassthroughValue(value))
+
+    return value
+
+
+def validate_status(self, attr, value):
+    if value not in self._NON_CONJOINED_STATUSES:
+        return validate_conjoined_attribute(self, attr, value)
+    else:
+        return value
+
+
+def validate_assignee(self, attr, value):
+    value = validate_conjoined_attribute(self, attr, value)
+    # Check if this assignee is public.
+    return validate_public_person(self, attr, value)
+
+
+def validate_sourcepackagename(self, attr, value):
+    value = validate_conjoined_attribute(self, attr, value)
+    self._syncSourcePackages(value)
+    return value
+
+
 class BugTask(SQLBase, BugTaskMixin):
     """See `IBugTask`."""
     implements(IBugTask)
@@ -311,7 +358,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
     _CONJOINED_ATTRIBUTES = (
-        "status", "importance", "assignee", "milestone",
+        "status", "importance", "assigneeID", "milestoneID",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed", "date_incomplete")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
@@ -325,7 +372,8 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_sourcepackagename)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
@@ -334,31 +382,39 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.NEW)
+        default=BugTaskStatus.NEW,
+        storm_validator=validate_status)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
         schema=BugTaskImportance,
-        default=BugTaskImportance.UNDECIDED)
+        default=BugTaskImportance.UNDECIDED,
+        storm_validator=validate_conjoined_attribute)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_assignee,
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    date_assigned = UtcDateTimeCol(notNull=False, default=None)
+    date_assigned = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    date_confirmed = UtcDateTimeCol(notNull=False, default=None)
-    date_inprogress = UtcDateTimeCol(notNull=False, default=None)
-    date_closed = UtcDateTimeCol(notNull=False, default=None)
-    date_incomplete = UtcDateTimeCol(notNull=False, default=None)
+    date_confirmed = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_inprogress = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_closed = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_incomplete = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     # The targetnamecache is a value that is only supposed to be set
     # when a bugtask is created/modified or by the
     # update-bugtask-targetnamecaches cronscript. For this reason it's
@@ -414,7 +470,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
-    def _syncSourcePackages(self, prev_sourcepackagename):
+    def _syncSourcePackages(self, new_spnid):
         """Synchronize changes to source packages with other distrotasks.
 
         If one distroseriestask's source package is changed, all the
@@ -433,8 +489,8 @@ class BugTask(SQLBase, BugTaskMixin):
                 else:
                     related_distribution = bugtask.distribution
                 if (related_distribution == distribution and
-                    bugtask.sourcepackagename == prev_sourcepackagename):
-                    bugtask.sourcepackagename = self.sourcepackagename
+                    bugtask.sourcepackagenameID == self.sourcepackagenameID):
+                    bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
 
     @property
     def conjoined_master(self):
@@ -491,77 +547,6 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_slave = None
         return conjoined_slave
 
-    # XXX: Bjorn Tillenius 2006-10-31:
-    # Conjoined bugtask synching methods. We override these methods
-    # individually, to avoid cycle problems if we were to override
-    # _SO_setValue instead. This indicates either a bug or design issue
-    # in SQLObject.
-    # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
-    # _set_foo method below.
-    def _set_status(self, value):
-        """Set status, and update conjoined BugTask."""
-        if value not in self._NON_CONJOINED_STATUSES:
-            self._setValueAndUpdateConjoinedBugTask("status", value)
-        else:
-            self._SO_set_status(value)
-
-    def _set_assignee(self, value):
-        """Set assignee, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("assignee", value)
-
-    def _set_importance(self, value):
-        """Set importance, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("importance", value)
-
-    def _set_milestone(self, value):
-        """Set milestone, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("milestone", value)
-
-    def _set_sourcepackagename(self, value):
-        """Set sourcepackagename, and update conjoined BugTask."""
-        old_sourcepackagename = self.sourcepackagename
-        self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
-        self._syncSourcePackages(old_sourcepackagename)
-
-    def _set_date_assigned(self, value):
-        """Set date_assigned, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_assigned", value)
-
-    def _set_date_confirmed(self, value):
-        """Set date_confirmed, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_confirmed", value)
-
-    def _set_date_inprogress(self, value):
-        """Set date_inprogress, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_inprogress", value)
-
-    def _set_date_closed(self, value):
-        """Set date_closed, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_closed", value)
-
-    def _set_date_incomplete(self, value):
-        """Set date_incomplete, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
-
-    def _setValueAndUpdateConjoinedBugTask(self, colname, value):
-        """Set a value, and update conjoined BugTask."""
-        if self._isConjoinedBugTask():
-            raise ConjoinedBugTaskEditError(
-                "This task cannot be edited directly, it should be"
-                " edited through its conjoined_master.")
-        # The conjoined slave is updated before the master one because,
-        # for distro tasks, conjoined_slave does a comparison on
-        # sourcepackagename, and the sourcepackagenames will not match
-        # if the conjoined master is altered before the conjoined slave!
-        conjoined_bugtask = self.conjoined_slave
-        if conjoined_bugtask:
-            conjoined_attrsetter = getattr(
-                conjoined_bugtask, "_SO_set_%s" % colname)
-            conjoined_attrsetter(value)
-
-        attrsetter = getattr(self, "_SO_set_%s" % colname)
-        attrsetter(value)
-
     def _isConjoinedBugTask(self):
         """Return True when conjoined_master is not None, otherwise False."""
         return self.conjoined_master is not None
@@ -580,8 +565,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # Bypass our checks that prevent setting attributes on
             # conjoined masters by calling the underlying sqlobject
             # setter methods directly.
-            attrsetter = getattr(self, "_SO_set_%s" % synched_attr)
-            attrsetter(slave_attr_value)
+            setattr(self, synched_attr, PassthroughValue(slave_attr_value))
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
