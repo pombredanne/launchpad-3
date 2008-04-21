@@ -199,35 +199,17 @@ class LaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        try:
-            self.logger.debug('translate_virtual_path(%r)', virtual_path)
-            segments = get_path_segments(virtual_path)
-            # XXX: JamesHenstridge 2007-10-09
-            # We trim the segments list so that we don't raise
-            # PermissionDenied when the client tries to read
-            # /~user/project/.bzr/branch-format when checking for a shared
-            # repository (instead, we'll fail to look up the branch, and
-            # return UntranslatablePath).  This whole function will
-            # probably need refactoring when we move to actually
-            # supporting shared repos.
-            if '.bzr' in segments:
-                segments = segments[:segments.index('.bzr')]
-            if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-                raise PermissionDenied(
-                    FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
-
-            # XXX: JonathanLange 2007-05-29, We could differentiate between
-            # 'branch not found' and 'not enough information in path to figure out
-            # a branch'.
-            branch_id, permissions, path = self._translate_path(virtual_path)
-            self.logger.debug(
-                'Translated %r => %r', virtual_path,
-                (branch_id, permissions, path))
-            if branch_id == '':
-                raise UntranslatablePath(path=virtual_path, user=self.user_name)
-            path = '/'.join([branch_id_to_path(branch_id), path])
-        except (UntranslatablePath, TransportNotPossible):
+        self.logger.debug('translate_virtual_path(%r)', virtual_path)
+        # XXX: JonathanLange 2007-05-29, We could differentiate between
+        # 'branch not found' and 'not enough information in path to figure out
+        # a branch'.
+        branch_id, permissions, path = self._translate_path(virtual_path)
+        self.logger.debug(
+            'Translated %r => %r', virtual_path,
+            (branch_id, permissions, path))
+        if branch_id == '':
             raise NoSuchFile(virtual_path)
+        path = '/'.join([branch_id_to_path(branch_id), path])
 
         if permissions == READ_ONLY:
             transport = self.mirror_transport
@@ -245,15 +227,27 @@ class LaunchpadServer(Server):
         to that branch. In short, everything you need to be able to access a
         file in a branch.
         """
+        segments = get_path_segments(virtual_path)
+        # XXX: JamesHenstridge 2007-10-09
+        # We trim the segments list so that we don't raise
+        # PermissionDenied when the client tries to read
+        # /~user/project/.bzr/branch-format when checking for a shared
+        # repository (instead, we'll fail to look up the branch, and
+        # return UntranslatablePath).  This whole function will
+        # probably need refactoring when we move to actually
+        # supporting shared repos.
+        if '.bzr' in segments:
+            segments = segments[:segments.index('.bzr')]
+        if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
+            raise PermissionDenied(
+                FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
         # We can safely pad with '' because we can guarantee that no product
         # or branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
         user_dir, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4, padding='')
         if not user_dir.startswith('~'):
-            raise TransportNotPossible(
-                'Path must start with user or team directory: %r'
-                % (user_dir,))
+            raise NoSuchFile(virtual_path)
         user = user_dir[1:]
         branch_id, permissions = self._get_branch_information(
             user, product, branch)
