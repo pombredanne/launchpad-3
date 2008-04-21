@@ -45,7 +45,7 @@ field, but not the inventory_number field.
     ...     export_field(author)
     ...
     ...     base_price = Float(title=u"The regular price of the book.")
-    ...     export_field(base_price, as='price')
+    ...     export_field(base_price, export_as='price')
     ...
     ...     inventory_number = TextLine(title=u'The inventory part number.')
 

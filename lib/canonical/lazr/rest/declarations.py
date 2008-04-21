@@ -107,7 +107,7 @@ def export_entry():
     addClassAdvisor(mark_entry)
 
 
-def export_field(field, as=None):
+def export_field(field, export_as=None):
     """Mark the field as part of the entry data model.
 
     :param as: the name under which the field is published in the entry. By
@@ -117,7 +117,7 @@ def export_field(field, as=None):
     if not IField.providedBy(field):
         raise TypeError("export_field() can only be used on IFields.")
     field.setTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED, dict(type=FIELD_TYPE, as=as))
+        LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': export_as})
 
 
 def export_collection():
