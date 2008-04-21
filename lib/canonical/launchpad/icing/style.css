@@ -1723,3 +1723,6 @@ div.popupTitle {
   position: absolute;
   display: none;
 }
+
+/* The icon next to inline action links */
+.inlineLinkIcon {margin-right: 0.5em; margin-left: 0.5em;}

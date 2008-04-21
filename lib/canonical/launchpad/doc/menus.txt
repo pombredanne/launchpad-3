@@ -411,10 +411,8 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <span class="action">
-        <img alt="" src="/@@/icon" />
-        <a class="menu-link-None" title="summary">text--&gt;</a>
-    </span>
+    <span class="action"><img alt="" class="inlineLinkIcon"
+                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -1087,10 +1085,8 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <span class="action">
-        <a href="http://127.0.0.1/sesamestreet/number73/+first"
-            class="menu-link-first">First menu</a>
-    </span>
+    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
+          class="menu-link-first">First menu</a></span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
