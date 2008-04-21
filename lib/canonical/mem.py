@@ -1,3 +1,5 @@
+# We like globals!
+# pylint: disable-msg=W0602
 """
 This code is from:
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/286222
@@ -16,6 +18,7 @@ and improve APIs as needed.
 __metatype__ = type
 __all__ = [
     'classesWithMostRefs',
+    'countsByType',
     'deltaCounts',
     'logInThread',
     'memory',
@@ -95,8 +98,9 @@ def dump_garbage():
     print "\nGARBAGE OBJECTS:"
     for x in gc.garbage:
         s = str(x)
-        if len(s) > 80: s = s[:80]
-        print type(x),"\n  ", s
+        if len(s) > 80:
+            s = s[:80]
+        print type(x), "\n  ", s
 
 # This is spiv's reference count code, under 'MIT Licence if I'm pressed'.
 #
@@ -113,7 +117,7 @@ def classesWithMostRefs(n=30):
     for obj in gc.get_objects():
         if type(obj) in (types.ClassType, types.TypeType):
             d[obj] = sys.getrefcount(obj)
-    counts = [(x[1],x[0]) for x in d.items()]
+    counts = [(x[1], x[0]) for x in d.items()]
     counts.sort()
     return reversed(counts[-n:])
 
@@ -128,14 +132,22 @@ def mostRefs(n=30):
 
     :return: A list of tuple (count, type).
     """
+    return countsByType(gc.get_objects(), n=n)
+
+
+def countsByType(objects, n=30):
+    """Return the n types with the highest instance count in a list.
+
+    This takes a list of objects and count the number of objects by type.
+    """
     d = {}
-    for obj in gc.get_objects():
+    for obj in objects:
         if type(obj) is types.InstanceType:
             cls = obj.__class__
         else:
             cls = type(obj)
         d[cls] = d.get(cls, 0) + 1
-    counts = [(x[1],x[0]) for x in d.items()]
+    counts = [(x[1], x[0]) for x in d.items()]
     counts.sort()
     return reversed(counts[-n:])
 
@@ -172,10 +184,19 @@ def printCounts(counts, file=None):
         else:
             file.write("%s %s\n" % (c, obj))
 
-def readCounts(file):
-    """Reverse of printCounts()."""
+def readCounts(file, marker=None):
+    """Reverse of printCounts().
+
+    If marker is not None, this will return the counts as soon as a line
+    containging is encountered. Otherwise, it reads until the end of file.
+    """
     counts = []
-    for line in file.readlines():
+    # We read one line at a time because we want the file pointer to
+    # be after the marker line if we encounters it.
+    while True:
+        line = file.readline()
+        if not line or (marker is not None and line == marker):
+            break
         count, ref_type = line.strip().split(' ', 1)
         counts.append((int(count), ref_type))
     return counts
@@ -184,7 +205,8 @@ def readCounts(file):
 def logInThread(n=30):
     reflog = file('/tmp/refs.log','w')
     t = threading.Thread(target=_logRefsEverySecond, args=(reflog, n))
-    t.setDaemon(True) # allow process to exit without explicitly stopping thread
+    # Allow process to exit without explicitly stopping thread.
+    t.setDaemon(True)
     t.start()
 
 
@@ -196,7 +218,7 @@ def _logRefsEverySecond(log, n):
         time.sleep(1)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     counts = mostRefs()
     printCounts(counts)
 
@@ -210,5 +232,4 @@ if __name__=="__main__":
 
     # show the dirt ;-)
     dump_garbage()
-
 

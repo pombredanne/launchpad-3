@@ -1,4 +1,4 @@
- # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -31,15 +31,20 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
+    ICountrySet,
     IPersonSet,
     IProductSet,
     IProjectSet,
     IRevisionSet,
+    IShippingRequestSet,
     ISpecificationSet,
+    IStandardShipItRequestSet,
     ITranslationGroupSet,
     License,
     PersonCreationRationale,
     RevisionControlSystems,
+    ShipItFlavour,
+    ShippingRequestStatus,
     SpecificationDefinitionStatus,
     TeamSubscriptionPolicy,
     UnknownBranchTypeError,
@@ -126,7 +131,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = self.getUniqueString('email')
+            email = "%s@example.com" % self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -400,11 +405,13 @@ class LaunchpadObjectFactory:
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
 
-    def makeCodeImportJob(self, code_import):
+    def makeCodeImportJob(self, code_import=None):
         """Create and return a new code import job for the given import.
 
         This implies setting the import's review_status to REVIEWED.
         """
+        if code_import is None:
+            code_import = self.makeCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
@@ -455,3 +462,26 @@ class LaunchpadObjectFactory:
         series.import_branch = import_branch
         syncUpdate(series)
         return series
+
+    def makeShipItRequest(self, flavour=ShipItFlavour.UBUNTU):
+        """Create a `ShipItRequest` associated with a newly created person.
+
+        The request's status will be approved and it will contain an arbitrary
+        number of CDs of the given flavour.
+        """
+        brazil = getUtility(ICountrySet)['BR']
+        city = 'Sao Carlos'
+        addressline = 'Antonio Rodrigues Cajado 1506'
+        name = 'Guilherme Salgado'
+        phone = '+551635015218'
+        person = self.makePerson()
+        request = getUtility(IShippingRequestSet).new(
+            person, name, brazil, city, addressline, phone)
+        # We don't want to login() as the person used to create the request,
+        # so we remove the security proxy for changing the status.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
+        template = getUtility(IStandardShipItRequestSet).getByFlavour(
+            flavour)[0]
+        request.setQuantities({flavour: template.quantities})
+        return request
