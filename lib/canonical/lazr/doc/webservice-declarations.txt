@@ -240,9 +240,9 @@ available as a POST operation on the exported resource, with the
 addition that the result of the method is a new object and the HTTP
 status code will be set appropriately.
 
-The specification of the accepted parameters should be given as
-parameters to these decorators. The parameter specification is done
-using normal IField description.
+The specification of the web service's acceptable method
+parameters should be described using decorator arguments, which are
+normal IField instances.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     export_as, export_factory_operation, export_read_operation,
