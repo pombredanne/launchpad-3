@@ -792,14 +792,13 @@ def get_bug_indirect_subscribers(bug, recipients=None):
     """ """ # TODO
 
     also_notified_subscribers = set()
+    structural_subscription_targets = set()
 
     for bugtask in bug.bugtasks:
         if bugtask.assignee:
             also_notified_subscribers.add(bugtask.assignee)
             if recipients is not None:
                 recipients.addAssignee(bugtask.assignee)
-
-        structural_subscription_targets = set()
 
         if IStructuralSubscriptionTarget.providedBy(bugtask.target):
             structural_subscription_targets.add(bugtask.target)
@@ -819,8 +818,8 @@ def get_bug_indirect_subscribers(bug, recipients=None):
                 recipients.addRegistrant(pillar.owner, pillar)
 
     person_set = getUtility(IPersonSet)
-    target_subscribers = person_set.getSubscribersForTarget(
-        structural_subscription_targets)
+    target_subscribers = person_set.getSubscribersForTargets(
+        structural_subscription_targets, recipients=recipients)
 
     also_notified_subscribers.update(target_subscribers)
 

@@ -3038,9 +3038,8 @@ class PersonSet:
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
-    def getSubscribersForTarget(self, targets):
+    def getSubscribersForTargets(self, targets, recipients=None):
         """See `IPersonSet`. """
-        clause_tables = ['StructuralSubscription']
         target_criteria = []
         for target in targets:
             # target_args is a mapping from query argumens
@@ -3049,21 +3048,20 @@ class PersonSet:
             target_criteria_clauses = []
             for k, v in target_args.items():
                 if v is not None:
-                    # The query argument is guaranteed to be identical
-                    # to the table name it's pointing at, so we can safely
-                    # use that for the FROM clause.
-                    clause_tables.append(k)
                     target_criteria_clauses.append(
                         '%s = %s' % (k, quote(v)))
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
-        # We select from Person, joining the subscriptions
-        # and looking for subscriptions where any of the criteria
-        # we collected for the targets match.
-        return Person.select(
-            """Person.id = StructuralSubscription.subscriber
-            AND (%s)""" % ' OR '.join(target_criteria),
-            clauseTables=clause_tables, distinct=True, orderBy='displayname')
+        query = ' OR '.join(target_criteria)
+        subscriptions = StructuralSubscription.select(
+            query, prejoins=['subscriber'])
+        subscribers = set()
+        for subscription in subscriptions:
+            subscribers.add(subscription.subscriber)
+            if recipients is not None:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+        return subscribers
 
 
 class PersonLanguage(SQLBase):

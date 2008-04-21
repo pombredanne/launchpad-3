@@ -1566,7 +1566,7 @@ class IPersonSet(Interface):
         Return None if there is no translator.
         """
 
-    def getSubscribersForTarget(targets):
+    def getSubscribersForTargets(targets, recipients=None):
         """Return the set of subscribers for `targets`."""
 
 
