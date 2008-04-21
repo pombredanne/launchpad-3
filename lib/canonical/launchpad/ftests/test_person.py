@@ -10,12 +10,13 @@ from zope.component import getUtility
 from sqlobject.include.validators import InvalidField
 
 from canonical.database.sqlbase import flush_database_updates, SQLBase
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BranchType, CreateBugParams, IArchiveSet, IBranchSet,
-    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
-    ISpecificationSet, PersonVisibility)
+    ArchivePurpose, BranchType, CreateBugParams, EmailAddressAlreadyTaken,
+    IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, InvalidEmailAddress,
+    InvalidName, IPersonSet, IProductSet, ISpecificationSet, NameAlreadyTaken,
+    PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
 
@@ -168,7 +169,7 @@ class TestPerson(unittest.TestCase):
         branch = getUtility(IBranchSet).new(
             branch_type=BranchType.HOSTED,
             name='namefoo',
-            creator=self.otherteam,
+            registrant=self.otherteam,
             owner=self.otherteam,
             author=self.otherteam,
             product=self.bzr,
@@ -234,6 +235,42 @@ class TestPerson(unittest.TestCase):
                 'This team cannot be made private since it is referenced by a'
                 ' teammembership.')
 
+
+class TestCreatePersonAndEmail(unittest.TestCase):
+    """Test `IPersonSet`.createPersonAndEmail()."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+        self.person_set = getUtility(IPersonSet)
+
+    def test_duplicated_name_not_accepted(self):
+        self.person_set.createPersonAndEmail(
+            'testing@example.com', PersonCreationRationale.UNKNOWN,
+            name='zzzz')
+        self.assertRaises(
+            NameAlreadyTaken, self.person_set.createPersonAndEmail,
+            'testing2@example.com', PersonCreationRationale.UNKNOWN,
+            name='zzzz')
+        
+    def test_duplicated_email_not_accepted(self):
+        self.person_set.createPersonAndEmail(
+            'testing@example.com', PersonCreationRationale.UNKNOWN)
+        self.assertRaises(
+            EmailAddressAlreadyTaken, self.person_set.createPersonAndEmail,
+            'testing@example.com', PersonCreationRationale.UNKNOWN)
+        
+    def test_invalid_email_not_accepted(self):
+        self.assertRaises(
+            InvalidEmailAddress, self.person_set.createPersonAndEmail,
+            'testing@.com', PersonCreationRationale.UNKNOWN)
+        
+    def test_invalid_name_not_accepted(self):
+        self.assertRaises(
+            InvalidName, self.person_set.createPersonAndEmail,
+            'testing@example.com', PersonCreationRationale.UNKNOWN,
+            name='/john')
+        
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
