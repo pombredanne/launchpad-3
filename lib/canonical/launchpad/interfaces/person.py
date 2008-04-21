@@ -1545,6 +1545,14 @@ class IPersonSet(Interface):
         Return None if there is no translator.
         """
 
+    def getPeopleWithBranches(product=None):
+        """Return the people who have branches.
+
+        :param product: If supplied, only people who have branches in the
+            specified product are returned.
+        """
+
+
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 

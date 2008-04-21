@@ -332,7 +332,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductBranchOverviewView"
+    class="canonical.launchpad.browser.ProductCodeIndexView"
     facet="branches"
     permission="zope.Public"
     name="+code-index"

@@ -1202,7 +1202,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #d18b39;
 }
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong {
+.tab-branches #application-footer strong, .tab-branches #application-summary strong {
   background: none;
   color: #d18b39;
 }

@@ -145,7 +145,6 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                 use-macro="branch/@@+macros/no-revision-message" />
             </em>
           </td>
-          <td></td>
         </tal:no_commit>
 
         <tal:has_commit condition="branch/last_commit">

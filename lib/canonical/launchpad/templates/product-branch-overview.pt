@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -14,103 +14,73 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Code overview for <tal:project-name replace="context/displayname"/></h1>
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
 
-  <tal:comment condition="nothing">
-    Here is where we'd add the branch searching form.
-  </tal:comment>
-
-  <div class="left">
-    <div class="section portlet" id="official-branches">
-
-      <h2>Official branches</h2>
-
-      <div class="project series"
-           tal:repeat="series view/sorted_series_list">
-        <div tal:define="is_focus python:context.development_focus == series"
-             tal:attributes="class python:is_focus and 'highlighted' or 'unhighlighted'">
-          <metal:series use-macro="series/@@+macros/branch_display" />
-        </div>
-
-      </div>
-    </div>
-
-    <div
-        tal:condition="view/latest_branches"
-        class="sectioon portlet"
-        id="portlet-latest-branches">
-      <h2>Latest branches</h2>
-      <div class="portletBody portletContent">
-
-        <table>
-          <tal:branches repeat="branch view/latest_branches">
-            <tr>
-              <td>
-                <img src="/@@/branch"/>
-              </td>
-              <td>
-                <div>
-                  <tal:branch replace="structure branch/fmt:title-link"/>
-                  <tal:badges replace="structure branch/badges:small"/>
-                </div>
-                <div class="lesser">
-                  registered
-                  <span
-                      tal:attributes="title branch/date_created/fmt:datetime"
-                      tal:content="branch/date_created/fmt:displaydate">2005-10-05</span>
-                  by
-                  <a tal:attributes="href branch/owner/fmt:url"
-                     tal:content="branch/owner/browsername">Foo Bar</a>
-                </div>
-                <p tal:condition="branch/summary"
-                   tal:content="branch/summary"/>
-              </td>
-            </tr>
-          </tal:branches>
-        </table>
-
-      </div>
-    </div>
-
+  <div style="float:right">
+    <a href="+addbranch">
+      <img alt="Register a branch"
+           src="/+icing/but-lrg-registerabranch.gif"/>
+    </a>
   </div>
-  <div class="right">
 
-    <div class="section portlet">
-      <h2>Recent revisions</h2>
-      <p>
-        These are the branches with the most recent revisions.
-      </p>
+  <tal:no-branches condition="not: view/branch_count">
+    No branches...
+  </tal:no-branches>
 
-      <table>
-        <tal:branches repeat="rev_no view/recent_revisions">
-          <tr tal:define="branch rev_no/branch">
-            <td>
-              <img src="/@@/branch"/>
-            </td>
-            <td>
-              <div>
-                <tal:branch replace="structure branch/fmt:title-link"/>
-                <tal:badges replace="structure branch/badges:small"/>
-              </div>
-              <div class="lesser">
-                registered by
-                  <a tal:attributes="href branch/owner/fmt:url"
-                     tal:content="branch/owner/browsername">Foo Bar</a>
-              </div>
-              <dl>
-                <dd>
-                  <tal:revision define="codebrowse string:${view/codebrowse_root}${rev_no/branch/unique_name}">
-                    <metal:landing-target use-macro="rev_no/branch/@@+macros/revision-text"/>
-                  </tal:revision>
-                </dd>
-              </dl>
-            </td>
-          </tr>
-        </tal:branches>
-      </table>
+  <tal:has-branches condition="view/branch_count">
+
+    <div id="application-summary">
+
+      <strong tal:content="view/branch_count">1234</strong>
+      <tal:branches replace="view/branch_text">branches</tal:branches>
+
+    owned by
+    <tal:individuals condition="view/person_owner_count">
+      <strong tal:content="view/person_owner_count">42</strong>
+      <tal:people replace="view/person_text">people</tal:people>
+    </tal:individuals>
+
+    <tal:teams condition="view/team_owner_count">
+      <tal:individuals condition="view/person_owner_count">
+        and
+      </tal:individuals>
+      <strong tal:content="view/team_owner_count">1</strong>
+      <tal:people replace="view/team_text">team</tal:people>
+    </tal:teams>
+
+    <br/>
+
+    <strong tal:content="view/commit_count">23</strong>
+    commits by
+    <strong tal:content="view/committer_count">4</strong>
+    <tal:people replace="view/committer_text">people</tal:people>
+    in the last month
 
     </div>
-  </div>
+
+    <tal:missing-dev-focus condition="not: view/has_development_focus_branch">
+      <tal:comment condition="nothing">
+        Only show the div with the warning and link if the user can actually
+        set the dev focus branch.
+      </tal:comment>
+      <div class="warning message"
+           tal:condition="context/required:launchpad.Edit"
+           tal:define="series_link context/development_focus/fmt:url;
+                       edit_link string:${series_link}/+linkbranchtoseries">
+          A branch has not yet been specified as the primary development focus
+          for <tal:project replace="context/displayname"/>
+          (<a tal:attributes="href edit_link">set</a>).
+      </div>
+    </tal:missing-dev-focus>
+
+    <div id="overview-branch-listing" style="margin-top: 1em">
+    <tal:branchlisting
+        define="branches view/branches"
+        content="structure branches/@@+branch-listing" />
+    </div>
+  </tal:has-branches>
+
+
 </div>
 
 </body>
