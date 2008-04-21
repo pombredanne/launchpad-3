@@ -6,7 +6,7 @@ The BugComment class is a content class assembled by browser code; it
 abstracts a single bug comment, has an index, and can be rendered
 independently.
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
@@ -21,7 +21,8 @@ page, and this is why getBugCommentsForDisplay doesn't return it:
     >>> bug_ten = getUtility(IBugSet).get(10)
     >>> bug_ten_bugtask = bug_ten.bugtasks[0]
 
-    >>> bug_view = getView(bug_ten_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_view = getMultiAdapter(
+    ...     (bug_ten_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
     >>> rendered_comments = bug_view.getBugCommentsForDisplay()
     >>> [bug_comment.index for bug_comment in rendered_comments]
@@ -51,8 +52,8 @@ BugTaskView.getCommentForDisplay does not return the first comment.
 
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_11_bugtask = bug_11.bugtasks[0]
-    >>> bug_11_view = getView(bug_11_bugtask, '+index', 
-    ...                       LaunchpadTestRequest())
+    >>> bug_11_view = getMultiAdapter(
+    ...     (bug_11_bugtask, LaunchpadTestRequest(), name='+index')
     >>> bug_11_view.initialize()
     >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
     >>> [bug_comment.index for bug_comment in rendered_comments]
@@ -68,7 +69,8 @@ in getBugCommentsForDisplay...
     ...     comment=bug_11.initial_message, filename='test.txt',
     ...     is_patch=False, content_type='text/plain',
     ...     description='sample data')
-    >>> bug_11_view = getView(bug_11_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_11_view = getMultiAdapter(
+    ...     (bug_11_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_11_view.initialize()
     >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
     >>> [bug_comment.index for bug_comment in rendered_comments]
@@ -101,7 +103,8 @@ just any of the bug's bugtask.)
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two_bugtask = bug_two.bugtasks[0]
-    >>> bug_view = getView(bug_two_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_view = getMultiAdapter(
+    ...     (bug_two_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
 
 If we get the bug comments from the view we can see that the two additional
@@ -208,7 +211,8 @@ to its preceding comment, it was made by a different user so it shouldn't be
 hidden.
 
     >>> bug_three_bugtask = bug_three.bugtasks[0]
-    >>> bug_view = getView(bug_three_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_view = getMultiAdapter(
+    ...     (bug_three_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
     >>> [(c.index, c.title, c.text_for_display) 
     ...  for c in bug_view.getBugCommentsForDisplay()]

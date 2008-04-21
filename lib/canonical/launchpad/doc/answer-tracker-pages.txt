@@ -2,7 +2,6 @@
 
 Several views are used to handle the various operations on a question.
 
-    >>> from zope.component import getView
     >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -42,7 +41,7 @@ Subscription is done when the user click on the 'Subscribe' button.
 
     >>> request = LaunchpadTestRequest(form={'subscribe': 'Subscribe'})
     >>> request.method = 'POST'
-    >>> view = getView(question_three, '+subscribe', request)
+    >>> view = getMultiAdapter((question_three, request), name='+subscribe')
     >>> view.initialize()
     >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     True
@@ -60,7 +59,7 @@ Unsubscription works in a similar manner.
 
     >>> request = LaunchpadTestRequest(form={'subscribe': 'Unsubscribe'})
     >>> request.method = 'POST'
-    >>> view = getView(question_three, '+subscribe', request)
+    >>> view = getMultiAdapter((question_three, request), name='+subscribe')
     >>> view.initialize()
     >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     False
@@ -389,7 +388,7 @@ question.
     ...     form={'field.actions.reject': 'Reject',
     ...           'field.message': 'Rejecting for the fun of it.'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_question, '+reject', request)
+    >>> view = getMultiAdapter((firefox_question, request), name='+reject')
     >>> view.initialize()
     >>> for notice in request.notifications:
     ...     print notice.message
@@ -408,7 +407,8 @@ outside of the comment workflow.
     ...           'field.status': 'SOLVED',
     ...           'field.message': 'Previous rejection was an error.'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_question, '+change-status', request)
+    >>> view = getMultiAdapter(
+    ...     (firefox_question, request), name='+change-status')
     >>> view.initialize()
     >>> for notice in request.notifications:
     ...     print notice.message
@@ -440,7 +440,7 @@ distribution, source package, product and whiteboard.
     ...     'field.whiteboard': 'Some note'})
     >>> request.method = 'POST'
 
-    >>> view = getView(question_three, '+edit', request)
+    >>> view = getMultiAdapter((question_three, request), name='+edit')
     >>> view.initialize()
     >>> question_three.title
     u'Better Title'
@@ -495,7 +495,7 @@ fields will be updated:
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note'})
     >>> request.method = 'POST'
-    >>> view = getView(question_three, '+edit', request)
+    >>> view = getMultiAdapter((question_three, request), name='+edit')
     >>> view.initialize()
     >>> print question_three.assignee.displayname
     Foo Bar
@@ -517,7 +517,7 @@ a distribution question:
     ...     'field.assignee': '',
     ...     'field.whiteboard': ''})
     >>> request.method = 'POST'
-    >>> view = getView(question_three, '+edit', request)
+    >>> view = getMultiAdapter((question_three, request), name='+edit')
     >>> view.initialize()
     >>> view.errors
     []
@@ -837,8 +837,8 @@ There is a helper view that is available on all IQuestionCollection
 that returns the number of questions in the Open and Needs information
 states on that target.
 
-    >>> view = getView(
-    ...     firefox, '+open_questions_count', LaunchpadTestRequest())
+    >>> view = getMultiAdapter(
+    ...     (firefox, LaunchpadTestRequest()), name='+open_questions_count')
     >>> view()
     u'4'
 

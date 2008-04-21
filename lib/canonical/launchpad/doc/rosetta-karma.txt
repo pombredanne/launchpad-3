@@ -364,7 +364,6 @@ We are going to use Sample Person for this test as he's the owner of the
 product from where the IPOTemplate is and he has rights to change the
 description.
 
-    >>> from zope.component import getView
     >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> sample_person = personset.getByEmail('test@canonical.com')

@@ -730,7 +730,7 @@ functions that achieve that.
 
 First we import the classes required to test the view:
 
-  >>> from zope.component import getView
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.interfaces import (
   ...     IDistribution)
   >>> from canonical.launchpad.browser.distribution import (
@@ -740,7 +740,7 @@ First we import the classes required to test the view:
 Create a view to test:
 
   >>> request = LaunchpadTestRequest()
-  >>> view = getView(ubuntu, '+archivemirrors', request)
+  >>> view = getMultiAdapter((ubuntu, request), name='+archivemirrors')
 
 Verify that the view is a DistributionMirrorsView:
 

@@ -3,11 +3,11 @@
 Every IBugTarget has a portlet for showing the most recently touched
 bugs (i.e bugs that have been recently modified/created).
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> portlet_view = getView(
-    ...     bugtarget, '+portlet-recently-touched-bugs',
-    ...     LaunchpadTestRequest())
+    ...     (bugtarget, LaunchpadTestRequest()),
+    ...     name='+portlet-recently-touched-bugs')
     >>> portlet_view.initialize()
 
     >>> import pytz
@@ -55,9 +55,9 @@ Only bugs that the user is allowed to see will be present in the list.
     >>> syncUpdate(bug_c)
 
     >>> login('no-priv@canonical.com')
-    >>> portlet_view = getView(
-    ...     bugtarget, '+portlet-recently-touched-bugs',
-    ...     LaunchpadTestRequest())
+    >>> portlet_view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()),
+    ...     name='+portlet-recently-touched-bugs')
     >>> portlet_view.initialize()
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:2]:
     ...     print bugtask.bug.title
@@ -65,9 +65,9 @@ Only bugs that the user is allowed to see will be present in the list.
     Bug A
 
     >>> login('test@canonical.com')
-    >>> portlet_view = getView(
-    ...     bugtarget, '+portlet-recently-touched-bugs',
-    ...     LaunchpadTestRequest())
+    >>> portlet_view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()),
+    ...     name='+portlet-recently-touched-bugs')
     >>> portlet_view.initialize()
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
     ...     print bugtask.bug.title
