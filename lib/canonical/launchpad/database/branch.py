@@ -1362,6 +1362,15 @@ class BranchSet:
 
         return [branches[id] for id in branch_ids]
 
+    def getByProductAndName(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.selectBy(name=name, product=product.id)
+
+    def getByProductAndNameStartsWith(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.select(
+            'product = %s AND name LIKE %s' % sqlvalues(product, name + '%%'))
+
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(

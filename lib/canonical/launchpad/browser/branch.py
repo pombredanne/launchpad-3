@@ -72,7 +72,6 @@ from canonical.launchpad.webapp.uri import URI
 
 from canonical.lazr import decorates
 
-from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
@@ -973,7 +972,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
     custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
 
     @property
     def next_url(self):
