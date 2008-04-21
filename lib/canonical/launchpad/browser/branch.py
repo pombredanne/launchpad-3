@@ -28,8 +28,10 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from zope.formlib import form
 from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -698,6 +700,21 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
         if hide_private_field:
             self.form_fields = self.form_fields.omit('private')
+
+        # If the user can administer branches, then they should be able to
+        # assign the ownership of the branch to any valid person or team.
+        if check_permission('launchpad.Admin', branch):
+            owner_field = self.schema['owner']
+            any_owner_choice = Choice(
+                __name__='owner', title=owner_field.title,
+                description = _("As an administrator you are able to reassign"
+                                " this branch to any person or team."),
+                required=True, vocabulary='ValidPersonOrTeam')
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit('owner')
+            self.form_fields = any_owner_field + self.form_fields
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
