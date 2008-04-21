@@ -261,7 +261,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='BranchRestrictedOnProduct',
+        vocabulary='Branch',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))

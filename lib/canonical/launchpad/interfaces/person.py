@@ -13,6 +13,7 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
+    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonAdminWriteRestricted',
@@ -28,6 +29,7 @@ __all__ = [
     'ITeamCreation',
     'ITeamReassignment',
     'JoinNotAllowed',
+    'NameAlreadyTaken',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -1350,17 +1352,36 @@ class IPersonSet(Interface):
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
-        """Create a new Person and an EmailAddress with the given email.
+        """Create and return an `IPerson` and `IEmailAddress`.
 
-        The comment must be of the following form: "when %(action_details)s"
-        (e.g. "when the foo package was imported into Ubuntu Breezy").
+        The newly created EmailAddress will have a status of NEW and will be
+        linked to the newly created Person.
 
-        Return the newly created Person and EmailAddress if everything went
-        fine or a (None, None) tuple otherwise.
+        If the given name is None, we generate a unique nickname from the
+        email address given.
 
-        Generate a unique nickname from the email address provided, create a
-        Person with that nickname and then create an EmailAddress (with status
-        NEW) for the new Person.
+        :param email: The email address, as text.
+        :param rationale: An item of `PersonCreationRationale` to be used as
+            the person's creation_rationale.
+        :param comment: A comment explaining why the person record was
+            created (usually used by scripts which create them automatically).
+            Must be of the following form: "when %(action_details)s"
+            (e.g. "when the foo package was imported into Ubuntu Breezy").
+        :param name: The person's name.
+        :param displayname: The person's displayname.
+        :param password: The person's password.
+        :param passwordEncrypted: Whether or not the given password is
+            encrypted.
+        :param registrant: The user who created this person, if any.
+        :param hide_email_addresses: Whether or not Launchpad should hide the
+            person's email addresses from other users.
+        :raises InvalidName: When the given name is not valid.
+        :raises InvalidEmailAddress: When the given email is not valid.
+        :raises NameAlreadyTaken: When the given name is already in use.
+        :raises EmailAddressAlreadyTaken: When the given email is already in
+            use.
+        :raises NicknameGenerationError: When no name is provided and we can't
+            generate a nickname from the given email address.
         """
 
     def ensurePerson(email, displayname, rationale, comment=None,
@@ -1657,3 +1678,11 @@ class ITeamContactAddressForm(Interface):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+
+
+class InvalidName(Exception):
+    """The name given for a person is not valid."""
+
+
+class NameAlreadyTaken(Exception):
+    """The name given for a person is already in use by other person."""
