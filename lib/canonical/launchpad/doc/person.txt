@@ -497,15 +497,15 @@ allowed to be connected with a few different database objects. This is
 enforced in the model, but there are also checks in the form handling to
 provide clearer error messages. 
 
-The PublicPersonChoice for interface classes and the public_person_validator
-for SQLObject classes only allow public teams to be assigned to the
+The PublicPersonChoice for interface classes and the validate_public_person
+for database classes only allow public teams to be assigned to the
 specified field.
 
 The validators will raise an PrivatePersonLinkageError exception if an
 invalid team is passed to the constructor or is used to set one of the
 attributes.
 
-myteam is a private-membership team, so public_person_validator
+myteam is a private-membership team, so validate_public_person
 will reject it for the BugSubscription.person and 
 BugSubscription.subscribed_by attributes.
 

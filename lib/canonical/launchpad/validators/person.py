@@ -8,7 +8,6 @@ can be connect to.
 
 __metaclass__ = type
 __all__ = [
-    'public_person_validator',
     'validate_public_person',
     ]
 
@@ -38,8 +37,3 @@ def validate_public_person(obj, attr, value):
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
     return value
-
-
-# XXX: this needs to be removed when everything is moved over to the
-# Storm validator.
-public_person_validator = None
