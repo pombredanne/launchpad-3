@@ -507,6 +507,9 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         script_path = os.path.join(
             get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
         process_end_deferred = defer.Deferred()
+        # The "childFDs={0:0, 1:1, 2:2}" means that any output from the script
+        # goes to the test runner's console rather than to pipes that noone is
+        # listening too.
         reactor.spawnProcess(
             DeferredOnExit(process_end_deferred), sys.executable,
             [sys.executable, script_path, str(job_id), '-q'],
