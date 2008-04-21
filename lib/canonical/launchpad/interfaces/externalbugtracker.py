@@ -69,6 +69,13 @@ class IExternalBugTracker(Interface):
 class ISupportsCommentImport(IExternalBugTracker):
     """An external bug tracker that supports comment imports."""
 
+    def fetchComments(bug_watch, comment_ids):
+        """Load a given set of remote comments, ready for parsing.
+
+        :param bug_watch: The bug watch for which to fetch the comments.
+        :param comment_ids: A list of the IDs of the comments to load.
+        """
+
     def getCommentIds(bug_watch):
         """Return all the comment IDs for a given remote bug."""
 
