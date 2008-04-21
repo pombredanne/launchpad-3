@@ -64,25 +64,25 @@ class TestLaunchpadServer(TestCase):
 
         # We can map a branch owned by the user to its path.
         self.assertEqual(
-            ('00/00/00/01/', WRITABLE),
-            self.server.translate_virtual_path('/~testuser/firefox/baz'))
+            (self.server.backing_transport, '00/00/00/01/'),
+            self.server.translateVirtualPath('/~testuser/firefox/baz'))
 
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         self.assertEqual(
-            ('00/00/00/03/', WRITABLE),
-            self.server.translate_virtual_path('/~testuser/+junk/random'))
+            (self.server.backing_transport, '00/00/00/03/'),
+            self.server.translateVirtualPath('/~testuser/+junk/random'))
 
         # We can map a branch owned by a team that the user is in to its path.
         self.assertEqual(
-            ('00/00/00/04/', WRITABLE),
-            self.server.translate_virtual_path('/~testteam/firefox/qux'))
+            (self.server.backing_transport, '00/00/00/04/'),
+            self.server.translateVirtualPath('/~testteam/firefox/qux'))
 
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         self.assertEqual(
-            ('00/00/00/05/', READ_ONLY),
-            self.server.translate_virtual_path('/~name12/+junk/junk.dev'))
+            (self.server.mirror_transport, '00/00/00/05/'),
+            self.server.translateVirtualPath('/~name12/+junk/junk.dev'))
 
     def test_extend_path_translation(self):
         # More than just the branch name needs to be translated: transports
@@ -91,11 +91,11 @@ class TestLaunchpadServer(TestCase):
         # to the four-byte hexadecimal split ID described in
         # test_base_path_translation and appends the remainder of the path.
         self.assertEqual(
-            ('00/00/00/01/.bzr', WRITABLE),
-            self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
+            (self.server.backing_transport, '00/00/00/01/.bzr'),
+            self.server.translateVirtualPath('/~testuser/firefox/baz/.bzr'))
         self.assertEqual(
-            ('00/00/00/05/.bzr', READ_ONLY),
-            self.server.translate_virtual_path(
+            (self.server.mirror_transport, '00/00/00/05/.bzr'),
+            self.server.translateVirtualPath(
                 '/~name12/+junk/junk.dev/.bzr'))
 
     def test_setUp(self):
@@ -423,7 +423,7 @@ class TestLaunchpadTransportReadOnly(TestCase):
             path.
         """
         for filename, contents in file_spec:
-            path_to_file = self.lp_server.translate_virtual_path(filename)[0]
+            path_to_file = self.lp_server.translateVirtualPath(filename)[1]
             directory = os.path.dirname(path_to_file)
             ensure_base(transport.clone(directory))
             transport.put_bytes(path_to_file, contents)
