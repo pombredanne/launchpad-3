@@ -102,8 +102,8 @@ class POFileSOP(POTemplateSOP):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
-    def overview(self):
-        text = 'Overview'
+    def description(self):
+        text = 'Description'
         return Link('', text)
 
     def translate(self):
@@ -123,14 +123,14 @@ class POFileAppMenus(ApplicationMenu, POFileMenuMixin):
     """Application menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'upload', 'download']
+    links = ['description', 'translate', 'upload', 'download']
 
 
 class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'upload', 'download']
+    links = ['description', 'translate', 'upload', 'download']
 
 
 class POFileView(LaunchpadView):
