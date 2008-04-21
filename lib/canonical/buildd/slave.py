@@ -343,7 +343,7 @@ class BuildDSlave(object):
             # excerpt to be scrubbed) because it may be cut off thus
             # thwarting the detection of embedded passwords.
             clean_content_iter = self._sanitizeURLs(log_lines[1:])
-            ret = ''.join(list(clean_content_iter))
+            ret = '\n'.join(list(clean_content_iter))
 
         return ret
 
@@ -411,7 +411,7 @@ class BuildDSlave(object):
                              "complete")
         self.builderstatus = BuilderStatus.WAITING
 
-    def sanitizeBuildlog(self, log_path, dest_path=None):
+    def sanitizeBuildlog(self, log_path):
         """Removes passwords from buildlog URLs.
 
         Because none of the URLs to be processed is expected to go across
@@ -421,10 +421,6 @@ class BuildDSlave(object):
         :param log_path: The path to the buildlog file that is to be
                          sanitized
         :type log_path: ``str``
-        :param dest_path: Optional destination path specifying where the
-                          sanitized buildlog content should be written to.
-                          Equals the 'log_path' if not supplied.
-        :type dest_path: ``str``
         """
         # First move the buildlog file that is to be sanitized out of
         # the way.
@@ -437,9 +433,7 @@ class BuildDSlave(object):
 
         # Open the file that will hold the resulting, sanitized buildlog
         # content for writing.
-        if dest_path is None:
-            dest_path = log_path
-        sanitized_fh = open(dest_path, 'w')
+        sanitized_fh = open(log_path, 'w')
 
         # Scrub the buildlog file line by line
         clean_content_iter = self._sanitizeURLs(unsanitized_fh)
