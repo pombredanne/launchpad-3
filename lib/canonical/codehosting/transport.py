@@ -245,7 +245,7 @@ class LaunchpadServer(Server):
             self._branch_info_cache[(user, product, branch)] = branch_info
         return branch_info
 
-    def _get_transport_and_path(self, abspath):
+    def translateVirtualPath(self, abspath):
         try:
             path, permissions = self.translate_virtual_path(abspath)
         except (UntranslatablePath, TransportNotPossible):
@@ -391,7 +391,7 @@ class LaunchpadTransport(Transport):
         :raise TransportNotPossible: If trying to do a write operation on a
             read-only path.
         """
-        transport, path, permissions = self.server._get_transport_and_path(
+        transport, path, permissions = self.server.translateVirtualPath(
             self._abspath(relpath))
         self.server.logger.info(
             '%s(%r -> %r, args=%r, kwargs=%r)',
@@ -429,13 +429,13 @@ class LaunchpadTransport(Transport):
 
     def iter_files_recursive(self):
         self.server.logger.debug('iter_files_recursive()')
-        transport, path, permissions = self.server._get_transport_and_path(
+        transport, path, permissions = self.server.translateVirtualPath(
             self._abspath('.'))
         return transport.clone(path).iter_files_recursive()
 
     def listable(self):
         self.server.logger.debug('listable()')
-        transport, path, permissions = self.server._get_transport_and_path(
+        transport, path, permissions = self.server.translateVirtualPath(
             self._abspath('.'))
         return transport.listable()
 
@@ -461,7 +461,7 @@ class LaunchpadTransport(Transport):
         return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        transport, path, permissions = self.server._get_transport_and_path(
+        transport, path, permissions = self.server.translateVirtualPath(
             self._abspath(rel_to))
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
