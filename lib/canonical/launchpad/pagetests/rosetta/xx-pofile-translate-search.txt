@@ -1,0 +1,61 @@
+= Searching through PO files =
+
+While doing translations, one can also find messages containing
+a certain substring (whether in original English string or in
+a translation).
+
+No Privileges Person visits the evolution-2.2 package in Ubuntu Hoary
+to review the state of the translation, but can't see the search form.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
+    >>> print find_tag_by_id(user_browser.contents, "search_box")
+    None
+
+They can still hack the URL to do a search:
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate'
+    ...     '?search=contact')
+
+The page now displays 4 results.
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 4  of 4 results
+
+To actually see a search form, one has to be a beta user:
+
+    >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
+    >>> beta_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
+    >>> beta_browser.getControl("Search").value = "contact"
+    >>> beta_browser.getControl("Find").click()
+    >>> beta_browser.url
+    'http://.../evolution-2.2/es/+translate?batch=10&show=all&search=contact'
+
+All 4 results are still shown.
+
+    >>> print_batch_header(find_main_content(beta_browser.contents))
+    1 ... 4  of 4 results
+
+Searching for a single-letter string fails.
+
+    >>> beta_browser.getControl("Search").value = "a"
+    >>> beta_browser.getControl("Find").click()
+    >>> beta_browser.url
+    'http://.../evolution-2.2/es/+translate?batch=10&show=all&search=a'
+
+A warning is displayed.
+
+    >>> tags = find_tags_by_class(beta_browser.contents, 'warning message')
+    >>> print extract_text(tags[0])
+    Please try searching for a longer string.
+
+And no filtering is applied: all messages are shown.
+
+    >>> print_batch_header(find_main_content(beta_browser.contents))
+    1 ... 10  of 22 results

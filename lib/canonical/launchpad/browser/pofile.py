@@ -466,7 +466,7 @@ class POFileTranslateView(BaseTranslationView):
             if self.search_text is not None and len(self.search_text) > 1:
                 ret = pofile.findPOTMsgSetsContaining(text=self.search_text)
             else:
-                if len(self.search_text) < 2:
+                if self.search_text is not None and len(self.search_text) < 2:
                     self.request.response.addWarningNotification(
                         "Please try searching for a longer string.")
                 ret = potemplate.getPOTMsgSets()
