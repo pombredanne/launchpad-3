@@ -614,6 +614,18 @@ exported as a read operation will generate an IResourceGETOperation.
     >>> IResourceGETOperation.implementedBy(read_method_adapter_factory)
     True
 
+The defined adapter is named GET_<interface>_<exported_name> and uses
+the ResourceOperation base class.
+
+    >>> from canonical.lazr.rest.operation import ResourceOperation
+    >>> read_method_adapter_factory.__name__
+    'GET_IBookSetOnSteroids_searchBooks'
+    >>> issubclass(read_method_adapter_factory, ResourceOperation)
+    True
+
+The adapter params property contain the specification of the parameters
+accepted by the operation.
+
     >>> class MockResponse(object):
     ...     """Simple response wrapper object."""
     ...     def __init__(self):
@@ -628,9 +640,8 @@ exported as a read operation will generate an IResourceGETOperation.
 
     >>> class MockRequest(object):
     ...     """Simple request object for testing purpose."""
-    ...     @property
-    ...     def response(self):
-    ...         return MockResponse()
+    ...     def __init__(self):
+    ...         self.response = MockResponse()
 
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
@@ -643,8 +654,32 @@ exported as a read operation will generate an IResourceGETOperation.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, base_price, title, "unknown")
 
+    >>> request = MockRequest()
     >>> read_method_adapter = read_method_adapter_factory(
-    ...     BookSetOnSteroids(), MockRequest())
+    ...     BookSetOnSteroids(), request)
+
+    >>> for param in read_method_adapter.params:
+    ...     print "%s: %s" % (param.__name__, param.__class__.__name__)
+    text: TextLine
+
+The call() method calls the underlying method and return its result.
+
+    >>> read_method_adapter.context.result = []
+    >>> print read_method_adapter.call(text='')
+    []
+
+When the method returns a string, it is encoded using JSON and the
+content-type is set to application/json. (That is done because the API
+framework expects that when a string is returned, it's the actual result
+and that the caller took care of setting the content type.)
+
+    >>> read_method_adapter.context.result = "A string."
+    >>> print read_method_adapter.call(text='')
+    "A string."
+    >>> request.response.status
+    200
+    >>> print request.response.headers['Content-Type']
+    application/json
 
 Methods exported as a write generates an adapter providing
 IResourcePOSTOperation.

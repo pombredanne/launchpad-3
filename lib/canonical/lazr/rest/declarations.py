@@ -26,6 +26,7 @@ __all__ = [
     'generate_operation_adapter',
     ]
 
+import simplejson
 import sys
 
 from zope.interface import classImplements
@@ -39,10 +40,9 @@ from zope.security.checker import CheckerPublic
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
 from canonical.lazr.interfaces.rest import (
-    ICollection, IEntry, IResourceOperation)
+    ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
-from canonical.lazr.rest.operation import (
-    ResourceGETOperation, ResourcePOSTOperation)
+from canonical.lazr.rest.operation import ResourceOperation
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -384,12 +384,28 @@ def generate_collection_adapter(interface):
     return factory
 
 
-class BaseGETOperationAdapter(ResourceGETOperation):
-    """Base for generated GET operation adapters."""
+class BaseResourceOperationAdapter(ResourceOperation):
+    """Base class for generated operations adapters."""
 
+    @property
+    def params(self):
+        """See `ResourceOperation."""
+        return self._export_info['params'].values()
 
-class BasePOSTOperationAdapter(ResourcePOSTOperation):
-    """Base for generated GET operation adapters."""
+    def call(self, **kwargs):
+        """See `ResourceOperation`."""
+        result = getattr(self.context, self._method_name)(**kwargs)
+
+        # The webservice assumes that the request is complete when the
+        # operation returns a string. So we take care of marshalling the
+        # result to json.
+        if isinstance(result, basestring):
+            response = self.request.response
+            response.setHeader('Content-Type', 'application/json')
+            return simplejson.dumps(result)
+        else:
+            # Use the default webservice encoding.
+            return result
 
 
 def generate_operation_adapter(method):
@@ -402,19 +418,22 @@ def generate_operation_adapter(method):
         raise TypeError(
             "'%s' isn't tagged for webservice export." % method.__name__)
 
+    bases = (BaseResourceOperationAdapter, )
     if tag['type'] == 'read_operation':
-        bases = (BaseGETOperationAdapter,)
         prefix = 'GET'
+        provides = IResourceGETOperation
     elif tag['type'] in ('factory', 'write_operation'):
-        bases = (BasePOSTOperationAdapter,)
+        provides = IResourcePOSTOperation
         prefix = 'POST'
     else:
         raise AssertionError('Unknown method export type: %s' % tag['type'])
 
     name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
-    cdict = {}
+    cdict = {'_export_info': tag,
+             '_method_name': method.__name__}
     factory = type(name, bases, cdict)
-    protect_schema(factory, IResourceOperation)
+    classImplements(factory, provides)
+    protect_schema(factory, provides)
 
     return factory
 
