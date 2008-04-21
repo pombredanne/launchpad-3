@@ -8,7 +8,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
-    ...     IFacetMenu, ILink, ILinkData, INavigationMenu)
+    ...     IFacetMenu, ILink, ILinkData)
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
