@@ -60,7 +60,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
-from canonical.launchpad.interfaces.mailinglist import (
+from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import (
     IHasMentoringOffers)
