@@ -492,13 +492,11 @@ class BranchEditFormView(LaunchpadEditFormView):
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the branch page."""
-
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class BranchEditWhiteboardView(BranchEditFormView):
