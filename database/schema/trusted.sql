@@ -218,6 +218,25 @@ $$;
 COMMENT ON FUNCTION you_are_your_own_member() IS
     'Trigger function to ensure that every row added to the Person table gets a corresponding row in the TeamParticipation table, as per the TeamParticipationUsage page on the Launchpad wiki';
 
+CREATE OR REPLACE FUNCTION assert_self_membership() RETURNS trigger
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        if OLD.person = OLD.team THEN
+            PERFORM TRUE FROM Person WHERE id = OLD.person;
+            IF FOUND THEN
+                RAISE EXCEPTION
+                    'Removing self membership but person still exists';
+            END IF;
+        END IF;
+        RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION assert_self_membership() IS
+    'AFTER DELETE trigger on TeamParticipation that ensures self membership is not removed when the Person record still exists.';
+
+
 SET check_function_bodies=false; -- Handle forward references
 
 CREATE OR REPLACE FUNCTION is_team(integer) returns boolean
