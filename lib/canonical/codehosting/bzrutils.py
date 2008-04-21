@@ -15,6 +15,8 @@ from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.errors import FileExists, NoSuchFile
 
 
+# XXX: JonathanLange 2007-06-13 bugs=120135:
+# This should probably be part of bzrlib.
 def ensure_base(transport):
     """Make sure that the base directory of `transport` exists.
 
@@ -27,25 +29,5 @@ def ensure_base(transport):
         create_prefix(transport)
 
 
-# XXX: JonathanLange 2007-06-13 bugs=120135:
-# This should probably be part of bzrlib.
-def makedirs(base_transport, path, mode=None):
-    """Create 'path' on 'base_transport', even if parents of 'path' don't
-    exist yet.
-    """
-    need_to_create = []
-    transport = base_transport.clone(path)
-    while True:
-        try:
-            transport.mkdir('.', mode)
-        except NoSuchFile:
-            need_to_create.append(transport)
-        except FileExists:
-            # Nothing to do. Directory made.
-            return
-        else:
-            break
-        transport = transport.clone('..')
-    while need_to_create:
-        transport = need_to_create.pop()
-        transport.mkdir('.', mode)
+def makedirs(transport, path):
+    return ensure_base(transport.clone(path))

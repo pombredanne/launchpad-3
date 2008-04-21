@@ -33,7 +33,7 @@ from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.bzrutils import makedirs
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
@@ -183,7 +183,8 @@ class LaunchpadServer(Server):
         if branch_id == '':
             raise PermissionDenied(
                 'Cannot create branch: %s' % (virtual_path,))
-        makedirs(self.backing_transport, branch_id_to_path(branch_id))
+        ensure_base(
+            self.backing_transport.clone(branch_id_to_path(branch_id)))
 
     def _make_branch(self, user, product, branch):
         """Create a branch in the database for the given user and product.

@@ -20,9 +20,9 @@ from bzrlib.tests import TestCase
 
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import (
-    LaunchpadServer, makedirs, set_up_logging)
+from canonical.codehosting.transport import LaunchpadServer, set_up_logging
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -425,7 +425,7 @@ class TestLaunchpadTransportReadOnly(TestCase):
         for filename, contents in file_spec:
             path_to_file = self.lp_server.translate_virtual_path(filename)[0]
             directory = os.path.dirname(path_to_file)
-            makedirs(transport, directory)
+            ensure_base(transport.clone(directory))
             transport.put_bytes(path_to_file, contents)
 
     def test_mkdir_readonly(self):
