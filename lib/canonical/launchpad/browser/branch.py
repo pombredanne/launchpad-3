@@ -719,8 +719,9 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
+        owner = data['owner']
         if ('product' in data and data['product'] is None
-            and self.context.owner.isTeam()):
+            and (owner is not None and owner.isTeam())):
             self.setFieldError(
                 'product',
                 "Team-owned branches must be associated with a project.")
@@ -732,13 +733,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 self.validate_branch_name(self.context.owner,
                                           data['product'],
                                           data['name'])
-
-        owner = data['owner']
-        if owner.isTeam() and data.get('product') is None:
-            error = self.getFieldError('product')
-            if not error:
-                self.setFieldError('product',
-                                   'Teams cannot have junk branches.')
 
         # If the branch is a MIRRORED branch, then the url
         # must be supplied, and if HOSTED the url must *not*

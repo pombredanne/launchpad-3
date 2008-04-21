@@ -384,3 +384,27 @@ When the owner is changed a notification is shown.
     ...    print extract_text(message)
     The branch owner has been changed to Landscape Developers (landscape-developers)
 
+If both the project and owner are changed, both notification messages are
+shown.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Owner').displayValue = ['Sample Person']
+    >>> browser.getControl('Project').value = ''
+    >>> browser.getControl('Change Branch').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...    print extract_text(message)
+    The branch owner has been changed to Sample Person (name12)
+    This branch is no longer associated with a project.
+
+
+=== Assignment to anyone ===
+
+Bazaar Experts and Launchpad administrators are able to reassign a branch
+to any valid person or team.
+
+    >>> admin_browser.open('http://launchpad.dev/~name12/firefox/main')
+    >>> admin_browser.getLink('Change branch details').click()
+    >>> admin_browser.getControl('Owner').value = 'sabdfl'
+    >>> admin_browser.getControl('Change Branch').click()
+    >>> print admin_browser.url
+    http://code.launchpad.dev/~sabdfl/firefox/main
