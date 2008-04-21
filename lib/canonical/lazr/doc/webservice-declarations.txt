@@ -240,10 +240,9 @@ available as a POST operation on the exported resource, with the
 addition that the result of the method is a new object and the HTTP
 status code will be set appropriately.
 
-All these decorators will interpret their keyword parameters as a
-specification of the parameters that the operation supports. The
-parameter names is the name of the parameter in the underlying method,
-and the value should be an IField describing the parameter type.
+The specification of the accepted parameters should be given as
+parameters to these decorators. The parameter specification is done
+using normal IField description.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     export_as, export_factory_operation, export_read_operation,
@@ -289,9 +288,9 @@ user.
     ...     """IBook with some methods."""
     ...     export_entry()
     ...
-    ...     @call_with(who=REQUEST_USER)
+    ...     @call_with(who=REQUEST_USER, kind='normal')
     ...     @export_write_operation()
-    ...     def checkout(who):
+    ...     def checkout(who, kind):
     ...         """Check this book out."""
 
 Like other declarations, these will add tagged value on the interface
@@ -343,7 +342,7 @@ These decorators can only be used from within an interface definition:
     TypeError: export_read_operation() can only be used from within an
     interface definition.
 
-An error is also reported, if not enough parameters are defined as
+An error is also reported if not enough parameters are defined as
 exported:
 
     >>> class MissingParameter(Interface):

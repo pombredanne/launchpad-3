@@ -178,10 +178,10 @@ def collection_default_content(f):
 class _method_annotator:
     """Base class for decorators annotating a method.
 
-    The actual method will be wrapped in IMethod specification, only once the
+    The actual method will be wrapped in an IMethod specification once the
     Interface is complete. So we save the annotations in an attribute of the
     method, and the class advisor invoked by export_entry() and
-    export_collection(), will do the final tagging.
+    export_collection() will do the final tagging.
     """
 
     def __init__(self, **params):
@@ -218,7 +218,7 @@ def annotate_exported_methods(interface):
         if not IMethod.providedBy(method):
             continue
         annotations = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-        if not annotations:
+        if annotations is None:
             continue
 
         # Method is exported under its own name by default.
