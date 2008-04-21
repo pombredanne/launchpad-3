@@ -240,18 +240,18 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         this project is considered active."""))
 
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
-        this project has been reviewed."""))
+        this project's license has been reviewed. Editable only by
+        reviewers (Commercialization Admins)."""))
 
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
     reviewer_whiteboard = Text(
         title=_('Notes for the project reviewer'),
-        required=False, 
+        required=False,
         description=_(
-            "Notes on the project, viewable only by reviewers "
-            "(administrators and registry experts)."))
-
+            "Notes on the project's license, editable only by reviewers "
+            "(Commercialization Admins)."))
 
     licenses = Set(
         title=_('Licenses'),

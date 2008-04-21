@@ -84,6 +84,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission,
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
@@ -913,8 +914,8 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
-                   "private_bugs", "reviewer_whiteboard"]
+    field_names = ["name", "owner", "active", "autoupdate",
+                   "private_bugs", "reviewed", "reviewer_whiteboard"]
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bugcontact is None:
@@ -923,6 +924,12 @@ class ProductReviewView(ProductEditView):
                     'Set a <a href="%s/+bugcontact">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
+
+    def setUpFields(self):
+        super(ProductReviewView, self).setUpFields()
+        if not check_permission('launchpad.Commercial', self.context):
+            self.form_fields['reviewed'].for_display = True
+            self.form_fields['reviewer_whiteboard'].for_display = True
 
 
 class ProductAddSeriesView(LaunchpadFormView):

@@ -64,6 +64,15 @@ class AdminByAdminsTeam(AuthorizationBase):
         return user.inTeam(admins)
 
 
+class AdminByCommercializationTeam(AuthorizationBase):
+    permission = 'launchpad.Commercial'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return user.inTeam(celebrities.commercialization_admin)
+
+
 class EditOAuthAccessToken(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IOAuthAccessToken
