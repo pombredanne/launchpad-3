@@ -787,6 +787,48 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers,
         key=operator.attrgetter('displayname'))
 
+
+def get_bug_indirect_subscribers(bug, recipients=None):
+    """ """ # TODO
+
+    also_notified_subscribers = set()
+
+    for bugtask in bug.bugtasks:
+        if bugtask.assignee:
+            also_notified_subscribers.add(bugtask.assignee)
+            if recipients is not None:
+                recipients.addAssignee(bugtask.assignee)
+
+        structural_subscription_targets = set()
+
+        if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+            structural_subscription_targets.add(bugtask.target)
+            if bugtask.target.parent_subscription_target is not None:
+                structural_subscription_targets.add(
+                    bugtask.target.parent_subscription_target)
+
+        if bugtask.milestone is not None:
+            structural_subscription_targets.add(bugtask.milestone)
+
+        # If the target's bug contact isn't set,
+        # we add the owner as a subscriber.
+        pillar = bugtask.pillar
+        if pillar.bugcontact is None:
+            also_notified_subscribers.add(pillar.owner)
+            if recipients is not None:
+                recipients.addRegistrant(pillar.owner, pillar)
+
+    person_set = getUtility(IPersonSet)
+    target_subscribers = person_set.getSubscribersForTarget(
+        structural_subscription_targets)
+
+    also_notified_subscribers.update(target_subscribers)
+
+    return sorted(
+        also_notified_subscribers,
+        key=operator.attrgetter('displayname'))
+
+
 def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)

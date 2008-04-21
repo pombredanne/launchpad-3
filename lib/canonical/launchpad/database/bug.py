@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.mailnotification import (
-    get_bugtask_indirect_subscribers)
+    get_bug_indirect_subscribers)
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -475,10 +475,8 @@ class Bug(SQLBase):
 
         also_notified_subscribers = set()
 
-        for bugtask in self.bugtasks:
-            bugtask_subscribers = get_bugtask_indirect_subscribers(
-                bugtask, recipients=recipients)
-            also_notified_subscribers.update(bugtask_subscribers)
+        also_notified_subscribers.update(
+            get_bug_indirect_subscribers(self, recipients=recipients))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

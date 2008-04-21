@@ -1566,6 +1566,10 @@ class IPersonSet(Interface):
         Return None if there is no translator.
         """
 
+    def getSubscribersForTarget(targets):
+        """Return the set of subscribers for `targets`."""
+
+
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
