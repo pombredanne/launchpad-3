@@ -53,13 +53,12 @@ These declarations adds tagged value to the original interface elements.
 The tags are in the lazr.webservice namespace and are dictionaries of
 elements.
 
+    >>> from pprint import pformat
     >>> def print_export_tag(element):
     ...     """Print the content of the 'lazr.webservice.exported' tag."""
     ...     def format_value(value):
     ...         if isinstance(value, dict):
-    ...             return "{%s}" % ",\n    ".join(
-    ...                 "'%s': %s" % (key, value)
-    ...                 for key, value  in sorted(value.items()))
+    ...             return pformat(value)
     ...         else:
     ...             return repr(value)
     ...     tag = element.queryTaggedValue('lazr.webservice.exported')
