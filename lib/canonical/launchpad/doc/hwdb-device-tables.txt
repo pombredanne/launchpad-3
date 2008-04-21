@@ -1,0 +1,257 @@
+= Hardware Database Device Tables =
+
+These tables represent devices and complete systems in the database. They
+allow to look up devices by their bus IDs and by their human readable
+vendor and product name. They also link a device to drivers.
+
+
+== HWVendorName ==
+
+HWVendorName is a simple list of vendor names. A new entry is created by
+IHWVendorNameSet.create.
+
+    >>> from canonical.launchpad.interfaces import IHWVendorNameSet
+    >>> vendor_name_set = getUtility(IHWVendorNameSet)
+    >>> intel_name = vendor_name_set.create(name='Intel')
+    >>> print intel_name.name
+    Intel
+
+Each name in the table must be unique. The attempt to create a second
+row with the same name raises a IntegrityError error.
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> vendor_name_set.create('Intel')
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwvendorname_name_key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+== HWVendorID ==
+
+HWVendorID associates a bus, as enumerated by HWBus, with a bus-specific
+vendor ID and a vendor name. We store the IDs as a string, because not all
+all busses use numeric IDs. Numbers are represented as strings with
+hexadecimal digits, prepended by '0x'.
+
+    >>> from canonical.launchpad.interfaces import HWBus, IHWVendorIDSet
+    >>> vendor_id_set = getUtility(IHWVendorIDSet)
+    >>> intel_pci_id = vendor_id_set.create(bus=HWBus.PCI,
+    ...                                 vendor_id='0x8086',
+    ...                                 vendor_name=intel_name)
+    >>> print intel_pci_id.bus.title, intel_pci_id.vendor_id_for_bus
+    PCI 0x8086
+    >>> print intel_pci_id.vendor_name.name
+    Intel
+
+The tuple (bus, vendor id, vendor name) must be unique.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> vendor_id_set.create(bus=HWBus.PCI,
+    ...                      vendor_id='0x8086',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwvendorid__bus_vendor_id__vendor_name__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+We store the (bus specific) vendor ID as a string, but several busses
+have stricter constraints for their vendor ID. The PCI and USB busses use
+16 bit integers, the IEEE1394 bus uses 24 bit integers, the SCSI bus
+uses ASCII strings with exactly 8 characters. The constructor of
+HWVendorID ensures that the vendor IDs match the bus-specific format.
+
+USB and PCI IDs are represented as strings with a four-digit hexadecimal
+number, prefixed by '0x'; the digits a..f must be lower cases characters.
+Other ID values raise a ValueError.
+
+The characters a..f are accepted as digits.
+
+    >>> another_pci_vendor_id = vendor_id_set.create(bus=HWBus.PCI,
+    ...                                          vendor_id='0x10ae',
+    ...                                          vendor_name=intel_name)
+    >>> print another_pci_vendor_id.bus.title
+    PCI
+    >>> print another_pci_vendor_id.vendor_id_for_bus
+    0x10ae
+    >>> print another_pci_vendor_id.vendor_name.name
+    Intel
+
+    >>> another_usb_vendor_id = vendor_id_set.create(bus=HWBus.USB,
+    ...                                          vendor_id='0x10ae',
+    ...                                          vendor_name=intel_name)
+    >>> print another_usb_vendor_id.bus.title
+    USB
+    >>> print another_usb_vendor_id.vendor_id_for_bus
+    0x10ae
+    >>> print another_usb_vendor_id.vendor_name.name
+    Intel
+
+A..F is rejected.
+
+    >>> vendor_id_set.create(bus=HWBus.PCI,
+    ...                      vendor_id='0x10AE',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x10AE' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.USB,
+    ...                      vendor_id='0x10AE',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x10AE' is not a valid vendor ID for USB
+
+The ID must have the prefix "0x".
+
+    >>> vendor_id_set.create(bus=HWBus.PCI,
+    ...                      vendor_id='8086',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '8086' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.USB,
+    ...                      vendor_id='8086',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '8086' is not a valid vendor ID for USB
+
+The number must have four digits.
+
+    >>> vendor_id_set.create(bus=HWBus.PCI,
+    ...                      vendor_id='0x123',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x123' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.USB,
+    ...                      vendor_id='0x123',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x123' is not a valid vendor ID for USB
+
+    >>> vendor_id_set.create(bus=HWBus.PCI,
+    ...                      vendor_id='0x12345',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.USB,
+    ...                      vendor_id='0x12345',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid vendor ID for USB
+
+Only hex digits are allowed.
+
+    >>> vendor_id_set.create(bus=HWBus.PCI,
+    ...                      vendor_id='0xblah',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xblah' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.USB,
+    ...                      vendor_id='0xblah',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xblah' is not a valid vendor ID for USB
+
+IEEE1394 IDs are represented as strings with a six-digit hexadecimal
+number, prefixed by '0x'; the digits a..f must be lower cases characters.
+Other ID values raise a value error.
+
+    >>> vendor_id_1394 = vendor_id_set.create(bus=HWBus.IEEE1394,
+    ...                                       vendor_id='0x0010e0',
+    ...                                       vendor_name=intel_name)
+    >>> print vendor_id_1394.bus.title
+    IEEE1394
+    >>> print vendor_id_1394.vendor_id_for_bus
+    0x0010e0
+    >>> print vendor_id_1394.vendor_name.name
+    Intel
+
+A..F is rejected.
+
+    >>> vendor_id_set.create(bus=HWBus.IEEE1394,
+    ...                      vendor_id='0x0010E0',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x0010E0' is not a valid vendor ID for IEEE1394
+
+The ID must have the prefix "0x".
+
+    >>> vendor_id_set.create(bus=HWBus.IEEE1394,
+    ...                      vendor_id='0010E0',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0010E0' is not a valid vendor ID for IEEE1394
+
+The number must have six digits.
+
+    >>> vendor_id_set.create(bus=HWBus.IEEE1394,
+    ...                      vendor_id='0x12345',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid vendor ID for IEEE1394
+
+    >>> vendor_id_set.create(bus=HWBus.IEEE1394,
+    ...                      vendor_id='0x1234567',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x1234567' is not a valid vendor ID for IEEE1394
+
+Only hex digits are allowed.
+
+    >>> vendor_id_set.create(bus=HWBus.IEEE1394,
+    ...                      vendor_id='0xfoobar',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xfoobar' is not a valid vendor ID for IEEE1394
+
+SCSI vendor IDs are ASCII strings with exactly eight characters.
+
+    >>> intel_scsi_id = vendor_id_set.create(bus=HWBus.SCSI,
+    ...                                      vendor_id='INTEL   ',
+    ...                                      vendor_name=intel_name)
+    >>> print intel_scsi_id.bus.title
+    SCSI
+    >>> intel_scsi_id.vendor_id_for_bus
+    u'INTEL   '
+    >>> print intel_scsi_id.vendor_name.name
+    Intel
+
+Strings with less than eight characters are not allowed as SCSI vendor IDs...
+
+    >>> vendor_id_set.create(bus=HWBus.SCSI,
+    ...                      vendor_id='1234567',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '1234567' is not a valid vendor ID for SCSI
+
+...as well as strings with more than eight characters.
+
+    >>> vendor_id_set.create(bus=HWBus.SCSI,
+    ...                      vendor_id='123456789',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '123456789' is not a valid vendor ID for SCSI

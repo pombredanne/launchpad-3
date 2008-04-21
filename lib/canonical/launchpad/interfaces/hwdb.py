@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'HWBus',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
@@ -13,7 +14,11 @@ __all__ = [
     'IHWSubmissionForm',
     'IHWSubmissionSet',
     'IHWSystemFingerprint',
-    'IHWSystemFingerprintSet'
+    'IHWSystemFingerprintSet',
+    'IHWVendorID',
+    'IHWVendorIDSet',
+    'IHWVendorName',
+    'IHWVendorNameSet',
     ]
 
 from zope.component import getUtility
@@ -212,3 +217,78 @@ class IHWSystemFingerprintSet(Interface):
 
         Return the new entry."""
         
+# Identification of a hardware device.
+#
+# In theory, a tuple (bus, vendor ID, product ID) should identify
+# a device unambiguosly. In practice, there are several cases where
+# this tuple can identify more then one device:
+#
+# - A USB chip or chipset may be used in different devices.
+#   A real world example:
+#     - Plustek sold different scanner models with the USB ID
+#       0x7b3/0x0017. Some of these scanners have for example a
+#       different maximum scan size.
+#
+# Hence we identify a device by tuple (bus, vendor ID, product ID,
+# variant). In the example above, we might use (HWBus.USB, '0x7b3',
+# '0x0017', 'OpticPro UT12') and (HWBus.USB, '0x7b3', '0x0017',
+# 'OpticPro UT16')
+
+class HWBus(DBEnumeratedType):
+    """The bus that connects a device to a computer."""
+
+    SYSTEM = DBItem(0, 'System')
+
+    PCI = DBItem(1, 'PCI')
+
+    USB = DBItem(2, 'USB')
+
+    IEEE1394 = DBItem(3, 'IEEE1394')
+
+    SCSI = DBItem(4, 'SCSI')
+
+    PARALLEL = DBItem(5, 'Parallel Port')
+
+    SERIAL = DBItem(6, 'Serial port')
+
+
+class IHWVendorName(Interface):
+    """A list of vendor names."""
+    name = TextLine(title=u'Vendor Name', required=True)
+
+
+class IHWVendorNameSet(Interface):
+    """The set of vendor names."""
+    def create(name):
+        """Create and return a new vendor name.
+
+        :return: A new IHWVendorName instance.
+
+        A RetryPsycopgIntegrityError is raised, if the name already exists.
+        """
+
+
+class IHWVendorID(Interface):
+    """A list of vendor IDs for different busses associated with vendor names.
+    """
+    bus = Choice(
+        title=u'The bus that connects a device to a computer',
+        required=True, vocabulary=HWBus)
+
+    vendor_id_for_bus = TextLine(title=u'Vendor ID', required=True)
+
+    vendor_name = Attribute('Vendor Name')
+
+
+class IHWVendorIDSet(Interface):
+    """The set of vendor IDs."""
+    def create(bus, vendor_id, name):
+        """Create a vendor ID.
+
+        :return: A new IHWVendorID instance.
+        :param bus: the HWBus instance for this bus.
+        :param vendor_id: a string containing the bus ID. Numeric IDs
+                          are represented as a hexadecimal string,
+                          prepended by '0x'
+        :param name: The IHWVendorName instance with the vendor name.
+        """
