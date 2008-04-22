@@ -255,6 +255,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="*"
+      name="+navigationmenutabs"
+      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+      template="../templates/launchpad-navigation-menutabs.pt"
+      permission="zope.Public"
+      />
+
   <browser:defaultView
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
