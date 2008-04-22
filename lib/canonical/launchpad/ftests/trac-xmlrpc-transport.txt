@@ -54,3 +54,101 @@ isn't suitable.
 
     >>> server.launchpad.time_snapshot()
     ['US/Eastern', 1206328061, 1206342461]
+
+
+== launchpad.bug_info() ==
+
+bug_info() returns, as the name suggests, info about a given bug or set
+of bugs. It takes two parameters: level, an integer indicating how much
+data to return, and criteria, which specifies criteria by which to
+select the bugs to return.
+
+We'll add some bugs to our trac transport to demonstrate this.
+
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     MockTracRemoteBug)
+
+    >>> remote_bugs = {
+    ...     '1': MockTracRemoteBug(
+    ...         id='1', last_modified=datetime(2008, 4, 1, 0, 0, 0),
+    ...         status='open'),
+    ...     '2': MockTracRemoteBug(
+    ...         id='2', last_modified=datetime(2007, 1, 1, 1, 1, 1),
+    ...         status='closed'),
+    ...     '3': MockTracRemoteBug(
+    ...         id='3', last_modified=datetime(2008, 1, 1, 1, 2, 3),
+    ...         status='fixed'),
+    ...     }
+
+    >>> trac_transport.remote_bugs = remote_bugs
+
+Specifying a level of 0 and no criteria will return the IDs of all the
+bugs, along with a time snapshot as returned by time_snapshot().
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=0)
+    >>> print bugs
+    [{'id': '1'}, {'id': '2'}, {'id': '3'}]
+
+Specifying a level of 1 will return each bug's metadata, not including
+its last modified time.
+
+    >>> def print_bugs(bug_list):
+    ...     for bug in bug_list:
+    ...         print "%(id)s: %(status)s." % bug
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=1)
+    >>> print_bugs(bugs)
+    1: open.
+    2: closed.
+    3: fixed.
+
+The criteria dict has two possible keys: modified_since and bugs.
+Specifying a value for modified_since will cause only the bugs modified
+since that time to be returned. modified_since is an integer timestamp,
+so we'll convert a datetime into one for the purposes of this test.
+
+    >>> import time
+    >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> last_checked_timestamp = int(
+    ...     time.mktime(last_checked.timetuple()))
+
+    >>> criteria = {'modified_since': last_checked_timestamp}
+    >>> time_snapshot, bugs = trac_transport.bug_info(
+    ...     level=0, criteria=criteria)
+
+    >>> print bugs
+    [{'id': '1'}, {'id': '3'}]
+
+The bugs key in the criteria dict allows us to specify a list of bug IDs
+to return.
+
+    >>> criteria = {'bugs': ['1', '2']}
+    >>> time_snapshot, bugs = trac_transport.bug_info(
+    ...     level=0, criteria=criteria)
+
+    >>> print bugs
+    [{'id': '1'}, {'id': '2'}]
+
+If a bug doesn't exist, it will be returned with a status of
+'missing'.
+
+    >>> criteria = {'bugs': ['11', '12']}
+    >>> time_snapshot, bugs = trac_transport.bug_info(
+    ...     level=0, criteria=criteria)
+
+    >>> print bugs
+    [{'status': 'missing', 'id': '11'}, {'status': 'missing', 'id': '12'}]
+
+Combining the bugs and modified_since fields in the criteria dict will
+result in only the bugs modified since the modified_since time whose IDs
+are in the bugs list being returned.
+
+    >>> criteria = {
+    ...     'bugs': ['1', '2'],
+    ...     'modified_since': last_checked_timestamp,}
+    >>> time_snapshot, bugs = trac_transport.bug_info(
+    ...     level=0, criteria=criteria)
+
+    >>> print bugs
+    [{'id': '1'}]
