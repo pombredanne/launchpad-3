@@ -20,6 +20,7 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
+from zope.event import notify
 from zope.interface import Interface
 from zope.schema import Int
 
@@ -28,6 +29,8 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -465,7 +468,9 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
                 'The proposal has already been marked as merged.')
         else:
             revno = data['merged_revno']
+            snapshot = BranchMergeProposalDelta.snapshot(self.context)
             self.context.markAsMerged(revno, merge_reporter=self.user)
+            notify(SQLObjectModifiedEvent(self.context, snapshot, []))
             self.request.response.addNotification(
                 'The proposal has now been marked as merged.')
 

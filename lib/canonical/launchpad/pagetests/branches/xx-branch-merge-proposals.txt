@@ -18,8 +18,16 @@ In order to test notifications, we need a subscriber for the branch.
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
-    >>> logout()
 
+Also subscribe to gnome-terminal, since Firefox tests are mixed with
+Gnome Terminal tests.
+
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/klingon')
+    >>> _unused = branch.subscribe(subscriber,
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.FULL)
+    >>> logout()
 
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
@@ -55,6 +63,14 @@ main page for the source branch.
 
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon
+
+An email notification is emitted when the merge proposal is created.
+
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> [notification] = pop_notifications()
+    >>> print notification['Subject']
+    Merge of Klingon support in GNOME Terminal into  GNOME Terminal Mainline
+    proposed
 
 Most of the time the merge proposal is looked at from the point
 of view of either the source branch or the target branch.
@@ -177,13 +193,9 @@ yet in the target branch are also shown.
       Import of Mozilla Firefox 0.9
     >>> firefox_merge_url = sample_browser.url
 
+Consume notification.
 
-An email notification is emitted when the merge proposal is created.
-
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> [notification] = pop_notifications()
-    >>> print notification['Subject']
-    Merge of Mozilla Firefox 0.9 into Mozilla Firefox Mainline proposed
+    >>> [_unused] = pop_notifications()
 
 
 == Editing a merge proposal ==
@@ -306,6 +318,10 @@ This association is also shown on the branch that is depended upon.
     This is the whiteboard
     Work in progress
 
+Consume notification.
+
+    >>> [_unused] = pop_notifications()
+
 
 == Marking as merged ==
 
@@ -350,6 +366,22 @@ A notification is also added.
     >>> for message in get_feedback_messages(nopriv_browser.contents):
     ...     print extract_text(message)
     The proposal has now been marked as merged.
+
+An email notification is also created.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification['Subject']
+    Proposed merge of Klingon support in GNOME Terminal into GNOME Terminal
+    Mainline updated
+    >>> print notification.get_payload()
+    The proposal to merge Klingon support in GNOME Terminal into GNOME
+    Terminal= Mainline has been updated.
+    <BLANKLINE>
+         Status: Work in progress =3D> Merged
+    --
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    You are subscribed to branch Klingon support in GNOME Terminal.
+    <BLANKLINE>
 
 The user is then taken to the proposal details page.  The source branch
 is shown as a link.
