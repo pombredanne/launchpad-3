@@ -3050,6 +3050,9 @@ class PersonSet:
                 if v is not None:
                     target_criteria_clauses.append(
                         '%s = %s' % (k, quote(v)))
+                else:
+                    target_criteria_clauses.append(
+                        '%s IS NULL' % k)
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
         query = ' OR '.join(target_criteria)
