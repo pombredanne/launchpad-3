@@ -1,6 +1,9 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
+from zope.schema import TextLine
+
+from canonical.launchpad import _
 
 __all__ = ['IStubPackager']
 
@@ -8,21 +11,32 @@ __all__ = ['IStubPackager']
 class IStubPackager(Interface):
     """Helper for packaging operations."""
 
-    sandbox_path = Attribute(
-        'Temporary directory where the packages are generated.')
+    name = TextLine(
+        title=_('Upstream source name'),
+        description=_('Upstream source package name.'))
 
-    name = Attribute('Upstream source package name.')
+    version = TextLine(
+        title=_('Upstream source version'),
+        description=_('Upstream source package version'))
 
-    version = Attribute('Upstream source package version')
+    gpg_key_id = TextLine(
+        title=_('Current GPG key ID'),
+        description=_('GPG key ID set to signed packages.'))
 
-    gpg_key_id = Attribute('GPG key ID set to signed packages.')
+    sandbox_path = TextLine(
+        title=_('Sandbox path'),
+        description=_('Temporary directory where the packages '
+                      'are generated.'))
 
-    upstream_directory = Attribute(
-        'Current upstream directory used to generate packages.')
+    upstream_directory = TextLine(
+        title=_('Upstream directory path'),
+        description=_('Current upstream directory used to generate '
+                      'packages.'))
 
-    debian_path = Attribute(
-        'Path to the debian directory generated for the current '
-        'upstream source.')
+    debian_path = TextLine(
+        title=_('Upstream debian directory path'),
+        description=_('Path to the debian directory generated for '
+                      'the current upstream source.'))
 
     def reset():
         """Reset sandbox directory used to generate packages.

@@ -5,14 +5,8 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.utilities.StubPackager">
+    <content class="canonical.launchpad.components.stubpackager.StubPackager">
         <allow interface="canonical.launchpad.interfaces.IStubPackager" />
     </content>
-
-    <securedutility
-        class="canonical.launchpad.utilities.StubPackager"
-        provides="canonical.launchpad.interfaces.IStubPackager">
-        <allow interface="canonical.launchpad.interfaces.IStubPackager" />
-    </securedutility>
 
 </configure>

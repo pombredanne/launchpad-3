@@ -4,16 +4,15 @@ StubPackager allow us to easily create minimal debian packages to be
 used in tests.
 
     >>> import os
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IStubPackager
-
+    >>> from canonical.launchpad.components.stubpackager import StubPackager
 
 == Setup and reset ==
 
-As all zope utilities, StubPackager is initialised when we look up for
-it the first time.
+When StubPackager is initialised it automatically creates a temporary
+directory we call 'sandbox'. It's where the packages will get created.
 
-    >>> packager = getUtility(IStubPackager)
+    >>> packager = StubPackager()
 
     >>> print packager.sandbox_path
     /tmp/stubpackager-...
@@ -21,16 +20,9 @@ it the first time.
     >>> os.path.exists(packager.sandbox_path)
     True
 
-    >>> initial_sandbox_path = packager.sandbox_path
-
-Next lookups will return the already initialised object.
-
-    >>> packager = getUtility(IStubPackager)
-
-    >>> packager.sandbox_path == initial_sandbox_path
-    True
-
 Source 'name' and 'version' and 'gpg_key_id' are empty.
+
+    >>> packager = StubPackager()
 
     >>> print packager.name
     None
@@ -97,8 +89,8 @@ Then we create it on disk based on the StubPackager templates.
 
     >>> packager.buildUpstream(build_orig=False)
 
-It results in a buildable source package the suffix '-1' appended to
-the upstream version in the upstream_directory path.
+It results in a buildable source package with the suffix '-1' appended
+to the upstream version in the upstream_directory path.
 
     >>> os.path.exists(packager.upstream_directory)
     True
@@ -208,6 +200,7 @@ basically checking we pass the right arguments to it.
 
     >>> content = open(changesfile_path).read()
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
