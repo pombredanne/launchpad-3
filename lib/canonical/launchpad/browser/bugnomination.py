@@ -116,6 +116,9 @@ class BugNominationView(LaunchpadFormView):
 
 class BugNominationTableRowView(LaunchpadView):
     """Browser view class for rendering a nomination table row."""
+
+    renderNonConjoinedSlave = LaunchpadView.__call__
+
     def getNominationPerson(self):
         """Return the IPerson associated with this nomination.
 
