@@ -42,7 +42,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action)
-from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.authorization import check_permission
 
 
