@@ -18,12 +18,20 @@ In order to test notifications, we need a subscriber for the branch.
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
-    >>> logout()
 
+We also need a subscriber for one of the Firefox branches.
+
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/firefox/main')
+    >>> _unused = branch.subscribe(subscriber,
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.FULL)
+    >>> logout()
 
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
 is `Propose for merging`.
+
 
 == Registering a merge proposal ==
 
