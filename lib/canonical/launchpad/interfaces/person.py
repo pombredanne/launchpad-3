@@ -1293,6 +1293,19 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    def autosubscribeToTeamList(team):
+        """Subscribe to a team's mailing list.
+
+        This method takes the user's mailing list auto-subscription
+        setting into account. It may or may not result in a list
+        subscription.
+
+        :param team: The team's list to subscribe to.  No action is
+        	taken if the team does not have a usable list.
+
+        :return: True if the user was subscribed, false if they weren't.
+        """
+
 
 class IPersonAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
