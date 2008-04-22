@@ -31,7 +31,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
+from canonical.database.sqlbase import (
+    block_implicit_flushes, SQLBase, sqlvalues, quote, quote_like)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -310,6 +311,7 @@ class PassthroughValue:
         self.value = value
 
 
+@block_implicit_flushes
 def validate_conjoined_attribute(self, attr, value):
     # If the value has been wrapped in a _PassthroughValue instance,
     # then we are being updated by our conjoined master: pass the
@@ -345,6 +347,7 @@ def validate_assignee(self, attr, value):
     return validate_public_person(self, attr, value)
 
 
+@block_implicit_flushes
 def validate_sourcepackagename(self, attr, value):
     value = validate_conjoined_attribute(self, attr, value)
     self._syncSourcePackages(value)
