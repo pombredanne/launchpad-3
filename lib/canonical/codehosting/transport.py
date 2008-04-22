@@ -183,6 +183,31 @@ class BranchPath:
             raise PermissionDenied(
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
+    def create(self):
+        """Create a branch in the database for the given user and product.
+
+        :raise PermissionDenied: If 'user' does not begin with a '~' or if
+            'product' is not the name of an existing product.
+        :return: The database ID of the new branch.
+        """
+        try:
+            return self._authserver.createBranch(
+                self._owner, self._product, self._name)
+        except Fault, f:
+            if f.faultCode == NOT_FOUND_FAULT_CODE:
+                # One might think that it would make sense to raise
+                # NoSuchFile here, but that makes the client do "clever"
+                # things like say "Parent directory of
+                # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
+                # does not exist.  You may supply --create-prefix to
+                # create all leading parent directories."  Which is just
+                # misleading.
+                raise TransportNotPossible(f.faultString)
+            elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
+                raise PermissionDenied(f.faultString)
+            else:
+                raise
+
     def ensureUnderlyingPath(self, transport):
         """Ensure that the directory for the branch exists on the transport.
         """
@@ -274,7 +299,7 @@ class LaunchpadServer(Server):
         except NoSuchFile:
             raise PermissionDenied(virtual_path)
 
-        branch_id = self._make_branch(branch)
+        branch_id = branch.create()
         # XXX: This logic should be moved to the authserver!
         if branch_id == '':
             raise PermissionDenied(
@@ -320,36 +345,6 @@ class LaunchpadServer(Server):
             transport = self.backing_transport
             branch.ensureUnderlyingPath(transport)
         return transport, real_path
-
-    def _make_branch(self, branch):
-        """Create a branch in the database for the given user and product.
-
-        :param user: The loginID of the user who owns the new branch.
-        :param product: The name of the product to which the new branch
-            belongs.
-        :param branch: The name of the new branch.
-
-        :raise PermissionDenied: If 'user' does not begin with a '~' or if
-            'product' is not the name of an existing product.
-        :return: The database ID of the new branch.
-        """
-        try:
-            return self.authserver.createBranch(
-                branch._owner, branch._product, branch._name)
-        except Fault, f:
-            if f.faultCode == NOT_FOUND_FAULT_CODE:
-                # One might think that it would make sense to raise
-                # NoSuchFile here, but that makes the client do "clever"
-                # things like say "Parent directory of
-                # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
-                # does not exist.  You may supply --create-prefix to
-                # create all leading parent directories."  Which is just
-                # misleading.
-                raise TransportNotPossible(f.faultString)
-            elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
-                raise PermissionDenied(f.faultString)
-            else:
-                raise
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
