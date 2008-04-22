@@ -1293,18 +1293,23 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
-    def autosubscribeToMailingList(mailinglist, requester=None):
-        """Subscribe to a mailing list.
+    def subscribeToMailingList(mailinglist, requester=None):
+        """Subscribe this person to a mailing list.
 
         This method takes the user's mailing list auto-subscription
-        setting into account. It may or may not result in a list
-        subscription.
+        setting into account, and it may or may not result in a list
+        subscription.  It tries to recover gracefully from common
+        problems, such as the mailing list being in an unusable
+        state, or the user already being subscribed.  If you want
+        these problems to raise exceptions then consider using
+        `IMailinglist.subscribe()` instead.
 
         :param mailinglist: The list to subscribe to.  No action is
         	taken if the list is None, or in an unusable state.
 
         :param requester: The person requesting the list subscription,
-        	if not the user themself.
+        	if not the user himself.  The default assumes the user
+        	themself is making the request.
 
         :return: True if the user was subscribed, false if they weren't.
         """

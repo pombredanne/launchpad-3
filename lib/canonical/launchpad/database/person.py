@@ -2076,7 +2076,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return StructuralSubscription.selectBy(
             subscriber=self, orderBy=['-date_created'])
 
-    def autosubscribeToMailingList(self, mailinglist, requester=None):
+    def subscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
         if mailinglist is None or not mailinglist.isUsable():
             return False
@@ -2100,6 +2100,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             mailinglist.subscribe(user)
             return True
         else:
+            # We don't want to subscribe to the list.
             return False
 
 
