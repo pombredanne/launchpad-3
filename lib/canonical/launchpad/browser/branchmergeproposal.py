@@ -50,9 +50,9 @@ def update_and_notify(func):
     """Decorate an action to update from a form and send a notification"""
     def decorator(view, action, data):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
+        result = func(view, action, data)
         form.applyChanges(
             view.context, view.form_fields, data, view.adapters)
-        result = func(view, action, data)
         notify(SQLObjectModifiedEvent(view.context, snapshot, []))
         return result
     return decorator
@@ -552,6 +552,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
             self.form_fields['revision_number'].for_display = True
 
     @action('Enqueue', name='enqueue')
+    @update_and_notify
     def enqueue_action(self, action, data):
         """Update the whiteboard and enqueue the merge proposal."""
         if self.context.isPersonValidReviewer(self.user):
@@ -559,7 +560,6 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
         else:
             revision_id = self.context.reviewed_revision_id
         self.context.enqueue(self.user, revision_id)
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

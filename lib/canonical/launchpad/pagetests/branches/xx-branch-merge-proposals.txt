@@ -496,13 +496,18 @@ Resubmitting proposals without changing the whiteboard emits notifications.
 
     >>> sample_browser.getLink('Resubmit proposal').click()
     >>> sample_browser.getControl('Resubmit').click()
-    >>> [status_notification, creation_notification] = pop_notifications()
-    >>> print status_notification['Subject']
-    Proposed merge of ~name12/gnome-terminal/scanned into GNOME Terminal
-    Mainline updated
-    >>> print creation_notification['Subject']
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    2
+    >>> subjects = [notification['Subject'] for notification in notifications]
+    >>> # The order of notifications appears to be non-deterministic
+    >>> subjects.sort()
+    >>> print subjects[0]
     Merge of ~name12/gnome-terminal/scanned into GNOME Terminal Mainline
     proposed
+    >>> print subjects[1]
+    Proposed merge of ~name12/gnome-terminal/scanned into GNOME Terminal
+    Mainline updated
 
 
 == Merge queues ==
@@ -563,6 +568,20 @@ recorded as the reviewer of the proposal.
     Reviewed revision: 1
     Queued by: Sample Person
     Queued revision: 1
+
+An email notification is also generated.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload()
+    The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox Mainline
+    has= been updated.
+    <BLANKLINE>
+        Status: Work in progress =3D> Queued
+        Commit Message: (not set) =3D> This is the commit message
+    --
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
+    You are subscribed to branch Mozilla Firefox Mainline.
+    <BLANKLINE>
 
 Next to the status in the summary is a link to view the queue that the
 proposal is queued in.
