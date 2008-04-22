@@ -20,6 +20,24 @@ from twisted.web import xmlrpc
 devnull = open("/dev/null", "r")
 
 
+def _sanitizeURLs(text_seq):
+    """A generator that deletes URL passwords from a string sequence.
+
+    This generator removes user/password data from URLs if embedded
+    in the latter as follows: scheme://user:passwd@netloc/path. 
+
+    :param text_seq: A sequence of strings (that may contain URLs).
+    :return: A (sanitized) line stripped of authentication credentials.
+    """
+    # This regular expression will be used to remove authentication
+    # credentials from URLs.
+    password_re = re.compile('://([^:]+:[^@]+@)(\S+)')
+
+    for line in text_seq:
+        sanitized_line = password_re.sub(r'://\2', line)
+        yield sanitized_line
+
+
 # XXX cprov 2005-06-28:
 # RunCapture can be replaced with a call to
 #
@@ -92,13 +110,12 @@ class BuildManager(object):
     def doUnpack(self):
         """Unpack the build chroot."""
         self.runSubProcess(
-            self._unpackpath, ["unpack-chroot", self._buildid,
-            self._chroottarfile])
+            self._unpackpath,
+            ["unpack-chroot", self._buildid, self._chroottarfile])
 
     def doCleanup(self):
         """Remove the build tree etc."""
-        self.runSubProcess( self._cleanpath,
-                        ["remove-build", self._buildid])
+        self.runSubProcess(self._cleanpath, ["remove-build", self._buildid])
 
         # Sanitize the URLs in the buildlog file if this is a build
         # in a private archive.
@@ -116,7 +133,12 @@ class BuildManager(object):
                             ["umount-chroot", self._buildid])
 
     def initiate(self, files, chroot, extra_args):
-        """Initiate a build given the input files"""
+        """Initiate a build given the input files.
+
+        Please note: the 'extra_args' dictionary may contain a boolean
+        value keyed under the 'archive_private' string. If that value
+        evaluates to True the build at hand is for a private archive.
+        """
         os.mkdir("%s/build-%s" % (os.environ["HOME"], self._buildid))
         for f in files:
             os.symlink( self._slave.cachePath(files[f]),
@@ -128,7 +150,7 @@ class BuildManager(object):
         # whether the URLs in the buildlog file should be sanitized
         # so that they do not contain any embedded authentication
         # credentials.
-        if extra_args.get('archive_private', False) == True:
+        if extra_args.get('archive_private'):
             self.is_archive_private = True
 
         self.runSubProcess(
@@ -239,7 +261,11 @@ class BuildDSlave(object):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
                 try:
                     f = urllib2.urlopen(url)
-                except Exception, info:
+                # XXX al-maisan, 2008-04-22: I was advised against fixing
+                # the Pylint notice for the exception below because changing
+                # it to URLError might introduce a regression.
+                # We may want to take a stab at this later however.
+                except Exception, info: #pylint: disable-msg=W0703
                     extra_info = 'Error accessing Librarian: %s' % info
                     self.log(extra_info)
                 else:
@@ -342,8 +368,8 @@ class BuildDSlave(object):
             # Please note: we are throwing away the first line (of the
             # excerpt to be scrubbed) because it may be cut off thus
             # thwarting the detection of embedded passwords.
-            clean_content_iter = self._sanitizeURLs(log_lines[1:])
-            ret = '\n'.join(list(clean_content_iter))
+            clean_content_iter = _sanitizeURLs(log_lines[1:])
+            ret = '\n'.join(clean_content_iter)
 
         return ret
 
@@ -414,53 +440,39 @@ class BuildDSlave(object):
     def sanitizeBuildlog(self, log_path):
         """Removes passwords from buildlog URLs.
 
-        Because none of the URLs to be processed is expected to go across
+        Because none of the URLs to be processed are expected to span
         multiple lines and because build log files are potentially huge
         they will be processed line by line.
 
         :param log_path: The path to the buildlog file that is to be
-                         sanitized
+            sanitized
         :type log_path: ``str``
         """
         # First move the buildlog file that is to be sanitized out of
         # the way.
-        unsanitized_path = self.cachePath('%s.unsanitized' % (
-            os.path.basename(log_path),))
+        unsanitized_path = self.cachePath(
+            os.path.basename(log_path) + '.unsanitized')
         os.rename(log_path, unsanitized_path)
 
         # Open the unsanitized buildlog file for reading.
-        unsanitized_fh = open(unsanitized_path)
+        unsanitized_file = open(unsanitized_path)
 
         # Open the file that will hold the resulting, sanitized buildlog
         # content for writing.
-        sanitized_fh = open(log_path, 'w')
+        sanitized_file = None
 
-        # Scrub the buildlog file line by line
-        clean_content_iter = self._sanitizeURLs(unsanitized_fh)
-        for line in clean_content_iter:
-            sanitized_fh.write(line)
+        try:
+            sanitized_file = open(log_path, 'w')
 
-        # We are done with buildlog scrubbing, close the file handles.
-        sanitized_fh.close()
-        unsanitized_fh.close()
-
-    @staticmethod
-    def _sanitizeURLs(text_seq):
-        """A generator that deletes URL passwords from a string sequence.
-
-        This generator removes user/password data from URLs if embedded
-        in the latter as follows: scheme://user:passwd@netloc/path. 
-
-        :param text_seq: A sequence of strings (that may contain URLs).
-        :return: A (sanitized) line stripped of authentication credentials.
-        """
-        # This regular expression will be used to remove authentication
-        # credentials from URLs.
-        password_re = re.compile('://([^:]+:[^@]+@)(\S+)')
-
-        for line in text_seq:
-            sanitized_line = password_re.sub(r'://\2', line)
-            yield sanitized_line
+            # Scrub the buildlog file line by line
+            clean_content_iter = _sanitizeURLs(unsanitized_file)
+            for line in clean_content_iter:
+                sanitized_file.write(line)
+        finally:
+            # We're done with scrubbing, close the file handles.
+            unsanitized_file.close()
+            if sanitized_file is not None:
+                sanitized_file.close()
 
 
 class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
