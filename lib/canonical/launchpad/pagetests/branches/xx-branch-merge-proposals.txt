@@ -411,6 +411,11 @@ an error is shown.
     ...     print extract_text(message)
     The proposal has already been marked as merged.
 
+No email notification is triggered.
+
+    >>> pop_notifications()
+    []
+
 
 == Resubmitting proposals ==
 
