@@ -238,14 +238,8 @@ class LaunchpadServer(Server):
         create a matching directory on the backing transport.
         """
         self.logger.info('mkdir(%r)', virtual_path)
-        # XXX: JonathanLange 2008-04-21: We might be able to use
-        # _parse_virtual_path here.
-        path_segments = get_path_segments(virtual_path)
-        if len(path_segments) != 3:
-            raise PermissionDenied(
-                'This method is only for creating branches: %s'
-                % (virtual_path,))
-        branch_id = self._make_branch(*path_segments)
+        branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
+        branch_id = self._make_branch(branch)
         if branch_id == '':
             raise PermissionDenied(
                 'Cannot create branch: %s' % (virtual_path,))
@@ -318,7 +312,7 @@ class LaunchpadServer(Server):
             user, product, branch)
         return branch_id, permissions, path
 
-    def _make_branch(self, user, product, branch):
+    def _make_branch(self, branch):
         """Create a branch in the database for the given user and product.
 
         :param user: The loginID of the user who owns the new branch.
@@ -330,36 +324,30 @@ class LaunchpadServer(Server):
             'product' is not the name of an existing product.
         :return: The database ID of the new branch.
         """
-        self.logger.debug('_make_branch(%r, %r, %r)', user, product, branch)
-        # XXX: JonathanLange 2008-04-21: This check is already done in
-        # _parse_virtual_path. Use that instead.
-        if not user.startswith('~'):
-            raise PermissionDenied(
-                'Path must start with user or team directory: %r' % (user,))
-        user = user[1:]
         # XXX: JonathanLange 2008-04-21: This shouldn't look before it leaps.
-        branch_id, permissions = self._get_branch_information(
-            user, product, branch)
-        if branch_id != '':
-            self.logger.debug('Branch (%r, %r, %r) already exists ')
-            return branch_id
-        else:
-            try:
-                return self._create_branch(user, product, branch)
-            except Fault, f:
-                if f.faultCode == NOT_FOUND_FAULT_CODE:
-                    # One might think that it would make sense to raise
-                    # NoSuchFile here, but that makes the client do "clever"
-                    # things like say "Parent directory of
-                    # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
-                    # does not exist.  You may supply --create-prefix to
-                    # create all leading parent directories."  Which is just
-                    # misleading.
-                    raise TransportNotPossible(f.faultString)
-                elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
-                    raise PermissionDenied(f.faultString)
-                else:
-                    raise
+        try:
+            return branch.getID()
+        except BranchNotFound:
+            # Branch doesn't exist. Great! That means we can create it.
+            pass
+
+        try:
+            return self._create_branch(
+                branch._owner, branch._product, branch._name)
+        except Fault, f:
+            if f.faultCode == NOT_FOUND_FAULT_CODE:
+                # One might think that it would make sense to raise
+                # NoSuchFile here, but that makes the client do "clever"
+                # things like say "Parent directory of
+                # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
+                # does not exist.  You may supply --create-prefix to
+                # create all leading parent directories."  Which is just
+                # misleading.
+                raise TransportNotPossible(f.faultString)
+            elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
+                raise PermissionDenied(f.faultString)
+            else:
+                raise
 
     def _create_branch(self, user, product, branch):
         """Create a branch on the authserver."""
