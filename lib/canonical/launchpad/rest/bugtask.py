@@ -11,10 +11,9 @@ __all__ = [
 
 
 from zope.component import adapts, getUtility
-from zope.interface import classProvides
 from zope.schema import Bool, Choice, Datetime, Object, Text
 
-from canonical.lazr.interfaces import IEntry, IEntryWADLSpecification
+from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Entry, ResourcePOSTOperation
 from canonical.lazr.rest.schema import CollectionField
 
@@ -89,7 +88,6 @@ class BugTaskEntry(Entry):
     adapts(IBugTask)
     decorates(IBugTaskEntry)
     schema = IBugTaskEntry
-    classProvides(IEntryWADLSpecification)
 
     @property
     def status_explanation(self):

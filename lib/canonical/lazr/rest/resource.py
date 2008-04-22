@@ -39,8 +39,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource,
-    ICollectionWADLSpecification, IEntry, IEntryResource,
-    IEntryWADLSpecification, IFieldDeserializer, IHTTPResource,
+    IEntry, IEntryResource, IFieldDeserializer, IHTTPResource,
     IJSONPublishable, IResourceGETOperation, IResourcePOSTOperation,
     IScopedCollection, IServiceRootResource)
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
@@ -768,7 +767,6 @@ class ServiceRootResource:
 class Entry:
     """An individual entry."""
     implements(IEntry)
-    classProvides(IEntryWADLSpecification)
 
     def __init__(self, context):
         """Associate the entry with some database model object."""
@@ -778,7 +776,6 @@ class Entry:
 class Collection:
     """A collection of entries."""
     implements(ICollection)
-    classProvides(ICollectionWADLSpecification)
 
     def __init__(self, context):
         """Associate the entry with some database model object."""
@@ -788,7 +785,6 @@ class Collection:
 class ScopedCollection:
     """A collection associated with some parent object."""
     implements(IScopedCollection)
-    classProvides(ICollectionWADLSpecification)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.

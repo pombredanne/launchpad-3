@@ -9,12 +9,11 @@ __all__ = [
     ]
 
 from zope.component import adapts
-from zope.interface import classProvides
 from zope.schema import Object, Text
 
 from canonical.lazr import decorates
 from canonical.lazr.rest import Entry
-from canonical.lazr.interfaces import IEntry, IEntryWADLSpecification
+from canonical.lazr.interfaces import IEntry
 
 from canonical.launchpad.interfaces import IPerson, ITeamMembership
 
@@ -40,7 +39,6 @@ class TeamMembershipEntry(Entry):
     adapts(ITeamMembership)
     decorates(ITeamMembershipEntry)
     schema = ITeamMembershipEntry
-    classProvides(IEntryWADLSpecification)
 
     @property
     def member(self):

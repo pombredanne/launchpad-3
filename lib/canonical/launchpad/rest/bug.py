@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from zope.component import adapts, getUtility
-from zope.interface import classProvides
 from zope.schema import Bool, Datetime, Int, List, Object, Text
 
 from canonical.lazr.rest import Collection, Entry
@@ -23,8 +22,6 @@ from canonical.launchpad.interfaces import IBug, IBugSet, IBugTask, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
 from canonical.lazr import decorates
-from canonical.lazr.interfaces import (
-    ICollectionWADLSpecification, IEntryWADLSpecification)
 
 
 class IBugEntry(IMessageTargetEntry):
@@ -103,7 +100,6 @@ class BugEntry(Entry):
     adapts(IBug)
     decorates(IBugEntry)
     schema = IBugEntry
-    classProvides(IEntryWADLSpecification)
 
     @property
     def duplicate_of(self):
@@ -118,7 +114,6 @@ class BugEntry(Entry):
 
 class BugCollection(Collection):
     """A collection of bugs, as exposed through the web service."""
-    classProvides(ICollectionWADLSpecification)
 
     def find(self):
         """Return all the bugs on the site."""

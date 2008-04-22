@@ -20,7 +20,7 @@ __all__ = [
 
 import sys
 
-from zope.interface import classImplements, directlyProvides
+from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface
@@ -30,8 +30,7 @@ from zope.security.checker import CheckerPublic
 
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
-from canonical.lazr.interfaces.rest import (
-    ICollection, ICollectionWADLSpecification, IEntry, IEntryWADLSpecification)
+from canonical.lazr.interfaces.rest import ICollection, IEntry
 from canonical.lazr.rest.resource import Collection, Entry
 from canonical.lazr.security import protect_schema
 
@@ -215,7 +214,6 @@ def generate_entry_adapter(content_interface, webservice_interface):
     factory = type(classname, bases=(Entry,), dict=cdict)
 
     classImplements(factory, webservice_interface)
-    directlyProvides(factory, IEntryWADLSpecification)
 
     protect_schema(
         factory, webservice_interface, write_permission=CheckerPublic)
@@ -233,8 +231,6 @@ def generate_collection_adapter(interface):
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
     factory = type(classname, bases=(Collection,), dict=cdict)
-
-    directlyProvides(factory, ICollectionWADLSpecification)
 
     protect_schema(factory, ICollection)
     return factory
