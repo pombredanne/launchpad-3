@@ -8,7 +8,6 @@ __all__ = [
     'LaunchpadServer',
     'LaunchpadTransport',
     'set_up_logging',
-    'UntranslatablePath',
     ]
 
 import logging
@@ -103,26 +102,50 @@ def set_up_logging(configure_oops_reporting=False):
     return log
 
 
-class UntranslatablePath(BzrError):
-
-    _fmt = ("Could not translate %(path)s onto backing transport for "
-            "user %(user)r")
-
-
 class BranchNotFound(BzrError):
+    """Raised when on translating a virtual path for a non-existent branch."""
 
     _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
 
 
 class CachingAuthserverClient:
+    """Wrapper for the authserver that caches responses for a particular user.
+
+    This only wraps the methods that are used for serving branches via a
+    Bazaar transport: createBranch, getBranchInformation and requestMirror.
+
+    In the normal course of operation, our Bazaar transport translates from
+    "virtual branch identifier" (currently '~owner/product/name') to a branch
+    ID. It does this many, many times for a single Bazaar operation. Thus, it
+    makes sense to cache results from the authserver.
+    """
 
     def __init__(self, authserver, user_id):
+        """Construct a caching authserver.
+
+        :param authserver: A blocking XML-RPC proxy, usually an instance of
+            `xmlrpclib.ServerProxy`
+        :param user_id: The user who will be making these requests.
+        """
         self._authserver = authserver
         self._branch_info_cache = {}
         self._user_id = user_id
 
     def createBranch(self, owner, product, branch):
-        """Create a branch on the authserver."""
+        """Create a branch on the authserver.
+
+        This raises any Faults that might be raised by the authserver's
+        `createBranch` method, so for more information see
+        `IHostedBranchStorage.createBranch`.
+
+        :param owner: The owner of the branch. A string that is the name of a
+            Launchpad `IPerson`.
+        :param product: The project that the branch belongs to. A string that
+            is either '+junk' or the name of a Launchpad `IProduct`.
+        :param branch: The name of the branch to create.
+
+        :return: The ID of the created branch.
+        """
         branch_id = self._authserver.createBranch(
             self._user_id, owner, product, branch)
         # Clear the cache for this branch. We *could* populate it with
@@ -132,7 +155,18 @@ class CachingAuthserverClient:
         return branch_id
 
     def getBranchInformation(self, owner, product, branch):
-        """Get branch information from the authserver."""
+        """Get branch information from the authserver.
+
+        :param owner: The owner of the branch. A string that is the name of a
+            Launchpad `IPerson`.
+        :param product: The project that the branch belongs to. A string that
+            is either '+junk' or the name of a Launchpad `IProduct`.
+        :param branch: The name of the branch that we are interested in.
+
+        :return: (branch_id, permissions), where 'permissions' is 'w' if the
+            user represented by 'loginID' can write to the branch, and 'r' if
+            they cannot. If the branch doesn't exist, return ('', '').
+        """
         branch_info = self._branch_info_cache.get((owner, product, branch))
         if branch_info is None:
             branch_info = self._authserver.getBranchInformation(
@@ -141,13 +175,42 @@ class CachingAuthserverClient:
         return branch_info
 
     def requestMirror(self, branch_id):
+        """Mark a branch as needing to be mirrored.
+
+        :param branch_id: The database ID of the branch.
+        """
         return self._authserver.requestMirror(self._user_id, branch_id)
 
 
-class BranchPath:
+class LaunchpadBranch:
+    """A branch on Launchpad."""
+
+    # The interface for this object deliberately hides the owner, product,
+    # name shenanigans from the rest of the transport. Instead, it assumes:
+    # - that the actual Bazaar branch is stored in a different location to the
+    #   one where it is published.
+    # - that Launchpad branches need to be created
+    # - that they have an ID and permissions.
+
+    #How do I say this more
+    # clearly?
 
     @classmethod
     def from_virtual_path(cls, authserver, virtual_path):
+        """Construct a LaunchpadBranch from a virtual path.
+
+        XXX - document exceptions raised once they are clearly defined in the
+        code!
+
+        :param authserver: An XML-RPC client to the Launchpad authserver.
+            This is used to get information about the branch and to perform
+            database operations on the branch.
+        :param virtual_path: A public path to a branch, or to a file or
+            directory within a branch.
+        :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
+            is an instance of LaunchpadBranch that represents the branch at
+            the virtual path, and `rest_of_path` is a path within that branch.
+        """
         segments = get_path_segments(virtual_path, 3)
         # If we don't have at least an owner, product and name, then we don't
         # have enough information for a branch.
@@ -169,13 +232,36 @@ class BranchPath:
         return cls(authserver, user_dir[1:], product, name), path
 
     def __init__(self, authserver, owner, product, name):
+        """Construct a LaunchpadBranch object.
+
+        In general, don't call this directly, use
+        `LaunchpadBranch.from_virtual_path` instead. This prevents assumptions
+        about branch naming spreading throughout the code.
+
+        :param authserver: An XML-RPC client to the Launchpad authserver.
+            This is used to get information about the branch and to perform
+            database operations on the branch.
+        :param owner: The owner of the branch. A string that is the name of a
+            Launchpad `IPerson`.
+        :param product: The project that the branch belongs to. A string that
+            is either '+junk' or the name of a Launchpad `IProduct`.
+        :param branch: The name of the branch.
+        """
         self._authserver = authserver
         self._owner = owner
         self._product = product
         self._name = name
 
     def checkPath(self, path_on_branch):
-        """Raise an error if `path_on_branch` is not valid."""
+        """Raise an error if `path_on_branch` is not valid.
+
+        This allows us to enforce a certain level of policy about what goes
+        into a branch directory on Launchpad. Specifically, we do not allow
+        arbitrary files at the top-level, we only allow Bazaar control
+        directories, and backups of same.
+
+        :raise PermissionDenied: if `path_on_branch` is forbidden.
+        """
         if path_on_branch == '':
             return
         segments = get_path_segments(path_on_branch)
@@ -184,12 +270,7 @@ class BranchPath:
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
     def create(self):
-        """Create a branch in the database for the given user and product.
-
-        :raise PermissionDenied: If 'user' does not begin with a '~' or if
-            'product' is not the name of an existing product.
-        :return: The database ID of the new branch.
-        """
+        """Create a branch in the database."""
         try:
             return self._authserver.createBranch(
                 self._owner, self._product, self._name)
@@ -219,18 +300,37 @@ class BranchPath:
             pass
 
     def getRealPath(self, path_on_branch):
+        """Return the 'real' path to a path within this branch.
+
+        :param path_on_branch: A path within this branch.
+        :return: A path relative to the base directory where all branches
+            are stored. This path will look like '00/AB/02/43/.bzr/foo', where
+            'AB0243' is the database ID of the branch expressed in hex and
+            '.bzr/foo' is `path_on_branch`.
+        """
         self.checkPath(path_on_branch)
         branch_id = self.getID()
         path = '/'.join([branch_id_to_path(branch_id), path_on_branch])
         return path
 
     def getID(self):
-        return self.getInfo()[0]
+        """Return the database ID of this branch.
+
+        :raise BranchNotFound: if the branch does not exist.
+        :return: the database ID of the branch, an integer.
+        """
+        return self._getInfo()[0]
 
     def getPermissions(self):
-        return self.getInfo()[1]
+        """Return the permissions that the current user has for this branch.
 
-    def getInfo(self):
+        :raise BranchNotFound: if the branch does not exist.
+        :return: WRITABLE if the user can write to the branch, READ_ONLY
+            otherwise.
+        """
+        return self._getInfo()[1]
+
+    def _getInfo(self):
         branch_id, permissions = self._authserver.getBranchInformation(
             self._owner, self._product, self._name)
         if branch_id == '':
@@ -239,15 +339,16 @@ class BranchPath:
         return branch_id, permissions
 
     def requestMirror(self):
+        """Request that the branch be mirrored as soon as possible.
+
+        :raise BranchNotFound: if the branch does not exist.
+        """
         branch_id = self.getID()
         self._authserver.requestMirror(branch_id)
 
 
 class LaunchpadServer(Server):
-    """Bazaar Server for Launchpad branches.
-
-    See LaunchpadTransport for more information.
-    """
+    """Bazaar Server for Launchpad branches."""
 
     def __init__(self, authserver, user_id, hosting_transport,
                  mirror_transport):
@@ -265,11 +366,6 @@ class LaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
-
-        # Cache for authserver responses to getBranchInformation(). This maps
-        # from (user, product, branch) tuples to whatever
-        # getBranchInformation() returns. To clear an individual tuple, set
-        # its value in the cache to None, or delete it from the cache.
         user_dict = authserver.getUser(user_id)
         user_id = user_dict['id']
         user_name = user_dict['name']
@@ -281,7 +377,8 @@ class LaunchpadServer(Server):
         self.logger = logging.getLogger('codehosting.lpserve.%s' % user_name)
 
     def _getBranch(self, virtual_path):
-        return BranchPath.from_virtual_path(self.authserver, virtual_path)
+        return LaunchpadBranch.from_virtual_path(
+            self.authserver, virtual_path)
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -313,14 +410,6 @@ class LaunchpadServer(Server):
 
     def translateVirtualPath(self, virtual_path):
         """Translate 'virtual_path' into a transport and sub-path.
-
-        :raise UntranslatablePath: If path is untranslatable. This could be
-            because the path is too short (doesn't include user, product and
-            branch), or because the user, product or branch in the path don't
-            exist.
-
-        :raise TransportNotPossible: If the path is necessarily invalid. Most
-            likely because it didn't begin with a tilde ('~').
 
         :return: (transport, path_on_transport)
         """
