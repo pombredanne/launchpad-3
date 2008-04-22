@@ -11,22 +11,15 @@ In order to test notifications, we need a subscriber for the branch.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel, IBranchSet, IPersonSet)
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/klingon')
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')
-    >>> _unused = branch.subscribe(subscriber,
-    ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.FULL)
-
-We also need a subscriber for one of the Firefox branches.
-
     >>> branch = getUtility(IBranchSet).getByUniqueName(
     ...     '~name12/firefox/main')
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
     >>> logout()
+
 
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
@@ -62,14 +55,6 @@ main page for the source branch.
 
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon
-
-An email notification is emitted when the merge proposal is created.
-
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> [notification] = pop_notifications()
-    >>> print notification['Subject']
-    Merge of Klingon support in GNOME Terminal into GNOME Terminal Mainline
-    proposed
 
 Most of the time the merge proposal is looked at from the point
 of view of either the source branch or the target branch.
@@ -193,6 +178,14 @@ yet in the target branch are also shown.
     >>> firefox_merge_url = sample_browser.url
 
 
+An email notification is emitted when the merge proposal is created.
+
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> [notification] = pop_notifications()
+    >>> print notification['Subject']
+    Merge of Mozilla Firefox 0.9 into Mozilla Firefox Mainline proposed
+
+
 == Editing a merge proposal ==
 
 The branch merge poposal can be edited by the owner of the source or
@@ -263,6 +256,9 @@ On update, the user is taken back to the proposal details page.
 A mail notification is sent out.
 
     >>> [notification] = pop_notifications()
+    >>> print notification['Subject']
+    Proposed merge of Mozilla Firefox 0.9 into Mozilla Firefox Mainline
+    updated
 
 
 == Deleting merge proposals ==
