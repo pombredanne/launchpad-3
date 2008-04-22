@@ -498,11 +498,11 @@ class Bug(SQLBase):
                 if recipients is not None:
                     recipients.addRegistrant(pillar.owner, pillar)
 
-            person_set = getUtility(IPersonSet)
-            target_subscribers = person_set.getSubscribersForTargets(
-                structural_subscription_targets, recipients=recipients)
+        person_set = getUtility(IPersonSet)
+        target_subscribers = person_set.getSubscribersForTargets(
+            structural_subscription_targets, recipients=recipients)
 
-            also_notified_subscribers.update(target_subscribers)
+        also_notified_subscribers.update(target_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

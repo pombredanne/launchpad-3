@@ -3042,7 +3042,7 @@ class PersonSet:
         """See `IPersonSet`. """
         target_criteria = []
         for target in targets:
-            # target_args is a mapping from query argumens
+            # target_args is a mapping from query arguments
             # to query values.
             target_args = target._target_args
             target_criteria_clauses = []
