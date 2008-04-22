@@ -202,7 +202,7 @@ def apply_for_list(browser, team_name):
     browser.getControl('Apply for Mailing List').click()
 
 
-def new_person(first_name):
+def new_person(first_name, set_preferred_email=True):
     """Create a new person with the given first name.
 
     The person will be given two email addresses, with the 'long form'
@@ -219,7 +219,8 @@ def new_person(first_name):
         preferred_address,
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
         name=variable_name, displayname=full_name)
-    person.setPreferredEmail(email)
+    if set_preferred_email:
+        person.setPreferredEmail(email)
     getUtility(IEmailAddressSet).new(alternative_address, person,
                                      EmailAddressStatus.VALIDATED)
     return person

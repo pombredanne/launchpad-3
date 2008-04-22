@@ -641,3 +641,88 @@ to.
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
+
+
+== Subscribing a person to a list gracefully ==
+
+Calling IMailingList.subscribe() directly will always subscribe a
+person, regardless of their mailing list auto-subscription settings,
+and raise errors if there are any problems.  Calling
+IPerson.subscribeToMailingList() will take these settings into account
+and try to recover gracefully from errors.  The method will return a
+True or False value to indicate if the user was subscribed to the list.
+
+    >>> team_eight, list_eight = new_team('team-eight', with_list=True)
+
+Anne is not a member of list-eight, so she will have no problem joining.
+
+    >>> anne.subscribeToMailingList(list_eight)
+    True
+    >>> print list_eight.getSubscription(anne)
+    <security ...MailingListSubscription instance ...>
+
+Subscribing a second time will fail.
+
+    >>> anne.subscribeToMailingList(list_eight)
+    False
+
+Subscribing to an inactive list fails.
+
+    >>> team_off, list_off = new_team('team-off', with_list=True)
+    >>> list_off.deactivate()
+    >>> list_off.isUsable()
+    False
+
+    >>> anne.subscribeToMailingList(list_off)
+    False
+
+If a team's mailing list is non-existant, then the method will try to
+recover gracefully.
+
+    >>> team_sans_list = new_team('sans-list', with_list=False)
+    >>> anne.subscribeToMailingList(team_sans_list.mailing_list)
+    False
+
+
+And we can't subscribe someone who does not have a preferred email address.
+
+    >>> qbert = new_person('Qbert', set_preferred_email=False)
+    >>> print qbert.preferredemail
+    None
+
+    >>> qbert.subscribeToMailingList(list_eight)
+    False
+
+
+=== Auto-subscription policy settings ===
+
+Anne's auto-subscription settings are taken into account when signing
+up for the list.
+
+    >>> from canonical.launchpad.interfaces.mailinglistsubscription import (
+    ...     MailingListAutoSubscribePolicy)
+    >>> ALWAYS = MailingListAutoSubscribePolicy.ALWAYS
+    >>> ON_REGISTRATION = MailingListAutoSubscribePolicy.ON_REGISTRATION
+    >>> NEVER = MailingListAutoSubscribePolicy.NEVER
+
+By default, new users have a policy to only join a list if they
+explicitly request it.  If someone else adds them to a list, then they
+are only subscribed to the list if their policy is set to 'ALWAYS'.
+
+    >>> kathy = new_person('Kathy')
+    >>> kathy.mailing_list_auto_subscribe_policy
+    <...ON_REGISTRATION...>
+
+    >>> kathy.subscribeToMailingList(list_eight, requester=anne)
+    False
+
+    >>> kathy.mailing_list_auto_subscribe_policy = ALWAYS
+    >>> kathy.subscribeToMailingList(list_eight, requester=anne)
+    True
+
+Setting the policy to NEVER should be self-explanatory.
+
+    >>> norbert = new_person('Norbert')
+    >>> norbert.mailing_list_auto_subscribe_policy = NEVER
+    >>> norbert.subscribeToMailingList(list_eight)
+    False
