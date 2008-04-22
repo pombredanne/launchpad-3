@@ -123,7 +123,7 @@ class UntranslatablePath(BzrError):
 class BranchPath:
 
     @classmethod
-    def from_virtual_path(cls, virtual_path):
+    def from_virtual_path(cls, server, virtual_path):
         segments = get_path_segments(virtual_path, 3)
         # If we don't have at least an owner, product and name, then we don't
         # have enough information for a branch.
@@ -142,9 +142,10 @@ class BranchPath:
             raise NoSuchFile(virtual_path)
         if not user_dir.startswith('~'):
             raise NoSuchFile(virtual_path)
-        return cls(user_dir[1:], product, name), path
+        return cls(server, user_dir[1:], product, name), path
 
-    def __init__(self, owner, product, name):
+    def __init__(self, server, owner, product, name):
+        self._server = server
         self._owner = owner
         self._product = product
         self._name = name
@@ -157,6 +158,21 @@ class BranchPath:
         if segments[0] not in ALLOWED_DIRECTORIES:
             raise PermissionDenied(
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
+
+    def getID(self):
+        return self.getInfo()[0]
+
+    def getPermissions(self):
+        return self.getInfo()[1]
+
+    def getInfo(self):
+        return self._server._get_branch_information(
+            self._owner, self._product, self._name)
+
+    def requestMirror(self, user_id):
+        branch_id = self.getID()
+        self._server.logger.info('Requesting mirror for: %r', branch_id)
+        self._server.authserver.requestMirror(user_id, branch_id)
 
 
 class LaunchpadServer(Server):
@@ -223,9 +239,8 @@ class LaunchpadServer(Server):
 
     def requestMirror(self, virtual_path):
         """Request that the branch that owns 'virtual_path' be mirrored."""
-        branch_id, ignored, path = self._translate_path(virtual_path)
-        self.logger.info('Requesting mirror for: %r', branch_id)
-        self.authserver.requestMirror(self.user_id, branch_id)
+        branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
+        branch.requestMirror(self.user_id)
 
     def translateVirtualPath(self, virtual_path):
         """Translate 'virtual_path' into a transport and sub-path.
@@ -265,7 +280,7 @@ class LaunchpadServer(Server):
             branch.
         :return: (user, product, branch_name, tail)
         """
-        branch, path = BranchPath.from_virtual_path(virtual_path)
+        branch, path = BranchPath.from_virtual_path(self, virtual_path)
         branch.checkPath(path)
         return (branch._owner, branch._product, branch._name, path)
 
