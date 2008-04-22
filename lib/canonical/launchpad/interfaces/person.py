@@ -1569,9 +1569,12 @@ class IPersonSet(Interface):
     def getSubscribersForTargets(targets, recipients=None):
         """Return the set of subscribers for `targets`.
 
-        :targets: The sequence of targets for which to get the subscribers.
-        :recipients: An optional instance of `BugNotificationRecipients`.
-                     If presents, all found subscribers will be added to it.
+        :param targets: The sequence of targets for which to get the
+                        subscribers.
+        :param recipients: An optional instance of
+                           `BugNotificationRecipients`.
+                           If present, all found subscribers will be
+                           added to it.
         """
 
 

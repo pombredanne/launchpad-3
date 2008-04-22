@@ -3046,13 +3046,13 @@ class PersonSet:
             # to query values.
             target_args = target._target_args
             target_criteria_clauses = []
-            for k, v in target_args.items():
-                if v is not None:
+            for key, value in target_args.items():
+                if value is not None:
                     target_criteria_clauses.append(
-                        '%s = %s' % (k, quote(v)))
+                        '%s = %s' % (key, quote(value)))
                 else:
                     target_criteria_clauses.append(
-                        '%s IS NULL' % k)
+                        '%s IS NULL' % key)
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
         query = ' OR '.join(target_criteria)
