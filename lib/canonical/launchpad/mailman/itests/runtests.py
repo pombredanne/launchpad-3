@@ -55,7 +55,7 @@ def integrationTestCleanUp(testobj):
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
-    'anne', 'bart', 'cris', 'dirk'
+    'anne', 'bart', 'cris', 'dirk', 'emma'
     );
 
     DELETE FROM AnswerContact
