@@ -120,6 +120,11 @@ class UntranslatablePath(BzrError):
             "user %(user)r")
 
 
+class BranchNotFound(BzrError):
+
+    _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
+
+
 class BranchPath:
 
     @classmethod
@@ -159,8 +164,18 @@ class BranchPath:
             raise PermissionDenied(
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
+    def getRealPath(self, path_on_branch):
+        self.checkPath(path_on_branch)
+        branch_id = self.getID()
+        path = '/'.join([branch_id_to_path(branch_id), path_on_branch])
+        return path
+
     def getID(self):
-        return self.getInfo()[0]
+        branch_id = self.getInfo()[0]
+        if branch_id == '':
+            raise BranchNotFound(
+                owner=self._owner, product=self._product, name=self._name)
+        return branch_id
 
     def getPermissions(self):
         return self.getInfo()[1]
@@ -259,14 +274,16 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-        branch_id, permissions, path = self._translate_path(virtual_path)
-        self.logger.debug(
-            'Translated %r => %r', virtual_path,
-            (branch_id, permissions, path))
-        if branch_id == '':
-            raise NoSuchFile(virtual_path)
-        path = '/'.join([branch_id_to_path(branch_id), path])
+        branch, path = BranchPath.from_virtual_path(self, virtual_path)
 
+        try:
+            branch_id = branch.getID()
+        except BranchNotFound:
+            raise NoSuchFile(virtual_path)
+
+        path = branch.getRealPath(path)
+
+        permissions = branch.getPermissions()
         if permissions == READ_ONLY:
             transport = self.mirror_transport
         else:
