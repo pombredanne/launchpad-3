@@ -21,7 +21,7 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 
-QUEUE_SIZE = 75
+QUEUE_SIZE = 30
 
 
 class QueueItemsView(LaunchpadView):
@@ -189,7 +189,8 @@ class QueueItemsView(LaunchpadView):
             if new_section:
                 feedback_interpolations['section'] = new_section.name
             if new_priority:
-                feedback_interpolations['priority'] = new_priority.title.lower()
+                feedback_interpolations[
+                    'priority'] = new_priority.title.lower()
 
             try:
                 getattr(self, 'queue_action_' + action)(queue_item)

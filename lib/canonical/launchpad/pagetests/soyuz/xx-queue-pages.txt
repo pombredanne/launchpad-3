@@ -306,19 +306,19 @@ At acceptance time, the component, section and priority (for binaries)
 may be overridden to new values by changing the value in any or all of
 the drop-down (select) boxes to the left of the "accept" button.  Source
 uploads can only have their component and section overridden.  Binary
-uploads can have all three properties overrdden but are overridable only
-at their file level.  Currently, this UI only permits overriding all of
-the binary files in an upload at once, or not at all.
+uploads can have all three properties overrdden but can be overridden
+only at their file level.  Currently, this UI only permits overriding
+all of the binary files in an upload at once, or not at all.
 
 Thus, the items that are checked for acceptance will also be overriden
 depending on the selected values.  This allows many items to be
 all overridden at once with the same value(s).
 
-Let's select netapplet(source) and pmount(i386) for acceptance:
+The upload manager selects netapplet(source) and pmount(i386) for acceptance:
 
   >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['2', '3']
 
-And change some override values:
+And changes some override values:
 
   >>> upload_manager_browser.getControl(
   ...     name="component_override").displayValue = ['restricted']
@@ -327,11 +327,11 @@ And change some override values:
   >>> upload_manager_browser.getControl(
   ...     name="priority_override").displayValue = ['extra']
 
-And now accept the checked items:
+And now accepts the checked items:
 
   >>> upload_manager_browser.getControl(name="Accept").click()
 
-The informational message shown confirms the details of what was
+He sees the informational message that confirms the details of what was
 overridden:
 
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
@@ -345,16 +345,19 @@ overridden:
   netapplet...dist... -                                      Release 2005-04-07
   alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-04-07
 
-The 'accepted' queue will now contain pmount with its overridden values.
+Any user can now see the 'accepted' queue contains pmount with its
+overridden values.
 
-  >>> anon_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> anon_browser.getControl(
+  ...     name="queue_state", index=0).displayValue=['Accepted']
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version     Component Section Priority Pocket  When
   pmount (i386)       0.1-1                                  Release 2005-04-07
   ...
 
-Drill down into the file list to see the overridden binary values:
+The user can drill down into the file list to see the overridden binary
+values:
 
   >>> filelist = find_tags_by_class(
   ...     anon_browser.contents, 'queue-pmount-2')
@@ -365,7 +368,8 @@ Drill down into the file list to see the overridden binary values:
 'netapplet' has gone straight to the 'done' queue because it's a single
 source upload, and we can see its overridden values there:
 
-  >>> anon_browser.getControl(name="queue_state").displayValue=['Done']
+  >>> anon_browser.getControl(
+  ...     name="queue_state", index=0).displayValue=['Done']
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version     Component  Section Priority Pocket  When

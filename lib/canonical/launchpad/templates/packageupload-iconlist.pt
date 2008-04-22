@@ -23,7 +23,8 @@
        alt="[Debian Description Translation Project Indexes]"
        src="/@@/ubuntu-icon"
        title="Debian Description Translation Project Indexes"/>
-  <a tal:attributes="href context/changesfile/http_url">
+  <a tal:attributes="href context/changesfile/http_url;
+                     title string:Changes file for ${context/displayname}">
     <tal:name replace="string: ${context/displayname}"/>
   </a>
   <tal:version replace="

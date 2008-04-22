@@ -92,11 +92,13 @@
            <tal:block
                 define="filelist_class string:queue-${packageupload/displayname}-${packageupload/id}">
              <tr class="queue-row">
-                <!-- Every column is top-padded apart from the checkbox
-                     because Firefox renders it offset anyway.  This will make
-                     other browsers look odd, now. :/ -->
+                <tal:comment condition="nothing">
+                  Every column is top-padded apart from the checkbox
+                  because Firefox renders it offset anyway.  This will make
+                  other browsers look odd, now. :/
+                </tal:comment>
                 <td width="14" style="padding-top: 5px">
-                  <a tal:attributes="href string:./+queue;
+                  <a tal:attributes="href string:#;
                      onclick string:return toggleExpandableTableRows('${filelist_class}')">
                     <img tal:attributes="id string:${filelist_class}-arrow"
                          width="14" height="14"
@@ -111,7 +113,7 @@
                   <tal:iconlist replace="structure packageupload/@@+iconlist"/>
                 </td>
 
-                <td style="padding-top: 5px" 
+                <td style="padding-top: 5px"
                     tal:content="packageupload/displayversion">2.0.17-6
                 </td>
                 <tal:is_source define="is_source packageupload/contains_source">
