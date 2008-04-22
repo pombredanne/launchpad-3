@@ -47,6 +47,9 @@ class SoyuzTestPublisher:
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
+        self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
