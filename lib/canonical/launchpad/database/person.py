@@ -66,7 +66,8 @@ from canonical.launchpad.interfaces import (
     IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
     IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    MailingListAutoSubscribePolicy, NameAlreadyTaken,
     PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
     PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
     ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
@@ -194,6 +195,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
+    mailing_list_auto_subscribe_policy = EnumCol(
+        enum=MailingListAutoSubscribePolicy,
+        default=MailingListAutoSubscribePolicy.ON_REGISTRATION)
 
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
@@ -2085,19 +2089,22 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # We are already subscribed to the list.
             return False
 
+        if self.preferredemail is None:
+            return False
+
         if requester is None:
             # Assume the current user requested this action themselves.
             requester = self
 
-        policy = self.mailinglist_autosubscription_policy
+        policy = self.mailing_list_auto_subscribe_policy
 
         if policy == MailingListAutoSubscribePolicy.ALWAYS:
-            mailinglist.subscribe(user)
+            mailinglist.subscribe(self)
             return True
         elif (requester is self) and \
                 policy == MailingListAutoSubscribePolicy.ON_REGISTRATION:
             # Assume that we requested to be joined.
-            mailinglist.subscribe(user)
+            mailinglist.subscribe(self)
             return True
         else:
             # We don't want to subscribe to the list.

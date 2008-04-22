@@ -702,7 +702,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
-    mailinglist_autosubscription_policy = Choice(
+    mailing_list_auto_subscribe_policy = Choice(
         title=_('Mailing List Auto-subscription Policy'),
         required=True,
         vocabulary=MailingListAutoSubscribePolicy,
@@ -1300,9 +1300,10 @@ class IPersonEditRestricted(Interface):
         setting into account, and it may or may not result in a list
         subscription.  It tries to recover gracefully from common
         problems, such as the mailing list being in an unusable
-        state, or the user already being subscribed.  If you want
-        these problems to raise exceptions then consider using
-        `IMailinglist.subscribe()` instead.
+        state, the user already being subscribed, or the user not
+        having a preferred email address set.  If you want
+        these problems to raise exceptions consider using
+        `IMailinglist.subscribe()`.
 
         :param mailinglist: The list to subscribe to.  No action is
         	taken if the list is None, or in an unusable state.
