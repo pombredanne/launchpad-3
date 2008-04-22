@@ -58,8 +58,6 @@ class BranchListingItem(BranchBadges):
                  show_blueprint_badge, is_dev_focus,
                  associated_product_series):
         BranchBadges.__init__(self, branch)
-        # The superclass now sets self.context instead of self.branch.
-        self.branch = branch
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
@@ -70,12 +68,12 @@ class BranchListingItem(BranchBadges):
     @property
     def since_updated(self):
         """How long since the branch was last updated."""
-        return self._now - self.branch.date_last_modified
+        return self._now - self.context.date_last_modified
 
     @property
     def since_created(self):
         """How long since the branch was created."""
-        return self._now - self.branch.date_created
+        return self._now - self.context.date_created
 
     def isBugBadgeVisible(self):
         return self.show_bug_badge
@@ -89,7 +87,7 @@ class BranchListingItem(BranchBadges):
 
     @property
     def revision_number(self):
-        return self.branch.revision_count
+        return self.context.revision_count
 
     @property
     def revision_log(self):
@@ -103,8 +101,8 @@ class BranchListingItem(BranchBadges):
     def revision_codebrowse_link(self):
         return "%(codebrowse_root)s%(branch)s/revision/%(rev_no)s" % {
             'codebrowse_root': config.codehosting.codebrowse_root,
-            'branch': self.branch.unique_name,
-            'rev_no': self.branch.revision_count}
+            'branch': self.context.unique_name,
+            'rev_no': self.context.revision_count}
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):

@@ -8,7 +8,6 @@ __all__ = [
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
-    'BugsBugTaskSearchListingView',
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskBadges',
@@ -19,21 +18,22 @@ __all__ = [
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
-    'BugTasksAndNominationsView',
+    'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
+    'BugTaskSOP',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
-    'BugTaskPrivacyAdapter',
-    'BugTaskSOP',
     'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
+    'BugTasksAndNominationsView',
+    'BugsBugTaskSearchListingView',
+    'NominationsReviewTableBatchNavigatorView',
+    'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
-    'NominationsReviewTableBatchNavigatorView',
-    'TextualBugTaskSearchListingView',
     ]
 
 from datetime import datetime, timedelta
@@ -2545,13 +2545,13 @@ class BugTaskPrivacyAdapter:
 class BugTaskBadges(HasBadgeBase):
     """Provides `IHasBadges` for `IBugTask`."""
 
-    badges = 'security', 'private', 'mentoring', 'branch'
+    badges = ('security', 'private', 'mentoring', 'branch')
 
     def isBranchBadgeVisible(self):
-        return self.context.bug.bug_branches.count()
+        return self.context.bug.bug_branches.count() > 0
 
     def isMentoringBadgeVisible(self):
-        return self.context.bug.mentoring_offers.count()
+        return self.context.bug.mentoring_offers.count() > 0
 
     def isSecurityBadgeVisible(self):
         return self.context.bug.security_related

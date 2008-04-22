@@ -111,7 +111,7 @@ class HasBadgeBase:
     implements(IHasBadges)
 
     # All private objects should show the private badge.
-    badges = 'private',
+    badges = ('private',)
 
     # This class is now a default adapter for IHasBadges.
     def __init__(self, context):
@@ -138,10 +138,11 @@ class HasBadgeBase:
         of the badge.
         """
         method_name = "is%sBadgeVisible" % badge_name.capitalize()
-        if hasattr(self, method_name):
-            return getattr(self, method_name)()
-        else:
+        method = getattr(self, method_name, None)
+        if method is None:
             raise NotImplementedError(method_name)
+        else:
+            return method()
 
     def _getBadgeTitle(self, badge_name):
         """Does the badge_name badge have a custom title?
