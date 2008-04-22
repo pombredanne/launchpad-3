@@ -21,6 +21,7 @@ __all__ = [
     ]
 
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Int
 
@@ -43,6 +44,18 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadView, action)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.authorization import check_permission
+
+
+def update_and_notify(func):
+    """Decorate an action to update from a form and send a notification"""
+    def decorator(view, action, data):
+        snapshot = BranchMergeProposalDelta.snapshot(view.context)
+        form.applyChanges(
+            view.context, view.form_fields, data, view.adapters)
+        result = func(view, action, data)
+        notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        return result
+    return decorator
 
 
 class BranchMergeProposalSOP(StructuralObjectPresentation):
@@ -349,9 +362,9 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
     field_names = ["whiteboard"]
 
     @action('Resubmit', name='resubmit')
+    @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        self.updateContextFromData(data)
         proposal = self.context.resubmit(self.user)
         self.request.response.addInfoNotification(_(
             "Please update the whiteboard for the new proposal."))

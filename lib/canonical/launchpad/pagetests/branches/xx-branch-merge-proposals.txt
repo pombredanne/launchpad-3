@@ -23,7 +23,7 @@ Also subscribe to gnome-terminal, since Firefox tests are mixed with
 Gnome Terminal tests.
 
     >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/klingon')
+    ...     '~name12/gnome-terminal/main')
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
@@ -116,6 +116,10 @@ shown.
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
     Work in progress
+
+Consume notification.
+
+    >>> [_unused] = pop_notifications()
 
 
 == Landing Candidates ==
@@ -380,7 +384,7 @@ An email notification is also created.
          Status: Work in progress =3D> Merged
     --
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch Klingon support in GNOME Terminal.
+    You are subscribed to branch GNOME Terminal Mainline.
     <BLANKLINE>
 
 The user is then taken to the proposal details page.  The source branch
@@ -434,7 +438,13 @@ branches but with the state set to work-in-progress.
 
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'Resubmitting due to extensive changes.')
+    >>> pop_notifications()
+    []
     >>> sample_browser.getControl('Resubmit').click()
+
+Consume notifications.
+
+    >>> [_unused, _unused] = pop_notifications()
 
     >>> for message in get_feedback_messages(sample_browser.contents):
     ...     print extract_text(message)
@@ -443,6 +453,10 @@ branches but with the state set to work-in-progress.
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'Updated work')
     >>> sample_browser.getControl('Update').click()
+
+Consume notification.
+
+    >>> [_unused] = pop_notifications()
 
 The new merge proposal is created as work in progress, and there is
 a link back to the superseded proposal.
@@ -477,6 +491,18 @@ new proposal that supersedes it.
     >>> print extract_text(find_tag_by_id(
     ...      sample_browser.contents, 'branch-whiteboard-value'))
     Updated work
+
+Resubmitting proposals without changing the whiteboard emits notifications.
+
+    >>> sample_browser.getLink('Resubmit proposal').click()
+    >>> sample_browser.getControl('Resubmit').click()
+    >>> [status_notification, creation_notification] = pop_notifications()
+    >>> print status_notification['Subject']
+    Proposed merge of ~name12/gnome-terminal/scanned into GNOME Terminal
+    Mainline updated
+    >>> print creation_notification['Subject']
+    Merge of ~name12/gnome-terminal/scanned into GNOME Terminal Mainline
+    proposed
 
 
 == Merge queues ==

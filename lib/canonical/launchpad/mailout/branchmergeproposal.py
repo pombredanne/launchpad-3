@@ -16,6 +16,7 @@ from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.interfaces import BranchMergeProposalStatus
 
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
