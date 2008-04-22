@@ -2,6 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   define="expandable view/canSeeTaskDetails;
           indent_task view/shouldIndentTask;
+          conjoined_master context/conjoined_master;
           tasklink view/taskLink;
           form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
@@ -24,7 +25,7 @@
         tal:condition="indent_task"
         tal:define="series_targetname view/getSeriesTargetName">
       <img src="/@@/milestone" alt="Targeted to" />
-      <tal:not-conjoined-task condition="not: context/conjoined_master">
+      <tal:not-conjoined-task condition="not: conjoined_master">
         <a
           tal:attributes="href context/target/fmt:url"
           tal:content="series_targetname"
@@ -43,7 +44,7 @@
       />
     </td>
 
-    <tal:conjoined-task condition="context/conjoined_master">
+    <tal:conjoined-task condition="conjoined_master">
     <td colspan="4" style="vertical-align: middle">
       <span class="discreet lesser" style="font-size: 100%">
         Status tracked in
@@ -54,7 +55,7 @@
     </td>
     </tal:conjoined-task>
 
-    <tal:not-conjoined-task condition="not:context/conjoined_master">
+    <tal:not-conjoined-task condition="not:conjoined_master">
     <td tal:attributes="class string:status${context/status/name}"
         tal:define="expander_link_text context/status/title">
       <metal:expander metal:use-macro="template/macros/expander" />
