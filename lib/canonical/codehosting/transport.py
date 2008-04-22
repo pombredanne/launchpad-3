@@ -41,17 +41,6 @@ from canonical.launchpad.webapp import errorlog
 from canonical.twistedsupport.loggingsupport import OOPSLoggingObserver
 
 
-def split_with_padding(a_string, splitter, num_fields, padding=None):
-    """Split the given string into exactly num_fields.
-
-    If the given string doesn't have enough tokens to split into num_fields
-    fields, then the resulting list of tokens is padded with 'padding'.
-    """
-    tokens = a_string.split(splitter, num_fields - 1)
-    tokens.extend([padding] * max(0, num_fields - len(tokens)))
-    return tokens
-
-
 def get_path_segments(path, maximum_segments=-1):
     """Break up the given path into segments.
 
