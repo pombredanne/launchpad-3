@@ -261,11 +261,11 @@ class BuildDSlave(object):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
                 try:
                     f = urllib2.urlopen(url)
-                # XXX al-maisan, 2008-04-22: I was advised against fixing
-                # the Pylint notice for the exception below because changing
-                # it to URLError might introduce a regression.
-                # We may want to take a stab at this later however.
-                except Exception, info: #pylint: disable-msg=W0703
+                # Don't change this to URLError without thoroughly
+                # testing for regressions. For now, just suppress
+                # the PyLint warnings.
+                # pylint: disable-msg=W0703
+                except Exception, info:
                     extra_info = 'Error accessing Librarian: %s' % info
                     self.log(extra_info)
                 else:
@@ -445,7 +445,7 @@ class BuildDSlave(object):
         they will be processed line by line.
 
         :param log_path: The path to the buildlog file that is to be
-            sanitized
+            sanitized.
         :type log_path: ``str``
         """
         # First move the buildlog file that is to be sanitized out of
