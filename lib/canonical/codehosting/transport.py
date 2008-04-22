@@ -250,7 +250,7 @@ class LaunchpadServer(Server):
         self.logger.info('mkdir(%r)', virtual_path)
         try:
             # XXX: the tests seem to expect that we should raise a
-            # PermissionDenied here. Hmm.
+            # PermissionDenied here. Hmm. Find out why.
             branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
         except NoSuchFile:
             raise PermissionDenied(virtual_path)
