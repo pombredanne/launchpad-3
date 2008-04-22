@@ -234,7 +234,7 @@ class StructuralSubscriptionTargetMixin:
 
     @property
     def parent_subscription_target(self):
-        """See `IStructuralSubscriptionTarget."""
+        """See `IStructuralSubscriptionTarget`."""
         # Some structures have a related structure which can be thought
         # of as their parent. A package is related to a distribution,
         # a product is related to a project, etc'...
