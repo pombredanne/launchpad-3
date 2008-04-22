@@ -12,11 +12,12 @@ __all__ = [
     ]
 
 from zope.component import adapts, getUtility
+from zope.interface import classProvides
 from zope.schema import Choice, Object, TextLine
 
 from canonical.lazr.rest import Entry
 from canonical.lazr.interface import use_template
-from canonical.lazr.interfaces import IEntry
+from canonical.lazr.interfaces import IEntry, IEntryWADLSpecification
 from canonical.lazr.rest.schema import CollectionField
 from canonical.lazr.rest import ResourceGETOperation, ResourcePOSTOperation
 
@@ -49,6 +50,7 @@ class PersonEntry(Entry):
     adapts(IPerson)
     decorates(IPersonEntry)
     schema = IPersonEntry
+    classProvides(IEntryWADLSpecification)
 
     @property
     def members(self):

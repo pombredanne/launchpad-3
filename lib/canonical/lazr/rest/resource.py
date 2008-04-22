@@ -19,10 +19,11 @@ __all__ = [
 from datetime import datetime
 import simplejson
 
+from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.interface import classProvides, implements
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
@@ -37,10 +38,11 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldDeserializer, IHTTPResource, IJSONPublishable,
-    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
-    IServiceRootResource)
+    ICollection, ICollectionField, ICollectionResource,
+    ICollectionWADLSpecification, IEntry, IEntryResource,
+    IEntryWADLSpecification, IFieldDeserializer, IHTTPResource,
+    IJSONPublishable, IResourceGETOperation, IResourcePOSTOperation,
+    IScopedCollection, IServiceRootResource)
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.rest.schema import URLDereferencingMixin
 
@@ -724,15 +726,49 @@ class ServiceRootResource:
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
         if REQUEST.method == "GET":
-            return "This is a web service."
+            return self.do_GET(REQUEST)
         else:
             REQUEST.response.setStatus(405)
-            REQUEST.response.setHeader("Allow", "GET")
+            REQUEST.response.setStatus(405)
+
+    def do_GET(self, request):
+        """Describe the capabilities of the web service in WADL."""
+
+        # Find all resource types.
+        site_manager = zapi.getGlobalSiteManager()
+        entry_classes = []
+        collection_classes = []
+        for registration in site_manager.registrations():
+            provided = registration.provided
+            if hasattr(provided, 'extends'):
+                if (provided.isOrExtends(IEntry)
+                    and IEntry.implementedBy(registration.value)):
+                    # The implementedBy check is necessary because
+                    # some IEntry adapters aren't classes with
+                    # schemas; they're functions. We can ignore these
+                    # functions because their return value will be one
+                    # of the classes with schemas, which we do describe.
+                    entry_classes.append((registration.value,
+                                          registration.required))
+                elif (provided.isOrExtends(ICollection)
+                      and ICollection.implementedBy(registration.value)):
+                    # See comment above re: implementedBy check.
+                    collection_classes.append((registration.value,
+                                               registration.required))
+        template = LazrPageTemplateFile('../templates/wadl-root.pt')
+        namespace = template.pt_getContext()
+        namespace['entries'] = entry_classes
+        namespace['collections'] = collection_classes
+        wadl = template.pt_render(namespace).encode('utf8')
+        request.response.setHeader(
+            'Content-Type', 'application/vd.sun.wadl+xml')
+        return wadl
 
 
 class Entry:
     """An individual entry."""
     implements(IEntry)
+    classProvides(IEntryWADLSpecification)
 
     def __init__(self, context):
         """Associate the entry with some database model object."""
@@ -742,6 +778,7 @@ class Entry:
 class Collection:
     """A collection of entries."""
     implements(ICollection)
+    classProvides(ICollectionWADLSpecification)
 
     def __init__(self, context):
         """Associate the entry with some database model object."""
@@ -751,6 +788,7 @@ class Collection:
 class ScopedCollection:
     """A collection associated with some parent object."""
     implements(IScopedCollection)
+    classProvides(ICollectionWADLSpecification)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.

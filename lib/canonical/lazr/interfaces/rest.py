@@ -9,7 +9,9 @@ __all__ = [
     'ICollection',
     'ICollectionField',
     'ICollectionResource',
+    'ICollectionWADLSpecification',
     'IEntry',
+    'IEntryWADLSpecification',
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
@@ -120,6 +122,13 @@ class IResourcePOSTOperation(IResourceOperation):
     This should be an operation that modifies the data set.
     """
 
+class IEntryWADLSpecification(Interface):
+    """Marker interface."""
+
+
+class ICollectionWADLSpecification(Interface):
+    """Marker interface."""
+
 
 class IEntry(Interface):
     """An entry, exposed as a resource by an IEntryResource."""
@@ -151,3 +160,4 @@ class IScopedCollection(ICollection):
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
+
