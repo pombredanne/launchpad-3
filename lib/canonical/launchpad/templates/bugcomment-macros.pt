@@ -2,7 +2,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
-  tal:attributes="class comment/css_class">
+  tal:define="remote_bug_comment_class
+              python: comment.bugwatch and 'remoteBugComment' or ''"
+  tal:attributes="class string:boardComment ${remote_bug_comment_class}">
 
   <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
     <tal:comment_has_owner>

@@ -128,14 +128,6 @@ class BugComment:
         return (len(self.text_for_display) == 0 and
             len(self.bugattachments) == 0)
 
-    @property
-    def css_class(self):
-        """The CSS class attribute for the outermost `div` element."""
-        class_attribute = 'boardComment'
-        if self.bugwatch is not None:
-            class_attribute += ' remoteBugComment'
-        return class_attribute
-
 
 class BugCommentView(LaunchpadView):
     """View for a single bug comment."""
