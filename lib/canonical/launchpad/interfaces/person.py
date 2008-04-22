@@ -1293,15 +1293,18 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
-    def autosubscribeToTeamList(team):
-        """Subscribe to a team's mailing list.
+    def autosubscribeToMailingList(mailinglist, requester=None):
+        """Subscribe to a mailing list.
 
         This method takes the user's mailing list auto-subscription
         setting into account. It may or may not result in a list
         subscription.
 
-        :param team: The team's list to subscribe to.  No action is
-        	taken if the team does not have a usable list.
+        :param mailinglist: The list to subscribe to.  No action is
+        	taken if the list is None, or in an unusable state.
+
+        :param requester: The person requesting the list subscription,
+        	if not the user themself.
 
         :return: True if the user was subscribed, false if they weren't.
         """

@@ -2076,6 +2076,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return StructuralSubscription.selectBy(
             subscriber=self, orderBy=['-date_created'])
 
+    def autosubscribeToMailingList(self, mailinglist, requester=None):
+        """See `IPerson`."""
+        if mailinglist is None or not mailinglist.isUsable():
+            return False
+
+        if mailinglist.getSubscription(self):
+            # We are already subscribed to the list.
+            return False
+
+        if requester is None:
+            # Assume the current user requested this action themselves.
+            requester = self
+
+        policy = self.mailinglist_autosubscription_policy
+
+        if policy == MailingListAutoSubscribePolicy.ALWAYS:
+            mailinglist.subscribe(user)
+            return True
+        elif (requester is self) and \
+                policy == MailingListAutoSubscribePolicy.ON_REGISTRATION:
+            # Assume that we requested to be joined.
+            mailinglist.subscribe(user)
+            return True
+        else:
+            return False
+
 
 class PersonSet:
     """The set of persons."""
