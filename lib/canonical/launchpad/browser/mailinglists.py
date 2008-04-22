@@ -3,14 +3,23 @@
 """Browser views for handling mailing lists."""
 
 __metaclass__ = type
-__all__ = ['MailingListsReviewView']
+__all__ = [
+    'HeldMessageView',
+    'MailingListsReviewView',
+    ]
 
 
-from zope.interface import Interface
+from email import message_from_string
+from email.Header import decode_header, make_header
+from itertools import repeat
+
+from zope.component import getUtility
+from zope.interface import Attribute, Interface
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import MailingListStatus
+from canonical.launchpad.interfaces import (
+    IMessageSet, MailingListStatus, NotFoundError)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url)
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
@@ -76,3 +85,66 @@ class MailingListsReviewView(LaunchpadFormView):
         # Redirect to prevent double posts (and not require
         # flush_database_updates() :)
         self.next_url = canonical_url(self.context)
+
+
+class IHeldMessageView(Interface):
+    """A simple view schema for held messages."""
+
+    message_id = Attribute('The Message-ID header')
+    subject = Attribute("The Subject header")
+    author = Attribute('The message originator (i.e. author)')
+    date = Attribute("The Date header.")
+    body_summary = Attribute('A summary of the message.')
+    body_details = Attribute('The message details.')
+
+
+class HeldMessageView:
+    """A little helper view for for held messages."""
+
+    schema = IHeldMessageView
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        messages = getUtility(IMessageSet).get(self.context.message_id)
+        assert len(messages) == 1, (
+            'Too many messages with Message-ID: %s' %
+            self.context.message_id)
+        from zope.security.proxy import removeSecurityProxy
+        naked_message = removeSecurityProxy(messages[0])
+        self.message_id = self.context.message_id
+        self.message = naked_message
+        self.subject = self.message.subject
+        self.date = self.message.datecreated
+        self.message.raw.open()
+        try:
+            self.message_object = message_from_string(self.message.raw.read())
+        finally:
+            self.message.raw.close()
+
+    @property
+    def author(self):
+        """Return the sender, but as a link to their person page."""
+        originators = self.message_object.get_all('from', [])
+        originators.extend(self.message_object.get_all('reply-to', []))
+        if len(originators) == 0:
+            return 'n/a'
+        unicode_parts = []
+        for bytes, charset in decode_header(originators[0]):
+            if charset is None:
+                charset = 'us-ascii'
+            unicode_parts.append(
+                bytes.decode(charset, 'replace').encode('utf-8'))
+        header = make_header(zip(unicode_parts, repeat('utf-8')))
+        return '<a href="%s">%s</a>' % (
+            canonical_url(self.message.owner), header)
+
+    @property
+    def body_summary(self):
+        """Return the first line of the message's plain text body."""
+        return self.message.text_contents.splitlines()[0]
+
+    @property
+    def body_details(self):
+        """Return more lines of the message's plain text body."""
+        return u'\n'.join(self.message.text_contents.splitlines()[1:20])

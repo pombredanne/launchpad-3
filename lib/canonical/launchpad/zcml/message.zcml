@@ -38,4 +38,14 @@
     provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
     factory="canonical.launchpad.browser.message.message_to_canonical_url_data"
     />
+
+  <!-- Helper page for held message approval -->
+  <browser:page
+    name="+moderation"
+    for="canonical.launchpad.interfaces.IMessageApproval"
+    class="canonical.launchpad.browser.HeldMessageView"
+    template="../templates/message-moderation.pt"
+    permission="launchpad.View"
+    />
+
 </configure>

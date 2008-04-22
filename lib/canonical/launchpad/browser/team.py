@@ -581,10 +581,27 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         address. Second, the mailing list may be in a transitional
         state: from MODIFIED to UPDATING to ACTIVE can take a while.
         """
-        super(TeamMailingListModerationView, self).__init__(
-            context, request)
+        super(TeamMailingListModerationView, self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
+        assert(self.mailing_list is not None), (
+            'No mailing list: %s' % self.context.name)
+
+    @property
+    def hold_count(self):
+        """The number of message being held for moderator approval.
+
+        :return: Number of message being held for moderator approval.
+        """
+        return self.mailing_list.getReviewableMessages().count()
+
+    @property
+    def held_messages(self):
+        """All the messages being held for moderator approval.
+
+        :return: Sequence of held messages.
+        """
+        return self.mailing_list.getReviewableMessages()        
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
