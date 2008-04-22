@@ -52,13 +52,13 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
     return tokens
 
 
-def get_path_segments(path):
+def get_path_segments(path, maximum_segments=-1):
     """Break up the given path into segments.
 
     If 'path' ends with a trailing slash, then the final empty segment is
     ignored.
     """
-    return path.strip('/').split('/')
+    return path.strip('/').split('/', maximum_segments)
 
 
 class _NotFilter(logging.Filter):
@@ -120,6 +120,45 @@ class UntranslatablePath(BzrError):
             "user %(user)r")
 
 
+class BranchPath:
+
+    @classmethod
+    def from_virtual_path(cls, virtual_path):
+        segments = get_path_segments(virtual_path, 3)
+        # If we don't have at least an owner, product and name, then we don't
+        # have enough information for a branch.
+        if len(segments) < 3:
+            raise NoSuchFile(virtual_path)
+        # If we have only an owner, product, name tuple, append an empty path.
+        if len(segments) == 3:
+            segments.append('')
+        user_dir, product, name, path = segments
+        # The Bazaar client will look for a .bzr directory in the owner and
+        # product directories to see if there's a shared repository. There
+        # won't be, but if we raise a PermissionDenied, Bazaar will prompt the
+        # user to retry the command with --create-prefix, which is unhelpful.
+        # Instead, we raise NoSuchFile, which should avoid this.
+        if '.bzr' in (user_dir, product, name):
+            raise NoSuchFile(virtual_path)
+        if not user_dir.startswith('~'):
+            raise NoSuchFile(virtual_path)
+        return cls(user_dir[1:], product, name), path
+
+    def __init__(self, owner, product, name):
+        self._owner = owner
+        self._product = product
+        self._name = name
+
+    def checkPath(self, path_on_branch):
+        """Raise an error if `path_on_branch` is not valid."""
+        if path_on_branch == '':
+            return
+        segments = get_path_segments(path_on_branch)
+        if segments[0] not in ALLOWED_DIRECTORIES:
+            raise PermissionDenied(
+                FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
+
+
 class LaunchpadServer(Server):
     """Bazaar Server for Launchpad branches.
 
@@ -168,6 +207,8 @@ class LaunchpadServer(Server):
         create a matching directory on the backing transport.
         """
         self.logger.info('mkdir(%r)', virtual_path)
+        # XXX: JonathanLange 2008-04-21: We might be able to use
+        # _parse_virtual_path here.
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
             raise PermissionDenied(
@@ -217,6 +258,17 @@ class LaunchpadServer(Server):
             transport = self.backing_transport
         return transport, path
 
+    def _parse_virtual_path(self, virtual_path):
+        """Parse the branch information from a virtual path.
+
+        :raise NoSuchFile: when `virtual_path` is not a valid path to a
+            branch.
+        :return: (user, product, branch_name, tail)
+        """
+        branch, path = BranchPath.from_virtual_path(virtual_path)
+        branch.checkPath(path)
+        return (branch._owner, branch._product, branch._name, path)
+
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions
         and relative path.
@@ -227,28 +279,9 @@ class LaunchpadServer(Server):
         to that branch. In short, everything you need to be able to access a
         file in a branch.
         """
-        segments = get_path_segments(virtual_path)
-        # XXX: JamesHenstridge 2007-10-09
-        # We trim the segments list so that we don't raise
-        # PermissionDenied when the client tries to read
-        # /~user/project/.bzr/branch-format when checking for a shared
-        # repository (instead, we'll fail to look up the branch, and
-        # return UntranslatablePath).  This whole function will
-        # probably need refactoring when we move to actually
-        # supporting shared repos.
-        if '.bzr' in segments:
-            segments = segments[:segments.index('.bzr')]
-        if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise PermissionDenied(
-                FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
-        # We can safely pad with '' because we can guarantee that no product
-        # or branch name is the empty string. (Mapping '' to '+junk' happens
-        # in _iter_branches). 'user' is checked later.
-        user_dir, product, branch, path = split_with_padding(
-            virtual_path.lstrip('/'), '/', 4, padding='')
-        if not user_dir.startswith('~'):
-            raise NoSuchFile(virtual_path)
-        user = user_dir[1:]
+        # XXX: JonathanLange 2008-04-21: This is only a separate method
+        # because of one test. Fix the test and remove this method.
+        user, product, branch, path = self._parse_virtual_path(virtual_path)
         branch_id, permissions = self._get_branch_information(
             user, product, branch)
         return branch_id, permissions, path
@@ -266,10 +299,13 @@ class LaunchpadServer(Server):
         :return: The database ID of the new branch.
         """
         self.logger.debug('_make_branch(%r, %r, %r)', user, product, branch)
+        # XXX: JonathanLange 2008-04-21: This check is already done in
+        # _parse_virtual_path. Use that instead.
         if not user.startswith('~'):
             raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
+        # XXX: JonathanLange 2008-04-21: This shouldn't look before it leaps.
         branch_id, permissions = self._get_branch_information(
             user, product, branch)
         if branch_id != '':
