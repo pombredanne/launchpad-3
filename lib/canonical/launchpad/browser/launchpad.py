@@ -15,6 +15,7 @@ __all__ = [
     'SoftTimeoutView',
     'OneZeroTemplateStatus',
     'IcingFolder',
+    'UbuntuIcingFolder',
     'StructuralHeaderPresentationView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
@@ -184,7 +185,11 @@ class LinkView(LaunchpadView):
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
         if self.context.enabled or config.devmode:
-            return self.template()
+            # XXX: TomBerger 2008-04-16 bug=218706:
+            # We strip the result of the template rendering
+            # since ZPT seems to always insert a line break
+            # at the end of an embedded template.
+            return self.template().strip()
         else:
             return ''
 
@@ -699,6 +704,13 @@ class IcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
+
+
+class UbuntuIcingFolder(ExportedFolder):
+    """Export the Ubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):

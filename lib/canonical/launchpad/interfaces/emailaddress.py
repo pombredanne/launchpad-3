@@ -4,14 +4,22 @@
 """EmailAddress interfaces."""
 
 __metaclass__ = type
-__all__ = ['IEmailAddress', 'IEmailAddressSet', 'EmailAddressAlreadyTaken',
-           'EmailAddressStatus']
+__all__ = [
+    'EmailAddressAlreadyTaken',
+    'EmailAddressStatus',
+    'IEmailAddress',
+    'IEmailAddressSet',
+    'InvalidEmailAddress']
 
 from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
+
+
+class InvalidEmailAddress(Exception):
+    """The email address is not valid."""
 
 
 class EmailAddressAlreadyTaken(Exception):

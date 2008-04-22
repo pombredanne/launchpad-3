@@ -70,7 +70,8 @@ from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
     Tuple)
 from zope.schema.interfaces import (
-    IBytes, IDatetime, IField, IInt, IPassword, IText, ITextLine)
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IPassword, IText,
+    ITextLine)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -666,7 +667,8 @@ class ProductNameField(PillarNameField):
 
 def is_valid_public_person_link(person, other):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
-    assert IPerson.providedBy(person)
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
