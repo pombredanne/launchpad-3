@@ -98,7 +98,7 @@ class SSHTestCase(ServerTestCase):
             push_command.run, remote_url, local_directory)
         return output.getvalue()
 
-    def push(self, local_directory, remote_url):
+    def push(self, local_directory, remote_url, **options):
         """Push the local branch to the given URL.
 
         This method is used to test the end-to-end behaviour of pushing Bazaar
@@ -112,9 +112,10 @@ class SSHTestCase(ServerTestCase):
         output = StringIO()
         push_command = cmd_push()
         push_command.outf = output
+        options['location'] = remote_url
         self.runInChdir(
             local_directory,
-            self.server.runAndWaitForDisconnect, push_command.run, remote_url)
+            self.server.runAndWaitForDisconnect, push_command.run, **options)
         return output.getvalue()
 
     def getLastRevision(self, remote_url):
@@ -456,7 +457,7 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.push(self.local_branch_path, remote_url)
+        self.push(self.local_branch_path, remote_url, use_existing_dir=True)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     @defer_to_thread

@@ -164,6 +164,16 @@ class BranchPath:
             raise PermissionDenied(
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
+    def ensureUnderlyingPath(self, transport):
+        """Ensure that the directory for the branch exists on the transport.
+        """
+        try:
+            ensure_base(transport.clone(self.getRealPath('')))
+        except BranchNotFound:
+            # The branch doesn't exist so we don't need to create the
+            # underlying directory.
+            pass
+
     def getRealPath(self, path_on_branch):
         self.checkPath(path_on_branch)
         branch_id = self.getID()
@@ -171,18 +181,18 @@ class BranchPath:
         return path
 
     def getID(self):
-        branch_id = self.getInfo()[0]
-        if branch_id == '':
-            raise BranchNotFound(
-                owner=self._owner, product=self._product, name=self._name)
-        return branch_id
+        return self.getInfo()[0]
 
     def getPermissions(self):
         return self.getInfo()[1]
 
     def getInfo(self):
-        return self._server._get_branch_information(
+        branch_id, permissions = self._server._get_branch_information(
             self._owner, self._product, self._name)
+        if branch_id == '':
+            raise BranchNotFound(
+                owner=self._owner, product=self._product, name=self._name)
+        return branch_id, permissions
 
     def requestMirror(self, user_id):
         branch_id = self.getID()
@@ -244,12 +254,13 @@ class LaunchpadServer(Server):
             branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
         except NoSuchFile:
             raise PermissionDenied(virtual_path)
+
         branch_id = self._make_branch(branch)
+        # XXX: This logic should be moved to the authserver!
         if branch_id == '':
             raise PermissionDenied(
                 'Cannot create branch: %s' % (virtual_path,))
-        ensure_base(
-            self.backing_transport.clone(branch_id_to_path(branch_id)))
+        branch.ensureUnderlyingPath(self.backing_transport)
 
     def requestMirror(self, virtual_path):
         """Request that the branch that owns 'virtual_path' be mirrored."""
@@ -276,20 +287,26 @@ class LaunchpadServer(Server):
         branch, path = BranchPath.from_virtual_path(self, virtual_path)
 
         try:
-            branch_id = branch.getID()
+            real_path = branch.getRealPath(path)
         except BranchNotFound:
-            raise NoSuchFile(virtual_path)
-
-        path = branch.getRealPath(path)
+            if path == '':
+                # We are trying to translate a branch path that doesn't exist.
+                raise
+            else:
+                # We are trying to translate a path within a branch that
+                # doesn't exist.
+                raise NoSuchFile(virtual_path)
 
         permissions = branch.getPermissions()
         if permissions == READ_ONLY:
             transport = self.mirror_transport
         else:
             transport = self.backing_transport
-        return transport, path
+            branch.ensureUnderlyingPath(transport)
+        return transport, real_path
 
     def _parse_virtual_path(self, virtual_path):
+        # XXX: only used by _translate_path
         """Parse the branch information from a virtual path.
 
         :raise NoSuchFile: when `virtual_path` is not a valid path to a
@@ -301,6 +318,7 @@ class LaunchpadServer(Server):
         return (branch._owner, branch._product, branch._name, path)
 
     def _translate_path(self, virtual_path):
+        # XXX: Now unused.
         """Translate a virtual path into an internal branch id, permissions
         and relative path.
 
@@ -329,13 +347,6 @@ class LaunchpadServer(Server):
             'product' is not the name of an existing product.
         :return: The database ID of the new branch.
         """
-        # XXX: JonathanLange 2008-04-21: This shouldn't look before it leaps.
-        try:
-            return branch.getID()
-        except BranchNotFound:
-            # Branch doesn't exist. Great! That means we can create it.
-            pass
-
         try:
             return self._create_branch(
                 branch._owner, branch._product, branch._name)
@@ -501,8 +512,13 @@ class LaunchpadTransport(Transport):
         # how to deal with absolute virtual paths.
         try:
             return self._call('mkdir', relpath, mode)
-        except NoSuchFile:
+        except BranchNotFound:
+            # Looks like we are trying to make a branch.
             return self.server.createBranch(self._abspath(relpath))
+        except NoSuchFile, e:
+            # The relpath is invalid for some reason. In that case tell the
+            # user we cannot make it.
+            raise PermissionDenied(relpath)
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)
