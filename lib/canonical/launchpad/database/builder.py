@@ -414,6 +414,10 @@ class Builder(SQLBase):
         archive_purpose = build_queue_item.build.archive.purpose.name
         args['archive_purpose'] = archive_purpose
 
+        # Let the build slave know whether this is a build in a private
+        # archive.
+        args['archive_private'] = build_queue_item.build.archive.private
+
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.

@@ -803,6 +803,9 @@ archive.purpose (e.g. PRIMARY or PPA).  These latter two arguments are
 used in the chroot to determine whether it needs to turn on some features
 or not (like pkgstriptranslations and pkgmaintainermangler).
 
+Please note also that the 'archive_private' flag is passed to the slave
+builder.  It is True for private archives and False otherwise.
+
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> a_builder.is_available
     True
@@ -815,6 +818,7 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
      deb http://ftpmaster.internal/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PRIMARY
+    Archive Private: False
 
     >>> candidate.destroySelf()
 
@@ -840,6 +844,7 @@ API/UI method to request the dispatch in advance.
      deb http://ftpmaster.internal/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PRIMARY
+    Archive Private: False
 
     >>> candidate.destroySelf()
 
@@ -870,6 +875,7 @@ addition to a reference to the release pocket in the partner archive itself.
      deb http://launchpad.dev/ubuntu-partner hoary main
     Suite: hoary
     Archive Purpose: PARTNER
+    Archive Private: False
 
     >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
     >>> candidate.destroySelf()
@@ -901,6 +907,7 @@ Similarly, PPA builds pass the 'archives' arguments:
      deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
+    Archive Private: False
 
 If the build is for a private PPA, the slave scanner will pass a
 sources.list entry that contains a password to access the archive.
@@ -935,6 +942,7 @@ proper solution that allows configurable pocket dependencies.
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PPA
+    Archive Private: True
 
     >>> candidate.destroySelf()
 
@@ -977,6 +985,7 @@ dependencies from Mark's PPA.
      deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
+    Archive Private: False
 
 Clean up before continuing:
 
@@ -1062,6 +1071,7 @@ A build in the updates pocket:
      deb http://ftpmaster.internal/ubuntu hoary-updates main
     Suite: hoary-updates
     Archive Purpose: PRIMARY
+    Archive Private: False
 
 A build in the proposed pocket:
 
@@ -1081,6 +1091,7 @@ A build in the proposed pocket:
      deb http://ftpmaster.internal/ubuntu hoary-updates main
     Suite: hoary-proposed
     Archive Purpose: PRIMARY
+    Archive Private: False
 
 A build in the backports pocket:
 
@@ -1100,6 +1111,7 @@ A build in the backports pocket:
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
     Suite: hoary-backports
     Archive Purpose: PRIMARY
+    Archive Private: False
 
 A build in the security pocket:
 

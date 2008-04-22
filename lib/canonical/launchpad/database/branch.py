@@ -35,7 +35,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreationException, BranchCreationForbidden,
+    BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -898,7 +899,7 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, creator, owner, product,
+    def new(self, branch_type, name, registrant, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, whiteboard=None, date_created=None):
@@ -908,7 +909,7 @@ class BranchSet:
 
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
-            creator, owner, product)
+            registrant, owner, product)
 
         # Not all code paths that lead to branch creation go via a
         # schema-validated form (e.g. the register_branch XML-RPC call or
@@ -917,8 +918,22 @@ class BranchSet:
         # relation "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
+        # Make sure that the new branch has a unique name if not a junk
+        # branch.
+        if not self.isBranchNameAvailable(owner, product, name):
+            params = {'name': name}
+            if product is None:
+                params['maybe_junk'] = 'junk '
+                params['context'] = owner.name
+            else:
+                params['maybe_junk'] = ''
+                params['context'] = product.name
+            raise BranchCreationException(
+                'A %(maybe_junk)sbranch with the name "%(name)s" already '
+                'exists for "%(context)s".' % params)
+
         branch = Branch(
-            registrant=creator,
+            registrant=registrant,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
@@ -1347,6 +1362,15 @@ class BranchSet:
 
         return [branches[id] for id in branch_ids]
 
+    def getByProductAndName(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.selectBy(name=name, product=product.id)
+
+    def getByProductAndNameStartsWith(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.select(
+            'product = %s AND name LIKE %s' % sqlvalues(product, name + '%%'))
+
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(
@@ -1363,3 +1387,13 @@ class BranchSet:
             """ % sqlvalues(user, product),
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
+
+    def isBranchNameAvailable(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        if product is None:
+            results = Branch.selectBy(
+                owner=owner, product=None, name=branch_name)
+        else:
+            results = Branch.selectBy(product=product, name=branch_name)
+
+        return results.count() == 0

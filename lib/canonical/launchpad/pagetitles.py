@@ -125,6 +125,8 @@ archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
+archive_copy_packages = ContextTitle('Copy packages from %s')
+
 archive_delete_packages = ContextTitle('Delete packages from %s')
 
 archive_edit = ContextTitle('Edit %s')
@@ -1192,6 +1194,8 @@ shipit_exports = 'ShipIt exports'
 shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
+
+shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
 
