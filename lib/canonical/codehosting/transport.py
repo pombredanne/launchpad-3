@@ -238,7 +238,12 @@ class LaunchpadServer(Server):
         create a matching directory on the backing transport.
         """
         self.logger.info('mkdir(%r)', virtual_path)
-        branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
+        try:
+            # XXX: the tests seem to expect that we should raise a
+            # PermissionDenied here. Hmm.
+            branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
+        except NoSuchFile:
+            raise PermissionDenied(virtual_path)
         branch_id = self._make_branch(branch)
         if branch_id == '':
             raise PermissionDenied(
