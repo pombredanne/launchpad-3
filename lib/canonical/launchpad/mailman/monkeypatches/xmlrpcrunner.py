@@ -191,7 +191,8 @@ class XMLRPCRunner(Runner):
                 # who need to be added to the mailing list, and the other is
                 # the set of old members who need to be removed from the
                 # mailing list.
-                current_members = set(mlist.getMembers())
+                current_members = set(
+                    mlist.getMemberCPAddresses(mlist.getMembers()))
                 future_members = set(member_map)
                 adds = future_members - current_members
                 deletes = current_members - future_members

@@ -195,14 +195,6 @@
         template="../templates/branch-messages.pt" />
   </browser:pages>
 
-  <browser:page
-      name="+reassign"
-      for="canonical.launchpad.interfaces.IBranch"
-      permission="launchpad.Edit"
-      facet="branches"
-      class="canonical.launchpad.browser.BranchReassignmentView"
-      template="../templates/object-reassignment.pt" />
-
   <!-- Subscribe to a branch -->
   <browser:page
       name="+subscribe"

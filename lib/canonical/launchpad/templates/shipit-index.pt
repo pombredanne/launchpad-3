@@ -57,10 +57,19 @@
   
     <h1>Requesting CDs from ShipIt</h1>
 
-    <p>Ubuntu is available free of charge and we can send you CDs of the
-    latest version (<span tal:replace="series_name" />) with no extra
-    cost, but the delivery may take up to ten weeks, so you should consider
-    downloading the CD images if you have a fast Internet connection.
+    <p><span tal:replace="flavour_name">Ubuntu</span> is available free of
+      charge and we can send you CDs of the latest version (<span
+      tal:replace="series_name" />) with no extra cost, but the delivery may
+      take up to ten weeks, so you should consider downloading the CD images
+      if you have a fast Internet connection.
+    </p>
+    <p tal:condition="view/flavour/enumvalue:KUBUNTU">
+      <tal:comment condition="nothing">
+        XXX: salgado, 2008-04-18: This is only needed while we're shipping
+        Hardy CDs.
+      </tal:comment>
+      The Kubuntu 8.04 CDs available here contain the commercially
+      supported version, featuring the stable KDE 3.5.9 desktop.
     </p>
     
     <div id="chooseLinks">
@@ -77,11 +86,6 @@
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="series_name" /></a>
         </div>
-        <div tal:condition="view/flavour/enumvalue:UBUNTU">
-          <a href="login-server">
-            I want to <span>request CDs of Ubuntu Server Edition</span>
-            <span tal:replace="series_name" /></a>
-        </div>
       </tal:no-prerelease>
       <tal:prerelease condition="view/prerelease_mode">
         <div>
@@ -93,11 +97,6 @@
           <a href="login">
             I want to <span>pre-order CDs</span> of
             <span tal:replace="flavour_name">Ubuntu</span>
-            <span tal:replace="series_name" /></a>
-        </div>
-        <div tal:condition="view/flavour/enumvalue:UBUNTU">
-          <a href="login-server">
-            I want to <span>pre-order CDs of Ubuntu Server Edition</span>
             <span tal:replace="series_name" /></a>
         </div>
       </tal:prerelease>
