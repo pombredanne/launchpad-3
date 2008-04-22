@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Browser views for sourcepackages."""
 
@@ -140,7 +140,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
-    @enabled_with_permission('launchpad.AnyPerson')
+    @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
         text = 'Download translations'
         enabled = (len(self.context.getCurrentTranslationTemplates()) > 0)

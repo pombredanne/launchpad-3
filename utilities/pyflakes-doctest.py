@@ -50,6 +50,7 @@ GLOBAL_NAMES = set([
     'print_batch_header',
     'print_comments',
     'print_portlet_links',
+    'print_ppa_packages',
     'print_radio_button_field',
     'print_submit_buttons',
     'print_tab_links',
@@ -58,6 +59,8 @@ GLOBAL_NAMES = set([
     'webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
+    # For buildd tests
+    'test_dbuser'
     ])
 
 
