@@ -438,8 +438,6 @@ branches but with the state set to work-in-progress.
 
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'Resubmitting due to extensive changes.')
-    >>> pop_notifications()
-    []
     >>> sample_browser.getControl('Resubmit').click()
 
 Consume notifications.

@@ -12,8 +12,8 @@ from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus)
-from canonical.launchpad.testing import (LaunchpadObjectFactory, time_counter,
-    capture_events)
+from canonical.launchpad.testing import (
+     capture_events, LaunchpadObjectFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
