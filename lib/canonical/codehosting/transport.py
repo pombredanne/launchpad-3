@@ -125,10 +125,40 @@ class BranchNotFound(BzrError):
     _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
 
 
+class CachingAuthserverClient:
+
+    def __init__(self, authserver, user_id):
+        self._authserver = authserver
+        self._branch_info_cache = {}
+        self._user_id = user_id
+
+    def createBranch(self, owner, product, branch):
+        """Create a branch on the authserver."""
+        branch_id = self._authserver.createBranch(
+            self._user_id, owner, product, branch)
+        # Clear the cache for this branch. We *could* populate it with
+        # (branch_id, 'w'), but then we'd be building in more assumptions
+        # about the authserver.
+        self._branch_info_cache[(owner, product, branch)] = None
+        return branch_id
+
+    def getBranchInformation(self, owner, product, branch):
+        """Get branch information from the authserver."""
+        branch_info = self._branch_info_cache.get((owner, product, branch))
+        if branch_info is None:
+            branch_info = self._authserver.getBranchInformation(
+                self._user_id, owner, product, branch)
+            self._branch_info_cache[(owner, product, branch)] = branch_info
+        return branch_info
+
+    def requestMirror(self, branch_id):
+        return self._authserver.requestMirror(self._user_id, branch_id)
+
+
 class BranchPath:
 
     @classmethod
-    def from_virtual_path(cls, server, virtual_path):
+    def from_virtual_path(cls, authserver, virtual_path):
         segments = get_path_segments(virtual_path, 3)
         # If we don't have at least an owner, product and name, then we don't
         # have enough information for a branch.
@@ -147,10 +177,10 @@ class BranchPath:
             raise NoSuchFile(virtual_path)
         if not user_dir.startswith('~'):
             raise NoSuchFile(virtual_path)
-        return cls(server, user_dir[1:], product, name), path
+        return cls(authserver, user_dir[1:], product, name), path
 
-    def __init__(self, server, owner, product, name):
-        self._server = server
+    def __init__(self, authserver, owner, product, name):
+        self._authserver = authserver
         self._owner = owner
         self._product = product
         self._name = name
@@ -187,17 +217,16 @@ class BranchPath:
         return self.getInfo()[1]
 
     def getInfo(self):
-        branch_id, permissions = self._server._get_branch_information(
+        branch_id, permissions = self._authserver.getBranchInformation(
             self._owner, self._product, self._name)
         if branch_id == '':
             raise BranchNotFound(
                 owner=self._owner, product=self._product, name=self._name)
         return branch_id, permissions
 
-    def requestMirror(self, user_id):
+    def requestMirror(self):
         branch_id = self.getID()
-        self._server.logger.info('Requesting mirror for: %r', branch_id)
-        self._server.authserver.requestMirror(user_id, branch_id)
+        self._authserver.requestMirror(branch_id)
 
 
 class LaunchpadServer(Server):
@@ -227,17 +256,18 @@ class LaunchpadServer(Server):
         # from (user, product, branch) tuples to whatever
         # getBranchInformation() returns. To clear an individual tuple, set
         # its value in the cache to None, or delete it from the cache.
-        self._branch_info_cache = {}
-        self.authserver = authserver
-        self.user_dict = self.authserver.getUser(user_id)
-        self.user_id = self.user_dict['id']
-        self.user_name = self.user_dict['name']
+        user_dict = authserver.getUser(user_id)
+        user_id = user_dict['id']
+        user_name = user_dict['name']
+        self.authserver = CachingAuthserverClient(authserver, user_id)
         self.backing_transport = hosting_transport
         self.mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
-        self.logger = logging.getLogger(
-            'codehosting.lpserve.%s' % self.user_name)
+        self.logger = logging.getLogger('codehosting.lpserve.%s' % user_name)
+
+    def _getBranch(self, virtual_path):
+        return BranchPath.from_virtual_path(self.authserver, virtual_path)
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -251,7 +281,7 @@ class LaunchpadServer(Server):
         try:
             # XXX: the tests seem to expect that we should raise a
             # PermissionDenied here. Hmm. Find out why.
-            branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
+            branch, ignored = self._getBranch(virtual_path)
         except NoSuchFile:
             raise PermissionDenied(virtual_path)
 
@@ -264,8 +294,8 @@ class LaunchpadServer(Server):
 
     def requestMirror(self, virtual_path):
         """Request that the branch that owns 'virtual_path' be mirrored."""
-        branch, ignored = BranchPath.from_virtual_path(self, virtual_path)
-        branch.requestMirror(self.user_id)
+        branch, ignored = self._getBranch(virtual_path)
+        branch.requestMirror()
 
     def translateVirtualPath(self, virtual_path):
         """Translate 'virtual_path' into a transport and sub-path.
@@ -281,10 +311,7 @@ class LaunchpadServer(Server):
         :return: (transport, path_on_transport)
         """
         self.logger.debug('translate_virtual_path(%r)', virtual_path)
-        # XXX: JonathanLange 2007-05-29, We could differentiate between
-        # 'branch not found' and 'not enough information in path to figure out
-        # a branch'.
-        branch, path = BranchPath.from_virtual_path(self, virtual_path)
+        branch, path = self._getBranch(virtual_path)
 
         try:
             real_path = branch.getRealPath(path)
@@ -305,36 +332,6 @@ class LaunchpadServer(Server):
             branch.ensureUnderlyingPath(transport)
         return transport, real_path
 
-    def _parse_virtual_path(self, virtual_path):
-        # XXX: only used by _translate_path
-        """Parse the branch information from a virtual path.
-
-        :raise NoSuchFile: when `virtual_path` is not a valid path to a
-            branch.
-        :return: (user, product, branch_name, tail)
-        """
-        branch, path = BranchPath.from_virtual_path(self, virtual_path)
-        branch.checkPath(path)
-        return (branch._owner, branch._product, branch._name, path)
-
-    def _translate_path(self, virtual_path):
-        # XXX: Now unused.
-        """Translate a virtual path into an internal branch id, permissions
-        and relative path.
-
-        'virtual_path' is a path that points to a branch or a path within a
-        branch. This method returns the id of the branch, the permissions that
-        the user running the server has for that branch and the path relative
-        to that branch. In short, everything you need to be able to access a
-        file in a branch.
-        """
-        # XXX: JonathanLange 2008-04-21: This is only a separate method
-        # because of one test. Fix the test and remove this method.
-        user, product, branch, path = self._parse_virtual_path(virtual_path)
-        branch_id, permissions = self._get_branch_information(
-            user, product, branch)
-        return branch_id, permissions, path
-
     def _make_branch(self, branch):
         """Create a branch in the database for the given user and product.
 
@@ -348,7 +345,7 @@ class LaunchpadServer(Server):
         :return: The database ID of the new branch.
         """
         try:
-            return self._create_branch(
+            return self.authserver.createBranch(
                 branch._owner, branch._product, branch._name)
         except Fault, f:
             if f.faultCode == NOT_FOUND_FAULT_CODE:
@@ -364,25 +361,6 @@ class LaunchpadServer(Server):
                 raise PermissionDenied(f.faultString)
             else:
                 raise
-
-    def _create_branch(self, user, product, branch):
-        """Create a branch on the authserver."""
-        branch_id = self.authserver.createBranch(
-            self.user_id, user, product, branch)
-        # Clear the cache for this branch. We *could* populate it with
-        # (branch_id, 'w'), but then we'd be building in more assumptions
-        # about the authserver.
-        self._branch_info_cache[(user, product, branch)] = None
-        return branch_id
-
-    def _get_branch_information(self, user, product, branch):
-        """Get branch information from the authserver."""
-        branch_info = self._branch_info_cache.get((user, product, branch))
-        if branch_info is None:
-            branch_info = self.authserver.getBranchInformation(
-                self.user_id, user, product, branch)
-            self._branch_info_cache[(user, product, branch)] = branch_info
-        return branch_info
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
@@ -412,7 +390,6 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        self._branch_info_cache.clear()
         unregister_transport(self.scheme, self._factory)
 
 

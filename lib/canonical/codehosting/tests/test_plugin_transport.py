@@ -19,7 +19,8 @@ from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
 
 from canonical.authserver.interfaces import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import LaunchpadServer, set_up_logging
@@ -43,13 +44,6 @@ class TestLaunchpadServer(TestCase):
         self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport,
             self.mirror_transport)
-
-    def test_construct(self):
-        self.assertEqual(
-            self.backing_transport, self.server.backing_transport)
-        self.assertEqual(self.user_id, self.server.user_id)
-        self.assertEqual('testuser', self.server.user_name)
-        self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
         # Branches are stored on the filesystem by branch ID. This allows
@@ -134,9 +128,9 @@ class TestLaunchpadServer(TestCase):
         self.addCleanup(self.server.tearDown)
 
         # ~testuser/firefox/baz is branch 1.
-        branch_id, permissions, path = self.server._translate_path(
+        transport, path = self.server.translateVirtualPath(
             '~testuser/firefox/baz/.bzr')
-        self.assertEqual(1, branch_id)
+        self.assertStartsWith(path, branch_id_to_path(1))
 
         # Futz with the fake authserver.
         del self.authserver._branch_set[1]
@@ -146,9 +140,9 @@ class TestLaunchpadServer(TestCase):
         self.assertEqual(('', ''), branch_info)
 
         # But we can still translate ~testuser/firefox/baz in the transport.
-        branch_id, permissions, path = self.server._translate_path(
+        transport, path = self.server.translateVirtualPath(
             '~testuser/firefox/baz/.bzr')
-        self.assertEqual(1, branch_id)
+        self.assertStartsWith(path, branch_id_to_path(1))
 
 
 class TestLaunchpadTransport(TestCase):
@@ -362,7 +356,7 @@ class TestLaunchpadTransport(TestCase):
         self.lockBranch('~testuser/firefox/baz')
         self.unlockBranch('~testuser/firefox/baz')
         self.assertEqual(
-            [(self.user_id, 1)], self.server.authserver._request_mirror_log)
+            [(self.user_id, 1)], self.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):

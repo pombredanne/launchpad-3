@@ -255,7 +255,6 @@ class FakeLaunchpadServer(LaunchpadServer):
     def setUp(self):
         from bzrlib.transport.memory import MemoryTransport
         self.backing_transport = MemoryTransport()
-        self.authserver = FakeLaunchpad()
         LaunchpadServer.setUp(self)
 
     def tearDown(self):
