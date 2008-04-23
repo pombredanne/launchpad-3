@@ -39,7 +39,7 @@ Sample Person defines milestone 1.0.0 for firefox series 1.0...
     >>> owner_browser.open('http://launchpad.dev/firefox/+bug/1')
     >>> owner_browser.getControl('Approve', index=0).click()
 
- Sample Persons assigns the firefox series 1.0 bugtask for bug 1 to
+Sample Person assigns the firefox series 1.0 bugtask for bug 1 to
 to the milestone 1.0.0.
 
     >>> milestone_control = owner_browser.getControl(
