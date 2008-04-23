@@ -770,8 +770,8 @@ A notification is sent.
 
     >>> [notification] = pop_notifications()
     >>> print notification.get_payload()
-    The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox Mainline h=
-    as been updated.
+    The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox
+    Mainline h= as been updated.
     <BLANKLINE>
         Status: Queued =3D> Code approved
         Queue Position: 0 =3D> (not set)
@@ -839,7 +839,6 @@ An email notification is generated.
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
-
 
 The branch can be rejected.
 
