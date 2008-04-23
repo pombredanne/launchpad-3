@@ -575,6 +575,7 @@ An email notification is also generated.
     has= been updated.
     <BLANKLINE>
         Status: Work in progress =3D> Queued
+        Queue Position: (not set) =3D> 1
         Commit Message: (not set) =3D> This is the commit message
     --
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
@@ -660,6 +661,10 @@ A commit message is still required.
     ...     "This work was done by sabdfl and I think it's cool")
     >>> nopriv_browser.getControl('Enqueue').click()
 
+Consume notification.
+
+    >>> [_unused] = pop_notifications()
+
 No Privileges Person can see the queue, and remove their proposal
 from the queue, but not any other.
 
@@ -708,6 +713,19 @@ front of the queue.
     2  Dequeue    Move to front
     ~sabdfl/firefox/release-0.9 - view proposal details
     This is the commit message
+
+A notification is sent.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload()
+    The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox
+    Mainline h= as been updated.
+    <BLANKLINE>
+        Queue Position: 2 =3D> 0
+    --
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merge/7
+    You are subscribed to branch Mozilla Firefox Mainline.
+    <BLANKLINE>
 
 Clicking on the "Dequeue" button remove it from the queue.
 

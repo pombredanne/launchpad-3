@@ -58,7 +58,7 @@ class BranchMergeProposalDelta:
 
     delta_values = (
         'registrant', 'source_branch', 'target_branch', 'dependent_branch',
-        'queue_status', 'commit_message')
+        'queue_status', 'queue_position', 'commit_message')
     new_values = ('whiteboard',)
 
     def __init__(self, **kwargs):

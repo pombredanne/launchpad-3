@@ -648,6 +648,7 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
     @action('Move to front', name='move')
+    @notify
     def move_action(self, action, data):
         """Move the proposal to the front of the queue (if queued)."""
         if (self.context.queue_status == BranchMergeProposalStatus.QUEUED and
