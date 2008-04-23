@@ -58,6 +58,7 @@ class WadlEntryResourceAPI(WadlResourceAPI):
         return "%s#%s" % (self._service_root_url(),
                           self.entry.__class__.__name__)
 
+
 class WadlCollectionResourceAPI(WadlResourceAPI):
     "Namespace for WADL functions that operate on collection resources."
 
