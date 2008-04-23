@@ -38,10 +38,10 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource,
-    IEntry, IEntryResource, IFieldDeserializer, IHTTPResource,
-    IJSONPublishable, IResourceGETOperation, IResourcePOSTOperation,
-    IScopedCollection, IServiceRootResource)
+    ICollection, ICollectionField, ICollectionResource, IEntry,
+    IEntryResource, IFieldDeserializer, IHTTPResource, IJSONPublishable,
+    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
+    IServiceRootResource)
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.rest.schema import URLDereferencingMixin
 
