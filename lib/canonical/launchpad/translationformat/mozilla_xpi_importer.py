@@ -7,8 +7,6 @@ __all__ = [
     ]
 
 import cElementTree
-import logging
-import re
 from email.Utils import parseaddr
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils

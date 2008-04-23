@@ -5,8 +5,6 @@ __metaclass__ = type
 
 import unittest
 
-import canonical.launchpad
-from canonical.database.sqlbase import commit
 from canonical.launchpad.translationformat.xpi_manifest import XpiManifest
 from canonical.testing import LaunchpadZopelessLayer
 
