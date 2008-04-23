@@ -761,6 +761,20 @@ The user is taken to a form where they can update the whiteboard.
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'Removed from the queue as I forgot a test.')
     >>> sample_browser.getControl('Dequeue').click()
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload()
+    The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox
+    Mainline has= been updated.
+    <BLANKLINE>
+        Status: Queued =3D> Code approved
+        Queue Position: 1 =3D> (not set)
+    Whiteboard changed to:
+    <BLANKLINE>
+    Removed from the queue as I forgot a test.
+    --
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
+    You are subscribed to branch Mozilla Firefox Mainline.
+    <BLANKLINE>
 
 Once out of the queue, the proposal goes back to "Code approved" status.
 

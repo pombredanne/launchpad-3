@@ -597,10 +597,10 @@ class BranchMergeProposalDequeueView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Dequeue', name='dequeue')
+    @update_and_notify
     def dequeue_action(self, action, data):
         """Update the whiteboard and remove the proposal from the queue."""
         self.context.dequeue()
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
