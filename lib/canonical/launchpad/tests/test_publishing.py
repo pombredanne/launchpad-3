@@ -147,7 +147,7 @@ class SoyuzTestPublisher:
         if pub_source is None:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
-                archive=archive)
+                archive=archive, distroseries=distroseries)
 
         builds = pub_source.createMissingBuilds(ignore_pas=True)
         published_binaries = []
