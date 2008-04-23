@@ -46,16 +46,17 @@ from canonical.launchpad.webapp.authorization import check_permission
 
 
 def notify(func):
-    """Decorate an action to update from a form and send a notification"""
-    def decorator(view, action, data):
+    """Decorate a view method to send a notification"""
+    def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
-        result = func(view, action, data)
+        result = func(view, *args, **kwargs)
         zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
         return result
     return decorator
 
 
 def update_and_notify(func):
+    """Decorate an action to update from a form and send a notification"""
     @notify
     def decorator(view, action, data):
         result = func(view, action, data)
