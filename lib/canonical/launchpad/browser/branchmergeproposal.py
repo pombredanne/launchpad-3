@@ -409,10 +409,10 @@ class BranchMergeProposalReviewView(MergeProposalEditView,
         self.context.approveBranch(self.user, self._getRevisionId(data))
 
     @action('Reject', name='reject')
+    @update_and_notify
     def reject_action(self, action, data):
         """Set the status to rejected."""
         self.context.rejectBranch(self.user, self._getRevisionId(data))
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

@@ -840,6 +840,34 @@ An email notification is generated.
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
 
+
+The branch can be rejected.
+
+    >>> sample_browser.getLink('Review proposal').click()
+    >>> sample_browser.getControl('Reject').click()
+
+    Rejecting a proposal causes a notification.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload()
+    The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox
+    Mainline has= been updated.
+    <BLANKLINE>
+        Status: Work in progress =3D> Rejected
+    --
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
+    You are subscribed to branch Mozilla Firefox Mainline.
+    <BLANKLINE>
+
+The status is now set to rejected.
+
+    >>> print_summary(sample_browser)
+    Source branch: ~sabdfl/firefox/release-0.9
+    Target branch: ~name12/firefox/main
+    Status: Rejected
+    Reviewed by: Sample Person
+    Reviewed revision: 1
+
 Remove the proposal created by No Privileges Person.
 
     >>> nopriv_browser.open(
