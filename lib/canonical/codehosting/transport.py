@@ -264,9 +264,8 @@ class LaunchpadBranch:
         user_dir, product, name, path = segments
         # The Bazaar client will look for a .bzr directory in the owner and
         # product directories to see if there's a shared repository. There
-        # won't be, but if we raise a PermissionDenied, Bazaar will prompt the
-        # user to retry the command with --create-prefix, which is unhelpful.
-        # Instead, we raise NoSuchFile, which should avoid this.
+        # won't be, so we should treat this case the same as trying to access
+        # a branch without enough information.
         if '.bzr' in (user_dir, product, name):
             raise NotEnoughInformation(virtual_path)
         if not user_dir.startswith('~'):
@@ -427,13 +426,7 @@ class LaunchpadServer(Server):
         create the branch in the database then create a matching directory on
         the backing transport.
         """
-        try:
-            branch, ignored = self._getBranch(virtual_path)
-        except NotABranchPath:
-            # If virtual_path is not the path to a branch (or a path within a
-            # branch), we forbid it to be created.
-            raise PermissionDenied(virtual_path)
-
+        branch, ignored = self._getBranch(virtual_path)
         branch_id = branch.create()
         branch.ensureUnderlyingPath(self._backing_transport)
 
@@ -447,12 +440,7 @@ class LaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        try:
-            branch, path = self._getBranch(virtual_path)
-        except NotABranchPath:
-            # If virtual_path doesn't point to a branch, then we cannot
-            # translate it to a path on the underlying transports.
-            raise NoSuchFile(virtual_path)
+        branch, path = self._getBranch(virtual_path)
 
         try:
             real_path = branch.getRealPath(path)
@@ -542,8 +530,14 @@ class LaunchpadTransport(Transport):
         :raise TransportNotPossible: If trying to do a write operation on a
             read-only path.
         """
-        transport, path = self.server.translateVirtualPath(
-            self._abspath(relpath))
+        virtual_path = self._abspath(relpath)
+        try:
+            transport, path = self.server.translateVirtualPath(virtual_path)
+        except NotABranchPath, e:
+            # If a virtual path doesn't point to a branch, then we cannot
+            # translate it to an underlying transport. For almost all
+            # purposes, this is as good as not existing at all.
+            raise NoSuchFile(e.virtual_path)
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
@@ -595,10 +589,18 @@ class LaunchpadTransport(Transport):
             return self._call('mkdir', relpath, mode)
         except BranchNotFound:
             # Looks like we are trying to make a branch.
-            return self.server.createBranch(self._abspath(relpath))
-        except NoSuchFile, e:
-            # The relpath is invalid for some reason. In that case tell the
-            # user we cannot make it.
+            virtual_path = self._abspath(relpath)
+            try:
+                return self.server.createBranch(virtual_path)
+            except NotABranchPath:
+                # If virtual_path is not the path to a branch (or a path
+                # within a branch), we forbid it to be created.
+                raise PermissionDenied(virtual_path)
+        except NoSuchFile:
+            # The relpath is invalid for some reason.
+            # XXX: JonathanLange 2008-04-23: Unfortunately, this catches both
+            # "we can't translate the path into a branch" and "NoSuchFile
+            # error on the underlying system".
             raise PermissionDenied(relpath)
 
     def put_file(self, relpath, f, mode=None):
