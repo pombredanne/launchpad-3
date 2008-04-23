@@ -449,7 +449,10 @@ class POTMsgSet(SQLBase):
                 % TranslationConstants.MAX_PLURAL_FORMS)
             new_message = TranslationMessage(
                 potmsgset=self,
+                potemplate=pofile.potemplate,
                 pofile=pofile,
+                language=pofile.language,
+                variant=pofile.variant,
                 origin=origin,
                 submitter=submitter,
                 msgstr0=potranslations[0],
