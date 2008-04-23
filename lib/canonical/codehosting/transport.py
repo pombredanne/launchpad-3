@@ -10,11 +10,16 @@ stored by branch ID. Branch 1 is stored at 00/00/00/01 and branch 10 is stored
 at 00/00/00/0A. Further, these branches might not be stored on the same
 physical machine.
 
-This means that our services need to:
- * Translate the external paths into internal paths.
- * Detect events like "make directory" and "unlock branch", translate
-   them into Launchpad operations like "create branch" and "request mirror"
-   and then actually perform those operations.
+This means that our services need to translate the external paths into
+internal paths.
+
+We also want to let users create new branches on Launchpad simply by pushing
+them up. We want Launchpad to detect when a branch has been changed and update
+our internal mirror.
+
+This means our services must detect events like "make directory" and "unlock
+branch", translate them into Launchpad operations like "create branch" and
+"request mirror" and then actually perform those operations.
 
 So, we have a `LaunchpadServer` which implements the core operations --
 translate a path, make a branch and request a mirror -- in terms of virtual
@@ -191,7 +196,8 @@ class CachingAuthserverClient:
 
         :param authserver: A blocking XML-RPC proxy, usually an instance of
             `xmlrpclib.ServerProxy`
-        :param user_id: The user who will be making these requests.
+        :param user_id: The database ID of the user who will be making these
+            requests. An integer.
         """
         self._authserver = authserver
         self._branch_info_cache = {}
@@ -238,9 +244,10 @@ class CachingAuthserverClient:
             is either '+junk' or the name of a Launchpad `IProduct`.
         :param branch: The name of the branch that we are interested in.
 
-        :return: (branch_id, permissions), where 'permissions' is 'w' if the
-            user represented by 'loginID' can write to the branch, and 'r' if
-            they cannot. If the branch doesn't exist, return ('', '').
+        :return: (branch_id, permissions), where 'permissions' is WRITABLE if
+            the current user can write to the branch, and READ_ONLY if
+            they cannot. If the branch doesn't exist, return ('', ''). The
+            "current user" is the user ID passed to the constructor.
         """
         branch_info = self._branch_info_cache.get((owner, product, branch))
         if branch_info is None:
