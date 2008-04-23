@@ -604,7 +604,7 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         return self.mailing_list.getReviewableMessages()
 
     @action('Moderate', name='moderate')
-    def save_action(self, action, data):
+    def moderate_action(self, action, data):
         """Commits the moderation actions."""
         self.next_url = canonical_url(self.context)
 

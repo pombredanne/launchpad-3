@@ -149,7 +149,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
+    custom_widget, enabled_with_active_mailing_list, enabled_with_permission,
+    smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
 
@@ -1070,6 +1071,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             'The mailing list associated with %s' % self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_active_mailing_list
     @enabled_with_permission('launchpad.Edit')
     def moderate_mailing_list(self):
         target = '+mailinglist-moderate'
