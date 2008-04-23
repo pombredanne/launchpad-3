@@ -13,7 +13,7 @@ from email.Utils import make_msgid
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -22,6 +22,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
+from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     BadStateTransition,
@@ -136,6 +137,25 @@ class BranchMergeProposal(SQLBase):
             """ % self.id)
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
+
+    votes = SQLMultipleJoin(
+        'CodeReviewVote', joinColumn='branch_merge_proposal')
+
+    def getNotificationRecipients(self, min_level):
+        """See IBranchMergeProposal.getNotificationRecipients"""
+        recipients = {}
+        branches = [self.source_branch, self.target_branch]
+        if self.dependent_branch is not None:
+            branches.append(self.dependent_branch)
+        for branch in branches:
+            branch_recipients = branch.getNotificationRecipients()
+            for recipient in branch_recipients:
+                subscription, rationale = branch_recipients.getReason(
+                    recipient)
+                if (subscription.review_level < min_level):
+                    continue
+                recipients[recipient] = (subscription, rationale)
+        return recipients
 
     def isValidTransition(self, next_state, user=None):
         """See `IBranchMergeProposal`."""
@@ -320,6 +340,12 @@ class BranchMergeProposal(SQLBase):
         # the old and the new proposal.
         self.syncUpdate()
         return proposal
+
+    def nominateReviewer(self, reviewer, registrant):
+        """See `IBranchMergeProposal`."""
+        return CodeReviewVote(branch_merge_proposal=self,
+                              registrant=registrant,
+                              reviewer=reviewer)
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""

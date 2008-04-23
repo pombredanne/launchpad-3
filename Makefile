@@ -16,7 +16,7 @@ Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
-LPCONFIG=default
+LPCONFIG=development
 CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 MINS_TO_SHUTDOWN=15
@@ -27,6 +27,7 @@ default: inplace
 schema: build
 	$(MAKE) -C database/schema
 	$(PYTHON) ./utilities/make-dummy-hosted-branches
+	rm -rf /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
@@ -46,9 +47,10 @@ check_loggerhead_on_merge:
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
-	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
-	    wc -l` -eq 0 ]
+	# Ignore lines starting with P as these are pending merges.
+	[ ! -f database-frozen.txt -o \
+	  `PYTHONPATH= bzr status -S database/schema/ | \
+		grep -v "\(^P\|pending\|security.cfg\|Makefile\)" | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -91,7 +93,7 @@ lint-verbose:
 	@bash ./utilities/lint.sh -v
 
 check-configs:
-	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
+	${PYTHON} utilities/check-configs.py
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -231,8 +233,8 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 
 install: reload-apache
 
-/etc/apache2/sites-available/local-launchpad: configs/default/local-launchpad-apache
-	cp configs/default/local-launchpad-apache $@
+/etc/apache2/sites-available/local-launchpad: configs/development/local-launchpad-apache
+	cp configs/development/local-launchpad-apache $@
 
 /etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
 	a2ensite local-launchpad

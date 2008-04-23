@@ -14,13 +14,17 @@ import unittest
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
+from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.component import getUtility
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.testing import PageTestLayer
@@ -54,12 +58,96 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         self.cookies = SimpleCookie()
 
 
-class WebServiceCaller(UnstickyCookieHTTPCaller):
+class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
 
-    def __call__(self, *args, **kw):
-        caller = super(WebServiceCaller, self).__call__(*args, **kw)
-        return WebServiceResponseWrapper(caller)
+    def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
+                 *args, **kwargs):
+        """Obtain the information necessary to sign OAuth requests."""
+        if oauth_consumer_key is not None and oauth_access_key is not None:
+            login(ANONYMOUS)
+            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
+                oauth_consumer_key)
+            self.access_token = self.consumer.getAccessToken(
+                oauth_access_key)
+            logout()
+        else:
+            self.consumer = None
+            self.access_token = None
+
+        # Set up a delegate to make the actual HTTP calls.
+        self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
+
+    def __call__(self, path, method='GET', data=None, headers=None):
+        # Make an HTTP request.
+        full_headers = {'Host' : 'api.launchpad.dev'}
+        if self.consumer is not None and self.access_token is not None:
+            full_url = 'http://api.launchpad.dev/' + path
+            request = OAuthRequest.from_consumer_and_token(
+                self.consumer, self.access_token, http_url = full_url,
+                )
+            request.sign_request(OAuthSignatureMethod_PLAINTEXT(),
+                                 self.consumer, self.access_token)
+            full_headers.update(request.to_header(OAUTH_REALM))
+        if headers is not None:
+            full_headers.update(headers)
+        header_strings = ["%s: %s" % (header, str(value))
+                          for header, value in full_headers.items()]
+        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
+                                                   "\n".join(header_strings))
+        if data:
+            request_string += "\n" + data
+
+        response = self.http_caller(request_string)
+        return WebServiceResponseWrapper(response)
+
+    def get(self, path, media_type='application/json', headers=None):
+        """Make a GET request."""
+        full_headers = {'Accept' : media_type}
+        if headers is not None:
+            full_headers.update(headers)
+        return self(path, 'GET', headers=full_headers)
+
+    def head(self, path, headers=None):
+        """Make a HEAD request."""
+        return self(path, 'HEAD', headers=headers)
+
+    def delete(self, path, headers=None):
+        """Make a DELETE request."""
+        return self(path, 'DELETE', headers=headers)
+
+    def put(self, path, media_type, data, headers=None):
+        """Make a PUT request."""
+        return self._make_request_with_entity_body(
+            path, 'PUT', media_type, data, headers)
+
+    def post(self, path, media_type, data, headers=None):
+        """Make a POST request."""
+        return self._make_request_with_entity_body(
+            path, 'POST', media_type, data, headers)
+
+    def named_post(self, path, operation_name, headers, **kwargs):
+        kwargs['ws_op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, value)
+                         for key, value in kwargs.items()])
+        return self.post(path, 'application/x-www-form-urlencoded', data,
+                         headers)
+
+    def patch(self, path, media_type, data, headers=None):
+        """Make a PATCH request."""
+        return self._make_request_with_entity_body(
+            path, 'PATCH', media_type, data, headers)
+
+    def _make_request_with_entity_body(self, path, method, media_type, data,
+                                       headers):
+        """A helper method for requests that include an entity-body.
+
+        This means PUT, PATCH, and POST requests.
+        """
+        real_headers = {'Content-type' : media_type }
+        if headers is not None:
+            real_headers.update(headers)
+        return self(path, method, data, real_headers)
 
 
 class WebServiceResponseWrapper(ProxyBase):
@@ -299,6 +387,17 @@ def print_action_links(content):
             print entry.strong.string
 
 
+def print_navigation_links(content):
+    """Print navigation menu urls."""
+    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    if navigation_links is None:
+        print "No navigation links"
+        return
+    entries = navigation_links.findAll('a')
+    for entry in entries:
+        print '%s: %s' % (entry.string, entry['href'])
+
+
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
 
@@ -358,6 +457,15 @@ def print_batch_header(soup):
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
+def print_ppa_packages(contents):
+    packages = find_tags_by_class(contents, 'ppa_package_row')
+    for pkg in packages:
+        print extract_text(pkg)
+    empty_section = find_tag_by_id(contents, 'empty-result')
+    if empty_section is not None:
+        print extract_text(empty_section)
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -377,7 +485,8 @@ def setupBrowser(auth=None):
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
-    test.globs['webservice'] = WebServiceCaller(port=9000)
+    test.globs['webservice'] = WebServiceCaller(
+        'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -397,11 +506,13 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
     test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
+    test.globs['print_ppa_packages'] = print_ppa_packages
 
 
 class PageStoryTestCase(unittest.TestCase):

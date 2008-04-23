@@ -110,9 +110,10 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 status=None, importance=None, assignee=None,
-                 milestone=None, statusexplanation=None, bugwatch=None):
+    def __init__(self, bugtask, product=None,
+                 sourcepackagename=None, status=None, importance=None,
+                 assignee=None, milestone=None, statusexplanation=None,
+                 bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -585,14 +586,6 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-        # We use the forbidden underscore attributes below because, with
-        # SQLObject, hitting self.product means querying and
-        # instantiating an object; prejoining doesn't help because this
-        # happens when the bug task is being instantiated -- too early
-        # in cases where we prejoin other things in.
-        # XXX: kiko 2006-03-21:
-        # we should use a specific SQLObject API here to avoid the
-        # privacy violation.
         if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
         elif self.productseriesID is not None:
@@ -663,7 +656,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:
@@ -763,7 +756,7 @@ class BugTask(SQLBase, BugTaskMixin):
             component = self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
             # Pull the component from the package published in the
-            # latest distribution series. 
+            # latest distribution series.
             packages = self.target.get_distroseries_packages()
             if packages:
                 component = packages[0].latest_published_component
@@ -834,12 +827,6 @@ class BugTask(SQLBase, BugTaskMixin):
         # a milestone set for the bug.
         if self.milestone:
             header_value += ' milestone=%s;' % self.milestone.name
-
-        # The same goes for bug tags: we only include them if they
-        # exist.
-        if self.bug.tags:
-            tag_string = ",".join(self.bug.tags)
-            header_value += ' tags=%s;' % tag_string
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
@@ -1135,13 +1122,6 @@ class BugTaskSet:
                             AND Milestone.name = %s)
                 """ % sqlvalues(params.milestone.target,
                                 params.milestone.name)
-
-                # A bug may have bugtasks in more than one series, and these
-                # bugtasks may have the same milestone value. To avoid
-                # duplicate result rows for one bug, ensure that only that
-                # bugtask is returned, that is directly assigned to the
-                # product.
-                extra_clauses.append("BugTask.product IS NOT null")
             else:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
@@ -1489,8 +1469,8 @@ class BugTaskSet:
             bugtasks = bugtasks.union(BugTask.select(
                 query, clauseTables=clauseTables), orderBy=orderby,
                 joins=joins)
-        bugtasks.prejoin(['sourcepackagename', 'product'])
-        bugtasks.prejoinClauseTables(['Bug'])
+        bugtasks = bugtasks.prejoin(['sourcepackagename', 'product'])
+        bugtasks = bugtasks.prejoinClauseTables(['Bug'])
         return bugtasks
 
     # XXX: salgado 2007-03-19:

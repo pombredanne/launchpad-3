@@ -1,0 +1,124 @@
+= LAZR's field deserializer =
+
+LAZR defines an interface for taking a string value that came in on an
+HTTP request, and deserializing it into a value that's appropriate for
+a particular schema field. This is similar to Zope's widget interface,
+but much smaller.
+
+To test the various deserializers we create a dummy request and
+application root.
+
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from canonical.launchpad.webapp.servers import WebServicePublication
+    >>> request = WebServiceTestRequest(method='GET')
+    >>> request.setPublication(WebServicePublication(None))
+    >>> login(ANONYMOUS, request)
+    >>> request.processInputs()
+
+    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> root = WebServiceApplication()
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> getUtility(IOpenLaunchBag).add(root)
+
+The deserializer for a TextLine field returns a string as-is, except
+that the empty string is deserialized as None.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.lazr.interfaces import IFieldDeserializer
+    >>> from zope.schema import TextLine
+    >>> field = TextLine()
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> deserializer.deserialize("foo")
+    'foo'
+    >>> deserializer.deserialize("4")
+    '4'
+    >>> deserializer.deserialize(u"unicode\u2122")
+    u'unicode\u2122'
+    >>> print deserializer.deserialize("")
+    None
+
+The deserializer for an Int field tries to convert the given string
+into an int.
+
+    >>> from zope.schema import Int
+    >>> field = Int()
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> deserializer.deserialize("4")
+    4
+    >>> deserializer.deserialize(u"4")
+    4
+
+    >>> deserializer.deserialize("foo")
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int(): foo
+
+    >>> deserializer.deserialize("4.62")
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int(): 4.62
+
+    >>> deserializer.deserialize("")
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int():
+
+The deserializer for a Choice is chosen based on the Choice's
+vocabulary. First, let's look at a Choice whose vocabulary is a
+relatively short list of enumerated values.
+
+    >>> from zope.schema import Choice
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> field = Choice(vocabulary=BugTaskStatus)
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+
+The client is expected to provide the title of one of the enumerated
+values. A string that corresponds to one of the values is deserialized
+to the appropriate value. A string that doesn't correspond to any
+enumerated value results in a helpful ValueError.
+
+    >>> deserializer.deserialize("Triaged")
+    <DBItem BugTaskStatus.TRIAGED...>
+
+    >>> deserializer.deserialize("NoSuchStatus")
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid value "NoSuchStatus". Acceptable values are: ...
+
+    >>> deserializer.deserialize("")
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid value "". Acceptable values are: ...
+
+Here's a Choice whose vocabulary is a filter on a database table that
+can be very large. Futhermore, every item in the vocabulary is
+published as a resource in Launchpad's web service.
+
+    >>> from canonical.launchpad.vocabularies import (
+    ...     ValidPersonOrTeamVocabulary)
+    >>> field = Choice(vocabulary=ValidPersonOrTeamVocabulary())
+    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+
+Here, the client is expected to designate a vocabulary item by its
+published URL. If the given string is a URL corresponding to a
+vocabulary item, the deserializer returns that item. Otherwise it
+raises a ValueError.
+
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> person = deserializer.deserialize(
+    ...     "http://api.launchpad.dev/beta/~salgado")
+    >>> IPerson.providedBy(person)
+    True
+    >>> person.name
+    u'salgado'
+
+    >>> deserializer.deserialize(
+    ...     "http://api.launchpad.dev/beta/~nosuchperson")
+    Traceback (most recent call last):
+    ...
+    ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
+
+    >>> deserializer.deserialize("salgado")
+    Traceback (most recent call last):
+    ...
+    ValueError: No such object "salgado".

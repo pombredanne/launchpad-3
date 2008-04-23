@@ -6,25 +6,41 @@ following a separate link from the front page.
 
     >>> browser.open('http://shipit.ubuntu.dev/')
     >>> print extract_text(find_tag_by_id(browser.contents, 'chooseLinks'))
-    I want to download Ubuntu ...
-    I want to request CDs of Ubuntu ...
-    I want to request CDs of Ubuntu Server Edition ...
+    Request a CD of Ubuntu Desktop Edition
+    Request a CD of Ubuntu Server Edition
 
-    >>> browser.getLink('request CDs of Ubuntu Server Edition').click()
+    >>> browser.getLink('Request a CD of Ubuntu Server Edition').click()
     >>> browser.url
     'http://shipit.ubuntu.dev/login-server'
-    
+
     >>> browser.getControl(name='loginpage_email').value = 'marilize@hbd.com'
     >>> browser.getControl(name='loginpage_password').value = 'test'
+
+Requesting server CDs is as easy as requesting any other flavour, but
+in order to do that we ask Marilize to answer a small survey.
+
     >>> browser.getControl('Log In').click()
+    >>> browser.title
+    'ShipIt Survey'
+    >>> print extract_text(
+    ...     find_tags_by_class(browser.contents, 'documentDescription')[0])
+    Please tell us more about your interest in Ubuntu Server Edition so that
+    we can better meet your needs...
+
+    >>> browser.getControl(name="field.environment").displayValue = ['Home']
+    >>> browser.getControl(name="field.evaluated_uses").displayValue = [
+    ...     'Backups', 'CRM']
+    >>> browser.getControl('Continue to Complete CD Request').click()
+
+Once Marilize answers the survey she is sent to the actual page where
+she can request server CDs.
+
     >>> browser.url
     'http://shipit.ubuntu.dev/myrequest-server'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'standard-options'))
     2 Ubuntu Server Edition CDs...
     5 Ubuntu Server Edition CDs...
-
-Requesting server CDs is as easy as requesting any other flavour.
 
     >>> browser.getControl(name='ordertype').value = ['16']
     >>> browser.getControl(name='field.recipientdisplayname').value = 'Foo'
@@ -35,7 +51,7 @@ Requesting server CDs is as easy as requesting any other flavour.
     >>> browser.getControl(name='field.postcode').value = '123456'
     >>> browser.getControl(name='field.country').value = ['226']
     >>> browser.getControl(name='field.phone').value = '43242442'
-    >>> browser.getControl('Request CDs').click()
+    >>> browser.getControl('Submit Request').click()
     >>> browser.url
     'http://shipit.ubuntu.dev/myrequest-server'
 
@@ -75,6 +91,6 @@ Now the request is considered special, so when we come back to shipit
 we'll be sent to the specialrequest-server page.
 
     >>> browser.open('http://shipit.ubuntu.dev/')
-    >>> browser.getLink('request CDs of Ubuntu Server Edition').click()
+    >>> browser.getLink('Request a CD of Ubuntu Server Edition').click()
     >>> browser.url
     'http://shipit.ubuntu.dev/specialrequest-server'

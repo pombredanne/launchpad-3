@@ -28,7 +28,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.helpers import filenameToContentType
@@ -414,6 +414,10 @@ class Builder(SQLBase):
         archive_purpose = build_queue_item.build.archive.purpose.name
         args['archive_purpose'] = archive_purpose
 
+        # Let the build slave know whether this is a build in a private
+        # archive.
+        args['archive_private'] = build_queue_item.build.archive.private
+
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
@@ -659,19 +663,28 @@ class BuilderSet(object):
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
 
-    def getBuildQueueDepthByArch(self):
+    def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
+        if virtualized:
+            archive_purposes = [ArchivePurpose.PPA]
+        else:
+            archive_purposes = [
+                ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]
+
         query = """
-            SELECT distroarchseries.architecturetag, COUNT(*) FROM
-                Build INNER JOIN DistroArchSeries
-                  ON Build.distroarchseries=DistroArchSeries.id
-            WHERE Build.buildstate=0
-            GROUP BY distroarchseries.architecturetag
-            ORDER BY distroarchseries.architecturetag
-            """
-        cur = cursor()
-        cur.execute(query)
-        return cur.fetchall()
+           BuildQueue.build = Build.id AND
+           Build.archive = Archive.id AND
+           Build.distroarchseries = DistroArchSeries.id AND
+           DistroArchSeries.processorfamily = Processor.family AND
+           Processor.id = %s AND
+           Build.buildstate = %s AND
+           Archive.purpose IN %s
+        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, archive_purposes)
+
+        clauseTables = [
+            'Build', 'DistroArchSeries', 'Processor', 'Archive']
+        queue = BuildQueue.select(query, clauseTables=clauseTables)
+        return queue.count()
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
@@ -690,3 +703,8 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
+
+    def getBuildersForQueue(self, processor, virtualized):
+        """See `IBuilderSet`."""
+        return Builder.selectBy(builderok=True, processor=processor,
+                                virtualized=virtualized)

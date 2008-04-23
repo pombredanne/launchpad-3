@@ -21,24 +21,22 @@ from bzrlib.transport import get_transport, remote
 
 from twisted.enterprise.adbapi import ConnectionPool
 from twisted.internet import process
-
-from canonical.tests.test_twisted import TwistedTestCase
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import plugins
 from canonical.config import config
 from canonical.codehosting.tests.servers import Authserver
 
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing import TwistedLayer
 from canonical.twistedsupport import defer_to_thread
-
 
 ROCKETFUEL_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(bzrlib.__file__)))
 
 
-class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
+class TestLaunchpadServerCommand(TrialTestCase, TestCaseInTempDir):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)

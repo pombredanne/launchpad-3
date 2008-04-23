@@ -31,6 +31,7 @@ __all__ = [
     'UnknownBranchTypeError'
     ]
 
+from cgi import escape
 from datetime import timedelta
 import re
 from zope.interface import Interface, Attribute
@@ -46,6 +47,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
@@ -233,8 +235,9 @@ class BranchURIField(URIField):
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
-                "cannot be on <code>%s</code>." % launchpad_domain)
-            raise LaunchpadValidationError(message)
+                "cannot be on <code>${domain}</code>.",
+                mapping={'domain': escape(launchpad_domain)})
+            raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
@@ -247,10 +250,11 @@ class BranchURIField(URIField):
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
-                "The bzr branch <a href=\"%s\">%s</a> is already registered "
-                "with this URL.")
-            raise LaunchpadValidationError(
-                message, canonical_url(branch), branch.displayname)
+                'The bzr branch <a href="${url}">${branch}</a> is '
+                'already registered with this URL.',
+                mapping={'url': canonical_url(branch),
+                         'branch': escape(branch.displayname)})
+            raise LaunchpadValidationError(structured(message))
 
 
 BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
@@ -279,8 +283,9 @@ def branch_name_validator(name):
     """
     if not valid_branch_name(name):
         raise LaunchpadValidationError(
-            _("Invalid branch name '%s'. %s"), name,
-            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+            _("Invalid branch name '${name}'. ${message}",
+              mapping={'name': name,
+                       'message': BRANCH_NAME_VALIDATION_ERROR_MESSAGE}))
     return True
 
 
@@ -553,9 +558,17 @@ class IBranch(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person, notification_level, max_diff_lines):
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level):
         """Subscribe this person to the branch.
 
+        :param person: The `Person` to subscribe.
+        :param notification_level: The kinds of branch changes that cause
+            notification.
+        :param max_diff_lines: The maximum number of lines of diff that may
+            appear in a notification.
+        :param code_review_level: The kinds of code review activity that cause
+            notification.
         :return: new or existing BranchSubscription."""
 
     def getSubscription(person):
@@ -686,7 +699,7 @@ class IBranchSet(Interface):
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
 
-    def new(branch_type, name, creator, owner, product, url, title=None,
+    def new(branch_type, name, registrant, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, whiteboard=None, date_created=None):
         """Create a new branch.
@@ -697,6 +710,12 @@ class IBranchSet(Interface):
         If product is None (indicating a +junk branch) then the owner must not
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
+
+    def getByProductAndName(product, name):
+        """Find all branches in a product with a given name."""
+
+    def getByProductAndNameStartsWith(product, name):
+        """Find all branches in a product a name that starts with `name`."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -1017,6 +1036,15 @@ class IBranchSet(Interface):
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targetted before."""
+
+    def isBranchNameAvailable(owner, product, branch_name):
+        """Is the specified branch_name valid for the owner and product.
+
+        :param owner: A `Person` who may be an individual or team.
+        :param product: A `Product` or None for a junk branch.
+        :param branch_name: The proposed branch name.
+        """
+
 
 
 class IBranchDelta(Interface):

@@ -158,13 +158,16 @@ cache when it's updated the next time.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> ubuntu.updateCompleteSourcePackageCache(
+  >>> updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
   DEBUG: Considering source 'mozilla-firefox'
   ...
   DEBUG: Considering source 'cdrkit'
   DEBUG: Creating new source cache entry.
   ...
+
+  >>> print updates
+  10
 
 The current transaction should be committed since the script only
 commits full batches of 50 elements:
@@ -252,13 +255,16 @@ cache will be added to it.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> warty.updateCompletePackageCache(
+  >>> updates = warty.updateCompletePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
   DEBUG: Considering binary 'mozilla-firefox'
   ...
   DEBUG: Considering binary 'cdrkit'
   DEBUG: Creating new binary cache entry.
   ...
+
+  >>> print updates
+  6
 
 Transaction behaves exactly the same as for Source Caches, except that
 it commits full batches of 100 elements.
@@ -285,7 +291,7 @@ reached via searches:
 
 == PPA package caches ==
 
-Package caches are also poulated for PPAs, allowing users to search
+Package caches are also populated for PPAs, allowing users to search
 for them considering the packages currently published in their context.
 
 We will use Celso's PPA.
@@ -327,7 +333,8 @@ reset, reflecting that nothing is cached in the database yet.
   0
 
 The sampledata contains no package caches, so attempts to find
-'pmount' (a source) or 'firefox' (a binary name term) fail.
+'pmount' (a source), 'firefox' (a binary name term) or 'shortdesc' (a
+term used in the pmount binary summary) fail.
 
   >>> ubuntu.searchPPAs(text='pmount').count()
   0
@@ -335,16 +342,18 @@ The sampledata contains no package caches, so attempts to find
   0
   >>> ubuntu.searchPPAs(text='warty').count()
   0
+  >>> ubuntu.searchPPAs(text='shortdesc').count()
+  0
 
 If we populate the package caches and update the archive caches, the
 same queries work, pointing to Celso's PPA.
 
-  >>> ubuntu.updateCompleteSourcePackageCache(
+  >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
   DEBUG: Considering source 'pmount'
   ...
 
-  >>> warty.updateCompletePackageCache(
+  >>> binary_updates = warty.updateCompletePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
   DEBUG: Considering binary 'mozilla-firefox'
   ...
@@ -352,6 +361,18 @@ same queries work, pointing to Celso's PPA.
   >>> cprov.archive.updateArchiveCache()
   >>> transaction.commit()
   >>> flush_database_updates()
+
+  >>> cprov.archive.sources_cached == source_updates
+  True
+
+  >>> print cprov.archive.sources_cached
+  3
+
+  >>> cprov.archive.binaries_cached == binary_updates
+  True
+
+  >>> print cprov.archive.binaries_cached
+  2
 
   >>> print ubuntu.searchPPAs(text='cprov')[0].title
   PPA for Celso Providelo
@@ -361,6 +382,92 @@ same queries work, pointing to Celso's PPA.
   PPA for Celso Providelo
   >>> print ubuntu.searchPPAs(text='warty')[0].title
   PPA for Celso Providelo
+  >>> print ubuntu.searchPPAs(text='shortdesc')[0].title
+  PPA for Celso Providelo
+
+The method which populates the archive caches also cleans the texts up
+to work around the current FTI limitation (see bug #207969). It
+performs the following tasks:
+
+ * Exclude punctuation ([,.;:!?])
+ * Store only unique lower case words
+
+We remove all caches related to Celso's PPA.
+
+  >>> celso_source_caches = DistributionSourcePackageCache.selectBy(
+  ...    archive=cprov.archive)
+
+  >>> celso_binary_caches = DistroSeriesPackageCache.selectBy(
+  ...    archive=cprov.archive)
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> def purge_caches(caches):
+  ...     for cache in caches:
+  ...         naked_cache = removeSecurityProxy(cache)
+  ...         naked_cache.destroySelf()
+
+
+  >>> purge_caches(celso_source_caches)
+  >>> purge_caches(celso_binary_caches)
+  >>> transaction.commit()
+
+Now, when we update the caches for Celso's PPA, only the owner
+information will be available, no packages information will be cached.
+
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
+
+  >>> print cprov.archive.sources_cached
+  0
+
+  >>> print cprov.archive.binaries_cached
+  0
+
+  >>> print cprov.archive.package_description_cache
+  celso providelo cprov
+
+We insert a new source cache with texts containing punctuation and
+duplicated words pointing to Celso's PPA.
+
+  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
+
+  >>> unclean_cache = DistributionSourcePackageCache(
+  ...    archive=cprov.archive,
+  ...    distribution=ubuntu,
+  ...    sourcepackagename=cdrkit_name,
+  ...    name=cdrkit_name.name,
+  ...    binpkgnames='cdrkit-bin cdrkit-extra',
+  ...    binpkgsummaries='Ding! Dong? Ding,Dong. Ding; DONG: ding dong')
+
+Note that 'binpkgdescription' and 'changelog' are not considered yet,
+and we have no binary cache.
+
+Let's update the archive cache and see how it goes.
+
+  >>> transaction.commit()
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
+
+Only one source cached and the 'package_description_cache' only
+contains unique and lowercase words free of any punctuation.
+
+  >>> print cprov.archive.sources_cached
+  1
+
+  >>> print cprov.archive.binaries_cached
+  0
+
+  >>> print cprov.archive.package_description_cache
+  ding providelo celso cdrkit cdrkit-bin dong ubuntu cdrkit-extra cprov
+
+Let's remove the unclean cache and update Celso's PPA cache, so
+everything will be back to normal.
+
+  >>> removeSecurityProxy(unclean_cache).destroySelf()
+  >>> transaction.commit()
+  >>> cprov.archive.updateArchiveCache()
+  >>> transaction.commit()
 
 
 == Package Counters ==
@@ -406,9 +513,9 @@ New values were stored:
 
 == DistroSeriesBinaryPackage cache lookups ==
 
-The DistroSeriesBinaryPackage object uses a DistroSeriesPackageCache
-record to present summary and description for the context binary
-package.
+The DistroSeriesBinaryPackage and DistroArchSeriesBinaryPackage
+objects uses a DistroSeriesPackageCache record to present summary and
+description for the context binary package.
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
   >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
@@ -417,6 +524,8 @@ package.
   ...     archive=ubuntu.main_archive, distroseries=warty,
   ...     binarypackagename=foobar_name, summary='main foobar',
   ...     description='main foobar description')
+
+The DistroSeriesBinaryPackage.
 
   >>> foobar_binary = warty.getBinaryPackage('foobar')
 
@@ -429,6 +538,20 @@ package.
   >>> print foobar_binary.description
   main foobar description
 
+The DistroArchSeriesBinaryPackage.
+
+  >>> warty_i386 = warty['i386']
+  >>> foobar_arch_binary = warty_i386.getBinaryPackage('foobar')
+
+  >>> foobar_arch_binary.cache == primary_cache
+  True
+
+  >>> print foobar_arch_binary.summary
+  main foobar
+
+  >>> print foobar_arch_binary.description
+  main foobar description
+
 This lookup mechanism will continue to work even after we have added a
 cache entry for a PPA package with the same name.
 
@@ -436,5 +559,10 @@ cache entry for a PPA package with the same name.
   ...     archive=cprov.archive, distroseries=warty,
   ...     binarypackagename=foobar_name, summary='ppa foobar')
 
+  >>> foobar_binary = warty.getBinaryPackage('foobar')
   >>> foobar_binary.cache != ppa_cache
+  True
+
+  >>> foobar_arch_binary = warty_i386.getBinaryPackage('foobar')
+  >>> foobar_arch_binary.cache != ppa_cache
   True

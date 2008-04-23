@@ -39,6 +39,42 @@ method for RequestTracker._logIn().
     <urllib2.OpenerDirector...>
 
 
+== Authentication Credentials ==
+
+RT instances require that we log in to be able to export statuses for
+their tickets. The RequestTracker ExternalBugTracker class has a
+credentials property which returns a dict of credentials based on the
+hostname of the current remote RT instance. We can demonstrate this by
+extending RequestTracker.
+
+    >>> class CredentialRequestTracker(RequestTracker):
+    ...     credentials_map = {
+    ...         'example.com': {
+    ...             'user': 'spam',
+    ...             'pass': 'ham'},
+    ...         'otherexample.com': {
+    ...             'user': 'eggs',
+    ...             'pass': 'spam'}}
+
+The different hosts will have different credentials properties.
+
+    >>> rt_one = CredentialRequestTracker('http://example.com/rt')
+    >>> rt_one.credentials
+    {'user': 'spam', 'pass': 'ham'}
+
+    >>> rt_two = CredentialRequestTracker('http://otherexample.com/rt')
+    >>> rt_two.credentials
+    {'user': 'eggs', 'pass': 'spam'}
+
+The default username and password for RT instances are 'guest' and
+'guest'. The credentials property for an RT instance that we don't have
+specific credentials for will return the default credentials.
+
+    >>> rt_three = CredentialRequestTracker('http://foobar.com')
+    >>> rt_three.credentials
+    {'user': 'guest', 'pass': 'guest'}
+
+
 == Status Conversion ==
 
 The RequestTracker class can convert the default RT ticket statuses into

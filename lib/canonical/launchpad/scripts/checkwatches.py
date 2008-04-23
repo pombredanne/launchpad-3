@@ -13,7 +13,6 @@ import sys
 import pytz
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -28,7 +27,8 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
     ISupportsCommentImport, PersonCreationRationale,
     UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -61,6 +61,12 @@ class TooMuchTimeSkew(BugWatchUpdateError):
 #
 
 
+class CheckWatchesErrorUtility(ErrorReportingUtility):
+    """An error utility that for the checkwatches process."""
+
+    _default_config_section = 'checkwatches'
+
+
 def report_oops(message=None, properties=None, info=None):
     """Record an oops for the current exception.
 
@@ -90,8 +96,9 @@ def report_oops(message=None, properties=None, info=None):
         properties.append(('error-explanation', message))
 
     # Create the dummy request object.
-    request = errorlog.ScriptRequest(properties)
-    errorlog.globalErrorUtility.raising(info, request)
+    request = ScriptRequest(properties)
+    error_utility = CheckWatchesErrorUtility()
+    error_utility.raising(info, request)
 
     return request
 
@@ -177,7 +184,7 @@ class BugWatchUpdater(object):
                     #      to identify all bug trackers like this so
                     #      that hard-coding like this can be genericised
                     #      (Bug 138949).
-                    self.log.info(
+                    self.log.debug(
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
                     self.updateBugTracker(bug_tracker)
@@ -272,7 +279,7 @@ class BugWatchUpdater(object):
             if bug_watches_to_update.count() > 0:
                 self.updateBugWatches(remotesystem, bug_watches_to_update)
             else:
-                self.log.info(
+                self.log.debug(
                     "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
@@ -294,7 +301,7 @@ class BugWatchUpdater(object):
         try:
             launchpad_status = remotesystem.convertRemoteStatus(
                 remote_status)
-        except UnknownRemoteStatusError, error:
+        except UnknownRemoteStatusError:
             # We log the warning, since we need to know about statuses
             # that we don't handle correctly.
             self.warning("Unknown remote status '%s'." % remote_status,
@@ -315,6 +322,7 @@ class BugWatchUpdater(object):
 
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
+        remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = remotesystem.baseurl
@@ -558,8 +566,17 @@ class BugWatchUpdater(object):
         :param bug_watch: The bug watch for which the comments should be
             imported.
         """
+        # Construct a list of the comment IDs we want to import; i.e.
+        # those which we haven't already imported.
+        all_comment_ids = external_bugtracker.getCommentIds(bug_watch)
+        comment_ids_to_import = [
+            comment_id for comment_id in all_comment_ids
+            if not bug_watch.hasComment(comment_id)]
+
+        external_bugtracker.fetchComments(bug_watch, comment_ids_to_import)
+
         imported_comments = 0
-        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+        for comment_id in comment_ids_to_import:
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
@@ -569,9 +586,9 @@ class BugWatchUpdater(object):
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)
-            if not bug_watch.hasComment(comment_id):
-                bug_watch.addComment(comment_id, comment_message)
-                imported_comments += 1
+
+            bug_watch.addComment(comment_id, comment_message)
+            imported_comments += 1
 
         if imported_comments > 0:
             self.log.info("Imported %(count)i comments for remote bug "
@@ -602,6 +619,7 @@ class BugWatchUpdater(object):
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        report_oops(message, properties, info)
+        oops_info = report_oops(message, properties, info)
+
         # Also put it in the log.
-        self.log.error(message)
+        self.log.error("%s (%s)" % (message, oops_info.oopsid))

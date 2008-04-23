@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
+import pytz
 import threading
 import xmlrpclib
+from datetime import datetime
 
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
@@ -23,6 +25,7 @@ from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+from zope.security.interfaces import Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -35,19 +38,23 @@ from canonical.config import config
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
     IScopedCollection)
-from canonical.lazr.rest import CollectionResource, EntryResource
+from canonical.lazr.rest.resource import CollectionResource, EntryResource
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication, IWebServiceApplication)
+    IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
+    OAuthPermission, NonceAlreadyUsed)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
-    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData)
+    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
+    IPlacelessLoginSource)
+from canonical.launchpad.webapp.authentication import (
+    check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -343,7 +350,6 @@ class WebServiceRequestPublicationFactory(
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
-
 
     def canHandle(self, environment):
         """See `IRequestPublicationFactory`.
@@ -648,6 +654,10 @@ class LaunchpadTestRequest(TestRequest):
         """See IBasicLaunchpadRequest."""
         return None, None
 
+    def setInWSGIEnvironment(self, key, value):
+        """See IBasicLaunchpadRequest."""
+        self._orig_env[key] = value
+
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
@@ -910,6 +920,15 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     root_object_interface = IWebServiceApplication
 
+    def getApplication(self, request):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Always use the web service application to serve web service
+        resources, no matter what application is normally used to serve
+        the underlying objects.
+        """
+        return getUtility(IWebServiceApplication)
+
     def traverseName(self, request, ob, name):
         """See `zope.publisher.interfaces.IPublication`.
 
@@ -1005,6 +1024,41 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # Wrap the resource in a security proxy.
         return ProxyFactory(resource)
 
+    def finishReadOnlyRequest(self, txn):
+        """Commit the transaction so that created OAuthNonces are stored."""
+        txn.commit()
+
+    def getPrincipal(self, request):
+        # Fetch OAuth authorization information from the request.
+        form = get_oauth_authorization(request)
+
+        consumer_key = form.get('oauth_consumer_key')
+        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
+        if consumer is None:
+            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        token_key = form.get('oauth_token')
+        token = consumer.getAccessToken(token_key)
+        if token is None:
+            raise Unauthorized('Unknown access token (%s).' % token_key)
+        nonce = form.get('oauth_nonce')
+        timestamp = form.get('oauth_timestamp')
+        try:
+            token.ensureNonce(nonce, timestamp)
+        except NonceAlreadyUsed, e:
+            raise Unauthorized('Invalid nonce/timestamp: %s' % e)
+        now = datetime.now(pytz.timezone('UTC'))
+        if token.permission == OAuthPermission.UNAUTHORIZED:
+            raise Unauthorized('Unauthorized token (%s).' % token.key)
+        elif token.date_expires is not None and token.date_expires <= now:
+            raise Unauthorized('Expired token (%s).' % token.key)
+        elif not check_oauth_signature(request, consumer, token):
+            raise Unauthorized('Invalid signature.')
+        else:
+            # Everything is fine, let's return the principal.
+            pass
+        return getUtility(IPlacelessLoginSource).getPrincipal(
+            token.person.id, access_level=token.permission)
+
 
 class WebServiceRequestTraversal:
     """Mixin providing web-service resource wrapping in traversal.
@@ -1020,6 +1074,14 @@ class WebServiceRequestTraversal:
         WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
+        stack = self.getTraversalStack()
+        # Only accept versioned URLs.
+        last_component = stack.pop()
+        if last_component == 'beta':
+            self.setTraversalStack(stack)
+            self.setVirtualHostRoot(names=('beta', ))
+        else:
+            raise NotFound(self, '', self)
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 

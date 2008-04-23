@@ -31,13 +31,15 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, NotFoundError, PackagingType,
-    RevisionControlSystems, SpecificationSort, SpecificationGoalStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus)
+    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
+    PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationImplementationStatus, SpecificationSort)
 
 
 class NoImportBranchError(Exception):
@@ -59,10 +61,12 @@ class DatePublishedSyncError(Exception):
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                    HasTranslationImportsMixin):
+                    HasTranslationImportsMixin,
+                    StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
-        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates,
+        IStructuralSubscriptionTarget)
 
     _table = 'ProductSeries'
 
@@ -527,6 +531,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
+    def getImportDetailsForDisplay(self):
+        assert self.rcstype is not None, (
+            "Only makes sense for series with import details set.")
+        if self.rcstype == RevisionControlSystems.CVS:
+            return '%s %s' % (self.cvsroot, self.cvsmodule)
+        elif self.rcstype == RevisionControlSystems.SVN:
+            return self.svnrepository
+        else:
+            raise AssertionError(
+                'Unknown rcs type: %s'% self.rcstype.title)
+
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(
@@ -588,7 +603,8 @@ class ProductSeriesSet:
         """See `IProductSeriesSet`."""
         query = self.composeQueryString(text, importstatus)
         return ProductSeries.select(
-            query, distinct=True, clauseTables=['Product', 'Project'])
+            query, orderBy=['product.name', 'productseries.name'],
+            clauseTables=['Product'])
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
@@ -599,22 +615,23 @@ class ProductSeriesSet:
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
         """
-        conditions = []
+        conditions = ["ProductSeries.product = Product.id"]
         if text == u'':
             text = None
 
-        # First filter on product: match text, if necessary, and only consider
-        # active projects.
+        # First filter on text, if supplied.
         if text is not None:
-            conditions.append('Product.fti @@ ftq(%s)' % quote(text))
-        conditions.append('Product.active IS TRUE')
-        conditions.append("ProductSeries.product = Product.id")
+            conditions.append("""
+                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
+                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
 
-        # Then filter on project in the same way, if any.
-        product_match = "Product.project = Project.id AND Project.active"
-        if text is not None:
-            product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
-        conditions.append("((%s) OR project IS NULL)" % product_match)
+        # Exclude deactivated products.
+        conditions.append('Product.active IS TRUE')
+
+        # Exclude deactivated projects, too.
+        conditions.append(
+            "((Product.project = Project.id AND Project.active) OR"
+            " Product.project IS NULL)")
 
         # Now just add the filter on import status.
         if importstatus is None:
@@ -623,8 +640,11 @@ class ProductSeriesSet:
             conditions.append('ProductSeries.importstatus = %s'
                               % sqlvalues(importstatus))
 
+        # And build the query.
         query = " AND ".join(conditions)
-        return query
+        return """productseries.id IN
+            (SELECT productseries.id FROM productseries, product, project
+             WHERE %s) AND productseries.product = product.id""" % query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
         """See IProductSeriesSet."""
@@ -640,3 +660,14 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
+
+    def getSeriesForBranches(self, branches):
+        """See `IProductSeriesSet`."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return []
+
+        return ProductSeries.select("""
+            ProductSeries.user_branch in %s OR
+            ProductSeries.import_branch in %s
+            """ % sqlvalues(branch_ids, branch_ids), orderBy=["name"])

@@ -80,14 +80,17 @@ def print_actions(pending_actions):
     not need to be coerced because they will be strs in both cases.
     """
     for action in sorted(pending_actions):
-        for team in sorted(pending_actions[action]):
+        for value in sorted(pending_actions[action]):
             if action in ('create', 'modify'):
-                team, modification = team
+                team, modification = value
                 modification = dict((k, unicode(v))
                                     for k, v in modification.items())
                 print team, '-->', action, modification
+            elif action == 'unsynchronized':
+                team, state = value
+                print team, '-->', action, state
             else:
-                print team, '-->', action
+                print value, '-->', action
 
 
 def print_info(info):

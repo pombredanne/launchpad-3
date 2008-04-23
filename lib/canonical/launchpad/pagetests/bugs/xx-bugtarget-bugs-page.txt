@@ -1,0 +1,9 @@
+= The bugs index page for bug targets =
+
+The bugs index page for bug targets is one of the first Launchpad
+page to embed all its action links in the main content area, rather
+than in an 'Actions' portlet.
+
+    >>> browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print find_portlet(browser.contents, 'Actions')
+    None
