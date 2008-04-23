@@ -30,6 +30,7 @@ __all__ = [
 import simplejson
 import sys
 
+from zope.component import getUtility
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
@@ -37,6 +38,8 @@ from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
 from zope.schema.interfaces import IField
 from zope.security.checker import CheckerPublic
+
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
@@ -412,7 +415,13 @@ class BaseResourceOperationAdapter(ResourceOperation):
 
     def call(self, **kwargs):
         """See `ResourceOperation`."""
-        result = getattr(self.context, self._method_name)(**kwargs)
+        params = kwargs.copy()
+        for name, value in self._export_info['call_with'].items():
+            if value is REQUEST_USER:
+                value = getUtility(ILaunchBag).user
+            params[name] = value
+
+        result = getattr(self.context, self._method_name)(**params)
 
         # The webservice assumes that the request is complete when the
         # operation returns a string. So we take care of marshalling the

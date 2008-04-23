@@ -670,7 +670,7 @@ accepted by the operation.
     ...         return self.result
     ...
     ...     def new(self, author, base_price, title):
-    ...         return Book(author, base_price, title, "unknown")
+    ...         return Book(author, title, base_price, "unknown")
 
     >>> request = MockRequest()
     >>> read_method_adapter = read_method_adapter_factory(
@@ -678,8 +678,12 @@ accepted by the operation.
     >>> verifyObject(IResourceGETOperation, read_method_adapter)
     True
 
-    >>> for param in read_method_adapter.params:
-    ...     print "%s: %s" % (param.__name__, param.__class__.__name__)
+    >>> from operator import attrgetter
+    >>> def print_params(params):
+    ...     """Print the name and type of the defined parameters."""
+    ...     for param in sorted(params, key=attrgetter('__name__')):
+    ...         print "%s: %s" % (param.__name__, param.__class__.__name__)
+    >>> print_params(read_method_adapter.params)
     text: TextLine
 
 The call() method calls the underlying method and return its result.
@@ -711,16 +715,42 @@ IResourcePOSTOperation.
     >>> IResourcePOSTOperation.implementedBy(write_method_adapter_factory)
     True
 
+The generated adapter class name is POST_<interface>_<operation>.
+
+    >>> print write_method_adapter_factory.__name__
+    POST_IBookOnSteroids_checkout
+
     >>> class BookOnSteroids(Book):
-    ...     def checkout(self, who):
-    ...         print """%r checked out '%s'.""" % (who, self.title)
+    ...     def checkout(self, who, kind):
+    ...         print """%s did a %s check out of '%s'.""" % (
+    ...             who, kind, self.title)
 
     >>> write_method_adapter = write_method_adapter_factory(
-    ...     Book('Noam Chomsky', 10.0, 'Perspectives on Power', 'unknown'),
+    ...     BookOnSteroids(
+    ...         'Noam Chomsky', 'Perspectives on Power', 10, 'unknown'),
     ...     MockRequest())
 
     >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
     True
+
+The adapter's params property also contains the available parameters
+(for which there are none in this case.)
+
+    >>> print_params(write_method_adapter.params)
+
+The call() method invokes the exported method on the context object. In
+this case, the underlying parameters were set using call_with. The
+REQUEST_USER specification is replaced by the current user.
+
+    >>> from zope.component import provideUtility
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> class MockLaunchBag:
+    ...     implements(ILaunchBag)
+    ...     user = 'A user'
+    >>> provideUtility(MockLaunchBag(), ILaunchBag)
+
+    >>> write_method_adapter.call()
+    A user did a normal check out of 'Perspectives on Power'.
 
 Methods exported as a factory also generates an adapter providing
 IResourcePOSTOperation.
