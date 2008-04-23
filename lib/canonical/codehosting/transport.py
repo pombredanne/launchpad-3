@@ -12,6 +12,7 @@ __all__ = [
 
 import logging
 import os
+import xmlrpclib
 
 from bzrlib.errors import (
     BzrError, InProcessTransport, NoSuchFile, PermissionDenied,
@@ -182,6 +183,15 @@ class CachingAuthserverClient:
         # (branch_id, 'w'), but then we'd be building in more assumptions
         # about the authserver.
         self._branch_info_cache[(owner, product, branch)] = None
+        # XXX: JonathanLange 2008-04-23: This logic should be moved to the
+        # authserver. test_make_product_directory_for_nonexistent_product and
+        # test_mkdir_not_team_member_error (in test_filesystem) both fail
+        # without this check. Those tests should be moved (or copied) to the
+        # authserver level at the same time that this check is.
+        if branch_id == '':
+            raise xmlrpclib.Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                'Cannot create branch: ~%s/%s/%s' % (owner, product, branch))
         return branch_id
 
     def getBranchInformation(self, owner, product, branch):
@@ -428,10 +438,6 @@ class LaunchpadServer(Server):
             raise PermissionDenied(virtual_path)
 
         branch_id = branch.create()
-        # XXX: This logic should be moved to the authserver!
-        if branch_id == '':
-            raise PermissionDenied(
-                'Cannot create branch: %s' % (virtual_path,))
         branch.ensureUnderlyingPath(self._backing_transport)
 
     def requestMirror(self, virtual_path):
