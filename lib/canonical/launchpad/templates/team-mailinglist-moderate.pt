@@ -41,9 +41,9 @@
             <th>Message details</th>
             <th>Approve</th><th>Decline</th><th>Discard</th><th>Hold</th>
           </tr></thead>
-          <div tal:repeat="message view/held_messages"
+          <span tal:repeat="message view/held_messages"
                tal:content="structure message/@@+moderation" />
-          </table>
+        </table>
 
           [Submit button goes here]
       </span>

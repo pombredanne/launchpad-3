@@ -9,9 +9,12 @@ __all__ = [
     ]
 
 
+from cgi import escape
 from email import message_from_string
 from email.Header import decode_header, make_header
 from itertools import repeat
+from textwrap import TextWrapper
+from urllib import quote, unquote
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -113,6 +116,7 @@ class HeldMessageView:
         from zope.security.proxy import removeSecurityProxy
         naked_message = removeSecurityProxy(messages[0])
         self.message_id = self.context.message_id
+        self.widget_name = quote(self.message_id)
         self.message = naked_message
         self.subject = self.message.subject
         self.date = self.message.datecreated
@@ -121,6 +125,67 @@ class HeldMessageView:
             self.message_object = message_from_string(self.message.raw.read())
         finally:
             self.message.raw.close()
+        self._process_text()
+
+    def _process_text(self):
+        """Sanitize the message text and split it into summary and details.
+        """
+        # Try to find a reasonable way to split the text of the message for
+        # presentation as both a summary and a revealed detail.  This is
+        # fraught with potential ugliness, so let's just do an 80% solution
+        # that's safe and easy.  First, we escape the text so that there's no
+        # chance of cross-site scripting, then split into lines.
+        text_lines = escape(self.message.text_contents).splitlines()
+        # Strip off any leadning whitespace-only lines.
+        text_lines.reverse()
+        while len(text_lines) > 0:
+            first_line = text_lines.pop()
+            if len(first_line.strip()) > 0:
+                text_lines.append(first_line)
+                break
+        text_lines.reverse()
+        # If there are no non-blank lines, then we're done.
+        if len(text_lines) == 0:
+            summary = u''
+            details = u''
+        # If the first line is of a completely arbitrarily chosen reasonable
+        # length, then we'll just use that as the summary.
+        elif len(text_lines[0]) < 60:
+            summary = text_lines[0]
+            details = u'\n'.join(text_lines[1:])
+        # It could be the case that the text is actually flowed using RFC
+        # 3676 format="flowed" parameters.  In that case, just split the line
+        # at the first whitespace after, again, our arbitrarily chosen limit.
+        else:
+            first_line = text_lines.pop(0)
+            wrapper = TextWrapper(width=60)
+            filled_lines = wrapper.fill(first_line).splitlines()
+            summary = filled_lines[0]
+            text_lines.insert(0, u''.join(filled_lines[1:]))
+            details = u'\n'.join(text_lines)
+        # Now, ideally we'd like to wrap this all in <pre> tags so as to
+        # preserve things like newlines in the original message body, but this
+        # doesn't work very well with the JavaScript folding ellipsis
+        # control.  The next best, and easiest thing, is simply to replace all
+        # empty blank lines in the details text with a <p> tag to give some
+        # separation in the paragraphs.  No more than 20 lines in total
+        # though, and here we don't worry about format="flowed".
+        #
+        # Again, 80% is good enough.
+        paragraphs = []
+        current_paragraph = []
+        for lineno, line in enumerate(details.splitlines()):
+            if lineno > 20:
+                break
+            if len(line.strip()) == 0:
+                paragraphs.append(u'\n'.join(current_paragraph))
+                paragraphs.append('\n<p>\n')
+                current_paragraph = []
+            else:
+                current_paragraph.append(line)
+        paragraphs.append(u''.join(current_paragraph))
+        self.body_summary = summary
+        self.body_details = u''.join(paragraphs)
 
     @property
     def author(self):
@@ -138,13 +203,3 @@ class HeldMessageView:
         header = make_header(zip(unicode_parts, repeat('utf-8')))
         return '<a href="%s">%s</a>' % (
             canonical_url(self.message.owner), header)
-
-    @property
-    def body_summary(self):
-        """Return the first line of the message's plain text body."""
-        return self.message.text_contents.splitlines()[0]
-
-    @property
-    def body_details(self):
-        """Return more lines of the message's plain text body."""
-        return u'\n'.join(self.message.text_contents.splitlines()[1:20])
