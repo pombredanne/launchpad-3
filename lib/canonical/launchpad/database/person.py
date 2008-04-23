@@ -3038,6 +3038,34 @@ class PersonSet:
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    def getSubscribersForTargets(self, targets, recipients=None):
+        """See `IPersonSet`. """
+        target_criteria = []
+        for target in targets:
+            # target_args is a mapping from query arguments
+            # to query values.
+            target_args = target._target_args
+            target_criteria_clauses = []
+            for key, value in target_args.items():
+                if value is not None:
+                    target_criteria_clauses.append(
+                        '%s = %s' % (key, quote(value)))
+                else:
+                    target_criteria_clauses.append(
+                        '%s IS NULL' % key)
+            target_criteria.append(
+                '(%s)' % ' AND '.join(target_criteria_clauses))
+        query = ' OR '.join(target_criteria)
+        subscriptions = StructuralSubscription.select(
+            query, prejoins=['subscriber'])
+        subscribers = set()
+        for subscription in subscriptions:
+            subscribers.add(subscription.subscriber)
+            if recipients is not None:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+        return subscribers
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
