@@ -295,7 +295,6 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def __init__(self, context=None):
         BranchVocabularyBase.__init__(self, context)
-
         if IProduct.providedBy(self.context):
             self.product = self.context
         elif IProductSeries.providedBy(self.context):
