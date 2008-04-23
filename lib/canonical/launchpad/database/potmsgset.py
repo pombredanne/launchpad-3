@@ -24,6 +24,8 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
+from canonical.launchpad.database.translationtemplateitem import (
+    TranslationTemplateItem)
 
 
 class POTMsgSet(SQLBase):
@@ -692,3 +694,20 @@ class POTMsgSet(SQLBase):
             except SQLObjectNotFound:
                 pomsgid = POMsgID(msgid=plural_form_text)
             self.msgid_plural = pomsgid
+
+    def setSequence(self, potemplate, sequence):
+        """See `IPOTMsgSet`."""
+        assert self.potemplate == potemplate, (
+            'Given potemplate is not correct"')
+        self.sequence = sequence
+        translation_template_item = TranslationTemplateItem.selectBy(
+            potmsgset=self)
+        if translation_template_item is not None:
+            # Update the sequence for the translation template item.
+            translation_template_item.sequence = sequence
+
+    def getSequence(self, potemplate):
+        """See `IPOTMsgSet`."""
+        assert self.potemplate == potemplate, (
+            'Given potemplate is not correct"')
+        return self.sequence

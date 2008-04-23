@@ -33,6 +33,8 @@ from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.database.translationtemplateitem import (
+    TranslationTemplateItem)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOFileSet, IPOTemplate, IPOTemplateSet,
     IPOTemplateSubset, ITranslationExporter, ITranslationFileData,
@@ -481,7 +483,7 @@ class POTemplate(SQLBase, RosettaStats):
     def expireAllMessages(self):
         """See `IPOTemplate`."""
         for potmsgset in self:
-            potmsgset.sequence = 0
+            potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
         """Look up named `Language` object, or raise `LanguageNotFound`."""
@@ -603,7 +605,7 @@ class POTemplate(SQLBase, RosettaStats):
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
                                   context=None):
         """See `IPOTemplate`."""
-        return POTMsgSet(
+        potmsgset = POTMsgSet(
             context=context,
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
@@ -613,6 +615,15 @@ class POTemplate(SQLBase, RosettaStats):
             filereferences=None,
             sourcecomment=None,
             flagscomment=None)
+
+        # Introduce this new entry into the TranslationTemplateItem for later
+        # usage.
+        TranslationTemplateItem(
+            potemplate=self,
+            sequence=0,
+            potmsgset=potmsgset)
+
+        return potmsgset
 
     def createMessageSetFromText(self, singular_text, plural_text,
                                  context=None):
@@ -712,6 +723,10 @@ class POTemplate(SQLBase, RosettaStats):
         template = helpers.get_email_template(template_mail)
         message = template % replacements
         return (subject, message)
+
+    def getTranslationTemplateItems(self):
+        """See `IPOTemplate`."""
+        return TranslationTemplateItem.selectBy(potemplate=self)
 
 
 class POTemplateSubset:

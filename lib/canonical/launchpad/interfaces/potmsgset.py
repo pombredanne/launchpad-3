@@ -45,8 +45,6 @@ class IPOTMsgSet(Interface):
         readonly=True,
         schema=IPOMsgID)
 
-    sequence = Attribute("The ordering of this set within its file.")
-
     potemplate = Attribute("The template this set is associated with.")
 
     commenttext = Attribute("The manual comments this set has.")
@@ -220,4 +218,18 @@ class IPOTMsgSet(Interface):
 
         :param plural_form_text: Unicode string representing the plural form
             we want to store or None to unset current plural form.
+        """
+
+    def getSequence(potemplate):
+        """Return the sequence number for this potmsgset in potemplate.
+
+        :param potemplate: `IPOTemplate` where the sequence number applies.
+        """
+
+    def setSequence(potemplate, sequence):
+        """Set the sequence number for this potmsgset in potemplate.
+
+        :param potemplate: `IPOTemplate` where the sequence number applies.
+        :param sequence: The sequence number of this `IPOTMsgSet` in the given
+            `IPOTemplate`.
         """
