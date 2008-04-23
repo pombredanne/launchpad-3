@@ -17,7 +17,7 @@ class CodeImportDispatcherScript(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        CodeImportDispatcher(self.logger).dispatchJobs()
+        CodeImportDispatcher(self.txn, self.logger).dispatchJobs()
 
 
 if __name__ == '__main__':

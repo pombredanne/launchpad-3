@@ -17,7 +17,8 @@ from zope.component import getUtility
 from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    CodeImportMachineState, ICodeImportJobSet, ICodeImportMachineSet)
+    CodeImportMachineOfflineReason, CodeImportMachineState, ICodeImportJobSet,
+    ICodeImportMachineSet)
 
 
 class CodeImportDispatcher:
@@ -26,11 +27,10 @@ class CodeImportDispatcher:
     worker_script = os.path.join(
         get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
 
-    def __init__(self, logger):
+    def __init__(self, txn, logger):
         """XXX."""
+        self.txn = txn
         self.logger = logger
-        self.machine = getUtility(ICodeImportMachineSet).getByHostname(
-            self.getHostname())
 
     def getHostname(self):
         """XXX."""
@@ -48,30 +48,33 @@ class CodeImportDispatcher:
         subprocess.Popen(
             [self.worker_script, str(job_id), '-vv', '--log-file', log_file])
 
-    def getJobId(self):
+    def getJobForMachine(self, machine):
         """XXX."""
         server_proxy = xmlrpclib.ServerProxy(
-            'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler')
-            #config.codeimport.codeimportscheduler_url)
-        return server_proxy.getJobForMachine(self.machine.hostname)
+            config.codeimport.codeimportscheduler_url)
+        return server_proxy.getJobForMachine(machine.hostname)
 
     def dispatchJobs(self):
         """XXX."""
 
-        if self.machine.state == CodeImportMachineState.OFFLINE:
+        machine = getUtility(ICodeImportMachineSet).getByHostname(
+            self.getHostname())
+
+        if machine.state == CodeImportMachineState.OFFLINE:
             self.logger.info(
                 "Machine is in OFFLINE state, not looking for jobs.")
             return
 
         job_set = getUtility(ICodeImportJobSet)
-        job_count = job_set.getJobsRunningOnMachine(self.machine).count()
+        job_count = job_set.getJobsRunningOnMachine(machine).count()
 
-        if self.machine.state == CodeImportMachineState.QUIESCING:
+        if machine.state == CodeImportMachineState.QUIESCING:
             if job_count == 0:
                 self.logger.info(
                     "Machine is in QUIESCING state and no jobs running, "
                     "going OFFLINE.")
-                self.machine.goOffline()
+                machine.setOffline(
+                    CodeImportMachineOfflineReason.QUIESCED)
                 # This is the only case where we modify the database.
                 self.txn.commit()
                 return
@@ -79,11 +82,11 @@ class CodeImportDispatcher:
                 "Machine is in QUIESCING state, not looking for jobs.")
             return
 
-        if job_count > 9: # Magic number!
+        if job_count >= config.codeimportdispatcher.max_jobs_per_machine:
             # There are enough jobs running on this machine already.
             return
 
-        job_id = self.getJobId()
+        job_id = self.getJobForMachine(machine)
 
         if job_id == 0:
             # There are no jobs that need to be run.
