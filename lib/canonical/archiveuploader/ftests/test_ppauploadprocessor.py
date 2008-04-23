@@ -54,7 +54,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             purpose=ArchivePurpose.PPA)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
-        self.breezy['i386'].ppa_supported = True
+        self.breezy['i386'].supports_virtualized = True
         self.layer.txn.commit()
 
         # Set up the uploadprocessor with appropriate options and logger
@@ -988,7 +988,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         """
         # Make all breezy architectures PPA-supported.
         for distroarchseries in self.breezy.architectures:
-            distroarchseries.ppa_supported = True
+            distroarchseries.supports_virtualized = True
 
         # We need to publish an architecture-independent package
         # for a couple of distroseries in a PPA.
