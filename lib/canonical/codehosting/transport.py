@@ -492,16 +492,12 @@ class LaunchpadServer(Server):
         unregister_transport(self.scheme, self._factory)
 
 
-class LaunchpadTransport(Transport):
-    """Transport to map from ~user/product/branch paths to codehosting paths.
+class VirtualTransport(Transport):
+    """A transport for a virtual file system.
 
-    Launchpad serves its branches from URLs that look like
-    bzr+ssh://launchpad/~user/product/branch. On the filesystem, the branches
-    are stored by their id.
-
-    This transport maps from the external, 'virtual' paths to the internal
-    filesystem paths. The internal filesystem is represented by a backing
-    transport.
+    Assumes that it has a 'server' which implements 'translateVirtualPath'.
+    This method is expected to take an absolute virtual path and translate it
+    into a real transport and a path on that transport.
     """
 
     def __init__(self, server, url):
@@ -515,30 +511,26 @@ class LaunchpadTransport(Transport):
 
     def _abspath(self, relpath):
         """Return the absolute path to `relpath` without the schema."""
-        return urlutils.joinpath(self.base[len(self.server.scheme)-1:],
-                                 relpath)
+        return urlutils.joinpath(
+            self.base[len(self.server.scheme)-1:], relpath)
 
-    def _call(self, methodname, relpath, *args, **kwargs):
+    def _getUnderylingTransportAndPath(self, relpath):
+        """Return the underlying transport and path for `relpath`.
+        """
+        virtual_path = self._abspath(relpath)
+        transport, path = self.server.translateVirtualPath(virtual_path)
+        return transport, path
+
+    def _call(self, method_name, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
         virtual paths to filesystem paths.
 
         If 'relpath' translates to a path that we only have read-access to,
         then the method will be called on the backing transport decorated with
         'readonly+'.
-
-        :raise NoSuchFile: If the path cannot be translated.
-        :raise TransportNotPossible: If trying to do a write operation on a
-            read-only path.
         """
-        virtual_path = self._abspath(relpath)
-        try:
-            transport, path = self.server.translateVirtualPath(virtual_path)
-        except NotABranchPath, e:
-            # If a virtual path doesn't point to a branch, then we cannot
-            # translate it to an underlying transport. For almost all
-            # purposes, this is as good as not existing at all.
-            raise NoSuchFile(e.virtual_path)
-        method = getattr(transport, methodname)
+        transport, path = self._getUnderylingTransportAndPath(relpath)
+        method = getattr(transport, method_name)
         return method(path, *args, **kwargs)
 
     # Transport methods
@@ -550,9 +542,9 @@ class LaunchpadTransport(Transport):
 
     def clone(self, relpath=None):
         if relpath is None:
-            return LaunchpadTransport(self.server, self.base)
+            return self.__class__(self.server, self.base)
         else:
-            return LaunchpadTransport(
+            return self.__class__(
                 self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
@@ -568,11 +560,11 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
-        transport, path = self.server.translateVirtualPath(self._abspath('.'))
+        transport, path = self._getUnderylingTransportAndPath('.')
         return transport.clone(path).iter_files_recursive()
 
     def listable(self):
-        transport, path = self.server.translateVirtualPath(self._abspath('.'))
+        transport, path = self._getUnderylingTransportAndPath('.')
         return transport.listable()
 
     def list_dir(self, relpath):
@@ -585,8 +577,52 @@ class LaunchpadTransport(Transport):
         return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
+        return self._call('mkdir', relpath, mode)
+
+    def put_file(self, relpath, f, mode=None):
+        return self._call('put_file', relpath, f, mode)
+
+    def rename(self, rel_from, rel_to):
+        to_transport, to_path = self._getUnderylingTransportAndPath(rel_to)
+        from_transport, from_path = self._getUnderylingTransportAndPath(
+            rel_from)
+        if to_transport is not from_transport:
+            raise TransportNotPossible(
+                'cannot move between underlying transports')
+        return getattr(from_transport, 'rename')(from_path, to_path)
+
+    def rmdir(self, relpath):
+        return self._call('rmdir', relpath)
+
+    def stat(self, relpath):
+        return self._call('stat', relpath)
+
+
+class LaunchpadTransport(VirtualTransport):
+    """Transport to map from ~user/product/branch paths to codehosting paths.
+
+    Launchpad serves its branches from URLs that look like
+    bzr+ssh://launchpad/~user/product/branch. On the filesystem, the branches
+    are stored by their id.
+
+    This transport maps from the external, 'virtual' paths to the internal
+    filesystem paths. The internal filesystem is represented by a backing
+    transport.
+    """
+
+    def _getUnderylingTransportAndPath(self, relpath):
         try:
-            return self._call('mkdir', relpath, mode)
+            return VirtualTransport._getUnderylingTransportAndPath(
+                self, relpath)
+        except NotABranchPath, e:
+            # If a virtual path doesn't point to a branch, then we cannot
+            # translate it to an underlying transport. For almost all
+            # purposes, this is as good as not existing at all.
+            raise NoSuchFile(e.virtual_path)
+
+    def mkdir(self, relpath, mode=None):
+        try:
+            return VirtualTransport.mkdir(self, relpath, mode)
         except BranchNotFound:
             # Looks like we are trying to make a branch.
             virtual_path = self._abspath(relpath)
@@ -603,29 +639,15 @@ class LaunchpadTransport(Transport):
             # error on the underlying system".
             raise PermissionDenied(relpath)
 
-    def put_file(self, relpath, f, mode=None):
-        return self._call('put_file', relpath, f, mode)
-
     def rename(self, rel_from, rel_to):
-        abs_to = self._abspath(rel_to)
-        transport, path = self.server.translateVirtualPath(abs_to)
-        # XXX: JonathanLange 2008-04-23: This is a horrible lie. What we
-        # should check is that the transport of rel_to is the same as the
-        # transport of rel_from. At the moment the `_call` abstraction gets in
-        # the way.
-        if transport.is_readonly():
-            raise TransportNotPossible('readonly transport')
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
             self.server.requestMirror(abs_from)
-        return self._call('rename', rel_from, path)
+        return VirtualTransport.rename(self, rel_from, rel_to)
 
     def rmdir(self, relpath):
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
             raise PermissionDenied(virtual_path)
-        return self._call('rmdir', relpath)
-
-    def stat(self, relpath):
-        return self._call('stat', relpath)
+        return VirtualTransport.rmdir(self, relpath)
