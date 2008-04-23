@@ -91,6 +91,7 @@ class ICollectionResource(IHTTPResource):
         :return: A string representation.
         """
 
+
 class IResourceOperation(Interface):
     """A one-off operation invokable on a resource."""
 
@@ -147,7 +148,6 @@ class IScopedCollection(ICollection):
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
-
 
 
 class WebServiceLayer(IDefaultBrowserLayer):

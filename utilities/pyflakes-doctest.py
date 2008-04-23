@@ -59,6 +59,8 @@ GLOBAL_NAMES = set([
     'webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
+    # For buildd tests
+    'test_dbuser'
     ])
 
 

@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces import (
     IShippingRequestSet,
     ISpecificationSet,
     IStandardShipItRequestSet,
+    ITranslationGroupSet,
     License,
     PersonCreationRationale,
     RevisionControlSystems,
@@ -130,7 +131,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = self.getUniqueString('email')
+            email = "%s@example.com" % self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -165,6 +166,18 @@ class LaunchpadObjectFactory:
         team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
         team_member.join(team, team)
         return team
+
+    def makeTranslationGroup(
+        self, owner, name=None, title=None, summary=None):
+        """Create a new, arbitrary `TranslationGroup`."""
+        if name is None:
+            name = self.getUniqueString("translationgroup")
+        if title is None:
+            title = self.getUniqueString("title")
+        if summary is None:
+            summary = self.getUniqueString("summary")
+        return getUtility(ITranslationGroupSet).new(
+            name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None):
         """Create and return a new, arbitrary Product."""

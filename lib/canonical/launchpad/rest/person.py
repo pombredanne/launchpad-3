@@ -20,9 +20,10 @@ from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 from canonical.lazr.rest import ResourceGETOperation, ResourcePOSTOperation
 
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, IPerson, ILaunchBag, ITeamMembership,
-    PersonCreationRationale, TeamMembershipStatus)
+    EmailAddressAlreadyTaken, ILaunchBag, IPerson, ITeamMembership,
+    NameAlreadyTaken, PersonCreationRationale, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr import decorates
@@ -32,7 +33,9 @@ class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
     use_template(IPerson, include=["name", "displayname", "datecreated"])
 
-    teamowner = Object(schema=IPerson, title=u"Team owner")
+    teamowner = PublicPersonChoice(
+        title=u'Team owner', required=False, readonly=False,
+        vocabulary='ValidTeamOwner')
 
     members = CollectionField(value_type=Object(schema=IPerson))
     team_memberships = CollectionField(
@@ -149,16 +152,10 @@ class PersonFactoryOperation(ResourcePOSTOperation):
                 email_address,
                 PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
                 comment, name, display_name, password, registrant=user)
-        except EmailAddressAlreadyTaken:
+        except (NameAlreadyTaken, EmailAddressAlreadyTaken), error:
             self.request.response.setStatus(409) # Conflict
-            return "The email address '%s' is already in use." % email_address
-        if person is None:
-            # XXX leonardr 2008-04-01 bug=210389
-            # Unfortunately we don't know why person creation failed,
-            # only that it did fail.
-            self.request.response.setStatus(400)
-        else:
-            self.request.response.setStatus(201)
-            self.request.response.setHeader("Location",
-                                            canonical_url(person))
+            return str(error)
+        self.request.response.setStatus(201)
+        self.request.response.setHeader("Location",
+                                        canonical_url(person))
         return ''

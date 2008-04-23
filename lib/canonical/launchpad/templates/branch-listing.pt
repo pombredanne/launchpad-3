@@ -82,7 +82,20 @@ registerLaunchpadFunction(hookUpFilterSubmission);
              tal:content="branch/unique_name">
                Name
           </a>
-          <em tal:condition="branch/is_development_focus">&nbsp;Current development focus</em>
+          <tal:associated-series repeat="series branch/associated_product_series">
+            <tal:first-series condition="repeat/series/start">
+              <br/><strong>Series:</strong>
+            </tal:first-series>
+            <tal:comment condition="nothing">
+              The lack of whitespace in the following tal expression
+              is there to make sure the comma immediately follows the series
+              link rather than having a space after it.
+            </tal:comment>
+            <tal:series-link>
+              <a tal:attributes="href series/fmt:url" tal:content="series/name">
+                trunk
+              </a></tal:series-link><tal:comma condition="not: repeat/series/end">,</tal:comma>
+          </tal:associated-series>
         </td>
         <td align="right" style="padding-right: 5px">
           <tal:badges replace="structure branch/badges:small"/>

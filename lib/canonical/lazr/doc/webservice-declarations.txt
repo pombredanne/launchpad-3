@@ -45,7 +45,7 @@ field, but not the inventory_number field.
     ...     export_field(author)
     ...
     ...     base_price = Float(title=u"The regular price of the book.")
-    ...     export_field(base_price, as='price')
+    ...     export_field(base_price, export_as='price')
     ...
     ...     inventory_number = TextLine(title=u'The inventory part number.')
 
@@ -53,13 +53,12 @@ These declarations adds tagged value to the original interface elements.
 The tags are in the lazr.webservice namespace and are dictionaries of
 elements.
 
+    >>> from pprint import pformat
     >>> def print_export_tag(element):
     ...     """Print the content of the 'lazr.webservice.exported' tag."""
     ...     def format_value(value):
     ...         if isinstance(value, dict):
-    ...             return "{%s}" % ",\n    ".join(
-    ...                 "'%s': %s" % (key, value)
-    ...                 for key, value  in sorted(value.items()))
+    ...             return pformat(value)
     ...         else:
     ...             return repr(value)
     ...     tag = element.queryTaggedValue('lazr.webservice.exported')
@@ -241,13 +240,13 @@ available as a POST operation on the exported resource, with the
 addition that the result of the method is a new object and the HTTP
 status code will be set appropriately.
 
-All these decorators will interpret their keyword parameters as a
-specification of the parameters that the operation supports. The
-parameter names is the name of the parameter in the underlying method,
-and the value should be an IField describing the parameter type.
+The specification of the web service's acceptable method
+parameters should be described using decorator arguments, which are
+normal IField instances.
 
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_as, export_factory_operation, export_read_operation)
+    ...     export_as, export_factory_operation, export_read_operation,
+    ...     export_parameters_as)
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_collection()
@@ -259,9 +258,10 @@ and the value should be an IField describing the parameter type.
     ...         """Return list of books containing 'text'."""
     ...
     ...     @export_as('create_book')
+    ...     @export_parameters_as(base_price='price')
     ...     @export_factory_operation(
     ...         author=TextLine(title=u"The author's name."),
-    ...         base_price=Float(__name__='price', title=u"The price."),
+    ...         base_price=Float(title=u"The price."),
     ...         title=TextLine(title=u"The title."))
     ...     def new(author, base_price, title):
     ...         """Create a new book."""
@@ -272,11 +272,9 @@ the internal API.  It is possible to export a method under a different
 name by using the @export_as decorator which takes the name under which
 the method should be exported.
 
-Also when the name of the parameter as exported on the web
-service should be different than in the underlying method,
-you can set the __name__ of the Field to the name as it should be exported
-on the webservice. In the example, the 'base_price' parameter will be
-called 'price' when exported on the web service.
+The @export_parameters_as decorator can be used to rename the method
+parameters on the web service.  In the example, the 'base_price' parameter
+will be called 'price' when exported on the web service.
 
 When some required parameters of the method should not be provided by
 the webservice client, it is possible to use the @call_with decorator to
@@ -290,9 +288,9 @@ user.
     ...     """IBook with some methods."""
     ...     export_entry()
     ...
-    ...     @call_with(who=REQUEST_USER)
+    ...     @call_with(who=REQUEST_USER, kind='normal')
     ...     @export_write_operation()
-    ...     def checkout(who):
+    ...     def checkout(who, kind):
     ...         """Check this book out."""
 
 Like other declarations, these will add tagged value on the interface
@@ -314,7 +312,7 @@ method.
 
     >>> print_export_tag(IBookOnSteroids['checkout'])
     as: 'checkout'
-    call_with: {'who': <object...>}
+    call_with: {'kind': 'normal', 'who': <object...>}
     params: {}
     type: 'write_operation'
 
@@ -331,7 +329,7 @@ exported under the same name:
 These decorators can only be used from within an interface definition:
 
     >>> @export_as('test')
-    ... def a_method(self): pass
+    ... def a_method1(self): pass
     Traceback (most recent call last):
       ...
     TypeError: export_as() can only be used from within an interface
@@ -344,7 +342,7 @@ These decorators can only be used from within an interface definition:
     TypeError: export_read_operation() can only be used from within an
     interface definition.
 
-An error is also reported, if not enough parameters are defined as
+An error is also reported if not enough parameters are defined as
 exported:
 
     >>> class MissingParameter(Interface):
@@ -387,6 +385,26 @@ All parameters definitions must be schema fields:
       ...
     TypeError: export definition of "a_param" in method "a_method" must
     provide IField: <object...>
+
+Renaming a parameter that wasn't defined results in an error:
+
+    >>> class NonExistentParameter(Interface):
+    ...     @export_parameters_as(param1='name', param2='name2')
+    ...     @export_read_operation(param1=TextLine())
+    ...     def a_method(param1): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: export_parameters_as(): no "param2" parameter is exported.
+
+Trying to use @export_parameters_as without exporting the method also
+results in an error.
+
+    >>> class MissingMethodExport(Interface):
+    ...     @export_parameters_as(a_param='name')
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: "a_method" isn't exported on the webservice.
 
 
 === Export and inheritance ===
