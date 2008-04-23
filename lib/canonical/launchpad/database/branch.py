@@ -609,11 +609,8 @@ class Branch(SQLBase):
         if break_references:
             self._breakReferences()
         if self.canBeDeleted():
-            # Delete any branch revisions.
-            branch_ancestry = BranchRevision.selectBy(branch=self)
-            for branch_revision in branch_ancestry:
-                BranchRevision.delete(branch_revision.id)
-            # Now delete the branch itself.
+            # BranchRevisions are taken care of a cascading delete
+            # in the database.
             SQLBase.destroySelf(self)
         else:
             raise CannotDeleteBranch(
