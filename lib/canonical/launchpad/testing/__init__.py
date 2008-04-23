@@ -37,7 +37,7 @@ class TestCaseWithFactory(TestCase):
 
 
 def capture_events(callable_obj, *args, **kwargs):
-    """Capture the events emitted by a callable
+    """Capture the events emitted by a callable.
 
     :param event_type: The type of event that notification is expected
         for.

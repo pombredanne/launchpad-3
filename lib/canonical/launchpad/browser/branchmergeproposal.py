@@ -20,7 +20,7 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
-from zope.event import notify
+from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Int
@@ -45,14 +45,23 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 
 
-def update_and_notify(func):
-    """Decorate an action to update from a form and send a notification"""
-    def decorator(view, action, data):
+def notify(func):
+    """Decorate a view method to send a notification."""
+    def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
+        result = func(view, *args, **kwargs)
+        zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        return result
+    return decorator
+
+
+def update_and_notify(func):
+    """Decorate an action to update from a form and send a notification."""
+    @notify
+    def decorator(view, action, data):
         result = func(view, action, data)
         form.applyChanges(
             view.context, view.form_fields, data, view.adapters)
-        notify(SQLObjectModifiedEvent(view.context, snapshot, []))
         return result
     return decorator
 
@@ -473,6 +482,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Mark as Merged', name='mark_merged')
+    @notify
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
@@ -480,12 +490,9 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
                 'The proposal has already been marked as merged.')
         else:
             revno = data['merged_revno']
-            @update_and_notify
-            def do_mark_merged(self, action, data):
-                self.context.markAsMerged(revno, merge_reporter=self.user)
-                self.request.response.addNotification(
-                    'The proposal has now been marked as merged.')
-            do_mark_merged(self, action, {})
+            self.context.markAsMerged(revno, merge_reporter=self.user)
+            self.request.response.addNotification(
+                'The proposal has now been marked as merged.')
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
