@@ -416,25 +416,22 @@ class LaunchpadServer(Server):
         self._is_set_up = False
 
     def _getBranch(self, virtual_path):
-        try:
-            return LaunchpadBranch.from_virtual_path(
-                self._authserver, virtual_path)
-        except NotABranchPath:
-            raise NoSuchFile(virtual_path)
+        return LaunchpadBranch.from_virtual_path(
+            self._authserver, virtual_path)
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
 
-        If the request is to make a user or a product directory, fail
-        with PermissionDenied error. If the request is to make a
-        branch directory, create the branch in the database then
-        create a matching directory on the backing transport.
+        If the request is to make a user or a product directory, fail with
+        PermissionDenied error. If the request is to make a branch directory,
+        create the branch in the database then create a matching directory on
+        the backing transport.
         """
         try:
-            # XXX: the tests seem to expect that we should raise a
-            # PermissionDenied here. Hmm. Find out why.
             branch, ignored = self._getBranch(virtual_path)
-        except NoSuchFile:
+        except NotABranchPath:
+            # If virtual_path is not the path to a branch (or a path within a
+            # branch), we forbid it to be created.
             raise PermissionDenied(virtual_path)
 
         branch_id = branch.create()
@@ -450,7 +447,12 @@ class LaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        branch, path = self._getBranch(virtual_path)
+        try:
+            branch, path = self._getBranch(virtual_path)
+        except NotABranchPath:
+            # If virtual_path doesn't point to a branch, then we cannot
+            # translate it to a path on the underlying transports.
+            raise NoSuchFile(virtual_path)
 
         try:
             real_path = branch.getRealPath(path)
@@ -589,9 +591,6 @@ class LaunchpadTransport(Transport):
         return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
-        # If we can't translate the path, then perhaps we are being asked to
-        # create a new branch directory. Delegate to the server, as it knows
-        # how to deal with absolute virtual paths.
         try:
             return self._call('mkdir', relpath, mode)
         except BranchNotFound:
@@ -608,8 +607,10 @@ class LaunchpadTransport(Transport):
     def rename(self, rel_from, rel_to):
         abs_to = self._abspath(rel_to)
         transport, path = self.server.translateVirtualPath(abs_to)
-        # This is a horrible lie. What we should check is that the transport
-        # of rel_to is the same as the transport of rel_from.
+        # XXX: JonathanLange 2008-04-23: This is a horrible lie. What we
+        # should check is that the transport of rel_to is the same as the
+        # transport of rel_from. At the moment the `_call` abstraction gets in
+        # the way.
         if transport.is_readonly():
             raise TransportNotPossible('readonly transport')
         abs_from = self._abspath(rel_from)
