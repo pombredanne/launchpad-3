@@ -6,13 +6,10 @@
 <body>
 
 <div metal:fill-slot="main">
-  <div metal:use-macro="context/@@launchpad_form/form">
-    <metal:extra-info fill-slot="extra_info">
-
-      <span tal:condition="not: view/hold_count">
-      There are no mailing list messages requiring your review.
-      </span>
-      <span tal:condition="view/hold_count">
+  <h1>Mailing list moderation</h1>
+  <div tal:condition="view/hold_count">
+    <metal:form metal:use-macro="context/@@launchpad_form/form">
+      <span metal:fill-slot="extra_top">
 
         <span tal:replace="view/hold_count">X</span>
         <span tal:condition="python: view.hold_count == 1">
@@ -35,18 +32,20 @@
           <li><strong>Hold</strong> - Continue to hold the message, deferring
           your decision until later.
         </ul>
-
-        <table class="listing">
-          <thead><tr>
-            <th>Message details</th>
-            <th>Approve</th><th>Decline</th><th>Discard</th><th>Hold</th>
-          </tr></thead>
-          <span tal:repeat="message view/held_messages"
-               tal:content="structure message/@@+moderation" />
-        </table>
       </span>
-    </metal:extra-info>
+      <table class="listing" metal:fill-slot="widgets">
+        <thead><tr>
+          <th>Message details</th>
+          <th>Approve</th><th>Decline</th><th>Discard</th><th>Hold</th>
+        </tr></thead>
+        <span tal:repeat="message view/held_messages"
+             tal:content="structure message/@@+moderation" />
+      </table>
+    </metal:form>
   </div>
+  <p tal:condition="not: view/hold_count">
+  There are no mailing list messages requiring your review.
+  </p>
 </div>
 
 </body>

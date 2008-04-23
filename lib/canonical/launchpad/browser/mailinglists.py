@@ -14,7 +14,7 @@ from email import message_from_string
 from email.Header import decode_header, make_header
 from itertools import repeat
 from textwrap import TextWrapper
-from urllib import quote, unquote
+from urllib import quote
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -116,7 +116,7 @@ class HeldMessageView:
         from zope.security.proxy import removeSecurityProxy
         naked_message = removeSecurityProxy(messages[0])
         self.message_id = self.context.message_id
-        self.widget_name = quote(self.message_id)
+        self.widget_name = 'field.' + quote(self.message_id)
         self.message = naked_message
         self.subject = self.message.subject
         self.date = self.message.datecreated

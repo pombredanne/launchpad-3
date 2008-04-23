@@ -13,6 +13,8 @@ __all__ = [
     'TeamMemberAddView',
     ]
 
+from urllib import quote, unquote
+
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
@@ -38,8 +40,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus,
-    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
+    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
+    PostedMessageStatus, TeamContactMethod, TeamMembershipStatus,
     TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
@@ -606,6 +608,32 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
     @action('Moderate', name='moderate')
     def moderate_action(self, action, data):
         """Commits the moderation actions."""
+        # We're somewhat abusing LaunchpadFormView, so the interesting bits
+        # won't be in data.  Instead, get it out of the request.
+        for message in self.held_messages:
+            action_name = self.request.form_ng.getOne(
+                'field.' + quote(message.message_id))
+            # This essentially acts like a switch statement or if/elifs.  It
+            # looks the action up in a map of allowed actions, watching out
+            # for bogus input.
+            try:
+                action, status = dict(
+                    approve=(message.approve, PostedMessageStatus.APPROVED),
+                    reject=(message.reject, PostedMessageStatus.REJECTED),
+                    discard=(message.discard, PostedMessageStatus.DISCARDED),
+                    # hold is a no-op.  Using None here avoids the bogus input
+                    # trigger.
+                    hold=(None, None),
+                    )[action_name]
+            except KeyError:
+                raise UnexpectedFormData(
+                    'Invalid moderation action for held message %s: %s' %
+                    (message.message_id, action_name))
+            if action is not None:
+                action(self.user)
+                self.request.response.addInfoNotification(
+                    'Held message %s; Message-ID: %s' % (
+                        status.title.lower(), message.message_id))
         self.next_url = canonical_url(self.context)
 
 

@@ -20,10 +20,10 @@
     </span>
   </td>
   <td style="text-align: center">
-    <input type="radio" value="approve" name="myname"
+    <input type="radio" value="approve" name="myname" id="myid"
            tal:attributes="name view/widget_name"/></td>
   <td style="text-align: center">
-    <input type="radio" value="decline" name="myname"
+    <input type="radio" value="reject" name="myname"
            tal:attributes="name view/widget_name"/></td>
   <td style="text-align: center">
     <input type="radio" value="discard" name="myname"
