@@ -602,6 +602,10 @@ queue for merging branches that have been approved.
     ...         '~name12/firefox/main')
     >>> nopriv_browser.getControl('Register').click()
 
+Consume notification.
+
+    >>> [_unused] = pop_notifications()
+
     >>> nopriv_browser.getLink('view proposal details').click()
     >>> print_action_links(nopriv_browser.contents)
     Edit ...
@@ -616,6 +620,20 @@ Have Sample Person approve the branch.
     >>> sample_browser.getLink('view proposal details').click()
     >>> sample_browser.getLink('Review proposal').click()
     >>> sample_browser.getControl('Approve').click()
+
+    Approving a proposal causes a notification.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload()
+    The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox
+    Mainline h= as been updated.
+    <BLANKLINE>
+        Status: Work in progress =3D> Code approved
+    --
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merge/7
+    You are subscribed to branch Mozilla Firefox Mainline.
+    <BLANKLINE>
+
 
 No Privileges Person can now queue the branch.
 

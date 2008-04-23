@@ -393,10 +393,10 @@ class BranchMergeProposalReviewView(MergeProposalEditView,
         return {'revision_number': self.context.source_branch.revision_count}
 
     @action('Approve', name='approve')
+    @update_and_notify
     def approve_action(self, action, data):
         """Set the status to approved."""
         self.context.approveBranch(self.user, self._getRevisionId(data))
-        self.updateContextFromData(data)
 
     @action('Reject', name='reject')
     def reject_action(self, action, data):
