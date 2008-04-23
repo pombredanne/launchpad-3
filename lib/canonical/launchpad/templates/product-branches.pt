@@ -6,24 +6,25 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Bazaar branches for <tal:project-name replace="context/displayname"/></h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
+
+  <div style="float:right">
+    <div>
+      <a href="+addbranch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
+  </div>
+
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
 
   <tal:branchlisting content="structure branches/@@+branch-listing" />
 

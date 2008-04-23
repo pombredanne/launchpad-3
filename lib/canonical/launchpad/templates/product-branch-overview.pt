@@ -14,14 +14,34 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
-
   <div style="float:right">
-    <a href="+addbranch">
-      <img alt="Register a branch"
-           src="/+icing/but-lrg-registerabranch.gif"/>
-    </a>
+    <div>
+      <a href="+addbranch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
+    <div tal:condition="not: context/official_codehosting">
+      <tal:code-imports define="config modules/canonical.config/config">
+        <tal:production-site
+            condition="not: config/codeimport/expose_code_import">
+          <a href="https://help.launchpad.net/VcsImports">
+            <img alt="Import your project"
+                 src="/+icing/but-lrg-importyourproject.gif"/>
+          </a>
+        </tal:production-site>
+        <tal:non-production-site
+            condition="config/codeimport/expose_code_import">
+          <a href="/+code-imports/+new" id="new-code-import">
+            <img alt="Import your project"
+                 src="/+icing/but-lrg-importyourproject.gif"/>
+          </a>
+        </tal:non-production-site>
+      </tal:code-imports>
+      </div>
   </div>
+
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
 
   <tal:no-branches condition="not: view/branch_count">
     No branches...
@@ -37,24 +57,32 @@
     owned by
     <tal:individuals condition="view/person_owner_count">
       <strong tal:content="view/person_owner_count">42</strong>
-      <tal:people replace="view/person_text">people</tal:people>
-    </tal:individuals>
-
-    <tal:teams condition="view/team_owner_count">
+      <tal:people replace="view/person_text">people</tal:people
+    ></tal:individuals
+    ><tal:teams condition="view/team_owner_count">
       <tal:individuals condition="view/person_owner_count">
         and
       </tal:individuals>
       <strong tal:content="view/team_owner_count">1</strong>
-      <tal:people replace="view/team_text">team</tal:people>
-    </tal:teams>
-
-    <br/>
+      <tal:people replace="view/team_text">team</tal:people
+    ></tal:teams>,
 
     <strong tal:content="view/commit_count">23</strong>
-    commits by
-    <strong tal:content="view/committer_count">4</strong>
-    <tal:people replace="view/committer_text">people</tal:people>
+    <tal:commits replace="view/commit_text">commits</tal:commits>
+    <tal:has-committers condition="view/committer_count">
+      by
+      <strong tal:content="view/committer_count">4</strong>
+      <tal:people replace="view/committer_text">people</tal:people>
+    </tal:has-committers>
     in the last month
+
+    <div tal:condition="view/has_development_focus_branch"
+         style="margin: 1em 0">
+      You browse the source code for development focus branch
+      <a href="xxx">here</a>,
+      or get a copy of the branch using the command:<br/>
+      <tt style="padding-left:2em">bzr branch lp:<tal:project-name replace="context/name"/></tt><br/>
+    </div>
 
     </div>
 
@@ -73,11 +101,19 @@
       </div>
     </tal:missing-dev-focus>
 
+
     <div id="overview-branch-listing" style="margin-top: 1em">
     <tal:branchlisting
-        define="branches view/branches"
+        define="branches view/branches;
+                form_action string:+branches"
         content="structure branches/@@+branch-listing" />
     </div>
+
+    <p>
+      And <tal:branches-not-shown replace="view/unseen_branch_count">5
+      </tal:branches-not-shown> other branches.
+    </p>
+
   </tal:has-branches>
 
 

@@ -54,7 +54,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    BranchLifecycleStatusFilter, BranchListingSort,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
+    ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
     IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
@@ -1261,12 +1263,6 @@ class ProductBranchListingView(BranchListingView):
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @cachedproperty
-    def hide_dormant_initial_value(self):
-        """If there are more than one page of branches, hide dormant ones."""
-        page_size = config.launchpad.branchlisting_batch_size
-        return self.context.branches.count() > page_size
-
-    @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 
@@ -1293,6 +1289,20 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin):
     """Initial view for products on the code virtual host."""
 
     # TODO: getting code, and listings.
+
+    @property
+    def form_action(self):
+        return "+branches"
+
+    @property
+    def initial_values(self):
+        # The initial value of hiding dormant is based on the number
+        # of branches that there are
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
+            'hide_dormant': False,
+            }
 
     @property
     def branch_count(self):
@@ -1362,55 +1372,81 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin):
         return [series.series_branch for series in self.sorted_series_list
                 if series.series_branch is not None]
 
-    def _branches(self, lifecycle_status, show_dormant):
+    @cachedproperty
+    def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
         branch_query = getUtility(IBranchSet).getBranchesForProduct(
             product=self.context, visible_by_user=self.user,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch to be batches, so only get
         # the batch size - the number of series_branches.
         batch_size = config.launchpad.branchlisting_batch_size
         max_branches_from_query = batch_size - len(series_branches)
-        series_branches.extend(branch_query[:max_branches_from_query])
+        # We want to make sure that the series branches do not appear
+        # in our branch list.
+        branches = [
+            branch for branch in branch_query[:max_branches_from_query]
+            if branch not in series_branches]
+        series_branches.extend(branches)
         return series_branches
+
+    def _branches(self, lifecycle_status, show_dormant):
+        """Return the series branches, followed by most recently changed."""
+        # The params are ignored, and only used by the listing view.
+        return self.initial_branches
+
+    @property
+    def unseen_branch_count(self):
+        """How many branches are not shown."""
+        return self.branch_count - len(self.initial_branches)
 
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.context.development_focus.series_branch is not None
 
+    def _getPluralText(self, count, singular, plural):
+        if count == 1:
+            return singular
+        else:
+            return plural
+
     @property
     def branch_text(self):
-        if self.branch_count == 1:
-            return _('branch')
-        else:
-            return _('branches')
+        return self._getPluralText(
+            self.branch_count, _('branch'), _('branches'))
 
     @property
     def person_text(self):
-        if self.person_owner_count == 1:
-            return _('person')
-        else:
-            return _('people')
+        return self._getPluralText(
+            self.person_owner_count, _('person'), _('people'))
 
     @property
     def team_text(self):
-        if self.team_owner_count == 1:
-            return _('team')
-        else:
-            return _('teams')
+        return self._getPluralText(
+            self.team_owner_count, _('team'), _('teams'))
+
+    @property
+    def commit_text(self):
+        return self._getPluralText(
+            self.commit_count, _('commit'), _('commits'))
 
     @property
     def committer_text(self):
-        if self.committer_count == 1:
-            return _('person')
-        else:
-            return _('people')
+        return self._getPluralText(
+            self.committer_count, _('person'), _('people'))
 
 
 class ProductBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
+
+    @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
 
     def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
