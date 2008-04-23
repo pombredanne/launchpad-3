@@ -480,11 +480,12 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
                 'The proposal has already been marked as merged.')
         else:
             revno = data['merged_revno']
-            snapshot = BranchMergeProposalDelta.snapshot(self.context)
-            self.context.markAsMerged(revno, merge_reporter=self.user)
-            notify(SQLObjectModifiedEvent(self.context, snapshot, []))
-            self.request.response.addNotification(
-                'The proposal has now been marked as merged.')
+            @update_and_notify
+            def do_mark_merged(self, action, data):
+                self.context.markAsMerged(revno, merge_reporter=self.user)
+                self.request.response.addNotification(
+                    'The proposal has now been marked as merged.')
+            do_mark_merged(self, action, {})
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
