@@ -728,7 +728,7 @@ class ServiceRootResource:
             return self.do_GET(REQUEST)
         else:
             REQUEST.response.setStatus(405)
-            REQUEST.response.setStatus(405)
+            REQUEST.response.setHeader("Allow", "GET")
 
     def do_GET(self, request):
         """Describe the capabilities of the web service in WADL."""
