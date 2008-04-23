@@ -23,7 +23,7 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import classProvides, implements
+from zope.interface import implements
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound

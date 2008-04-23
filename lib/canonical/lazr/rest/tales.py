@@ -10,7 +10,6 @@ from zope.app.zapi import getGlobalSiteManager
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IChoice, IObject
-from zope.interface.declarations import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
