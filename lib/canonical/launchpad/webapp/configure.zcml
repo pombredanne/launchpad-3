@@ -599,4 +599,14 @@
       permission="zope.Public"
       />
 
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
+      permission="zope.Public"
+      />
+
 </configure>
