@@ -248,6 +248,7 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Set as work in progress', name='wip')
+    @notify
     def wip_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.setAsWorkInProgress()
