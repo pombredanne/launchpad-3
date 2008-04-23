@@ -621,8 +621,11 @@ class LaunchpadTransport(VirtualTransport):
             raise NoSuchFile(e.virtual_path)
 
     def mkdir(self, relpath, mode=None):
+        # We want different error handling for the NotABranchPath case, so
+        # we'll call the base translation method.
         try:
-            return VirtualTransport.mkdir(self, relpath, mode)
+            transport, path = VirtualTransport._getUnderylingTransportAndPath(
+                self, relpath)
         except BranchNotFound:
             # Looks like we are trying to make a branch.
             virtual_path = self._abspath(relpath)
@@ -632,12 +635,11 @@ class LaunchpadTransport(VirtualTransport):
                 # If virtual_path is not the path to a branch (or a path
                 # within a branch), we forbid it to be created.
                 raise PermissionDenied(virtual_path)
-        except NoSuchFile:
-            # The relpath is invalid for some reason.
-            # XXX: JonathanLange 2008-04-23: Unfortunately, this catches both
-            # "we can't translate the path into a branch" and "NoSuchFile
-            # error on the underlying system".
+        except NotABranchPath:
+            # You can't ever create a directory that's not even a valid branch
+            # name. That's strictly forbidden.
             raise PermissionDenied(relpath)
+        return getattr(transport, 'mkdir')(path, mode)
 
     def rename(self, rel_from, rel_to):
         abs_from = self._abspath(rel_from)
