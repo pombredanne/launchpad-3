@@ -601,7 +601,12 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
         :return: Sequence of held messages.
         """
-        return self.mailing_list.getReviewableMessages()        
+        return self.mailing_list.getReviewableMessages()
+
+    @action('Moderate', name='moderate')
+    def save_action(self, action, data):
+        """Commits the moderation actions."""
+        self.next_url = canonical_url(self.context)
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
@@ -737,4 +742,3 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
-

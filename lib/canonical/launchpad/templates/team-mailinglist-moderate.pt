@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
-    <div class="actions" metal:fill-slot="buttons">
+    <metal:extra-info fill-slot="extra_info">
 
       <span tal:condition="not: view/hold_count">
       There are no mailing list messages requiring your review.
@@ -44,10 +44,8 @@
           <span tal:repeat="message view/held_messages"
                tal:content="structure message/@@+moderation" />
         </table>
-
-          [Submit button goes here]
       </span>
-    </div>
+    </metal:extra-info>
   </div>
 </div>
 
