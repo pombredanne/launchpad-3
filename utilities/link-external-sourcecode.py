@@ -3,8 +3,8 @@
 import optparse
 
 from os import curdir, listdir, sep, symlink
-from os.path import abspath, exists, join, split
-from sys import argv, exit, stderr, stdout
+from os.path import realpath, exists, join
+from sys import stdout
 from urllib import unquote
 from urlparse import urlparse
 
@@ -86,8 +86,8 @@ if __name__ == '__main__':
             "Parent branch not specified, and could not be discovered.")
 
     missing_files = gen_missing_files(
-        abspath(join(options.parent, 'sourcecode')),
-        abspath(join(options.target, 'sourcecode')))
+        realpath(join(options.parent, 'sourcecode')),
+        join(options.target, 'sourcecode'))
 
     for target, link in missing_files:
         symlink(target, link)
