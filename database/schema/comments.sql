@@ -226,6 +226,7 @@ COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the peopl
 COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URLs for relevant pages in the bug tracker based on this baseurl.';
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
+COMMENT ON COLUMN BugTracker.block_comment_pushing IS 'Whether to block pushing comments to the bug tracker. Having a value of false means that we will push the comments if the bug tracker supports it.';
 
 -- BugTrackerAlias
 
