@@ -223,17 +223,17 @@ class CachingAuthserverClient:
 
 
 class LaunchpadBranch:
-    """A branch on Launchpad."""
+    """A branch on Launchpad.
 
-    # The interface for this object deliberately hides the owner, product,
-    # name shenanigans from the rest of the transport. Instead, it assumes:
-    # - that the actual Bazaar branch is stored in a different location to the
-    #   one where it is published.
-    # - that Launchpad branches need to be created
-    # - that they have an ID and permissions.
+    This abstractly represents a branch on Launchpad without exposing details
+    of the naming of Launchpad branches. It contains and maintains the
+    knowledge of how a virtual path, such as '~owner/product/branch' is
+    translated into the underlying storage systems.
 
-    #How do I say this more
-    # clearly?
+    It also exposes operations on Launchpad branches that we in turn expose
+    via the codehosting system. Namely, creating a branch and requesting that
+    a branch be mirrored.
+    """
 
     @classmethod
     def from_virtual_path(cls, authserver, virtual_path):
@@ -311,7 +311,14 @@ class LaunchpadBranch:
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
     def create(self):
-        """Create a branch in the database."""
+        """Create a branch in the database.
+
+        :raise TransportNotPossible: If the branch owner or product does not
+            exist.
+        :raise PermissionDenied: If the branch cannot be created in the
+            database. This might indicate that the branch already exists, or
+            that its creation is forbidden by a policy.
+        """
         try:
             return self._authserver.createBranch(
                 self._owner, self._product, self._name)
@@ -344,6 +351,10 @@ class LaunchpadBranch:
         """Return the 'real' path to a path within this branch.
 
         :param path_on_branch: A path within this branch.
+
+        :raise BranchNotFound: if the branch does not exist.
+        :raise PermissionDenied: if `path_on_branch` is forbidden.
+
         :return: A path relative to the base directory where all branches
             are stored. This path will look like '00/AB/02/43/.bzr/foo', where
             'AB0243' is the database ID of the branch expressed in hex and
@@ -393,8 +404,7 @@ class LaunchpadServer(Server):
 
     def __init__(self, authserver, user_id, hosting_transport,
                  mirror_transport):
-        """
-        Construct a LaunchpadServer.
+        """Construct a LaunchpadServer.
 
         :param authserver: An xmlrpclib.ServerProxy that points to the
             authserver.
@@ -421,22 +431,46 @@ class LaunchpadServer(Server):
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
 
-        If the request is to make a user or a product directory, fail with
-        PermissionDenied error. If the request is to make a branch directory,
-        create the branch in the database then create a matching directory on
-        the backing transport.
+        If `virtual_path` is a branch directory, create the branch in the
+        database, then create a matching directory on the backing transport.
+
+        :param virtual_path: A virtual path to be translated.
+
+        :raise NotABranchPath: If `virtual_path` does not have at least a
+            valid path to a branch.
+        :raise TransportNotPossible: If the branch owner or product does not
+            exist.
+        :raise PermissionDenied: If the branch cannot be created in the
+            database. This might indicate that the branch already exists, or
+            that its creation is forbidden by a policy.
         """
         branch, ignored = self._getBranch(virtual_path)
         branch_id = branch.create()
         branch.ensureUnderlyingPath(self._backing_transport)
 
     def requestMirror(self, virtual_path):
-        """Request that the branch that owns 'virtual_path' be mirrored."""
+        """Request that the branch that owns 'virtual_path' be mirrored.
+
+        :param virtual_path: A virtual path to be translated.
+
+        :raise NotABranchPath: If `virtual_path` does not have at least a
+            valid path to a branch.
+        """
         branch, ignored = self._getBranch(virtual_path)
         branch.requestMirror()
 
     def translateVirtualPath(self, virtual_path):
         """Translate 'virtual_path' into a transport and sub-path.
+
+        :param virtual_path: A virtual path to be translated.
+
+        :raise NotABranchPath: If `virtual_path` does not have at least a
+            valid path to a branch.
+        :raise BranchNotFound: If `virtual_path` looks like a path to a
+            branch, but there is no branch in the database that matches.
+        :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
+            branch.
+        :raise PermissionDenied: if the path on the branch is forbidden.
 
         :return: (transport, path_on_transport)
         """
@@ -515,8 +549,7 @@ class VirtualTransport(Transport):
             self.base[len(self.server.scheme)-1:], relpath)
 
     def _getUnderylingTransportAndPath(self, relpath):
-        """Return the underlying transport and path for `relpath`.
-        """
+        """Return the underlying transport and path for `relpath`."""
         virtual_path = self._abspath(relpath)
         transport, path = self.server.translateVirtualPath(virtual_path)
         return transport, path
@@ -535,6 +568,7 @@ class VirtualTransport(Transport):
 
     # Transport methods
     def abspath(self, relpath):
+        # XXX: JonathanLange 2008-04-23: This looks wrong.
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
@@ -599,15 +633,14 @@ class VirtualTransport(Transport):
 
 
 class LaunchpadTransport(VirtualTransport):
-    """Transport to map from ~user/product/branch paths to codehosting paths.
+    """Virtual transport to implement the Launchpad VFS for branches.
 
-    Launchpad serves its branches from URLs that look like
-    bzr+ssh://launchpad/~user/product/branch. On the filesystem, the branches
-    are stored by their id.
+    This implements a few hooks to translate filesystem operations (such as
+    making a certain kind of directory) into Launchpad operations (such as
+    creating a branch in the database).
 
-    This transport maps from the external, 'virtual' paths to the internal
-    filesystem paths. The internal filesystem is represented by a backing
-    transport.
+    It also converts the Launchpad-specific translation errors (such as 'not a
+    valid branch path') into Bazaar errors (such as 'no such file').
     """
 
     def _getUnderylingTransportAndPath(self, relpath):
@@ -621,20 +654,19 @@ class LaunchpadTransport(VirtualTransport):
             raise NoSuchFile(e.virtual_path)
 
     def mkdir(self, relpath, mode=None):
-        # We want different error handling for the NotABranchPath case, so
-        # we'll call the base translation method.
+        # We hook into mkdir so that we can request the creation of a branch
+        # and so that we can provide useful errors in the special case where
+        # the user tries to make a directory like "~foo/bar". That is, a
+        # directory that has too little information to be translated into a
+        # Launchpad branch.
         try:
+            # We want different error handling for the NotABranchPath case, so
+            # we'll call the base translation method.
             transport, path = VirtualTransport._getUnderylingTransportAndPath(
                 self, relpath)
         except BranchNotFound:
             # Looks like we are trying to make a branch.
-            virtual_path = self._abspath(relpath)
-            try:
-                return self.server.createBranch(virtual_path)
-            except NotABranchPath:
-                # If virtual_path is not the path to a branch (or a path
-                # within a branch), we forbid it to be created.
-                raise PermissionDenied(virtual_path)
+            return self.server.createBranch(self._abspath(relpath))
         except NotABranchPath:
             # You can't ever create a directory that's not even a valid branch
             # name. That's strictly forbidden.
@@ -642,12 +674,16 @@ class LaunchpadTransport(VirtualTransport):
         return getattr(transport, 'mkdir')(path, mode)
 
     def rename(self, rel_from, rel_to):
+        # We hook into rename to catch the "unlock branch" event, so that we
+        # can request a mirror once a branch is unlocked.
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
             self.server.requestMirror(abs_from)
         return VirtualTransport.rename(self, rel_from, rel_to)
 
     def rmdir(self, relpath):
+        # We hook into rmdir in order to prevent users from deleting branches,
+        # products and people from the VFS.
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
