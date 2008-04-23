@@ -1,0 +1,9 @@
+[&nbsp;
+<tal:link repeat="link view/links">
+  <tal:separator condition="not: repeat/link/start">|&nbsp;</tal:separator>
+  <tal:link-content replace="structure link/@@+link">
+    Link
+  </tal:link-content>
+  &nbsp;
+</tal:link>
+]
