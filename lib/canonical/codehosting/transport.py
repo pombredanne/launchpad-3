@@ -568,8 +568,7 @@ class VirtualTransport(Transport):
 
     # Transport methods
     def abspath(self, relpath):
-        # XXX: JonathanLange 2008-04-23: This looks wrong.
-        return urlutils.join(self.server.scheme, relpath)
+        return urlutils.join(self.base, relpath)
 
     def append_file(self, relpath, f, mode=None):
         return self._call('append_file', relpath, f, mode)
