@@ -125,9 +125,6 @@ class MozillaZipFile:
                 jarf = MozillaZipFile(filename=entry, xpi_path=file_subpath,
                     content=data, manifest=manifest)
                 self.extend(jarf.messages)
-            elif entry == 'install.rdf':
-                data = zip.read(entry)
-                self.header = MozillaHeader(data)
             else:
                 # Not a file we know what to do with.
                 pass
@@ -496,16 +493,19 @@ class MozillaXpiImporter:
 
     uses_source_string_msgids = True
 
-    def _extract_manifest(self, zipcontent):
-        """Extract manifest file from zipfile (passed as content string)."""
+    def _extract_manifest(self, zip, contained_files):
+        """Extract manifest file from `ZipFile`."""
         manifest_names = ['chrome.manifest', 'en-US.manifest']
-        zip = ZipFile(StringIO(zipcontent), 'r')
-        contained_files = set(zip.namelist())
         for filename in manifest_names:
             if filename in contained_files:
                 return XpiManifest(zip.read(filename))
 
         return None
+
+    def _extract_install_rdf(self, zip, contained_files):
+        if 'install.rdf' not in contained_files:
+            raise TranslationFormatInvalidInputError("No install.rdf found")
+        return MozillaHeader(zip.read('install.rdf'))
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
@@ -521,11 +521,19 @@ class MozillaXpiImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
+        # Before going into MozillaZipFile, extract metadata.
         content = self.content.read()
-        manifest = self._extract_manifest(content)
+        zip = ZipFile(StringIO(content), 'r')
+        contained_files = set(zip.namelist())
+        manifest = self._extract_manifest(zip, contained_files)
+        header = self._extract_install_rdf(zip, contained_files)
+
+        # Forget this ZipFile; MozillaZipFile will open a new one.
+        zip = None
+
         parser = MozillaZipFile(self.basepath, content, manifest=manifest)
 
-        self._translation_file.header = parser.header
+        self._translation_file.header = header
         self._translation_file.messages = parser.messages
 
         return self._translation_file
