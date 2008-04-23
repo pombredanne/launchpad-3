@@ -46,7 +46,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 
 
 def notify(func):
-    """Decorate a view method to send a notification"""
+    """Decorate a view method to send a notification."""
     def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
         result = func(view, *args, **kwargs)
@@ -56,7 +56,7 @@ def notify(func):
 
 
 def update_and_notify(func):
-    """Decorate an action to update from a form and send a notification"""
+    """Decorate an action to update from a form and send a notification."""
     @notify
     def decorator(view, action, data):
         result = func(view, action, data)
