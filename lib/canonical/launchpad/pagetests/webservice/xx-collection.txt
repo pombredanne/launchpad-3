@@ -179,8 +179,9 @@ person with a name that's taken.
 
   >>> print create_person("serviceuser3@example.com", "", "serviceuser",
   ...                     "Name already taken", "password")
-  HTTP/1.1 400 Bad Request
+  HTTP/1.1 409 Conflict
   ...
+  The name 'serviceuser' is already taken.
 
 You also can't create a person with an email address that's taken.
 
@@ -188,7 +189,7 @@ You also can't create a person with an email address that's taken.
   ...                     "Email address already taken", "password")
   HTTP/1.1 409 Conflict
   ...
-  The email address 'serviceuser@example.com' is already in use.
+  The email address 'serviceuser@example.com' is already registered.
 
 A POST request has no meaning right now unless it specifies a custom
 operation.

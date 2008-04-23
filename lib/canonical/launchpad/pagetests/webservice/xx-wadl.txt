@@ -1,7 +1,15 @@
 = Launchpad's WADL documents =
 
-Let's get a WADL representation of a Launchpad resource (in this case,
-a bug task), and see what's inside.
+Every resource in the web service has a WADL representation that
+describes the capabilities of the resource in a machine-readable
+format. These documents are similar to the HTML documents that provide
+human beings with links to click and forms to fill out.
+
+
+== Entry resources ==
+
+Let's get a WADL representation of a resource (in this case, a bug
+task), and see what's inside.
 
     >>> wadl = webservice.get('/beta/debian/+source/mozilla-firefox/+bug/1',
     ...                       'application/vd.sun.wadl+xml').getBody()
@@ -132,7 +140,7 @@ values.
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
-== The resource type ==
+=== The resource type ===
 
 The 'representation' tags tell you what representations a resource
 sends and receives. In this case the representations are for a
@@ -225,7 +233,7 @@ valid values.
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
-== The resource ==
+=== The resource ===
 
 Now we know what a bug task resource can do and what documents it can
 serve. But we haven't defined any actual bug task resources! This
@@ -260,4 +268,131 @@ we have to do is refer to the previous definition.
 A client can resolve the relative URL "#BugTaskEntry" and figure out
 what HTTP methods the resource exposes and what representations it
 serves and expects.
+
+
+== Collection resources ==
+
+A collection resource has a simpler WADL representation. Collections
+support one standard HTTP method (GET) in addition to any custom
+operations. The representation of one type of entry (say, a person)
+looks different from the representation of another type (say, a bug),
+but all collections look the same, no matter what kind of entries they
+contain.
+
+    >>> wadl = webservice.get('/beta/people',
+    ...                       'application/vd.sun.wadl+xml').getBody()
+    >>> tree = ET.fromstring(wadl)
+    >>> (page_rep, resource_type, resources) = list(tree)
+
+    >>> page_rep.tag
+    '...representation'
+    >>> page_rep.attrib
+    {'mediaType': 'application/json', 'id': 'collection-page'}
+    >>> params = list(page_rep)
+    >>> [param.attrib['name'] for param in params]
+    ['total_size', 'next_collection_link', 'prev_collection_link', 'entries']
+    >>> size, next, prev, entries = params
+
+The 'next_collection_link' and 'prev_collection_link' parameters are
+links to other resources. What are these other resources? Other pages
+of the same collection!
+
+    >>> next_type, = list(next)
+    >>> next_type.attrib['type']
+    '#collection-page'
+
+    >>> prev_type, = list(prev)
+    >>> prev_type.attrib['type']
+    '#collection-page'
+
+
+=== Collection operations ===
+
+The "list of people" resource exposes a standard GET, as well as two
+custom operations, 'create_person' (POST) and 'people' (GET).
+
+    >>> methods = list(resource_type)
+
+    >>> [method.attrib['name'] for method in methods]
+    ['GET', 'POST', 'GET']
+
+    >>> [method.attrib['id'] for method in methods]
+    ['PersonSetCollectionAdapter-get',
+     'PersonSetCollectionAdapter-create_person',
+     'PersonSetCollectionAdapter-people']
+
+    >>> (get, create_person, people) = methods
+
+The standard GET operation is a way of getting either the
+'collection-page' representation defined above, or else the WADL
+document we're working on right now.
+
+    >>> response, = list(get)
+    >>> json_rep, wadl_rep = list(response)
+    >>> json_rep.attrib
+    {'href': '#collection-page'}
+    >>> wadl_rep.attrib
+    {'mediaType': 'application/vd.sun.wadl+xml',
+     'id': 'PersonSetCollectionAdapter-wadl'}
+
+The 'create_person' custom operation takes a number of parameters.
+
+    >>> [param.attrib['name'] for param in list(create_person)]
+    ['ws_op', 'email_address', 'comment', 'name', 'display_name', 'password']
+
+    >>> ws_op = create_person[0]
+    >>> ws_op.attrib['fixed']
+    'create_person'
+
+So does the 'people' custom operation.
+
+    >>> [param.attrib['name'] for param in list(people)]
+    ['ws_op', 'text']
+
+    >>> ws_op = people[0]
+    >>> ws_op.attrib['fixed']
+    'people'
+
+
+=== The resource ===
+
+As with an entry, a collection's WADL representation ends with a short
+'resources' stanza referencing the big definitions that precede it.
+
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/people'
+
+    >>> resource, = resources
+    >>> resource.attrib
+    {'path': '', 'type': '#PersonSetCollectionAdapter'}
+
+
+== Scoped collection resources ==
+
+Scoped collection resources have WADL representations that look just
+like the representations of regular collections.
+
+    >>> wadl = webservice.get('/beta/~admins/members',
+    ...                       'application/vd.sun.wadl+xml').getBody()
+
+    >>> tree = ET.fromstring(wadl)
+    >>> (page_rep, resource_type, resources) = list(tree)
+
+    >>> page_rep.attrib['id']
+    'collection-page'
+
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/~admins/members'
+    >>> resource, = resources
+    >>> resource.attrib
+    {'path': '', 'type': '#ScopedCollection'}
+
+The main difference is that, right now, scoped collections never have
+custom operations.
+
+    >>> resource_type.attrib['id']
+    'ScopedCollection'
+    >>> get, = resource_type
+    >>> get.attrib['id']
+    'ScopedCollection-get'
 
