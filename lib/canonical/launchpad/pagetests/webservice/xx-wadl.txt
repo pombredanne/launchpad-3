@@ -524,6 +524,3 @@ standard GET operation.
     >>> get, = resource_type
     >>> get.attrib['id']
     'ScopedCollection-get'
-
-
-

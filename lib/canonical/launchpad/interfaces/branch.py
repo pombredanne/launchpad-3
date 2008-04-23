@@ -699,7 +699,7 @@ class IBranchSet(Interface):
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
 
-    def new(branch_type, name, creator, owner, product, url, title=None,
+    def new(branch_type, name, registrant, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, whiteboard=None, date_created=None):
         """Create a new branch.
@@ -710,6 +710,12 @@ class IBranchSet(Interface):
         If product is None (indicating a +junk branch) then the owner must not
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
+
+    def getByProductAndName(product, name):
+        """Find all branches in a product with a given name."""
+
+    def getByProductAndNameStartsWith(product, name):
+        """Find all branches in a product a name that starts with `name`."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -1030,6 +1036,15 @@ class IBranchSet(Interface):
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targetted before."""
+
+    def isBranchNameAvailable(owner, product, branch_name):
+        """Is the specified branch_name valid for the owner and product.
+
+        :param owner: A `Person` who may be an individual or team.
+        :param product: A `Product` or None for a junk branch.
+        :param branch_name: The proposed branch name.
+        """
+
 
 
 class IBranchDelta(Interface):

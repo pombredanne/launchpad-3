@@ -51,12 +51,12 @@
       </tbody>
       <tfoot tal:condition="view/has_undisplayed_sources">
          <tr>
-           <td colspan="7" tal:condition="context/owner/isTeam">
+           <td colspan="8" tal:condition="context/owner/isTeam">
              <div>Presenting only <tal:presented replace="
                view/max_sources_presented"/> of <tal:available replace="
                view/available_sources_size" /> available sources.</div>
            </td>
-           <td colspan="6" tal:condition="not: context/owner/isTeam">
+           <td colspan="7" tal:condition="not: context/owner/isTeam">
              <div>Presenting only <tal:presented replace="
                view/max_sources_presented"/> of <tal:available replace="
                view/available_sources_size" /> available sources.</div>

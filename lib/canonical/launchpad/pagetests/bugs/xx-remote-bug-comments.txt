@@ -1,0 +1,25 @@
+= Remote bug comments =
+
+Comments imported into Launchpad from external bug trackers are
+formatted for display in a way that distinguishes them from comments
+entered within Launchpad itself.
+
+    >>> from canonical.config import config
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [malone]
+    ...     show_imported_comments: True
+    ...     """)
+    >>> config.push('test_data', test_data)
+
+    >>> browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
+    >>> remote_bug_comment = find_tags_by_class(
+    ...     browser.contents, 'remoteBugComment')[0]
+    >>> details = find_tags_by_class(
+    ...     str(remote_bug_comment), 'boardCommentDetails')[0]
+    >>> print extract_text(details)
+    In Debian Bug tracker #308994, josh wrote on 2005-05-13:
+    gnome-volume-manager: dvd+rw unreadable when automounted
+    in burner because mounted read/write (permalink)
+
+    >>> test_config_data = config.pop('test_data')
