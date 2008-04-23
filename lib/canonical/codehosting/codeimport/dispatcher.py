@@ -51,7 +51,7 @@ class CodeImportDispatcher:
     def getJobForMachine(self, machine):
         """XXX."""
         server_proxy = xmlrpclib.ServerProxy(
-            config.codeimport.codeimportscheduler_url)
+            config.codeimportdispatcher.codeimportscheduler_url)
         return server_proxy.getJobForMachine(machine.hostname)
 
     def dispatchJobs(self):

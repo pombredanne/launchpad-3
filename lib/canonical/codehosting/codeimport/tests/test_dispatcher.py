@@ -34,7 +34,7 @@ class CodeImportDispatcherTestMixin:
         """XXX."""
         self.config_count += 1
         name = 'test%d' % self.config_count
-        body = '\n'.join(["%s: %s" for k, v in args.iteritems()])
+        body = '\n'.join(["%s: %s"%(k, v) for k, v in args.iteritems()])
         config.push(name, dedent("""
             [codeimportdispatcher]
             %s
