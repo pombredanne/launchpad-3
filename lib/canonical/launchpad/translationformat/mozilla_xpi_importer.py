@@ -83,10 +83,12 @@ class MozillaZipFile:
     def __init__(self, filename, content, xpi_path='', manifest=None):
         """Open zip (or XPI, or jar) file and scan its contents.
 
-        :param filename:
-        :param content:
-        :param xpi_path:
-        :param manifest:
+        :param filename: Name of this zip (XPI/jar) file.
+        :param content: The data making up this zip file.
+        :param xpi_path: Full path of this file inside the XPI archive.
+            Leave blank for the XPI file itself.
+        :param manifest: String with the contents of the XPI archive's
+            manifest file, if any.
         """
         self.filename = filename
         self.header = None
@@ -96,6 +98,8 @@ class MozillaZipFile:
         zip = ZipFile(StringIO(content), 'r')
         for entry in sorted(zip.namelist()):
 
+            # Figure out filesystem path to contained file, from the root of
+            # the XPI archive.
             if entry.endswith('.jar'):
                 file_subpath = XpiManifest.make_jarpath(xpi_path, entry)
             else:
