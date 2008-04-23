@@ -108,6 +108,36 @@ class BranchNotFound(BzrError):
     _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
 
 
+class NotABranchPath(BzrError):
+    """Raised when we cannot translate a virtual path to a branch.
+
+    In particular, this is raised when there is some intrinsic deficiency in
+    the path itself.
+    """
+
+    _fmt = ("Could not translate %(virtual_path)r to branch. %(reason)s")
+
+
+class NotEnoughInformation(NotABranchPath):
+    """Raised when there's not enough information in the path."""
+
+    def __init__(self, virtual_path):
+        NotABranchPath.__init__(
+            self, virtual_path=virtual_path, reason="Not enough information.")
+
+
+class InvalidOwnerDirectory(NotABranchPath):
+    """Raised when the owner directory is invalid.
+
+    This generally means that it doesn't start with a tilde (~).
+    """
+
+    def __init__(self, virtual_path):
+        NotABranchPath.__init__(
+            self, virtual_path=virtual_path,
+            reason="Invalid owner directory.")
+
+
 class CachingAuthserverClient:
     """Wrapper for the authserver that caches responses for a particular user.
 
@@ -199,14 +229,16 @@ class LaunchpadBranch:
     def from_virtual_path(cls, authserver, virtual_path):
         """Construct a LaunchpadBranch from a virtual path.
 
-        XXX - document exceptions raised once they are clearly defined in the
-        code!
-
         :param authserver: An XML-RPC client to the Launchpad authserver.
             This is used to get information about the branch and to perform
             database operations on the branch.
         :param virtual_path: A public path to a branch, or to a file or
             directory within a branch.
+
+        :raise NotABranchPath: If `virtual_path` cannot be translated into a
+            (potential) path to a branch. See also `NotEnoughInformation`
+            and `InvalidOwnerDirectory`.
+
         :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
             is an instance of LaunchpadBranch that represents the branch at
             the virtual path, and `rest_of_path` is a path within that branch.
@@ -215,7 +247,7 @@ class LaunchpadBranch:
         # If we don't have at least an owner, product and name, then we don't
         # have enough information for a branch.
         if len(segments) < 3:
-            raise NoSuchFile(virtual_path)
+            raise NotEnoughInformation(virtual_path)
         # If we have only an owner, product, name tuple, append an empty path.
         if len(segments) == 3:
             segments.append('')
@@ -226,9 +258,9 @@ class LaunchpadBranch:
         # user to retry the command with --create-prefix, which is unhelpful.
         # Instead, we raise NoSuchFile, which should avoid this.
         if '.bzr' in (user_dir, product, name):
-            raise NoSuchFile(virtual_path)
+            raise NotEnoughInformation(virtual_path)
         if not user_dir.startswith('~'):
-            raise NoSuchFile(virtual_path)
+            raise InvalidOwnerDirectory(virtual_path)
         return cls(authserver, user_dir[1:], product, name), path
 
     def __init__(self, authserver, owner, product, name):
@@ -374,8 +406,11 @@ class LaunchpadServer(Server):
         self._is_set_up = False
 
     def _getBranch(self, virtual_path):
-        return LaunchpadBranch.from_virtual_path(
-            self._authserver, virtual_path)
+        try:
+            return LaunchpadBranch.from_virtual_path(
+                self._authserver, virtual_path)
+        except NotABranchPath:
+            raise NoSuchFile(virtual_path)
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
