@@ -605,7 +605,7 @@ class POTemplate(SQLBase, RosettaStats):
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
                                   context=None):
         """See `IPOTemplate`."""
-        potmsgset = POTMsgSet(
+        return POTMsgSet(
             context=context,
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
@@ -615,15 +615,6 @@ class POTemplate(SQLBase, RosettaStats):
             filereferences=None,
             sourcecomment=None,
             flagscomment=None)
-
-        # Introduce this new entry into the TranslationTemplateItem for later
-        # usage.
-        TranslationTemplateItem(
-            potemplate=self,
-            sequence=0,
-            potmsgset=potmsgset)
-
-        return potmsgset
 
     def createMessageSetFromText(self, singular_text, plural_text,
                                  context=None):

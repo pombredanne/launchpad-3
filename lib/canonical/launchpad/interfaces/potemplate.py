@@ -444,6 +444,9 @@ class IPOTemplate(IRosettaStats):
             to be sent to the uploader.
         """
 
+    def getTranslationTemplateItems():
+        """Return all `ITranslationTemplateItems` related with 'self'."""
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
