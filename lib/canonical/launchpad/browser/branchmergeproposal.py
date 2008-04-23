@@ -623,6 +623,7 @@ class BranchMergeProposalInlineDequeueView(LaunchpadEditFormView):
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
     @action('Dequeue', name='dequeue')
+    @notify
     def dequeue_action(self, action, data):
         """Remove the proposal from the queue if queued."""
         if self.context.queue_status == BranchMergeProposalStatus.QUEUED:
