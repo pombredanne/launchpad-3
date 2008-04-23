@@ -496,7 +496,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         if self.archive.require_virtualized:
             architectures_available = [
-                arch for arch in self.distroseries.ppa_architectures]
+                arch for arch in self.distroseries.virtualized_architectures]
         else:
             architectures_available = self.distroseries.architectures
 
