@@ -167,6 +167,10 @@ task to a bug watch. In other words, we are connecting the state of the task
 to the state of the bug in a different bug tracking system. To the best of
 our ability we\'ll try and keep the bug task syncronised with the state of
 the remote bug watch.';
+COMMENT ON COLUMN BugTask.date_left_new IS 'The date when this bug first transitioned out of the NEW status.';
+COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned to a status >= TRIAGED.';
+COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
+COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 
 
 -- BugNotification
