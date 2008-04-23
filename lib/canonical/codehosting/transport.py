@@ -176,7 +176,7 @@ class InvalidOwnerDirectory(NotABranchPath):
     def __init__(self, virtual_path):
         NotABranchPath.__init__(
             self, virtual_path=virtual_path,
-            reason="Invalid owner directory.")
+            reason="Path must start with a user or team directory.")
 
 
 class CachingAuthserverClient:
@@ -692,7 +692,7 @@ class LaunchpadTransport(VirtualTransport):
             # If a virtual path doesn't point to a branch, then we cannot
             # translate it to an underlying transport. For almost all
             # purposes, this is as good as not existing at all.
-            raise NoSuchFile(e.virtual_path)
+            raise NoSuchFile(e.virtual_path, e.reason)
 
     def mkdir(self, relpath, mode=None):
         # We hook into mkdir so that we can request the creation of a branch
@@ -708,10 +708,10 @@ class LaunchpadTransport(VirtualTransport):
         except BranchNotFound:
             # Looks like we are trying to make a branch.
             return self.server.createBranch(self._abspath(relpath))
-        except NotABranchPath:
+        except NotABranchPath, e:
             # You can't ever create a directory that's not even a valid branch
             # name. That's strictly forbidden.
-            raise PermissionDenied(relpath)
+            raise PermissionDenied(e.virtual_path, e.reason)
         return getattr(transport, 'mkdir')(path, mode)
 
     def rename(self, rel_from, rel_to):
