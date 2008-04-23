@@ -651,15 +651,24 @@ accepted by the operation.
     ...         self.headers = {}
     ...
     ...     def setStatus(self, new_status):
-    ...         status = new_status
+    ...         self.status = new_status
     ...
     ...     def setHeader(self, name, value):
     ...         self.headers[name] = value
 
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> class MockRequest(object):
     ...     """Simple request object for testing purpose."""
+    ...     # This makes us eligible for get_current_browser_request()
+    ...     implements(IHTTPApplicationRequest)
+    ...
     ...     def __init__(self):
     ...         self.response = MockResponse()
+    ...         self.principal = None
+    ...         self.interaction = None
+    ...
+    ...     def getApplicationURL(self):
+    ...         return "http://api.example.org"
 
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
@@ -765,7 +774,39 @@ IResourcePOSTOperation.
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
 
-The factory adapter 
+Factory operations sets the 201 Created status code and returns the
+URL to the newly created object. The body of the response will be empty.
+
+(For canonical_url() to work, we need to register an ICanonicalUrlData
+adapter and set the request as the current interfaction.)
+
+    >>> from urllib import quote
+    >>> from zope.component import provideAdapter
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> class BookUrlData(object):
+    ...     inside = None
+    ...     rootsite = None
+    ...
+    ...     def __init__(self, context):
+    ...         self.context = context
+    ...
+    ...     @property
+    ...     def path(self):
+    ...         return "books/%s" % quote(self.context.title)
+    >>> provideAdapter(BookUrlData, [IBook], ICanonicalUrlData)
+
+    >>> from zope.security.management import endInteraction, newInteraction
+    >>> endInteraction()
+    >>> newInteraction(factory_method_adapter.request)
+
+    >>> factory_method_adapter.call(
+    ...     author='Aldous Huxley', title="Eyeless in Gaza", price=10.5)
+    u''
+    >>> response = factory_method_adapter.request.response
+    >>> response.status
+    201
+    >>> print response.headers['Location']
+    http://api.example.org/books/Eyeless%20in%20Gaza
 
 The generate_operation_adapter() function can only be called on IMethod
 marked for export:

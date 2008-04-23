@@ -39,7 +39,10 @@ from zope.schema import getFields
 from zope.schema.interfaces import IField
 from zope.security.checker import CheckerPublic
 
+# XXX flacoste 2008-01-25 bug=185958:
+# canonical_url and ILaunchBag code should be moved into lazr.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
@@ -408,19 +411,34 @@ def generate_collection_adapter(interface):
 class BaseResourceOperationAdapter(ResourceOperation):
     """Base class for generated operations adapters."""
 
-    @property
-    def params(self):
-        """See `ResourceOperation."""
-        return self._export_info['params'].values()
+    def _getMethodParameters(self, kwargs):
+        """Return the method parameters.
 
-    def call(self, **kwargs):
-        """See `ResourceOperation`."""
-        params = kwargs.copy()
+        This takes the validated parameters list and handle any possible
+        renames, and adds the parameters fixed using @call_with.
+
+        :returns: a dictionary.
+        """
+        # Handle renames.
+        renames = dict(
+            (param_def.__name__, orig_name)
+            for orig_name, param_def in self._export_info['params'].items()
+            if param_def.__name__ != orig_name)
+        params = {}
+        for name, value in kwargs.items():
+            name = renames.get(name, name)
+            params[name] = value
+
+        # Handle fixed parameters.
         for name, value in self._export_info['call_with'].items():
             if value is REQUEST_USER:
                 value = getUtility(ILaunchBag).user
             params[name] = value
+        return params
 
+    def call(self, **kwargs):
+        """See `ResourceOperation`."""
+        params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
 
         # The webservice assumes that the request is complete when the
@@ -433,6 +451,23 @@ class BaseResourceOperationAdapter(ResourceOperation):
         else:
             # Use the default webservice encoding.
             return result
+
+
+class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
+    """Base adapter class for factory operation."""
+
+    def call(self, **kwargs):
+        """See `ResourceOperation`.
+
+        Factory uses the 201 status code on success and sets the Location
+        header to the URL to the created object.
+        """
+        params = self._getMethodParameters(kwargs)
+        result = getattr(self.context, self._method_name)(**params)
+        response = self.request.response
+        response.setStatus(201)
+        response.setHeader('Location', canonical_url(result))
+        return u''
 
 
 def generate_operation_adapter(method):
@@ -452,11 +487,14 @@ def generate_operation_adapter(method):
     elif tag['type'] in ('factory', 'write_operation'):
         provides = IResourcePOSTOperation
         prefix = 'POST'
+        if tag['type'] == 'factory':
+            bases = (BaseFactoryResourceOperationAdapter,)
     else:
         raise AssertionError('Unknown method export type: %s' % tag['type'])
 
     name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
-    cdict = {'_export_info': tag,
+    cdict = {'params' : tuple(tag['params'].values()),
+             '_export_info': tag,
              '_method_name': method.__name__}
     factory = type(name, bases, cdict)
     classImplements(factory, provides)
