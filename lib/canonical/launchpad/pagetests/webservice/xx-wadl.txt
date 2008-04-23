@@ -280,11 +280,23 @@ of the link.
     >>> assignee_link.tag
     '...link'
 
-Right now there's no information about the link, just the fact that it
-is a link.
+The link's 'type' attribute tells the client about the capabilities of
+the resource at the other end of the link.
 
-    >>> assignee_link.attrib
-    {}
+    >>> assignee_link.attrib['type']
+    'http://api.launchpad.dev/beta/#PersonEntry'
+
+If the link is a link to collection, the 'type' will always be
+'ScopedCollection' (at least for now).
+
+    >>> related_tasks, = [
+    ...     param for param in full_params
+    ...     if param.attrib['name'] == 'related_tasks_collection_link']
+    >>> related_tasks_link, = list(related_tasks)
+    >>> related_tasks_link.tag
+    '...link'
+    >>> related_tasks_link.attrib['type']
+    'http://api.launchpad.dev/beta/#ScopedCollection'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
