@@ -48,7 +48,7 @@ from zope.app.form.interfaces import (
 from zope.app.form.utility import setUpWidget, setUpWidgets
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
-from zope.formlib import form
+from zope import formlib
 from zope.interface import implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
@@ -936,7 +936,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 vocabulary=status_vocab_factory(self.context))
 
             self.form_fields = self.form_fields.omit('status')
-            self.form_fields += form.Fields(status_field)
+            self.form_fields += formlib.form.Fields(status_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -955,7 +955,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 item for item in BugTaskImportance.items.items
                 if item != BugTaskImportance.UNKNOWN]
             self.form_fields = self.form_fields.omit('importance')
-            self.form_fields += form.Fields(
+            self.form_fields += formlib.form.Fields(
                 Choice(__name__='importance',
                        title=_('Importance'),
                        values=importance_vocab_items,
@@ -1113,7 +1113,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)
 
-        changed = form.applyChanges(
+        changed = formlib.form.applyChanges(
             bugtask, self.form_fields, data_to_apply, self.adapters)
 
         # Now that we've updated the bugtask we can add messages about
@@ -2265,7 +2265,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
             if bug_listing_item.review_action_widget is not None]
-        self.widgets = form.Widgets(widgets_list, len(self.prefix)+1)
+        self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
 
     @action('Save changes', name='submit',
             condition=canApproveNominations)
