@@ -58,24 +58,24 @@ class TestLaunchpadServer(TestCase):
 
         # We can map a branch owned by the user to its path.
         self.assertEqual(
-            (self.server.backing_transport, '00/00/00/01/'),
+            (self.server._backing_transport, '00/00/00/01/'),
             self.server.translateVirtualPath('/~testuser/firefox/baz'))
 
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         self.assertEqual(
-            (self.server.backing_transport, '00/00/00/03/'),
+            (self.server._backing_transport, '00/00/00/03/'),
             self.server.translateVirtualPath('/~testuser/+junk/random'))
 
         # We can map a branch owned by a team that the user is in to its path.
         self.assertEqual(
-            (self.server.backing_transport, '00/00/00/04/'),
+            (self.server._backing_transport, '00/00/00/04/'),
             self.server.translateVirtualPath('/~testteam/firefox/qux'))
 
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         self.assertEqual(
-            (self.server.mirror_transport, '00/00/00/05/'),
+            (self.server._mirror_transport, '00/00/00/05/'),
             self.server.translateVirtualPath('/~name12/+junk/junk.dev'))
 
     def test_extend_path_translation(self):
@@ -85,10 +85,10 @@ class TestLaunchpadServer(TestCase):
         # to the four-byte hexadecimal split ID described in
         # test_base_path_translation and appends the remainder of the path.
         self.assertEqual(
-            (self.server.backing_transport, '00/00/00/01/.bzr'),
+            (self.server._backing_transport, '00/00/00/01/.bzr'),
             self.server.translateVirtualPath('/~testuser/firefox/baz/.bzr'))
         self.assertEqual(
-            (self.server.mirror_transport, '00/00/00/05/.bzr'),
+            (self.server._mirror_transport, '00/00/00/05/.bzr'),
             self.server.translateVirtualPath(
                 '/~name12/+junk/junk.dev/.bzr'))
 
@@ -464,8 +464,8 @@ class TestLaunchpadTransportReadOnly(TestCase):
         # listable() returns the same value for both transports. To
         # distinguish them, we'll monkey patch the mirror and backing
         # transports.
-        self.lp_server.mirror_transport.listable = lambda: 'mirror'
-        self.lp_server.backing_transport.listable = lambda: 'backing'
+        self.lp_server._mirror_transport.listable = lambda: 'mirror'
+        self.lp_server._backing_transport.listable = lambda: 'backing'
 
         self.assertEqual('mirror', transport.listable())
 
