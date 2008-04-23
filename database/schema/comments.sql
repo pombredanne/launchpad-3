@@ -637,6 +637,12 @@ COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from w
 COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
 unreviewed TranslationMessages for this POFile.';
 
+-- TranslationRelicensingAgreement
+COMMENT ON TABLE TranslationRelicensingAgreement IS 'Who of translation contributors wants their translations relicensed and who does not.';
+COMMENT ON COLUMN TranslationRelicensingAgreement.person IS 'A translator which has submitted their answer.';
+COMMENT ON COLUMN TranslationRelicensingAgreement.allow_relicensing IS 'Does this person want their translations relicensed under BSD.';
+COMMENT ON COLUMN TranslationRelicensingAgreement.date_decided IS 'Date when the last change of opinion was registered.';
+
 -- RevisionAuthor
 COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
 COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
