@@ -366,19 +366,16 @@ class LaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
-        user_dict = authserver.getUser(user_id)
-        user_id = user_dict['id']
-        user_name = user_dict['name']
-        self.authserver = CachingAuthserverClient(authserver, user_id)
-        self.backing_transport = hosting_transport
-        self.mirror_transport = get_transport(
+        user_id = authserver.getUser(user_id)['id']
+        self._authserver = CachingAuthserverClient(authserver, user_id)
+        self._backing_transport = hosting_transport
+        self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
-        self.logger = logging.getLogger('codehosting.lpserve.%s' % user_name)
 
     def _getBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
-            self.authserver, virtual_path)
+            self._authserver, virtual_path)
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -388,7 +385,6 @@ class LaunchpadServer(Server):
         branch directory, create the branch in the database then
         create a matching directory on the backing transport.
         """
-        self.logger.info('mkdir(%r)', virtual_path)
         try:
             # XXX: the tests seem to expect that we should raise a
             # PermissionDenied here. Hmm. Find out why.
@@ -401,7 +397,7 @@ class LaunchpadServer(Server):
         if branch_id == '':
             raise PermissionDenied(
                 'Cannot create branch: %s' % (virtual_path,))
-        branch.ensureUnderlyingPath(self.backing_transport)
+        branch.ensureUnderlyingPath(self._backing_transport)
 
     def requestMirror(self, virtual_path):
         """Request that the branch that owns 'virtual_path' be mirrored."""
@@ -413,7 +409,6 @@ class LaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        self.logger.debug('translate_virtual_path(%r)', virtual_path)
         branch, path = self._getBranch(virtual_path)
 
         try:
@@ -429,9 +424,9 @@ class LaunchpadServer(Server):
 
         permissions = branch.getPermissions()
         if permissions == READ_ONLY:
-            transport = self.mirror_transport
+            transport = self._mirror_transport
         else:
-            transport = self.backing_transport
+            transport = self._backing_transport
             branch.ensureUnderlyingPath(transport)
         return transport, real_path
 
@@ -511,14 +506,12 @@ class LaunchpadTransport(Transport):
 
     # Transport methods
     def abspath(self, relpath):
-        self.server.logger.debug('abspath(%s)', relpath)
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
         return self._call('append_file', relpath, f, mode)
 
     def clone(self, relpath=None):
-        self.server.logger.debug('clone(%s)', relpath)
         if relpath is None:
             return LaunchpadTransport(self.server, self.base)
         else:
@@ -538,12 +531,10 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
-        self.server.logger.debug('iter_files_recursive()')
         transport, path = self.server.translateVirtualPath(self._abspath('.'))
         return transport.clone(path).iter_files_recursive()
 
     def listable(self):
-        self.server.logger.debug('listable()')
         transport, path = self.server.translateVirtualPath(self._abspath('.'))
         return transport.listable()
 
