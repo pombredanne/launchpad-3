@@ -409,7 +409,7 @@ def generate_collection_adapter(interface):
 
 
 class BaseResourceOperationAdapter(ResourceOperation):
-    """Base class for generated operations adapters."""
+    """Base class for generated operation adapters."""
 
     def _getMethodParameters(self, kwargs):
         """Return the method parameters.
@@ -454,7 +454,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
 
 
 class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
-    """Base adapter class for factory operation."""
+    """Base adapter class for factory operations."""
 
     def call(self, **kwargs):
         """See `ResourceOperation`.
