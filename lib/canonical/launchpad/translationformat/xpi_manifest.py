@@ -10,6 +10,7 @@ import re
 
 
 def normalize_path(path):
+    """Normalize filesystem path within XPI file."""
     # Normalize "jar:" prefix.  Make sure it's there when needed, not there
     # when not needed.
     if path.startswith('jar:'):
@@ -55,6 +56,7 @@ def is_valid_path(path):
 
 
 def is_valid_dir_path(path):
+    """Check that path is a normalized directory path in an XPI file."""
     if not is_valid_path(path):
         return False
     if not path.endswith('/'):
@@ -63,6 +65,12 @@ def is_valid_dir_path(path):
 
 
 class ManifestEntry:
+    """A "locale" line in a manifest file."""
+
+    chrome = None
+    locale = None
+    path = None
+
     def __init__(self, chrome, locale, path):
         self.chrome = chrome
         self.locale = locale
@@ -83,12 +91,18 @@ def manifest_entry_sort_key(entry):
 
 
 class XpiManifest:
+    """Representation of an XPI manifest file.
+
+    Does two things: parsers an XPI file; and looks up chrome paths and
+    locales for given filesystem paths inside the XPI file.
+    """
 
     # List of locale entries, sorted by increasing path length.  The sort
     # order matters for lookup.
     _locales = None
 
     def __init__(self, content):
+        """Initialize: parse `content` as a manifest file."""
         locales = []
         for line in content.splitlines():
             words = line.split()
@@ -142,7 +156,7 @@ class XpiManifest:
         return None
 
     def get_chrome_path_and_locale(self, file_path):
-        """Return chrome path and locale applying to file_path.
+        """Return chrome path and locale applying to a filesystem path.
         """
         assert file_path is not None, "Looking up chrome path for None"
         file_path = normalize_path(file_path)
