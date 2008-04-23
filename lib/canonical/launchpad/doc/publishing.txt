@@ -412,7 +412,7 @@ distroseries to a older one, like a backport rebuild.
     >>> ppa_copied_source.createMissingBuilds()
     []
 
-There is also a possibility to copy sources and binaries to another
+It is also possible to copy sources and binaries to another
 distroseries within the same PPA. That's usually the case for
 architecture-independent sources.
 
@@ -448,7 +448,7 @@ The source and binary are present in hoary-test:
     ...     print bin.displayname
     foo-bin 999 in hoary-test i386
 
-So, no builds should be created.
+So, no builds are created.
 
     >>> copied_source.createMissingBuilds()
     []

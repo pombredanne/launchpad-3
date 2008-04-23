@@ -372,7 +372,7 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-        # First we try to follow any binaries built from the given source,
+        # First we try to follow any binaries built from the given source
         # in a distroarchseries with the given architecturetag and published
         # in the given (distroarchseries, archive) location.
         clauseTables = [
@@ -381,8 +381,8 @@ class SourcePackageRelease(SQLBase):
 
         query = """
             Build.sourcepackagerelease = %s AND
-            Build.id = BinaryPackageRelease.build AND
-            Build.distroarchseries = DistroArchSeries.id AND
+            BinaryPackageRelease.build = Build.id AND
+            DistroArchSeries.id = Build.distroarchseries AND
             DistroArchSeries.architecturetag = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
