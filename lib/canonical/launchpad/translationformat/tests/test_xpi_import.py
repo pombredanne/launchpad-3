@@ -382,8 +382,8 @@ class XpiTestCase(unittest.TestCase):
         self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
         self.assertEqual(email, u'carlos@canonical.com')
 
-    def test_ClashingMessageIds(self):
-        """Test correct handling of clashing message ids in XPI file."""
+    def test_Contexts(self):
+        """Test that message context in XPI file is set to chrome path."""
         queue_entry = self.setUpTranslationImportQueueForTranslation(
             'clashing_ids')
         importer = MozillaXpiImporter()
