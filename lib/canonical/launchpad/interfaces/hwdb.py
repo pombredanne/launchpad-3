@@ -11,9 +11,9 @@ __all__ = [
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
     'IHWDevice',
-    'IHWDeviceSet',
     'IHWDeviceNameVariant',
     'IHWDeviceNameVariantSet',
+    'IHWDeviceSet',
     'IHWSubmission',
     'IHWSubmissionForm',
     'IHWSubmissionSet',
@@ -323,7 +323,7 @@ class IHWDeviceSet(Interface):
         """Create a new device entry.
 
         :return: A new IHWDevice instance.
-        :param bus: A bus name as enumerated in HWBus
+        :param bus: A bus name as enumerated in HWBus.
         :param vendor_id: The vendor ID for the bus.
         :param product_id: The product ID.
         :param name: The human readable product name.
@@ -358,8 +358,8 @@ class IHWDeviceNameVariantSet(Interface):
     def create(device, vendor_name, product_name):
         """Create a new IHWDeviceNameVariant instance.
 
-        :return: The new IHWDeviceNameVariant
-        :param device: An IHWDevice instance
-        :param vendor_name: The alternative vendor name for the device
-        :param product_name: The alternative product name for the device
+        :return: The new IHWDeviceNameVariant.
+        :param device: An IHWDevice instance.
+        :param vendor_name: The alternative vendor name for the device.
+        :param product_name: The alternative product name for the device.
         """

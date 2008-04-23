@@ -4,9 +4,9 @@
 """Hardware database related table classes."""
 
 __all__ = ['HWDevice',
-           'HWDeviceSet',
            'HWDeviceNameVariant',
            'HWDeviceNameVariantSet',
+           'HWDeviceSet',
            'HWSubmission',
            'HWSubmissionSet',
            'HWSystemFingerprint',
@@ -346,6 +346,7 @@ class HWVendorIDSet:
         return HWVendorID(bus=bus, vendor_id_for_bus=vendor_id,
                           vendor_name=vendor_name)
 
+
 class HWDevice(SQLBase):
     """See `IHWDevice.`"""
 
@@ -353,8 +354,9 @@ class HWDevice(SQLBase):
     _table = 'HWDevice'
 
     bus_vendor = ForeignKey(dbName='bus_vendor_id', foreignKey='HWVendorID',
-                            notNull=True)
-    bus_product_id = StringCol(notNull=True, dbName='bus_product_id')
+                            notNull=True, immutable=True)
+    bus_product_id = StringCol(notNull=True, dbName='bus_product_id',
+                               immutable=True)
     variant = StringCol(notNull=False)
     name = StringCol(notNull=True)
     submissions = IntCol(notNull=True)
@@ -379,7 +381,7 @@ class HWDeviceSet:
         vendor_id_record = HWVendorID.selectOneBy(bus=bus,
                                                   vendor_id_for_bus=vendor_id)
         if vendor_id_record is None:
-            # The vendor ID may be yet unknown for two reasons:
+            # The vendor ID may be unknown for two reasons:
             #   - we do not have anything like a subscription to newly
             #     assigned PCI or USB vendor IDs, so we may get submissions
             #     with IDs we don't know about yet.
