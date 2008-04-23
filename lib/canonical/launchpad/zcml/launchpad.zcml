@@ -255,6 +255,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="*"
+      name="+navigationmenutabs"
+      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+      template="../templates/launchpad-navigation-menutabs.pt"
+      permission="zope.Public"
+      />
+
   <browser:defaultView
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
@@ -400,6 +408,14 @@ these URLs in Apache.
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
   class="canonical.launchpad.browser.launchpad.IcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-ubuntu"
+  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
   attribute="__call__"
   permission="zope.Public"
   />

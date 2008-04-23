@@ -1,9 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/browser">
     <!-- Style sheets -->
-    <resource name="ubuntu.css" file="../templates/ubuntu.css" />
-    <resource name="ubuntu-discs.css" file="../templates/ubuntu-discs.css" />
-    <resource name="ubuntu-plone.css" file="../templates/ubuntu-plone.css" />
-    <resource name="ubuntu-masthead.css" file="../templates/ubuntu-masthead.css" />
     <resource name="kubuntu-masthead2.css" file="../templates/kubuntu-masthead2.css" />
     <resource name="edubuntu.css" file="../templates/edubuntu.css" />
     <resource name="edubuntu-screen.css" file="../templates/edubuntu-screen.css" />

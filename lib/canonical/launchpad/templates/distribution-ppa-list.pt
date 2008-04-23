@@ -11,10 +11,6 @@
 >
 <body>
 
-  <metal:portlets fill-slot="portlets">
-    <tal:portlet replace="structure context/@@+portlet-ppa-architectures" />
-  </metal:portlets>
-
   <div metal:fill-slot="main">
 
     <h1>Personal Package Archives for <span tal:replace="context/title" /></h1>
@@ -25,16 +21,41 @@
        <a href="https://help.launchpad.net/PPAQuickStart"
        >quick-start guide</a>.</p>
 
-    <p>You can search for a PPA by the owner name or by any word
-       in its description.</p>
+    <table width="100%">
+      <tr>
+        <td align="left">
+          <div id="ppa_statistics">
+            <h2>Statistics</h2>
+            <ul>
+              <li><tal:ppa_registered replace="view/number_of_registered_ppas"
+                >10</tal:ppa_registered> registered</li>
+              <li><tal:ppa_active replace="view/number_of_active_ppas"
+                >4</tal:ppa_active> active</li>
+              <li><tal:ppa_sources replace="view/number_of_ppa_sources"
+                >20</tal:ppa_sources> published sources</li>
+              <li><tal:ppa_binaries replace="view/number_of_ppa_binaries"
+                >20</tal:ppa_binaries> published binaries</li>
+            </ul>
+          </div>
+        </td>
+        <td align="left">
+          <div id="supports_virtualized_archs"
+               tal:content="structure context/@@+portlet-ppa-architectures" />
+        </td>
+      </tr>
+    </table>
+
+    <p>Search user-contributed software packages published in any
+      <tal:distribution replace="context/title">Ubuntu</tal:distribution>
+      PPA.</p>
 
     <form name="ppa_search" action="" method="GET">
       <label for="name">PPAs containing:</label>
       <input id="name" title="Filter" size="20"
              type="text" name="name_filter"
              tal:attributes="value view/name_filter"/>
-      <label for="inactive">Show Inactive</label>
-      <input id="inactive" title="Show Inactive"
+      <label for="inactive">Include inactive PPAs</label>
+      <input id="inactive" title="Include inactive PPAs"
              type="checkbox" name="show_inactive"
              tal:attributes="checked view/show_inactive"/>
       <input type="submit" value="Search" />
@@ -42,25 +63,27 @@
 
     <tal:batch define="batch view/search_results">
 
-      <tal:navigation_top
-           replace="structure view/batchnav/@@+navigation-links-upper" />
+      <div id="ppa_list" tal:condition="batch">
+        <tal:navigation_top
+             replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing sortable" id="ppa_list" tal:condition="batch">
-        <thead>
-          <tr>
-            <th>Owner</th>
-            <th>Description</th>
-            <th>Sources</th>
-            <th>Binaries</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
-        </tbody>
-      </table>
+        <table class="listing sortable">
+          <thead>
+            <tr>
+              <th>Owner</th>
+              <th>Description</th>
+              <th>Sources</th>
+              <th>Binaries</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
+          </tbody>
+        </table>
 
-      <tal:navigation_bottom
-           replace="structure view/batchnav/@@+navigation-links-lower" />
+        <tal:navigation_bottom
+             replace="structure view/batchnav/@@+navigation-links-lower" />
+      </div>
 
       <div id="empty-result" tal:condition="not: batch">
         <tal:has_filter condition="view/name_filter">

@@ -120,7 +120,8 @@ class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
     'status' attribute.
     """
 
-    params = (Choice(__name__='status', vocabulary=BugTaskStatus),)
+    params = (Choice(__name__='status', vocabulary=BugTaskStatus,
+                     required=True),)
 
     def call(self, status):
         """Execute the operation.
