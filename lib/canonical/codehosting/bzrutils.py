@@ -7,8 +7,7 @@ Everything in here should be submitted upstream.
 
 __metaclass__ = type
 __all__ = [
-    'ensure_base',
-    'makedirs'
+    'ensure_base'
     ]
 
 from bzrlib.builtins import _create_prefix as create_prefix
@@ -27,7 +26,3 @@ def ensure_base(transport):
         transport.ensure_base()
     except NoSuchFile:
         create_prefix(transport)
-
-
-def makedirs(transport, path):
-    return ensure_base(transport.clone(path))
