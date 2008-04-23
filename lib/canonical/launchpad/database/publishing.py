@@ -515,7 +515,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """Create a build for a given architecture if it doesn't exist yet.
 
         Return the just-created `IBuild` record already scored or None
-        if no chroot is available for the given  IDistroArchSeries or
+        if no chroot is available for the given `IDistroArchSeries` or
         a suitable build is already present.
         """
         if arch.getChroot() is None:

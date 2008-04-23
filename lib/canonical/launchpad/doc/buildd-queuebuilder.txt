@@ -37,13 +37,12 @@ test_system_documentation.py for more information.
 Now that we have satisfied all of the needs for BuildMaster, let's
 instantiate it.
 
-# XXX cprov 20080422: If I pass the current 'transaction' to
-# BuilddMaster it will call commit() on it for it build created.
-# It apparently mess with the transaction manager is a way that the
-# builds created in the sampledata catch-up (line 103) do not persist
-# for the test build creation (line 469). This issue results in new
-# build records exactly for the same souces and locations but with
-# higher IDs.
+If I pass the current 'transaction' to BuilddMaster it will call
+commit() on it for it build created. It apparently mess with the
+transaction manager is a way that the builds created in the sampledata
+catch-up (line 103) do not persist for the test build creation (line
+469). This issue results in new build records exactly for the same
+souces and locations but with higher IDs.
 
     >>> class FakeZtm:
     ...     def commit(self):
