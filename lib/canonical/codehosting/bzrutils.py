@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from bzrlib.builtins import _create_prefix as create_prefix
-from bzrlib.errors import FileExists, NoSuchFile
+from bzrlib.errors import NoSuchFile
 
 
 # XXX: JonathanLange 2007-06-13 bugs=120135:
