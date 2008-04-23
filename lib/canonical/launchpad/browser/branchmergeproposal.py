@@ -277,10 +277,10 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Request review', name='review')
+    @update_and_notify
     def review_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.requestReview()
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

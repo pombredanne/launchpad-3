@@ -327,6 +327,37 @@ Consume notification.
     >>> [_unused] = pop_notifications()
 
 
+== Requesting reviews ==
+
+You can request a review of a merge proposal.
+
+    >>> sample_browser.open(
+    ...    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1'
+    ...    )
+    >>> sample_browser.getLink('Request review').click()
+    >>> sample_browser.getControl('Request review').click()
+
+This causes a notification to be sent.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload()
+    The proposal to merge Klingon support in GNOME Terminal into GNOME
+    Terminal= Mainline has been updated.
+    <BLANKLINE>
+        Status: Work in progress =3D> Needs review
+    --
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    You are subscribed to branch GNOME Terminal Mainline.
+    <BLANKLINE>
+
+The status of the merge proposal is updated to "Needs review".
+
+    >>> print_summary(sample_browser)
+    Source branch: ~name12/gnome-terminal/klingon
+    Target branch: ~name12/gnome-terminal/main
+           Status: Needs review
+
+
 == Marking as merged ==
 
 When a branch has been merged into the target branch, the proposal should
@@ -381,7 +412,7 @@ An email notification is also created.
     The proposal to merge Klingon support in GNOME Terminal into GNOME
     Terminal= Mainline has been updated.
     <BLANKLINE>
-         Status: Work in progress =3D> Merged
+         Status: Needs review =3D> Merged
     --
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
     You are subscribed to branch GNOME Terminal Mainline.
