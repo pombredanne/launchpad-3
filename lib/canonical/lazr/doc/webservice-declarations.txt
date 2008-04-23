@@ -765,6 +765,7 @@ IResourcePOSTOperation.
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
 
+The factory adapter 
 
 The generate_operation_adapter() function can only be called on IMethod
 marked for export:
