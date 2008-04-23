@@ -13,20 +13,21 @@ def normalize_path(path):
     # Normalize "jar:" prefix.  Make sure it's there when needed, not there
     # when not needed.
     if path.startswith('jar:'):
-        # No leading slash.
+        # No leading slashes please.
         path = re.sub('^jar:/+', 'jar:', path)
 
-        if '!' not in path:
+        if '.jar!' not in path:
             logging.debug("Removing 'jar:' from manifest path: '%s'" % path)
             path = path[4:]
     else:
-        # No leading slash.
+        # No leading slashes please.
         path = re.sub('^/+', '', path)
 
         if '.jar!' in path:
             # Path delves into a jar file, but lacks "jar:" prefix.  This is
             # really a malformed path.
             logging.info("Adding 'jar:' to manifest path: '%s'" % path)
+            path = 'jar:' + path
 
     # A path inside a jar file must begin with a slash.
     path = re.sub('\.jar!', '.jar!/', path)
@@ -58,6 +59,8 @@ def is_valid_dir_path(path):
         return False
     if not path.endswith('/'):
         return False
+    return True
+
 
 class ManifestEntry:
     def __init__(self, chrome, locale, path):
@@ -71,7 +74,7 @@ class ManifestEntry:
         self.path = normalize_path(path + "/")
 
         assert is_valid_dir_path(self.path), (
-            "Normalized path not valid: %s" % self.path)
+            "Normalized path not valid: '%s' -> '%s'" % (path, self.path))
 
 
 def manifest_entry_sort_key(entry):
@@ -81,7 +84,8 @@ def manifest_entry_sort_key(entry):
 
 class XpiManifest:
 
-    # List of locale entries, sorted by increasing path length.
+    # List of locale entries, sorted by increasing path length.  The sort
+    # order matters for lookup.
     _locales = None
 
     def __init__(self, content):
@@ -92,18 +96,16 @@ class XpiManifest:
             if num_words == 0 or words[0] != 'locale':
                 pass
             if num_words < 4:
-                logging.info("Ignoring short manifest line: '%s'" % content)
-            elif num_words > 3:
-                logging.info("Ignoring long manifest line: '%s'" % content)
+                logging.info("Ignoring short manifest line: '%s'" % line)
+            elif num_words > 4:
+                logging.info("Ignoring long manifest line: '%s'" % line)
             else:
                 locales.append(ManifestEntry(words[1], words[2], words[3]))
 
-        file('/tmp/manifest.dump','a').write("** %s **\n"%locales) # DEBUG CODE
-        if not locales:
-            # XXX: Raise something!
-            return
-
         self._locales = sorted(locales, key=manifest_entry_sort_key)
+
+        if not locales:
+            return
 
         # Verify manifest.
         paths = set()
@@ -117,9 +119,8 @@ class XpiManifest:
 
             if entry in paths:
                 logging.info("Duplicate paths in manifest: '%s'" % entry.path)
-                # XXX: Fail?
 
-            paths.insert(entry.path)
+            paths.add(entry.path)
 
             last_entry = entry
 

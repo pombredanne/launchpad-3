@@ -96,7 +96,10 @@ class MozillaZipFile:
         zip = ZipFile(StringIO(content), 'r')
         for entry in sorted(zip.namelist()):
 
-            file_subpath = "%s/%s" % (xpi_path, entry)
+            if entry.endswith('.jar'):
+                file_subpath = XpiManifest.make_jarpath(xpi_path, entry)
+            else:
+                file_subpath = "%s/%s" % (xpi_path, entry)
 
             if manifest is not None:
                 chrome_path, locale = manifest.get_chrome_path_and_locale(
@@ -119,8 +122,7 @@ class MozillaZipFile:
                 self.extend(dtdf.messages)
             elif entry.endswith('.jar'):
                 data = zip.read(entry)
-                jarpath = XpiManifest.make_jarpath(xpi_path, entry)
-                jarf = MozillaZipFile(filename=entry, xpi_path=jarpath,
+                jarf = MozillaZipFile(filename=entry, xpi_path=file_subpath,
                     content=data, manifest=manifest)
                 self.extend(jarf.messages)
             elif entry == 'install.rdf':
@@ -129,6 +131,19 @@ class MozillaZipFile:
             else:
                 # Not a file we know what to do with.
                 pass
+
+        # Eliminate duplicate messages.
+        seen_messages = set()
+        deletions = []
+        for index, message in enumerate(self.messages):
+            identifier = (message.msgid_singular, message.context)
+            if identifier in seen_messages:
+                # This message is a duplicate.  Mark it for removal.
+                deletions.append(index)
+            else:
+                seen_messages.add(identifier)
+        for index in reversed(deletions):
+            del self.messages[index]
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""

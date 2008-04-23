@@ -49,7 +49,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     )
 from canonical.launchpad.webapp.interfaces import (
-    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+    IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
+    NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import (
@@ -184,6 +185,17 @@ class MenuAPI:
         menu = IContextMenu(self._context, None)
         if menu is None:
             return  {}
+        else:
+            menu.request = self._request
+            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            return dict((link.name, link) for link in links)
+
+    @property
+    def navigation(self):
+        """Navigation menu links list."""
+        menu = INavigationMenu(self._context, None)
+        if menu is None:
+            return {}
         else:
             menu.request = self._request
             links = list(menu.iterlinks(requesturi=self._requesturi()))
