@@ -163,10 +163,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=["ComponentSelection"])
 
     @property
-    def ppa_architectures(self):
+    def virtualized_architectures(self):
         return DistroArchSeries.select("""
         DistroArchSeries.distroseries = %s AND
-        DistroArchSeries.ppa_supported = True
+        DistroArchSeries.supports_virtualized = True
         """ % sqlvalues(self), orderBy='architecturetag')
 
     @property
@@ -1068,12 +1068,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
     def newArch(self, architecturetag, processorfamily, official, owner,
-                ppa_supported=False):
+                supports_virtualized=False):
         """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
             official=official, distroseries=self, owner=owner,
-            ppa_supported=ppa_supported)
+            supports_virtualized=supports_virtualized)
         return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, description=None):
