@@ -336,7 +336,7 @@
     facet="branches"
     permission="zope.Public"
     name="+code-index"
-    template="../templates/product-branch-overview.pt"
+    template="../templates/product-code-index.pt"
     />
 
   <browser:page

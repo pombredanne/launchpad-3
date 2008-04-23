@@ -6,38 +6,138 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
-  i18n:domain="bazaar"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
 >
-  <body>
-    <h1 metal:fill-slot="heading">Code in branches</h1>
-    <div metal:fill-slot="main">
-      <h2>Projects with active branches</h2>
 
-      <div><strong><a href="/">&laquo; Back</a></strong></div>
+<body>
 
-      <div id="project-tags">
-        <a tal:repeat="product view/products"
-           tal:attributes="href product/fmt:url;
-                           class product/html_class;
-                           title product/html_title"
-           tal:content="product/name">project</a>
-      </div>
-    </div><!--main-->
-    <div metal:fill-slot="help">
-      <p>
-        All projects that have active hosted or mirrored branches
-        are shown here.
-      </p>
-      <p>
-        The size of the tag in the cloud is defined by the number of
-        branches that the project has.
-      </p>
+<div metal:fill-slot="main">
 
-      <p>
-        The colour of the tag in the cloud is determined by how
-        recent the last commit to any active branch is.
-      </p>
+  <div style="float:right">
+    <div>
+      <a href="+addbranch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
     </div>
-  </body>
+    <div tal:condition="not: context/official_codehosting">
+      <tal:code-imports define="config modules/canonical.config/config">
+        <tal:production-site
+            condition="not: config/codeimport/expose_code_import">
+          <a href="https://help.launchpad.net/VcsImports">
+            <img alt="Import your project"
+                 src="/+icing/but-lrg-importyourproject.gif"/>
+          </a>
+        </tal:production-site>
+        <tal:non-production-site
+            condition="config/codeimport/expose_code_import">
+          <a href="/+code-imports/+new" id="new-code-import">
+            <img alt="Import your project"
+                 src="/+icing/but-lrg-importyourproject.gif"/>
+          </a>
+        </tal:non-production-site>
+      </tal:code-imports>
+      </div>
+  </div>
+
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
+
+  <div id="application-summary" tal:condition="not: view/branch_count">
+    There are no branches for <tal:project-name replace="context/displayname"/>
+    in Launchpad.
+    <ul>
+      <li>If you have branches in a publicly accessable location,
+      Launchpad can act as a mirror of the branch by registering a
+      <em>Mirrored</em> branch.
+      <a href="https://help.launchpad.net/CreatingAMirroredBranch">Read more.</a>
+      </li>
+      <li>Launchpad can also act as a primary
+      location for branches. You can push branches directly to
+      Launchpad or you can register a <em>Hosted</em> branch in
+      order to get exact commands to push your branch to Launchpad.
+      <a href="https://help.launchpad.net/CreatingAHostedBranch">Read more.</a>
+      </li>
+
+      <li>Launchpad can import code from CVS or Subversion into Bazaar
+      branches.
+      <a href="https://help.launchpad.net/VcsImports">Read more.</a>
+      </li>
+
+    </ul>
+  </div>
+
+  <tal:has-branches condition="view/branch_count">
+
+    <div id="application-summary">
+
+      <strong tal:content="view/branch_count">1234</strong>
+      <tal:branches replace="view/branch_text">branches</tal:branches>
+
+    owned by
+    <tal:individuals condition="view/person_owner_count">
+      <strong tal:content="view/person_owner_count">42</strong>
+      <tal:people replace="view/person_text">people</tal:people
+    ></tal:individuals
+    ><tal:teams condition="view/team_owner_count">
+      <tal:individuals condition="view/person_owner_count">
+        and
+      </tal:individuals>
+      <strong tal:content="view/team_owner_count">1</strong>
+      <tal:people replace="view/team_text">team</tal:people
+    ></tal:teams>,
+
+    <strong tal:content="view/commit_count">23</strong>
+    <tal:commits replace="view/commit_text">commits</tal:commits>
+    <tal:has-committers condition="view/committer_count">
+      by
+      <strong tal:content="view/committer_count">4</strong>
+      <tal:people replace="view/committer_text">people</tal:people>
+    </tal:has-committers>
+    in the last month
+
+    <div tal:condition="view/has_development_focus_branch"
+         style="margin: 1em 0">
+      You browse the source code for development focus branch
+      <a href="xxx">here</a>,
+      or get a copy of the branch using the command:<br/>
+      <tt style="padding-left:2em">bzr branch lp:<tal:project-name replace="context/name"/></tt><br/>
+    </div>
+
+    </div>
+
+    <tal:missing-dev-focus condition="not: view/has_development_focus_branch">
+      <tal:comment condition="nothing">
+        Only show the div with the warning and link if the user can actually
+        set the dev focus branch.
+      </tal:comment>
+      <div class="warning message"
+           tal:condition="context/required:launchpad.Edit"
+           tal:define="series_link context/development_focus/fmt:url;
+                       edit_link string:${series_link}/+linkbranchtoseries">
+          A branch has not yet been specified as the primary development focus
+          for <tal:project replace="context/displayname"/>
+          (<a tal:attributes="href edit_link">set</a>).
+      </div>
+    </tal:missing-dev-focus>
+
+
+    <div id="overview-branch-listing" style="margin-top: 1em">
+    <tal:branchlisting
+        define="branches view/branches;
+                form_action string:+branches"
+        content="structure branches/@@+branch-listing" />
+    </div>
+
+    <p>
+      And <tal:branches-not-shown replace="view/unseen_branch_count">5
+      </tal:branches-not-shown> other branches.
+    </p>
+
+  </tal:has-branches>
+
+
+</div>
+
+</body>
 </html>
