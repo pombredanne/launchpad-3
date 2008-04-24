@@ -60,15 +60,15 @@
                   >John Smith</a>
                 </td>
               </tr>
-              <tr tal:define="bugcontact context/bugcontact">
+              <tr tal:define="bug_supervisor context/bug_supervisor">
                 <th>Bug supervisor:</th>
                 <td>
-                  <tal:none condition="not:bugcontact"
+                  <tal:none condition="not:bug_supervisor"
                   >None set</tal:none>
                   <a
-                    tal:condition="bugcontact"
-                    tal:attributes="href bugcontact/fmt:url"
-                    tal:content="bugcontact/displayname"
+                    tal:condition="bug_supervisor"
+                    tal:attributes="href bug_supervisor/fmt:url"
+                    tal:content="bug_supervisor/displayname"
                   >Bob Johnson</a>
                 </td>
                 <td>

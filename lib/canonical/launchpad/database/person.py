@@ -651,12 +651,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
-    # XXX Tom Berger 2008-02-14:
-    # The name (and possibly the implementation) of these functions
+    # XXX: TomBerger 2008-02-14, 2008-04-14 bug=191799:
+    # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
-    # rather than package bug contacts.
-    # See bug #191799
-    def getBugContactPackages(self):
+    # rather than package bug supervisors.
+    def getBugSubscriberPackages(self):
         """See `IPerson`."""
         packages = [sub.target for sub in self.structural_subscriptions
                     if (sub.distribution is not None and
@@ -664,7 +663,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBugContactOpenBugCounts(self, user):
+    def getBugSubscriberOpenBugCounts(self, user):
         """See `IPerson`."""
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
@@ -730,7 +729,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # add the rest of the packages as well.
         all_packages = set(
             (distro_package.distribution, distro_package.sourcepackagename)
-            for distro_package in self.getBugContactPackages())
+            for distro_package in self.getBugSubscriberPackages())
         for distribution, sourcepackagename in all_packages.difference(
                 packages_with_bugs):
             package_counts = dict(
@@ -1549,7 +1548,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             ('QuestionSubscription', 'person'),
             ('POSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('PackageBugContact', 'bugcontact'),
+            ('PackageBugSupervisor', 'bug_subscriber'),
             ('AnswerContact', 'person')]
         cur = cursor()
         for table, person_id_column in removals:
@@ -2760,12 +2759,12 @@ class PersonSet:
             ''' % vars())
         skip.append(('bugnotificationrecipient', 'person'))
 
-        # Update PackageBugContact entries.
+        # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugContact SET bugcontact=%(to_id)s
-            WHERE bugcontact=%(from_id)s
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
+            WHERE bug_supervisor=%(from_id)s
             ''', vars())
-        skip.append(('packagebugcontact', 'bugcontact'))
+        skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
