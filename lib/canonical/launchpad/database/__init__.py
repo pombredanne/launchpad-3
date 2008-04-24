@@ -136,3 +136,4 @@ from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
 from canonical.launchpad.database.codereviewmessage import *
+from canonical.launchpad.database.archivepermission import *
