@@ -23,6 +23,7 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
+from storm.store import Store
 
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
@@ -323,14 +324,22 @@ class Bug(SQLBase):
             if sub.person.id == person.id:
                 return sub
 
-        return BugSubscription(
+        subscription = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+        # Ensure that the subscription has been flushed.
+        subscription_id = subscription.id
+        return subscription
 
     def unsubscribe(self, person):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                BugSubscription.delete(sub.id)
+                store = Store.of(sub)
+                store.remove(sub)
+                # Make sure that the subscription removal has been
+                # flushed so that code running with implicit flushes
+                # disabled see the change.
+                store.flush()
                 return
 
     def unsubscribeFromDupes(self, person):
