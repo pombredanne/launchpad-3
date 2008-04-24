@@ -74,8 +74,6 @@ registerLaunchpadFunction(hookUpFilterSubmission);
     </thead>
     <tbody>
       <tr tal:repeat="branch context/branches">
-<!--          tal:attributes="
-              class python:branch.is_development_focus and 'highlighted' or 'unhighlighted'"> -->
         <td>
           <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"

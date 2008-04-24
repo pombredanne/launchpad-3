@@ -1301,8 +1301,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     @property
     def initial_values(self):
-        # The initial value of hiding dormant is based on the number
-        # of branches that there are
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
@@ -1318,9 +1316,9 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         revisions = list(
             getUtility(IRevisionSet).getRecentRevisionsForProduct(
                 product=self.context, days=30))
+        # XXX: thumper 2008-04-24
         # How best to warn if the limit is getting too large?
-        # And how much is too much anyway.  Several thousand objects can
-        # be constructed in under a second (on my limited laptop).
+        # And how much is too much anyway.
         return revisions
 
     @property
@@ -1379,7 +1377,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             product=self.context, visible_by_user=self.user,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
-        # We don't want the initial branch to be batches, so only get
+        # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
         batch_size = config.launchpad.branchlisting_batch_size
         max_branches_from_query = batch_size - len(series_branches)
@@ -1447,7 +1445,7 @@ class ProductBranchesView(ProductBranchListingView):
 
     @cachedproperty
     def hide_dormant_initial_value(self):
-        """If there are more than one page of branches, hide dormant ones."""
+        """If there is more than one page of branches, hide dormant ones."""
         page_size = config.launchpad.branchlisting_batch_size
         return self.context.branches.count() > page_size
 

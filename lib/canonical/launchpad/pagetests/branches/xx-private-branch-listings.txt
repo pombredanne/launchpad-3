@@ -134,6 +134,8 @@ listing tab.
     >>> def print_landscape_code_listing(browser):
     ...     browser.open('http://code.launchpad.dev/landscape/+branches')
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
+    ...     # If there are no branches, the table is not shown.
+    ...     # So print the text shown in the application summary.
     ...     if table is None:
     ...         print extract_text(find_tag_by_id(
     ...             browser.contents, 'application-summary'))
