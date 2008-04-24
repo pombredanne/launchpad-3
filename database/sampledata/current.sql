@@ -1297,7 +1297,7 @@ INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, dat
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (24, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (25, '2007-07-08 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 9, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (26, '2007-07-08 00:00:00', 1, 1, 2, '2007-07-08 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 9, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (26, '2007-07-08 00:00:00', 1, 8, 2, '2007-07-08 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 9, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (27, '2007-07-24 00:00:00', 1, 1, 1, '2007-07-24 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 9, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (28, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 9, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (29, '2007-08-09 21:54:18.553132', 1, 8, 1, '2007-08-09 23:59:59', NULL, NULL, NULL, 36, 0, NULL, 12, NULL, NULL);
@@ -1836,14 +1836,14 @@ ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, supports_virtualized) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
 
 
 ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
@@ -7445,6 +7445,12 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architec
 INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (159, 19, 0, 2, 3, 2, 0);
 INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (160, 19, 50, 3, 3, 1, 50);
 INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (161, 20, 8, 1, 4, 1, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (166, 21, 1, 1, 6, 1, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (167, 21, 0, 1, 6, 2, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (168, 21, 0, 1, 6, 3, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (169, 21, 5, 2, 6, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (170, 21, 0, 2, 6, 2, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (171, 21, 0, 2, 6, 3, 0);
 
 
 ALTER TABLE requestedcds ENABLE TRIGGER ALL;
@@ -7774,6 +7780,7 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, datereque
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, "type") VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Velvet Zephyr Woods', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 4, 4, 'velvetzephyrwoods5423whatever', NULL);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, "type") VALUES (19, 243601, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', NULL, NULL, 1, 'somewherearoundherefdasfdasfa', NULL);
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, "type") VALUES (20, 1, NULL, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Somebody Else', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 6, 'ruederivoli1345paris', NULL);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, "type") VALUES (21, 63, NULL, NULL, '2008-04-22 14:57:32.037998', NULL, NULL, false, 'fdsafdsa fdsafdsa', 'fdsafdsaf', NULL, 'fdsafdfda', 'fdsafdsafd', 'fdsafdsa', 16, '43214321421', '43124321', NULL, NULL, 1, 'fdsafdsaffdsafdsafd', 2);
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;

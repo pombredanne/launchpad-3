@@ -62,11 +62,12 @@ from canonical.launchpad.interfaces import (
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
-    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
-    ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
-    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, PersonVisibility,
+    INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress, InvalidName,
+    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
+    IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
+    PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
     PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
     ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
@@ -102,6 +103,8 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (
     public_person_validator, visibility_validator)
 
@@ -1990,24 +1993,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
-        query_clause = " AND ".join(clauses)
+        query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
-                       sourcepackagerelease.id
-                  FROM sourcepackagerelease, archive
-                 WHERE %s
-              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
-                       dateuploaded DESC
+                    sourcepackagerelease.id
+                FROM sourcepackagerelease, archive,
+                    securesourcepackagepublishinghistory sspph
+                WHERE
+                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
+                    sspph.archive = archive.id AND
+                    sspph.status = %(pub_status)s AND
+                    %(more_query_clauses)s
+                ORDER BY upload_distroseries, sourcepackagename,
+                    upload_archive, dateuploaded DESC
               )
-              """ % (query_clause)
+              """ % dict(pub_status=quote(PackagePublishingStatus.PUBLISHED),
+                         more_query_clauses=query_clauses)
 
-        return SourcePackageRelease.select(
+        rset = SourcePackageRelease.select(
             query,
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+
+        return rset
 
     def isUploader(self, distribution):
         """See `IPerson`."""
@@ -2110,14 +2121,21 @@ class PersonSet:
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
+        if not valid_email(email):
+            raise InvalidEmailAddress(
+                "%s is not a valid email address." % email)
+
         if name is None:
-            try:
-                name = nickname.generate_nick(email)
-            except nickname.NicknameGenerationError:
-                return None, None
+            name = nickname.generate_nick(email)
+        elif not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a person." % name)
         else:
-            if self.getByName(name, ignore_merged=False) is not None:
-                return None, None
+            # The name should be okay, move on...
+            pass
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
 
         if not passwordEncrypted and password is not None:
             password = getUtility(IPasswordEncryptor).encrypt(password)
@@ -2215,7 +2233,7 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text, orderBy=None):
+    def find(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
@@ -3019,6 +3037,50 @@ class PersonSet:
             ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
+    def getSubscribersForTargets(self, targets, recipients=None):
+        """See `IPersonSet`. """
+        if len(targets) == 0:
+            return set()
+        target_criteria = []
+        for target in targets:
+            # target_args is a mapping from query arguments
+            # to query values.
+            target_args = target._target_args
+            target_criteria_clauses = []
+            for key, value in target_args.items():
+                if value is not None:
+                    target_criteria_clauses.append(
+                        '%s = %s' % (key, quote(value)))
+                else:
+                    target_criteria_clauses.append(
+                        '%s IS NULL' % key)
+            target_criteria.append(
+                '(%s)' % ' AND '.join(target_criteria_clauses))
+
+        # Build a UNION query, since using OR slows down the query a lot.
+        subscriptions = StructuralSubscription.select(target_criteria[0])
+        for target_criterion in target_criteria[1:]:
+            subscriptions = subscriptions.union(
+                StructuralSubscription.select(target_criterion))
+
+        # Listify the result, since we want to loop over it multiple times.
+        subscriptions = list(subscriptions)
+
+        # We can't use prejoins in UNION queries, so populate the cache
+        # by getting all the subscribers.
+        subscriber_ids = [
+            subscription.subscriberID for subscription in subscriptions]
+        if len(subscriber_ids) > 0:
+            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+
+        subscribers = set()
+        for subscription in subscriptions:
+            subscribers.add(subscription.subscriber)
+            if recipients is not None:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+        return subscribers
 
 
 class PersonLanguage(SQLBase):

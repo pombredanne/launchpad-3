@@ -222,8 +222,8 @@ We got a valid en-US.xpi file.
     >>> fh = tarfile.extractfile('rosetta-grumpy/xpi/firefox/en-US.xpi')
     >>> from zipfile import ZipFile
     >>> zip = ZipFile(fh, 'r')
-    >>> zip.namelist()
-    ['copyover3.png', 'install.rdf', 'chrome/en-US.jar']
+    >>> sorted(zip.namelist())
+    ['chrome/en-US.jar', 'copyover3.png', 'install.rdf']
 
 
 == Base language pack export using Librarian with date limits ==
