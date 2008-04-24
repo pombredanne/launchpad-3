@@ -170,7 +170,7 @@ def get_visible_comments(comments):
         previous_comment = comment
 
     # These two lines are here to fill the ValidPersonOrTeamCache cache,
-    # so thate checking owner.is_valid_person, when rendering the link,
+    # so that checking owner.is_valid_person, when rendering the link,
     # won't issue a DB query.
     commenters = set(comment.owner for comment in visible_comments)
     getUtility(IPersonSet).getValidPersons(commenters)
