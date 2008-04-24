@@ -145,7 +145,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessLoginSource, MailingListAutoSubscribePolicy)
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
@@ -2805,6 +2806,12 @@ class TeamJoinView(PersonView):
         if not self.join_allowed:
             return False
         return not (self.userIsActiveMember() or self.userIsProposedMember())
+
+    @property
+    def user_wants_list_subscriptions(self):
+        """Is the user interested in subscribing to mailing lists?"""
+        return self.user.mailing_list_auto_subscribe_policy != \
+            MailingListAutoSubscribePolicy.NEVER
 
     @property
     def team_is_moderated(self):
