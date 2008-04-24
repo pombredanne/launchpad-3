@@ -69,7 +69,7 @@ def register_webservice(context, module):
             discriminator=('adapter', interface, provides, ''),
             callable=handler,
             args=('provideAdapter',
-                   (interface, ), provides, '', factory, context.info),
+                  (interface, ), provides, '', factory, context.info),
             )
         register_webservice_operations(context, interface)
 
@@ -93,7 +93,7 @@ def register_webservice_operations(context, interface):
                 'adapter', (interface, WebServiceLayer), provides, tag['as']),
             callable=handler,
             args=('provideAdapter',
-                   (interface, WebServiceLayer), provides, tag['as'],
-                   factory, context.info),
+                  (interface, WebServiceLayer), provides, tag['as'], factory,
+                  context.info),
             )
 

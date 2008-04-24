@@ -375,15 +375,15 @@ def generate_entry_adapter(content_interface, webservice_interface):
     if not isinstance(webservice_interface, InterfaceClass):
         raise TypeError('webservice_interface is not an interface.')
 
-    cdict = {'schema': webservice_interface}
+    class_dict = {'schema': webservice_interface}
     for name, field in getFields(content_interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        cdict[tag['as']] = Passthrough(name, 'context')
+        class_dict[tag['as']] = Passthrough(name, 'context')
 
     classname = "%sAdapter" % webservice_interface.__name__[1:]
-    factory = type(classname, bases=(Entry,), dict=cdict)
+    factory = type(classname, bases=(Entry,), dict=class_dict)
 
     classImplements(factory, webservice_interface)
 
@@ -398,11 +398,11 @@ def generate_collection_adapter(interface):
 
     tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     method_name = tag['collection_default_content']
-    cdict = {
+    class_dict = {
         'find': lambda self: (getattr(self.context, method_name)()),
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
-    factory = type(classname, bases=(Collection,), dict=cdict)
+    factory = type(classname, bases=(Collection,), dict=class_dict)
 
     protect_schema(factory, ICollection)
     return factory
@@ -493,10 +493,10 @@ def generate_operation_adapter(method):
         raise AssertionError('Unknown method export type: %s' % tag['type'])
 
     name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
-    cdict = {'params' : tuple(tag['params'].values()),
+    class_dict = {'params' : tuple(tag['params'].values()),
              '_export_info': tag,
              '_method_name': method.__name__}
-    factory = type(name, bases, cdict)
+    factory = type(name, bases, class_dict)
     classImplements(factory, provides)
     protect_schema(factory, provides)
 

@@ -714,7 +714,7 @@ and that the caller took care of setting the content type.)
     >>> print request.response.headers['Content-Type']
     application/json
 
-Methods exported as a write generates an adapter providing
+Methods exported as a write operations generates an adapter providing
 IResourcePOSTOperation.
 
     >>> from canonical.lazr.interfaces.rest import IResourcePOSTOperation
@@ -736,7 +736,7 @@ The adapter's params property also contains the available parameters
 
     >>> class BookOnSteroids(Book):
     ...     def checkout(self, who, kind):
-    ...         print """%s did a %s check out of '%s'.""" % (
+    ...         print "%s did a %s check out of '%s'." % (
     ...             who, kind, self.title)
 
     >>> write_method_adapter = write_method_adapter_factory(
@@ -761,7 +761,7 @@ REQUEST_USER specification is replaced by the current user.
     >>> write_method_adapter.call()
     A user did a normal check out of 'The Doors of Perception'.
 
-Methods exported as a factory also generates an adapter providing
+Methods exported as a factory also generate an adapter providing
 IResourcePOSTOperation.
 
     >>> factory_method_adapter_factory = generate_operation_adapter(
@@ -786,7 +786,7 @@ The adapter's params property also contains the available parameters.
     price: Float
     title: TextLine
 
-Factory operations sets the 201 Created status code and returns the
+Factory operations set the 201 Created status code and return the
 URL to the newly created object. The body of the response will be empty.
 
 (For canonical_url() to work, we need to register an ICanonicalUrlData
@@ -820,8 +820,8 @@ adapter and set the request as the current interaction.)
     >>> print response.headers['Location']
     http://api.example.org/books/Eyeless%20in%20Gaza
 
-The generate_operation_adapter() function can only be called on IMethod
-marked for export:
+The generate_operation_adapter() function can only be called on an
+IMethod marked for export:
 
     >>> generate_operation_adapter(IBook)
     Traceback (most recent call last):
