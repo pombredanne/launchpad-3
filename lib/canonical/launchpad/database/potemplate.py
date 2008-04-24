@@ -715,10 +715,6 @@ class POTemplate(SQLBase, RosettaStats):
         message = template % replacements
         return (subject, message)
 
-    def getTranslationTemplateItems(self):
-        """See `IPOTemplate`."""
-        return TranslationTemplateItem.selectBy(potemplate=self)
-
 
 class POTemplateSubset:
     implements(IPOTemplateSubset)

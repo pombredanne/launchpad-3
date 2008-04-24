@@ -704,7 +704,7 @@ class POTMsgSet(SQLBase):
             'Given potemplate is not correct"')
         self.sequence = sequence
         translation_template_item = TranslationTemplateItem.selectOneBy(
-            potmsgset=self)
+            potmsgset=self, potemplate=potemplate)
         if translation_template_item is not None:
             # Update the sequence for the translation template item.
             if sequence == 0:

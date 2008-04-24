@@ -217,7 +217,9 @@ Let's add a fuzzy translation.
 
 XXX CarlosPerelloMarin 20080423: Once we finish shared translations DB
 migration, we could remove this part of the test. We don't need to
-migrate it!.
+migrate it! Please, read
+https://blueprints.launchpad.net/rosetta/+spec/message-sharing for
+more details.
 
 Finally, it should have some fields initialised in the same way its
 pofile attribute has it:
@@ -993,17 +995,18 @@ However, this one doesn't show up as external suggestion for Spanish.
 
 == POTMsgSet.setSequence ==
 
-Finally, the new potmsgset should have an entry in the
-translationtemplateitems table once we assign a sequence number.
+Finally, the new `IPOTMsgSet` should have an entry in the
+`TranslationTemplateItem` table once we assign a sequence number.
 
-First, we need a helper function to check whether the potmsgset existis
+First, we need a helper function to check whether the potmsgset exists
 in the table or not.
 
 
-    >>> def is_potmsgset_in_translation_template_items(potmsgset):
+    >>> def is_potmsgset_in_potemplate(potmsgset, potemplate):
     ...     items = [
     ...         item.potmsgset.id
-    ...         for item in potemplate.getTranslationTemplateItems()
+    ...         for item in TranslationTemplateItem.selectOneBy(
+    ...             potemplate=potemplate, potmsgset=potmsgset)
     ...         ]
     ...     return potmsgset.id in items
 
