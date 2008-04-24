@@ -101,6 +101,7 @@
                       replace="pub/age/fmt:approximateduration">
                       3 minutes ago
                     </tal:datepublished>
+                    ago
                  </li>
                </ul>
               </div>

@@ -47,10 +47,10 @@ sources' section.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_sources'))
     Latest sources
-    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo 41 weeks
-    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth 41 weeks
-    pmount 0.1-1 in warty in PPA for Celso Providelo 41 weeks
-    iceweasel 1.0 in warty in PPA for Celso Providelo 41 weeks
+    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo 41 weeks ago
+    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth 41 weeks ago
+    pmount 0.1-1 in warty in PPA for Celso Providelo 41 weeks ago
+    iceweasel 1.0 in warty in PPA for Celso Providelo 41 weeks ago
 
 
 == Searching PPAs ==
