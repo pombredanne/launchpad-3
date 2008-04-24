@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/defaultnomenu"
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
@@ -51,7 +51,7 @@
             <tbody>
               <tr>
                 <th>Driver:</th>
-                <td>
+                <td colspan="2">
                   <tal:none condition="not:context/driver">None set</tal:none>
                   <a
                     tal:condition="context/driver"
@@ -61,7 +61,7 @@
                 </td>
               </tr>
               <tr tal:define="bugcontact context/bugcontact">
-                <th>Bug contact:</th>
+                <th>Bug supervisor:</th>
                 <td>
                   <tal:none condition="not:bugcontact"
                   >None set</tal:none>
@@ -70,6 +70,16 @@
                     tal:attributes="href bugcontact/fmt:url"
                     tal:content="bugcontact/displayname"
                   >Bob Johnson</a>
+                </td>
+                <td>
+                  <tal:edit-bugcontact
+                      condition="context/menu:bugs/bugcontact|nothing">
+                    <a tal:define="link context/menu:bugs/bugcontact"
+                       tal:condition="link/enabled"
+                       tal:attributes="href link/url; title link/text">
+                      <img tal:attributes="alt link/text" src="/@@/edit" />
+                    </a>
+                  </tal:edit-bugcontact>
                 </td>
               </tr>
               <tr tal:define="securitycontact context/security_contact">
@@ -82,6 +92,16 @@
                     tal:attributes="href securitycontact/fmt:url"
                     tal:content="securitycontact/displayname"
                   >Billy Anderson</a>
+                </td>
+                <td>
+                  <tal:edit-securitycontact
+                      condition="context/menu:bugs/securitycontact|nothing">
+                    <a tal:define="link context/menu:bugs/securitycontact"
+                       tal:condition="link/enabled"
+                       tal:attributes="href link/url; title link/text">
+                      <img tal:attributes="alt link/text" src="/@@/edit" />
+                    </a>
+                  </tal:edit-securitycontact>
                 </td>
               </tr>
             </tbody>
@@ -101,6 +121,14 @@
                 open CVE
                 <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
               </a>
+              <tal:cve-reports
+                  condition="context/menu:bugs/cve|nothing">
+                -<a tal:define="link context/menu:bugs/cve"
+                   tal:replace="structure link/render"
+                   tal:condition="link/enabled">
+                  CVE reports
+                </a>
+              </tal:cve-reports>
             </li>
             <li tal:define="pending_bugwatches view/pending_bugwatches_info"
                 tal:condition="pending_bugwatches">
@@ -124,6 +152,13 @@
                 can expire
               </a>
             </li>
+            <tal:review-nominations
+                condition="context/menu:bugs/nominations|nothing">
+              <li tal:define="link context/menu:bugs/nominations">
+                <a tal:attributes="href link/url"
+                   tal:content="link/text" />
+              </li>
+            </tal:review-nominations>
             <li style="font-weight: bold;">
               <a href="+bugs">List all open bugs</a>
             </li>

@@ -12,13 +12,12 @@ from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, CodeHostingTestProviderAdapter, ServerTestCase)
+    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
 
 from canonical.testing import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
-
 
 def wait_for_disconnect(method):
     """Run 'method' and wait for it to fully disconnect from the server.
@@ -53,13 +52,6 @@ class TestBranchIDToPath(unittest.TestCase):
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedLaunchpadZopelessLayer
-
-    def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13 bug=120156
-        # Override Twisted's post-test cleanup.
-        # The tests fail badly if this is removed, for unknown reasons.
-        from twisted.internet import defer
-        return defer.succeed(None)
 
     @defer_to_thread
     def test_remove_branch_directory(self):
@@ -288,13 +280,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedLaunchpadZopelessLayer
-
-    def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13 bug=120156: Override Twisted's
-        # post-test cleanup. The tests fail badly if this is removed, for
-        # unknown reasons.
-        from twisted.internet import defer
-        return defer.succeed(None)
 
     def installServer(self, server):
         self.server = server

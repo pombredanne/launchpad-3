@@ -18,7 +18,7 @@
                   import_job" />
     <require
       permission="launchpad.Edit"
-      attributes="updateFromData" />
+      attributes="approve invalidate suspend updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when
@@ -89,6 +89,14 @@
         class="canonical.launchpad.browser.CodeImportNewView"
         name="+new"
         template="../templates/codeimport-new.pt"
+        permission="launchpad.AnyPerson"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImportSet"
+        class="canonical.launchpad.browser.CodeImportMachineView"
+        name="+machines"
+        template="../templates/codeimport-machines.pt"
         permission="launchpad.AnyPerson"
         />
   </facet>

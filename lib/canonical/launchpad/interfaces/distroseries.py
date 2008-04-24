@@ -162,7 +162,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("All architectures in this series.")
-    ppa_architectures = Attribute(
+    virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
@@ -178,7 +178,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'This list is made up of any drivers or owners from this '
         'DistroSeries, and the Distribution to which it belong.')
     bugcontact = Attribute(
-        'Currently just a reference to the Distribution bug contact.')
+        'Currently just a reference to the Distribution bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Distribution security contact.')
     messagecount = Attribute("The total number of translatable items in "
@@ -501,12 +501,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         DEBUG level messages.
         """
 
-    def updateCompletePackageCache(archive, log, ztm):
+    def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
         Consider all binary package names published in this distro series.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        :param archive: target `IArchive`;
+        :param log: logger object for printing debug level information;
+        :param ztm:  transaction used for partial commits, every chunk of
+            'commit_chunk' updates is committed;
+        :param commit_chunk: number of updates before commit, defaults to 500.
+
+        :return the number of packages updated.
         """
 
     def updatePackageCache(binarypackagename, archive, log):
@@ -540,7 +546,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                ppa_supported=False):
+                supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):

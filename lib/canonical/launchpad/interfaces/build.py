@@ -13,7 +13,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Timedelta
 
+from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 class IBuild(Interface):
@@ -31,6 +33,9 @@ class IBuild(Interface):
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     archive = Attribute("The archive")
+    estimated_build_duration = Timedelta(
+        title=_("Estimated Build Duration"), required=False,
+        description=_("Estimated build duration interval"))
 
     # Properties
     current_component = Attribute(
@@ -127,6 +132,14 @@ class IBuild(Interface):
         doc/build-notification.txt for further information.
         """
 
+    def getEstimatedBuildStartTime():
+        """Get the estimated build start time for a pending build job.
+
+        :return: a timestamp upon success or None on failure. None
+            indicates that an estimated start time is not available.
+        :raise: AssertionError when the build job is not in the
+            `BuildStatus.NEEDSBUILD` state.
+        """
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -144,7 +157,7 @@ class IBuildSet(Interface):
     def getPendingBuildsForArchSet(archseries):
         """Return all pending build records within a group of ArchSerieses
 
-        Pending means that buildstatus is NEEDSBUILDING.
+        Pending means that buildstate is NEEDSBUILD.
         """
 
     def getBuildsForBuilder(builder_id, status=None, name=None):

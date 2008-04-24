@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Bazaar transport for the Launchpad code hosting file system."""
 
@@ -26,7 +27,6 @@ from bzrlib.transport import (
     )
 
 from twisted.web.xmlrpc import Fault
-from twisted.python import log as tplog
 
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
@@ -35,7 +35,7 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 def split_with_padding(a_string, splitter, num_fields, padding=None):
@@ -80,21 +80,6 @@ def get_path_segments(path):
     ignored.
     """
     return path.strip('/').split('/')
-
-
-def oops_reporting_observer(args):
-    """A log observer for twisted's logging system that reports OOPSes."""
-    if args.get('isError', False) and 'failure' in args:
-        log = logging.getLogger('codehosting')
-        try:
-            failure = args['failure']
-            request = errorlog.ScriptRequest([])
-            errorlog.globalErrorUtility.raising(
-                (failure.type, failure.value, failure.getTraceback()),
-                request,)
-            log.info("Logged OOPS id %s."%(request.oopsid,))
-        except:
-            log.exception("Error reporting OOPS:")
 
 
 class _NotFilter(logging.Filter):
@@ -144,12 +129,7 @@ def set_up_logging(configure_oops_reporting=False):
     log.setLevel(logging.DEBUG)
 
     if configure_oops_reporting:
-        errorreports = config.codehosting
-
-        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
-        config.launchpad.errorreports.errordir = errorreports.errordir
-        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
-        tplog.addObserver(oops_reporting_observer)
+        set_up_oops_reporting('codehosting')
 
     return log
 
@@ -182,6 +162,12 @@ class LaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
+
+        # Cache for authserver responses to getBranchInformation(). This maps
+        # from (user, product, branch) tuples to whatever
+        # getBranchInformation() returns. To clear an individual tuple, set
+        # its value in the cache to None, or delete it from the cache.
+        self._branch_info_cache = {}
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
@@ -236,15 +222,14 @@ class LaunchpadServer(Server):
             raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        branch_id, permissions = self.authserver.getBranchInformation(
-            self.user_id, user, product, branch)
+        branch_id, permissions = self._get_branch_information(
+            user, product, branch)
         if branch_id != '':
             self.logger.debug('Branch (%r, %r, %r) already exists ')
             return branch_id
         else:
             try:
-                return self.authserver.createBranch(
-                    self.user_id, user, product, branch)
+                return self._create_branch(user, product, branch)
             except Fault, f:
                 if f.faultCode == NOT_FOUND_FAULT_CODE:
                     # One might think that it would make sense to raise
@@ -259,6 +244,25 @@ class LaunchpadServer(Server):
                     raise PermissionDenied(f.faultString)
                 else:
                     raise
+
+    def _create_branch(self, user, product, branch):
+        """Create a branch on the authserver."""
+        branch_id = self.authserver.createBranch(
+            self.user_id, user, product, branch)
+        # Clear the cache for this branch. We *could* populate it with
+        # (branch_id, 'w'), but then we'd be building in more assumptions
+        # about the authserver.
+        self._branch_info_cache[(user, product, branch)] = None
+        return branch_id
+
+    def _get_branch_information(self, user, product, branch):
+        """Get branch information from the authserver."""
+        branch_info = self._branch_info_cache.get((user, product, branch))
+        if branch_info is None:
+            branch_info = self.authserver.getBranchInformation(
+                self.user_id, user, product, branch)
+            self._branch_info_cache[(user, product, branch)] = branch_info
+        return branch_info
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions
@@ -280,8 +284,8 @@ class LaunchpadServer(Server):
                 'Path must start with user or team directory: %r'
                 % (user_dir,))
         user = user_dir[1:]
-        branch_id, permissions = self.authserver.getBranchInformation(
-            self.user_id, user, product, branch)
+        branch_id, permissions = self._get_branch_information(
+            user, product, branch)
         return branch_id, permissions, path
 
     def translate_virtual_path(self, virtual_path):
@@ -353,6 +357,7 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
+        self._branch_info_cache.clear()
         unregister_transport(self.scheme, self._factory)
 
 

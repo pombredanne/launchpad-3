@@ -191,6 +191,16 @@ ucci\u00F3n
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
+    def test_WhiteSpaceBeforeComment(self):
+        """Test that single line comment is detected even with white space."""
+        content = ' # foo = bar'
+        property_file = PropertyFile('test.properties', content)
+        # No message should be parsed.
+        expected = {}
+        parsed = dict([(message.msgid_singular, message.translations)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
+
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)

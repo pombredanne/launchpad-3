@@ -1,6 +1,6 @@
 = Archive View Classes and Pages =
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 Let's use Celso's PPA for the tests.
@@ -28,7 +28,8 @@ Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
     >>> empty_request = LaunchpadTestRequest(form={})
-    >>> view = getView(cprov.archive, "+delete-packages", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+delete-packages")
     >>> view.initialize()
 
 We query the available PUBLISHED sources and use them to build the
@@ -37,7 +38,7 @@ We query the available PUBLISHED sources and use them to build the
     >>> [pub.id for pub in view.sources]
     [27, 28, 29]
 
-    >>> view.has_sources_for_deletion
+    >>> view.has_sources
     True
 
     >>> view.available_sources_size
@@ -91,8 +92,8 @@ filtered results.
 
     >>> name_filter_request = LaunchpadTestRequest(
     ...     form={'field.name_filter': 'pmount'})
-    >>> view = getView(
-    ...    cprov.archive, "+delete-packages", name_filter_request)
+    >>> view = getMultiAdapter(
+    ...    (cprov.archive, name_filter_request), name="+delete-packages")
     >>> view.initialize()
 
     >>> for pub in view.sources:
@@ -110,12 +111,13 @@ which the available options already exclude the deleted items.
     ...          'field.selected_sources-empty-marker': 1})
     >>> delete_all_request.method = 'POST'
 
-    >>> view = getView(cprov.archive, "+delete-packages", delete_all_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, delete_all_request), name="+delete-packages")
     >>> view.initialize()
 
     >>> view.available_sources_size
     0
-    >>> view.has_sources_for_deletion
+    >>> view.has_sources
     False
 
     >>> import transaction
@@ -125,11 +127,12 @@ If by any chance, the form containing already deleted items, is
 re-POSTed to the page, the code is able to identify such invalid
 situation and ignore it. See bug #185922 for reference.
 
-    >>> view = getView(cprov.archive, "+delete-packages", delete_all_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, delete_all_request), name="+delete-packages")
     >>> view.initialize()
     >>> view.available_sources_size
     0
-    >>> view.has_sources_for_deletion
+    >>> view.has_sources
     False
     >>> len(view.errors)
     2
@@ -153,7 +156,8 @@ Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
     >>> empty_request = LaunchpadTestRequest(form={})
-    >>> view = getView(cprov.archive, "+edit-dependencies", empty_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+edit-dependencies")
     >>> view.initialize()
 
 There is a property indicating whether or not the context PPA has
@@ -189,8 +193,9 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...         'field.actions.add': 'Add Dependency',
     ...         })
     >>> add_dependency_request.method = 'POST'
-    >>> view = getView(
-    ...    cprov.archive, "+edit-dependencies", add_dependency_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, add_dependency_request),
+    ...     name="+edit-dependencies")
     >>> view.initialize()
 
 Now we can see that the view properties correctly indicates the
@@ -231,8 +236,8 @@ We simply let the zope infrastructure raise FormError on malformed requests.
     >>> broken_request = LaunchpadTestRequest(
     ...     form={'field.actions.remove': 'Remove Dependencies',})
     >>> broken_request.method = 'POST'
-    >>> view = getView(
-    ...    cprov.archive, "+edit-dependencies", broken_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, broken_request), name="+edit-dependencies")
     >>> view.initialize()
     Traceback (most recent call last):
     ...
@@ -248,8 +253,9 @@ initial/empty state.
     ...         'field.actions.remove': 'Remove Dependencies',
     ...         })
     >>> remove_dependency_request.method = 'POST'
-    >>> view = getView(
-    ...    cprov.archive, "+edit-dependencies", remove_dependency_request)
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, remove_dependency_request),
+    ...     name="+edit-dependencies")
     >>> view.initialize()
 
     >>> view.has_dependencies
@@ -262,4 +268,183 @@ initial/empty state.
     <!--
     setFocusByName('field.dependency_candidate');
     // -->
+
+
+== ArchivePackageCopyingView ==
+
+This class extends ArchiveSourceSelectionFormView, and thus uses the
+same mechanisms for presenting and filtering available sources for
+copying, the 'selected_sources' widget. Related features don't need to
+be re-tested.
+
+    >>> login('celso.providelo@canonical.com')
+
+Issuing a empty request we can inspect the internal attributes used to
+build the page.
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
+    >>> view.initialize()
+
+The main difference for ArchivePackageDeletionView  is that this uses a
+different 'source' provider, which includes deleted sources.
+
+    >>> [pub.status.name for pub in view.sources]
+    ['DELETED', 'DELETED', 'DELETED']
+
+This view contains three properties. The first is a list of the PPAs
+in which the current user has upload/copy rights (see
+`IArchiveSet.getPPAsForUser`).
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    [u'cprov']
+
+The second shows whether or not the current user is allowed to perform
+copies. They must participate in at least one PPA for this to be True.
+
+    >>> view.can_copy
+    True
+
+And finally if the user has the right to upload/copy to the context
+PPA.
+
+    >>> view.can_copy_to_context_ppa
+    True
+
+Lets exercise the properties. 'No Privileges Person' user has his own
+PPA, thus he can copy to it, but not to Celso's PPA.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
+    >>> view.initialize()
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    [u'no-priv']
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    False
+
+'Foo Bar' user has no PPA, so he cannot perform copies at all.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
+    >>> view.initialize()
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    []
+
+    >>> view.can_copy
+    False
+
+    >>> view.can_copy_to_context_ppa
+    False
+
+When we activate the Ubuntu team PPA, in which Celso participates,
+he will be able to copy not only to his PPA but also to the PPA for a
+team he is member of.
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> ubuntu_team_ppa = getUtility(IArchiveSet).ensure(
+    ...     owner=ubuntu_team, distribution=None, purpose=ArchivePurpose.PPA,
+    ...     description="Don't we have a distribution ?")
+
+    >>> login('celso.providelo@canonical.com')
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+copy-packages")
+    >>> view.initialize()
+
+    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    [u'cprov', u'ubuntu-team']
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    True
+
+We will prepare a empty POST and inspect the default form values.
+
+    >>> empty_post = LaunchpadTestRequest(
+    ...    form={'field.destination_archive': '',
+    ...          'field.destination_series': ''})
+    >>> empty_post.method = 'POST'
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_post), name="+copy-packages")
+    >>> view.initialize()
+
+The 'destination_archive' widget contents are directly based on the
+'ppas_for_user', but it excludes the context PPA from the list of
+options making it the default option, 'This PPA' rendered option.
+
+    >>> archive_widget = view.widgets['destination_archive']
+
+    >>> archive_widget.required
+    False
+
+    >>> print archive_widget.translate(archive_widget._messageNoValue)
+    This PPA
+
+    >>> for item in archive_widget.vocabulary:
+    ...     print item.title
+    PPA for Ubuntu Team
+
+    >>> print archive_widget.getInputValue() == cprov.archive
+    True
+
+The 'destination_series' widget behaves similarly, it contains all
+series available for the PPA distribution and default to 'The same
+series', which ends up being None in the browser domain.
+
+    >>> series_widget = view.widgets['destination_series']
+
+    >>> series_widget.required
+    False
+
+    >>> print archive_widget.translate(series_widget._messageNoValue)
+    The same series
+
+    >>> for item in series_widget.vocabulary:
+    ...     print item.title
+    Breezy Badger Autotest
+    Grumpy
+    Hoary
+    Warty
+
+    >>> print series_widget.getInputValue()
+    None
+
+The 'destination_archive' widget behaves different depending on
+whether or not the user has permission to perform copies to the
+context PPA.
+
+No Privileges user can't copy package to the Celso's PPA, thus
+'destination' widget will become required and will fail if an empty
+value is submitted.
+
+    >>> login('no-priv@canonical.com')
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_post), name="+copy-packages")
+    >>> view.initialize()
+
+    >>> archive_widget = view.widgets['destination_archive']
+    >>> archive_widget.required
+    True
+
+    >>> for item in archive_widget.vocabulary:
+    ...     print item.title
+    PPA for No Privileges Person
+
+    >>> print archive_widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('destination_archive', u'Destination PPA', )
 

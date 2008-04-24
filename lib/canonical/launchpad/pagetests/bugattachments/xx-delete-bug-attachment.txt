@@ -39,14 +39,14 @@ attachment.
     >>> user_browser.getLink(url=re.compile(r'attachments/\d')).click()
     >>> user_browser.title
     'Bug #2 - Edit attachment \xe2\x80\x9cGreat deal\xe2\x80\x9d'
-    >>> user_browser.getControl('Delete attachment') is not None
+    >>> user_browser.getControl('Delete Attachment') is not None
     True
 
 If the button is pressed, the attachment will be deleted, which means
 that it won't show up in the attachments portlet anymore. Since there
 arent' any other attachments, the portlet won't show up at all.
 
-    >>> user_browser.getControl('Delete attachment').click()
+    >>> user_browser.getControl('Delete Attachment').click()
     >>> user_browser.url
     'http://.../+bug/2'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):

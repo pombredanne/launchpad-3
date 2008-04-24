@@ -1,10 +1,23 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <permission id="launchpad.AnyPerson" title="Any Authenticated Person" />
+  <permission
+    id="zope.Public" title="Public stuff" access_level="read" />
+  <permission
+    id="launchpad.View" title="Viewing something" access_level="read" />
 
-  <permission id="launchpad.View" title="Viewing something" />
+  <permission
+    id="launchpad.AnyPerson" title="Any Authenticated Person"
+    access_level="write" />
 
-  <permission id="launchpad.Edit" title="Editing something" />
+  <permission
+    id="launchpad.Edit" title="Editing something" access_level="write" />
+
+  <!-- Request large downloads, or other heavyweight jobs that are not
+  semantically like "editing" and are not restricted to administrators.
+  -->
+  <permission
+    id="launchpad.ExpensiveRequest" title="Make expensive requests"
+    access_level="read" />
 
   <!-- XXX: David Allouche 2006-07-19
   Needed to allow EditSeriesSourceByVCSImports to run, and enable
@@ -12,39 +25,51 @@
   'launchpad.Edit' on ProductSeries and only enables IProductSeries. There
   might be a cleaner way of fixing that issue, but it breaks my brain already
   and I need this fix urgently. -->
-  <permission id="launchpad.EditSource" title="Edit source details" />
+  <permission
+    id="launchpad.EditSource" title="Edit source details"
+    access_level="write" />
 
-  <permission id="launchpad.Append" title="Adding something" />
+  <permission
+    id="launchpad.Append" title="Adding something" access_level="write" />
 
-  <permission id="launchpad.Moderate" title="Moderate something" />
+  <permission
+    id="launchpad.Moderate" title="Moderate something" access_level="write" />
 
-  <permission id="launchpad.Admin" title="Administer something" />
+  <permission
+    id="launchpad.Admin" title="Administer something" access_level="write" />
 
   <!-- There are some translation-related fields that need to be set
   by Translation admins (aka Rosetta Admins) but we don't want to give
   them launchpad.Admin rights because they should not be able to change other
   details for those objects, for instance, IDistroSeries.name. -->
-  <permission id="launchpad.TranslationsAdmin" title="Administer something
-        related with translations." />
-  <permission id="launchpad.LanguagePacksAdmin" title="Administer Language
-        Packs." />
+  <permission
+    id="launchpad.TranslationsAdmin"
+    title="Administer something related with translations."
+    access_level="write" />
+  <permission
+    id="launchpad.LanguagePacksAdmin" title="Administer Language Packs."
+    access_level="write" />
 
   <!-- XXX: GuilhermeSalgado 2005-08-25
   To be removed soon, this is only needed by the page to upload SSH
   keys, cause we decided to not allow admins to upload keys in behalf of other
   users. -->
-  <permission id="launchpad.Special" title="Special permissions" />
+  <permission
+    id="launchpad.Special" title="Special permissions" access_level="write" />
 
   <!-- Experimental (sabdfl) Trying to use the permissions system to
        establish roles. If this works we should consider a parallel "roles"
        system that is similar to the permissions system, or just extending
        our permissions vocabulary to include these roles. -->
-  <permission id="launchpad.Driver" title="The role of deciding what
-        bug fixes and features should be goals for a series or release." />
+  <permission 
+    id="launchpad.Driver"
+    title="The role of deciding what bug fixes and features should be goals
+           for a series or release."
+    access_level="write" />
 
-  <permission id="launchpad.Owner" title="The role of someone who created or
-        otherwise owns an object." />
-
-  <permission id="launchpad.WEGSND" title="What even god should not do" />
+  <permission
+    id="launchpad.Owner"
+    title="The role of someone who created or otherwise owns an object."
+    access_level="write" />
 
 </configure>

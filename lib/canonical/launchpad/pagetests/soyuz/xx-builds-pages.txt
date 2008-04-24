@@ -252,6 +252,17 @@ code is prepared to raise the correct exception:
     ...
     UnexpectedFormData: No suitable state found for value "foo"
 
+The code also raises UnexpectedFormData when valid, but duplicated,
+form values are submitted:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+builds"
+    ...     "?build_text=binutils&build_state=building"
+    ...     "&build_text=binutils&build_state=all")
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: No suitable state found for value "[u'building', u'all']"
+
 
 == Builder history ==
 
@@ -284,7 +295,7 @@ failed-to-build builds.
     taking a minute &mdash; see the log
     ------------------------------
     Failed to build
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     Build started on 2007-07-07 and finished on 2007-07-08
     taking a minute &mdash; see the log
     ------------------------------

@@ -656,7 +656,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:
@@ -1122,13 +1122,6 @@ class BugTaskSet:
                             AND Milestone.name = %s)
                 """ % sqlvalues(params.milestone.target,
                                 params.milestone.name)
-
-                # A bug may have bugtasks in more than one series, and these
-                # bugtasks may have the same milestone value. To avoid
-                # duplicate result rows for one bug, ensure that only that
-                # bugtask is returned, that is directly assigned to the
-                # product.
-                extra_clauses.append("BugTask.product IS NOT null")
             else:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)

@@ -25,17 +25,18 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError',
-    'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
-    'TwistedLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
+    'ExperimentalLaunchpadZopelessLayer', 'TwistedLaunchpadZopelessLayer'
     ]
 
+import gc
 import logging
 import os
 import signal
 import socket
 import sys
 from textwrap import dedent
+import threading
 import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -101,8 +102,8 @@ class LayerIsolationError(LayerError):
     This generally indicates a test has screwed up by not resetting
     something correctly to the default state.
 
-    The test suite should abort as further test failures may well
-    be spurious.
+    The test suite should abort if it cannot clean up the mess as further
+    test failures may well be spurious.
     """
 
 
@@ -158,6 +159,10 @@ class BaseLayer:
     @classmethod
     @profiled
     def testSetUp(cls):
+        # Store currently running threads so we can detect if a test
+        # leaves new threads running.
+        BaseLayer._threads = threading.enumerate()
+
         BaseLayer.check()
 
         BaseLayer.original_working_directory = os.getcwd()
@@ -202,6 +207,28 @@ class BaseLayer:
         BaseLayer.test_name = None
 
         BaseLayer.check()
+
+        # Check for tests that leave live threads around early.
+        # A live thread may be the cause of other failures, such as
+        # uncollectable garbage.
+        new_threads = [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+        if new_threads:
+            BaseLayer.flagTestIsolationFailure(
+                    "Test left new live threads: %s" % repr(new_threads))
+        del BaseLayer._threads
+
+        # Objects with __del__ methods cannot participate in refence cycles.
+        # Fail tests with memory leaks now rather than when Launchpad crashes
+        # due to a leak because someone ignored the warnings.
+        if gc.garbage:
+            gc.collect() # Expensive, so only do if there might be garbage.
+            if gc.garbage:
+                BaseLayer.flagTestIsolationFailure(
+                        "Test left uncollectable garbage\n"
+                        "%s (referenced from %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
 
     @classmethod
     @profiled
