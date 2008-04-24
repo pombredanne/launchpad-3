@@ -1262,6 +1262,12 @@ class ProductBranchListingView(BranchListingView):
 
     no_sort_by = (BranchListingSort.PRODUCT,)
 
+    @property
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return getUtility(IBranchSet).getBranchesForProduct(
+            product=self.context, visible_by_user=self.user).count()
+
     @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
@@ -1285,10 +1291,9 @@ class ProductBranchListingView(BranchListingView):
         return message % self.context.displayname
 
 
-class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin):
+class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
+                           ProductDownloadFileMixin):
     """Initial view for products on the code virtual host."""
-
-    # TODO: getting code, and listings.
 
     @property
     def form_action(self):
@@ -1303,12 +1308,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin):
             'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
             'hide_dormant': False,
             }
-
-    @property
-    def branch_count(self):
-        """The number of total branches the user can see."""
-        return getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user).count()
 
     @cachedproperty
     def _recent_revisions(self):

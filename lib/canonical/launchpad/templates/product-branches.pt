@@ -12,21 +12,14 @@
 
 <body>
 
-<div metal:fill-slot="main"
-     tal:define="branches view/branches">
+<div metal:fill-slot="main">
 
-  <div style="float:right">
-    <div>
-      <a href="+addbranch">
-        <img alt="Register a branch"
-             src="/+icing/but-lrg-registerabranch.gif"/>
-      </a>
-    </div>
-  </div>
+  <tal:branch-summary content="structure context/@@+branch-summary" />
 
-  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
-
-  <tal:branchlisting content="structure branches/@@+branch-listing" />
+  <tal:has-branches condition="view/branch_count"
+                    define="branches view/branches">
+    <tal:branchlisting content="structure branches/@@+branch-listing" />
+  </tal:has-branches>
 
 </div>
 
