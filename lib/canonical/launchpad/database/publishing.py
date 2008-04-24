@@ -428,6 +428,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
+        published_status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            ]
+
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
@@ -440,13 +445,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.pocket=%s AND
-            BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(
-                    self.sourcepackagerelease,
-                    self.distroseries,
-                    self.archive,
-                    self.pocket,
-                    PackagePublishingStatus.PUBLISHED)
+            BinaryPackagePublishingHistory.status IN %s
+        """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
+                        self.archive, self.pocket, published_status)
 
         orderBy = ['BinaryPackageName.name',
                    'DistroArchSeries.architecturetag']
@@ -465,9 +466,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `ISourcePackagePublishingHistory`."""
         clause = """
             Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
             Build.sourcepackagerelease = %s AND
             Build.archive = %s
-        """ % sqlvalues(self.sourcepackagerelease, self.archive)
+        """ % sqlvalues(self.distroseries, self.sourcepackagerelease,
+                        self.archive)
 
         orderBy = ['DistroArchSeries.architecturetag']
 
@@ -493,7 +496,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         if self.archive.require_virtualized:
             architectures_available = [
-                arch for arch in self.distroseries.ppa_architectures]
+                arch for arch in self.distroseries.virtualized_architectures]
         else:
             architectures_available = self.distroseries.architectures
 
