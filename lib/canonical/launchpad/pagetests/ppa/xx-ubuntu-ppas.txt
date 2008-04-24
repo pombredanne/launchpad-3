@@ -41,6 +41,17 @@ published across all ubuntu PPAs.
     4 published sources
     4 published binaries
 
+The 5 most active PPAs are listed in the 'Most active' section. Since
+we only have 3 PPAs in sampledata they are all presented.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    Most active
+                                 Sources  Binaries
+    PPA for Celso Providelo      3        3
+    PPA for Mark Shuttleworth    1        1
+    PPA for No Privileges Person 0        0
+
 Up to 5 latest source publications are also presented in the 'Latest
 sources' section.
 
@@ -76,14 +87,17 @@ PENDING or PUBLISHED source record) PPAs.
 
 When a search is requested the information sections are not rendered.
 
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_archs')
-    None
-
     >>> print find_tag_by_id(anon_browser.contents, 'ppa_statistics')
     None
 
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    None
+
     >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_sources')
+    None
+
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_archs')
     None
 
 The information section will be only rendered if the page is reloaded
@@ -93,15 +107,19 @@ request.
     >>> anon_browser.getLink("Personal Package Archives").click()
 
     >>> find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_archs') is not None
-    True
-
-    >>> find_tag_by_id(
     ...     anon_browser.contents, 'ppa_statistics') is not None
     True
 
     >>> find_tag_by_id(
+    ...     anon_browser.contents, 'ppa_most_active') is not None
+    True
+
+    >>> find_tag_by_id(
     ...     anon_browser.contents, 'ppa_latest_sources') is not None
+    True
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_archs') is not None
     True
 
 Back to the search form again anonymous users can click on a checkbox

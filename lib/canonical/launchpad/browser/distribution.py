@@ -529,6 +529,12 @@ class DistributionPPASearchView(LaunchpadView):
         return archive_set.getLatestPPASourcePublicationsForDistribution(
             distribution=self.context)
 
+    def getMostActivePPAs(self):
+        """Return the last 5 most active PPAs."""
+        archive_set = getUtility(IArchiveSet)
+        return archive_set.getMostActivePPAsForDistribution(
+            distribution=self.context)
+
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):

@@ -335,8 +335,20 @@ class IArchiveSet(Interface):
 
         The result is ordered by PPA owner's displayname.
         """
+
     def getLatestPPASourcePublicationsForDistribution(distribution):
-        """The latest 5 PPA source publications for a given distribution."""
+        """The latest 5 PPA source publications for a given distribution.
+
+        Private PPAs are excluded from the result.
+        """
+
+    def getMostActivePPAsForDistribution(distribution):
+        """Return the 5 most active PPAs.
+
+        The activity is currently measured by number of published packages
+        cached for each PPA, first source, then binaries.
+        Private PPAs are excluded from the result.
+        """
 
 
 class ArchivePurpose(DBEnumeratedType):

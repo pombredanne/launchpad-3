@@ -1140,14 +1140,19 @@ method returns a empty SelectResults.
     >>> jblack_ppas.count()
     0
 
+For the next test we will make Celso's PPA public again, so it can
+appear in public lists. We do that because that PPA contains relevant
+contents for testing.
+
+    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
+    >>> naked_cprov_archive.private = False
+    >>> flush_database_updates()
+
 'getLatestPPASourcePublicationsForDistribution' returns up to 5
 lastest source publications available for a given distribution ordered
 by descending 'datecreated'. We should use it carefully due to the
 possible huge number of PPA sources available in production for
 ubuntu. Usually callsites will limit its results.
-
-After flushing the database caches we can see that the sampledata
-contains 4 PPA sources for ubuntu.
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
@@ -1170,31 +1175,84 @@ superseded publications continue to be presented.
     pmount 0.1-1 in warty PUBLISHED cprov
     iceweasel 1.0 in warty DELETED cprov
 
-When we copy a source within Celso's PPA, it will be presented a new
-record in the results.
+When we copy a source from Celso's PPA to Mark's PPA, it will be
+presented as a new record in the results.
 
     >>> cprov_iceweasel = source_publications[1]
     >>> trash = cprov_iceweasel.copyTo(
-    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE, cprov_archive)
+    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE, sabdfl.archive)
     >>> flush_database_caches()
 
     >>> print_pubs(source_publications)
-    iceweasel 1.0 in hoary PENDING cprov
+    iceweasel 1.0 in hoary PENDING sabdfl
     cdrkit 1.0 in breezy-autotest SUPERSEDED cprov
     iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
     pmount 0.1-1 in warty PUBLISHED cprov
     iceweasel 1.0 in warty DELETED cprov
 
-When we do another copy the result will be limited, so the last
-occurence (Celso's deleted icewasel) will be excluded.
+When we do another copy the result will be limited, so the previous
+last publication (Celso's deleted iceweasel) will be excluded.
 
     >>> cprov_cdrkit = source_publications[1]
     >>> trash = cprov_cdrkit.copyTo(
-    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE, cprov_archive)
+    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE, sabdfl.archive)
     >>> flush_database_caches()
     >>> print_pubs(source_publications)
-    cdrkit 1.0 in hoary PENDING cprov
-    iceweasel 1.0 in hoary PENDING cprov
+    cdrkit 1.0 in hoary PENDING sabdfl
+    iceweasel 1.0 in hoary PENDING sabdfl
     cdrkit 1.0 in breezy-autotest SUPERSEDED cprov
     iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
     pmount 0.1-1 in warty PUBLISHED cprov
+
+Private source publications are excluded from this list, the fact that
+they exist should never leak. If we make Celso's PPA private, its
+contents will not be listed anymore. The same happens for uploaded
+sources, since they are essentially another source publication in this
+context.
+
+    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
+    >>> naked_cprov_archive.private = True
+    >>> flush_database_updates()
+
+    >>> print_pubs(source_publications)
+    cdrkit 1.0 in hoary PENDING sabdfl
+    iceweasel 1.0 in hoary PENDING sabdfl
+    iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
+
+'getMostActivePPAsForDistribution' returns the 5 PPAs with the highest
+number of cached packages (published packages), first sources than
+binaries and tie-breaks on database record ID.
+
+    >>> most_active_ppas = (
+    ...     archive_set.getMostActivePPAsForDistribution(ubuntu))
+    >>> most_active_ppas.count()
+    5
+
+So, note that Celso's PPA still private, so it's not listed.
+
+    >>> def print_most_active_ppas():
+    ...     for ppa in most_active_ppas:
+    ...         print ppa.title, ppa.sources_cached, ppa.binaries_cached
+
+    >>> print_most_active_ppas()
+    PPA for No Privileges Person 10 2
+    PPA for Mark Shuttleworth 1 1
+    PPA for Foo Bar 0 0
+    PPA for Sample Person 0 0
+    PPA for Launchpad Buildd Admins 0 0
+
+When we make Celso's PPA public, the result gets limited in 5 items.
+The previous last item (lp-build-admins PPA) will be excluded to give
+place to Celso's PPAs.
+
+    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
+    >>> naked_cprov_archive.private = False
+    >>> flush_database_updates()
+
+    >>> print_most_active_ppas()
+    PPA for Celso Providelo 1000 2000
+    PPA for No Privileges Person 10 2
+    PPA for Mark Shuttleworth 1 1
+    PPA for Foo Bar 0 0
+    PPA for Sample Person 0 0
+

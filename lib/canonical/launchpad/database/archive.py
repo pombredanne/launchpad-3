@@ -708,6 +708,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.archive = Archive.id AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
+            Archive.private = FALSE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
         """ % sqlvalues(distribution, ArchivePurpose.PPA)
@@ -715,3 +716,17 @@ class ArchiveSet:
         return SourcePackagePublishingHistory.select(
             query, limit=5, clauseTables=['Archive', 'DistroSeries'],
             orderBy=['-datecreated', '-id'])
+
+
+    def getMostActivePPAsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        query = """
+            Archive.distribution = %s AND
+            Archive.purpose = %s AND
+            Archive.private = FALSE
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        return Archive.select(
+            query, limit=5, clauseTables=['Archive'],
+            orderBy=['-sources_cached', '-binaries_cached', 'id'])
+
