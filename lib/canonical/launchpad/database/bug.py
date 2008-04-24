@@ -1035,6 +1035,7 @@ class Bug(SQLBase):
             tag.destroySelf()
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
+        Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
 
