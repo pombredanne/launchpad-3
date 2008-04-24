@@ -82,7 +82,7 @@ class XpiManifestTestCase(unittest.TestCase):
                 "Bad chrome path in multi-line parse.")
             self.assertEqual(locale, dirlocale, "Locales got mixed up.")
 
-    def test_IgnoredLines
+    def test_IgnoredLines(self):
         # Ignored lines: anything that doesn't start with "locale" or doesn't
         # have the right number of arguments.  The one correct line is picked
         # out though.

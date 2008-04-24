@@ -31,7 +31,7 @@ def normalize_path(path):
             path = 'jar:' + path
 
     # A path inside a jar file must begin with a slash.
-    path.replace('.jar!', '.jar!/')
+    path = path.replace('.jar!', '.jar!/')
 
     # Finally, eliminate redundant slashes.  The previous steps may have
     # introduced some.
