@@ -59,9 +59,7 @@ Each fingerprint string in HWSystemFingerprint must be unique.
     >>> fp = hw_fingerprint_set.createFingerprint(u'IBM T41')
     Traceback (most recent call last):
     ...
-    RetryPsycopgIntegrityError: ERROR:  duplicate key violates unique 
-    constraint "hwsystemfingerprint__fingerprint__key"
-    ...
+    RetryPsycopgIntegrityError: ERROR:  ... violates unique constraint ...
 
     INSERT INTO HWSystemFingerprint (id, fingerprint) VALUES (2, u'IBM T41')
 
