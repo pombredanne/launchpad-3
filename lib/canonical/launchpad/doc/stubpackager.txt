@@ -6,12 +6,13 @@ used in tests.
     >>> import os
     >>> from canonical.launchpad.testing.stubpackager import StubPackager
 
+
 == Setup and reset ==
 
 When StubPackager is initialised it automatically creates a temporary
 directory we call 'sandbox'. It's where the packages will get created.
 
-    >>> packager = StubPackager()
+    >>> packager = StubPackager('biscuit', '1.0')
 
     >>> print packager.sandbox_path
     /tmp/stubpackager-...
@@ -19,31 +20,19 @@ directory we call 'sandbox'. It's where the packages will get created.
     >>> os.path.exists(packager.sandbox_path)
     True
 
-Source 'name' and 'version' and 'gpg_key_id' are empty.
-
-    >>> packager = StubPackager()
+Source 'name' and 'version' and 'gpg_key_id' are set according the
+give arguments passed in the initialization.
 
     >>> print packager.name
-    None
+    biscuit
 
     >>> print packager.version
-    None
+    1.0
 
     >>> print packager.gpg_key_id
     None
 
-The 'upstream_directory' can't be calculated at this stage since it
-depends on the upstream source name and version.
-
-    >>> print packager.upstream_directory
-    Traceback (most recent call last):
-    ...
-    AssertionError: Undefined name and version.
-
-Defining them via setSourceNameAndVersion method, allow us to know
-the 'upstream_directory' path, but it is not yet created.
-
-    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
+The upstream directory is known but not yet created.
 
     >>> print packager.upstream_directory
     /tmp/stubpackager-.../biscuit-1.0
@@ -51,38 +40,8 @@ the 'upstream_directory' path, but it is not yet created.
     >>> os.path.exists(packager.upstream_directory)
     False
 
-We can now play with the reset method. It purges the current sandbox
-directory and creates a new one. It also clears StubPackager's
-'name' and 'version', avoid inconsistent states.
-
-    >>> previous_sandbox_path = packager.sandbox_path
-
-    >>> os.path.exists(previous_sandbox_path)
-    True
-
-    >>> packager.reset()
-
-    >>> os.path.exists(previous_sandbox_path)
-    False
-
-    >>> packager.sandbox_path != previous_sandbox_path
-    True
-
-    >>> os.path.exists(packager.sandbox_path)
-    True
-
-    >>> print packager.name
-    None
-
-    >>> print packager.version
-    None
-
 
 == Creating Packages ==
-
-First we define a source upstream name and version.
-
-    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
 
 Then we create it on disk based on the StubPackager templates.
 
@@ -100,12 +59,10 @@ to the upstream version in the upstream_directory path.
     >>> print sorted(os.listdir(packager.debian_path))
     ['changelog', 'control', 'copyright', 'rules']
 
-We will reset the packager so we can generate a new upstream directory
-with a corresponding original tarball.
+We will instantiate a new packager so we can generate a new upstream
+directory with a corresponding original tarball.
 
-    >>> packager.reset()
-
-    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
+    >>> packager = StubPackager('biscuit', '1.0')
     >>> packager.buildUpstream()
 
     >>> print sorted(os.listdir(packager.sandbox_path))
@@ -170,11 +127,14 @@ The error was raised because no signing key was set.
     >>> print packager.gpg_key_id
     None
 
-A GPG key can be set using 'setGPGKey' method and it accepts a
-filename available in our test_keys directory (see
-launchpad/ftests/keys_for_tests.py)
+A GPG key can only be set on initialiation so we will have to create a
+new packager passing a filename available in our test_keys directory
+(see launchpad/ftests/keys_for_tests.py)
 
-    >>> packager.setGPGKey('foo.bar@canonical.com-passwordless.sec')
+    >>> packager = StubPackager(
+    ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+    >>> packager.buildUpstream()
+    >>> packager.buildSource()
 
 GPG key set, now we are able to build a signed version.
 
@@ -213,36 +173,40 @@ for the same upstream source.
     >>> packager.buildVersion('1.0-4', changelog_text="uhmmm, leker")
     >>> packager.buildSource(include_orig=False)
 
-Or, at any time, change to another upstream source.
+Or, at any time, we can create another packager.
 
-    >>> packager.setSourceNameAndVersion('zeca', '1.0')
-    >>> packager.buildUpstream()
-    >>> packager.buildSource()
+    >>> zeca_packager = StubPackager(
+    ...     'zeca', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+    >>> zeca_packager.buildUpstream()
+    >>> zeca_packager.buildSource()
 
-    >>> packager.buildVersion('1.0-2', changelog_text="cookies")
-    >>> packager.buildSource(include_orig=False)
+    >>> zeca_packager.buildVersion('1.0-2', changelog_text="cookies")
+    >>> zeca_packager.buildSource(include_orig=False)
 
 And get back to the previous source.
 
-    >>> packager.setSourceNameAndVersion('biscuit', '1.0')
     >>> packager.buildVersion('1.0-5', changelog_text="we, together, again.")
     >>> packager.buildSource(include_orig=False)
 
-All generated changesfile and their corresponding files are available
-in the sandbox directory.
+All generated changesfiles and related files are available in their
+corresponding sandbox directory.
 
     >>> for changesfile in packager.listAvailableUploads():
     ...     print changesfile
     /tmp/stubpackager-.../biscuit_1.0-1_source.changes
     /tmp/stubpackager-.../biscuit_1.0-3_source.changes
     /tmp/stubpackager-.../biscuit_1.0-4_source.changes
+    /tmp/stubpackager-.../biscuit_1.0-5_source.changes
+
+    >>> for changesfile in zeca_packager.listAvailableUploads():
+    ...     print changesfile
     /tmp/stubpackager-.../zeca_1.0-1_source.changes
     /tmp/stubpackager-.../zeca_1.0-2_source.changes
 
 Finally, an error is raised if we try to build a source package before
 creating the upstream directory.
 
-    >>> packager.setSourceNameAndVersion('canjica', '1.0')
+    >>> packager = StubPackager('canjica', '1.0')
     >>> packager.buildSource()
     Traceback (most recent call last):
     ...

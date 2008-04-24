@@ -2,7 +2,7 @@
 
 """StubPackager utility.
 
-It build small and fully functional packages to be used in launchpad test
+It builds small and fully functional packages to be used in launchpad test
 suite.
 """
 
@@ -18,7 +18,6 @@ import tempfile
 import time
 
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
 from canonical.launchpad.interfaces import IGPGHandler
@@ -71,72 +70,32 @@ binary: binary-arch
 
 
 class StubPackager:
+    """Builds small and fully functional debian source packages
 
+    It uses a series of templated to build controllable sources to be
+    used in Soyuz tests.
+    """
 
-    name = None
-    version = None
-    gpg_key_id = None
-
-    def __init__(self):
+    def __init__(self, name, version, key_path=None):
         """Create a 'sandbox' directory."""
         self._createNewSandbox()
-
-    def setSourceNameAndVersion(self, name, version):
-        """Set the context source name and version."""
         self.name = name
         self.version = version
 
-    def setGPGKey(self, key_path=None):
-        """Import and use the give secret GPG key to sign packages."""
-        gpghandler = getUtility(IGPGHandler)
-
-        if key_path is None:
+        if key_path is not None:
+            self.gpg_key_id = self._importGPGKey(key_path)
+        else:
             self.gpg_key_id = None
-            return
 
-        import_secret_test_key(key_path)
-        key = list(gpghandler.localKeys())[0]
-        self.gpg_key_id = '0x%s' % key.keyid
+        self.upstream_directory = os.path.join(
+            self.sandbox_path, '%s-%s' % (self.name, self.version))
 
-    @property
-    def upstream_directory(self):
-        """Current upstream directory used to generate packages."""
-        assert self.sandbox_path is not None, (
-            "Sandbox directory path is not set.")
-
-        assert self.name is not None and self.version is not None, (
-            'Undefined name and version.')
-
-        directory_name = '%s-%s' % (self.name, self.version)
-        return os.path.join(self.sandbox_path, directory_name)
-
-    @property
-    def debian_path(self):
-        """Path to the debian directory.
-
-        Generated for the current upstream source.
-        """
-        return os.path.join(self.upstream_directory, 'debian')
-
-    @property
-    def changelog_path(self):
-        """Current debian/changelog path."""
-        return os.path.join(self.debian_path, 'changelog')
-
-    @property
-    def copyright_path(self):
-        """Current debian/copyright path."""
-        return os.path.join(self.debian_path, 'copyright')
-
-    @property
-    def rules_path(self):
-        """Current debian/rules path."""
-        return os.path.join(self.debian_path, 'rules')
-
-    @property
-    def control_path(self):
-        """Current debian/control path."""
-        return os.path.join(self.debian_path, 'control')
+        # Upstream debian paths.
+        self.debian_path = os.path.join(self.upstream_directory, 'debian')
+        self.changelog_path = os.path.join(self.debian_path, 'changelog')
+        self.copyright_path = os.path.join(self.debian_path, 'copyright')
+        self.rules_path = os.path.join(self.debian_path, 'rules')
+        self.control_path = os.path.join(self.debian_path, 'control')
 
     def _createNewSandbox(self):
         """Create the 'sandbox' path as a temporary directory.
@@ -150,6 +109,22 @@ class StubPackager:
             if os.path.exists(sandbox):
                 shutil.rmtree(sandbox)
         atexit.register(removeSandbox, self.sandbox_path)
+
+    def _importGPGKey(self, key_path):
+        """Import the given secret GPG key to sign packages.
+
+        Return the key ID import as '0xAABBCCDD'
+        """
+        gpghandler = getUtility(IGPGHandler)
+
+        if key_path is None:
+            self.gpg_key_id = None
+            return
+
+        import_secret_test_key(key_path)
+        key = list(gpghandler.localKeys())[0]
+
+        return '0x%s' % key.keyid
 
     def _appendContents(self, content):
         """Append a given content in the upstream 'contents' file.
@@ -234,7 +209,7 @@ class StubPackager:
     def _runSubProcess(self, script, extra_args=None):
         """Run the given script and collects STDOUT and STDERR.
 
-        If the script returns a non-Zero value it will raise.
+        :raises AssertionError: If the script returns a non-Zero value.
         """
         if extra_args is None:
             extra_args = []
@@ -253,9 +228,15 @@ class StubPackager:
     def buildUpstream(self, build_orig=True):
         """Build a stub source upstream version.
 
-        param: build_orig: boolean indicating whether or not to prepare
-            a orig.tar.gz containing the pristine upstream code. If
-            generated it can be used for subsequent versions.
+        This method should only be called once for a given upstream-{name,
+        version}.
+
+        :param build_orig: boolean indicating whether or not to prepare
+             a orig.tar.gz containing the pristine upstream code. If
+             generated it can be used for subsequent versions.
+
+        :raises AssertionError: if there is already a upstream directory
+            for the context upstream-{name, version}.
         """
         assert not os.path.exists(self.upstream_directory), (
             'Selected upstream directory already exists: %s' % (
@@ -273,16 +254,12 @@ class StubPackager:
             first_version, changelog_text='Initial Upstream package')
 
     def buildVersion(self, version, changelog_text="nicht !",
-                     suite=None, author='Foo Bar',
-                     email='foo.bar@canonical.com',
-                     timestamp=None):
+                     suite='hardy', author='Foo Bar',
+                     email='foo.bar@canonical.com', timestamp=None):
         """Initialise a new version of extracted package."""
         assert version.startswith(self.version), (
             'New versions should start with the upstream version: %s ' % (
                 self.version))
-
-        if suite is None:
-            suite = 'hardy'
 
         if timestamp is None:
             timestamp = time.strftime('%a, %d %b %Y %T %z')
@@ -339,18 +316,3 @@ class StubPackager:
                    if filename.endswith('.changes')]
 
         return sorted(changes)
-
-    def reset(self):
-        """Reset sandbox directory used to generate packages.
-
-        It actually purges the current tempdir and created a new one.
-        It also undefine upstream 'name' and 'version' to avoid user
-        mistakes.
-        """
-        shutil.rmtree(self.sandbox_path)
-
-        self.name = None
-        self.version = None
-
-        self._createNewSandbox()
-
