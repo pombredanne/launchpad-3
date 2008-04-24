@@ -747,6 +747,36 @@ the following API:
  * findCandidate:  returns a suitable BuildQueue candidate
  * dispatchBuildCandidate: dispatch a build for a given candidate.
 
+We will use SoyuzTestPublisher to simulate the required context in the
+next tests. Let's initialise it.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> test_publisher.prepareBreezyAutotest()
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+
+Helper function to create binary publications in this test.
+
+    >>> def create_binary_publication_for(archive, distroseries, status):
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     login('foo.bar@canonical.com')
+    ...     pub_binaries = test_publisher.getPubBinaries(
+    ...         archive=archive, distroseries=distroseries,
+    ...         status=status)
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+    ...     login(ANONYMOUS)
+
 IBuilder.findCandidate also identifies if there are builds for
 superseded source package releases in the queue and marks the
 corresponding build record as SUPERSEDED.
@@ -803,6 +833,9 @@ archive.purpose (e.g. PRIMARY or PPA).  These latter two arguments are
 used in the chroot to determine whether it needs to turn on some features
 or not (like pkgstriptranslations and pkgmaintainermangler).
 
+Please note also that the 'archive_private' flag is passed to the slave
+builder.  It is True for private archives and False otherwise.
+
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> a_builder.is_available
     True
@@ -815,6 +848,7 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
      deb http://ftpmaster.internal/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PRIMARY
+    Archive Private: False
 
     >>> candidate.destroySelf()
 
@@ -840,6 +874,7 @@ API/UI method to request the dispatch in advance.
      deb http://ftpmaster.internal/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PRIMARY
+    Archive Private: False
 
     >>> candidate.destroySelf()
 
@@ -859,6 +894,60 @@ addition to a reference to the release pocket in the partner archive itself.
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+The partner archive won't be passed to the builder unless it has at
+least one published binary availble in the target distroarchseries.
+This feature fixes bug #196782, when archive/suites got passed to
+builders before they get published on disk, i.e. the first build on
+any PPA/suite will fail during the first 20 minutes because no empty
+indexes are published.
+
+Note that only a published binary in the right context will make the
+archive relevant, anything PENDING or published in another context
+wouldn't work.
+
+    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+    >>> create_binary_publication_for(
+    ...    partner_archive, warty, PackagePublishingStatus.PUBLISHED)
+
+    >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+    >>> create_binary_publication_for(
+    ...    partner_archive, hoary, PackagePublishingStatus.PENDING)
+
+So, at moment, partner archive is still not relevant for builds in
+hoary/i386. It's not passed to the builder.
+
+    >>> a_builder.dispatchBuildCandidate(candidate)
+    ensurepresent called
+    ensurepresent called
+    OkSlave BUILDING
+    Archives:
+     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
+    Suite: hoary
+    Archive Purpose: PARTNER
+    Archive Private: False
+
+Let's try it again.
+
+    >>> candidate.destroySelf()
+    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.is_available
+    True
+
+    >>> candidate = a_build.createBuildQueueEntry()
+    >>> setupBuildQueue(candidate, a_builder)
+    >>> last_stub_mail_count = len(stub.test_emails)
+
+But this time We will create a valid publication on partner hoary/i386.
+
+    >>> create_binary_publication_for(
+    ...    partner_archive, hoary, PackagePublishingStatus.PUBLISHED)
+
+Now when we dispatch the partner build, since it has one published
+binary in hoary/i386, the partner archive gets included in the builder
+sources_list.
+
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called
     ensurepresent called
@@ -870,6 +959,7 @@ addition to a reference to the release pocket in the partner archive itself.
      deb http://launchpad.dev/ubuntu-partner hoary main
     Suite: hoary
     Archive Purpose: PARTNER
+    Archive Private: False
 
     >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
     >>> candidate.destroySelf()
@@ -890,6 +980,13 @@ Similarly, PPA builds pass the 'archives' arguments:
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+Exactly as Partner, Celso's PPA won't be included if it doesn't
+contain any published binary in hoary/i386. We will create it before
+dispatching.
+
+    >>> create_binary_publication_for(
+    ...    cprov_archive, hoary, PackagePublishingStatus.PUBLISHED)
+
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called
     ensurepresent called
@@ -901,11 +998,12 @@ Similarly, PPA builds pass the 'archives' arguments:
      deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
+    Archive Private: False
 
 If the build is for a private PPA, the slave scanner will pass a
 sources.list entry that contains a password to access the archive.
 
-Make cprov's archive private and set the buildd_secret (which is the
+Making Celso's PPA private and set the buildd_secret (which is the
 password for the archive):
 
     >>> from canonical.testing import LaunchpadZopelessLayer
@@ -918,7 +1016,7 @@ password for the archive):
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> login(ANONYMOUS)
 
-Dispatch the build again.  Cprov's sources.list entry now has the
+Dispatch the build again. Celso's archive sources.list entry now has the
 buildd:secret@ part in the URL.  Also note that because it's a private
 PPA, it's missing the dependency on the updates pocket.  This is mainly
 to accommodate the security build private PPA which must not depend
@@ -935,12 +1033,12 @@ proper solution that allows configurable pocket dependencies.
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
     Suite: hoary
     Archive Purpose: PPA
+    Archive Private: True
 
     >>> candidate.destroySelf()
 
 A PPA can depend on another PPA. We can make Celso's PPA depend on
 Mark's PPA:
-
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -955,7 +1053,8 @@ Mark's PPA:
     >>> login(ANONYMOUS)
 
 Now we can see that a build from Celso's PPA will be able to install
-dependencies from Mark's PPA.
+dependencies from Mark's PPA, if Mark's PPA has at least one binary
+published in hoary/i386, which is not the case.
 
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> a_builder.is_available
@@ -974,9 +1073,37 @@ dependencies from Mark's PPA.
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
      deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    Suite: hoary
+    Archive Purpose: PPA
+    Archive Private: False
+
+We will create the required publication in Mark's PPA and try again.
+
+    >>> candidate.destroySelf()
+    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.is_available
+    True
+
+    >>> candidate = a_build.createBuildQueueEntry()
+    >>> setupBuildQueue(candidate, a_builder)
+    >>> last_stub_mail_count = len(stub.test_emails)
+
+    >>> create_binary_publication_for(
+    ...    sabdfl_archive, hoary, PackagePublishingStatus.PUBLISHED)
+
+    >>> a_builder.dispatchBuildCandidate(candidate)
+    ensurepresent called
+    ensurepresent called
+    OkSlave BUILDING
+    Archives:
+     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
+     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
      deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
     Suite: hoary
     Archive Purpose: PPA
+    Archive Private: False
 
 Clean up before continuing:
 
@@ -1010,7 +1137,7 @@ Make a build in the updates pocket:
     >>> a_builder.dispatchBuildCandidate(updates_bqItem)
     Traceback (most recent call last):
     ...
-    AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (31) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
+    AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (...) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
 
 == Pocket dependencies ==
 
@@ -1062,6 +1189,7 @@ A build in the updates pocket:
      deb http://ftpmaster.internal/ubuntu hoary-updates main
     Suite: hoary-updates
     Archive Purpose: PRIMARY
+    Archive Private: False
 
 A build in the proposed pocket:
 
@@ -1081,6 +1209,7 @@ A build in the proposed pocket:
      deb http://ftpmaster.internal/ubuntu hoary-updates main
     Suite: hoary-proposed
     Archive Purpose: PRIMARY
+    Archive Private: False
 
 A build in the backports pocket:
 
@@ -1100,6 +1229,7 @@ A build in the backports pocket:
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
     Suite: hoary-backports
     Archive Purpose: PRIMARY
+    Archive Private: False
 
 A build in the security pocket:
 

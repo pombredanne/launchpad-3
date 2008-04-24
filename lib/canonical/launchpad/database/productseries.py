@@ -660,3 +660,14 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
+
+    def getSeriesForBranches(self, branches):
+        """See `IProductSeriesSet`."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return []
+
+        return ProductSeries.select("""
+            ProductSeries.user_branch in %s OR
+            ProductSeries.import_branch in %s
+            """ % sqlvalues(branch_ids, branch_ids), orderBy=["name"])

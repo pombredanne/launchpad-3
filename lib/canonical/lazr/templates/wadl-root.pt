@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd"
+  xmlns="http://research.sun.com/wadl/2006/10"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+>
+
+  <!--Begin resource_type definitions for collection resources.-->
+  <tal:collection_classes tal:repeat="context collections">
+    <resource_type tal:attributes="id context/wadl_collection:collection_type">
+      <method name="GET"
+              tal:attributes="id string:${context/wadl_collection:collection_type}-get">
+        <response>
+          <representation href="#collection-page" />
+          <representation mediaType="application/vd.sun.wadl+xml"
+            tal:attributes="id string:${context/wadl_collection:collection_type}-wadl" />
+        </response>
+      </method>
+
+      <method tal:repeat="operation context/wadl_collection:named_operations"
+        tal:attributes="id
+                        string:${context/wadl_collection:collection_type}-${operation/name};
+                        name operation/op/wadl_operation:http_method">
+        <param name="ws_op" required="True"
+               tal:attributes="fixed operation/name" />
+        <param tal:repeat="field operation/op/params"
+               tal:attributes="name field/__name__;
+                               required field/required">
+          <link tal:condition="field/wadl:is_link" />
+          <option tal:repeat="option field/wadl:options"
+                  tal:attributes="value option/title" />
+        </param>
+      </method>
+    </resource_type>
+  </tal:collection_classes>
+  <!--End resource_type definitions for collection resources.-->
+
+  <!--All collection resources serve the same kind of representation. -->
+  <representation mediaType="application/json" id="collection-page">
+    <param name="total_size" path="[&quot;total_size&quot;]"
+           required="True" />
+
+    <param name="next_collection_link"
+           path="[&quot;next_collection_link&quot;]">
+      <link type="#collection-page"/>
+    </param>
+
+    <param name="prev_collection_link"
+           path="[&quot;prev_collection_link&quot;]">
+      <link type="#collection-page"/>
+    </param>
+
+    <param name="entries" path="[&quot;entries&quot;]" required="True" />
+  </representation>
+
+  <!--Begin representation and resource_type definitions for entry
+      resources. -->
+  <tal:entry_classes tal:repeat="context entries">
+    <resource_type tal:attributes="id context/wadl_entry:singular_type">
+      <method name="GET"
+              tal:attributes="id string:${context/wadl_entry:singular_type}-get">
+        <response>
+          <representation
+             tal:attributes="href context/wadl_entry:full_representation_link" />
+          <representation mediaType="application/vd.sun.wadl+xml"
+            tal:attributes="id string:${context/wadl_entry:singular_type}-wadl" />
+        </response>
+      </method>
+
+      <method name="PUT"
+              tal:attributes="id string:${context/wadl_entry:singular_type}-put">
+        <request>
+          <representation
+             tal:attributes="href context/wadl_entry:full_representation_link" />
+        </request>
+      </method>
+
+      <method name="PATCH"
+              tal:attributes="id string:${context/wadl_entry:singular_type}-patch">
+        <request>
+          <representation
+             tal:attributes="href context/wadl_entry:patch_representation_link" />
+        </request>
+      </method>
+
+      <method tal:repeat="operation context/wadl_entry:named_operations"
+              tal:attributes="
+                id string:${context/wadl_entry:singular_type}-${operation/name};
+                name operation/op/wadl_operation:http_method">
+        <param name="ws_op" required="True"
+               tal:attributes="fixed operation/name" />
+        <param tal:repeat="field operation/op/params"
+               tal:attributes="name field/__name__;
+                               required field/required">
+          <link tal:condition="field/wadl:is_link" />
+          <option tal:repeat="option field/wadl:options"
+                  tal:attributes="value option/title" />
+        </param>
+      </method>
+    </resource_type>
+
+
+    <representation mediaType="application/json"
+       tal:attributes="id string:${context/wadl_entry:singular_type}-full">
+      <param tal:repeat="field context/wadl_entry:all_fields" required="True"
+             tal:attributes="name field/wadl:name;
+                             path field/wadl:path">
+        <link tal:condition="field/wadl:is_link" />
+        <option tal:repeat="option field/wadl:options"
+                tal:attributes="value option/title" />
+      </param>
+    </representation>
+
+    <representation mediaType="application/json"
+       tal:attributes="id string:${context/wadl_entry:singular_type}-diff">
+      <param tal:repeat="field context/wadl_entry:all_writable_fields"
+             required="False"
+             tal:attributes="name field/wadl:name;
+                             path field/wadl:path">
+        <link tal:condition="field/wadl:is_link" />
+        <option tal:repeat="option field/wadl:options"
+                tal:attributes="value option/title" />
+      </param>
+    </representation>
+  </tal:entry_classes>
+  <!--End representation and resource_type definitions for entry
+      resources. -->
+</application>

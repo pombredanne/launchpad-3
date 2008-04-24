@@ -30,7 +30,7 @@
           attributes="setNew setUnapproved setRejected setAccepted setDone
                       realiseUpload addSource addBuild addCustom syncUpdate
                       notify acceptFromUploader acceptFromQueue
-		      rejectFromQueue"
+                      rejectFromQueue overrideSource overrideBinaries"
           set_attributes="status distroseries pocket changesfile archive"
           />
     </content>
@@ -38,10 +38,6 @@
     <browser:pages
       for="canonical.launchpad.interfaces.IPackageUpload"
       permission="zope.Public">
-      <browser:page
-        name="+filelist"
-        template="../templates/packageupload-filelist.pt"
-        />
       <browser:page
         name="+iconlist"
         template="../templates/packageupload-iconlist.pt"
