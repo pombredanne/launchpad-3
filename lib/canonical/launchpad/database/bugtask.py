@@ -485,6 +485,9 @@ class BugTask(SQLBase, BugTaskMixin):
         package has to be changed, as well as the corresponding
         distrotask.
         """
+        if self.bug is None:
+            # The validator is being called on an incomplete bug task.
+            return
         if self.distroseries is not None:
             distribution = self.distroseries.distribution
         else:
