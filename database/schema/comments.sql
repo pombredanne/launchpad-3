@@ -1694,6 +1694,16 @@ COMMENT ON COLUMN ArchiveDependency.date_created IS 'Instant when the dependency
 COMMENT ON COLUMN ArchiveDependency.archive IS 'The archive where the dependency should be applied.';
 COMMENT ON COLUMN ArchiveDependency.dependency IS 'The archive to depend on.';
 
+-- ArchivePermission
+
+COMMENT ON TABLE ArchivePermission IS 'ArchivePermission: A record of who has permission to upload and approve uploads to an archive (and hence a distribution)';
+COMMENT ON COLUMN ArchivePermission.date_created IS 'The date that this permission was created.';
+COMMENT ON COLUMN ArchivePermission.archive IS 'The archive to which this permission applies.';
+COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being granted.';
+COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
+COMMENT ON COLUMN DistroComponentUploader.component IS 'The component to which this upload permission applies.';
+COMMENT ON COLUMN DistroComponentUploader.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
