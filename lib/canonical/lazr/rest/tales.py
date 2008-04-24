@@ -186,7 +186,7 @@ class WadlFieldAPI(WadlAPI):
             return "%s#%s" % (self._service_root_url(),
                               entry_class.__name__)
         else:
-            return None
+            raise AssertionError("Field is not a link to another resource.")
 
     def options(self):
         """An enumeration of acceptable values for this field.
