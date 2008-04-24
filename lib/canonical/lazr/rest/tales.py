@@ -19,6 +19,8 @@ from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollectionField, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
+from canonical.lazr.rest import CollectionResource
+
 
 class WadlAPI:
 
@@ -79,6 +81,36 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         return "%s#%s" % (self._service_root_url(),
                           self.resource.collection.__class__.__name__)
 
+class WadlServiceRootResourceAPI(WadlAPI):
+    """Namespace for functions that operate on the service root resource.
+
+    This class doesn't subclass WadlResourceAPI because that class
+    assumes there's an underlying 'context' object that's being
+    published. The service root resource is unique in not having a
+    'context'. Methods like url() need to be implemented specially
+    with that in mind.
+    """
+
+    def __init__(self, resource):
+        """Initialize the helper class with a resource."""
+        self.resource = resource
+
+    def url(self):
+        """Return the full URL to the resource."""
+        return self._service_root_url()
+
+    def top_level_resources(self):
+        """Return a list of dicts describing the top-level resources."""
+        resource_dicts = []
+        request = get_current_browser_request()
+        top_level_resources = self.resource.getTopLevelResources(request)
+        for link_name, utility in top_level_resources.items():
+            # We only expose collection resources for now.
+            resource = CollectionResource(utility, request)
+            resource_dicts.append({'name' : link_name,
+                                   'path' : "[&quot;%s&quot;]" % link_name,
+                                   'resource' : resource})
+        return resource_dicts
 
 class WadlResourceAdapterAPI(WadlAPI):
     """Namespace for functions that operate on resource adapter classes."""

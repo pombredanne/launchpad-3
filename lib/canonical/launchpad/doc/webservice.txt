@@ -157,6 +157,7 @@ Here are the "model objects" themselves:
 
 Here's a simple CookbookSet with a predefined list of cookbooks.
 
+    >>> from zope.component import provideUtility
     >>> class CookbookSet:
     ...     implements(ICookbookSet)
     ...     def __init__(self):
@@ -194,6 +195,7 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...             raise ValueError("No matches for %s" % name)
     ...         return matches
     >>> protect_schema(CookbookSet, ICookbookSet)
+    >>> provideUtility(CookbookSet(), ICookbookSet)
 
 Here's a simple AuthorSet with predefined authors.
 
@@ -216,6 +218,7 @@ Here's a simple AuthorSet with predefined authors.
     ...             return match[0]
     ...         return None
     >>> protect_schema(AuthorSet, IAuthorSet)
+    >>> provideUtility(AuthorSet(), IAuthorSet)
 
 Finally, a simple DishSet with predefined dishes.
 
@@ -233,6 +236,7 @@ Finally, a simple DishSet with predefined dishes.
     ...             return match[0]
     ...         return None
     >>> protect_schema(DishSet, IDishSet)
+    >>> provideUtility(DishSet(), IDishSet)
 
 The web service uses the standard Navigation components to map URLs to
 components to publish (see navigation.txt) and the standard
@@ -733,16 +737,25 @@ will act as though you had performed a GET on the URL
     >>> request = create_web_service_request('/beta/')
     >>> ignore = request.traverse(app)
 
-The response document is a WADL description of the resource types
-defined earlier.
+The response document is a JSON document full of links to the
+top-level collections of authors, cookbooks, and dishes. It's the
+'home page' for the web service.
 
-    >>> print app(request)
-    <?xml version="1.0"?>
-    <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns="http://research.sun.com/wadl/2006/10"
-      xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
-      <!--Begin resource_type definitions for collection resources.-->
-    ...
+    # XXX leonardr 2008-04-24 bug=221037: It also includes top-level
+    # collections from the Launchpad web service. This part of the
+    # test can be simplified once the test is moved to another layer.
+    >>> import simplejson
+    >>> response = app(request)
+    >>> representation = simplejson.loads(response)
+
+    >>> representation["AuthorCollection_collection_link"]
+    u'http://api.launchpad.dev/beta/authors'
+
+    >>> representation["CookbookCollection_collection_link"]
+    u'http://api.launchpad.dev/beta/cookbooks'
+
+    >>> representation["DishCollection_collection_link"]
+    u'http://api.launchpad.dev/beta/dishes'
 
 The standard canonical_url() function can be used to generate URLs to
 content objects published on the web service. It works for the web
@@ -775,7 +788,6 @@ into a CollectionResource.
 Calling the collection resource yields a JSON document, which can be
 parsed with standard tools.
 
-    >>> import simplejson
     >>> representation = simplejson.loads(collection())
 
 === Pagination ===

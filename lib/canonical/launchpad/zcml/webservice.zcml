@@ -23,6 +23,13 @@
         />
 
     <adapter
+        for="canonical.lazr.interfaces.IServiceRootResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlServiceRootResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
         for="canonical.lazr.interfaces.ICollectionResource"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"

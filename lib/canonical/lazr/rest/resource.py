@@ -21,7 +21,7 @@ import simplejson
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
-from zope.component import adapts, getAdapters, getMultiAdapter
+from zope.component import adapts, getAdapters, getMultiAdapter, getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -129,14 +129,14 @@ class HTTPResource(URLDereferencingMixin):
         namespace['context'] = self
         return template.pt_render(namespace)
 
-    def getPreferredSupportedContentType(self):
+    def getPreferredSupportedContentType(self, request=None):
         """Of the content types we serve, which would the client prefer?
 
         The web service supports WADL and JSON representations. The
         default is JSON. This method determines whether the client
         would rather have WADL or JSON.
         """
-        content_types = self.getPreferredContentTypes()
+        content_types = self.getPreferredContentTypes(request)
         try:
             wadl_pos = content_types.index(self.WADL_TYPE)
         except ValueError:
@@ -149,9 +149,11 @@ class HTTPResource(URLDereferencingMixin):
             return self.WADL_TYPE
         return self.JSON_TYPE
 
-    def getPreferredContentTypes(self):
+    def getPreferredContentTypes(self, request=None):
         """Find which content types the client prefers to receive."""
-        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
+        if request is None:
+            request = self.request
+        return self._parseAcceptStyleHeader(request.get('HTTP_ACCEPT'))
 
 
     def _fieldValueIsObject(self, field):
@@ -711,16 +713,27 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
 
         The WADL document describes the capabilities of this resource.
         """
-        return super(CollectionResource, self).toWADL('wadl-collection.pt')
+        return super(CollectionResource, self).toWADL(
+            'wadl-collection.pt')
 
 
-class ServiceRootResource:
+class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource, ICanonicalUrlData)
 
     inside = None
     path = ''
     rootsite = None
+
+    def __init__(self):
+        """Initialize the resource.
+
+        The service root constructor is different from other
+        HTTPResource constructors because Zope initializes the object
+        with no request or context, and then passes the request in
+        when it calls the service root object.
+        """
+        pass
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
@@ -733,6 +746,19 @@ class ServiceRootResource:
     def do_GET(self, request):
         """Describe the capabilities of the web service in WADL."""
 
+        if self.getPreferredSupportedContentType(request) == self.WADL_TYPE:
+            result = self.toWADL().encode("utf-8")
+            request.response.setHeader('Content-Type', self.WADL_TYPE)
+            return result
+
+        # The client didn't want WADL, so we'll give them JSON.
+        # Specifically, a JSON map containing links to all the
+        # top-level resources.
+        result = self.toDataForJSON(request)
+        request.response.setHeader('Content-type', self.JSON_TYPE)
+        return simplejson.dumps(result)
+
+    def toWADL(self):
         # Find all resource types.
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
@@ -758,10 +784,39 @@ class ServiceRootResource:
         namespace = template.pt_getContext()
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        wadl = template.pt_render(namespace).encode('utf8')
-        request.response.setHeader(
-            'Content-Type', 'application/vd.sun.wadl+xml')
-        return wadl
+        namespace['context'] = self
+        return template.pt_render(namespace)
+
+    def toDataForJSON(self, request):
+        """Return a map of links to top-level collection resources.
+
+        A top-level resource is one that adapts a utility.  Currently
+        top-level entry resources (should there be any) are not
+        represented.
+        """
+        data_for_json = {}
+        for link_name, context in self.getTopLevelResources(request).items():
+            data_for_json[link_name] = canonical_url(context)
+        return data_for_json
+
+    def getTopLevelResources(self, request):
+        """Return a mapping of top-level link names to published objects."""
+        top_level_resources = {}
+        site_manager = zapi.getGlobalSiteManager()
+        for registration in site_manager.registrations():
+            provided = registration.provided
+            if hasattr(provided, 'extends'):
+                if (provided.isOrExtends(ICollection)
+                     and ICollection.implementedBy(registration.value)):
+                    try:
+                        utility = getUtility(registration.required[0])
+                    except ComponentLookupError:
+                        # It's not a top-level resource.
+                        continue
+                    link_name = ("%s_collection_link"
+                                 % registration.value.__name__)
+                    top_level_resources[link_name] = utility
+        return top_level_resources
 
 
 class Entry:

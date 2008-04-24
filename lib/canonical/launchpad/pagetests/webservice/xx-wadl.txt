@@ -151,16 +151,130 @@ is rooted at an <application> tag.
     >>> tree.tag
     '...application'
 
-But that <application> tag contains all the information referenced by
-all the other WADL documents in the system. #PersonEntry is here, as
-is #PersonSetCollectionAdapter and #ScopedCollection and many other
-targets of a <resource> tag's 'type' attribute. Also located here are
-the descriptions of the JSON representations those resources serve.
+As with the WADL descriptions of collection and entry resources, this
+<application> tag describes the capabilities of the server root
+resource. But that <application> tag also contains all the information
+referenced by all the other WADL documents in the system. #PersonEntry
+is here, as is #PersonSetCollectionAdapter and #ScopedCollection and
+many other targets of a <resource> tag's 'type' attribute. Also
+located here are the descriptions of the JSON representations those
+resources serve.
+
+
+== Description of the service root itself ==
+
+Let's whittle down the complexity a little by taking a look at the
+description of the service root resource itself.
+
+    >>> children = list(tree)
+    >>> service_root_type, service_root_repr, resources = children[:3]
+
+The service root is an instance of a special resource type that
+responds only to GET.
+
+    >>> service_root_type.tag
+    '...resource_type'
+    >>> service_root_type.attrib['id']
+    'service-root'
+    >>> get, = list(service_root_type)
+    >>> get.tag
+    '...method'
+    >>> get.attrib['name']
+    'GET'
+
+A client that makes a GET request to a resource of this type can get a
+representation of type 'service-root-json', or it can get a WADL
+representation. The WADL representation is the document we're looking
+at right now.
+
+    >>> response, = list(get)
+    >>> json_repr, wadl_repr, = list(response)
+    >>> json_repr.attrib['href']
+    '#service-root-json'
+    >>> wadl_repr.attrib['mediaType']
+    'application/vd.sun.wadl+xml'
+
+The details of the 'service-root-json' representation are given
+immediately afterwards:
+
+    >>> service_root_repr.tag
+    '...representation'
+    >>> service_root_repr.attrib['id']
+    'service-root-json'
+    >>> service_root_repr.attrib['mediaType']
+    'application/json'
+
+The JSON representation contains a link for each collection resource
+exposed at the top level. The WADL description of the JSON
+representation shows each link as a <param> tag.
+
+    >>> person_set_param = [
+    ...     param for param in service_root_repr
+    ...     if param.attrib['name'].startswith('PersonSet')][0]
+    >>> person_set_param.tag
+    '...param'
+    >>> person_set_param.attrib['path']
+    '[&quot;PersonSetCollectionAdapter_collection_link&quot;]'
+    >>> person_set_param.attrib['name']
+    'PersonSetCollectionAdapter_collection_link'
+
+This is saying that applying the JSON expression
+'["PersonSetCollectionAdapter_collection_link"]' to the JSON document
+will give you something interesting: a variable we like to call
+'PersonSetCollectionAdapter_collection_link'.
+
+What's special about this variable? Well, it's a link to another
+resource. This is represented in WADL by giving the <param> tag a
+child <link> tag. This tag explains what sort of resource is at the
+other end of the link.
+
+    >>> person_set_param_link, = list(person_set_param)
+    >>> person_set_param_link.tag
+    '...link'
+    >>> person_set_param_link.attrib['type']
+    'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
+
+A WADL client can read this and know that if it ever finds a resource
+of type "service-root", it can send a GET request to that URL and get
+back a JSON document. By applying the JSON expression
+'["PersonSetCollectionAdapter_collection_link"]' to that document, it
+will find the URL to the list of people. The list of people is the
+resource type defined at
+http://api.launchpad.dev/beta/#PersonSetCollectionAdapter.
+
+But where is the WADL client going to find a resource of type
+"service-root" in the first place? The <resources> tag explains
+everything.
+
+As with the <resources> tags shown earlier, this one contains a single
+<resource> tag.
+
+    >>> resources.tag
+    '...resources'
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/'
+
+    >>> resource, = resources
+    >>> resource.tag
+    '...resource'
+    >>> resource.attrib['path']
+    ''
+    >>> resource.attrib['type']
+    '#service-root'
+
+Aha! There's a resource of type "service-root" right there at the
+service root! Who would have thought?
+
+
+== The rest of the document ==
 
 Looking at the children of the <application> tag can be
-overwhelming. There are a huge number of <representation> and
-<resource_type> tags. I'll explain the large-scale structure of the
-document and then show some examples in detail.
+overwhelming. The relatively simple definition of the service root
+comes first, but then there are a huge number of <representation> and
+<resource_type> tags that don't have anything to do directly with the
+service root: they form a description of the web service as a
+whole. I'll explain the large-scale structure of the document and then
+show some examples in detail.
 
 The first few tags are <resource_type> tags which describe the
 different possible kinds of collections: person collections, bug
@@ -169,15 +283,14 @@ describes the JSON document you get if you send GET to a collection.
 This code stores the <representation> tag in 'collection_rep' and the
 initial <resource_type> tags in 'collection_resource_types'.
 
-    >>> children = list(tree)
     >>> collection_rep = None
-    >>> for index, child in enumerate(children):
+    >>> for index, child in enumerate(children[3:]):
     ...     if child.tag.endswith('representation'):
     ...         collection_rep = child
-    ...         collection_cutoff = index
+    ...         collection_cutoff = index+3
     ...         break
 
-    >>> collection_resource_types = children[0:collection_cutoff]
+    >>> collection_resource_types = children[3:collection_cutoff]
 
 After that <representation> tag there's a group of three tags for
 every type of entry resource exposed through the web service. The
