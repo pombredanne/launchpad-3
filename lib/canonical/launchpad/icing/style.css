@@ -1098,6 +1098,7 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 /* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
+.remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
 .boardCommentBody {padding: 0.5em 12px 0;}
@@ -1723,3 +1724,6 @@ div.popupTitle {
   position: absolute;
   display: none;
 }
+
+/* The icon next to inline action links */
+.inlineLinkIcon {margin-right: 0.5em; margin-left: 0.5em;}

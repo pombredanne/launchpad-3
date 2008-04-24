@@ -1573,6 +1573,17 @@ class IPersonSet(Interface):
             specified product are returned.
         """
 
+    def getSubscribersForTargets(targets, recipients=None):
+        """Return the set of subscribers for `targets`.
+
+        :param targets: The sequence of targets for which to get the
+                        subscribers.
+        :param recipients: An optional instance of
+                           `BugNotificationRecipients`.
+                           If present, all found subscribers will be
+                           added to it.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""

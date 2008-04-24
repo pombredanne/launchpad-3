@@ -74,7 +74,7 @@ class IMessage(Interface):
     text_contents = Text(
         title=_('All the text/plain chunks joined together as a '
                 'unicode string.'))
-    export_field(text_contents, as='content')
+    export_field(text_contents, export_as='content')
 
     followup_title = Attribute(_('Candidate title for a followup message.'))
 

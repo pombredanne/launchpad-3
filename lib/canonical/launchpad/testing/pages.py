@@ -387,6 +387,17 @@ def print_action_links(content):
             print entry.strong.string
 
 
+def print_navigation_links(content):
+    """Print navigation menu urls."""
+    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    if navigation_links is None:
+        print "No navigation links"
+        return
+    entries = navigation_links.findAll('a')
+    for entry in entries:
+        print '%s: %s' % (entry.string, entry['href'])
+
+
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
 
@@ -495,6 +506,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
     test.globs['print_submit_buttons'] = print_submit_buttons
