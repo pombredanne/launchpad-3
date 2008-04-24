@@ -3,15 +3,16 @@
 
 """Hardware database related table classes."""
 
-__all__ = ['HWSubmission',
-           'HWSubmissionSet',
-           'HWSystemFingerprint',
-           'HWSystemFingerprintSet',
-           'HWVendorID',
-           'HWVendorIDSet',
-           'HWVendorName',
-           'HWVendorNameSet',
-          ]
+__all__ = [
+    'HWSubmission',
+    'HWSubmissionSet',
+    'HWSystemFingerprint',
+    'HWSystemFingerprintSet',
+    'HWVendorID',
+    'HWVendorIDSet',
+    'HWVendorName',
+    'HWVendorNameSet',
+    ]
 
 import re
 
@@ -34,6 +35,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.person import public_person_validator
 
 
+# The vendor name assigned to new, unknown vendor IDs. See
+# HWDeviceSet.create().
 UNKNOWN = 'Unknown'
 
 
@@ -246,36 +249,39 @@ six_hex_digits = re.compile('^0x[0-9a-f]{6}$')
 scsi_vendor = re.compile('^.{8}$')
 scsi_product = re.compile('^.{16}$')
 
-validVendorID = {HWBus.PCI: four_hex_digits,
-                  HWBus.USB: four_hex_digits,
-                  HWBus.IEEE1394: six_hex_digits,
-                  HWBus.SCSI: scsi_vendor}
+validVendorID = {
+    HWBus.PCI: four_hex_digits,
+    HWBus.USB: four_hex_digits,
+    HWBus.IEEE1394: six_hex_digits,
+    HWBus.SCSI: scsi_vendor,
+    }
 
-validProductID = {HWBus.PCI: four_hex_digits,
-                   HWBus.USB: four_hex_digits,
-                   HWBus.IEEE1394: six_hex_digits,
-                   HWBus.SCSI: scsi_product}
+validProductID = {
+    HWBus.PCI: four_hex_digits,
+    HWBus.USB: four_hex_digits,
+    HWBus.SCSI: scsi_product,
+    }
 
 
 def isValidVendorID(bus, id):
-    """check, if the string id is a valid vendor for this bus.
+    """check if the string id is a valid vendor ID for this bus.
 
     :return: True, if id is valid, otherwise False
-    :param bus: The bus the id is checked for (type HWBus)
+    :param bus: A HWBus indicating the bus type of "id"
     :param id: A string with the ID
 
-    Some busses have constraints for IDs, while can use arbitrary
-    value for the "fake" busses HWBus.SYSTEM and HWBus.SERIAL.
+    Some busses have constraints for IDs, while some can use arbitrary
+    values, for example the "fake" busses HWBus.SYSTEM and HWBus.SERIAL.
 
     We use a hexadecimal representation of integers like "0x123abc",
     i.e., the numbers have the prefix "0x"; for the digits > 9 we
-    use the lower case characters a..f.
+    use the lower case characters a to f.
 
     USB and PCI IDs have always four digits; IEEE1394 IDs have always
     six digits.
 
     SCSI vendor IDs consist of eight bytes of ASCII data (0x20..0x7e);
-    if a vendor name has less than eight characters, it is padded to the
+    if a vendor name has less than eight characters, it is padded on the
     right with spaces (See http://t10.org/ftp/t10/drafts/spc4/spc4r14.pdf,
     page 45).
     """
@@ -291,18 +297,20 @@ def isValidProductID(bus, id):
     :param bus: The bus the id is checked for (type HWBus)
     :param id: A string with the ID
 
-    Some busses have constraints for IDs, while may use arbitrary
-    value for the"fake" busses HWBus.SYSTEM and HWBus.SERIAL.
+    Some busses have constraints for IDs, while some can use arbitrary
+    values, for example the "fake" busses HWBus.SYSTEM and HWBus.SERIAL.
 
     We use a hexadecimal representation of integers like "0x123abc",
     i.e., the numbers have the prefix "0x"; for the digits > 9 we
-    use the lower case characters a..f.
+    use the lower case characters a to f.
 
-    USB and PCI IDs have always four digits; IEEE1394 IDs have always
-    six digits.
+    USB and PCI IDs have always four digits.
+
+    Since IEEE1394 does not specify product IDs, there is no formal
+    check of them.
 
     SCSI product IDs consist of 16 bytes of ASCII data (0x20..0x7e);
-    if a product name has less than 16 characters, it is padded to the
+    if a product name has less than 16 characters, it is padded on the
     right with spaces.
     """
     if bus not in validProductID:

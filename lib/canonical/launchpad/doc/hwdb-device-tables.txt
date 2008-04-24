@@ -1,14 +1,13 @@
 = Hardware Database Device Tables =
 
 These tables represent devices and complete systems in the database. They
-allow to look up devices by their bus IDs and by their human readable
-vendor and product name. They also link a device to drivers.
-
+allow look up of devices by their bus IDs and by their human readable
+vendor and product names. They also link devices to drivers.
 
 == HWVendorName ==
 
 HWVendorName is a simple list of vendor names. A new entry is created by
-IHWVendorNameSet.create.
+IHWVendorNameSet.create().
 
     >>> from canonical.launchpad.interfaces import IHWVendorNameSet
     >>> vendor_name_set = getUtility(IHWVendorNameSet)
@@ -17,7 +16,7 @@ IHWVendorNameSet.create.
     Intel
 
 Each name in the table must be unique. The attempt to create a second
-row with the same name raises a IntegrityError error.
+row with the same name raises an IntegrityError error.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()

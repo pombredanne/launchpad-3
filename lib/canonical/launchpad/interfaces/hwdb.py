@@ -220,8 +220,8 @@ class IHWSystemFingerprintSet(Interface):
 # Identification of a hardware device.
 #
 # In theory, a tuple (bus, vendor ID, product ID) should identify
-# a device unambiguosly. In practice, there are several cases where
-# this tuple can identify more then one device:
+# a device unambiguously. In practice, there are several cases where
+# this tuple can identify more than one device:
 #
 # - A USB chip or chipset may be used in different devices.
 #   A real world example:
@@ -264,7 +264,7 @@ class IHWVendorNameSet(Interface):
 
         :return: A new IHWVendorName instance.
 
-        A RetryPsycopgIntegrityError is raised, if the name already exists.
+        An IntegrityError is raised, if the name already exists.
         """
 
 
