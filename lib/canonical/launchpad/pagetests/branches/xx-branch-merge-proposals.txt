@@ -607,7 +607,9 @@ An email notification is also generated.
     <BLANKLINE>
         Status: Work in progress =3D> Queued
         Queue Position: (not set) =3D> 1
-        Commit Message: (not set) =3D> This is the commit message
+    <BLANKLINE>
+    Commit Message changed to:
+    This is the commit message
     --
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
     You are subscribed to branch Mozilla Firefox Mainline.
