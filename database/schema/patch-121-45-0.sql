@@ -6,8 +6,8 @@ CREATE TABLE BugTrackerPerson
     date_created TIMESTAMP WITHOUT TIME ZONE
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     bugtracker integer NOT NULL REFERENCES BugTracker(id),
-    name text NOT NULL,
     person integer NOT NULL REFERENCES Person(id),
+    name text NOT NULL,
     CONSTRAINT bugtrackerperson__bugtracker__name__key
         UNIQUE (bugtracker, name)
 );
