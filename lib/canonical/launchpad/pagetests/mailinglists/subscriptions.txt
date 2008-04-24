@@ -385,3 +385,68 @@ does not show either link.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+
+== Mailing list auto-subscription settings ==
+
+Launchpad may automatically subscribe a person to a team's mailing
+list.  The setting that controls this behaviour is on the person's
+Email preferences page.
+
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~carlos')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+Carlos's default setting, 'On registration', is still in place.
+
+    >>> print_radio_button_field(browser.contents,
+    ...     'mailing_list_auto_subscribe_policy')
+    ( ) Never
+    (*) On registration
+    ( ) Always subscribe
+
+Carlos can update the value at any time.
+
+    # A convenient helper for setting and submitting a new value.
+    >>> def set_and_submit(newvalue):
+    ...     control = browser.getControl(
+    ...         name='field.mailing_list_auto_subscribe_policy')
+    ...     control.value = [newvalue]
+    ...     submit = browser.getControl(
+    ...         name='field.actions.update_autosubscribe_policy')
+    ...     submit.click()
+    ...     print_radio_button_field(browser.contents,
+    ...         'mailing_list_auto_subscribe_policy')
+
+    >>> original_value = browser.getControl(
+    ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
+
+    >>> set_and_submit('ALWAYS')
+    ( ) Never
+    ( ) On registration
+    (*) Always subscribe
+
+    # We only need to check this once.
+    >>> get_feedback_messages(browser.contents)
+    [u'Your auto-subscription policy has been updated.']
+
+    >>> set_and_submit('NEVER')
+    (*) Never
+    ( ) On registration
+    ( ) Always subscribe
+
+    >>> set_and_submit('ON_REGISTRATION')
+    ( ) Never
+    (*) On registration
+    ( ) Always subscribe
+
+Updating the value twice has no adverse affect.
+
+    # Restores the original value while performing the test.
+    >>> assert original_value == 'ON_REGISTRATION'
+    >>> set_and_submit(original_value)
+    ( ) Never
+    (*) On registration
+    ( ) Always subscribe
