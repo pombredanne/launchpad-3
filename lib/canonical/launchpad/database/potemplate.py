@@ -33,6 +33,8 @@ from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.database.translationtemplateitem import (
+    TranslationTemplateItem)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOFileSet, IPOTemplate, IPOTemplateSet,
     IPOTemplateSubset, ITranslationExporter, ITranslationFileData,
@@ -481,7 +483,7 @@ class POTemplate(SQLBase, RosettaStats):
     def expireAllMessages(self):
         """See `IPOTemplate`."""
         for potmsgset in self:
-            potmsgset.sequence = 0
+            potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
         """Look up named `Language` object, or raise `LanguageNotFound`."""
