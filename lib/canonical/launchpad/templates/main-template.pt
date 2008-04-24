@@ -258,6 +258,21 @@
                           </tal:notifications>
                           <metal:block define-slot="main" />
                         </tal:noportlets>
+                        <div id="navigation-tabs"
+                             tal:condition="not:view/macro:pagehas/actionsmenu">
+                          <div id="context-navigation-tabs"
+                               tal:condition="context/menu:navigation">
+                            <tal:menu
+                              replace="structure context/@@+navigationmenutabs"
+                              />
+                          </div>
+                          <div id="view-navigation-tabs"
+                               tal:condition="view/menu:navigation">
+                            <tal:menu
+                              replace="structure view/@@+navigationmenutabs"
+                              />
+                          </div>
+                        </div>
                         <div
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"

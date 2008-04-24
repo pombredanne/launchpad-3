@@ -276,7 +276,7 @@ for packages. This is certainly not part of the doctest story.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> grumpy_i386 = grumpy.newArch(
     ...     'i386', ProcessorFamily.get(1), False, cprov,
-    ...     ppa_supported=True)
+    ...     supports_virtualized=True)
     >>> grumpy.nominatedarchindep = grumpy_i386
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
