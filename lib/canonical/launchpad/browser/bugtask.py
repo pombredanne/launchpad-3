@@ -2395,6 +2395,16 @@ class BugTasksAndNominationsView(LaunchpadView):
                     BugNominationStatus.APPROVED)
                 ]
 
+        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
+        # so that checking person.is_valid_person, when rendering the
+        # link, won't issue a DB query.
+        assignees = set(
+            bugtask.assignee for bugtask in all_bugtasks
+            if bugtask.assignee is not None)
+        reporters = set(
+            bugtask.owner for bugtask in all_bugtasks)
+        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
+
         return bugtasks_and_nominations
 
     def currentBugTask(self):
