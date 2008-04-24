@@ -12,5 +12,7 @@ CREATE TABLE BugTrackerPerson
         UNIQUE (bugtracker, name)
 );
 
+CREATE INDEX bugtrackerperson__person__idx ON BugTrackerPerson(person);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 45, 0);
