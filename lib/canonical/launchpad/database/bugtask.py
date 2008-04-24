@@ -436,14 +436,13 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagename == prev_sourcepackagename):
                     bugtask.sourcepackagename = self.sourcepackagename
 
-    @property
-    def conjoined_master(self):
+    def getConjoinedMaster(self, bugtasks):
         """See `IBugTask`."""
         conjoined_master = None
         if (IDistroBugTask.providedBy(self) and
             self.distribution.currentseries is not None):
             current_series = self.distribution.currentseries
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in bugtasks:
                 if (bugtask.distroseries == current_series and
                     bugtask.sourcepackagename == self.sourcepackagename):
                     conjoined_master = bugtask
@@ -452,7 +451,7 @@ class BugTask(SQLBase, BugTaskMixin):
             assert self.product.development_focus is not None, (
                 'A product should always have a development series.')
             devel_focus = self.product.development_focus
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in bugtasks:
                 if bugtask.productseries == devel_focus:
                     conjoined_master = bugtask
                     break
@@ -461,6 +460,11 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
+
+    @property
+    def conjoined_master(self):
+        """See `IBugTask`."""
+        return self.getConjoinedMaster(shortlist(self.bug.bugtasks))
 
     @property
     def conjoined_slave(self):
@@ -1122,13 +1126,6 @@ class BugTaskSet:
                             AND Milestone.name = %s)
                 """ % sqlvalues(params.milestone.target,
                                 params.milestone.name)
-
-                # A bug may have bugtasks in more than one series, and these
-                # bugtasks may have the same milestone value. To avoid
-                # duplicate result rows for one bug, ensure that only that
-                # bugtask is returned, that is directly assigned to the
-                # product.
-                extra_clauses.append("BugTask.product IS NOT null")
             else:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)

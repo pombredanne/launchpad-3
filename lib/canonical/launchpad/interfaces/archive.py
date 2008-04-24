@@ -10,6 +10,7 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
@@ -104,6 +105,8 @@ class IArchive(IHasOwner):
         "PRIMARY archive dependency for PPAs.")
 
     archive_url = Attribute("External archive URL.")
+
+    is_ppa = Attribute("True if this archive is a PPA.")
 
     title = Attribute("Archive Title.")
 
@@ -278,6 +281,15 @@ class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
         description=_("The reason why the package is being deleted."))
 
 
+class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
+    """Schema used to copy packages across archive."""
+
+    include_binaries = Bool(
+        title=_("Copy binaries"), required=False, default=False,
+        description=_("Whether or not to copy the binary packages for "
+                      "the selected sources."))
+
+
 class IArchiveEditDependenciesForm(Interface):
     """Schema used to edit dependencies settings within a archive."""
 
@@ -290,6 +302,12 @@ class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
+
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
 
     def new(distribution=None, purpose=None, owner=None, description=None):
         """Create a new archive.
