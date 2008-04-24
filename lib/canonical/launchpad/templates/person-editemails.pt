@@ -114,36 +114,37 @@
         method="post" enctype="multipart/form-data"
         accept-charset="UTF-8">
 
-    <h2>Auto-subscribing to mailing lists</h2>
+    <h2>Automatic subscription to mailing lists</h2>
 
-    <table class="form">
-	<tal:widget define="widget nocall:view/widgets/mailing_list_auto_subscribe_policy">
-	  <thead>
-	    <tr>
-              <th style="white-space:nowrap; text-align:left;">
-		<label tal:attributes="for widget/name">When should launchpad subscribe you to a team&#x2019;s mailing list?</label>
-	      </th>
-              <td></td>
-	    </tr>
-	  </thead>
-	</tal:widget>
+    <tal:widget
+       define="widget nocall:view/widgets/mailing_list_auto_subscribe_policy">
+      <table class="form">
 
-      <tbody>
+	<thead>
+	  <tr>
+            <th style="white-space:nowrap; text-align:left;">
+		<label tal:attributes="for widget/name">
+		  When should launchpad subscribe you to a
+		  team&#x2019;s mailing list?
+		</label>
+	    </th>
+            <td></td>
+	  </tr>
+	</thead>
 
-	<tal:widget define="widget nocall:view/widgets/mailing_list_auto_subscribe_policy">
+	<tbody>
 	  <metal:block use-macro="context/@@launchpad_form/widget_row" />
-	</tal:widget>
-
           <tr>
             <td>
-              <input tal:replace="structure
-                     view/action_update_autosubscribe_policy/render" />
+		<input tal:replace="structure
+			view/action_update_autosubscribe_policy/render" />
             </td>
             <td></td>
           </tr>
+	</tbody>
 
-      </tbody>
-    </table>
+      </table>
+    </tal:widget>
   </form>
 
 </div>
