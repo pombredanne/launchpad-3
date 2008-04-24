@@ -19,7 +19,7 @@ COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
 
--- Branch 
+-- Branch
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
 COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
@@ -339,6 +339,19 @@ COMMENT ON COLUMN CodeReviewVote.registrant IS 'The person who registered this v
 COMMENT ON COLUMN CodeReviewVote.vote_message IS 'The message associated with the vote';
 COMMENT ON COLUMN CodeReviewVote.date_created IS 'The date this vote reference was created';
 
+-- CommercialSubscription
+COMMENT ON TABLE CommercialSubscription is 'A Commercial Subscription entry for a project.  Projects with licenses of Other/Proprietary must purchase a subscription in order to use Launchpad.';
+COMMENT ON COLUMN CommercialSubscription.date_created IS 'The date this subscription was created in Launchpad.';
+COMMENT ON COLUMN CommercialSubscription.date_last_modified IS 'The date this subscription was last modified.';
+COMMENT ON COLUMN CommercialSubscription.date_starts IS 'The beginning date for this subscription.  It is invalid until that date.';
+COMMENT ON COLUMN CommercialSubscription.date_expires IS 'The expiration date for this subscription.  It is invalid after that date.';
+COMMENT ON COLUMN CommercialSubscription.status IS 'The current status.  One of: SUBSCRIBED, LAPSED, SUSPENDED.';
+COMMENT ON COLUMN CommercialSubscription.product IS 'The product this subscription enables.';
+COMMENT ON COLUMN CommercialSubscription.registrant IS 'The person who created this subscription.';
+COMMENT ON COLUMN CommercialSubscription.purchaser IS 'The person who purchased this subscription.';
+COMMENT ON COLUMN CommercialSubscription.whiteboard IS 'A place for administrators to store comments related to this subscription.';
+COMMENT ON COLUMN CommercialSubscription.sales_system_id IS 'A reference in the external sales system (e.g. Salesforce) that can be used to identify this subscription.';
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
@@ -483,6 +496,7 @@ COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic 
 COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product upstream uses Blueprints officially. This is useful to help indicate whether or not the upstream project will be actively watching the blueprints in Launchpad.';
 COMMENT ON COLUMN Product.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this product.';
 COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
+COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -1351,7 +1365,7 @@ COMMENT ON COLUMN Milestone.distroseries IS 'The distroseries for which this is 
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
-COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';  
+COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
