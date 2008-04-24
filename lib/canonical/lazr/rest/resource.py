@@ -795,8 +795,9 @@ class ServiceRootResource(HTTPResource):
         represented.
         """
         data_for_json = {}
-        for link_name, context in self.getTopLevelResources(request).items():
-            data_for_json[link_name] = canonical_url(context)
+        publications = self.getTopLevelPublications(request)
+        for link_name, publication in publications.items():
+            data_for_json[link_name] = canonical_url(publication)
         return data_for_json
 
     def getTopLevelResources(self, request):

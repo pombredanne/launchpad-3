@@ -56,8 +56,8 @@ class IJSONPublishable(Interface):
 class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
 
-    def getTopLevelResources(request):
-        """Return a mapping of top-level link names to resources."""
+    def getTopLevelPublications(request):
+        """Return a mapping of top-level link names to published objects."""
 
 
 class IEntryResource(IHTTPResource):

@@ -103,10 +103,10 @@ class WadlServiceRootResourceAPI(WadlAPI):
         """Return a list of dicts describing the top-level resources."""
         resource_dicts = []
         request = get_current_browser_request()
-        top_level_resources = self.resource.getTopLevelResources(request)
-        for link_name, utility in top_level_resources.items():
+        top_level = self.resource.getTopLevelPublications(request)
+        for link_name, publication in top_level.items():
             # We only expose collection resources for now.
-            resource = CollectionResource(utility, request)
+            resource = CollectionResource(publication, request)
             resource_dicts.append({'name' : link_name,
                                    'path' : "[&quot;%s&quot;]" % link_name,
                                    'resource' : resource})
