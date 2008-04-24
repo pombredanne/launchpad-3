@@ -17,7 +17,8 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Review comment</h1>
+  <h1>Code review comment</h1>
+  <tt id="comment-body" tal:content="context/message/text_contents">foo</tt>
 </div>
 
 </body>

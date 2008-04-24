@@ -6,10 +6,17 @@ Let's get us a code review message and canonical_url
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> message = LaunchpadObjectFactory().makeCodeReviewMessage()
+    >>> message = LaunchpadObjectFactory().makeCodeReviewMessage('my body')
     >>> message_url = canonical_url(message)
+    >>> print message.message.text_contents
+    my body
     >>> logout()
 
 Now, open its home page.
 
     >>> anon_browser.open(message_url)
+    >>> print anon_browser.title
+    Code review comment
+    >>> body = find_tag_by_id(anon_browser.contents, 'comment-body')
+    >>> print extract_text(body)
+    my body
