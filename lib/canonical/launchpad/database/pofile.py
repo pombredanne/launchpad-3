@@ -228,7 +228,7 @@ class POFileMixIn(RosettaStats):
 
             # Do not look for translations in a DummyPOFile.
             if self.id is not None:
-                # XXX 2008-04-21 DaniloSegan:
+                # XXX 2008-04-21 DaniloSegan: bug #221353.
                 # We are currently searching only through the first form of
                 # translation.  This needs to be fixed, however, the query
                 # would need some prettyfying before that can happen, and

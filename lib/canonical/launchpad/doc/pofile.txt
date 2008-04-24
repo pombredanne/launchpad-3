@@ -73,11 +73,11 @@ We need a helper method to better display test results.
     ...         translation = ""
     ...         if potmsgset.singular_text:
     ...             singular = potmsgset.singular_text
-    ...             if len(singular)>20:
+    ...             if len(singular) > 20:
     ...                singular = singular[:17] + "..."
     ...         if potmsgset.plural_text:
     ...             plural = potmsgset.plural_text
-    ...             if len(plural)>20:
+    ...             if len(plural) > 20:
     ...                plural = plural[:17] + "..."
     ...         if pofile is not None:
     ...             translation = potmsgset.getCurrentTranslationMessage(
@@ -93,9 +93,9 @@ We need a helper method to better display test results.
 It is common to want to find those POTMsgSets which contain a certain
 substring in their original English string.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     dummy_pofile.findPOTMsgSetsContaining(u"contact"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     4
     >>> print_potmsgsets(found_potmsgsets)
      7. contact's header:      None
@@ -105,9 +105,9 @@ substring in their original English string.
 
 Search is case-insensitive.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     dummy_pofile.findPOTMsgSetsContaining(u"CONTact"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     4
     >>> print_potmsgsets(found_potmsgsets)
      7. contact's header:      None
@@ -117,9 +117,9 @@ Search is case-insensitive.
 
 Search will look through plural msgids as well.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     dummy_pofile.findPOTMsgSetsContaining(u"contacts"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     2
     >>> print_potmsgsets(found_potmsgsets)
     15. %d contact             %d contacts
@@ -127,14 +127,14 @@ Search will look through plural msgids as well.
 
 Looking for a non-existing string returns an empty SelectResults.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     dummy_pofile.findPOTMsgSetsContaining(u"non-existing-string"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     0
 
 Trying to find a string shorter than two characters doesn't work.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     dummy_pofile.findPOTMsgSetsContaining(u"a"))
     Traceback (most recent call last):
     ...
@@ -142,34 +142,34 @@ Trying to find a string shorter than two characters doesn't work.
 
 In a Spanish translation, you will also get matching translations.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     pofile.findPOTMsgSetsContaining(u"ventana"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     1
     >>> print_potmsgsets(found_potmsgsets, pofile)
     16. Opening %d contac...   Opening %d contac...   Abrir %d contacto...
 
 Searching for translations is case insensitive.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     pofile.findPOTMsgSetsContaining(u"VENTANA"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     1
     >>> print_potmsgsets(found_potmsgsets, pofile)
     16. Opening %d contac...   Opening %d contac...   Abrir %d contacto...
 
 However, searching for plural forms other than the first one doesn't work.
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     pofile.findPOTMsgSetsContaining(u"estos"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     0
 
 One can find a message by looking for a suggestion (non-current translation).
 
-    >>> found_potmsgsets = list(
+    >>> found_potmsgsets = (
     ...     pofile.findPOTMsgSetsContaining(u"tarjetas"))
-    >>> len(found_potmsgsets)
+    >>> found_potmsgsets.count()
     1
     >>> print_potmsgsets(found_potmsgsets, pofile)
      5.  cards                 None                    caratas

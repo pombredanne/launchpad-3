@@ -297,7 +297,7 @@ class POTemplate(SQLBase, RosettaStats):
             """ % sqlvalues (self.id, sequence))
 
 
-    def getPOTMsgSets(self, current=True, search=None):
+    def getPOTMsgSets(self, current=True):
         """See `IPOTemplate`."""
         clauses = [
             'POTMsgSet.potemplate = %s' % sqlvalues(self)
@@ -306,23 +306,6 @@ class POTemplate(SQLBase, RosettaStats):
         if current:
             # Only count the number of POTMsgSet that are current.
             clauses.append('POTMsgSet.sequence > 0')
-
-        if search is not None:
-            # XXX 2008-04-14 Danilo:
-            # Doing subselects on POMsgID has proved to perform best
-            # during testing: doing LEFT OUTER JOINs with POMsgID
-            # table for both msgid_singular and msgid_plural proved
-            # to be too slow.
-            clauses.append("""
-              ((POTMsgSet.msgid_singular IS NOT NULL AND
-                POTMsgSet.msgid_singular IN (
-                  SELECT POMsgID.id FROM POMsgID
-                    WHERE msgid LIKE '%%' || %s || '%%')) OR
-               (POTMsgSet.msgid_plural IS NOT NULL AND
-                POTMsgSet.msgid_plural IN (
-                  SELECT POMsgID.id FROM POMsgID
-                    WHERE msgid LIKE '%%' || %s || '%%')))
-              """ % (quote_like(search), quote_like(search)))
 
         return POTMsgSet.select(" AND ".join(clauses),
                                 orderBy='sequence')

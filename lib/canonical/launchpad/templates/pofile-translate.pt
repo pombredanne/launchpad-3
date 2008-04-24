@@ -57,8 +57,8 @@
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
-        <!-- Search box -->
         <tal:is_beta condition="view/isBetaUser">
+        <!-- Search box -->
           <form method="get" style="float: right;" action="+translate">
             <!-- the hidden elements -->
             <input tal:condition="view/second_lang_code"
@@ -70,7 +70,6 @@
             <input id="search_box" type="text" name="search"
                    title="Enter English string to search for"
                    tal:attributes="value view/search_text" />
-            <input type="submit" value="Find" />
           </form>
         </tal:is_beta>
 
