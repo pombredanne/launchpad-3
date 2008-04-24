@@ -43,7 +43,7 @@ class SoyuzTestPublisher:
         self.person = getUtility(IPersonSet).getByName('name16')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person,
-            ppa_supported=True)
+            supports_virtualized=True)
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
@@ -147,7 +147,7 @@ class SoyuzTestPublisher:
         if pub_source is None:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
-                archive=archive)
+                archive=archive, distroseries=distroseries)
 
         builds = pub_source.createMissingBuilds(ignore_pas=True)
         published_binaries = []

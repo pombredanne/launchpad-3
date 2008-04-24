@@ -81,7 +81,7 @@ bugtask directly.
 He sees his comment was appended to the bug report's messages.
 
     >>> print extract_text(
-    ...     content.findAll('div', {'class' : 'boardComment'})[-1])
+    ...     find_tags_by_class(str(content), 'boardComment')[-1])
     No Privileges Person wrote ... This bug is a question.
 
 No Privileges Person looks at the page heading and sees that Foo Bar
@@ -257,7 +257,7 @@ again. The bug status is sill Invalid for Jokosher, but he can edit it.
 He reads his comment that was appended to the bug report's messages.
 
     >>> print extract_text(
-    ...     content.findAll('div', {'class' : 'boardComment'})[-1])
+    ...     find_tags_by_class(str(content), 'boardComment')[-1])
     No Privileges Person wrote ... I misunderstood.
 
 When the remove question page is visited, and there is no question,
