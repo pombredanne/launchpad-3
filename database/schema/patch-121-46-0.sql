@@ -20,5 +20,4 @@ CREATE INDEX translationtemplateitem__potmsgset__idx
 ON TranslationTemplateItem(potmsgset);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 77, 0);
-
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 46, 0);
