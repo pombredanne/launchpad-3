@@ -95,10 +95,8 @@ information.
 
     >>> def find_spoken_languages(spoken_in):
     ...     """Screen-scrape list of "spoken-in" languages out of html."""
-    ...     list_items = spoken_in.find('li', 'language')
-    ...     if list_items is None:
-    ...         return []
-    ...     return [li for li in list_items]
+    ...     list_items = spoken_in.findAll('li', 'language')
+    ...     return [li.contents for li in list_items]
 
     >>> print find_spoken_languages(country_portlet)
     []
@@ -109,13 +107,13 @@ Back home in Brazil, Joao gets the equivalent for Brazil, where the
 equivalent information is known.
 
     >>> browser = setupBrowser('Basic test@canonical.com:test')
-    >>> browser.addHeader('X-Forwarded-For', '63.246.129.170')
+    >>> browser.addHeader('X-Forwarded-For', '201.68.7.102')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
     >>> country_portlet = find_portlet(browser.contents,
     ...     'Languages in Brazil')
     >>> print find_spoken_languages(country_portlet)
-    [u'Portuguese (Brazil)']
+    [[u'Portuguese (Brazil)']]
 
 We also have a page under the launchpad root, called +editmylanguages,
 with launchpad.AnyPerson as permission. This is the page to which we
