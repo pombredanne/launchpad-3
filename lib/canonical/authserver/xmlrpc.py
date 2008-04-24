@@ -6,6 +6,7 @@ from canonical.config import config
 
 
 class LoggingResource(xmlrpc.XMLRPC):
+    """Includes the original stack trace in unexpected Faults."""
 
     def _ebRender(self, failure):
         fault = xmlrpc.XMLRPC._ebRender(self, failure)
