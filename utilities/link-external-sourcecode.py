@@ -3,7 +3,7 @@
 import optparse
 
 from os import curdir, listdir, sep, symlink
-from os.path import realpath, exists, join
+from os.path import abspath, exists, join, realpath
 from sys import stdout
 from urllib import unquote
 from urlparse import urlparse
@@ -41,7 +41,7 @@ def gen_missing_files(source, destination):
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(
-        usage="%prog [branch] [parent]",
+        usage="%prog [options] [parent]",
         description=(
             "Add a symlink in <target>/sourcecode for each corresponding "
             "file in <parent>/sourcecode."),
@@ -76,6 +76,8 @@ if __name__ == '__main__':
         else:
             parser.error("Cannot specify parent tree as named "
                          "argument and positional argument.")
+    elif len(args) >= 2:
+        parser.error("Too many arguments.")
 
     # Discover the parent branch using Bazaar.
     if options.parent is None:
@@ -87,13 +89,13 @@ if __name__ == '__main__':
 
     missing_files = gen_missing_files(
         realpath(join(options.parent, 'sourcecode')),
-        join(options.target, 'sourcecode'))
+        abspath(join(options.target, 'sourcecode')))
 
     for target, link in missing_files:
         symlink(target, link)
         if options.verbose:
             stdout.write('%s -> %s\n' % (
-                    join(*(link.rsplit(sep, 3)[-3:])), target))
+                    sep.join(link.rsplit(sep, 3)[-3:]), target))
 
 
 # End
