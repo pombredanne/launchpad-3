@@ -1219,40 +1219,66 @@ context.
     iceweasel 1.0 in hoary PENDING sabdfl
     iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
 
-'getMostActivePPAsForDistribution' returns the 5 PPAs with the highest
-number of cached packages (published packages), first sources than
-binaries and tie-breaks on database record ID.
+'getMostActivePPAsForDistribution' returns a list of tuples containing
+up to 5 PPAs with the highest number of publications in the last 7 days
+and the corresponding number of uploads. The list is ordered by
+descending number of uploads and then database record ID.
 
     >>> most_active_ppas = (
     ...     archive_set.getMostActivePPAsForDistribution(ubuntu))
-    >>> most_active_ppas.count()
-    5
+    >>> len(most_active_ppas)
+    1
 
-So, note that Celso's PPA still private, so it's not listed.
+As expected only Mark's PPA had activity, all the sampledata records
+are old.
 
     >>> def print_most_active_ppas():
-    ...     for ppa in most_active_ppas:
-    ...         print ppa.title, ppa.sources_cached, ppa.binaries_cached
+    ...     most_active_ppas = (
+    ...         archive_set.getMostActivePPAsForDistribution(ubuntu))
+    ...     for ppa, number_of_uploads in most_active_ppas:
+    ...         print ppa.title, number_of_uploads
 
     >>> print_most_active_ppas()
-    PPA for No Privileges Person 10 2
-    PPA for Mark Shuttleworth 1 1
-    PPA for Foo Bar 0 0
-    PPA for Sample Person 0 0
-    PPA for Launchpad Buildd Admins 0 0
+    PPA for Mark Shuttleworth 2
+
+We will create some activity.
+
+    >>> a_pub = cprov_archive.getPublishedSources()[0]
+    >>> def create_activity(where, how_many):
+    ...     for i in range(how_many):
+    ...         a_pub.copyTo(
+    ...             ubuntu['hoary'], PackagePublishingPocket.RELEASE, where)
+
+
+    >>> create_activity(cprov_archive, 20)
+    >>> create_activity(sandbox_archive, 10)
+    >>> create_activity(name12.archive, 4)
+    >>> create_activity(no_priv.archive, 4)
+    >>> create_activity(lp_buildd_team.archive, 8)
+
+    >>> flush_database_updates()
+
+So, note that Celso's PPA still private, so, despite of having the
+highest number of uploads, it's not listed.
+
+    >>> print_most_active_ppas()
+    PPA for Foo Bar 10
+    PPA for Launchpad Buildd Admins 8
+    PPA for No Privileges Person 4
+    PPA for Sample Person 4
+    PPA for Mark Shuttleworth 2
 
 When we make Celso's PPA public, the result gets limited in 5 items.
-The previous last item (lp-build-admins PPA) will be excluded to give
-place to Celso's PPAs.
+The previous last item (Marks' PPA) will be excluded to give place to
+Celso's PPAs.
 
     >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
     >>> naked_cprov_archive.private = False
     >>> flush_database_updates()
 
     >>> print_most_active_ppas()
-    PPA for Celso Providelo 1000 2000
-    PPA for No Privileges Person 10 2
-    PPA for Mark Shuttleworth 1 1
-    PPA for Foo Bar 0 0
-    PPA for Sample Person 0 0
-
+    PPA for Celso Providelo 20
+    PPA for Foo Bar 10
+    PPA for Launchpad Buildd Admins 8
+    PPA for No Privileges Person 4
+    PPA for Sample Person 4

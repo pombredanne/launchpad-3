@@ -720,13 +720,23 @@ class ArchiveSet:
 
     def getMostActivePPAsForDistribution(self, distribution):
         """See `IArchiveSet`."""
-        query = """
-            Archive.distribution = %s AND
-            Archive.purpose = %s AND
-            Archive.private = FALSE
+        cur = cursor()
+        q = """
+             SELECT a.id, count(*) as C
+             FROM Archive a, SourcePackagePublishingHistory spph
+             WHERE
+                 spph.archive = a.id AND
+                 a.private = FALSE AND
+                 spph.datecreated >= now() - INTERVAL '1 week' AND
+                 a.distribution = %s AND
+                 a.purpose = %s
+             GROUP BY a.id
+             ORDER BY C DESC, a.id
+             LIMIT 5
         """ % sqlvalues(distribution, ArchivePurpose.PPA)
 
-        return Archive.select(
-            query, limit=5, clauseTables=['Archive'],
-            orderBy=['-sources_cached', '-binaries_cached', 'id'])
+        cur.execute(q)
+
+        return [(Archive.get(int(archive_id)), archive_activity)
+                for archive_id, archive_activity in cur.fetchall()]
 

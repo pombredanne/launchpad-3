@@ -41,27 +41,32 @@ published across all ubuntu PPAs.
     4 published sources
     4 published binaries
 
+
+Up to 5 latest source publications are also presented in the 'Latest
+sources' section.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
+    Latest uploads
+    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo 41 weeks ago
+    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth 41 weeks ago
+    pmount 0.1-1 in warty in PPA for Celso Providelo 41 weeks ago
+    iceweasel 1.0 in warty in PPA for Celso Providelo 41 weeks ago
+
+
 The 5 most active PPAs are listed in the 'Most active' section. Since
 we only have 3 PPAs in sampledata they are all presented.
 
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-                                 Sources  Binaries
-    PPA for Celso Providelo      3        3
-    PPA for Mark Shuttleworth    1        1
-    PPA for No Privileges Person 0        0
+    Number of uploads in the last 7 days
 
-Up to 5 latest source publications are also presented in the 'Latest
-sources' section.
+Nothing suitable in the sampledata, check the end of this document for
+further tests.
 
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_sources'))
-    Latest sources
-    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo 41 weeks ago
-    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth 41 weeks ago
-    pmount 0.1-1 in warty in PPA for Celso Providelo 41 weeks ago
-    iceweasel 1.0 in warty in PPA for Celso Providelo 41 weeks ago
+
+
 
 
 == Searching PPAs ==
@@ -93,7 +98,7 @@ When a search is requested the information sections are not rendered.
     >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
     None
 
-    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_sources')
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
     None
 
     >>> print find_tag_by_id(
@@ -115,7 +120,7 @@ request.
     True
 
     >>> find_tag_by_id(
-    ...     anon_browser.contents, 'ppa_latest_sources') is not None
+    ...     anon_browser.contents, 'ppa_latest_uploads') is not None
     True
 
     >>> find_tag_by_id(
@@ -162,8 +167,8 @@ them properly, see doc/package-archive.txt.
     >>> from zope.component import getUtility
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.interfaces import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -187,6 +192,7 @@ Let's start by adding an extra package to Celso's archive:
 
     >>> import transaction
     >>> from canonical.launchpad.ftests.ppa import publishToPPA
+
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> logout()
@@ -658,3 +664,37 @@ corresponding build page.
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
     Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+
+== Populating 'Most Active' section ==
+
+
+    >>> login(ANONYMOUS)
+    >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
+    >>> publishToPPA("cprov", "hoary", "commercialpackage", "1.0-1")
+    >>> publishToPPA("cprov", "warty", "cdrkit", "1.0")
+
+    >>> publishToPPA("sabdfl", "warty", "commercialpackage", "1.0-1")
+    >>> publishToPPA(
+    ...     "sabdfl", "breezy-autotest", "commercialpackage", "1.0-1")
+
+    >>> publishToTeamPPA(team_name="ubuntu-team")
+
+    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
+
+    >>> logout()
+    >>> transaction.commit()
+    >>> flush_database_updates()
+
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    Most active
+    Number of uploads in the last 7 days
+    PPA for Celso Providelo        4
+    PPA for Mark Shuttleworth      2
+    PPA for Ubuntu Team            2
+    PPA for No Privileges Person   1
+
+

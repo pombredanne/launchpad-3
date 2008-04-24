@@ -95,26 +95,27 @@
               <table class="listing">
                 <thead>
                   <tr>
-                    <td></td>
-                    <td>Sources</td>
-                    <td>Binaries</td>
+                    <td colspan="2">Number of uploads in the last 7 days</td>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr tal:repeat="ppa view/getMostActivePPAs">
+                  <tr tal:repeat="ppa_and_uploads view/getMostActivePPAs">
+                    <tal:ppa_and_uploads
+                      define="ppa python:ppa_and_uploads[0];
+                              uploads python:ppa_and_uploads[1]">
                     <td>
                       <a tal:attributes="href ppa/fmt:url"
                          tal:content="ppa/title">PPA for Celso Providelo</a>
                     </td>
-                    <td><tal:sources replace="ppa/sources_cached" /></td>
-                    <td><tal:sources replace="ppa/binaries_cached" /></td>
+                    <td><tal:sources replace="uploads" /></td>
+                    </tal:ppa_and_uploads>
      	          </tr>
                 </tbody>
               </table>
             </div>
 
-            <div class="section" id="ppa_latest_sources">
-              <h2>Latest sources</h2>
+            <div class="section" id="ppa_latest_uploads">
+              <h2>Latest uploads</h2>
               <ul class="source package">
                 <li tal:repeat="pub view/getLatestPPASourcePublications">
                   <tal:source_title replace="pub/displayname">
