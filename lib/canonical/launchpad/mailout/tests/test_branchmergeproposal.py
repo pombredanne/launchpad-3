@@ -105,6 +105,7 @@ Baz Qux has proposed merging foo into bar.
         """Fixture method providing a mailer for a modified merge proposal"""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        merge_proposal.requestReview()
         merge_proposal.commit_message = 'new commit message'
         mailer = BMPMailer.forModification(
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
@@ -120,6 +121,7 @@ Baz Qux has proposed merging foo into bar.
         """Ensure the right delta is filled out if there is a change."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual(
+            '    Status: Work in progress => Needs review\n'
             '    Commit Message: (not set) => new commit message',
             mailer.textDelta())
 
@@ -133,6 +135,7 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual("""\
 The proposal to merge foo into bar has been updated.
 
+    Status: Work in progress => Needs review
     Commit Message: (not set) => new commit message
 --
 %s

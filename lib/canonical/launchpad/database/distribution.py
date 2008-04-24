@@ -755,7 +755,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompleteSourcePackageCache(self, archive, log, ztm):
+    def updateCompleteSourcePackageCache(self, archive, log, ztm,
+                                         commit_chunk=500):
         """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
@@ -773,17 +774,19 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
-        # XXX cprov 20080317: I'm not sure why we need to commit that often.
-        # Now update, committing every 50 packages.
-        counter = 0
+        number_of_updates = 0
+        chunk_size = 0
         for spn in spns:
             log.debug("Considering source '%s'" % spn.name)
             self.updateSourcePackageCache(spn, archive, log)
-            counter += 1
-            if counter > 49:
-                counter = 0
+            chunk_size += 1
+            number_of_updates += 1
+            if chunk_size == commit_chunk:
+                chunk_size = 0
                 log.debug("Committing")
                 ztm.commit()
+
+        return number_of_updates
 
     def updateSourcePackageCache(self, sourcepackagename, archive, log):
         """See `IDistribution`."""

@@ -49,7 +49,7 @@ class DistroArchSeries(SQLBase):
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
-    ppa_supported = BoolCol(notNull=False, default=False)
+    supports_virtualized = BoolCol(notNull=False, default=False)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',

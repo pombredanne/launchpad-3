@@ -16,6 +16,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
@@ -52,7 +54,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             purpose=ArchivePurpose.PPA)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
-        self.breezy['i386'].ppa_supported = True
+        self.breezy['i386'].supports_virtualized = True
         self.layer.txn.commit()
 
         # Set up the uploadprocessor with appropriate options and logger
@@ -217,6 +219,56 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "Subject: bar_1.0-2_source.changes rejected",
             "Version older than that in the archive. 1.0-2 <= 1.0-10"]
         self.assertEmail(contents)
+
+    def testPPAPublisherOverrides(self):
+        """Check that PPA components override to main at publishing time,
+
+        To preserve the original upload data, PPA uploads are not overridden
+        until they are published.  This means that the SourcePackageRelease
+        and BinaryPackageRelease keep the uploaded data, but the publishing
+        tables have the overridden data.
+        """
+        # bar_1.0-1_universe is targeted to universe.
+        upload_dir = self.queueUpload("bar_1.0-1_universe", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # The SourcePackageRelease still has a component of universe:
+        pub_sources = self.name16.archive.getPublishedSources(name="bar")
+        [pub_foo] = pub_sources
+        self.assertEqual(
+            pub_foo.sourcepackagerelease.component.name, "universe")
+
+        # But the publishing record has main:
+        self.assertEqual(pub_foo.component.name, 'main')
+
+        # Continue with a binary upload:
+        builds = self.name16.archive.getBuildRecords(name="bar")
+        [build] = builds
+        self.options.context = 'buildd'
+        self.options.buildid = build.id
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary_universe", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # No mails are sent for successful binary uploads.
+        self.assertEqual(len(stub.test_emails), 0,
+                         "Unexpected email generated on binary upload.")
+
+        # Publish the binary.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_item.realiseUpload()
+
+        for binary_package in build.binarypackages:
+            self.assertEqual(binary_package.component.name, "universe")
+            [binary_pub] = BinaryPackagePublishingHistory.selectBy(
+                binarypackagerelease=binary_package,
+                archive=self.name16.archive)
+            self.assertEqual(binary_pub.component.name, "main")
 
     def testPPABinaryUploads(self):
         """Check the usual binary upload life-cycle for PPAs."""
@@ -936,7 +988,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         """
         # Make all breezy architectures PPA-supported.
         for distroarchseries in self.breezy.architectures:
-            distroarchseries.ppa_supported = True
+            distroarchseries.supports_virtualized = True
 
         # We need to publish an architecture-independent package
         # for a couple of distroseries in a PPA.
