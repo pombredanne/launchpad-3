@@ -7,9 +7,10 @@ Hello %(user)s,
     Date: %(date)s
     Message-ID: %(message_id)s
 
-A message has been posted to the mailing list for your team, but this message
-requires your approval before it will be sent to the list members.  After
-reviewing the message, you may approve, discard or reject it.
+A message has been posted to the mailing list for your team, but this
+message requires your approval before it will be sent to the list
+members.  After reviewing the message, you may approve, discard or
+reject it.
 
 To review all messages pending approval, visit:
 

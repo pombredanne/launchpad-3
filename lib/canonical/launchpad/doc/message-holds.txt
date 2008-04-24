@@ -97,7 +97,31 @@ A notification message is sent to every team administrator informing
 them that there is a message waiting for their approval.
 
     >>> mail_helpers.print_emails()
-    XXX
+    From: Test One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Subject: New mailing list message requiring approval for Test One
+    <BLANKLINE>
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Test One has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: My first test
+        From: foo.bar@canonical.com
+        Date: 2000-08-01 01:08:59+00:00
+        Message-ID: <first-post>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~test-one/+mailinglist-moderate
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 
 == Approving the message ==

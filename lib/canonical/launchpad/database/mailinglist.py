@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'HeldMessageDetails',
     'MailingList',
     'MailingListSet',
     'MailingListSubscription',
@@ -11,6 +12,10 @@ __all__ = [
     'MessageApprovalSet',
     ]
 
+
+from email import message_from_string
+from email.Header import decode_header, make_header
+from itertools import repeat
 from string import Template
 
 from sqlobject import ForeignKey, StringCol
@@ -27,9 +32,10 @@ from canonical.launchpad import _
 from canonical.launchpad.event import MessageHeldEvent, SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
-    IMailingListSet, IMailingListSubscription, IMessageApproval,
-    IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
+    EmailAddressStatus, IEmailAddressSet, IHeldMessageDetails,
+    ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
+    IMessageSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -428,6 +434,9 @@ class MailingList(SQLBase):
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
                                        mailing_list=self)
+        # XXX BarryWarsaw is there any way to avoid this?
+        import transaction
+        transaction.commit()
         notify(MessageHeldEvent(self, held_message))
         return held_message
 
@@ -558,3 +567,46 @@ class MessageApprovalSet:
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
         return MessageApproval.selectBy(status=status)
+
+
+class HeldMessageDetails:
+    """Details about a held message."""
+
+    implements(IHeldMessageDetails)
+
+    def __init__(self, message_approval):
+        self.message_approval = message_approval
+        self.message_id = message_approval.message_id
+        # We need to get the IMessage object associated with this
+        # IMessageApproval object.  The tie-in is the Message-ID.
+        messages = getUtility(IMessageSet).get(self.message_id)
+        assert len(messages) == 1, (
+            'Expected exactly one message with Message-ID: %s' %
+            self.message_id)
+        #from zope.security.proxy import removeSecurityProxy
+        #naked_message = removeSecurityProxy(messages[0])
+        message = messages[0] # naked_message
+        self.subject = message.subject
+        self.date = message.datecreated
+        message.raw.open()
+        try:
+            self.email_message = message_from_string(message.raw.read())
+        finally:
+            message.raw.close()
+        self.body = message.text_contents
+
+    @property
+    def author(self):
+        """Return the sender, but as a link to their person page."""
+        originators = self.email_message.get_all('from', [])
+        originators.extend(self.email_message.get_all('reply-to', []))
+        if len(originators) == 0:
+            return 'n/a'
+        unicode_parts = []
+        for bytes, charset in decode_header(originators[0]):
+            if charset is None:
+                charset = 'us-ascii'
+            unicode_parts.append(
+                bytes.decode(charset, 'replace').encode('utf-8'))
+        header = make_header(zip(unicode_parts, repeat('utf-8')))
+        return unicode(header)
