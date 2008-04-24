@@ -5,8 +5,12 @@ comment to a bug.
 In this case, let's add a simple comment to bug #2 as user Foo
 Bar. First, let's clear out the notification table:
 
+  >>> from zope.component import getUtility
+  >>> from storm.zope.interfaces import IZStorm
   >>> from canonical.launchpad.database import BugNotification
-  >>> BugNotification.clearTable()
+
+  >>> store = getUtility(IZStorm).get('main')
+  >>> store.execute("DELETE FROM BugNotification", noresult=True)
 
   >>> user_browser.open(
   ...     'http://localhost/debian/+source/mozilla-firefox/+bug/2')
