@@ -113,14 +113,17 @@ class TestUploadProcessorBase(unittest.TestCase):
             'i386', bat['i386'].processorfamily, True, self.breezy.owner)
         self.breezy.nominatedarchindep = breezy_i386
 
-        chroot_content = "Yellow"
-        fake_chroot = getUtility(ILibraryFileAliasSet).create(
-                'fake_chroot.tar.gz', len(chroot_content),
-                StringIO(chroot_content),'application/x-gtar')
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         breezy_i386.addOrUpdateChroot(fake_chroot)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
+
+    def addMockFile(self, filename, content="anything"):
+        """Return a librarian file."""
+        return getUtility(ILibraryFileAliasSet).create(
+            filename, len(content), StringIO(content),
+            'application/x-gtar')
 
     def queueUpload(self, upload_name, relative_path=""):
         """Queue one of our test uploads.
