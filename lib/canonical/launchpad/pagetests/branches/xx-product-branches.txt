@@ -150,6 +150,10 @@ shows correct singular and plural forms.
     >>> print_summary('iso-codes')
     1 branch owned by 1 person, 0 commits in the last month
 
+# XXX: thumper 2008-04-24
+# There is no easy way to change the database user in the pagetests
+# in order to add revisions to the branches to show commits by users.
+
 
 == Getting to the branch listing for a product ==
 
