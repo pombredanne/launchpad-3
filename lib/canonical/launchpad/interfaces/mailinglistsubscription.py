@@ -23,23 +23,20 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
     """
 
     NEVER = DBItem(0, """
-        Never subscribe automatically
+        Never
 
-        The user must explicitly subscribe to a team mailing list for any team
-        that she joins.
+        Do not subscribe to mailing lists.
         """)
 
     ON_REGISTRATION = DBItem(1, """
-        Subscribe on self-registration
+        On registration
 
-        The user is automatically joined to any team mailng list for a team
-        that she joins explicitly.  She is never joined to any team mailing
-        list for a team that someone else joins her to.
+        Only subscribe when you request to join a team.
         """)
 
     ALWAYS = DBItem(2, """
-        Always subscribe automatically
+        Always subscribe
 
-        The user is automatically subscribed to any team mailing list when she
-        is added to the team, regardless of who joins her to the team.
+        Automatically subscribe to mailing lists, even if someone else
+        adds you to the team.
         """)
