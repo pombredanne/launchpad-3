@@ -1,13 +1,16 @@
 = Introduction =
 
 The service root (/[version]/) is a resource that responds to GET by
-describing the web service. Right now, it just sends a simple string
-description.  you get a string.
+describing the web service. The description is in WADL format.
 
   >>> print webservice.get("/beta/")
   HTTP/1.1 200 Ok
   ...
-  This is a web service.
+  Content-Type: application/vd.sun.wadl+xml
+  ...
+  <application...>
+  ...
+  </application>
 
 Though web services in general support all HTTP methods, this
 particular resource supports only GET. Eventually it will also support
