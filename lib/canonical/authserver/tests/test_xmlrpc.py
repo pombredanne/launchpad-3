@@ -1,4 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0104
 
 # TODO:
 #  - exercise a bit more of the authUser interface
