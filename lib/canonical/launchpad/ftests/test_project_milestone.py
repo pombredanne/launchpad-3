@@ -217,7 +217,7 @@ class ProjectMilestoneTest(unittest.TestCase):
 
     def _createProductSeriesBugtask(self, product_name, product_series_name,
                                     milestone_name):
-        """Create a bugtask for a product, assign the task to a milestone."""
+        """Create a bugtask for a productseries, assign it to a milestone."""
         personset = getUtility(IPersonSet)
         sample_person = personset.getByEmail('test@canonical.com')
         product = getUtility(IProductSet)[product_name]
