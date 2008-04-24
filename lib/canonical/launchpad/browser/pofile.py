@@ -469,6 +469,7 @@ class POFileTranslateView(BaseTranslationView):
                 else:
                     self.request.response.addWarningNotification(
                         "Please try searching for a longer string.")
+                    ret = potemplate.getPOTMsgSets()
             else:
                 ret = potemplate.getPOTMsgSets()
         elif self.show == 'translated':
