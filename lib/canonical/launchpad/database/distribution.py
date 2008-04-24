@@ -1218,8 +1218,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def setBugContact(self, bugcontact, user):
         """See `IHasBugContact`."""
-        self.bugcontact = bugcontact
-        if bugcontact is not None:
+        # XXX 2008-04-24 jamesh:
+        # This was setting self.bugcontact, but the update was getting
+        # lost somehow.
+        if bugcontact is None:
+            self.bugcontactID = None
+        else:
+            self.bugcontactID = bugcontact.id
             subscription = self.addBugSubscription(bugcontact, user)
 
 

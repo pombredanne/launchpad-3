@@ -19,9 +19,9 @@ users - only bug watches use it.
 Only the bug supervisor, or a user with launchpd.Edit on the respective
 product or distro, can edit Importance.
 
+    >>> import transaction
     >>> from zope.component import getUtility
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IProductSet, IDistributionSet)
@@ -50,8 +50,8 @@ For a product bug supervisor.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.setBugContact(no_priv, no_priv)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
@@ -77,8 +77,8 @@ he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.setBugContact(None, None)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
@@ -89,8 +89,8 @@ For a distribution bug supervisor.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu.setBugContact(no_priv, no_priv)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
@@ -113,8 +113,8 @@ For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu.setBugContact(None, None)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
