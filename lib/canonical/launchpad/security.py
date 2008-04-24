@@ -22,11 +22,12 @@ from canonical.launchpad.interfaces import (
     IPerson, IPoll, IPollOption, IPollSubset, IProduct, IProductRelease,
     IProductReleaseFile, IProductSeries, IQuestion, IQuestionTarget,
     IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
-    IShippingRun, ISourcePackageRelease, ISpecification, ISpecificationBranch,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
+    IShippingRun, ISourcePackage, ISourcePackageRelease, ISpecification,
+    ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
+    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
+    PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1010,6 +1011,37 @@ class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationGroupSet
 
 
+class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
+    """Restrict full `SourcePackage` translation downloads.
+
+    Experience shows that the export queue can easily get swamped by
+    large export requests.  Email leads us to believe that many of the
+    users making these requests are looking for language packs, or for
+    individual translations rather than the whole package.  That's why
+    this class defines who is allowed to make those requests.
+    """
+
+    permission = 'launchpad.ExpensiveRequest'
+    usedfor = ISourcePackage
+
+    def checkAuthenticated(self, user):
+        """Define who may download these translations.
+
+        Admins and Translations admins have access, as do the owner of
+        the translation group (if applicable) and whoever is allowed to
+        upload new versions of the source package.
+        """
+        translation_group = self.obj.distribution.translationgroup
+        return (
+            # User is admin of some relevant kind.
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User has upload rights to this package.
+            user.inTeam(self.obj.distribution.upload_admin) or
+            # User is owner of applicable translation group.
+            (translation_group is not None and
+             user.inTeam(translation_group.owner)))
+
+
 class EditBugTracker(EditByRegistryExpertsOrOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
@@ -1253,6 +1285,17 @@ class EditBranch(AuthorizationBase):
         celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
+
+
+class AdminBranch(AuthorizationBase):
+    """The bazaar experts or admins can administer branches."""
+    permission = 'launchpad.Admin'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebs.admin) or
                 user.inTeam(celebs.bazaar_experts))
 
 

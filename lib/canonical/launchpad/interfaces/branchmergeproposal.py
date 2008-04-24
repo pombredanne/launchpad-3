@@ -141,7 +141,10 @@ class IBranchMergeProposal(Interface):
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
 
-    queue_status = Attribute(_("The current state of the proposal."))
+    queue_status = Choice(
+        title=_('Status'),
+        vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+        description=_("The current state of the proposal."))
 
     reviewer = Attribute(
         _("The person that accepted (or rejected) the code for merging."))

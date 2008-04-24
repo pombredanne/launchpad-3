@@ -11,13 +11,16 @@ import time
 import urlparse
 import xmlrpclib
 
+from datetime import datetime
+
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
+    BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
+    ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
+    Trac, TracXMLRPCTransport)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -25,6 +28,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.scripts import checkwatches, debbugs
+from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -399,6 +403,9 @@ class TestTrac(Trac):
     supports_single_exports = True
     trace_calls = False
 
+    def getExternalBugTrackerToUse(self):
+        return self
+
     def supportsSingleExports(self, bug_ids):
         """See `Trac`."""
         return self.supports_single_exports
@@ -412,12 +419,57 @@ class TestTrac(Trac):
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 
 
-class TestTracXMLRPCTransport:
+class MockTracRemoteBug:
+    """A mockup of a remote Trac bug."""
+
+    def __init__(self, id, last_modified=None, status=None, resolution=None):
+        self.id = id
+        self.last_modified = last_modified
+        self.status = status
+        self.resolution = resolution
+
+    def asDict(self):
+        """Return the bug's metadata, but not its comments, as a dict."""
+        return {
+            'id': self.id,
+            'status': self.status,
+            'resolution': self.resolution,}
+
+
+class TestTracInternalXMLRPCTransport:
+    """Test XML-RPC Transport for the internal XML-RPC server.
+
+    This transport executes all methods as the 'launchpad' db user, and
+    then switches back to the 'checkwatches' user.
+    """
+
+    def request(self, host, handler, request, verbose=None):
+        args, method_name = xmlrpclib.loads(request)
+        method = getattr(self, method_name)
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        result = method(*args)
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+        return result
+
+    def newBugTrackerToken(self):
+        token_api = ExternalBugTrackerTokenAPI(None, None)
+        print "Using XML-RPC to generate token."
+        return token_api.newBugTrackerToken()
+
+
+class TestTracXMLRPCTransport(TracXMLRPCTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
+    remote_bugs = {}
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
+    expired_cookie = None
+
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
+        self.expired_cookie = cookie
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -432,6 +484,12 @@ class TestTracXMLRPCTransport:
         prefix = 'launchpad.'
         assert method_name.startswith(prefix), (
             'All methods should be in the launchpad namespace')
+        if (self.auth_cookie is None or
+            self.auth_cookie == self.expired_cookie):
+            # All the Trac XML-RPC methods need authentication.
+            raise xmlrpclib.ProtocolError(
+                method_name, errcode=403, errmsg="Forbidden",
+                headers=None)
 
         method_name = method_name[len(prefix):]
         method = getattr(self, method_name)
@@ -449,6 +507,85 @@ class TestTracXMLRPCTransport:
             local_time = self.seconds_since_epoch
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
+
+    def bug_info(self, level, criteria=None):
+        """Return info about a bug or set of bugs.
+
+        :param level: The level of detail to return about the bugs
+            requested. This can be one of:
+            0: Return IDs only.
+            1: Return Metadata only.
+            2: Return Metadata + comments.
+            3: Return all data about each bug.
+
+        :param criteria: The selection criteria by which bugs will be
+            returned. Possible keys include:
+            modified_since: An integer timestamp. If specified, only
+                bugs modified since this timestamp will
+                be returned.
+            bugs: A list of bug IDs. If specified, only bugs whose IDs are in
+                this list will be returned.
+
+        Return a list of [ts, bugs] where ts is a utc timestamp as
+        returned by `time_snapshot()` and bugs is a list of bug dicts.
+        """
+        # XXX 2008-04-12 gmb:
+        #     This is only a partial implementation of this; it will
+        #     grow over time as implement different methods that call
+        #     this method. See bugs 203564, 158703 and 158705.
+
+        # We sort the list of bugs for the sake of testing.
+        bug_ids = sorted([bug_id for bug_id in self.remote_bugs.keys()])
+        bugs_to_return = []
+        missing_bugs = []
+
+        for bug_id in bug_ids:
+            bugs_to_return.append(self.remote_bugs[bug_id])
+
+        if criteria is None:
+            criteria = {}
+
+        # If we have a modified_since timestamp, we return bugs modified
+        # since that time.
+        if 'modified_since' in criteria:
+            # modified_since is an integer timestamp, so we convert it
+            # to a datetime.
+            modified_since = datetime.fromtimestamp(
+                criteria['modified_since'])
+
+            bugs_to_return = [
+                bug for bug in bugs_to_return
+                if bug.last_modified > modified_since]
+
+        # If we have a list of bug IDs specified, we only return
+        # those members of bugs_to_return that are in that
+        # list.
+        if 'bugs' in criteria:
+            bugs_to_return = [
+                bug for bug in bugs_to_return
+                if bug.id in criteria['bugs']]
+
+            # We make a separate list of bugs that don't exist so that
+            # we can return them with a status of 'missing' later.
+            missing_bugs = [
+                bug_id for bug_id in criteria['bugs']
+                if bug_id not in self.remote_bugs]
+
+        # We only return what's required based on the level parameter.
+        # For level 0, only IDs are returned.
+        if level == 0:
+            bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
+        # For level 1, we return the bug's metadata, too.
+        elif level == 1:
+            bugs_to_return = [bug.asDict() for bug in bugs_to_return]
+
+        # Tack the missing bugs onto the end of our list of bugs. These
+        # will always be returned in the same way, no matter what the
+        # value of the level argument.
+        missing_bugs = [
+            {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
+
+        return [self.time_snapshot()[2], bugs_to_return + missing_bugs]
 
 
 class TestRoundup(Roundup):

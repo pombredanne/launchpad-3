@@ -1,36 +1,35 @@
-Email Address
-=============
+= Email Address =
 
 In Launchpad we use email addresses to uniquely identify a person. This is why
 email addresses must be unique.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
-  >>> personset = getUtility(IPersonSet)
-  >>> foobar = personset.getByName('name16')
-  >>> emailset = getUtility(IEmailAddressSet)
-  >>> emailset.getByEmail('test@canonical.com').email
-  u'test@canonical.com'
-
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> foobar = personset.getByName('name16')
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> emailset.getByEmail('test@canonical.com').email
+    u'test@canonical.com'
 
 Trying to register an email address that already exists will raise an
 exception.
 
-  >>> emailset.new('test@canonical.com', foobar)
-  Traceback (most recent call last):
-  ...
-  EmailAddressAlreadyTaken: The email address test@canonical.com is already registered.
+    >>> emailset.new('test@canonical.com', foobar)
+    Traceback (most recent call last):
+    ...
+    EmailAddressAlreadyTaken: The email address 'test@canonical.com' is
+    already registered.
 
-The email addresses verification is case insensitive:
+The email address verification is case insensitive:
 
-  >>> emailset.new('Test@Canonical.com', foobar)
-  Traceback (most recent call last):
-  ...
-  EmailAddressAlreadyTaken: The email address Test@Canonical.com is already registered.
+    >>> emailset.new('Test@Canonical.com', foobar)
+    Traceback (most recent call last):
+    ...
+    EmailAddressAlreadyTaken: The email address 'Test@Canonical.com' is
+    already registered.
 
 Registering a new email address works -- and preserves case -- though:
 
-  >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
-  >>> emailaddress.email
-  u'oink@Canonical.com'
-
+    >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
+    >>> emailaddress.email
+    u'oink@Canonical.com'
