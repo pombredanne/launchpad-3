@@ -125,7 +125,6 @@ class UserDetailsResourceV2(LoggingResource):
     def xmlrpc_getBranchInformation(self, loginID, userName, productName,
                                     branchName):
         """See IHostedBranchStorage."""
-        1/0
         if self.debug:
             print 'getBranchInformation(%r, %r, %r, %r)' % (loginID,
                                                             userName,
