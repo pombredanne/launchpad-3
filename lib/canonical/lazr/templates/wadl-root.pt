@@ -35,7 +35,9 @@
     <resource path="" type="#service-root" />
   </resources>
 
-  <!--But that's not all.-->
+  <!--But that's not all. This document also describes all the types
+      of resources you might encounter as you browse this web
+      service.-->
 
   <!--Begin resource_type definitions for collection resources.-->
   <tal:collection_classes tal:repeat="context collections">

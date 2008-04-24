@@ -713,8 +713,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
 
         The WADL document describes the capabilities of this resource.
         """
-        return super(CollectionResource, self).toWADL(
-            'wadl-collection.pt')
+        return super(CollectionResource, self).toWADL('wadl-collection.pt')
 
 
 class ServiceRootResource(HTTPResource):
@@ -800,7 +799,7 @@ class ServiceRootResource(HTTPResource):
             data_for_json[link_name] = canonical_url(publication)
         return data_for_json
 
-    def getTopLevelResources(self, request):
+    def getTopLevelPublications(self, request):
         """Return a mapping of top-level link names to published objects."""
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
