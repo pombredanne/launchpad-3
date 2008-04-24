@@ -335,6 +335,8 @@ class IArchiveSet(Interface):
 
         The result is ordered by PPA owner's displayname.
         """
+    def getLatestPPASourcePublicationsForDistribution(distribution):
+        """The latest 5 PPA source publications for a given distribution."""
 
 
 class ArchivePurpose(DBEnumeratedType):

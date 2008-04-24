@@ -445,6 +445,19 @@ Notice that some files appear twice if they are published in more than one
 architecture (e.g. for arch-all files).
 
 
+== Publishing records age ==
+
+Both ISourcePackagePublishingHistory and IBinaryPackagePublishingHistory
+implement the 'age' property which return a timedelta representing
+"NOW - datecreated".
+
+    >>> ppa_source.age
+    datetime.timedelta(...)
+
+    >>> ppa_binaries[0].age
+    datetime.timedelta(...)
+
+
 == Secure Source Publishing ==
 
 'secure_record' returns a ISecureSourcePackagePublishing instance

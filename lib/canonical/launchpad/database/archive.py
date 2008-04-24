@@ -701,3 +701,17 @@ class ArchiveSet:
         return Archive.select(
             query, clauseTables=['Person', 'TeamParticipation'],
             orderBy=['Person.displayname'])
+
+    def getLatestPPASourcePublicationsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        query = """
+            SourcePackagePublishingHistory.archive = Archive.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
+            Archive.purpose = %s
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        return SourcePackagePublishingHistory.select(
+            query, limit=5, clauseTables=['Archive', 'DistroSeries'],
+            orderBy=['-datecreated', '-id'])

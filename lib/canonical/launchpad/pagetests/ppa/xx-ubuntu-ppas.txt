@@ -41,6 +41,17 @@ published across all ubuntu PPAs.
     4 published sources
     4 published binaries
 
+Up to 5 latest source publications are also presented in the 'Latest
+sources' section.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_sources'))
+    Latest sources
+    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo 41 weeks
+    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth 41 weeks
+    pmount 0.1-1 in warty in PPA for Celso Providelo 41 weeks
+    iceweasel 1.0 in warty in PPA for Celso Providelo 41 weeks
+
 
 == Searching PPAs ==
 
@@ -63,7 +74,38 @@ PENDING or PUBLISHED source record) PPAs.
     1
     1
 
-We have a checkbox to allow inactive PPA results.
+When a search is requested the information sections are not rendered.
+
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_archs')
+    None
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_statistics')
+    None
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_sources')
+    None
+
+The information section will be only rendered if the page is reloaded
+with no 'name_filter' GET argument, in other words, when no search was
+request.
+
+    >>> anon_browser.getLink("Personal Package Archives").click()
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_archs') is not None
+    True
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'ppa_statistics') is not None
+    True
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'ppa_latest_sources') is not None
+    True
+
+Back to the search form again anonymous users can click on a checkbox
+to allow inactive PPA results.
 
     >>> anon_browser.getControl(name="show_inactive").value = True
     >>> anon_browser.getControl("Search").click()
