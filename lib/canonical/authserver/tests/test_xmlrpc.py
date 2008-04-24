@@ -119,7 +119,9 @@ class TestLoggingResource(TrialTestCase):
 
     @suppress_stderr
     def getFaultString(self, method, *arguments):
-        """Call 'method' on the XML-RPC server and fire the fault it makes."""
+        """Call 'method' on the XML-RPC server and fire the fault string it
+        makes.
+        """
         client = xmlrpc.Proxy(self.url)
         deferred = client.callRemote('divide_by_zero')
         deferred.addBoth(self._flushLogs)
@@ -128,29 +130,29 @@ class TestLoggingResource(TrialTestCase):
 
     def test_tracebackInFault(self):
         # The original traceback is stored in the fault string.
-        def check_failure(fault_string):
+        def check_fault_string(fault_string):
             self.assertIn('Original traceback', fault_string)
 
         deferred = self.getFaultString('divide_by_zero')
-        return deferred.addCallback(check_failure)
+        return deferred.addCallback(check_fault_string)
 
     def test_tracebackNotInFault(self):
         # The original traceback is not in the fault string if the config
         # option is disabled.
-        original_value = config.authserver.include_traceback_in_fault
+        config.push(
+            "test", '[authserver]\ninclude_traceback_in_fault: False\n')
         config.authserver.include_traceback_in_fault = False
 
-        def check_failure(fault_string):
+        def check_fault_string(fault_string):
             self.assertNotIn('Original traceback', fault_string)
 
         def restore_config(pass_through):
-            config.authserver.include_traceback_in_fault = original_value
+            config.pop("test")
             return pass_through
 
         deferred = self.getFaultString('divide_by_zero')
-        deferred.addCallback(check_failure)
+        deferred.addCallback(check_fault_string)
         return deferred.addBoth(restore_config)
-
 
 class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
