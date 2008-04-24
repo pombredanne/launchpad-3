@@ -85,7 +85,7 @@ class MozillaZipFile:
         :param content: The data making up this zip file.
         :param xpi_path: Full path of this file inside the XPI archive.
             Leave blank for the XPI file itself.
-        :param manifest: String with the contents of the XPI archive's
+        :param manifest: `XpiManifest` representing the XPI archive's
             manifest file, if any.
         """
         self.filename = filename
@@ -93,8 +93,8 @@ class MozillaZipFile:
         self.messages = []
         self.last_translator = None
 
-        zip = ZipFile(StringIO(content), 'r')
-        for entry in sorted(zip.namelist()):
+        archive = ZipFile(StringIO(content), 'r')
+        for entry in sorted(archive.namelist()):
 
             # Figure out filesystem path to contained file, from the root of
             # the XPI archive.
@@ -113,17 +113,17 @@ class MozillaZipFile:
                 chrome_path = None
 
             if entry.endswith('.properties'):
-                data = zip.read(entry)
+                data = archive.read(entry)
                 pf = PropertyFile(
                     filename=entry, chrome_path=chrome_path, content=data)
                 self.extend(pf.messages)
             elif entry.endswith('.dtd'):
-                data = zip.read(entry)
+                data = archive.read(entry)
                 dtdf = DtdFile(
                     filename=entry, chrome_path=chrome_path, content=data)
                 self.extend(dtdf.messages)
             elif entry.endswith('.jar'):
-                data = zip.read(entry)
+                data = archive.read(entry)
                 jarf = MozillaZipFile(filename=entry, xpi_path=file_subpath,
                     content=data, manifest=manifest)
                 self.extend(jarf.messages)
@@ -495,19 +495,19 @@ class MozillaXpiImporter:
 
     uses_source_string_msgids = True
 
-    def _extract_manifest(self, zip, contained_files):
+    def _extract_manifest(self, archive, contained_files):
         """Extract manifest file from `ZipFile`."""
         manifest_names = ['chrome.manifest', 'en-US.manifest']
         for filename in manifest_names:
             if filename in contained_files:
-                return XpiManifest(zip.read(filename))
+                return XpiManifest(archive.read(filename))
 
         return None
 
-    def _extract_install_rdf(self, zip, contained_files):
+    def _extract_install_rdf(self, archive, contained_files):
         if 'install.rdf' not in contained_files:
             raise TranslationFormatInvalidInputError("No install.rdf found")
-        return MozillaHeader(zip.read('install.rdf'))
+        return MozillaHeader(archive.read('install.rdf'))
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
@@ -525,13 +525,12 @@ class MozillaXpiImporter:
 
         # Before going into MozillaZipFile, extract metadata.
         content = self.content.read()
-        zip = ZipFile(StringIO(content), 'r')
-        contained_files = set(zip.namelist())
-        manifest = self._extract_manifest(zip, contained_files)
-        header = self._extract_install_rdf(zip, contained_files)
+        archive = ZipFile(StringIO(content), 'r')
+        contained_files = set(archive.namelist())
+        manifest = self._extract_manifest(archive, contained_files)
+        header = self._extract_install_rdf(archive, contained_files)
 
-        # Forget this ZipFile; MozillaZipFile will open a new one.
-        zip = None
+        archive = None
 
         parser = MozillaZipFile(self.basepath, content, manifest=manifest)
 

@@ -1,6 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Functional tests for XPI manifests."""
+"""Unit tests for XPI manifests."""
+
 __metaclass__ = type
 
 import unittest
@@ -15,6 +16,7 @@ class XpiManifestTestCase(unittest.TestCase):
     def test_TrivialParse(self):
         # Parse and use minimal manifest.
         manifest = XpiManifest("locale chromepath en-US directory/")
+        self.assertEqual(len(manifest._locales), 1)
         chrome_path, locale = manifest.get_chrome_path_and_locale(
             'directory/file.dtd')
         self.failIf(chrome_path is None, "Failed to match simple path")
@@ -37,6 +39,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale lines
             in this file.
             """)
+        self.assertEqual(len(manifest._locales), 0)
         chrome_path, locale = manifest.get_chrome_path_and_locale('lines')
         self.failIf(chrome_path is not None, "Empty manifest matched a path.")
         chrome_path, locale = manifest.get_chrome_path_and_locale('')
@@ -50,6 +53,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale ixx en-US ixxdir/
             locale gna en-US gnadir/
             """)
+        self.assertEqual(len(manifest._locales), 4)
         for dir in ['gna', 'bar', 'ixx', 'foo']:
             path = "%sdir/file.html" % dir
             chrome_path, locale = manifest.get_chrome_path_and_locale(path)
@@ -93,6 +97,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale overlong fr foordir/ etc. etc. etc.
             locale incomplete fr
             """)
+        self.assertEqual(len(manifest._locales), 1)
         chrome_path, locale = manifest.get_chrome_path_and_locale('foodir/x')
         self.failIf(chrome_path is None, "Garbage lines messed up match.")
         self.assertEqual(chrome_path, "okay/x", "Matched wrong line.")

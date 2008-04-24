@@ -109,7 +109,7 @@ class XpiManifest:
             num_words = len(words)
             if num_words == 0 or words[0] != 'locale':
                 pass
-            if num_words < 4:
+            elif num_words < 4:
                 logging.info("Ignoring short manifest line: '%s'" % line)
             elif num_words > 4:
                 logging.info("Ignoring long manifest line: '%s'" % line)
