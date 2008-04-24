@@ -40,14 +40,15 @@ Sample Person defines milestone 1.0.0 for firefox series 1.0...
     >>> owner_browser.getControl('Approve', index=0).click()
 
 Sample Person assigns the firefox series 1.0 bugtask for bug 1 to
-to the milestone 1.0.0.
+to the milestone 1.0.0. Note that milestones defined for the product itself
+are listed too.
 
     >>> milestone_control = owner_browser.getControl(
     ...     name='1.0_firefox.milestone')
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Mozilla Firefox: 1.0.0']
+    ['(no value)', 'Mozilla Firefox: 1.0', 'Mozilla Firefox: 1.0.0']
     >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0.0']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(

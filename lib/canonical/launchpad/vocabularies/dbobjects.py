@@ -1259,6 +1259,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                     (milestone for product in target.products
                      for milestone in product.all_milestones),
                     longest_expected=40)
+            elif IProductSeries.providedBy(target):
+                series_milestones = shortlist(target.all_milestones,
+                                              longest_expected=40)
+                product_milestones = shortlist(target.product.all_milestones,
+                                               longest_expected=40)
+                # Some milestones are associtaed with a product
+                # and a product series; these should appear only
+                # once.
+                milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
                     target.all_milestones, longest_expected=40)
