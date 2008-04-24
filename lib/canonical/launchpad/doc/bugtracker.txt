@@ -121,7 +121,7 @@ You can get a specific bug tracker from the database by querying by
 its base URL.
 
     >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'http://bugzilla.ubuntu.com/')
+    ...     u'http://bugzilla.ubuntu.com/bugs/')
     >>> ubuntu_bugzilla.baseurl
     u'http://bugzilla.ubuntu.com/bugs/'
 
@@ -129,15 +129,7 @@ It's necessary to specify the exact URL, differences in the schema
 (http vs. https) and trailing slashes are accepted.
 
     >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'https://bugzilla.ubuntu.com')
-    >>> ubuntu_bugzilla.baseurl
-    u'http://bugzilla.ubuntu.com/bugs/'
-
-If the exact bugtracker isn't found but a the url searched for
-is a substring of an existing bugtracker, we use the first match.
-
-    >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'zilla.ubuntu.com')
+    ...     u'https://bugzilla.ubuntu.com/bugs')
     >>> ubuntu_bugzilla.baseurl
     u'http://bugzilla.ubuntu.com/bugs/'
 

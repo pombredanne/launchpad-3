@@ -8,8 +8,6 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
-import re
-
 from itertools import chain
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
@@ -24,7 +22,7 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, sqlvalues)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
@@ -254,9 +252,6 @@ class BugTrackerSet:
         """See `IBugTrackerSet`."""
         # All permutations we'll search for.
         permutations = base_url_permutations(baseurl)
-        # All permutations that are needed for substring matches (trim
-        # trailing slashes and de-duplicate).
-        permutations_simple = set(url.rstrip('/') for url in permutations)
         # Construct the search. All the important parts in the next
         # expression are lazily evaluated. SQLObject queries do not
         # execute any SQL until results are pulled, so the first query
@@ -270,18 +265,7 @@ class BugTrackerSet:
             (alias.bugtracker for alias in
              BugTrackerAlias.select(
                     OR(*(BugTrackerAlias.q.base_url == url
-                         for url in permutations)))),
-            # Search for a substring match in BugTracker.
-            BugTracker.select(
-                OR(*(BugTracker.q.baseurl.contains(url)
-                     for url in permutations_simple)),
-                limit=1),
-            # Search for a substring match in BugTrackerAlias.
-            (alias.bugtracker for alias in
-             BugTrackerAlias.select(
-                    OR(*(BugTrackerAlias.q.base_url.contains(url)
-                         for url in permutations_simple)),
-                    limit=1)))
+                         for url in permutations)))))
         # Return the first match.
         for bugtracker in matching_bugtrackers:
             return bugtracker
