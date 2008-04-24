@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['XpiManifest']
+__all__ = ['make_jarpath', 'XpiManifest']
 
 
 import logging
@@ -64,6 +64,29 @@ def is_valid_dir_path(path):
     return True
 
 
+def make_jarpath(path, jarname):
+    """Construct base path for files inside a jar file.
+
+    To name some translation file that's inside a jar file inside an XPI
+    file, concatenate the result of this method (for the jar file) and the
+    translation file's path within the jar file.
+
+    For example, let's say the XPI file contains foo/bar.jar.  Inside
+    foo/bar.jar is a translation file locale/gui.dtd.  Then
+    make_jarfile('foo', 'bar.jar') will return "jar:foo/bar.jar!/", to
+    which you can append "locale/gui.dtd" to get the full path
+    "jar:foo/bar.jar!/locale/gui.dtd" which identifies the translation
+    file within the XPI file.
+    """
+    # This function is where we drill down into a jar file, so prefix with
+    # "jar:" (unless it's already there).  We carry the "jar:" prefix only
+    # for paths that drill into jar files.
+    if not path.startswith('jar:'):
+        path = 'jar:' + path
+
+    return normalize_path("%s/%s!" % (path, jarname))
+
+
 class ManifestEntry:
     """A "locale" line in a manifest file."""
 
@@ -116,27 +139,28 @@ class XpiManifest:
             else:
                 locales.append(ManifestEntry(words[1], words[2], words[3]))
 
-        self._locales = sorted(locales, key=manifest_entry_sort_key)
-
-        if not locales:
-            return
-
-        # Verify manifest.
+        # Eliminate duplicates.
         paths = set()
-        last_entry = None
-        for entry in self._locales:
+        deletions = []
+        for index, entry in enumerate(locales):
             assert entry.path.endswith('/'), "Manifest path lost its slash"
 
-            if last_entry is not None:
-                assert len(entry.path) >= len(last_entry.path), (
-                    "Manifest entries not sorted by path length")
-
-            if entry in paths:
+            if entry.path in paths:
                 logging.info("Duplicate paths in manifest: '%s'" % entry.path)
+                deletions.append(index)
 
             paths.add(entry.path)
-
             last_entry = entry
+
+        for index in reversed(deletions):
+            del locales[index]
+
+        self._locales = sorted(locales, key=manifest_entry_sort_key)
+
+    @classmethod
+    def _normalizePath(cls, path):
+        """Normalize path.  Here so it can be tested without exporting it."""
+        return normalize_path(path)
 
     def _get_matching_entry(self, file_path):
         """Return longest matching entry matching file_path."""
@@ -159,7 +183,7 @@ class XpiManifest:
         """Return chrome path and locale applying to a filesystem path.
         """
         assert file_path is not None, "Looking up chrome path for None"
-        file_path = normalize_path(file_path)
+        file_path = self._normalizePath(file_path)
         entry = self._get_matching_entry(file_path)
 
         if entry is None:
@@ -169,27 +193,4 @@ class XpiManifest:
         replace = len(entry.path)
         chrome_path = "%s/%s" % (entry.chrome, file_path[replace:])
         return chrome_path, entry.locale
-
-    @classmethod
-    def make_jarpath(cls, path, jarname):
-        """Construct base path for files inside a jar file.
-
-        To name some translation file that's inside a jar file inside an XPI
-        file, concatenate the result of this method (for the jar file) and the
-        translation file's path within the jar file.
-
-        For example, let's say the XPI file contains foo/bar.jar.  Inside
-        foo/bar.jar is a translation file locale/gui.dtd.  Then
-        make_jarfile('foo', 'bar.jar') will return "jar:foo/bar.jar!/", to
-        which you can append "locale/gui.dtd" to get the full path
-        "jar:foo/bar.jar!/locale/gui.dtd" which identifies the translation
-        file within the XPI file.
-        """
-        # This method is where we drill down into a jar file, so prefix with
-        # "jar:" (unless it's already there).  We carry the "jar:" prefix only
-        # for paths that drill into jar files.
-        if not path.startswith('jar:'):
-            path = 'jar:' + path
-
-        return normalize_path("%s/%s!" % (path, jarname))
 

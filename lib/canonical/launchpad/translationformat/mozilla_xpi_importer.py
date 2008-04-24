@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces import (
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
-from canonical.launchpad.translationformat.xpi_manifest import XpiManifest
+from canonical.launchpad.translationformat.xpi_manifest import (
+    make_jarpath, XpiManifest)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -99,7 +100,7 @@ class MozillaZipFile:
             # Figure out filesystem path to contained file, from the root of
             # the XPI archive.
             if entry.endswith('.jar'):
-                file_subpath = XpiManifest.make_jarpath(xpi_path, entry)
+                file_subpath = make_jarpath(xpi_path, entry)
             else:
                 file_subpath = "%s/%s" % (xpi_path, entry)
 

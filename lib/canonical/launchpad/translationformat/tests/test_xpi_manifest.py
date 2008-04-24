@@ -45,6 +45,15 @@ class XpiManifestTestCase(unittest.TestCase):
         chrome_path, locale = manifest.get_chrome_path_and_locale('')
         self.failIf(chrome_path is not None, "Matched empty path.")
 
+    def _checkSortOrder(self, manifest):
+        """Verify that manifest is sorted by increasing path length."""
+        last_entry = None
+        for entry in manifest._locales:
+            if last_entry is not None:
+                self.failIf(len(entry.path) < len(last_entry.path),
+                    "Manifest entries not sorted by increasing path length.")
+            last_entry = entry
+
     def test_MultipleLines(self):
         # Parse manifest file with multiple entries.
         manifest = XpiManifest("""
@@ -54,6 +63,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale gna en-US gnadir/
             """)
         self.assertEqual(len(manifest._locales), 4)
+        self._checkSortOrder(manifest)
         for dir in ['gna', 'bar', 'ixx', 'foo']:
             path = "%sdir/file.html" % dir
             chrome_path, locale = manifest.get_chrome_path_and_locale(path)
@@ -77,6 +87,7 @@ class XpiManifestTestCase(unittest.TestCase):
             for dir, locale in dirs.iteritems()
             ])
         manifest = XpiManifest(manifest_text)
+        self._checkSortOrder(manifest)
         for dir, dirlocale in dirs.iteritems():
             path = "%sdir/file.html" % dir
             chrome_path, locale = manifest.get_chrome_path_and_locale(path)
@@ -103,37 +114,58 @@ class XpiManifestTestCase(unittest.TestCase):
         self.assertEqual(chrome_path, "okay/x", "Matched wrong line.")
         self.assertEqual(locale, "fr", "Inexplicably mismatched locale.")
 
+    def test_DuplicateLines(self):
+        # The manifest ignores redundant lines with the same path.
+        manifest = XpiManifest("""
+            locale dup fy boppe
+            locale dup fy boppe
+            """)
+        self.assertEqual(len(manifest._locales), 1)
+
     def _checkLookup(self, manifest, path, chrome_path, locale):
-        """Helper: look up "path" in "manifest," expect given output."""
+        """Helper: look up `path` in `manifest`, expect given output."""
         found_chrome_path, found_locale = manifest.get_chrome_path_and_locale(
             path)
         self.failIf(found_chrome_path is None, "No match found for " + path)
         self.assertEqual(found_chrome_path, chrome_path)
         self.assertEqual(found_locale, locale)
 
-    def test_Normalize(self):
-        # These paths are all wrong for one reason or another.  So are most of
-        # the paths we look up here, but they're broken in different ways.
-        # Check that the normalization of paths renders those little
-        # differences and imperfections irrelevant to path lookup.
-        manifest = XpiManifest("""
-            locale foo1 el /ploink/squit
-            locale foo2 he /ploink/squittle
-            locale foo3 ja hello///kitty////
-            locale foo4 sux /deep/sumerian/file/path/
-            """)
-        self._checkLookup(manifest, 'ploink/squit/file', 'foo1/file', 'el')
-        self._checkLookup(manifest, 'ploink///squit//file', 'foo1/file', 'el')
-        self._checkLookup(
-            manifest, '/ploink/squit/dir/file', 'foo1/dir/file', 'el')
-        self._checkLookup(manifest, '/ploink/squittle/file', 'foo2/file', 'he')
-        self._checkLookup(
-            manifest, 'ploink/squittle/dir/file', 'foo2/dir/file', 'he')
-        self._checkLookup(
-            manifest, 'hello/kitty/how/are/you', 'foo3/how/are/you', 'ja')
-        self._checkLookup(
-            manifest, 'deep/sumerian/file/path/x', 'foo4/x', 'sux')
+    def test_NormalizedLookup(self):
+        # Both sides of a path lookup are normalized, so that a matching
+        # prefix is recognized in a path even if the two have some meaningless
+        # differences in their spelling.
+        manifest = XpiManifest("locale x nn //a/dir")
+        self._checkLookup(manifest, "a//dir///etc", 'x/etc', 'nn')
 
+    def _checkNormalize(self, bad_path, good_path):
+        """Test that `bad_path` normalizes to `good_path`."""
+        self.assertEqual(XpiManifest._normalizePath(bad_path), good_path)
+
+    def test_Normalize(self):
+        # These paths are all wrong or difficult for one reason or another.
+        # Check that the normalization of paths renders those little
+        # imperfections irrelevant to path lookup.
+        self._checkNormalize('x/', 'x/')
+        self._checkNormalize('x', 'x')
+        self._checkNormalize('/x', 'x')
+        self._checkNormalize('//x', 'x')
+        self._checkNormalize('/x/', 'x/')
+        self._checkNormalize('x//', 'x/')
+        self._checkNormalize('x///', 'x/')
+        self._checkNormalize('x/y/', 'x/y/')
+        self._checkNormalize('x/y', 'x/y')
+        self._checkNormalize('x//y/', 'x/y/')
+
+    def test_PathBoundaries(self):
+        # Paths can only match on path boundaries, where the slashes are
+        # supposed to be.
+        manifest = XpiManifest("""
+            locale short el /ploink/squit
+            locale long he /ploink/squittle
+            """)
+        self._checkSortOrder(manifest)
+        self._checkLookup(manifest, 'ploink/squit/x', 'short/x', 'el')
+        self._checkLookup(manifest, '/ploink/squittle/x', 'long/x', 'he')
 
     def test_Overlap(self):
         # Path matching looks for longest prefix.  Make sure this works right,
@@ -144,6 +176,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale foo3 ca a/b/c/x1
             locale foo4 ca a/b/c/x2
             """)
+        self._checkSortOrder(manifest)
         self._checkLookup(manifest, 'a/bb', 'foo1/bb', 'ca')
         self._checkLookup(manifest, 'a/bb/c', 'foo1/bb/c', 'ca')
         self._checkLookup(manifest, 'a/b/y', 'foo2/y', 'ca')
@@ -153,41 +186,49 @@ class XpiManifestTestCase(unittest.TestCase):
         self._checkLookup(manifest, 'a/b/c/x2/y', 'foo4/y', 'ca')
 
     def test_JarLookup(self):
-        # Correct lookup.
+        # Simple, successful lookup of a correct path inside a jar file.
         manifest = XpiManifest("""
             locale foo en_GB jar:foo.jar!/dir/
             locale bar id jar:bar.jar!/
             """)
+        self._checkSortOrder(manifest)
         self._checkLookup(
             manifest, 'jar:foo.jar!/dir/file', 'foo/file', 'en_GB')
         self._checkLookup(
             manifest, 'jar:bar.jar!/dir/file', 'bar/dir/file', 'id')
 
     def test_JarNormalization(self):
-        # Various badly-formed paths and lookups.  All get normalized.
-        manifest = XpiManifest("""
-            locale foo pl foo.jar!contained/dir
-            locale bar tr jar://bar.jar!//contained/dir
-            locale splat id splat.jar!
-            locale nojar hu splat.jar
-            """)
-        self._checkLookup(
-            manifest, 'jar:foo.jar!/contained/dir/x', 'foo/x', 'pl')
-        self._checkLookup(
-            manifest, 'jar:/foo.jar!/contained/dir/x', 'foo/x', 'pl')
-        self._checkLookup(
-            manifest, 'jar:bar.jar!/contained/dir/x', 'bar/x', 'tr')
-        self._checkLookup(manifest, 'jar:splat.jar!/x', 'splat/x', 'id')
-        self._checkLookup(manifest, 'splat.jar/x', 'nojar/x', 'hu')
+        # Various badly-formed or corner-case paths.  All get normalized.
+        self._checkNormalize('jar:jarless/path', 'jarless/path')
+        self._checkNormalize(
+            'jar:foo.jar!/contained/file', 'jar:foo.jar!/contained/file')
+        self._checkNormalize(
+            'foo.jar!contained/file', 'jar:foo.jar!/contained/file')
+        self._checkNormalize(
+            'jar:foo.jar!//contained/file', 'jar:foo.jar!/contained/file')
+        self._checkNormalize('splat.jar!', 'jar:splat.jar!/')
+        self._checkNormalize('dir/x.jar!dir', 'jar:dir/x.jar!/dir')
+
+    def test_NestedJarNormalization(self):
+        # Test that paths with jars inside jars are normalized correctly.
+        self._checkNormalize(
+            'jar:dir/x.jar!/y.jar!/dir', 'jar:dir/x.jar!/y.jar!/dir')
+        self._checkNormalize(
+            'dir/x.jar!y.jar!dir', 'jar:dir/x.jar!/y.jar!/dir')
+        self._checkNormalize(
+            'dir/x.jar!/dir/y.jar!', 'jar:dir/x.jar!/dir/y.jar!/')
 
     def test_JarMixup(self):
-        # Two locales mixed up in two jar files.
+        # Two jar files can have files for the same locale.  Two locales can
+        # have files in the same jar file.  Two translations in different
+        # places can have the same chrome path.
         manifest = XpiManifest("""
             locale serbian sr jar:translations.jar!/sr/
             locale croatian hr jar:translations.jar!/hr/
             locale docs sr jar:docs.jar!/sr/
             locale docs hr jar:docs.jar!/hr/
             """)
+        self._checkSortOrder(manifest)
         self._checkLookup(
             manifest, 'jar:translations.jar!/sr/x', 'serbian/x', 'sr')
         self._checkLookup(
@@ -196,18 +237,19 @@ class XpiManifestTestCase(unittest.TestCase):
         self._checkLookup(manifest, 'jar:docs.jar!/hr/x', 'docs/x', 'hr')
 
     def test_NestedJars(self):
-        # Nested jar files.
+        # Jar files can be contained in jar files.
         manifest = XpiManifest("""
             locale x it jar:dir/x.jar!/subdir/y.jar!/
             locale y it jar:dir/x.jar!/subdir/y.jar!/deep/
             locale z it jar:dir/x.jar!/subdir/z.jar!/
             """)
+        self._checkSortOrder(manifest)
         self._checkLookup(
             manifest, 'jar:dir/x.jar!/subdir/y.jar!/foo', 'x/foo', 'it')
         self._checkLookup(
             manifest, 'jar:dir/x.jar!/subdir/y.jar!/deep/foo', 'y/foo', 'it')
         self._checkLookup(
-            manifest, 'jar:dir/x.jar!/subdir/z.jar!/foo', 'z/foo', 'it')
+            manifest, 'dir/x.jar!/subdir/z.jar!/foo', 'z/foo', 'it')
 
 
 def test_suite():
