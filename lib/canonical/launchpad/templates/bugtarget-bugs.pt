@@ -72,14 +72,14 @@
                   >Bob Johnson</a>
                 </td>
                 <td>
-                  <tal:edit-bugcontact
-                      condition="context/menu:bugs/bugcontact|nothing">
-                    <a tal:define="link context/menu:bugs/bugcontact"
+                  <tal:edit-bug-supervisor
+                      condition="context/menu:bugs/bugsupervisor|nothing">
+                    <a tal:define="link context/menu:bugs/bugsupervisor"
                        tal:condition="link/enabled"
                        tal:attributes="href link/url; title link/text">
                       <img tal:attributes="alt link/text" src="/@@/edit" />
                     </a>
-                  </tal:edit-bugcontact>
+                  </tal:edit-bug-supervisor>
                 </td>
               </tr>
               <tr tal:define="securitycontact context/security_contact">

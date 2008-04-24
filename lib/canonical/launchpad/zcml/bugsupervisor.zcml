@@ -10,6 +10,6 @@
     facet="bugs"
     class="canonical.launchpad.browser.BugSupervisorEditView"
     permission="launchpad.Edit"
-    template="../templates/edit-bugcontact.pt"
+    template="../templates/edit-bug-supervisor.pt"
     />
 </configure>

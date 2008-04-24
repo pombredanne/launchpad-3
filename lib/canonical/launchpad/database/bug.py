@@ -490,10 +490,10 @@ class Bug(SQLBase):
             if bugtask.milestone is not None:
                 structural_subscription_targets.add(bugtask.milestone)
 
-            # If the target's bug contact isn't set,
+            # If the target's bug supervisor isn't set,
             # we add the owner as a subscriber.
             pillar = bugtask.pillar
-            if pillar.bugcontact is None:
+            if pillar.bug_supervisor is None:
                 also_notified_subscribers.add(pillar.owner)
                 if recipients is not None:
                     recipients.addRegistrant(pillar.owner, pillar)
