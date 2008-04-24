@@ -97,6 +97,135 @@ error:
     pmount - 0.1-1 was already requested by Celso Providelo
 
 
+== Diff request for source uploads ==
+
+When a source package upload is processed, the upload-processor
+already requests a package diff against the immediate ancestry.
+
+Before starting let's enable the universe component in hoary in order
+to be able to accept the NEW packages.
+
+    >>> from canonical.launchpad.database.component import (
+    ...     ComponentSelection)
+    >>> from canonical.launchpad.interfaces import IComponentSet
+
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> selection = ComponentSelection(
+    ...     distroseries=hoary, component=universe)
+
+We will use `StubPackager` (see stubpackager.txt) to do the package
+and perform the upload of a new series of source. This way we will
+avoid to mess with sampledata to create valid packages.
+
+    >>> from canonical.launchpad.testing.stubpackager import StubPackager
+    >>> login('foo.bar@canonical.com')
+    >>> packager = StubPackager(
+    ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+And setup the test_keys in order to build and upload signed packages.
+
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import_public_test_keys()
+
+When the first version of 'biscuit' is uploaded, since there is no
+suitable ancentry, no diff is requested.
+
+    >>> packager.buildUpstream()
+    >>> packager.buildSource(signed=False)
+    >>> biscuit_one_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', policy='sync')
+
+    >>> biscuit_one_pub.sourcepackagerelease.package_diffs.count()
+    0
+
+When 1.0-8 is uploaded and 1.0-1 is published, the upload-processor
+request a diff, since there is a suitable ancestry
+
+    >>> packager.buildVersion('1.0-8', changelog_text="cookies")
+    >>> packager.buildSource(signed=False)
+    >>> biscuit_eight_pub = packager.uploadSourceVersion(
+    ...     '1.0-8', policy='sync')
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    Package diff from biscuit - 1.0-8 to biscuit - 1.0-1
+
+We will release ubuntu/hoary so we can upload to post-RELEASE pockets.
+
+    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> hoary.status = DistroSeriesStatus.CURRENT
+
+We upload version '1.0-9' to hoary-updates and get the diff against
+the last published version in the RELEASE pocket.
+
+    >>> packager.buildVersion('1.0-9', changelog_text="cookies")
+    >>> packager.buildSource(signed=False)
+    >>> biscuit_nine_pub = packager.uploadSourceVersion(
+    ...     '1.0-9', policy='sync', suite='hoary-updates')
+
+    >>> [diff] = biscuit_nine_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8
+
+The subsequent version uploaded to UPDATES will get a diff against
+1.0-9.
+
+    >>> packager.buildVersion('1.0-10', changelog_text="cookies")
+    >>> packager.buildSource(signed=False)
+    >>> biscuit_ten_pub = packager.uploadSourceVersion(
+    ...     '1.0-10', policy='sync', suite='hoary-updates')
+
+    >>> [diff] = biscuit_ten_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9
+
+An upload to other pocket, let's go with PROPOSED, will get a diff
+against the last version in RELEASE pocket.
+
+    >>> packager.buildVersion('1.0-11', changelog_text="cookies")
+    >>> packager.buildSource(signed=False)
+    >>> biscuit_eleven_pub = packager.uploadSourceVersion(
+    ...     '1.0-11', policy='sync', suite='hoary-proposed')
+
+    >>> [diff] = biscuit_eleven_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8
+
+For testing diffs in the PPA context we will activate Foo bar PPA.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePurpose, IArchiveSet, IPersonSet)
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> ppa = getUtility(IArchiveSet).new(
+    ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
+
+We will upload version 1.0-2 to Foo Bar's PPA and since it was never
+published in the PPA context it will get a diff against the last
+version in the PRIMARY archive in the RELEASE pocket.
+
+    >>> packager.buildVersion('1.0-2', changelog_text="unterzeichnet")
+    >>> packager.buildSource()
+    >>> biscuit_two_pub = packager.uploadSourceVersion(
+    ...     '1.0-2', archive=foobar.archive)
+
+    >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8
+
+A subsequent upload in the PPA context will get a diff against 1.0-2,
+the version found in its context.
+
+    >>> packager.buildVersion('1.0-3', changelog_text="unterzeichnet")
+    >>> packager.buildSource()
+    >>> biscuit_three_pub = packager.uploadSourceVersion(
+    ...     '1.0-3', archive=foobar.archive)
+
+    >>> [diff] = biscuit_three_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2
+
+
 == Performing a Diff ==
 
 

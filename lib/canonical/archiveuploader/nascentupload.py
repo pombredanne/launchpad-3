@@ -947,11 +947,18 @@ class NascentUpload:
         # Mixed-mode uploads need special handling, and the spr here is
         # short-circuited into the binary. See the docstring in
         # UBinaryUploadFile.verify_sourcepackagerelease() for details.
-        spr = None
+        sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            spr = self.changes.dsc.storeInDatabase()
-            self.queue_root.addSource(spr)
+            sourcepackagerelease = self.changes.dsc.storeInDatabase()
+            package_upload_source = self.queue_root.addSource(
+                sourcepackagerelease)
+            ancestry = package_upload_source.getSourceAncestry()
+            if ancestry is not None:
+                to_sourcepackagerelease = ancestry.sourcepackagerelease
+                diff = sourcepackagerelease.requestDiffTo(
+                    sourcepackagerelease.creator, to_sourcepackagerelease)
+                self.logger.debug('%s requested' % diff.title)
 
         if self.binaryful:
 
@@ -971,12 +978,15 @@ class NascentUpload:
                     # sourcepackagerelease to verify here!
                     assert self.policy.can_upload_mixed, (
                         "Current policy does not allow mixed uploads.")
-                    assert spr, "No sourcepackagerelease was found."
-                    binary_package_file.verifySourcePackageRelease(spr)
+                    assert sourcepackagerelease, (
+                        "No sourcepackagerelease was found.")
+                    binary_package_file.verifySourcePackageRelease(
+                        sourcepackagerelease)
                 else:
-                    spr = binary_package_file.findSourcePackageRelease()
+                    sourcepackagerelease = (
+                        binary_package_file.findSourcePackageRelease())
 
-                build = binary_package_file.findBuild(spr)
+                build = binary_package_file.findBuild(sourcepackagerelease)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)
@@ -989,7 +999,8 @@ class NascentUpload:
                                    for build in self.queue_root.builds]
                 if considered_build.id in attached_builds:
                     continue
-                assert (considered_build.sourcepackagerelease.id == spr.id), (
+                assert (considered_build.sourcepackagerelease.id ==
+                        sourcepackagerelease.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
