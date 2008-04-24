@@ -264,10 +264,10 @@ validProductID = {
 
 
 def isValidVendorID(bus, id):
-    """check if the string id is a valid vendor ID for this bus.
+    """Check if the string id is a valid vendor ID for this bus.
 
     :return: True, if id is valid, otherwise False
-    :param bus: A HWBus indicating the bus type of "id"
+    :param bus: A `HWBus` indicating the bus type of "id"
     :param id: A string with the ID
 
     Some busses have constraints for IDs, while some can use arbitrary
@@ -291,10 +291,10 @@ def isValidVendorID(bus, id):
 
 
 def isValidProductID(bus, id):
-    """check, if the string id is a valid product for this bus.
+    """Check, if the string id is a valid product for this bus.
 
     :return: True, if id is valid, otherwise False
-    :param bus: The bus the id is checked for (type HWBus)
+    :param bus: A `HWBus` indicating the bus type of "id"
     :param id: A string with the ID
 
     Some busses have constraints for IDs, while some can use arbitrary
@@ -329,13 +329,12 @@ class HWVendorID(SQLBase):
     vendor_name = ForeignKey(dbName='vendor_name', foreignKey='HWVendorName',
                              notNull=True)
 
-    def _create(self, id, bus, vendor_id_for_bus, vendor_name):
-        if not isValidVendorID(bus, vendor_id_for_bus):
+    def _create(self, id, **kw):
+        if not isValidVendorID(kw['bus'], kw['vendor_id_for_bus']):
             raise ValueError('%s is not a valid vendor ID for %s'
-                             % (repr(vendor_id_for_bus), bus.title))
-        SQLBase._create(self, id, bus=bus,
-                        vendor_id_for_bus=vendor_id_for_bus,
-                         vendor_name=vendor_name)
+                             % (repr(kw['vendor_id_for_bus']),
+                                kw['bus'].title))
+        SQLBase._create(self, id, **kw)
 
 
 class HWVendorIDSet:
