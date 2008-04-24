@@ -24,7 +24,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.event import MessageHeldEvent, SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
@@ -423,11 +423,13 @@ class MailingList(SQLBase):
 
     def holdMessage(self, message):
         """See `IMailingList`."""
-        return MessageApproval(message_id=message.rfc822msgid,
-                               posted_by=message.owner,
-                               posted_message=message.raw,
-                               posted_date=message.datecreated,
-                               mailing_list=self)
+        held_message = MessageApproval(message_id=message.rfc822msgid,
+                                       posted_by=message.owner,
+                                       posted_message=message.raw,
+                                       posted_date=message.datecreated,
+                                       mailing_list=self)
+        notify(MessageHeldEvent(self, held_message))
+        return held_message
 
     def getReviewableMessages(self):
         return MessageApproval.select("""

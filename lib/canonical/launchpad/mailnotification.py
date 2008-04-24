@@ -1726,3 +1726,29 @@ def notify_mailinglist_activated(mailinglist, event):
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)
         simple_sendmail(from_address, to_address, subject, body, headers)
+
+
+def notify_message_held(event):
+    """Send a notification of a message hold to all team administrators."""
+    message = event.object
+    team = event.mailing_list.team
+    from_address = format_address(
+        team.displayname, config.canonical.noreply_from_address)
+    subject = (
+        'New posted mailing list message requiring your approval for %s'
+        % team.displayname)
+    template = get_email_template('new-held-message.txt')
+
+    # The replacements are the same for everybody.
+    replacements = {
+        'subject': subject,
+        'from': from_address,
+        'date': date,
+        'message_id': message_id,
+        'review_url': review_url,
+        }
+    body = MailWrapper(72).format(template % replacements, force_wrap=True)
+
+    # Send one message to every team administrator.
+    for address in team.getTeamAdminsEmailAddresses():
+        simple_sendmail(from_address, address, subject, body)

@@ -8,6 +8,12 @@ personal standing in Launchpad is unknown.
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
 
+    # We don't care about the email notifications sent when the mailing
+    # list was created, and we don't want the notification to confuse
+    # things later on in this test, so clear the queue.
+    >>> from canonical.launchpad.tests import mail_helpers
+    >>> ignore = mail_helpers.pop_notifications()
+
 
 == Initial hold ==
 
@@ -86,6 +92,12 @@ information.
     None
     >>> print held_message.disposal_date
     None
+
+A notification message is sent to every team administrator informing
+them that there is a message waiting for their approval.
+
+    >>> mail_helpers.print_emails()
+    XXX
 
 
 == Approving the message ==
