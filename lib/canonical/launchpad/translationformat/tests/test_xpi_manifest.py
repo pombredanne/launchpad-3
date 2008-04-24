@@ -12,8 +12,6 @@ from canonical.testing import LaunchpadZopelessLayer
 class XpiManifestTestCase(unittest.TestCase):
     """Test `XpiManifest`."""
 
-    layer = LaunchpadZopelessLayer
-
     def test_TrivialParse(self):
         # Parse and use minimal manifest.
         manifest = XpiManifest("locale chromepath en-US directory/")
