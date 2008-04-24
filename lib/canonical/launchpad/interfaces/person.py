@@ -1566,6 +1566,17 @@ class IPersonSet(Interface):
         Return None if there is no translator.
         """
 
+    def getValidPersons(self, persons):
+        """Get all the Persons that are valid.
+
+        This method is more effective than looking at
+        Person.is_valid_person_or_team, since it avoids issuing one DB
+        query per person. It queries the ValidPersonOrTeamCache table,
+        issuing one query for all the person records. This makes the
+        method useful for filling the ORM cache, so that checks to
+        .is_valid_person won't issue any DB queries.
+        """
+
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 

@@ -3038,6 +3038,14 @@ class PersonSet:
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    def getValidPersons(self, persons):
+        """See `IPersonSet.`"""
+        valid_person_cache = ValidPersonOrTeamCache.select(
+            "id IN %s" % sqlvalues([person.id for person in persons]))
+        valid_person_ids = set(cache.id for cache in valid_person_cache)
+        return [
+            person for person in persons if person.id in valid_person_ids]
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
