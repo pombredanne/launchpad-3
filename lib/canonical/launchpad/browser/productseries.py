@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.enum import EnumeratedType, Item, use_template
-from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
@@ -386,7 +385,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
-        form = self.form
         ubuntupkg = self.form.get('ubuntupkg', '')
         if ubuntupkg == '':
             # No package was selected.
@@ -421,8 +419,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
         """
-        form = self.form
-
         file = self.request.form['file']
         if not isinstance(file, FileUpload):
             if file == '':
@@ -577,27 +573,16 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     schema = IProductSeries
     field_names = ['user_branch']
 
-    custom_widget('user_branch', SinglePopupWidget, displayWidth=35)
-
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @action(_('Update'), name='update')
+    def not_import(self, action=None):
+        return self.context.import_branch is None
+
+    @action(_('Update'), name='update', condition=not_import)
     def update_action(self, action, data):
         self.updateContextFromData(data)
-        # Clear out old revision control details.
-        if self.context.rcstype == RevisionControlSystems.CVS:
-            self.context.rcstype = None
-            self.context.cvsroot = None
-            self.context.cvsmodule = None
-            self.context.cvsbranch = None
-        elif self.context.rcstype == RevisionControlSystems.SVN:
-            self.context.rcstype = None
-            self.context.svnrepository = None
-        else:
-            # Nothing to clear out.
-            assert self.context.rcstype is None, "rcstype is not None"
         self.request.response.addInfoNotification(
             'Series code location updated.')
 

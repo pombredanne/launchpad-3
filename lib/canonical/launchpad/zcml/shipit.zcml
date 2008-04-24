@@ -20,7 +20,6 @@
         permission="zope.Public"
         />
 
-
     <browser:page
         for="*"
         permission="zope.Public"
@@ -120,6 +119,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitFrontPageView"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/shipit-index-ubuntu.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItLoginView"
         permission="zope.Public"
         name="login"
@@ -168,6 +175,15 @@
         layer="canonical.launchpad.layers.ShipItUbuntuLayer"
         name="specialrequest-server">
     </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItSurveyView"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        permission="launchpad.AnyPerson"
+        name="survey"
+        template="../templates/shipit-survey.pt"
+        />
 
     <!-- XXX: Guilherme Salgado 2006-05-24:
          This needs to be moved into a normal browser:page declaration,
@@ -452,6 +468,12 @@
         class="canonical.launchpad.database.ShipItReportSet"
         provides="canonical.launchpad.interfaces.IShipItReportSet">
         <allow interface="canonical.launchpad.interfaces.IShipItReportSet" />
+    </securedutility>
+
+    <securedutility
+        class="canonical.launchpad.database.ShipItSurveySet"
+        provides="canonical.launchpad.interfaces.IShipItSurveySet">
+        <allow interface="canonical.launchpad.interfaces.IShipItSurveySet" />
     </securedutility>
 
 </configure>

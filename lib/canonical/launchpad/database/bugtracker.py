@@ -172,8 +172,9 @@ class BugTracker(SQLBase):
         """See `IBugTracker.aliases`."""
         alias_urls = set(alias.base_url for alias in self._bugtracker_aliases)
         # Although it does no harm if the current baseurl is also an
-        # alias, we hide it here to avoid confusion.
-        alias_urls.discard(self.baseurl)
+        # alias, we hide it and all its permutations to avoid
+        # confusion.
+        alias_urls.difference_update(base_url_permutations(self.baseurl))
         return tuple(sorted(alias_urls))
 
     def _set_aliases(self, alias_urls):

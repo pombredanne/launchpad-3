@@ -124,7 +124,7 @@ def LayeredDocFileSuite(*args, **kw):
 class SpecialOutputChecker(doctest.OutputChecker):
     """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
     def output_difference(self, example, got, optionflags):
-        if config.chunkydiff is False:
+        if config.canonical.chunkydiff is False:
             return doctest.OutputChecker.output_difference(
                 self, example, got, optionflags)
 

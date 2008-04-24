@@ -6,18 +6,19 @@ import _pythonpath
 from optparse import OptionParser
 
 from twisted.internet import defer, reactor
+from twisted.python import log as tplog
 
+from canonical.codehosting.puller import mirror, scheduler
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts import logger_options, logger
-from canonical.codehosting.puller import (
-    configure_oops_reporting, mirror, scheduler)
-
+from canonical.launchpad.scripts import logger_options
+from canonical.twistedsupport.loggingsupport import set_up_logging_for_script
 
 def clean_shutdown(ignored):
     reactor.stop()
 
 
 def shutdown_with_errors(failure):
+    tplog.err(failure)
     failure.printTraceback()
     reactor.stop()
 
@@ -51,8 +52,7 @@ if __name__ == '__main__':
             'Expected one of %s, but got: %r'
             % (branch_type_map.keys(), which))
 
-    configure_oops_reporting(branch_type)
-    log = logger(options, 'branch-puller')
+    log = set_up_logging_for_script(options, 'supermirror_%s_puller' % which)
     manager = scheduler.JobScheduler(
         scheduler.BranchStatusClient(), log, branch_type)
 

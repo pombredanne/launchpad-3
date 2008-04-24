@@ -255,6 +255,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="*"
+      name="+navigationmenutabs"
+      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+      template="../templates/launchpad-navigation-menutabs.pt"
+      permission="zope.Public"
+      />
+
   <browser:defaultView
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
@@ -355,6 +363,13 @@
 
 </facet>
 
+<adapter
+  provides="canonical.lazr.interfaces.IObjectPrivacy"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  permission="zope.Public"
+  />
+
 <!--
 Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
@@ -393,6 +408,14 @@ these URLs in Apache.
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
   class="canonical.launchpad.browser.launchpad.IcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-ubuntu"
+  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
   attribute="__call__"
   permission="zope.Public"
   />

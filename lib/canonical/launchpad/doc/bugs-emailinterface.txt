@@ -911,8 +911,9 @@ telling you that you what bug it's a duplicate of.
     Failing command:
         duplicate 4
     ...
-    Bug 4 is already a duplicate of bug 2. You can only duplicate to
-    bugs that are not duplicates themselves.
+    Bug 4 is already a duplicate of bug 2. You can only
+    mark a bug report as duplicate of one that isn't a
+    duplicate itself.
     ...
 
 If the specified bug has other bugs marked as a duplicate of it, an

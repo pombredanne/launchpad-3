@@ -740,13 +740,13 @@ class NascentUpload:
         This mainly relates to Debian syncs, where the default component
         is 'main' but should not be in main for Ubuntu.
 
-        In the case of a PPA, files are always overridden to 'main'.
+        In the case of a PPA, files are not touched.  They are always
+        overridden to 'main' at publishing time, though.
 
         All files are also marked as new unless it's a PPA file, which are
         never considered new as they are auto-accepted.
         """
         if self.is_ppa:
-            uploaded_file.component_name = 'main'
             return
 
         # All newly-uploaded, non-PPA files must be marked as new so that
@@ -1024,6 +1024,7 @@ class NascentUpload:
             # Reject partner uploads to PPAs.
             if self.is_ppa:
                 self.reject("PPA does not support partner uploads.")
+                return
 
             # All files in the upload must be partner if any one of them is.
             if len(components) != 1:

@@ -64,9 +64,7 @@ class TooMuchTimeSkew(BugWatchUpdateError):
 class CheckWatchesErrorUtility(ErrorReportingUtility):
     """An error utility that for the checkwatches process."""
 
-    def __init__(self):
-        super(CheckWatchesErrorUtility, self).__init__()
-        self.setOopsToken('CW')
+    _default_config_section = 'checkwatches'
 
 
 def report_oops(message=None, properties=None, info=None):
@@ -324,6 +322,7 @@ class BugWatchUpdater(object):
 
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
+        remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = remotesystem.baseurl
@@ -567,8 +566,17 @@ class BugWatchUpdater(object):
         :param bug_watch: The bug watch for which the comments should be
             imported.
         """
+        # Construct a list of the comment IDs we want to import; i.e.
+        # those which we haven't already imported.
+        all_comment_ids = external_bugtracker.getCommentIds(bug_watch)
+        comment_ids_to_import = [
+            comment_id for comment_id in all_comment_ids
+            if not bug_watch.hasComment(comment_id)]
+
+        external_bugtracker.fetchComments(bug_watch, comment_ids_to_import)
+
         imported_comments = 0
-        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+        for comment_id in comment_ids_to_import:
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
@@ -578,9 +586,9 @@ class BugWatchUpdater(object):
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)
-            if not bug_watch.hasComment(comment_id):
-                bug_watch.addComment(comment_id, comment_message)
-                imported_comments += 1
+
+            bug_watch.addComment(comment_id, comment_message)
+            imported_comments += 1
 
         if imported_comments > 0:
             self.log.info("Imported %(count)i comments for remote bug "

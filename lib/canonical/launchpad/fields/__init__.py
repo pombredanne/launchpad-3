@@ -70,7 +70,8 @@ from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
     Tuple)
 from zope.schema.interfaces import (
-    IBytes, IDatetime, IField, IInt, IPassword, IText, ITextLine)
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IPassword, IText,
+    ITextLine)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -297,8 +298,8 @@ class DuplicateBug(BugField):
         elif dup_target.duplicateof is not None:
             raise LaunchpadValidationError(_(dedent("""
                 Bug ${dup} is already a duplicate of bug ${orig}. You
-                can only duplicate to bugs that are not duplicates
-                themselves.
+                can only mark a bug report as duplicate of one that
+                isn't a duplicate itself.
                 """), mapping={'dup': dup_target.id,
                                'orig': dup_target.duplicateof.id}))
         elif current_bug_has_dup_refs:
@@ -366,7 +367,7 @@ class UniqueField(TextLine):
         object of this same context. The 'input' should be valid as per
         TextLine.
         """
-        TextLine._validate(self, input)
+        super(UniqueField, self)._validate(input)
         assert self._content_iface is not None
         _marker = object()
 
@@ -666,7 +667,8 @@ class ProductNameField(PillarNameField):
 
 def is_valid_public_person_link(person, other):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
-    assert IPerson.providedBy(person)
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
