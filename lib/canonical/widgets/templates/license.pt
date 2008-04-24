@@ -48,11 +48,12 @@
 
   <p>
     Launchpad.net is free to use for software projects that share
-    their source code and comply with
+    their source code and comply with these
     <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
-    these licensing policies.</a>
+    licensing policies.</a>
     <br/>
-    Contact us if your project uses a proprietary licence.
+    <a href="mailto:feedback@launchpad.net">Contact us</a>
+    if your project uses a proprietary license.
   </p>
 </div>
 </tal:root>

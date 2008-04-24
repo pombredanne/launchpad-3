@@ -39,7 +39,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class License(DBEnumeratedType):
-    """Licenses in which a project's code can be released."""
+    """Licenses under which a project's code can be released."""
 
     # XXX: EdwinGrubbs 2008-04-11 bug=216040
     # The deprecated licenses can be removed in the next cycle.

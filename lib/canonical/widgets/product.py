@@ -148,8 +148,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
 
         cssClass = self.cssClass
 
-        # multiple items with the same value are not allowed from a
-        # vocabulary, so that need not be considered here
+        # Multiple items with the same value are not allowed from a
+        # vocabulary, so that does not need to be considered here.
         rendered_items = []
         count = 0
         for term in self.vocabulary:
