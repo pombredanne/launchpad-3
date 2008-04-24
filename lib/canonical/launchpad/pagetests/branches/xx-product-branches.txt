@@ -10,33 +10,148 @@ are reset here to be recently updated.
     >>> reset_all_branch_last_modified()
 
 
-== Getting to the branch listing for a product ==
+= Product branch summaries =
+
+Branch listings for products now have a summary shown at the top of
+the page before the listing table itself.
+
+What is shown depends on the how many branches are in the project,
+who they are owned by, whether or not the branch officially uses
+Launchpad code, whether or not there is a development focus branch,
+whether or not there are any download files specified for the product.
+
+
+= No branches =
+
+If there are no branches a message offering options is shown.
 
 The default page for the code rootsite on a product is the code
 overview page.
 
     >>> browser.open('http://code.launchpad.dev/applets')
     >>> print browser.title
-    Code overview for Gnome Applets
+    Bazaar branches of Gnome Applets
 
-To get to the complete branch listing, the user clicks on the
-link:
+If there are not any branches, a helpful message is shown.
 
-    >>> browser.getLink('List branches').click()
-    >>> print browser.title
-    Gnome Applets's Bazaar branches registered in Launchpad
-    >>> print extract_text(find_main_content(browser.contents).h1)
-    Bazaar branches for Gnome Applets
+    >>> def get_summary(browser):
+    ...     return find_tag_by_id(browser.contents, 'application-summary')
+    >>> summary = get_summary(browser)
+    >>> print extract_text(summary)
+    There are no branches for Gnome Applets in Launchpad.
+    If there are Bazaar branches of Gnome Applets in a publicly
+      accessible location, Launchpad can act as a mirror of the branch
+      by registering a Mirrored branch. Read more.
+    Launchpad can also act as a primary location for Bazaar branches of
+      Gnome Applets. Read more.
+    Launchpad can import code from CVS or Subversion into Bazaar branches.
+      Read more.
 
-If there are not any branches, a relevant message is shown.
+The 'Read more' links go to the help wiki.
 
-    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print extract_text(message)
-    There are no branches registered for Gnome Applets in Launchpad today.
-    We recommend you visit www.bazaar-vcs.org
-    for more information about how you can use
-    the Bazaar revision control system to improve community
-    participation in this project.
+    >>> for anchor in summary.fetch('a'):
+    ...     print anchor['href']
+    https://help.launchpad.net/CreatingAMirroredBranch
+    https://help.launchpad.net/CreatingAHostedBranch
+    https://help.launchpad.net/VcsImports
+
+
+= Link to the product downloads =
+
+It is possible that a new person coming to the code tab would be interested
+in downloads that may have been added for the product.
+
+    >>> browser.open('http://code.launchpad.dev/netapplet')
+    >>> print extract_text(get_summary(browser))
+    There are no branches for NetApplet in Launchpad.
+    ...
+    There are download files available for NetApplet.
+
+
+= Development focus branches =
+
+If the product has branches, but no branch has been set as the current
+development focus, then if the user is able to set the development focus
+branch, they are shown an option.
+
+    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> sample_browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> print extract_text(get_summary(sample_browser))
+    10 branches ... commits in the last month
+    A branch has not yet been specified as the primary development focus
+    for GNOME Terminal (set).
+
+This text is not shown if the user cannot set the branch.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> print extract_text(get_summary(browser))
+    10 branches ... commits in the last month
+
+If a development focus branch is set, the user is shown with a link to
+browse the code, and shown a simple command line to get the branch.
+
+    >>> browser.open('http://code.launchpad.dev/evolution')
+    >>> summary = get_summary(browser)
+    >>> print extract_text(get_summary(browser))
+    3 branches ...
+    You can browse the source code for development focus branch,
+    or get a copy of the branch using the command:
+       bzr branch lp:evolution
+
+    >>> print summary.a['href']
+    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
+
+
+== Floating buttons ==
+
+There are two buttons that show on the right hand side of the screen
+for project branch listings.  'Register a branch' and 'Import your project'.
+
+    >>> def print_buttons(browser):
+    ...     buttons = find_tag_by_id(browser.contents, 'floating-buttons')
+    ...     for button_image in buttons.fetch('img'):
+    ...         print button_image['alt']
+    >>> print_buttons(browser)
+    Register a branch
+    Import your project
+
+If the product specifies that it officially uses Launchpad code, then
+the 'Import your project' button is not shown.
+
+    >>> sample_browser.open('http://launchpad.dev/gnome-terminal')
+    >>> sample_browser.getLink('Change details').click()
+    >>> sample_browser.getControl(
+    ...     'Code for this project is published in Bazaar branches '
+    ...     'on Launchpad').click()
+    >>> sample_browser.getControl('Change').click()
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> print_buttons(browser)
+    Register a branch
+
+
+== Nice wording of summary numbers ==
+
+The text that is shown giving a summary of the number of branches
+shows correct singular and plural forms.
+
+    >>> def print_summary(product):
+    ...     browser.open('http://code.launchpad.dev/%s' % product)
+    ...     print extract_text(get_summary(browser))
+
+    >>> print_summary('gnome-terminal')
+    10 branches owned by 1 person and 2 teams, 0 commits in the last month
+    >>> print_summary('firefox')
+    5 branches owned by 2 people, 0 commits in the last month
+    ...
+    >>> print_summary('evolution')
+    3 branches owned by 1 person and 1 team, 0 commits in the last month
+    ...
+    >>> print_summary('iso-codes')
+    1 branch owned by 1 person, 0 commits in the last month
+
+
+== Getting to the branch listing for a product ==
 
 If there are branches, but they do not fit with the appropriate filter
 we are given a different message.

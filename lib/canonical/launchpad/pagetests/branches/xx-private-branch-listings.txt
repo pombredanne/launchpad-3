@@ -134,12 +134,15 @@ listing tab.
     >>> def print_landscape_code_listing(browser):
     ...     browser.open('http://code.launchpad.dev/landscape/+branches')
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
-    ...     for row in table.tbody.fetch('tr'):
-    ...         print extract_text(row)
+    ...     if table is None:
+    ...         print extract_text(find_tag_by_id(
+    ...             browser.contents, 'application-summary'))
+    ...     else:
+    ...         for row in table.tbody.fetch('tr'):
+    ...             print extract_text(row)
 
     >>> print_landscape_code_listing(anon_browser)
-    There are no branches registered for The Landscape Project in Launchpad
-    today...
+    There are no branches for The Landscape Project today...
 
     >>> print_landscape_code_listing(no_priv_browser)
     ~no-priv/landscape/testing-branch      New   ...

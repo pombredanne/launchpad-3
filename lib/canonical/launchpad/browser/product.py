@@ -1383,11 +1383,15 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # the batch size - the number of series_branches.
         batch_size = config.launchpad.branchlisting_batch_size
         max_branches_from_query = batch_size - len(series_branches)
+        # Since series branches are actual branches, and the query
+        # returns the bastardised BranchWithSortColumns, we need to
+        # check branch ids in the following list comprehension.
+        series_branch_ids = set(branch.id for branch in series_branches)
         # We want to make sure that the series branches do not appear
         # in our branch list.
         branches = [
             branch for branch in branch_query[:max_branches_from_query]
-            if branch not in series_branches]
+            if branch.id not in series_branch_ids]
         series_branches.extend(branches)
         return series_branches
 
