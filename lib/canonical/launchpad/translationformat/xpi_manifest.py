@@ -31,7 +31,7 @@ def normalize_path(path):
             path = 'jar:' + path
 
     # A path inside a jar file must begin with a slash.
-    path = re.sub('\.jar!', '.jar!/', path)
+    path.replace('.jar!', '.jar!/')
 
     # Finally, eliminate redundant slashes.  The previous steps may have
     # introduced some.
@@ -42,7 +42,7 @@ def is_valid_path(path):
     """Check that path is a valid, normalized path inside an XPI file."""
     if '//' in path:
         return False
-    if re.search('\.jar![^/]', path):
+    if re.search('\\.jar![^/]', path):
         return False
     if path.startswith('jar:'):
         if path.startswith('jar:jar:'):
