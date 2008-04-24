@@ -693,7 +693,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[1],
             #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[2],
             LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[2],
-            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name        : items[3]}
+            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name  : items[3]}
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')
