@@ -88,14 +88,14 @@ Now we can build the source package using the generated tarball.
     Binary: biscuit
     Architecture: source
     Version: 1.0-1
-    Distribution: hardy
+    Distribution: hoary
     Urgency: low
     Maintainer: Launchpad team <launchpad@lists.canonical.com>
     Changed-By: Foo Bar <foo.bar@canonical.com>
     Description:
      biscuit    - Stuff for testing
     Changes:
-     biscuit (1.0-1) hardy; urgency=low
+     biscuit (1.0-1) hoary; urgency=low
      .
        * Initial Upstream package
     Files:
@@ -206,8 +206,131 @@ corresponding sandbox directory.
 Finally, an error is raised if we try to build a source package before
 creating the upstream directory.
 
-    >>> packager = StubPackager('canjica', '1.0')
-    >>> packager.buildSource()
+    >>> canjica_packager = StubPackager('canjica', '1.0')
+    >>> canjica_packager.buildSource()
     Traceback (most recent call last):
     ...
     AssertionError: Selected upstream directory does not exist: canjica-1.0
+
+
+== Uploading generated packages ==
+
+StubPackage also allow the user to upload available packages using a
+simplified upload-processor.
+
+In order to upload packages we have to be logged in as a administrator
+user.
+
+    >>> login('foo.bar@canonical.com')
+
+Also, it required the public test gpg keys to be imported in the
+database.
+
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import_public_test_keys()
+
+The default upload target is ubuntu/hoary and since we will deal with
+NEW packages, which defaults to 'universe' component, we have to
+enable uploads for it.
+
+    >>> from canonical.launchpad.database.component import (
+    ...     ComponentSelection)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IComponentSet, IDistributionSet)
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> selection = ComponentSelection(
+    ...     distroseries=hoary, component=universe)
+
+Uploading a generated package is deadly simple, let's use the
+StubPackager object for 'zeca' source
+
+Then all we have to do is to call uploadSourceVersion() passing the
+desired upload version.
+
+It raises an error if the version wasn't generated yet.
+
+    >>> upload = zeca_packager.uploadSourceVersion('6.6.6')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Could not find a source upload for version 6.6.6
+
+If the version is available, the package is uploaded, NEW packages are
+automatically accepted, builds are created, the upload is published and
+the source publishing record created are returned.
+
+    >>> print ubuntu.getSourcePackage('zeca')
+    None
+
+    >>> zeca_pub = zeca_packager.uploadSourceVersion('1.0-1')
+
+    >>> print zeca_pub.displayname, zeca_pub.status.name
+    zeca 1.0-1 in hoary PENDING
+
+    >>> zeca_pub.getBuilds().count()
+    2
+
+    >>> print ubuntu.getSourcePackage('zeca').currentrelease.version
+    1.0-1
+
+New uploaded versions will immediately shows up as the current
+version in ubuntu.
+
+    >>> zeca_pub = zeca_packager.uploadSourceVersion('1.0-2')
+
+    >>> zeca_pub.getBuilds().count()
+    2
+
+    >>> print ubuntu.getSourcePackage('zeca').currentrelease.version
+    1.0-2
+
+We can change the upload policy for a specific upload, for instace to
+allow unsigned uploads.
+
+    >>> biscuit_pub = packager.uploadSourceVersion('1.0-1', policy="sync")
+
+    >>> biscuit_pub.getBuilds().count()
+    2
+
+    >>> print ubuntu.getSourcePackage('biscuit').currentrelease.version
+    1.0-1
+
+Since we are using FooBar GPG key to sign packages, in order to test
+PPA uploads we will create a PPA for it.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> print foobar.archive
+    None
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> ppa = getUtility(IArchiveSet).new(
+    ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
+
+So, uploading to a PPA only requires us to specify the target archive.
+
+    >>> ppa_pub = packager.uploadSourceVersion(
+    ...     '1.0-5', archive=foobar.archive)
+
+    >>> print ppa_pub.archive.title
+    PPA for Foo Bar
+
+    >>> print ppa_pub.displayname, ppa_pub.status.name
+    biscuit 1.0-5 in hoary PENDING
+
+    >>> ppa_pub.getBuilds().count()
+    1
+
+Upload errors are raised when they happen. In this case packages
+signed by Foo Bar can't be uploaded to Celso's PPA.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> cprov_pub = packager.uploadSourceVersion(
+    ...     '1.0-5', archive=cprov.archive)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Upload was rejected: Signer has no upload rights to this PPA

@@ -19,8 +19,13 @@ import time
 
 from zope.component import getUtility
 
+from canonical.archiveuploader.uploadpolicy import findPolicyByName
+from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
 from canonical.launchpad.interfaces import IGPGHandler
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackageUploadStatus)
+from canonical.launchpad.scripts.logger import FakeLogger
 
 
 changelog_entry_template = (
@@ -161,14 +166,20 @@ class StubPackager:
         """Create an empty debian/changelog """
         self._touch(self.changelog_path)
 
-    def _populateControl(self):
+    def _populateControl(self, section=None, arch=None):
         """Create the debian/control using 'control_file_template'."""
+        if section is None:
+            section = 'devel'
+
+        if arch is None:
+            arch = 'any'
+
         replacements = {
             'source': self.name,
             'binary': self.name,
-            'section': 'devel',
+            'section': section,
             'priority': 'optional',
-            'arch': 'any',
+            'arch': arch,
             }
         self._touch(
             self.control_path, control_file_template % replacements)
@@ -186,11 +197,11 @@ class StubPackager:
         self._touch(
             self.rules_path, rules_file_template % replacements)
 
-    def _populateDebian(self):
+    def _populateDebian(self, section, arch):
         """Create and populate a minimal debian directory."""
         os.mkdir(self.debian_path)
         self._populateChangelog()
-        self._populateControl()
+        self._populateControl(section, arch)
         self._populateCopyright()
         self._populateRules()
 
@@ -225,7 +236,81 @@ class StubPackager:
 
         return (stdout, stderr)
 
-    def buildUpstream(self, build_orig=True):
+    def _getChangefilePathForVersion(self, version, type='source'):
+        """Return the changesfile path for a given (version, type).
+
+        'type' defaults to 'source' but can also be a architecturetag
+        for binary uploads. It respects the context 'name'.
+
+        Return None if the specified upload could not be found.
+        """
+        changesfile_name = "%s_%s_%s.changes" % (self.name, version, type)
+        changesfile_path = os.path.join(self.sandbox_path, changesfile_name)
+
+        if os.path.exists(changesfile_path):
+            return changesfile_path
+
+        return None
+
+    def _getQuietLogger(self):
+        """Return an extra quiet FakeLogger object.
+
+        Deactivate 'debug' and 'info'.
+        """
+        def swallow(cls, *stuff, **kw):
+            pass
+        logger = FakeLogger()
+        logger.debug = swallow
+        logger.info = swallow
+
+        return logger
+
+    def _doUpload(self, type, version, policy, archive, distribution_name,
+                  suite, logger, notify):
+        """Upload a given version.
+
+        Raises an error if the version couldn't be found or the upload
+        was rejected.
+
+        Build a upload policy with the given name and override it with
+        archive, distribution_name and suite if passed.
+
+        Return a IPackageUpload object in DONE state.
+        """
+        changesfile_path = self._getChangefilePathForVersion(version, type)
+        assert changesfile_path is not None, (
+            "Could not find a %s upload for version %s" % (type, version))
+
+        if archive is not None:
+            policy.archive = archive
+
+        policy.distro = getUtility(IDistributionSet).getByName(
+            distribution_name)
+
+        if suite is not None:
+            policy.setDistroSeriesAndPocket(suite)
+
+        upload = NascentUpload(changesfile_path, policy, logger)
+
+        upload.process()
+
+        assert not upload.is_rejected, (
+            "Upload was rejected: %s" % upload.rejection_message)
+
+        upload.do_accept(notify=notify)
+
+        queue = upload.queue_root
+        needs_acceptance_status = (
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.UNAPPROVED,
+            )
+        if queue.status in needs_acceptance_status:
+            queue.acceptFromUploader(changesfile_path, logger)
+
+        return queue
+
+    def buildUpstream(self, suite='hoary', section=None, arch=None,
+                      build_orig=True):
         """Build a stub source upstream version.
 
         This method should only be called once for a given upstream-{name,
@@ -248,13 +333,15 @@ class StubPackager:
         if build_orig:
             self._buildOrig()
 
-        self._populateDebian()
+        self._populateDebian(section, arch)
+
         first_version = '%s-1' % self.version
         self.buildVersion(
-            first_version, changelog_text='Initial Upstream package')
+            first_version, suite=suite, section=section,
+            changelog_text='Initial Upstream package')
 
     def buildVersion(self, version, changelog_text="nicht !",
-                     suite='hardy', author='Foo Bar',
+                     suite='hoary', section=None, arch=None, author='Foo Bar',
                      email='foo.bar@canonical.com', timestamp=None):
         """Initialise a new version of extracted package."""
         assert version.startswith(self.version), (
@@ -263,6 +350,8 @@ class StubPackager:
 
         if timestamp is None:
             timestamp = time.strftime('%a, %d %b %Y %T %z')
+
+        self._populateControl(section, arch)
 
         changelog_replacements = {
             'source_name': self.name,
@@ -282,9 +371,10 @@ class StubPackager:
 
         :param  include_orig: boolean, controls whether or not the
              upstream tarball should be included in the changesfile.
-        :param key_id: if not passed will result in unsigned sources,
-             if a signed package is wanted it should be the key ID
-             (in '0xAABBCCDD' form) of a password-less GPG key.
+        :param signed: whether or not to build a signed package.
+
+        :raises AssertionError: if the upstream directory is not available
+            or if the no GPG key was import by this object.
         """
         assert os.path.exists(self.upstream_directory), (
             'Selected upstream directory does not exist: %s' % (
@@ -316,3 +406,22 @@ class StubPackager:
                    if filename.endswith('.changes')]
 
         return sorted(changes)
+
+    def uploadSourceVersion(self, version, policy='insecure', archive=None,
+                            distribution_name='ubuntu', suite=None,
+                            logger=None, notify=False):
+        """See IStubPackager."""
+        policy = findPolicyByName(policy)
+
+        if logger is None:
+            logger = self._getQuietLogger()
+
+        queue_record = self._doUpload(
+            'source', version, policy, archive, distribution_name, suite,
+            logger, notify)
+
+        pub_record = queue_record.archive.getPublishedSources(
+            name=self.name, version=version, exact_match=True)[0]
+
+        return pub_record
+
