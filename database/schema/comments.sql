@@ -971,7 +971,8 @@ COMMENT ON COLUMN DistroArchSeries.processorfamily IS 'A link to the ProcessorFa
 COMMENT ON COLUMN DistroArchSeries.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
 COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
-COMMENT ON COLUMN DistroArchSeries.ppa_supported IS 'Whether or not PPA support should be provided by this specific distroarchseries';
+COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
+virtualized build support should be provided by this specific distroarchseries';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
