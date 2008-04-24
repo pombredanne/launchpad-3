@@ -1701,8 +1701,8 @@ COMMENT ON COLUMN ArchivePermission.date_created IS 'The date that this permissi
 COMMENT ON COLUMN ArchivePermission.archive IS 'The archive to which this permission applies.';
 COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being granted.';
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
-COMMENT ON COLUMN DistroComponentUploader.component IS 'The component to which this upload permission applies.';
-COMMENT ON COLUMN DistroComponentUploader.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
+COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
