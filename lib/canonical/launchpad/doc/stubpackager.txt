@@ -4,8 +4,7 @@ StubPackager allow us to easily create minimal debian packages to be
 used in tests.
 
     >>> import os
-    >>> from canonical.launchpad.interfaces import IStubPackager
-    >>> from canonical.launchpad.components.stubpackager import StubPackager
+    >>> from canonical.launchpad.testing.stubpackager import StubPackager
 
 == Setup and reset ==
 

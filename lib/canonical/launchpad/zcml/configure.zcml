@@ -175,6 +175,5 @@
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
     <include file="gpghandler.zcml" />
-    <include file="stubpackager.zcml" />
 
 </configure>

@@ -22,7 +22,6 @@ from zope.interface import implements
 
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
 from canonical.launchpad.interfaces import IGPGHandler
-from canonical.launchpad.interfaces import IStubPackager
 
 
 changelog_entry_template = (
@@ -72,9 +71,7 @@ binary: binary-arch
 
 
 class StubPackager:
-    """See `IStubPackager`."""
 
-    implements(IStubPackager)
 
     name = None
     version = None
@@ -85,12 +82,12 @@ class StubPackager:
         self._createNewSandbox()
 
     def setSourceNameAndVersion(self, name, version):
-        """See `IStubPackager`."""
+        """Set the context source name and version."""
         self.name = name
         self.version = version
 
     def setGPGKey(self, key_path=None):
-        """See `IStubPackager`."""
+        """Import and use the give secret GPG key to sign packages."""
         gpghandler = getUtility(IGPGHandler)
 
         if key_path is None:
@@ -103,7 +100,7 @@ class StubPackager:
 
     @property
     def upstream_directory(self):
-        """See `IStubPackager`."""
+        """Current upstream directory used to generate packages."""
         assert self.sandbox_path is not None, (
             "Sandbox directory path is not set.")
 
@@ -115,7 +112,10 @@ class StubPackager:
 
     @property
     def debian_path(self):
-        """See `IStubPackager`."""
+        """Path to the debian directory.
+
+        Generated for the current upstream source.
+        """
         return os.path.join(self.upstream_directory, 'debian')
 
     @property
@@ -251,7 +251,12 @@ class StubPackager:
         return (stdout, stderr)
 
     def buildUpstream(self, build_orig=True):
-        """See `IStubPackager`."""
+        """Build a stub source upstream version.
+
+        param: build_orig: boolean indicating whether or not to prepare
+            a orig.tar.gz containing the pristine upstream code. If
+            generated it can be used for subsequent versions.
+        """
         assert not os.path.exists(self.upstream_directory), (
             'Selected upstream directory already exists: %s' % (
                 os.path.basename(self.upstream_directory)))
@@ -271,7 +276,7 @@ class StubPackager:
                      suite=None, author='Foo Bar',
                      email='foo.bar@canonical.com',
                      timestamp=None):
-        """See `IStubPackager`."""
+        """Initialise a new version of extracted package."""
         assert version.startswith(self.version), (
             'New versions should start with the upstream version: %s ' % (
                 self.version))
@@ -296,7 +301,14 @@ class StubPackager:
         self._appendContents(version)
 
     def buildSource(self, include_orig=True, signed=True):
-        """See `IStubPackager`."""
+        """Build a new version of the source package.
+
+        :param  include_orig: boolean, controls whether or not the
+             upstream tarball should be included in the changesfile.
+        :param key_id: if not passed will result in unsigned sources,
+             if a signed package is wanted it should be the key ID
+             (in '0xAABBCCDD' form) of a password-less GPG key.
+        """
         assert os.path.exists(self.upstream_directory), (
             'Selected upstream directory does not exist: %s' % (
                 os.path.basename(self.upstream_directory)))
@@ -321,7 +333,7 @@ class StubPackager:
         os.chdir(current_path)
 
     def listAvailableUploads(self):
-        """See `IStubPackager`."""
+        """Return the path for all available changesfiles."""
         changes = [os.path.join(self.sandbox_path, filename)
                    for filename in os.listdir(self.sandbox_path)
                    if filename.endswith('.changes')]
@@ -329,7 +341,12 @@ class StubPackager:
         return sorted(changes)
 
     def reset(self):
-        """See `IStubPackager`."""
+        """Reset sandbox directory used to generate packages.
+
+        It actually purges the current tempdir and created a new one.
+        It also undefine upstream 'name' and 'version' to avoid user
+        mistakes.
+        """
         shutil.rmtree(self.sandbox_path)
 
         self.name = None
