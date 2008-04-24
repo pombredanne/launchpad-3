@@ -144,66 +144,6 @@
 
       </tbody>
     </table>
-
-<!--
-    <table class="form">
-      <tbody>
-
-	<tr>
-	  <td>
-	    <input type="radio" name="auto_subscribe_policy"
-		   id="subscribe_on_registration"
-		   tal:attributes="
-			value view/subscribe_on_registration;
-			checked view/subscribe_on_registration_checked" />
-	  </td>
-	  <td>
-	    <label for="subscribe_on_registration">
-	      Only subscribe me to mailing lists when I register for a team.
-	    </label>
-	  </td>
-	</tr>
-
-	<tr>
-	  <td>
-	    <input type="radio" name="auto_subscribe_policy"
-		   id="subscribe_always"
-		   tal:attributes="
-			value view/subscribe_always;
-			checked view/subscribe_always_checked" />
-	  </td>
-	  <td>
-	    <label for="subscribe_always">
-	      Always subscribe me to a team's mailing list, even when
-	      someone else adds me to the team.
-	    </label>
-	  </td>
-	</tr>
-	<tr>
-	  <td>
-	    <input type="radio" name="auto_subscribe_policy"
-		   id="subscribe_never"
-		   tal:attributes="
-			value view/subscribe_never;
-			checked view/subscribe_never_checked" />
-	  </td>
-	  <td>
-	    <label for="subscribe_never">
-	      Never subscribe me to mailing lists.
-	    </label>
-	  </td>
-	</tr>
-
-        <tr>
-          <td></td>
-          <td>
-            <input tal:replace="structure
-		view/action_update_autosubscribe_policy/render" />
-          </td>
-        </tr>
-      </tbody>
-    </table>
--->
   </form>
 
 </div>
