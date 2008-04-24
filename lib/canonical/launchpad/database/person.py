@@ -2490,6 +2490,7 @@ class PersonSet:
             ('vote', 'person'),
             # This table is handled entirely by triggers.
             ('validpersonorteamcache', 'id'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
