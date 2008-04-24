@@ -217,7 +217,7 @@ Now Jdub can apply for team membership and mailing list access.
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> browser.getControl(name='mailinglist_subscribe').value = ['checked']
+    >>> browser.getControl(name='mailinglist_subscribe').value = ['subscribe']
     >>> browser.getControl(name='join').click()
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins'
@@ -410,7 +410,7 @@ Carlos's default setting, 'On registration', is still in place.
 Carlos can update the value at any time.
 
     # A convenient helper for setting and submitting a new value.
-    >>> def set_and_submit(newvalue):
+    >>> def set_autosubscribe_policy(newvalue):
     ...     control = browser.getControl(
     ...         name='field.mailing_list_auto_subscribe_policy')
     ...     control.value = [newvalue]
@@ -423,7 +423,7 @@ Carlos can update the value at any time.
     >>> original_value = browser.getControl(
     ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
 
-    >>> set_and_submit('ALWAYS')
+    >>> set_autosubscribe_policy('ALWAYS')
     ( ) Never
     ( ) On registration
     (*) Always subscribe
@@ -432,12 +432,12 @@ Carlos can update the value at any time.
     >>> get_feedback_messages(browser.contents)
     [u'Your auto-subscription policy has been updated.']
 
-    >>> set_and_submit('NEVER')
+    >>> set_autosubscribe_policy('NEVER')
     (*) Never
     ( ) On registration
     ( ) Always subscribe
 
-    >>> set_and_submit('ON_REGISTRATION')
+    >>> set_autosubscribe_policy('ON_REGISTRATION')
     ( ) Never
     (*) On registration
     ( ) Always subscribe
@@ -446,7 +446,69 @@ Updating the value twice has no adverse affect.
 
     # Restores the original value while performing the test.
     >>> assert original_value == 'ON_REGISTRATION'
-    >>> set_and_submit(original_value)
+    >>> set_autosubscribe_policy(original_value)
+    ( ) Never
+    (*) On registration
+    ( ) Always subscribe
+
+These settings also effect what a user sees when they go to join a new
+team.  The 'Team Join' page has a checkbox that allows a user to sign
+up for the team mailing list at the same time as joining the
+team. Users who have chosen the 'On registration' or 'Always'
+subscription settings will see the box checked by default.
+
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> print_radio_button_field(browser.contents,
+    ...     'mailing_list_auto_subscribe_policy')
+    ( ) Never
+    (*) On registration
+    ( ) Always subscribe
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins/+join'
+
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    ['subscribe']
+
+    # Change James' setting
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy('ALWAYS')
+    ( ) Never
+    ( ) On registration
+    (*) Always subscribe
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    ['subscribe']
+
+Users who have chosen to never be auto-subscribed to mailing
+lists will not have the box checked.
+
+    # Change James' setting
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy('NEVER')
+    (*) Never
+    ( ) On registration
+    ( ) Always subscribe
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    []
+
+    # Restore James' setting.
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy('ON_REGISTRATION')
     ( ) Never
     (*) On registration
     ( ) Always subscribe

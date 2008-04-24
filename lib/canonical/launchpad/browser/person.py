@@ -138,15 +138,13 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
-
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, MailingListAutoSubscribePolicy)
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
