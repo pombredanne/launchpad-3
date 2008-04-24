@@ -45,4 +45,4 @@ DELETE FROM ProductLicense
 WHERE ProductLicense.license IN (
         60, 70, 110, 120, 140, 180, 240, 250, 260, 270);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 40, 0);
