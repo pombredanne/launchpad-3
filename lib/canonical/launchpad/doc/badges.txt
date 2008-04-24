@@ -136,7 +136,8 @@ NotImplementedError.
     ...     print badge.alt
     Traceback (most recent call last):
     ...
-    NotImplementedError: isBlueprintBadgeVisible
+    AttributeError: 'SimpleBadger' object has no attribute 'isBlueprintBadgeVisible'
+
 
 
 == Preferred badging methodology ==

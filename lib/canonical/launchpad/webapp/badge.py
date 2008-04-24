@@ -138,11 +138,8 @@ class HasBadgeBase:
         of the badge.
         """
         method_name = "is%sBadgeVisible" % badge_name.capitalize()
-        method = getattr(self, method_name, None)
-        if method is None:
-            raise NotImplementedError(method_name)
-        else:
-            return method()
+        method = getattr(self, method_name)
+        return method()
 
     def _getBadgeTitle(self, badge_name):
         """Does the badge_name badge have a custom title?
