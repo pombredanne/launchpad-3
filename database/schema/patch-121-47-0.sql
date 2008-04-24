@@ -35,25 +35,15 @@ The Archive/Component must be unique.
 
 -- There won't be many records for a given person, so a simple index on
 -- person will be fine for queries and person merge
-CREATE INDEX archivepermission__person__idx ON ArchivePermission(person);
+CREATE INDEX archivepermission__person__archive__idx
+    ON ArchivePermission(person, archive);
 
--- A person can have one, and only one, permission on the entire archive
-CREATE UNIQUE INDEX archivepermission__archive__key
-    ON ArchivePermission (archive) 
-    WHERE component IS NULL AND sourcepackagename IS NULL;
+-- Allow fast lookups
+CREATE INDEX archivepermission__archive__component__permission__idx
+    ON ArchivePermission(archive, component, permission);
 
--- A person can have one, and only one, permission on a component in an
--- archive
-CREATE UNIQUE INDEX archivepermission__archive__component__key
-    ON ArchivePermission (archive, component)
-    WHERE component IS NOT NULL;
-
--- A person can have one, and only one, permission on a particular
--- sourcepackage in an archive. A sourcepackage can only exist in one
--- one component, so it isn't specified.
-CREATE UNIQUE INDEX archivepermission__archive__sourcepackagename__key
-    ON ArchivePermission (archive, sourcepackagename)
-    WHERE sourcepackagename IS NOT NULL;
+CREATE INDEX archivepermission__archive__sourcepackagename__permission__idx
+    ON ArchivePermission(archive, sourcepackagename, permission);
 
 -- Within an archive, specific permissions are supported for a component
 -- or a sourcepackage. Not a sourcepackage in a particular component.
