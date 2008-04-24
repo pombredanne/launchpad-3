@@ -13,6 +13,7 @@ from canonical.launchpad.interfaces import ITranslationTemplateItem
 
 
 class TranslationTemplateItem(SQLBase):
+    """See `ITranslationTemplateItem`."""
     implements(ITranslationTemplateItem)
 
     _table = 'TranslationTemplateItem'
