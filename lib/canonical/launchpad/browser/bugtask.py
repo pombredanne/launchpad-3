@@ -50,7 +50,7 @@ from zope.app.form.interfaces import (
 from zope.app.form.utility import setUpWidget, setUpWidgets
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
-from zope.formlib import form
+from zope import formlib
 from zope.interface import implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
@@ -940,7 +940,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 vocabulary=status_vocab_factory(self.context))
 
             self.form_fields = self.form_fields.omit('status')
-            self.form_fields += form.Fields(status_field)
+            self.form_fields += formlib.form.Fields(status_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -959,7 +959,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 item for item in BugTaskImportance.items.items
                 if item != BugTaskImportance.UNKNOWN]
             self.form_fields = self.form_fields.omit('importance')
-            self.form_fields += form.Fields(
+            self.form_fields += formlib.form.Fields(
                 Choice(__name__='importance',
                        title=_('Importance'),
                        values=importance_vocab_items,
@@ -1117,7 +1117,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)
 
-        changed = form.applyChanges(
+        changed = formlib.form.applyChanges(
             bugtask, self.form_fields, data_to_apply, self.adapters)
 
         # Now that we've updated the bugtask we can add messages about
@@ -2269,7 +2269,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
             if bug_listing_item.review_action_widget is not None]
-        self.widgets = form.Widgets(widgets_list, len(self.prefix)+1)
+        self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
 
     @action('Save changes', name='submit',
             condition=canApproveNominations)
@@ -2377,14 +2377,18 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Insert bug nominations in between the appropriate tasks.
         bugtasks_and_nominations = []
         for bugtask in all_bugtasks:
-            bugtasks_and_nominations.append(bugtask)
+            conjoined_master = bugtask.getConjoinedMaster(bugtasks)
+            bugtasks_and_nominations.append(
+                {'row_context': bugtask,
+                 'is_conjoined_slave': conjoined_master is not None})
 
             target = bugtask.product or bugtask.distribution
             if not target:
                 continue
 
             bugtasks_and_nominations += [
-                nomination for nomination in bug.getNominations(target)
+                {'row_context': nomination, 'is_conjoined_slave': False}
+                for nomination in bug.getNominations(target)
                 if (nomination.status !=
                     BugNominationStatus.APPROVED)
                 ]
@@ -2407,6 +2411,18 @@ class BugTasksAndNominationsView(LaunchpadView):
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
 
+    is_conjoined_slave = None
+
+    def renderNonConjoinedSlave(self):
+        """Set is_conjoined_slave to False and render the page."""
+        self.is_conjoined_slave = False
+        return self.render()
+
+    def renderConjoinedSlave(self):
+        """Set is_conjoined_slave to True and render the page."""
+        self.is_conjoined_slave = True
+        return self.render()
+
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
 
@@ -2415,8 +2431,10 @@ class BugTaskTableRowView(LaunchpadView):
         It is independent of whether they can *change* the status; you
         need to expand the details to see any milestone set.
         """
+        assert self.is_conjoined_slave is not None, (
+            'is_conjoined_slave should be set before rendering the page.')
         return (self.displayEditForm() and
-                self.context.conjoined_master is None and
+                not self.is_conjoined_slave and
                 self.context.bug.duplicateof is None and
                 self.context.bug.getQuestionCreatedFromBug() is None)
 
