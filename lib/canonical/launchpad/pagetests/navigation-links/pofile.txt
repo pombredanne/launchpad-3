@@ -19,10 +19,10 @@ The Application tabs should point to IProductSeries URLs.
   Translations: http://translations.launchpad.dev/evolution/trunk/
   Answers: Unavailable
 
-But the actions should point to IPOFile urls.
+But the navigation links should point to IPOFile urls.
 
-  >>> print_action_links(browser.contents)
-  Overview
+  >>> print_navigation_links(browser.contents)
+  Description: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/
   Translate: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
   Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
   Download: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
@@ -46,10 +46,10 @@ The Application tabs should point to ISourcePackage URLs.
   Answers: http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/
 
 
-But the actions should point to IPOFile urls.
+But the navigation links should point to IPOFile urls.
 
-  >>> print_action_links(browser.contents)
-  Overview
+  >>> print_navigation_links(browser.contents)
+  Description: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/
   Translate: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
   Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
   Download: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export

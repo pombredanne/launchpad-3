@@ -5,3 +5,4 @@
 
 from canonical.lazr.rest.operation import *
 from canonical.lazr.rest.resource import *
+from canonical.lazr.rest.schema import *

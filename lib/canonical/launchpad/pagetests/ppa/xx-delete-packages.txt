@@ -50,14 +50,6 @@ Once accessed the page provides a way to search for published package
 sources and optionally delete one or more matching packages via POST
 form.
 
-    >>> def print_ppa_packages(contents):
-    ...     packages = find_tags_by_class(contents, 'ppa_package_row')
-    ...     for pkg in packages:
-    ...         print extract_text(pkg)
-    ...     empty_section = find_tag_by_id(contents, 'empty-result')
-    ...     if empty_section is not None:
-    ...         print extract_text(empty_section)
-
 When the 'Delete packages' page is loaded a list of all published
 sources is presented,
 
@@ -294,7 +286,8 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingStatus)
+    ...    IDistributionSet, ILibraryFileAliasSet, IPersonSet,
+    ...    PackagePublishingStatus)
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
 
@@ -302,6 +295,9 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> trash = hoary["i386"].addOrUpdateChroot(fake_chroot)
 
     >>> test_publisher = SoyuzTestPublisher()
 

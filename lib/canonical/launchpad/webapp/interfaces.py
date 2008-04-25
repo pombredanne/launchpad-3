@@ -10,9 +10,10 @@ from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
 class TranslationUnavailable(Exception):
@@ -126,6 +127,10 @@ class IApplicationMenu(IMenuBase):
 
 class IContextMenu(IMenuBase):
     """Context menu for an object."""
+
+
+class INavigationMenu(IMenuBase):
+    """Navigation menu for an object."""
 
 
 class ILinkData(Interface):
@@ -508,11 +513,61 @@ class IPlacelessLoginSource(IPrincipalSource):
         """
 
 
+# We have to define this here because importing from launchpad.interfaces
+# would create circular dependencies.
+class OAuthPermission(DBEnumeratedType):
+    """The permission granted by the user to the OAuth consumer."""
+
+    UNAUTHORIZED = DBItem(10, """
+        No Access
+
+        The application will not be allowed to access Launchpad on your
+        behalf.
+        """)
+
+    READ_PUBLIC = DBItem(20, """
+        Read Non-Private Data
+
+        The application will be able to access Launchpad on your behalf
+        but only for reading non-private data.
+        """)
+
+    WRITE_PUBLIC = DBItem(30, """
+        Change Non-Private Data
+
+        The application will be able to access Launchpad on your behalf
+        for reading and changing non-private data.
+        """)
+
+    READ_PRIVATE = DBItem(40, """
+        Read Anything
+
+        The application will be able to access Launchpad on your behalf
+        for reading anything, including private data.
+        """)
+
+    WRITE_PRIVATE = DBItem(50, """
+        Change Anything
+
+        The application will be able to access Launchpad on your behalf
+        for reading and changing anything, including private data.
+        """)
+
+
+class AccessLevel(DBEnumeratedType):
+    """The level of access any given principal has."""
+    use_template(OAuthPermission, exclude='UNAUTHORIZED')
+
+
 class ILaunchpadPrincipal(IPrincipal):
     """Marker interface for launchpad principals.
 
     This is used for the launchpad.AnyPerson permission.
     """
+
+    access_level = Choice(
+        title=_("The level of access this principal has."),
+        vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
 
 class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):

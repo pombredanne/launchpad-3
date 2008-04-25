@@ -29,12 +29,10 @@ from canonical.launchpad.interfaces import (
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
     IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
     IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
+    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.mailnotification import (
-    get_bugtask_indirect_subscribers)
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -475,10 +473,36 @@ class Bug(SQLBase):
 
         also_notified_subscribers = set()
 
+        structural_subscription_targets = set()
+
         for bugtask in self.bugtasks:
-            bugtask_subscribers = get_bugtask_indirect_subscribers(
-                bugtask, recipients=recipients)
-            also_notified_subscribers.update(bugtask_subscribers)
+            if bugtask.assignee:
+                also_notified_subscribers.add(bugtask.assignee)
+                if recipients is not None:
+                    recipients.addAssignee(bugtask.assignee)
+
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                structural_subscription_targets.add(bugtask.target)
+                if bugtask.target.parent_subscription_target is not None:
+                    structural_subscription_targets.add(
+                        bugtask.target.parent_subscription_target)
+
+            if bugtask.milestone is not None:
+                structural_subscription_targets.add(bugtask.milestone)
+
+            # If the target's bug contact isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bugcontact is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(pillar.owner, pillar)
+
+        person_set = getUtility(IPersonSet)
+        target_subscribers = person_set.getSubscribersForTargets(
+            structural_subscription_targets, recipients=recipients)
+
+        also_notified_subscribers.update(target_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

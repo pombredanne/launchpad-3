@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -86,11 +86,11 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch,
-    IBugTask, IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget,
-    ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
+    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch, IBugTask,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
+    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProductSeries, IProductSeriesBugTask, IProject,
     ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
     MailingListStatus, PersonVisibility)
 
@@ -166,19 +166,18 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        branch_set = BranchSet()
-        branch = branch_set.getByUniqueName(token)
+        branch = self._getExactMatch(token)
         # fall back to interpreting the token as a branch URL
-        if branch is None:
-            url = token.rstrip('/')
-            branch = branch_set.getByUrl(url)
         if branch is None:
             raise LookupError(token)
         return self.toTerm(branch)
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        return BranchSet().getByUniqueName(query)
+        branch = BranchSet().getByUniqueName(query)
+        if branch is not None:
+            return branch
+        return BranchSet().getByUrl(query.rstrip('/'))
 
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
@@ -296,7 +295,6 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def __init__(self, context=None):
         BranchVocabularyBase.__init__(self, context)
-
         if IProduct.providedBy(self.context):
             self.product = self.context
         elif IProductSeries.providedBy(self.context):
@@ -309,7 +307,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        branch = BranchSet().getByUniqueName(query)
+        branch = super(
+            BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
         if branch is not None:
             if branch.product == self.product:
                 return branch
@@ -1227,6 +1226,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
+        elif IProductSeriesBugTask.providedBy(milestone_context):
+            target = milestone_context.productseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1257,6 +1258,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                     (milestone for product in target.products
                      for milestone in product.all_milestones),
                     longest_expected=40)
+            elif IProductSeries.providedBy(target):
+                series_milestones = shortlist(target.all_milestones,
+                                              longest_expected=40)
+                product_milestones = shortlist(target.product.all_milestones,
+                                               longest_expected=40)
+                # Some milestones are associtaed with a product
+                # and a product series; these should appear only
+                # once.
+                milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
                     target.all_milestones, longest_expected=40)

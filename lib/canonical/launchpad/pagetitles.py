@@ -125,6 +125,8 @@ archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
+archive_copy_packages = ContextTitle('Copy packages from %s')
+
 archive_delete_packages = ContextTitle('Delete packages from %s')
 
 archive_edit = ContextTitle('Edit %s')
@@ -168,13 +170,8 @@ branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 branch_edit_subscription = ContextDisplayName(smartquote(
     'Edit subscription to branch "%s"'))
 
-def branch_index(context, view):
-    """Return the branch page title, with the author if it is known."""
-    if context.author:
-        return smartquote('"%s" branch by %s in Launchpad') % (
-            context.displayname, context.author.title)
-    else:
-        return smartquote('"%s" branch in Launchpad') % (context.displayname)
+branch_index = ContextDisplayName(smartquote(
+    '"%s" branch in Launchpad'))
 
 branch_link_to_bug = ContextDisplayName(smartquote(
     'Link branch "%s" to a bug report'))
@@ -429,6 +426,8 @@ codeimport_edit = 'Edit import details'
 
 codeimport_list = 'Code Imports'
 
+codeimport_machines = ViewLabel()
+
 codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
@@ -571,7 +570,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug contact for %s')
+edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -1191,6 +1190,8 @@ shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
 
+shipit_index_ubuntu = 'Request an Ubuntu CD'
+
 shipit_login = 'ShipIt'
 
 shipit_myrequest = "Your ShipIt order"
@@ -1200,6 +1201,8 @@ shipit_oops = 'Error: Oops'
 shipit_reports = 'ShipIt reports'
 
 shipit_requestcds = 'Your ShipIt Request'
+
+shipit_survey = 'ShipIt Survey'
 
 shipitrequests_index = 'ShipIt requests'
 
@@ -1254,6 +1257,8 @@ def sourcepackages(context, view):
 sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
+
+sources_list = 'Available code imports'
 
 sourcesource_index = 'Upstream source import'
 

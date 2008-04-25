@@ -920,6 +920,15 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     root_object_interface = IWebServiceApplication
 
+    def getApplication(self, request):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Always use the web service application to serve web service
+        resources, no matter what application is normally used to serve
+        the underlying objects.
+        """
+        return getUtility(IWebServiceApplication)
+
     def traverseName(self, request, ob, name):
         """See `zope.publisher.interfaces.IPublication`.
 
@@ -1047,7 +1056,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         else:
             # Everything is fine, let's return the principal.
             pass
-        return getUtility(IPlacelessLoginSource).getPrincipal(token.person.id)
+        return getUtility(IPlacelessLoginSource).getPrincipal(
+            token.person.id, access_level=token.permission)
 
 
 class WebServiceRequestTraversal:
@@ -1064,6 +1074,17 @@ class WebServiceRequestTraversal:
         WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
+        stack = self.getTraversalStack()
+        # Only accept versioned URLs.
+        if len(stack) > 0:
+            last_component = stack.pop()
+        else:
+            last_component = ''
+        if last_component == 'beta':
+            self.setTraversalStack(stack)
+            self.setVirtualHostRoot(names=('beta', ))
+        else:
+            raise NotFound(self, '', self)
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 

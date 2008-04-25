@@ -24,6 +24,7 @@ GLOBAL_NAMES = set([
     # for system documentation
     'ANONYMOUS',
     'ILaunchBag',
+    'commit',
     'create_view',
     'flush_database_updates',
     'getUtility',
@@ -43,11 +44,13 @@ GLOBAL_NAMES = set([
     'first_tag_by_class',
     'get_feedback_messages',
     'http',
+    'mailinglist_api',
     'parse_relationship_section',
     'print_action_links',
     'print_batch_header',
     'print_comments',
     'print_portlet_links',
+    'print_ppa_packages',
     'print_radio_button_field',
     'print_submit_buttons',
     'print_tab_links',
@@ -56,6 +59,8 @@ GLOBAL_NAMES = set([
     'webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
+    # For buildd tests
+    'test_dbuser'
     ])
 
 

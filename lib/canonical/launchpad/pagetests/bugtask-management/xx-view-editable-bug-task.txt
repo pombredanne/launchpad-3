@@ -6,7 +6,7 @@ redirected to the login page.
       ...
     Unauthorized: ...
 
-(Even when the product has a bug contact:
+(Even when the product has a bug supervisor:
 https://launchpad.net/malone/+bug/49891)
 
     >>> from zope.component import getUtility

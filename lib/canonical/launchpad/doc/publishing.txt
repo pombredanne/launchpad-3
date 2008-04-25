@@ -253,20 +253,6 @@ archive index.
     PENDING
     PENDING
 
-Before checking getPublishedBinaries in the copied publications we
-have to make them PUBLISHED emulating what would have been done by the
-publisher.
-
-    >>> def publish(pub):
-    ...     pub.status = PackagePublishingStatus.PUBLISHED
-
-    >>> publish(copied_source)
-    >>> for bin in copied_binaries:
-    ...     publish(bin)
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
 Let's retrieve the 'insecure' corresponding publishing records since
 only they provide the API we are interested in.
 
@@ -275,19 +261,158 @@ only they provide the API we are interested in.
     >>> copied_binaries = [BinaryPackagePublishingHistory.get(bin.id)
     ...                    for bin in copied_binaries]
 
+When we call createMissingBuilds method on the copied sources it won't
+create any builds since the binaries were copied over too.
+
+    >>> copied_source.createMissingBuilds()
+    []
+
 Now we can observe that both, the original and the copied sources are
 related only with their corresponding binaries, see bug #181834 for
 previous broken implementation in this area.
 
     >>> for bin in source.getPublishedBinaries():
-    ...     print bin.displayname, bin.pocket.name
-    foo-bin 666 in breezy-autotest hppa PROPOSED
-    foo-bin 666 in breezy-autotest i386 PROPOSED
+    ...     print bin.displayname, bin.pocket.name, bin.status.name
+    foo-bin 666 in breezy-autotest hppa PROPOSED PUBLISHED
+    foo-bin 666 in breezy-autotest i386 PROPOSED PUBLISHED
 
     >>> for bin in copied_source.getPublishedBinaries():
-    ...     print bin.displayname, bin.pocket.name
-    foo-bin 666 in breezy-autotest hppa UPDATES
-    foo-bin 666 in breezy-autotest i386 UPDATES
+    ...     print bin.displayname, bin.pocket.name, bin.status.name
+    foo-bin 666 in breezy-autotest hppa UPDATES PENDING
+    foo-bin 666 in breezy-autotest i386 UPDATES PENDING
+
+Note that even PENDING binary publications are returned by
+getPublishedBinaries, it considers both PENDING and PUBLISHED status
+as active, SUPERSEDED, DELETED and OBSOLETE are excluded.
+
+    >>> source.getPublishedBinaries().count()
+    2
+
+When we supersede one of the original binary publications, it gets
+excluded from the getPublishedBinaries results.
+
+    >>> superseded = source.getPublishedBinaries()[0].supersede()
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> source.getPublishedBinaries().count()
+    1
+
+The same happens when we delete the i386 binary, so no binaries are
+published in the original location.
+
+    >>> deleted = source.getPublishedBinaries()[0].requestDeletion(
+    ...     sabdfl, "go")
+    >>> flush_database_updates()
+
+    >>> source.getPublishedBinaries().count()
+    0
+
+Finally we will mark both copied binary publication as obsolete and
+verify that the getPublishedBinaries result is also empty after that.
+
+    >>> copied_source.getPublishedBinaries().count()
+    2
+
+    >>> for bin in copied_source.getPublishedBinaries():
+    ...     obsoleted = bin.requestObsolescence()
+    >>> flush_database_updates()
+
+    >>> copied_source.getPublishedBinaries().count()
+    0
+
+We have to re-publish the superseded and the deleted publications above
+because it's used below.
+
+    >>> superseded.status = PackagePublishingStatus.PUBLISHED
+    >>> deleted.status = PackagePublishingStatus.PUBLISHED
+    >>> flush_database_updates()
+
+Another common copy use-case is rebuild the same source in another
+suite. To simulate this we will create a publication in Celso's PPA.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> ppa_source = test_publisher.getPubSource(
+    ...     archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> ppa_binaries = test_publisher.getPubBinaries(
+    ...     pub_source=ppa_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> print ppa_source.displayname, ppa_source.archive.title
+    foo 666 in breezy-autotest PPA for Celso Providelo
+
+    >>> for bin in ppa_binaries:
+    ...     print bin.displayname, bin.archive.title
+    foo-bin 666 in breezy-autotest i386 PPA for Celso Providelo
+    foo-bin 666 in breezy-autotest hppa PPA for Celso Providelo
+
+Now we will copy only the source from Celso's PPA breezy-autotest to
+hoary-test.
+
+    >>> breezy_autotest = ppa_source.distroseries
+    >>> hoary_test = breezy_autotest.distribution.getSeries(
+    ...     'hoary-test')
+    >>> hoary_test.nominatedarchindep = hoary_test["i386"]
+    >>> fake_chroot = test_publisher.addMockFile('fake_chroot.tar.gz')
+    >>> trash = hoary_test["i386"].addOrUpdateChroot(fake_chroot)
+
+Perform the source-only copy.
+
+    >>> ppa_copied_source = ppa_source.copyTo(
+    ...     hoary_test, PackagePublishingPocket.RELEASE, cprov.archive)
+
+    >>> ppa_copied_source = SourcePackagePublishingHistory.get(
+    ...     ppa_copied_source.id)
+
+Since it's a rebuild we can immediately create the corresponding
+builds.
+
+    >>> builds = ppa_copied_source.createMissingBuilds()
+
+    >>> for build in builds:
+    ...     print build.title
+    i386 build of foo 666 in ubuntutest hoary-test RELEASE
+
+If createMissingBuilds get called again on either sources no builds
+will get created.
+
+    >>> ppa_source.createMissingBuilds()
+    []
+
+    >>> ppa_copied_source.createMissingBuilds()
+    []
+
+In the sampledata, both, hoary-test and breezy-autotest derives from
+ubuntu/warty. To make it more realistic we will make hoary-test derive
+from breezy-autotest and test if the build algorithm copes with it.
+
+This simulates a rebuild in of the same source in a more recent
+distroseries, like rebuilding SRUs for constant sources.
+
+    >>> breezy_autotest.parent_series = None
+    >>> hoary_test.parent_series = breezy_autotest
+
+    >>> ppa_source.createMissingBuilds()
+    []
+
+    >>> ppa_copied_source.createMissingBuilds()
+    []
+
+Now, let's check the opposite, as if the copy was from a more recent
+distroseries to a older one, like a backport rebuild.
+
+    >>> breezy_autotest.parent_series = hoary_test
+    >>> hoary_test.parent_series = None
+
+    >>> ppa_source.createMissingBuilds()
+    []
+
+    >>> ppa_copied_source.createMissingBuilds()
+    []
 
 
 == getSourceAndBinaryLibraryFiles ==
@@ -305,8 +430,6 @@ Using the same Ubuntu source publishing example as above:
 
 We can also publish a package in a PPA and query on its files:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ppa_source = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     archive=cprov.archive)
