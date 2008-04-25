@@ -1463,13 +1463,13 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         store = getUtility(IZStorm).get('main')
         query, clauseTables, orderby = self.buildQuery(params)
-        result = store.find(BugTask, query,
+        bugtask_fti = SQL('BugTask.fti')
+        result = store.find((BugTask, bugtask_fti), query,
                             AutoTables(SQL("1=1"), clauseTables))
-        result._add_select_also(SQL('BugTask.fti'))
         for arg in args:
             query, clauseTables, dummy = self.buildQuery(arg)
-            other_result = store.find(BugTask, query,
-                                 AutoTables(SQL("1=1"), clauseTables))
+            other_result = store.find((BugTask, bugtask_fti), query,
+                                      AutoTables(SQL("1=1"), clauseTables))
             other_result._add_select_also(SQL('BugTask.fti'))
 
             result = result.union(other_result)
