@@ -3,25 +3,26 @@
 
 """Hardware database related table classes."""
 
-__all__ = ['HWDevice',
-           'HWDeviceSet',
-           'HWDeviceDriverLink',
-           'HWDeviceDriverLinkSet',
-           'HWDeviceNameVariant',
-           'HWDeviceNameVariantSet',
-           'HWDriver',
-           'HWDriverSet',
-           'HWSubmission',
-           'HWSubmissionSet',
-           'HWSubmissionDevice',
-           'HWSubmissionDeviceSet',
-           'HWSystemFingerprint',
-           'HWSystemFingerprintSet',
-           'HWVendorID',
-           'HWVendorIDSet',
-           'HWVendorName',
-           'HWVendorNameSet',
-          ]
+__all__ = [
+    'HWDevice',
+    'HWDeviceSet',
+    'HWDeviceDriverLink',
+    'HWDeviceDriverLinkSet',
+    'HWDeviceNameVariant',
+    'HWDeviceNameVariantSet',
+    'HWDriver',
+    'HWDriverSet',
+    'HWSubmission',
+    'HWSubmissionSet',
+    'HWSubmissionDevice',
+    'HWSubmissionDeviceSet',
+    'HWSystemFingerprint',
+    'HWSystemFingerprintSet',
+    'HWVendorID',
+    'HWVendorIDSet',
+    'HWVendorName',
+    'HWVendorNameSet',
+    ]
 
 import re
 

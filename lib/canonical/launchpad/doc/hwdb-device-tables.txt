@@ -625,12 +625,12 @@ IntegrityError error.
 
 == HWDriver ==
 
-If a device is reported to have problems under Ubuntu or Linux in
-general, we are often more interested in the question, which drivers
-are involved in the problem that the fact that there are problems.
-The table HWDriver stores minimal data about drivers: its package
-name, the driver name itself and the driver's license. This data is
-linked to HWDevice records via the table HWDeviceDriverLink (see below).
+If a device is reported as having problems, then we are more 
+interested in which drivers are involved rather than the fact that
+there are problems. The table HWDriver stores minimal data about 
+drivers: its package name, the driver name itself and the driver's
+license. This data is linked to HWDevice records via the table 
+HWDeviceDriverLink (see below).
 
 The driver is not in every case a kernel driver, it may also be for
 example a Ghostscript driver of a printer or a Sane scanner backend.
@@ -744,8 +744,8 @@ and to its Sane backend.
     >>> print scanner_sane_plustek_link.driver.name
     plustek
 
-Devices can have alternative drivers. Let's assume that Plustek provides
-a closed-source driver for its scanners.
+Devices can have alternative drivers. Let's assume that Plustek
+provides a closed-source driver for its scanners.
 
     >>> closed_driver = driver_set.create(package_name='plustek-scanner',
     ...                                   name='ut12',
@@ -797,9 +797,9 @@ The tuple (device, driver) must be unique.
 
 == HWSubmissionDevice ==
 
-This table links devices listed in a submission to the HWDeviceDriverLink
-table. Additionally it links a device of a submission to its parent device,
-as modeled by HAL.
+This table links devices listed in a submission to the 
+HWDeviceDriverLink table. Additionally it links a device of a
+submission to its parent device, as modeled by HAL.
 
 We need a submission to which we can link HWSubmissionDevice entries.
 
@@ -822,7 +822,7 @@ A HWSubmissionDevice record for a system does not have any parent...
     None
 
 ...while ordinary device entries have the attribute parent set. The
-parent/child relationsship may extend to several "generations". For
+parent/child relationship may extend to several "generations". For
 example, our Inspiron 1234 has a USB host controller; its parent
 is the system itself.
 
@@ -841,7 +841,7 @@ that we just have created.
     ...      parent=usb_controller_ehci_hcd_link)
 
 The USB controller is connected to an (often internal) USB hub. We don't
-have yet HWDevice and HWDeviceDriverLink records for this hub, so let's
+yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
 create them first.
 
     >>> usb_hub = device_set.create(bus=HWBus.USB,

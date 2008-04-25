@@ -375,9 +375,13 @@ class IHWDeviceNameVariantSet(Interface):
 class IHWDriver(Interface):
     """Information about a device driver."""
 
-    package_name = TextLine(title=u'Package Name', required=False)
+    package_name = TextLine(title=u'Package Name', required=False,
+        description=_("The name of the package written without spaces in "
+                      "lowercase letters and numbers."))
 
-    name = TextLine(title=u'Driver Name', required=True)
+    name = TextLine(title=u'Driver Name', required=True,
+        description=_("The name of the driver written without spaces in "
+                      "lowercase letters and numbers."))
 
     license = Choice(title=u'License of the Driver',
                      required=False, vocabulary=License)
@@ -389,19 +393,19 @@ class IHWDriverSet(Interface):
     def create(package_name, name, license):
         """Create a new IHWDriver instance.
 
-        :return: The new IHWDriver instance
-        :param package_name: The name of the packages containing the driver
-        :param name: The name of the driver
-        :param license: The licnse of the driver
+        :return: The new IHWDriver instance.
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :param license: The license of the driver.
         """
 
 
 class IHWDeviceDriverLink(Interface):
     """Link a device with a driver."""
 
-    device = Attribute(u'The Device')
+    device = Attribute(u'The Device.')
 
-    driver = Attribute(u'The Driver')
+    driver = Attribute(u'The Driver.')
 
 
 class IHWDeviceDriverLinkSet(Interface):
@@ -410,9 +414,9 @@ class IHWDeviceDriverLinkSet(Interface):
     def create(device, driver):
         """Create a new IHWDeviceDriver instance.
 
-        :return: The new IHWDeviceDriver instance
-        :param device: The IHWDevice instance to be linked
-        :param driver: The IHWDriver instnace to be linked
+        :return: The new IHWDeviceDriver instance.
+        :param device: The IHWDevice instance to be linked.
+        :param driver: The IHWDriver instance to be linked.
         """
 
 class IHWSubmissionDevice(Interface):
@@ -433,11 +437,10 @@ class IHWSubmissionDeviceSet(Interface):
     def create(device_driver_link, submission, parent):
         """Create a new IHWSubmissionDevice instance.
 
-        :return: The new IHWSubmissionDevice instance
-        :param device_driver_link: An IHWDeviceDriverLink instance
+        :return: The new IHWSubmissionDevice instance.
+        :param device_driver_link: An IHWDeviceDriverLink instance.
         :param submission: The submission the device/driver combination
-                           is mentioned in.
+            is mentioned in.
         :param parent: The parent of this device in the device tree in
-                       the submission.
+            the submission.
         """
-
