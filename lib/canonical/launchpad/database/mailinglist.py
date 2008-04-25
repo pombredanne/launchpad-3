@@ -13,6 +13,8 @@ __all__ = [
     ]
 
 
+import transaction
+
 from email import message_from_string
 from email.Header import decode_header, make_header
 from itertools import repeat
@@ -434,8 +436,10 @@ class MailingList(SQLBase):
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
                                        mailing_list=self)
-        # XXX BarryWarsaw is there any way to avoid this?
-        import transaction
+        # This is required because the notification process needs IMessage.id
+        # in order to pull the raw message text from the librarian.  Without
+        # this commit, the id won't be assigned and the process will fail with
+        # a KeyError.
         transaction.commit()
         notify(MessageHeldEvent(self, held_message))
         return held_message
@@ -583,9 +587,7 @@ class HeldMessageDetails:
         assert len(messages) == 1, (
             'Expected exactly one message with Message-ID: %s' %
             self.message_id)
-        #from zope.security.proxy import removeSecurityProxy
-        #naked_message = removeSecurityProxy(messages[0])
-        message = messages[0] # naked_message
+        message = messages[0]
         self.subject = message.subject
         self.date = message.datecreated
         message.raw.open()
