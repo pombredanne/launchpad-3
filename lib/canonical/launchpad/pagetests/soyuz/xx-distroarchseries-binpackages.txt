@@ -173,15 +173,15 @@ librarian URL and size:
     commercialpackage_1.0-1_i386.deb (652 bytes)
 
 
-== Tracing binary copies ==
+== Tracing copied binary ==
 
 Any user can view the publishing history details for a binary in the
 distribution PRIMARY archive, specifically in the
 DistroArchSeriesBinaryPackage page. It offers enough information to
-trace binary copies.
+trace copied binaries
 
-If judge as a copy, the original location, the distribution,
-distroarchseries and archive are presented.
+If the publishing is a copy, the original location, distribution,
+distroseries and archive are shown.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/warty/i386/pmount')

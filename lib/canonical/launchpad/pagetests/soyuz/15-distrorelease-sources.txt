@@ -438,15 +438,15 @@ And also download the files contained in this source, like '.orig',
     ...
 
 
-== Tracing source copies ==
+== Tracing copied sources ==
 
 Any user can view the publishing history details for a source in the
 distribution PRIMARY archive, specifically in the
 DistributionSourcePackage 'Full publishing history' page. It offers
-enough information to trace sources copies.
+enough information to trace copied sources.
 
-If judge as a copy, the original location, the distribution,
-distroseries and archive are presented.
+If the publishing is a copy, the original location, distribution,
+distroseries and archive are shown.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils')

@@ -21,15 +21,14 @@ from canonical.launchpad.interfaces import (
 
 class BasePublishingRecordView(LaunchpadView):
     """Base Publishing view class."""
-    __used_for__ = None
 
     @property
     def is_source(self):
-        return self.__used_for__ == ISourcePackagePublishingHistory
+        return ISourcePackagePublishingHistory.providedBy(self.context)
 
     @property
     def is_binary(self):
-        return self.__used_for__ == IBinaryPackagePublishingHistory
+        return IBinaryPackagePublishingHistory.providedBy(self.context)
 
     def wasDeleted(self):
         """Whether or not a publishing record deletion was requested.
