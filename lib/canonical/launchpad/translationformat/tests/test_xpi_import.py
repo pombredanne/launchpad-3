@@ -382,8 +382,8 @@ class XpiTestCase(unittest.TestCase):
         self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
         self.assertEqual(email, u'carlos@canonical.com')
 
-    def test_ClashingMessageIds(self):
-        """Test correct handling of clashing message ids in XPI file."""
+    def test_Contexts(self):
+        """Test that message context in XPI file is set to chrome path."""
         queue_entry = self.setUpTranslationImportQueueForTranslation(
             'clashing_ids')
         importer = MozillaXpiImporter()
@@ -401,10 +401,10 @@ class XpiTestCase(unittest.TestCase):
               u'mac/extra.properties',
               u'This message is Mac-specific, and comes from properties.'),
              (u'foozilla.clashing.key',
-              u'main.dtd',
+              u'main/main.dtd',
               u'This message is in the main DTD.'),
              (u'foozilla.clashing.key',
-              u'main.properties',
+              u'main/main.properties',
               u'This message is in the main properties file.'),
              (u'foozilla.clashing.key',
               u'unix/extra.dtd',
@@ -420,7 +420,7 @@ class XpiTestCase(unittest.TestCase):
               u'This message is Windows-specific, '
                   'and comes from properties.'),
              (u'foozilla.regular.message',
-              None,
+              u'main/main.dtd',
               u'A non-clashing message.'),
             ],
             messages)
