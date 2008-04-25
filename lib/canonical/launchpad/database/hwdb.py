@@ -44,6 +44,7 @@ class HWSubmission(SQLBase):
     """See `IHWSubmission`."""
 
     implements(IHWSubmission)
+
     _table = 'HWSubmission'
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -202,6 +203,7 @@ class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""
 
     implements(IHWSystemFingerprint)
+
     _table = 'HWSystemFingerprint'
 
     fingerprint = StringCol(notNull=True)
@@ -225,6 +227,7 @@ class HWVendorName(SQLBase):
     """See `IHWVendorName`."""
 
     implements(IHWVendorName)
+
     _table = 'HWVendorName'
 
     name = StringCol(notNull=True)
@@ -234,6 +237,7 @@ class HWVendorNameSet:
     """See `IHWVendorNameSet`."""
 
     implements(IHWVendorNameSet)
+
     def create(self, name):
         """See `IHWVendorNameSet`."""
         return HWVendorName(name=name)
@@ -264,7 +268,7 @@ validProductID = {
 
 
 def isValidVendorID(bus, id):
-    """Check if the string id is a valid vendor ID for this bus.
+    """Check that the string id is a valid vendor ID for this bus.
 
     :return: True, if id is valid, otherwise False
     :param bus: A `HWBus` indicating the bus type of "id"
@@ -291,7 +295,7 @@ def isValidVendorID(bus, id):
 
 
 def isValidProductID(bus, id):
-    """Check, if the string id is a valid product for this bus.
+    """Check that the string id is a valid product for this bus.
 
     :return: True, if id is valid, otherwise False
     :param bus: A `HWBus` indicating the bus type of "id"
@@ -322,6 +326,7 @@ class HWVendorID(SQLBase):
     """See `IHWVendorID`."""
 
     implements(IHWVendorID)
+
     _table = 'HWVendorID'
 
     bus = EnumCol(enum=HWBus, notNull=True)
@@ -330,10 +335,18 @@ class HWVendorID(SQLBase):
                              notNull=True)
 
     def _create(self, id, **kw):
-        if not isValidVendorID(kw['bus'], kw['vendor_id_for_bus']):
+        bus = kw.get('bus')
+        if bus is None:
+            raise TypeError('HWVendorID() did not get expected keyword '
+                            'argument bus')
+        vendor_id_for_bus = kw.get('vendor_id_for_bus')
+        if vendor_id_for_bus is None:
+            raise TypeError('HWVendorID() did not get expected keyword '
+                            'argument vendor_id_for_bus')
+        if not isValidVendorID(bus, vendor_id_for_bus):
             raise ValueError('%s is not a valid vendor ID for %s'
-                             % (repr(kw['vendor_id_for_bus']),
-                                kw['bus'].title))
+                             % (repr(vendor_id_for_bus),
+                                bus.title))
         SQLBase._create(self, id, **kw)
 
 

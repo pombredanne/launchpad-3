@@ -288,7 +288,6 @@ class IHWVendorIDSet(Interface):
         :return: A new IHWVendorID instance.
         :param bus: the HWBus instance for this bus.
         :param vendor_id: a string containing the bus ID. Numeric IDs
-                          are represented as a hexadecimal string,
-                          prepended by '0x'
+            are represented as a hexadecimal string, prepended by '0x'.
         :param name: The IHWVendorName instance with the vendor name.
         """
