@@ -99,7 +99,9 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+from canonical.widgets import (
+    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
+    PasswordChangeWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -117,7 +119,8 @@ from canonical.launchpad.interfaces import (
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
     ISignedCodeOfConductSet, ITeam, ITeamMembership,
     ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
+    LoginTokenType, MailingListAutoSubscribePolicy,
+    NotFoundError, PersonCreationRationale,
     PersonVisibility, QuestionParticipation, SSHKeyType,
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
@@ -2985,13 +2988,10 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     schema = IEmailAddress
 
-    # Custom fields for validated and unvalidated email addresses.
     custom_widget('VALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
-
-    # Custom fields for the mailing list auto-subscription policy.
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
 
@@ -3029,14 +3029,14 @@ class PersonEditEmailsView(LaunchpadFormView):
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        defaults = dict(VALIDATED_SELECTED=validated,
-                    UNVALIDATED_SELECTED=unvalidated)
+        initial = dict(VALIDATED_SELECTED=validated,
+                       UNVALIDATED_SELECTED=unvalidated)
 
         # Defaults for the mailing list autosubscribe buttons.
         policy = self.context.mailing_list_auto_subscribe_policy
-        defaults.update(mailing_list_auto_subscribe_policy=policy)
+        initial.update(mailing_list_auto_subscribe_policy=policy)
 
-        return defaults
+        return initial
 
     def setUpWidgets(self, context=None):
         super(PersonEditEmailsView, self).setUpWidgets(context)
@@ -3124,8 +3124,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         return FormFields(*fields)
 
     def _autosubscribe_policy_fields(self):
-        """Create a field for each mailing list auto-subscription option.
-        """
+        """Create a field for each mailing list auto-subscription option."""
         return FormFields(
             Choice(__name__='mailing_list_auto_subscribe_policy',
                    source=MailingListAutoSubscribePolicy),
@@ -3423,8 +3422,6 @@ class PersonEditEmailsView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "Subscriptions updated.")
         self.next_url = self.action_url
-
-    # Actions to do with mailing list auto-subscription policy.
 
     def validate_action_update_autosubscribe_policy(self, action, data):
         """Ensure that the requested auto-subscribe setting is valid."""
