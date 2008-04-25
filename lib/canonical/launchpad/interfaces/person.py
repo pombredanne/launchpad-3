@@ -1582,6 +1582,7 @@ class IPersonSet(Interface):
              away. Bug 221901. -- Bjorn Tillenius, 2008-04-25
         """
 
+
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
