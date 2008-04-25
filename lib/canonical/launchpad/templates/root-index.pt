@@ -78,7 +78,7 @@
               <td><img src="/@@/news" alt="" /></td>
               <td>
                 <a href="https://help.launchpad.net/PPAQuickStart#copy">
-                <strong>Copy PPA packages/strong><br />
+                <strong>Copy PPA packages</strong><br />
                 Now you can copy source and binary packages between distro releases
                 within a PPA or to any other PPA for which you have upload permission.
                </a>
