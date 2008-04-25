@@ -12,7 +12,7 @@
 <div metal:fill-slot="main">
   <div tal:condition="view/hold_count">
     <metal:form metal:use-macro="context/@@launchpad_form/form">
-      <span metal:fill-slot="extra_top">
+      <span metal:fill-slot="extra_top" id="legend">
 
         <span tal:replace="view/hold_count">X</span>
         <span tal:condition="python: view.hold_count == 1">
@@ -46,7 +46,7 @@
       </table>
     </metal:form>
   </div>
-  <span tal:condition="not: view/hold_count">
+  <span tal:condition="not: view/hold_count" id="legend">
     <h1>Mailing list moderation</h1>
     <p>There are no mailing list messages requiring your review.</p>
   </span>

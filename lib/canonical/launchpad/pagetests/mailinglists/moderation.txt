@@ -1,0 +1,161 @@
+= Mailing list moderation =
+
+When a non-member posts a message to a team's mailing list, that message will
+be held for moderator review, if the sender is not a Launchpad member in good
+standing (as is the default).
+
+    >>> admin_browser.open('http://launchpad.dev/~guadamen')
+    >>> admin_browser.getLink('Configure mailing list').click()
+    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
+    >>> admin_browser.getControl(name='field.guadamen').value = ['approve']
+    >>> admin_browser.getControl('Submit').click()
+
+    >>> from canonical.launchpad.ftests import mailinglists_helper
+    >>> mailinglists_helper.mailman.act()
+
+    # Ignore any notifications up to this point.
+    >>> from canonical.launchpad.tests import mail_helpers
+    >>> ignore = mail_helpers.pop_notifications()
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> login('foo.bar@canonical.com')
+    >>> guadamen = getUtility(IMailingListSet).get('guadamen')
+    >>> logout()
+
+Anonymous users cannot see the messages waiting for moderation.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+Non-administrators can also not review the messages.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+Foo Bar though, is the moderator for the Guadamen team, so he can visit the
+moderation page.  But right now, there is nothing to moderate.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate')
+    >>> admin_browser.title
+    'Moderate mailing list'
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
+    Mailing list moderation
+    There are no mailing list messages requiring your review.
+
+Carlos is not a member of the Guadamen team, nor is he a Launchpad member in
+good standing.  He posts a message to the team's mailing list, and it is held
+for approval.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> message_set = getUtility(IMessageSet)
+    >>> message = message_set.fromEmail("""\
+    ... From: carlos@canonical.com
+    ... To: guadamen@lists.launchpad.dev
+    ... Subject: Aardvark
+    ... Message-ID: <aardvark>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... This is my first post!
+    ... """)
+    >>> held_message = guadamen.holdMessage(message)
+    >>> logout()
+
+Foo Bar sees that there is one message waiting for approval.
+
+    >>> admin_browser.reload()
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
+    1 message has been posted to your mailing list...
+    ...
+
+Let's say Carlos posts another message to the list, which also gets held for
+moderation.  Now there are two messages waiting for review.
+
+    >>> login('foo.bar@canonical.com')
+    >>> message = message_set.fromEmail("""\
+    ... From: carlos@canonical.com
+    ... To: guadamen@lists.launchpad.dev
+    ... Subject: Bobcat
+    ... Message-ID: <bobcat>
+    ... Date: Fri, 01 Aug 2000 01:09:01 -0000
+    ...
+    ... This is my second post!
+    ... """)
+    >>> held_message = guadamen.holdMessage(message)
+    >>> logout()
+
+    >>> admin_browser.reload()
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
+    2 messages have been posted to your mailing list...
+    ...
+
+Each held message displays some details about what's being held.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'field.%3Caardvark%3E'))
+    Subject:
+    Aardvark
+    From:
+    carlos@canonical.com
+    Date:
+    2000-08-01 01:09:00+00:00
+    Message-ID:
+    &lt;aardvark&gt;
+    This is my first post!
+
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'field.%3Cbobcat%3E'))
+    Subject:
+    Bobcat
+    From:
+    carlos@canonical.com
+    Date:
+    2000-08-01 01:09:01+00:00
+    Message-ID:
+    &lt;bobcat&gt;
+    This is my second post!
+
+By default, the action to take on all messages is to continue to hold them.
+So if the messages are moderated now, they'll just show up the next time Foo
+visits this page.
+
+    >>> admin_browser.getControl('Moderate').click()
+    >>> admin_browser.title
+    'GuadaMen in Launchpad'
+    >>> admin_browser.getLink('Moderate mailing list').click()
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
+    2 messages have been posted to your mailing list...
+    ...
+
+Foo has three other options available to him for disposing of these messages.
+Carlos sends one more to the list, and it is also held, which gives Foo a
+perfect opportunity for exercises each of his options.
+
+    >>> login('foo.bar@canonical.com')
+    >>> message = message_set.fromEmail("""\
+    ... From: carlos@canonical.com
+    ... To: guadamen@lists.launchpad.dev
+    ... Subject: Caribou
+    ... Message-ID: <caribou>
+    ... Date: Fri, 01 Aug 2000 01:09:02 -0000
+    ...
+    ... This is my third post!
+    ... """)
+    >>> held_message = guadamen.holdMessage(message)
+    >>> logout()
+
+    >>> admin_browser.reload()
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
+    3 messages have been posted to your mailing list...
+    ...
+    

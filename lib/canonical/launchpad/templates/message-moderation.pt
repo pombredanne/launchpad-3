@@ -1,4 +1,4 @@
-<tr>
+<tr id="myid" tal:attributes="id view/widget_name">
   <td><tt>
     <strong>Subject:</strong>
     <span tal:replace="view/subject">The subject</span>
@@ -20,7 +20,7 @@
     </span>
   </td>
   <td style="text-align: center">
-    <input type="radio" value="approve" name="myname" id="myid"
+    <input type="radio" value="approve" name="myname"
            tal:attributes="name view/widget_name"/></td>
   <td style="text-align: center">
     <input type="radio" value="reject" name="myname"
