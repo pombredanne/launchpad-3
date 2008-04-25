@@ -589,9 +589,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
             if person.preferredemail is None:
                 self.addError(
                         _(
-                    "The email address '${email}' has not yet been confirmed. "
-                    "We sent an email to that address with instructions on "
-                    "how to confirm that it belongs to you.",
+                    "The email address '${email}' has not yet been "
+                    "confirmed. We sent an email to that address with "
+                    "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
