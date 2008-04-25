@@ -437,3 +437,42 @@ And also download the files contained in this source, like '.orig',
     <a href="/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1/+files/commercialpackage_1.0-1.dsc">commercialpackage_1.0-1.dsc</a>
     ...
 
+
+== Tracing source copies ==
+
+Any user can view the publishing history details for a source in the
+distribution PRIMARY archive, specifically in the
+DistributionSourcePackage 'Full publishing history' page. It offers
+enough information to trace sources copies.
+
+If judge as a copy, the original location, the distribution,
+distroseries and archive are presented.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/alsa-utils')
+
+    >>> anon_browser.getLink("Show publishing history").click()
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
+    Date           Status     Target    Pocket  Component Section Version
+    2006-02-15 ... Pending    WartyII   release main      editors 1.0.9a-4ubuntu1
+      Copied from ubuntu hoary in Primary Archive for The Test Distribution
+    ...
+    2005-09-16 ... Published  WartyII   release main      base    1.0.9a-4
+      Published on 2005-09-16
+      Copied from debian sid in Primary Archive for The Test Distribution
+    ...
+    2005-09-15 ... Superseded Hoary     release main      editors 1.0.9a-4
+      Removed from disk on 2005-09-15.
+      Removal requested on 2005-09-15.
+      Superseded on 2005-09-15 by alsa-utils - 1.0.9a-4ubuntu1
+      Published on 2005-09-15
+      Copied from debian sid in Primary Archive for The Test Distribution
+    ...
+    2005-09-15 ... Published  Hoary     release main      base    1.0.9a-4ubuntu1
+      Published on 2005-09-15
+    ...
+    2005-09-15 ... Published  WartyII   release main      base    1.0.8-1ubuntu1
+      Published on 2005-09-15
+    ...

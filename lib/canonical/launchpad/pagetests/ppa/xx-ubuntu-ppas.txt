@@ -283,6 +283,7 @@ Each data row is expandable to contain some sections containing:
     >>> print extract_text(iceweasel_data)
     Publishing details
       Published on 2007-07-09
+      Copied from ubuntu warty in PPA for Mark Shuttleworth
     Changelog
     Builds
       i386

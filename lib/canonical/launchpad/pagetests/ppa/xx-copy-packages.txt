@@ -135,6 +135,7 @@ The page section id is built using "pub$ID" notation.
     >>> print extract_text(pmount_details)
     Publishing details
       Published on 2007-07-09
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -219,6 +220,7 @@ context.
     ...     jblack_browser.contents, pmount_details_id)
     >>> print extract_text(pmount_details)
     Publishing details
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)

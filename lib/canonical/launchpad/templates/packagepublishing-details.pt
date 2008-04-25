@@ -33,6 +33,29 @@
       <span tal:attributes="title context/datepublished/fmt:datetime"
             tal:content="context/datepublished/fmt:displaydate" />
     </li>
+    <li tal:condition="view/wasCopied">
+      <strong>Copied from</strong>
+      <tal:source_original_location condition="view/is_source">
+        <tal:message
+          define="source context/sourcepackagerelease;
+                  archive source/upload_archive;
+                  series source/upload_distroseries;
+                  distro series/distribution;
+                  message string:${distro/name} ${series/name} in ${archive/title}"
+          replace="message" />
+      </tal:source_original_location>
+      <tal:binary_build_location condition="view/is_binary">
+        <tal:message
+          define="build context/binarypackagerelease/build;
+                  archive build/archive;
+                  arch build/distroarchseries;
+                  distro arch/distroseries/distribution;
+                  message string:${distro/name} ${arch/displayname} in ${archive/title}"
+          replace="message" />
+      </tal:binary_build_location>
+    </li>
+
+
 
   </ul>
 </tal:root>

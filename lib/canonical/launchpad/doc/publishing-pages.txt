@@ -9,7 +9,8 @@ filenames and filesizes.
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.database import (
-    ...     SourcePackagePublishingHistory)
+    ...     SourcePackagePublishingHistory,
+    ...     BinaryPackagePublishingHistory)
 
 Retrieve any SourcePackagePublishingHistory entry.
 
@@ -38,3 +39,31 @@ Retrieve any SourcePackagePublishingHistory entry.
      {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
       'filesize': 3,
       'filename': u'mozilla-firefox_0.9_i386.deb'}]
+
+The publishing view classed allow the template to find out if its a
+source or a binary publication.
+
+A source.
+
+    >>> spph = SourcePackagePublishingHistory.get(20)
+    >>> view = getMultiAdapter((spph, LaunchpadTestRequest()),
+    ...           name="+record-details")
+
+    >>> print view.is_source
+    True
+
+    >>> print view.is_binary
+    False
+
+A binary.
+
+    >>> bpph = BinaryPackagePublishingHistory.get(20)
+    >>> view = getMultiAdapter((bpph, LaunchpadTestRequest()),
+    ...           name="+record-details")
+
+    >>> print view.is_source
+    False
+
+    >>> print view.is_binary
+    True
+
