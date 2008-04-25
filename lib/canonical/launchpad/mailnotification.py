@@ -25,7 +25,7 @@ from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    IMessageSet, INotificationRecipientSet, IPersonSet, ISpecification,
+    INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
 from canonical.launchpad.mail import (
