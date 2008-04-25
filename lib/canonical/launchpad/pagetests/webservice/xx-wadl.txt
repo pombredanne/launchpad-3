@@ -292,7 +292,7 @@ initial <resource_type> tags in 'collection_resource_types'.
     ...         collection_cutoff = index
     ...         break
 
-    >>> collection_resource_types = other_children[collection_cutoff]
+    >>> collection_resource_types = other_children[:collection_cutoff]
 
 After that <representation> tag there's a group of three tags for
 every type of entry resource exposed through the web service. The
@@ -305,7 +305,7 @@ the client in response to PATCH requests. This code splits the tags
 into groups of three and stores the groups in
 'entry_resource_descriptions'.
 
-    >>> entry_resource_types = children[collection_cutoff+1:]
+    >>> entry_resource_types = other_children[collection_cutoff+1:]
     >>> entry_resource_descriptions = []
     >>> for index in range(0, len(entry_resource_types), 3):
     ...     resource_type = entry_resource_types[index]
