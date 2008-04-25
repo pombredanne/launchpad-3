@@ -5,6 +5,9 @@ objects as RESTful HTTP resources. I'll demonstrate these features by
 defining a model for managing recipes, and then publishing the model
 objects as resources through a web service.
 
+# XXX leonardr 2008-04-23 bug=221037: This test should be moved to
+# launchpad/doc and made to run without layers. It registers resource
+# classes that pollute generated WADL documents in the pagetests.
 
 == Example model objects ==
 
@@ -689,12 +692,16 @@ root of the object tree.
     ...     implements(IMyWebServiceApplication)
     >>> register_navigation(RootNavigation, IMyWebServiceApplication)
 
+    >>> from canonical.launchpad.webapp.servers import WebServicePublication
+    >>> class MyWebServicePublication(WebServicePublication):
+    ...    def getApplication(self, request):
+    ...        return MyServiceRootResource()
+
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
-'http://api.launchpad.net/'.
+'http://api.launchpad.net/beta/'.
 
     >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
-    >>> from canonical.launchpad.webapp.servers import WebServicePublication
     >>> from cStringIO import StringIO
 
     >>> def create_web_service_request(
@@ -714,7 +721,7 @@ will act as though you had performed a GET on the URL
     ...     request = WebServiceTestRequest(
     ...         body_instream=body_instream, environ=test_environ,
     ...         method=method)
-    ...     request.setPublication(WebServicePublication(None))
+    ...     request.setPublication(MyWebServicePublication(None))
     ...     # Set the "current" request.
     ...     login(ANONYMOUS, request)
     ...     request.processInputs()
@@ -725,8 +732,17 @@ will act as though you had performed a GET on the URL
     >>> getUtility(IOpenLaunchBag).add(app)
     >>> request = create_web_service_request('/beta/')
     >>> ignore = request.traverse(app)
-    >>> app(request)
-    'This is a web service.'
+
+The response document is a WADL description of the resource types
+defined earlier.
+
+    >>> print app(request)
+    <?xml version="1.0"?>
+    <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns="http://research.sun.com/wadl/2006/10"
+      xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
+      <!--Begin resource_type definitions for collection resources.-->
+    ...
 
 The standard canonical_url() function can be used to generate URLs to
 content objects published on the web service. It works for the web

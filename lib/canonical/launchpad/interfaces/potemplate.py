@@ -321,12 +321,11 @@ class IPOTemplate(IRosettaStats):
         The sequence number must be > 0.
         """
 
-    def getPOTMsgSets(current=True, slice=None):
+    def getPOTMsgSets(current=True):
         """Return an iterator over `IPOTMsgSet` objects in this template.
 
         The 'current' argument is used to select only current POTMsgSets or
         all of them.
-        'slice' is a slice object that selects a subset of POTMsgSets.
         """
 
     def getPOTMsgSetsCount(current=True):
