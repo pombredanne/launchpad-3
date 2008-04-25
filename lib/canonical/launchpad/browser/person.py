@@ -2821,7 +2821,10 @@ class TeamJoinView(PersonView):
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
-            user.join(context)
+            # Shut off mailing list auto-subscription - we want direct
+            # control over it.
+            user.join(context, may_subscribe_to_list=False)
+
             if self.team_is_moderated:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
@@ -2832,8 +2835,21 @@ class TeamJoinView(PersonView):
                     _('You have successfully joined ${team}.',
                       mapping={'team': context.displayname}))
 
-            if 'mailinglist_subscribe' in request.form:
-                self._subscribeToList()
+            if ('mailinglist_subscribe' in request.form
+                and self.user_can_subscribe_to_list):
+                # 'user_can_subscribe_to_list' should have dealt with
+                # all of the error cases.
+                self.context.mailing_list.subscribe(self.user)
+
+                if self.team_is_moderated:
+                    response.addInfoNotification(
+                        _('Your mailing list subscription is '
+                          'awaiting approval.'))
+                else:
+                    response.addInfoNotification(
+                        structured(
+                            _("You have been subscribed to this "
+                              "team&#x2019;s mailing list.")))
 
         elif 'join' in request.form:
             response.addErrorNotification(
@@ -2847,30 +2863,6 @@ class TeamJoinView(PersonView):
                 "Couldn't find any of the expected actions.")
         self.request.response.redirect(canonical_url(context))
 
-    def _subscribeToList(self):
-        """Subscribe the user to the team's mailing list."""
-        response = self.request.response
-
-        if not self.user_can_subscribe_to_list:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-            return
-
-        try:
-            self.context.mailing_list.subscribe(self.user)
-        except CannotSubscribe, error:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-        else:
-            if self.team_is_moderated:
-                response.addInfoNotification(
-                    _('Your mailing list subscription is awaiting '
-                      'approval.'))
-            else:
-                response.addInfoNotification(
-                    structured(
-                        _("You have been subscribed to this team&#x2019;s "
-                          "mailing list.")))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):
