@@ -48,11 +48,10 @@ sources' section.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
     Latest uploads
-    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo 41 weeks ago
-    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth 41 weeks ago
-    pmount 0.1-1 in warty in PPA for Celso Providelo 41 weeks ago
-    iceweasel 1.0 in warty in PPA for Celso Providelo 41 weeks ago
-
+    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo ... ago
+    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth ... ago
+    pmount 0.1-1 in warty in PPA for Celso Providelo ... ago
+    iceweasel 1.0 in warty in PPA for Celso Providelo ... ago
 
 The 5 most active PPAs are listed in the 'Most active' section. Since
 we only have 3 PPAs in sampledata they are all presented.
@@ -60,13 +59,11 @@ we only have 3 PPAs in sampledata they are all presented.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    Number of uploads in the last 7 days
+    PPA with the highest number of uploads during the last 7 days
+
 
 Nothing suitable in the sampledata, check the end of this document for
 further tests.
-
-
-
 
 
 == Searching PPAs ==
@@ -668,7 +665,6 @@ corresponding build page.
 
 == Populating 'Most Active' section ==
 
-
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> publishToPPA("cprov", "hoary", "commercialpackage", "1.0-1")
@@ -691,10 +687,10 @@ corresponding build page.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    Number of uploads in the last 7 days
-    PPA for Celso Providelo        4
-    PPA for Mark Shuttleworth      2
-    PPA for Ubuntu Team            2
-    PPA for No Privileges Person   1
+    PPA with the highest number of uploads during the last 7 days
+    PPA for Celso Providelo        4 uploads
+    PPA for Mark Shuttleworth      2 uploads
+    PPA for Ubuntu Team            2 uploads
+    PPA for No Privileges Person   1 uploads
 
 

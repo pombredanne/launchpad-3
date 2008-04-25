@@ -721,7 +721,7 @@ class ArchiveSet:
     def getMostActivePPAsForDistribution(self, distribution):
         """See `IArchiveSet`."""
         cur = cursor()
-        q = """
+        query = """
              SELECT a.id, count(*) as C
              FROM Archive a, SourcePackagePublishingHistory spph
              WHERE
@@ -735,7 +735,7 @@ class ArchiveSet:
              LIMIT 5
         """ % sqlvalues(distribution, ArchivePurpose.PPA)
 
-        cur.execute(q)
+        cur.execute(query)
 
         return [(Archive.get(int(archive_id)), archive_activity)
                 for archive_id, archive_activity in cur.fetchall()]
