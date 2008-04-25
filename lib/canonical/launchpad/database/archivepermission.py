@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 
-__all__ = ['ArchivePermission']
+__all__ = [
+    'ArchivePermission',
+    'ArchivePermissionSet',
+    ]
 
 from sqlobject import ForeignKey
 from zope.interface import implements
@@ -14,7 +17,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import IArchivePermission
+from canonical.launchpad.interfaces import (
+    IArchivePermission, IComponent, ISourcePackageName, ISourcePackageNameSet)
 
 
 class ArchivePermission(SQLBase):
@@ -40,3 +44,44 @@ class ArchivePermission(SQLBase):
         foreignKey='Sourcepackagename', dbname='sourcepackagename',
         notNull=False)
 
+
+class ArchivePermissionSet:
+    """See `IArchivePermissionSet`."""
+    implements(IArchivePermissionSet)
+
+    def checkAuthenticated(self, user, archive, permission, item):
+        """See `IArchivePermissionSet`."""
+        if IComponent.providedBy(item):
+            auth = ArchivePermission.selectBy(
+                archive=archive, permission=permission, person=person,
+                component=item)
+        elif ISourcePackageName.providedBy(item):
+            auth = ArchivePermission.selectBy(
+                archive=archive, permission=permission, person=user,
+                sourcepackagename=item)
+        else:
+            raise AssertionError(
+                "'item' is not an IComponent or an ISourcePackageName")
+
+        return auth
+
+    def uploadersForComponent(self, archive, component=None):
+        "See `IArchivePermissionSet`."""
+        return ArchivePermission.selectBy(
+            archive=archive, permission=ArchivePermissionType.UPLOAD,
+            component=component)
+
+    def uploadersForPackage(self, archive, sourcepackagename):
+        "See `IArchivePermissionSet`."""
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet).queryByName(sourcepackagename)
+        return ArchivePermission.selectBy(
+            archive=archive, permission=ArchivePermissionType.UPLOAD,
+            sourcepackagename=sourcepackagename)
+
+    def queueAdminsForComponent(self, archive, component):
+        "See `IArchivePermissionSet`."""
+        return ArchivePermission.selectBy(
+            archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
+            component=component)

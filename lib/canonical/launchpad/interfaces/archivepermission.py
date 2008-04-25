@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ArchivePermissionType',
     'IArchivePermission',
+    'IArchivePermissionSet',
     ]
 
 from zope.interface import Interface, Attribute
@@ -38,7 +39,7 @@ class ArchivePermissionType(DBEnumeratedType):
 
 
 class IArchivePermission(Interface):
-    """ArchivePermission interface."""
+    """The interface for `ArchivePermission`."""
 
     id = Attribute("The archive permission ID.")
 
@@ -56,4 +57,55 @@ class IArchivePermission(Interface):
 
     sourcepackagename = Attribute(
         "The source package name that this permission is related to.")
+
+
+class IArchivePermissionSet(Interface):
+    """The interface for `ArchivePermissionSet`."""
+
+    def checkAuthenticated(user, archive, permission, item):
+        """The `ArchivePermission` records that authenticate the user.
+
+        :param user: An `IPerson` whom should be checked for authentication.
+        :param archive: The context `IArchive` for the permission check.
+        :param permission: The `ArchivePermissionType` to check.
+        :param item: The context `IComponent` or `ISourcePackageName` for the
+            permission check.
+
+        Return all the `ArchivePermission` records that match the parameters
+        supplied.  If none are returned, it means the user is not
+        authenticated in that context.
+        """
+
+    def uploadersForComponent(archive, component=None):
+        """The `ArchivePermission` records for authorised component uploaders.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param component: Optional `IComponent`, if specified will only
+            return records for uploaders to that component, otherwise
+            all components are considered.
+
+        Return `ArchivePermission` records for all the uploaders who
+            are authorised for the supplied component.
+        """
+
+    def uploadersForPackage(archive, sourcepackagename):
+        """The `ArchivePermission` records for authorised package uploaders.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param sourcepackagename: An `ISourcePackageName` or a string
+            package name.
+
+        Return `ArchivePermission` records for all the uploaders who are
+            authorised to upload the named source package.
+        """
+
+    def queueAdminsForComponent(archive, component):
+        """The `ArchivePermission` records for authorised queue admins.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param component: The context `IComponent` for the permission check.
+
+        Return `ArchivePermission` records for all the users who are allowed
+        to administrate the distroseries upload queue.
+        """
 
