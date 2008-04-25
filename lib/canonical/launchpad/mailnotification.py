@@ -16,7 +16,7 @@ from email.Utils import formatdate
 import re
 import rfc822
 
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -24,8 +24,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
-    INotificationRecipientSet, IPersonSet, ISpecification,
+    IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
+    IMessageSet, INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
 from canonical.launchpad.mail import (
@@ -1728,27 +1728,40 @@ def notify_mailinglist_activated(mailinglist, event):
         simple_sendmail(from_address, to_address, subject, body, headers)
 
 
-def notify_message_held(event):
+def notify_message_held(message_approval, event):
     """Send a notification of a message hold to all team administrators."""
-    message = event.object
+    message_details = queryAdapter(message_approval, IHeldMessageDetails)
     team = event.mailing_list.team
     from_address = format_address(
         team.displayname, config.canonical.noreply_from_address)
     subject = (
-        'New posted mailing list message requiring your approval for %s'
+        'New mailing list message requiring approval for %s'
         % team.displayname)
     template = get_email_template('new-held-message.txt')
 
-    # The replacements are the same for everybody.
+    # The author string is unicode because that's what's most helpful for the
+    # web u/i.  However, we'd like this message to be ascii, or we'll have to
+    # encode the message body, which will make simple_sendmail() more
+    # difficult (or impossible) to use.  The 80% solution should be fine for
+    # now.
+    author = message_details.author.encode('ascii', 'ignore')
+
+    # Most of the replacements are the same for everyone.
     replacements = {
-        'subject': subject,
-        'from': from_address,
-        'date': date,
-        'message_id': message_id,
-        'review_url': review_url,
+        'subject': message_details.subject,
+        'from': author,
+        'date': message_details.date,
+        'message_id': message_details.message_id,
+        'review_url': '%s/+mailinglist-moderate' % canonical_url(team),
+        'team': team.displayname,
         }
-    body = MailWrapper(72).format(template % replacements, force_wrap=True)
 
     # Send one message to every team administrator.
+    person_set = getUtility(IPersonSet)
     for address in team.getTeamAdminsEmailAddresses():
+        user = person_set.getByEmail(address)
+        user_replacements = replacements.copy()
+        user_replacements['user'] = user.displayname
+        body = MailWrapper(72).format(
+            template % user_replacements, force_wrap=True)
         simple_sendmail(from_address, address, subject, body)
