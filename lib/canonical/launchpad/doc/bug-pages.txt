@@ -438,7 +438,8 @@ approved nomination will have created a task anyway.
     ...         return "unknown"
 
     >>> def print_tasks_and_nominations(tasks_and_nominations):
-    ...     for task_or_nomination in tasks_and_nominations:
+    ...     for task_or_nomination_dict in tasks_and_nominations:
+    ...         task_or_nomination = task_or_nomination_dict['row_context']
     ...         print "%s, %s, %s" % (
     ...             get_object_type(task_or_nomination),
     ...             task_or_nomination.status.title,

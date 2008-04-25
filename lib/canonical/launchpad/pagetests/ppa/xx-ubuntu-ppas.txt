@@ -16,7 +16,7 @@ published) and a list of context series and corresponding architectures
 supported for PPA.
 
     >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_supported_archs'))
+    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
     PPA supported series
     5.04
     "Hoary"
