@@ -406,7 +406,7 @@ If the link is a link to collection, the 'type' will always be
     >>> related_tasks, = [
     ...     param for param in full_params
     ...     if param.attrib['name'] == 'related_tasks_collection_link']
-    >>> related_tasks_link, = list(related_tasks)
+    >>> related_tasks_link, = related_tasks.getchildren()
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['type']
@@ -438,8 +438,8 @@ parameters, we provide the client with information about the possible
 values.
 
     >>> status_param, = [param for param in full_params
-    ...                  if param.attrib['name'] == 'status']
-    >>> status_options = list(status_param)
+    ...                   if param.attrib['name'] == 'status']
+    >>> status_options = status_param.getchildren()
     >>> status_options[0].tag
     '...option'
     >>> sorted(status.attrib['value'] for status in status_options)
