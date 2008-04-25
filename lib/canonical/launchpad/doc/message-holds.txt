@@ -50,17 +50,10 @@ IHeldMessageDetails interface.
     <first-post>
     >>> print details.subject
     My first test
-    >>> print details.author
-    foo.bar@canonical.com
+    >>> print details.author.displayname
+    Foo Bar
     >>> print details.date
     2000-08-01 01:08:59+00:00
-    >>> print details.body
-    This is my first post!
-    <BLANKLINE>
-    >>> details.email_message.__class__
-    <class email.Message.Message at ...>
-    >>> print details.email_message.get_content_type()
-    text/plain
 
 The new hold has several important pieces of information, such as the
 message id of the held message...
@@ -128,7 +121,8 @@ them that there is a message waiting for their approval.
     Test One has a new message requiring your approval.
     <BLANKLINE>
         Subject: My first test
-        From: foo.bar@canonical.com
+        Author name: Foo Bar
+        Author url: http://launchpad.dev/~name16
         Date: 2000-08-01 01:08:59+00:00
         Message-ID: <first-post>
     <BLANKLINE>

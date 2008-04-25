@@ -16,7 +16,7 @@ from email.Utils import formatdate
 import re
 import rfc822
 
-from zope.component import getUtility, queryAdapter
+from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -1730,8 +1730,8 @@ def notify_mailinglist_activated(mailinglist, event):
 
 def notify_message_held(message_approval, event):
     """Send a notification of a message hold to all team administrators."""
-    message_details = queryAdapter(message_approval, IHeldMessageDetails)
-    team = event.mailing_list.team
+    message_details = getAdapter(message_approval, IHeldMessageDetails)
+    team = message_approval.mailing_list.team
     from_address = format_address(
         team.displayname, config.canonical.noreply_from_address)
     subject = (
@@ -1739,17 +1739,11 @@ def notify_message_held(message_approval, event):
         % team.displayname)
     template = get_email_template('new-held-message.txt')
 
-    # The author string is unicode because that's what's most helpful for the
-    # web u/i.  However, we'd like this message to be ascii, or we'll have to
-    # encode the message body, which will make simple_sendmail() more
-    # difficult (or impossible) to use.  The 80% solution should be fine for
-    # now.
-    author = message_details.author.encode('ascii', 'ignore')
-
     # Most of the replacements are the same for everyone.
     replacements = {
         'subject': message_details.subject,
-        'from': author,
+        'author_name': message_details.author.displayname,
+        'author_url': canonical_url(message_details.author),
         'date': message_details.date,
         'message_id': message_details.message_id,
         'review_url': '%s/+mailinglist-moderate' % canonical_url(team),
@@ -1760,8 +1754,7 @@ def notify_message_held(message_approval, event):
     person_set = getUtility(IPersonSet)
     for address in team.getTeamAdminsEmailAddresses():
         user = person_set.getByEmail(address)
-        user_replacements = replacements.copy()
-        user_replacements['user'] = user.displayname
+        replacements['user'] = user.displayname
         body = MailWrapper(72).format(
-            template % user_replacements, force_wrap=True)
+            template % replacements, force_wrap=True)
         simple_sendmail(from_address, address, subject, body)

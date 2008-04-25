@@ -79,7 +79,8 @@ them that there is a message waiting for their approval.
     Team One has a new message requiring your approval.
     <BLANKLINE>
         Subject: A question
-        From: anne.person@example.com
+        Author name: Anne Person
+        Author url: http://launchpad.dev/~anne
         Date: 2000-08-01 01:08:59+00:00
         Message-ID: <first-post>
     <BLANKLINE>
