@@ -216,12 +216,12 @@ for every link in the JSON representation.
     >>> person_set_param.tag
     '...param'
     >>> person_set_param.attrib['path']
-    '[&quot;PersonSetCollectionAdapter_collection_link&quot;]'
+    "$['PersonSetCollectionAdapter_collection_link']"
     >>> person_set_param.attrib['name']
     'PersonSetCollectionAdapter_collection_link'
 
-This is saying that applying the JSON expression
-'["PersonSetCollectionAdapter_collection_link"]' to the JSON document
+This is saying that applying the JSONPath expression
+'$['PersonSetCollectionAdapter_collection_link']' to the JSON document
 will give you something interesting: a variable we like to call
 'PersonSetCollectionAdapter_collection_link'.
 
@@ -373,16 +373,15 @@ parameter for each key of the hash.
     >>> full_rep_names
     ['assignee_link', 'bug_link', ... 'title']
 
-In addition to a name, each parameter has a 'path', which is what you
-have to do to the JSON data structure to get the parameter's value.
+In addition to a name, each parameter has a 'path', a JSONPath
+expression you can apply to the JSON data structure to get the
+parameter's value.
 
     >>> sorted([param.attrib['path'] for param in full_params])
-    ['["assignee_link"]', '["bug_link"]', ... '["title"]']
+    ["$['assignee_link']", "$['bug_link']", ... "$['title']"]
 
-So to get the assignee link out of data structure 'foo' you need the
-Python code 'foo["assignee_link"]'. This is not a standard; it's
-something we made up due to the lack of an XPath-like standard for
-JSON. If such a standard emerges we should change it.
+So to get the assignee link out of a JSON data structure you need to
+look up the element called "assignee_link".
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end

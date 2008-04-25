@@ -72,20 +72,20 @@
 
   <!--All collection resources serve the same kind of representation. -->
   <representation mediaType="application/json" id="collection-page">
-    <param name="total_size" path="[&quot;total_size&quot;]"
+    <param name="total_size" path="$['total_size']"
            required="True" />
 
     <param name="next_collection_link"
-           path="[&quot;next_collection_link&quot;]">
+           path="$['next_collection_link']">
       <link type="#collection-page"/>
     </param>
 
     <param name="prev_collection_link"
-           path="[&quot;prev_collection_link&quot;]">
+           path="$['prev_collection_link']">
       <link type="#collection-page"/>
     </param>
 
-    <param name="entries" path="[&quot;entries&quot;]" required="True" />
+    <param name="entries" path="$['entries']" required="True" />
   </representation>
 
   <!--Begin representation and resource_type definitions for entry

@@ -108,7 +108,7 @@ class WadlServiceRootResourceAPI(WadlAPI):
             # We only expose collection resources for now.
             resource = CollectionResource(publication, request)
             resource_dicts.append({'name' : link_name,
-                                   'path' : "[&quot;%s&quot;]" % link_name,
+                                   'path' : "$['%s']" % link_name,
                                    'resource' : resource})
         return resource_dicts
 
@@ -201,7 +201,7 @@ class WadlFieldAPI(WadlAPI):
         to do a dictionary lookup. There's no XPath-like standard for
         JSON so we made something up that seems JSONic.
         """
-        return '["%s"]' % self.name()
+        return "$['%s']" % self.name()
 
     def is_link(self):
         """Is this field a link to another resource?"""
