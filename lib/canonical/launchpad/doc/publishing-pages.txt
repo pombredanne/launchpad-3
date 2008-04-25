@@ -37,8 +37,8 @@ for each file related with the alsa-utils source publication in ubuntu.
      'filesize': 3,
      'filename': u'alsa-utils_1.0.9a-4ubuntu1.dsc'}]
 
-Let's check a publication with binary files. 'iceweasel' source in
-Celso's PPA contains binary files that can be inspected.
+'iceweasel' source in Celso's PPA contains binary files that can be
+inspected.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
