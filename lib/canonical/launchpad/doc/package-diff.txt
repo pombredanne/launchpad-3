@@ -228,7 +228,74 @@ the version found in its context.
 
 == Performing a Diff ==
 
+Now we will actually perform a package diff and look at the results.
 
+In order for the uploaded files to be flushed to the librarian we need
+to commit the transaction here.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+The auxilliary function below will facilitate the viewing of diff results.
+
+    >>> import os
+    >>> from subprocess import Popen, PIPE
+    >>> import tempfile
+
+    >>> def get_diff_results(diff):
+    ...     lfa = diff.diff_content
+    ...     if lfa is None:
+    ...         return None
+    ...     lfa.open()
+    ...     pdiff_content = lfa.read()
+    ...     lfa.close()
+    ...     fhandle, fname = tempfile.mkstemp()
+    ...     fhandle = open(fname, 'w')
+    ...     fhandle.write(pdiff_content)
+    ...     fhandle.close()
+    ...     fhandle = open(fname)
+    ...     child = Popen(['gunzip'], stdin=fhandle, stdout=PIPE)
+    ...     diffresult = child.stdout.read()
+    ...     fhandle.close()
+    ...     return diffresult
+
+Let's obtain the diff that was created when package "biscuit - 1.0-8"
+was uploaded.
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+
+Now we can run it.
+
+    >>> diff.performDiff()
+
+Since it stores the diff results in the librarian we need to commit the
+transaction before we can access the file.
+
+    >>> transaction.commit()
+
+Now we can compare the package diff outcome to the debdiff output
+(obtained manually on the shell) for the packages in question.
+
+    >>> print get_diff_results(diff)
+    diff -u biscuit-1.0/contents biscuit-1.0/contents
+    --- biscuit-1.0/contents
+    +++ biscuit-1.0/contents
+    @@ -3 +2,0 @@
+    -1.0-8
+    diff -u biscuit-1.0/debian/changelog biscuit-1.0/debian/changelog
+    --- biscuit-1.0/debian/changelog
+    +++ biscuit-1.0/debian/changelog
+    @@ -1,9 +1,3 @@
+    -biscuit (1.0-8) hoary; urgency=low
+    -
+    -  * cookies
+    -
+    - -- Foo Bar <foo.bar@canonical.com>  ...
+    -
+     biscuit (1.0-1) hoary; urgency=low
+    <BLANKLINE>
+       * Initial Upstream package
+    <BLANKLINE>
 
 
 == Browsing Diffs ==
