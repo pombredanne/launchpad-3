@@ -4,6 +4,10 @@ Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
 people, a team and its team mailing list.
 
+    # login() as an admin so that we can call join() on anyone
+    # and change their mailing list auto-subscription settings.
+    >>> login('foo.bar@canonical.com')
+
     # We'll need this throughout the test script.
     >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -25,9 +29,6 @@ Anne gets two email addresses.  One is her preferred address...
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one, list_one = new_team('team-one', with_list=True)
 
-    # login() as an admin so that we can call IPerson.join() on any
-    # person/team we want.
-    >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
     >>> bart.join(team_one)
 
@@ -648,55 +649,57 @@ to.
 Calling IMailingList.subscribe() directly will always subscribe a
 person, regardless of their mailing list auto-subscription settings,
 and raise errors if there are any problems.  Calling
-IPerson.subscribeToMailingList() will take these settings into account
+IPerson.autoSubscribeToMailingList() will take these settings into account
 and try to recover gracefully from errors.  The method will return a
 True or False value to indicate if the user was subscribed to the list.
 
     >>> team_eight, list_eight = new_team('team-eight', with_list=True)
+    >>> mary = new_person('Mary', use_default_autosubscribe_policy=True)
 
-Anne is not a member of list-eight, so she will have no problem joining.
+Mary is not a member of list-eight, so she will have no problem joining.
 
-    >>> anne.subscribeToMailingList(list_eight)
+    >>> mary.autoSubscribeToMailingList(list_eight)
     True
-    >>> print list_eight.getSubscription(anne)
+    >>> print list_eight.getSubscription(mary)
     <security ...MailingListSubscription instance ...>
 
-Subscribing a second time will fail.
+Subscribing a second time will do nothing.
 
-    >>> anne.subscribeToMailingList(list_eight)
+    >>> mary.autoSubscribeToMailingList(list_eight)
     False
 
-Subscribing to an inactive list fails.
+Subscribing to an inactive list also does nothing.
 
     >>> team_off, list_off = new_team('team-off', with_list=True)
     >>> list_off.deactivate()
     >>> list_off.isUsable()
     False
 
-    >>> anne.subscribeToMailingList(list_off)
+    >>> mary.autoSubscribeToMailingList(list_off)
     False
 
 If a team's mailing list is non-existant, then the method will try to
 recover gracefully.
 
     >>> team_sans_list = new_team('sans-list', with_list=False)
-    >>> anne.subscribeToMailingList(team_sans_list.mailing_list)
+    >>> mary.autoSubscribeToMailingList(team_sans_list.mailing_list)
     False
 
 
 And we can't subscribe someone who does not have a preferred email address.
 
-    >>> qbert = new_person('Qbert', set_preferred_email=False)
+    >>> qbert = new_person('Qbert', set_preferred_email=False,
+    ...                    use_default_autosubscribe_policy=True)
     >>> print qbert.preferredemail
     None
 
-    >>> qbert.subscribeToMailingList(list_eight)
+    >>> qbert.autoSubscribeToMailingList(list_eight)
     False
 
 
 === Auto-subscription policy settings ===
 
-Anne's auto-subscription settings are taken into account when signing
+Mary's auto-subscription settings are taken into account when signing
 up for the list.
 
     >>> from canonical.launchpad.interfaces.mailinglistsubscription import (
@@ -709,20 +712,20 @@ By default, new users have a policy to only join a list if they
 explicitly request it.  If someone else adds them to a list, then they
 are only subscribed to the list if their policy is set to 'ALWAYS'.
 
-    >>> kathy = new_person('Kathy')
+    >>> kathy = new_person('Kathy', use_default_autosubscribe_policy=True)
     >>> kathy.mailing_list_auto_subscribe_policy
     <...ON_REGISTRATION...>
 
-    >>> kathy.subscribeToMailingList(list_eight, requester=anne)
+    >>> kathy.autoSubscribeToMailingList(list_eight, requester=mary)
     False
 
     >>> kathy.mailing_list_auto_subscribe_policy = ALWAYS
-    >>> kathy.subscribeToMailingList(list_eight, requester=anne)
+    >>> kathy.autoSubscribeToMailingList(list_eight, requester=mary)
     True
 
 Setting the policy to NEVER should be self-explanatory.
 
     >>> norbert = new_person('Norbert')
     >>> norbert.mailing_list_auto_subscribe_policy = NEVER
-    >>> norbert.subscribeToMailingList(list_eight)
+    >>> norbert.autoSubscribeToMailingList(list_eight)
     False
