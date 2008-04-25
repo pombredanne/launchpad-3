@@ -207,8 +207,8 @@ immediately afterwards:
     'application/json'
 
 The JSON representation contains a link for each collection resource
-exposed at the top level. The WADL description of the JSON
-representation shows each link as a <param> tag.
+exposed at the top level. The WADL representation has a <param> tag
+for every link in the JSON representation.
 
     >>> person_set_param = [
     ...     param for param in service_root_repr
@@ -227,8 +227,8 @@ will give you something interesting: a variable we like to call
 
 What's special about this variable? Well, it's a link to another
 resource. This is represented in WADL by giving the <param> tag a
-child <link> tag. This tag explains what sort of resource is at the
-other end of the link.
+child <link> tag. The <link> tag explains what sort of resource is at
+the other end of the link.
 
     >>> person_set_param_link, = list(person_set_param)
     >>> person_set_param_link.tag
@@ -240,21 +240,21 @@ A WADL client can read this and know that if it ever finds a resource
 of type "service-root", it can send a GET request to that URL and get
 back a JSON document. By applying the JSON expression
 '["PersonSetCollectionAdapter_collection_link"]' to that document, it
-will find the URL to the list of people. The list of people is the
-resource type defined at
+will find the URL to the list of people. The list of people has the
+characteristics described (in WADL format) at
 http://api.launchpad.dev/beta/#PersonSetCollectionAdapter.
 
 But where is the WADL client going to find a resource of type
-"service-root" in the first place? The <resources> tag explains
+"service-root" in the first place? The <resources> tag will explain
 everything.
-
-As with the <resources> tags shown earlier, this one contains a single
-<resource> tag.
 
     >>> resources.tag
     '...resources'
     >>> resources.attrib['href']
     'http://api.launchpad.dev/beta/'
+
+As with the <resources> tags shown earlier, this one contains a single
+<resource> tag.
 
     >>> resource, = resources
     >>> resource.tag
@@ -271,12 +271,12 @@ service root! Who would have thought?
 == The rest of the document ==
 
 Looking at the children of the <application> tag can be
-overwhelming. The relatively simple definition of the service root
-comes first, but then there are a huge number of <representation> and
-<resource_type> tags that don't have anything to do directly with the
-service root: they form a description of the web service as a
-whole. I'll explain the large-scale structure of the document and then
-show some examples in detail.
+overwhelming. The description of the service root resource is
+relatively simple, but then there are a huge number of
+<representation> and <resource_type> tags that don't have anything to
+do directly with the service root: they form a description of the web
+service as a whole. I'll explain the large-scale structure of the
+document and then show some examples in detail.
 
 The first few tags are <resource_type> tags which describe the
 different possible kinds of collections: person collections, bug
