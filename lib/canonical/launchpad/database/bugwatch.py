@@ -43,7 +43,7 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.RT:          'Ticket/Display.html?id=%s',
     BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
     BugTrackerType.TRAC:        'ticket/%s',
-    BugTrackerType.SAVANE:    'bugs/?%s',
+    BugTrackerType.SAVANE:      'bugs/?%s',
     }
 
 
@@ -448,7 +448,7 @@ class BugWatchSet(BugSetBase):
             return base_url, remote_bug
 
     def parseSavaneURL(self, scheme, host, path, query):
-        """Extract Savame base URL and bug ID."""
+        """Extract Savane base URL and bug ID."""
         # Savane bugs URLs are in the form /bugs/?<bug-id>, so we
         # exclude any path that isn't '/bugs/'. We also exclude query
         # string that have a length of more or less than one, since in
