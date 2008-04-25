@@ -2985,10 +2985,15 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     schema = IEmailAddress
 
+    # Custom fields for validated and unvalidated email addresses.
     custom_widget('VALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
+
+    # Custom fields for the mailing list auto-subscription policy.
+    custom_widget('mailing_list_auto_subscribe_policy',
+                  LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
         """Set up fields for this view.
@@ -3002,7 +3007,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                             self._unvalidated_emails_field() +
                             FormFields(TextLine(__name__='newemail',
                                                 title=u'Add a new address'))
-                            + self._mailing_list_fields())
+                            + self._mailing_list_fields()
+                            + self._autosubscribe_policy_fields())
 
     @property
     def initial_values(self):
@@ -3016,14 +3022,26 @@ class PersonEditEmailsView(LaunchpadFormView):
         address: then, that address is used as the default validated
         email address.
         """
+        # Defaults for the user's email addresses.
         validated = self.context.preferredemail
         if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        return dict(VALIDATED_SELECTED=validated,
+        defaults = dict(VALIDATED_SELECTED=validated,
                     UNVALIDATED_SELECTED=unvalidated)
+
+        # Defaults for the mailing list autosubscribe buttons.
+        policy = self.context.mailing_list_auto_subscribe_policy
+        defaults.update(mailing_list_auto_subscribe_policy=policy)
+
+        return defaults
+
+    def setUpWidgets(self, context=None):
+        super(PersonEditEmailsView, self).setUpWidgets(context)
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        widget.display_label = False
 
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
@@ -3104,6 +3122,15 @@ class PersonEditEmailsView(LaunchpadFormView):
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
         return FormFields(*fields)
+
+    def _autosubscribe_policy_fields(self):
+        """Create a field for each mailing list auto-subscription option.
+        """
+        return FormFields(
+            Choice(__name__='mailing_list_auto_subscribe_policy',
+                   source=MailingListAutoSubscribePolicy),
+            custom_widget=self.custom_widgets[
+                    'mailing_list_auto_subscribe_policy'])
 
     @property
     def mailing_list_widgets(self):
@@ -3395,6 +3422,25 @@ class PersonEditEmailsView(LaunchpadFormView):
         if dirty:
             self.request.response.addInfoNotification(
                 "Subscriptions updated.")
+        self.next_url = self.action_url
+
+    # Actions to do with mailing list auto-subscription policy.
+
+    def validate_action_update_autosubscribe_policy(self, action, data):
+        """Ensure that the requested auto-subscribe setting is valid."""
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        self.validate_widgets(data, widget.name)
+        return self.errors
+
+    @action(
+        _('Update Policy'),
+        name="update_autosubscribe_policy",
+        validator=validate_action_update_autosubscribe_policy)
+    def action_update_autosubscribe_policy(self, action, data):
+        newpolicy = data['mailing_list_auto_subscribe_policy']
+        self.context.mailing_list_auto_subscribe_policy = newpolicy
+        self.request.response.addInfoNotification(
+            'Your auto-subscription policy has been updated.')
         self.next_url = self.action_url
 
 
