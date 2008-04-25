@@ -445,11 +445,11 @@ class MailingList(SQLBase):
         return held_message
 
     def getReviewableMessages(self):
+        """See `IMailingList`."""
         return MessageApproval.select("""
             MessageApproval.mailing_list = %s AND
             MessageApproval.status = %s
             """ % sqlvalues(self, PostedMessageStatus.NEW),
-            distinct=True, clauseTables=['MailingList'],
             orderBy=['posted_date', 'message_id'])
 
 
