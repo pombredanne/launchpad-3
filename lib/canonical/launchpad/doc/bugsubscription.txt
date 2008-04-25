@@ -671,7 +671,7 @@ they receive an email notification.
 
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
-    >>> ff_bug.subscribe(sabdfl, lifeless)
+    >>> bug.subscribe(sabdfl, lifeless)
     <BugSubscription at ...>
     >>> transaction.commit()
     >>> print stub.test_emails[-1][2]
