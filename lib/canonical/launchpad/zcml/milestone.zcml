@@ -41,7 +41,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.milestone"
-        classes="MilestoneFacets MilestoneContextMenu" />
+        classes="MilestoneContextMenu" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"

@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'MilestoneSetNavigation',
     'MilestoneNavigation',
-    'MilestoneFacets',
     'MilestoneContextMenu',
     'MilestoneAddView',
     'MilestoneEditView',
@@ -41,20 +40,6 @@ class MilestoneSetNavigation(GetitemNavigation):
 class MilestoneNavigation(Navigation):
 
     usedfor = IMilestone
-
-
-class MilestoneFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IMilestone."""
-
-    usedfor = IMilestone
-
-    enable_only = ['overview']
-
-    def overview(self):
-        target = ''
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
 
 
 class MilestoneContextMenu(ContextMenu):
