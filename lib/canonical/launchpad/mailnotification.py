@@ -787,6 +787,7 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers,
         key=operator.attrgetter('displayname'))
 
+
 def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)

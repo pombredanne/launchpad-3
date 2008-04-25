@@ -14,6 +14,23 @@ contributors.
     Mark Shuttleworth (filter)
     No Privileges Person (filter)
 
+
+From this page, we are able to navigate to the translate page...
+
+    >>> print anon_browser.getLink('Translate').url
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
+
+... the download page...
+
+    >>> print anon_browser.getLink('Download').url
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
+
+... and the upload page...
+
+    >>> print anon_browser.getLink('Upload a file').url
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+
+
 User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:
 
