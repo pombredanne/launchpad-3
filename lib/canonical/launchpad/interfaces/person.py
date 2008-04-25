@@ -1575,6 +1575,11 @@ class IPersonSet(Interface):
         issuing one query for all the person records. This makes the
         method useful for filling the ORM cache, so that checks to
         .is_valid_person won't issue any DB queries.
+
+        XXX: This method exists mainly to fill the ORM cache for
+             ValidPersonOrTeamCache. It would be better to add a column
+             to the Person table. If we do that, this method can go
+             away. Bug 221901. -- Bjorn Tillenius, 2008-04-25
         """
 
 class IRequestPeopleMerge(Interface):
