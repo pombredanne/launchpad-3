@@ -7,7 +7,6 @@ an existing team.  This is done through an IMailingListSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListSet)
-    >>> from canonical.launchpad.database import MailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> verifyObject(IMailingListSet, list_set)
     True

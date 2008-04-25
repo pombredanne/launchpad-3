@@ -105,19 +105,21 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
-    CannotSubscribe, CannotUnsubscribe,
+    AccountStatus, BranchListingSort, BugTaskSearchParams,
+    BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
-    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
+    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
+    IPOTemplateSet, IPasswordEncryptor, IPerson,
+    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, PersonVisibility, QuestionParticipation,
-    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
