@@ -9,7 +9,7 @@ __all__ = [
 import cElementTree
 from email.Utils import parseaddr
 from StringIO import StringIO
-from xml.parsers.xmlproc import dtdparser, xmldtd, utils
+from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
 from zipfile import ZipFile
 from zope.component import getUtility
 from zope.interface import implements
