@@ -52,7 +52,7 @@ class BranchListingItem(BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    decorates(IBranch, 'branch')
+    decorates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus,
