@@ -56,9 +56,11 @@ from zope.schema import Choice
 from zope.schema.interfaces import IList
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.config import config
+from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -2331,12 +2333,52 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
 
     def render(self):
         """Render the BugTarget for text display."""
-        self.request.response.setHeader('Content-type', 'text/plain')
-        tasks = self.searchUnbatched()
+        self.request.response.setHeader(
+            'Content-type', 'text/plain')
 
-        # We use task.bugID rather than task.bug.id here as the latter
-        # would require an extra query per task.
-        return u''.join('%d\n' % task.bugID for task in tasks)
+        # This uses the BugTaskSet internal API instead of using the
+        # standard searchTasks() because this can retrieve a lot of 
+        # bugs and we don't want to load all of that data in memory. 
+        # Retrieving only the bug numbers is much more efficient.
+        search_params = self.buildSearchParams()
+
+        # XXX flacoste 2008/04/24 This should be moved to a 
+        # BugTaskSearchParams.setTarget().
+        if IDistroSeries.providedBy(self.context):
+            search_params.setDistroSeries(self.context)
+        elif IDistribution.providedBy(self.context):
+            search_params.setDistribution(self.context)
+        elif IProductSeries.providedBy(self.context):
+            search_params.setProductSeries(self.context)
+        elif IProduct.providedBy(self.context):
+            search_params.setProduct(self.context)
+        elif IProject.providedBy(self.context):
+            search_params.setProject(self.context)
+        elif (ISourcePackage.providedBy(self.context) or
+              IDistributionSourcePackage.providedBy(self.context)):
+            search_params.setSourcePackage(self.context)
+        else:
+            raise AssertionError('Uknown context type: %s' % self.context)
+
+        # XXX flacoste 2008/04/25 bug=221947 This should be moved to an
+        # IBugTaskSet.findBugIds(search_params) method.
+        # buildQuery() is part of the internal API.
+        taskset = removeSecurityProxy(getUtility(IBugTaskSet))
+        query, clauseTables, orderBy = taskset.buildQuery(search_params)
+
+        # Convert list of SQLObject order by spec into SQL.
+        order_by_clause = []
+        for field in orderBy:
+            if field[0] == '-':
+                field = "%s DESC" % field[1:]
+            order_by_clause.append(field)
+
+        sql = 'SELECT BugTask.bug FROM %s WHERE %s ORDER BY %s' % (
+            ', '.join(clauseTables), query, ', '.join(order_by_clause))
+
+        cur = cursor()
+        cur.execute(sql)
+        return u"".join("%d\n" % row[0] for row in cur.fetchall())
 
 
 def _by_targetname(bugtask):
