@@ -29,6 +29,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -805,11 +806,17 @@ class IHeldMessageDetails(Interface):
         description=_('The RFC 2822 Subject header.'),
         required=True, readonly=True)
 
-    author = Text(
+    sender = Text(
         title=_('Message author'),
         description=_('The message originator (i.e. author), formatted as '
                       'per RFC 2822 and derived from the RFC 2822 originator '
                       'fields From and Reply-To.  This is a unicode string.'),
+        required=True, readonly=True)
+
+    author = Object(
+        schema=IPerson,
+        title=_('Message author'),
+        description=_('The person who sent the message'),
         required=True, readonly=True)
 
     date = Text(

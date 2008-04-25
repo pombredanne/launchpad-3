@@ -3,6 +3,5 @@
 
 """Launchpad events."""
 
-from canonical.launchpad.event.message import *
 from canonical.launchpad.event.sqlobjectevent import *
 from canonical.launchpad.event.team import *

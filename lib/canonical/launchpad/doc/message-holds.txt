@@ -40,6 +40,21 @@ Then this message is inserted into the approval queue.
     >>> verifyObject(IMessageApproval, held_message)
     True
 
+We can get some useful details about this held message by adapting it to the
+IHeldMessageDetails interface.
+
+    >>> from zope.component import getAdapter
+    >>> from canonical.launchpad.interfaces import IHeldMessageDetails
+    >>> details = getAdapter(held_message, IHeldMessageDetails)
+    >>> print details.message_id
+    <first-post>
+    >>> print details.subject
+    My first test
+    >>> print details.author.displayname
+    Foo Bar
+    >>> print details.date
+    2000-08-01 01:08:59+00:00
+
 The new hold has several important pieces of information, such as the
 message id of the held message...
 
@@ -106,7 +121,8 @@ them that there is a message waiting for their approval.
     Test One has a new message requiring your approval.
     <BLANKLINE>
         Subject: My first test
-        From: foo.bar@canonical.com
+        Author name: Foo Bar
+        Author url: http://launchpad.dev/~name16
         Date: 2000-08-01 01:08:59+00:00
         Message-ID: <first-post>
     <BLANKLINE>
@@ -314,3 +330,50 @@ just those new messages needing approval for a specific list.
     ...     print_hold(message_hold)
     <sixth-post> test-two My sixth test
     <seventh-post> test-two My seventh test
+
+
+== Non-ASCII hold notifications ==
+
+When a message is sent by a person who's name contains non-ASCII characters,
+the notification message is properly encoded.
+
+    # Ignore any notifications up to this point.
+    >>> ignore = mail_helpers.pop_notifications()
+
+    >>> message = message_set.fromEmail("""\
+    ... From: carlos@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: =?iso-8859-1?q?Adi=C3=B3s?=
+    ... Message-ID: <eighth-post>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... This is my first post!
+    ... """)
+    >>> held_message = list_one.holdMessage(message)
+
+    >>> mail_helpers.print_emails()
+    From: Test One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Subject: New mailing list message requiring approval for Test One
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Test One has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: Adi=C3=83=C2=B3s
+        Author name: Carlos Perell=C3=B3 Mar=C3=ADn
+        Author url: http://launchpad.dev/~carlos
+        Date: 2000-08-01 01:09:00+00:00
+        Message-ID: <eighth-post>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~test-one/+mailinglist-moderate
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------

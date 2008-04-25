@@ -13,7 +13,7 @@ from cgi import escape
 from textwrap import TextWrapper
 from urllib import quote
 
-from zope.component import queryAdapter
+from zope.component import getAdapter
 from zope.interface import Attribute, Interface
 
 from canonical.cachedproperty import cachedproperty
@@ -111,7 +111,7 @@ class HeldMessageView:
         # details in order to present the u/i.  We need to adapt the
         # IMessageApproval into an IHeldMessageDetails in order to get most of
         # that extra detailed information.
-        self.details = queryAdapter(self.context, IHeldMessageDetails)
+        self.details = getAdapter(self.context, IHeldMessageDetails)
         # Some of the attributes are clear pass-throughs.
         self.message_id = self.details.message_id
         self.subject = self.details.subject
@@ -120,8 +120,7 @@ class HeldMessageView:
         # The author field is very close to what the details has, except that
         # the view wants to include a link to the person's overview page.
         self.author = '<a href="%s">%s</a>' % (
-            canonical_url(self.details.message.owner),
-            self.details.author)
+            canonical_url(self.details.author), self.details.sender)
         # Finally, the body text summary and details must be calculated from
         # the plain text body of the details object.
         self._split_body()

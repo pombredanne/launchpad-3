@@ -23,13 +23,15 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
-from canonical.launchpad.event import MessageHeldEvent, SQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, IHeldMessageDetails,
@@ -434,18 +436,15 @@ class MailingList(SQLBase):
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
                                        mailing_list=self)
-        # XXX BarryWarsaw is there any way to avoid this?
-        import transaction
-        transaction.commit()
-        notify(MessageHeldEvent(self, held_message))
+        notify(SQLObjectCreatedEvent(held_message))
         return held_message
 
     def getReviewableMessages(self):
+        """See `IMailingList`."""
         return MessageApproval.select("""
             MessageApproval.mailing_list = %s AND
             MessageApproval.status = %s
             """ % sqlvalues(self, PostedMessageStatus.NEW),
-            distinct=True, clauseTables=['MailingList'],
             orderBy=['posted_date', 'message_id'])
 
 
@@ -583,21 +582,23 @@ class HeldMessageDetails:
         assert len(messages) == 1, (
             'Expected exactly one message with Message-ID: %s' %
             self.message_id)
-        #from zope.security.proxy import removeSecurityProxy
-        #naked_message = removeSecurityProxy(messages[0])
-        self.message = messages[0] # naked_message
+        self.message = messages[0]
         self.subject = self.message.subject
         self.date = self.message.datecreated
+        self.author = self.message.owner
+
+    @cachedproperty
+    def email_message(self):
         self.message.raw.open()
         try:
-            self.email_message = message_from_string(self.message.raw.read())
+            return message_from_string(self.message.raw.read())
         finally:
             self.message.raw.close()
         self.body = self.message.text_contents
 
-    @property
-    def author(self):
-        """Return the sender, but as a link to their person page."""
+    @cachedproperty
+    def sender(self):
+        """See `IHeldMessageDetails`."""
         originators = self.email_message.get_all('from', [])
         originators.extend(self.email_message.get_all('reply-to', []))
         if len(originators) == 0:
@@ -610,3 +611,8 @@ class HeldMessageDetails:
                 bytes.decode(charset, 'replace').encode('utf-8'))
         header = make_header(zip(unicode_parts, repeat('utf-8')))
         return unicode(header)
+
+    @cachedproperty
+    def body(self):
+        """See `IHeldMessageDetails`."""
+        return self.message.text_contents
