@@ -6,10 +6,7 @@ __all__ = [
     'PackageDiffSet',
     ]
 
-from datetime import datetime
 import os
-import re
-from StringIO import StringIO
 import shutil
 from subprocess import Popen
 import tempfile
@@ -98,7 +95,7 @@ class PackageDiff(SQLBase):
 
             # All downloads are done. Construct the name of the resulting
             # diff file.
-            result_filename='%s-%s.%s-%s.diff' % (
+            result_filename = '%s-%s.%s-%s.diff' % (
                 self.from_source.sourcepackagename.name,
                 self.from_source.version,
                 self.to_source.sourcepackagename.name,

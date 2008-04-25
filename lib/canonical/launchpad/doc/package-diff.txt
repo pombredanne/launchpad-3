@@ -238,7 +238,6 @@ to commit the transaction here.
 
 The auxilliary function below will facilitate the viewing of diff results.
 
-    >>> import os
     >>> from subprocess import Popen, PIPE
     >>> import tempfile
 
