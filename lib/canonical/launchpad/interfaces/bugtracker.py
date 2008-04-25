@@ -125,7 +125,8 @@ class BugTrackerType(DBEnumeratedType):
         Savane
 
         Savane is a web-based project hosting system which includes
-        bug, support and request tracking.
+        support and request tracking. The best-known example of Savane
+        is GNU's Savannah.
         """)
 
 
