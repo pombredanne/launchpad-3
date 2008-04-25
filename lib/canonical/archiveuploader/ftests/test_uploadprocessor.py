@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
 
@@ -32,8 +33,9 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IDistroSeriesSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus)
+    IDistroSeriesSet, ILibraryFileAliasSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
+
 from canonical.launchpad.mail import stub
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 
@@ -97,7 +99,8 @@ class TestUploadProcessorBase(unittest.TestCase):
         Use *initialiseFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
 
-        Also sets 'changeslist' and 'nominatedarchindep' properly.
+        Also sets 'changeslist' and 'nominatedarchindep' properly and
+        creates a chroot for breezy-autotest/i386 distroarchseries.
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -109,8 +112,18 @@ class TestUploadProcessorBase(unittest.TestCase):
         breezy_i386 = self.breezy.newArch(
             'i386', bat['i386'].processorfamily, True, self.breezy.owner)
         self.breezy.nominatedarchindep = breezy_i386
+
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        breezy_i386.addOrUpdateChroot(fake_chroot)
+
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
+
+    def addMockFile(self, filename, content="anything"):
+        """Return a librarian file."""
+        return getUtility(ILibraryFileAliasSet).create(
+            filename, len(content), StringIO(content),
+            'application/x-gtar')
 
     def queueUpload(self, upload_name, relative_path=""):
         """Queue one of our test uploads.
