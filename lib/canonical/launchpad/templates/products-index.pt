@@ -46,7 +46,7 @@
         were found, so we're displaying only the ones that are most relevant
         to your search terms.
         If the project you are looking for is not on the list below, please
-        do another search with more relevant search terms.  
+        do another search with more relevant search terms.
       </p>
 
       <p>
@@ -99,10 +99,9 @@
       <h2>Why register?</h2>
 
       <p id="application-summary">
-        Launchpad is designed to make it much easier to collaborate with
-        other free software projects. Registering a project here will mean
-        that you, and others, can collaborate efficiently on work related
-        to that project.
+        Launchpad helps people to work together by making it easy to share
+        code, bug reports, translations and ideas. To get started, search here
+        for a project you want to know more about.
       </p>
 
     </tal:non-empty-search-string>
@@ -111,10 +110,9 @@
   <tal:no_search condition="not: view/searchrequested">
 
     <p id="application-summary">
-      Launchpad is designed to make it much easier to collaborate with
-      other free software projects. Registering a project here will mean
-      that you, and others, can collaborate efficiently on work related
-      to that project.
+        Launchpad helps people to work together by making it easy to share
+        code, bug reports, translations and ideas. To get started, search here
+        for a project you want to know more about.
     </p>
 
     <div class="left">
