@@ -48,9 +48,11 @@
         <tal:message
           define="build context/binarypackagerelease/build;
                   archive build/archive;
+                  pocket build/pocket;
                   arch build/distroarchseries;
-                  distro arch/distroseries/distribution;
-                  message string:${distro/name} ${arch/displayname} in ${archive/title}"
+                  series arch/distroseries;
+                  distro series/distribution;
+                  message string:${distro/name} ${series/name}-${pocket/name/fmt:lower} ${arch/architecturetag} in ${archive/title}"
           replace="message" />
       </tal:binary_build_location>
     </li>

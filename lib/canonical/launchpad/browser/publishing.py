@@ -256,6 +256,12 @@ class BinaryPublishingRecordView(BasePublishingRecordView):
 
           * The publishing `DistroArchSeries` is not the same than where
             the binary was built (SBPPH -> BPR -> B -> DAS != SBPPH -> DAS).
+
+        Or
+
+          * The publishing pocket is not the same than where the binary was
+            built (SBPPH -> BPR -> B -> Pocket != SBPPH -> Pocket).
+
         """
         build = self.context.binarypackagerelease.build
 
@@ -263,6 +269,9 @@ class BinaryPublishingRecordView(BasePublishingRecordView):
             return True
 
         if self.context.distroarchseries != build.distroarchseries:
+            return True
+
+        if self.context.pocket != build.pocket:
             return True
 
         return False

@@ -191,13 +191,13 @@ distroarchseries and archive are presented.
     Date           Status      Target     Pocket  Component Section Version
     2006-01-26 ... Superseded  warty i386 release universe  editors  0.1-1
       Published on 2006-01-26
-      Copied from ubuntu hoary i386 in Primary Archive for Ubuntu Linux
+      Copied from ubuntu hoary-release i386 in Primary Archive for Ubuntu Linux
     ...
     2005-05-05 ... Published   warty i386 release  main     base     0.1-1
       Published on 2005-06-24
-      Copied from ubuntu hoary i386 in Primary Archive for Ubuntu Linux
+      Copied from ubuntu hoary-release i386 in Primary Archive for Ubuntu Linux
     ...
     2005-05-05 ... Published warty i386   release  main     base     2:1.9-1
       Published on 2005-06-20
-      Copied from  ubuntu hoary hppa in Primary Archive for Ubuntu Linux
+      Copied from  ubuntu hoary-release hppa in Primary Archive for Ubuntu Linux
     ...
