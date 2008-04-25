@@ -11,6 +11,12 @@ Launchpad to be eventually displayed in Launchpad's u/i.
     >>> team_one, list_one = new_team('team-one', True)
     >>> anne = new_person('Anne')
 
+    # We don't care about the email notifications sent when the mailing
+    # list was created, and we don't want the notification to confuse
+    # things later on in this test, so clear the queue.
+    >>> from canonical.launchpad.tests import mail_helpers
+    >>> ignore = mail_helpers.pop_notifications()
+
 Anne posts a message to the Team One list, but because she is not a member of
 the list, Mailman will hold the message for the team's administrators to
 approve or reject.
@@ -59,6 +65,36 @@ IMessageApprovalSet interface.
     <BLANKLINE>
     >>> held_message_anne.status
      <DBItem PostedMessageStatus.NEW, (0) New status>
+
+A notification message is sent to every team administrator informing
+them that there is a message waiting for their approval.
+
+    >>> mail_helpers.print_emails()
+    From: Team One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Subject: New mailing list message requiring approval for Team One
+    <BLANKLINE>
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Team One has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: A question
+        From: anne.person@example.com
+        Date: 2000-08-01 01:08:59+00:00
+        Message-ID: <first-post>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~team-one/+mailinglist-moderate
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 There are no messages waiting to be handled by Mailman yet.
 
