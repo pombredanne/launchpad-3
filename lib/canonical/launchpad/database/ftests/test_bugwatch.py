@@ -14,7 +14,7 @@ from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp import urlsplit
 from canonical.testing import LaunchpadFunctionalLayer
 
 
