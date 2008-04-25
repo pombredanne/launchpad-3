@@ -21,7 +21,7 @@ cd ~/canonical/lp-branches
 for branch in *; do
   cd $branch
   echo "Updating sourcecode dependencies for ${branch}"
-  utilities/link-external-sourcecode.py ../../lp-sourcedeps
+  utilities/link-external-sourcecode ../../lp-sourcedeps
   cd ..
 done
 
