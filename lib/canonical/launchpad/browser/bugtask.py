@@ -40,7 +40,6 @@ import pytz
 import re
 import urllib
 from operator import attrgetter
-import tempfile
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -2357,6 +2356,8 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
         else:
             raise AssertionError('Uknown context type: %s' % self.context)
 
+        # XXX flacoste 2008/04/25 bug=221947 This should be moved to an
+        # IBugTaskSet.findBugIds(search_params) method.
         # buildQuery() is part of the internal API.
         taskset = removeSecurityProxy(getUtility(IBugTaskSet))
         query, clauseTables, orderBy = taskset.buildQuery(search_params)
