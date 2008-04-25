@@ -594,7 +594,6 @@ class HeldMessageDetails:
             return message_from_string(self.message.raw.read())
         finally:
             self.message.raw.close()
-        self.body = self.message.text_contents
 
     @cachedproperty
     def sender(self):
