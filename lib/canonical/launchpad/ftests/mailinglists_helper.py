@@ -207,8 +207,14 @@ def new_person(first_name, set_preferred_email=True,
     """Create a new person with the given first name.
 
     The person will be given two email addresses, with the 'long form'
-    (e.g. anne.person@example.com) as the preferred address.  Return the new
-    person object.
+    (e.g. anne.person@example.com) as the preferred address.  Return
+    the new person object.
+
+    The person will also have their mailing list auto-subscription
+    policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
+    set to True. (This requires the Launchpad.Edit permission).  This
+    is useful for testing, where we often want precise control over
+    when a person gets subscribed to a mailing list.
     """
     variable_name = first_name.lower()
     full_name = first_name + ' Person'

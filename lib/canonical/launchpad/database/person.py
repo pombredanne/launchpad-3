@@ -1239,7 +1239,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             notify(event(person, self))
 
         if not person.isTeam() and may_subscribe_to_list:
-            person.subscribeToMailingList(self.mailing_list,
+            person.autoSubscribeToMailingList(self.mailing_list,
                                           requester=reviewer)
 
     # The three methods below are not in the IPerson interface because we want
@@ -2085,7 +2085,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return StructuralSubscription.selectBy(
             subscriber=self, orderBy=['-date_created'])
 
-    def subscribeToMailingList(self, mailinglist, requester=None):
+    def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
         if mailinglist is None or not mailinglist.isUsable():
             return False
@@ -2106,8 +2106,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if policy == MailingListAutoSubscribePolicy.ALWAYS:
             mailinglist.subscribe(self)
             return True
-        elif (requester is self) and \
-                policy == MailingListAutoSubscribePolicy.ON_REGISTRATION:
+        elif (requester is self and
+              policy == MailingListAutoSubscribePolicy.ON_REGISTRATION):
             # Assume that we requested to be joined.
             mailinglist.subscribe(self)
             return True
