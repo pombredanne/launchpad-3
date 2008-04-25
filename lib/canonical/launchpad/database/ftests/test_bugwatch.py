@@ -6,12 +6,15 @@ __metaclass__ = type
 
 import unittest
 
+from urlparse import urlunsplit
+
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
+from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -168,6 +171,34 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         # The SourceForge tracker is always registered, so this test
         # doesn't make sense for SourceForge URLs.
         pass
+
+    def test_aliases(self):
+        """Test that parsing SourceForge URLs works with the SF aliases."""
+        original_bug_url = self.bug_url
+        original_base_url = self.base_url
+        url_bits = urlsplit(original_bug_url)
+        sf_bugtracker = self.bugtracker_set.getByName(name='sf')
+
+        # Carry out all the applicable tests for each alias.
+        for alias in sf_bugtracker.aliases:
+            alias_bits = urlsplit(alias)
+            self.base_url = alias
+
+            bug_url_bits = (
+                alias_bits[0],
+                alias_bits[1],
+                url_bits[2],
+                url_bits[3],
+                url_bits[4],
+                )
+
+            self.bug_url = urlunsplit(bug_url_bits)
+
+            self.test_registered_tracker_url()
+            self.test_unknown_baseurl()
+
+        self.bug_url = original_bug_url
+        self.base_url = original_base_url
 
 
 class XForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
