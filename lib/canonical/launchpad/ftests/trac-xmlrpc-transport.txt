@@ -103,7 +103,7 @@ its last modified time.
     2: closed.
     3: fixed.
 
-Specifiying a level of 2 will return each bug's metadata and a list of
+Specifying a level of 2 will return each bug's metadata and a list of
 comment IDs for each bug.
 
 We'll add some sample comments to demonstrate this.
@@ -129,6 +129,13 @@ We'll add some sample comments to demonstrate this.
     2: ['2-1', '2-2']
     3: []
 
+We'll also define a helper function to print comments out.
+
+    >>> def print_bug_comment(comment):
+    ...     for key in sorted(comment.keys()):
+    ...         print "%s: %s" % (key, comment[key])
+    ...     print ""
+
 At level 3 the full list of comment dicts is returned along with the bug
 metadata, but not including comment authors.
 
@@ -136,15 +143,24 @@ metadata, but not including comment authors.
     >>> for bug in bugs:
     ...     print "Comments for bug %s:" % bug['id']
     ...     for comment in bug['comments']:
-    ...         print comment
+    ...         print_bug_comment(comment)
     Comments for bug 1:
-    {'comment': 'Hello, world!', 'timestamp': 1208514600,
-     'type': 'comment', 'id': '1-1'}
+    comment: Hello, world!,
+    id: 1-1
+    timestamp: 1208514600,
+    type: comment,
+
     Comments for bug 2:
-    {'comment': 'Hello again, world!', 'timestamp': 1208514600,
-     'type': 'comment', 'id': '2-1'}
-    {'comment': 'More commentary.', 'timestamp': 1208514600,
-     'type': 'comment', 'id': '2-2'}
+    comment: Hello again, world!
+    id: 2-1
+    timestamp: 1208514600
+    type: comment
+
+    comment: More commentary.
+    id: 2-2
+    timestamp: 1208514600
+    type: comment,
+
     Comments for bug 3:
 
 The criteria dict has two possible keys: modified_since and bugs.
@@ -201,17 +217,28 @@ are in the bugs list being returned.
 == launchpad.get_comments() ==
 
 get_comments() returns a list of comment dicts. The comment dicts
-returned correspond to the comment IDs passed in the comments paramter.
+returned correspond to the comment IDs passed in the comments parameter.
 
     >>> comments_to_retrieve = ['1-1', '2-1', '2-2']
     >>> time_snapshot, comments = trac_transport.get_comments(
     ...     comments_to_retrieve)
     >>> for comment in comments:
-    ...     print comment
-    {'comment': 'Hello, world!', 'time': 1208514600,
-     'type': 'comment', 'id': '1-1', 'user': 'test@canonical.com'}
-    {'comment': 'Hello again, world!', 'time': 1208514600,
-     'type': 'comment', 'id': '2-1', 'user': 'test@canonical.com'}
-    {'comment': 'More commentary.', 'time': 1208514600,
-     'type': 'comment', 'id': '2-2', 'user': 'foo.bar@canonical.com'}
+    ...     print_bug_comment(comment)
+    comment: Hello, world!
+    id: 1-1
+    time: 1208514600
+    type: comment
+    user: test@canonical.com
+
+    comment: Hello again, world!
+    id: 2-1
+    time: 1208514600
+    type: comment
+    user: test@canonical.com
+
+    comment: More commentary.
+    id: 2-2
+    time: 1208514600
+    type: comment
+    user: foo.bar@canonical.com
 

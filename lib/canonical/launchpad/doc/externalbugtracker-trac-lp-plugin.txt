@@ -383,8 +383,8 @@ the poster of a given comment.
 
 getPosterForComment() handles situations in which only an email address
 is supplied for the 'user' field by returning None as the user's
-displayname. When this is passed to IPersonSet.ensurePerson() a display name
-will be generated for the user from their email address.
+displayname. When this is passed to IPersonSet.ensurePerson() a display
+name will be generated for the user from their email address.
 
     >>> trac.fetchComments(bug_watch_two, ['2-1', '2-2'])
     >>> trac.getPosterForComment(bug_watch_two, '2-1')

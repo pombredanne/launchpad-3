@@ -599,20 +599,20 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # For level 1, we return the bug's metadata, too.
         elif level == 1:
             bugs_to_return = [bug.asDict() for bug in bugs_to_return]
-        # At level 2 we also return comment IDs for each bug.
+        # At level 2, we also return comment IDs for each bug.
         elif level == 2:
             bugs_to_return = [
                 dict(bug.asDict(), comments=[
                     comment['id'] for comment in bug.comments])
                 for bug in bugs_to_return]
-        # At level 3 we return the full comment dicts along with the bug
-        # metadata. Tne comment dicts do not include the user field,
+        # At level 3, we return the full comment dicts along with the
+        # bug metadata. Tne comment dicts do not include the user field,
         # however.
         elif level == 3:
             bugs_to_return = [
-                dict(bug.asDict(), comments=[
-                    strip_trac_comment(dict(comment))
-                    for comment in bug.comments])
+                dict(bug.asDict(),
+                     comments=[strip_trac_comment(dict(comment))
+                               for comment in bug.comments])
                 for bug in bugs_to_return]
 
         # Tack the missing bugs onto the end of our list of bugs. These
