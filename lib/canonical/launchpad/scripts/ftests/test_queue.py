@@ -23,8 +23,8 @@ from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
-    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus)
+    IDistributionSet, ILibraryFileAliasSet, IPackageUploadSet, IPersonSet,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -261,6 +261,14 @@ class TestQueueTool(TestQueueBase):
         upload_bar_source()
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
+
+        # Add a chroot to breezy-autotest/i386, so the system can create
+        # builds for it.
+        a_file = getUtility(ILibraryFileAliasSet)[1]
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest['i386'].addOrUpdateChroot(a_file)
+
         LaunchpadZopelessLayer.txn.commit()
 
         LaunchpadZopelessLayer.switchDbUser("queued")

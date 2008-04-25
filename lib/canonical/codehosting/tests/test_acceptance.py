@@ -622,8 +622,12 @@ def make_smoke_tests(base_suite):
 def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
-    suite.addTest(make_server_tests(
-            base_suite, [make_sftp_server, make_bzr_ssh_server]))
+
+    # XXX: Disabling the AcceptanceTests tests due to them failing
+    #      intermittently. Bug 221762. -- Bjorn Tillenius, 2008-04-25
+    #suite.addTest(make_server_tests(
+    #        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))

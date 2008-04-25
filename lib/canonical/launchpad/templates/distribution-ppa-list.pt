@@ -39,7 +39,7 @@
           </div>
         </td>
         <td align="left">
-          <div id="ppa_supported_archs"
+          <div id="supports_virtualized_archs"
                tal:content="structure context/@@+portlet-ppa-architectures" />
         </td>
       </tr>
