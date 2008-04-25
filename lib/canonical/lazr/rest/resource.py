@@ -732,7 +732,7 @@ class ServiceRootResource(HTTPResource):
         with no request or context, and then passes the request in
         when it calls the service root object.
         """
-        pass
+        super(ServiceRootResource, self).__init__(None, None)
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""

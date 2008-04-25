@@ -285,14 +285,13 @@ describes the JSON document you get if you send GET to a collection.
 This code stores the <representation> tag in 'collection_rep' and the
 initial <resource_type> tags in 'collection_resource_types'.
 
-    >>> collection_rep = None
     >>> for index, child in enumerate(other_children):
     ...     if child.tag.endswith('representation'):
-    ...         collection_rep = child
-    ...         collection_cutoff = index
+    ...         last_collection_tag = index
     ...         break
 
-    >>> collection_resource_types = other_children[:collection_cutoff]
+    >>> collection_resource_types = other_children[:last_collection_tag]
+    >>> collection_rep = other_children[last_collection_tag]
 
 After that <representation> tag there's a group of three tags for
 every type of entry resource exposed through the web service. The
@@ -305,7 +304,7 @@ the client in response to PATCH requests. This code splits the tags
 into groups of three and stores the groups in
 'entry_resource_descriptions'.
 
-    >>> entry_resource_types = other_children[collection_cutoff+1:]
+    >>> entry_resource_types = other_children[last_collection_tag+1:]
     >>> entry_resource_descriptions = []
     >>> for index in range(0, len(entry_resource_types), 3):
     ...     resource_type = entry_resource_types[index]
