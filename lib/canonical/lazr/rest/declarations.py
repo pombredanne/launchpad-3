@@ -25,6 +25,8 @@ __all__ = [
     'generate_entry_adapter',
     'generate_entry_interface',
     'generate_operation_adapter',
+    'webservice_error',
+    'WebServiceExceptionView',
     ]
 
 import simplejson
@@ -185,6 +187,24 @@ def collection_default_content(f):
     tag['collection_default_content'] = f.__name__
 
     return f
+
+
+def webservice_error(status):
+    """Mark the exception with the HTTP status code to use.
+
+    That status code will be used by the view used to handle that kind of
+    exceptions on the web service.
+    """
+    frame = sys._getframe(1)
+    f_locals = frame.f_locals
+
+    # Try to make sure we were called from a class def.
+    if (f_locals is frame.f_globals) or ('__module__' not in f_locals):
+        raise TypeError(
+            "webservice_error() can only be used from within an exception "
+            "definition.")
+
+    f_locals['__lazr_webservice_error__'] = int(status)
 
 
 class _method_annotator:
@@ -406,6 +426,22 @@ def generate_collection_adapter(interface):
 
     protect_schema(factory, ICollection)
     return factory
+
+
+class WebServiceExceptionView:
+    """Generic view handling exceptions on the web service."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Generate the HTTP response describing the exception."""
+        response = self.request.response
+        response.setStatus(self.context.__lazr_webservice_error__)
+        response.setHeader('Content-Type', 'text/plain')
+
+        return str(self.context)
 
 
 class BaseResourceOperationAdapter(ResourceOperation):
