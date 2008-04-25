@@ -1,0 +1,54 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+  <div metal:fill-slot="body">
+  <tal:block define="flavour_name view/flavour/title;
+                     series_name view/series/title">
+  
+    <h1>Requesting an Ubuntu CD</h1>
+
+    <p>Ubuntu is available free of charge and we can send you a CD of the
+    latest version (<span tal:replace="series_name" />) with no extra
+    cost, but the delivery may take up to ten weeks, so you should consider
+    downloading the CD image if you have a fast Internet connection.
+    </p>
+    
+    <table id="chooseLinks">
+      <tr>
+      <tal:no-prerelease condition="not: view/prerelease_mode">
+        <td class="cdchoice" width="45%">
+          <a href="login">Request a CD of Ubuntu Desktop Edition</a>
+        </td>
+        <td width="10%">&nbsp;</td>
+        <td class="cdchoice" width="45%">
+          <a href="login-server">Request a CD of Ubuntu Server Edition</a>
+        </td>
+      </tal:no-prerelease>
+      <tal:prerelease condition="view/prerelease_mode">
+        <td class="cdchoice" width="45%">
+          <a href="login">Pre-order a CD of Ubuntu Desktop Edition</a>
+        </td>
+        <td width="10%">&nbsp;</td>
+        <td class="cdchoice" width="45%">
+          <a href="login-server">Pre-order a CD of Ubuntu Server Edition</a>
+        </td>
+      </tal:prerelease>
+      </tr>
+    </table>
+  
+    <p><a href="login">Check the status of an existing request</a></p>
+
+  </tal:block>
+  </div>
+</body>
+</html>

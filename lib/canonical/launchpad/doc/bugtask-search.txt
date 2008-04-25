@@ -172,7 +172,7 @@ If the search_comments config option is False, no bugs are found.
     >>> found_bugtasks.count()
     0
 
-    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS 
+    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS
 
 == Searching using bug full-text index ==
 
@@ -449,7 +449,7 @@ will not be included in the results returned by the bug commenter search.
 
 == Search for BugTasks assigned to milestones ==
 
-BugTaskSet.search() can return bugtasks associated with milestones. 
+BugTaskSet.search() can return bugtasks associated with milestones.
 No BugTask is associated yet with firefox milestone 1.0.
 
     >>> product_milestone = firefox.getMilestone('1.0')
@@ -488,6 +488,37 @@ This BugTask is also a BugTask of the milestone of the mozilla project.
     >>> for bugtask in milestone_tasks:
     ...     print bugTaskInfo(bugtask)
     2 1 Mozilla Firefox Firefox does not support SVG
+
+If a bug has one bugtask associated with a product and another bugtask
+associated with a product series, and if both tasks are assigned to the
+same milestone...
+
+    >>> firefox_1_0 = firefox.getSeries("1.0")
+    >>> productseries_task = bugtask_set.createTask(
+    ...     owner=no_priv, bug=bug_one, productseries=firefox_1_0)
+    >>> productseries_task.milestone = product_milestone
+    >>> syncUpdate(productseries_task)
+    >>> print bugTaskInfo(productseries_task)
+    40 1 Mozilla Firefox 1.0 Firefox does not support SVG
+
+...both of them are returned, by a search for bugs associated with the
+product milestone...
+
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+    40 1 Mozilla Firefox 1.0 Firefox does not support SVG
+
+...as well as by a search for bugs associated with the project milestone.
+
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+    40 1 Mozilla Firefox 1.0 Firefox does not support SVG
 
 
 == Bugs with partner packages ==
@@ -589,7 +620,7 @@ Here is the list of bugs for Ubuntu.
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 None of these bugs have any duplicates.
 
@@ -615,7 +646,7 @@ Searching again reveals bug #9 at the top of the list, since it now has a duplic
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 === Ordering by number of comments ===

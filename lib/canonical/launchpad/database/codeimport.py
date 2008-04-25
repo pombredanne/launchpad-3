@@ -179,7 +179,7 @@ class CodeImportSet:
                 "vcs-imports with the name %s" % (product.name, branch_name))
         import_branch = branch_set.new(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            creator=vcs_imports, owner=vcs_imports,
+            registrant=vcs_imports, owner=vcs_imports,
             product=product, url=None)
 
         code_import = CodeImport(

@@ -21,10 +21,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
 
-from canonical.config import config
-
 from canonical.buildd.utils import notes
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
 
 
@@ -50,7 +47,7 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     known-failures build attempts and thus saving build-farm time.
 
     For PPA publications we only consider architectures supported by PPA
-    subsystem (`DistroArchSeries`.ppa_supported flag) and P-a-s is turned
+    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is turned
     off to give the users the chance to test their fixes for upstream
     problems.
 
@@ -67,11 +64,14 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
 
     assert hint_string, 'Missing arch_hint_list'
 
-    # For PPA publications exclude non-PPA architectures and ignore P-a-s.
+    # Ignore P-a-s for PPA publications.
     if pubrec.archive.purpose == ArchivePurpose.PPA:
-        legal_archserieses = [
-            arch for arch in legal_archserieses if arch.ppa_supported]
         pas_verify = None
+
+    # The 'PPA supported' flag only applies to virtualized archives
+    if pubrec.archive.require_virtualized:
+        legal_archserieses = [
+            arch for arch in legal_archserieses if arch.supports_virtualized]
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
@@ -204,74 +204,14 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
-        registered_arch_ids = set(dar.id for dar in self._archserieses.keys())
-        series_arch_ids = set(dar.id for dar in distroseries_architectures)
-        legal_arch_ids = series_arch_ids.intersection(registered_arch_ids)
-        legal_archs = [dar for dar in distroseries_architectures
-                       if dar.id in legal_arch_ids]
-        if not legal_archs:
-            self._logger.debug(
-                "Chroots missing for %s, skipping" % distroseries.name)
-            return
-
-        self._logger.info("Supported architectures: %s" %
-                          " ".join(a.architecturetag for a in legal_archs))
-
-        pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, distroseries)
-
         sources_published = distroseries.getSourcesPublishedForAllArchives()
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            build_archs = determineArchitecturesToBuild(
-                pubrec, legal_archs, distroseries, pas_verify)
-
-            self._createMissingBuildsForPublication(pubrec, build_archs)
-
-        self.commit()
-
-    def _createMissingBuildsForPublication(self, pubrec, build_archs):
-        """Create new Build record for the requested archseries.
-
-        It verifies if the requested build is already inserted before
-        creating a new one.
-        The Build record is created for the archseries 'default_processor'.
-        """
-        for archseries in build_archs:
-            # Dismiss if there is no processor available for the
-            # archseries in question.
-            if not archseries.processors:
-                self._logger.debug(
-                    "No processors defined for %s: skipping %s"
-                    % (archseries.title, pubrec.displayname))
-                continue
-
-            build_candidate = pubrec.sourcepackagerelease.getBuildByArch(
-                archseries, pubrec.archive)
-
-            # Dismiss if build is already present for this specific
-            # distroarchseries or if it was already FULLYBUILT in any
-            # architecture.
-            if (build_candidate is not None and
-                (build_candidate.distroarchseries == archseries or
-                 build_candidate.buildstate == BuildStatus.FULLYBUILT)):
-                continue
-
-            # Create new Build record, its corresponding BuildQueue and
-            # score it, so it will be ready for dispatching.
-            build = pubrec.sourcepackagerelease.createBuild(
-                distroarchseries=archseries,
-                pocket=pubrec.pocket,
-                processor=archseries.default_processor,
-                archive=pubrec.archive)
-            build_queue = build.createBuildQueueEntry()
-            build_queue.score()
-            self._logger.debug(
-                "Created %s [%d] in %s (%d)" % (
-                    build.title, build.id, build.archive.title,
-                    build_queue.lastscore))
+            builds = pubrec.createMissingBuilds(logger=self._logger)
+            if len(builds) > 0:
+                self.commit()
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

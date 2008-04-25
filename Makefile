@@ -27,6 +27,7 @@ default: inplace
 schema: build
 	$(MAKE) -C database/schema
 	$(PYTHON) ./utilities/make-dummy-hosted-branches
+	rm -rf /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata

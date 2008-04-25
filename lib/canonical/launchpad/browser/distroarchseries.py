@@ -104,10 +104,11 @@ class DistroArchSeriesAddView(SQLObjectAddView):
         SQLObjectAddView.__init__(self, context, request)
 
     def create(self, architecturetag, processorfamily, official, owner,
-               ppa_supported):
+               supports_virtualized):
         """Create a new Port."""
         distroarchseries = self.context.newArch(
-            architecturetag, processorfamily, official, owner, ppa_supported)
+            architecturetag, processorfamily, official, owner,
+            supports_virtualized)
         self._nextURL = canonical_url(distroarchseries)
         return distroarchseries
 

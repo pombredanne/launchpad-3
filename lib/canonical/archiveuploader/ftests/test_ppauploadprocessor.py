@@ -55,7 +55,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             purpose=ArchivePurpose.PPA)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
-        self.breezy['i386'].ppa_supported = True
+        self.breezy['i386'].supports_virtualized = True
         self.layer.txn.commit()
 
         # Set up the uploadprocessor with appropriate options and logger
@@ -1099,10 +1099,6 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The binary size for an archive should only take into account one
         occurrence of arch-independent files published in multiple locations.
         """
-        # Make all breezy architectures PPA-supported.
-        for distroarchseries in self.breezy.architectures:
-            distroarchseries.ppa_supported = True
-
         # We need to publish an architecture-independent package
         # for a couple of distroseries in a PPA.
         publisher = SoyuzTestPublisher()
@@ -1113,8 +1109,13 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             archive=self.name16.archive, distroseries=self.breezy,
             status=PackagePublishingStatus.PUBLISHED)
 
-        # Publish To Warty:
+        # Create chroot for warty/i386, allowing binaries to build and
+        # thus be published in this architecture.
         warty = self.ubuntu['warty']
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        warty['i386'].addOrUpdateChroot(fake_chroot)
+
+        # Publish To Warty:
         pub_bin2 = publisher.getPubBinaries(
             archive=self.name16.archive, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
