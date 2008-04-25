@@ -627,7 +627,6 @@ def test_suite():
     #      Bug 221762. -- Bjorn Tillenius, 2008-04-25
     #suite.addTest(make_server_tests(
     #        base_suite, [make_sftp_server, make_bzr_ssh_server]))
-    suite.addTest(make_server_tests(base_suite, [make_bzr_ssh_server]))
 
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
