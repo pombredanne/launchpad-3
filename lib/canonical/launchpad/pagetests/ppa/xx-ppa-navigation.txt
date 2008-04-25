@@ -13,27 +13,6 @@ link on the PPA owner page.
 While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
-    >>> def print_structural_info(contents):
-    ...     doc = find_tag_by_id(contents, 'document')
-    ...     breadcrumbs = doc.findAll(attrs='breadcrumb')
-    ...     print "Location: %s" % " > ".join(
-    ...         extract_text(tag) for tag in breadcrumbs)
-    ...     print "Structural title: %s" % extract_text(
-    ...         doc.find(id='structuralobject'))
-    ...     print 'Tabs:'
-    ...     for tab in doc.find(id='applicationchooser').findAll('li'):
-    ...         if tab.a:
-    ...             link = tab.a['href']
-    ...         else:
-    ...             link = 'Not active'
-    ...         print "* %s (%s)" % (extract_text(tab), link)
-    ...     title = doc.h1
-    ...     if title:
-    ...         title = extract_text(title)
-    ...     else:
-    ...         title = '(No page title)'
-    ...     print "Page title: %s" % title
-
     >>> print_structural_info(anon_browser.contents)
     Location: Celso Providelo
     Structural title: Celso Providelo

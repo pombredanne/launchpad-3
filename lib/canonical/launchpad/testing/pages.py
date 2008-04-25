@@ -466,6 +466,28 @@ def print_ppa_packages(contents):
         print extract_text(empty_section)
 
 
+def print_structural_info(contents):
+    doc = find_tag_by_id(contents, 'document')
+    breadcrumbs = doc.findAll(attrs='breadcrumb')
+    print "Location: %s" % " > ".join(
+        extract_text(tag) for tag in breadcrumbs)
+    print "Structural title: %s" % extract_text(
+        doc.find(id='structuralobject'))
+    print 'Tabs:'
+    for tab in doc.find(id='applicationchooser').findAll('li'):
+        if tab.a:
+            link = tab.a['href']
+        else:
+            link = 'Not active'
+        print "* %s (%s)" % (extract_text(tab), link)
+    title = doc.h1
+    if title:
+        title = extract_text(title)
+    else:
+        title = '(No page title)'
+    print "Page title: %s" % title
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -513,6 +535,7 @@ def setUpGlobs(test):
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
+    test.globs['print_structural_info'] = print_structural_info
 
 
 class PageStoryTestCase(unittest.TestCase):
