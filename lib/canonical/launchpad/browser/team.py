@@ -13,7 +13,7 @@ __all__ = [
     'TeamMemberAddView',
     ]
 
-from urllib import quote, unquote
+from urllib import quote
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent

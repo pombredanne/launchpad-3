@@ -10,19 +10,16 @@ __all__ = [
 
 
 from cgi import escape
-from email import message_from_string
-from email.Header import decode_header, make_header
-from itertools import repeat
 from textwrap import TextWrapper
 from urllib import quote
 
-from zope.component import getUtility, queryAdapter
+from zope.component import queryAdapter
 from zope.interface import Attribute, Interface
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHeldMessageDetails, IMessageSet, MailingListStatus, NotFoundError)
+    IHeldMessageDetails, MailingListStatus)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url)
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
