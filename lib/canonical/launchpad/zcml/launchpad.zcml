@@ -196,6 +196,14 @@
       name="+editmylanguages"
       />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
+      name="+pre-authorize-rp"
+      permission="launchpad.AnyPerson"
+      attribute="__call__"
+      />
+
   <!-- A page to list all the icons in LP -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"

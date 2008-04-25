@@ -8,6 +8,8 @@ __all__ = [
     ]
 
 import cgi
+import pytz
+from datetime import datetime, timedelta
 from time import time
 
 from BeautifulSoup import BeautifulSoup
@@ -25,6 +27,7 @@ from openid.extensions.sreg import (
 from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
@@ -662,3 +665,44 @@ class ProtocolErrorView(LaunchpadView):
             response.setStatus(200)
         response.setHeader('Content-Type', 'text/plain;charset=utf-8')
         return self.context.encodeToKVForm()
+
+
+class PreAuthorizeRPView(LaunchpadView):
+    """Pre-authorize an OpenID consumer.
+
+    This page expects to find a 'trust_root' and a 'callback' query parameters
+    and it raises an UnexpectedFormData if any of them is not found or empty.
+
+    The pre-authorization is only allowed if the HTTP referer and the given
+    trust_root are in config.launchpad.openid_preauthorization_acl
+    """
+
+    # Number of hours a pre-authorization is valid for.
+    PRE_AUTHORIZATION_VALIDITY = 2
+
+    def __call__(self):
+        form = self.request.form
+        trust_root = form.get('trust_root')
+        if not trust_root:
+            raise UnexpectedFormData("trust_root was not specified.")
+        callback = form.get('callback')
+        if not callback:
+            raise UnexpectedFormData("callback was not specified.")
+        for line in config.launchpad.openid_preauthorization_acl.split('\n'):
+            referrer, acl_trust_root = line.split(' ')
+            if (not self.request.getHeader('referer').startswith(referrer)
+                or trust_root != acl_trust_root):
+                continue
+
+            client_id = getUtility(IClientIdManager).getClientId(self.request)
+            expires = (datetime.now(pytz.timezone('UTC'))
+                       + timedelta(hours=self.PRE_AUTHORIZATION_VALIDITY))
+            getUtility(IOpenIdAuthorizationSet).authorize(
+                self.user, trust_root, expires, client_id)
+            # Need to commit the transaction because this will always be
+            # processing GET requests.
+            import transaction
+            transaction.commit()
+            break
+        self.request.response.redirect(callback)
+        return u''

@@ -1,0 +1,88 @@
+= Pre-authorized consumers =
+
+In some cases we want consumers to be pre-authorized so that the
+authorization step of the protocol is skipped.  This is the case for
+canonical's training site: we want the canonical shop to pre-authorize
+the training site when a user buys some sort of training.
+
+To do so the shop has to craft a link which takes the user to the
+training site through Launchpad.  This is what the link looks like:
+
+    https://launchpad.net/+pre-authorize-rp?trust_root=...&callback=...
+
+Where the value of trust_root should be the root URL of the consumer to
+be pre-authorized and callback is the URL to which the user will be
+redirected after the consumer is pre-authorized.
+
+As an example we'll pre-authorize our own OpenID consumer:
+
+    >>> from urllib import urlencode
+    >>> args = urlencode({
+    ...     'trust_root': 'http://launchpad.dev/',
+    ...     'callback': 'http://launchpad.dev/people/+me'})
+    >>> browser.handleErrors = True
+    >>> browser.open('http://launchpad.dev/+pre-authorize-rp?%s' % args)
+
+    # Since the user is not logged in, he'll have to login first.
+    >>> browser.title
+    'Log in or register with Launchpad'
+    >>> browser.getControl('E-mail address:', index=0).value = 'mark@hbd.com'
+    >>> browser.getControl('Password:').value = 'test'
+    >>> browser.getControl('Log In').click()
+
+    # Now he's redirected to the callback page and the RP has been
+    # pre-authorized.
+    >>> browser.url
+    'http://launchpad.dev/~sabdfl'
+
+From now on, and until that authorization expires, the user won't need
+to authorize that consumer when he wants to log into it.
+
+    # First we will set up the helper view that lets us test the OpenID
+    # protocol.
+    >>> from openid.consumer.discover import OPENID_2_0_TYPE
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.testing.openidhelpers import (
+    ...     complete_from_browser, make_identifier_select_endpoint,
+    ...     PublisherFetcher)
+    >>> setDefaultFetcher(PublisherFetcher())
+
+    # The authentication process is started by the relying party issuing a
+    # checkid_setup request, sending the user to Launchpad.
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(OPENID_2_0_TYPE))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+The user (sabdfl) was already logged into Launchpad, so at this point,
+instead of being presented with a form asking if they want to 
+authenticate to the relying party, they are sent directly to the RP.
+
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+
+If the HTTP referrer and the trust_root are not in our config's
+openid_preauthorization_acl, we will not pre-authorize.
+
+    >>> from canonical.config import config
+    >>> print config.launchpad.openid_preauthorization_acl
+    localhost http://launchpad.dev/
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.addHeader('Referer', 'http://www.example.com')
+    >>> browser.open('http://launchpad.dev/+pre-authorize-rp?%s' % args)
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open('http://launchpad.dev/+pre-authorize-rp?%s' % args)
+    >>> browser.open(request.redirectURL(
+    ...     'http://example.com/', 'http://example.com/+openid-consumer'))
+    >>> print browser.title
+    Authenticate to http://example.com/
