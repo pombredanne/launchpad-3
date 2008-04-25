@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Code to talk to the database about what the worker script is doing."""
 
@@ -24,7 +25,10 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
     ILibraryFileAliasSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.webapp import canonical_url
 from canonical.twistedsupport import defer_to_thread
+from canonical.twistedsupport.loggingsupport import (
+    log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 
@@ -157,14 +161,27 @@ class CodeImportWorkerMonitor:
         get_rocketfuel_root(),
         'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id):
+    def __init__(self, job_id, logger):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
+        :param logger: A `Logger` object.
         """
+        self._logger = logger
         self._job_id = job_id
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
+        self._source_details = None
+        self._code_import_id = None
+        self._branch_url = None
+
+    def _logOopsFromFailure(self, failure):
+        request = log_oops_from_failure(
+            failure, code_import_job_id=self._job_id,
+            code_import_id=self._code_import_id, URL=self._branch_url)
+        self._logger.info(
+            "Logged OOPS id %s: %s: %s",
+            request.oopsid, failure.type.__name__, failure.value)
 
     def getJob(self):
         """Fetch the `CodeImportJob` object we are working on from the DB.
@@ -175,6 +192,8 @@ class CodeImportWorkerMonitor:
         """
         job = getUtility(ICodeImportJobSet).getById(self._job_id)
         if job is None:
+            self._logger.info(
+                "Job %d not found, exiting quietly.", self._job_id)
             self._call_finish_job = False
             raise ExitQuietly
         else:
@@ -184,13 +203,19 @@ class CodeImportWorkerMonitor:
     @read_only_transaction
     def getSourceDetails(self):
         """Get a `CodeImportSourceDetails` for the job we are working on."""
-        return CodeImportSourceDetails.fromCodeImport(
-            self.getJob().code_import)
+        code_import = self.getJob().code_import
+        source_details = CodeImportSourceDetails.fromCodeImport(code_import)
+        self._logger.info(
+            'Found source details: %s', source_details.asArguments())
+        self._branch_url = canonical_url(code_import.branch)
+        self._code_import_id = code_import.id
+        return source_details
 
     @defer_to_thread
     @writing_transaction
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
+        self._logger.debug("Updating heartbeat.")
         getUtility(ICodeImportJobWorkflow).updateHeartbeat(
             self.getJob(), tail)
 
@@ -221,19 +246,20 @@ class CodeImportWorkerMonitor:
             branch = job.code_import.branch
             log_file_name = '%s-%s-log.txt' % (
                 branch.product.name, branch.name)
-            # Watch out for this failing!!
             try:
                 log_file_alias = self._createLibrarianFileAlias(
                     log_file_name, log_file_size, self._log_file,
                     'text/plain')
+                self._logger.info(
+                    "Uploaded logs to librarian %s.", log_file_alias.getURL())
             except:
+                self._logger.error("Upload to librarian failed.")
+                self._logOopsFromFailure(failure.Failure())
                 log_file_alias = None
-                librarian_failure = failure.Failure()
         else:
             log_file_alias = None
         getUtility(ICodeImportJobWorkflow).finishJob(
             job, status, log_file_alias)
-        return librarian_failure
 
     def _launchProcess(self, source_details):
         """Launch the code-import-worker.py child process."""
@@ -242,6 +268,8 @@ class CodeImportWorkerMonitor:
             deferred, self, self._log_file)
         command = [sys.executable, self.path_to_script]
         command.extend(source_details.asArguments())
+        self._logger.info(
+            "Launching worker child process %s.", command)
         reactor.spawnProcess(
             protocol, sys.executable, command, env=os.environ, usePTY=True)
         return deferred
@@ -265,8 +293,10 @@ class CodeImportWorkerMonitor:
         if isinstance(reason, failure.Failure):
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
+            self._logOopsFromFailure(reason)
             status = CodeImportResultStatus.FAILURE
         else:
+            self._logger.info('Import succeeded.')
             status = CodeImportResultStatus.SUCCESS
         return self.finishJob(status)
 

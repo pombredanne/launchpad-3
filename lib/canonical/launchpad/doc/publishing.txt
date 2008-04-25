@@ -357,6 +357,8 @@ hoary-test.
     >>> hoary_test = breezy_autotest.distribution.getSeries(
     ...     'hoary-test')
     >>> hoary_test.nominatedarchindep = hoary_test["i386"]
+    >>> fake_chroot = test_publisher.addMockFile('fake_chroot.tar.gz')
+    >>> trash = hoary_test["i386"].addOrUpdateChroot(fake_chroot)
 
 Perform the source-only copy.
 

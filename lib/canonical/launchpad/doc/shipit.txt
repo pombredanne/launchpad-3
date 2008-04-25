@@ -165,12 +165,12 @@ We have 16 requests, and two of them are cancelled
      (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
      (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
      (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-     (20, u'sabdfl'), (21L, u'name16')]
+     (20, u'sabdfl'), (21, u'karl'), (22L, u'name16')]
 
     >>> cancelled = ShippingRequestStatus.CANCELLED
     >>> sorted((shipreq.id, shipreq.recipient.name) 
     ...        for shipreq in requestset.search(status=cancelled))
-    [(6, u'cprov'), (21L, u'name16')]
+    [(6, u'cprov'), (22L, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -186,7 +186,8 @@ Eight are approved but not yet shipped.
     >>> sorted((shipreq.id, shipreq.recipient.name) 
     ...         for shipreq in requestset.search(status=approved))
     [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-     (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins')]
+     (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins'),
+     (21, u'karl')]
 
 And finally, four of them are already shipped.
 
@@ -204,7 +205,8 @@ of a given distroseries (or both, obviously).
     ...  for shipreq in requestset.search(flavour=kubuntu)]
     [(u'Celso Providelo', 6), (u'David Allouche', 5),
      (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-     (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
+     (u'James Blackwell', 17), (u'ShipIt Administrators', 19),
+     (u'Karl Tilbury', 21)]
 
     >>> [(shipreq.recipient.displayname , shipreq.id)
     ...  for shipreq in requestset.search(distroseries=feisty)]
@@ -214,7 +216,7 @@ of a given distroseries (or both, obviously).
      (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
      (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
      (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-     (u'Stuart Bishop', 2), (u'Foo Bar', 21L)]
+     (u'Stuart Bishop', 2), (u'Foo Bar', 22L)]
 
     >>> edubuntu = ShipItFlavour.EDUBUNTU
     >>> [(shipreq.recipient.displayname , shipreq.id)

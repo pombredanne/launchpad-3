@@ -91,9 +91,9 @@ from canonical.launchpad.interfaces import (
     IBranch, IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
     IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
-    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
-    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus, PersonVisibility)
+    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
@@ -1233,6 +1233,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
+        elif IProductSeriesBugTask.providedBy(milestone_context):
+            target = milestone_context.productseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1263,6 +1265,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                     (milestone for product in target.products
                      for milestone in product.all_milestones),
                     longest_expected=40)
+            elif IProductSeries.providedBy(target):
+                series_milestones = shortlist(target.all_milestones,
+                                              longest_expected=40)
+                product_milestones = shortlist(target.product.all_milestones,
+                                               longest_expected=40)
+                # Some milestones are associtaed with a product
+                # and a product series; these should appear only
+                # once.
+                milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
                     target.all_milestones, longest_expected=40)

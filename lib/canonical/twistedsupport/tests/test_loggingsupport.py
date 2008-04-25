@@ -41,14 +41,16 @@ class LoggingSupportTests(TestCase):
             error_dir: %s
             copy_to_zlog: False
             """ % self.temp_dir))
-        self.addCleanup(config.pop, 'testing')
         globalErrorUtility.configure()
-        self.addCleanup(globalErrorUtility.configure)
         self.log_stream = StringIO.StringIO()
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(logging.StreamHandler(self.log_stream))
         self.observer = OOPSLoggingObserver('test')
+
+    def tearDown(self):
+        config.pop('testing')
+        globalErrorUtility.configure()
 
     def assertLogMatches(self, pattern):
         """Assert that the messages logged by self.logger matches a regexp."""

@@ -23,7 +23,7 @@ switch once the release is out and we move from pre-release to normal mode.
     Pre-order a CD of Ubuntu Desktop Edition
     Pre-order a CD of Ubuntu Server Edition
 
-    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic tim@canonical.com:test')
     >>> browser.open('http://shipit.ubuntu.dev/myrequest')
     >>> print get_feedback_messages(browser.contents)[0]
     Ubuntu...has not been released yet, but we'll record your request...
