@@ -2808,8 +2808,8 @@ class TeamJoinView(PersonView):
     @property
     def user_wants_list_subscriptions(self):
         """Is the user interested in subscribing to mailing lists?"""
-        return self.user.mailing_list_auto_subscribe_policy != \
-            MailingListAutoSubscribePolicy.NEVER
+        return (self.user.mailing_list_auto_subscribe_policy !=
+                MailingListAutoSubscribePolicy.NEVER)
 
     @property
     def team_is_moderated(self):
