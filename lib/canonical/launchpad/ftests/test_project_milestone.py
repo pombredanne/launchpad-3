@@ -199,7 +199,7 @@ class ProjectMilestoneTest(unittest.TestCase):
             [spec.name for spec in gnome_milestone.specifications],
             ['evolution-specification', 'gnomebaker-specification'])
 
-    def _createBugtask(self, product_name, milestone_name):
+    def _createProductBugtask(self, product_name, milestone_name):
         """Create a bugtask for a product, assign the task to a milestone."""
         personset = getUtility(IPersonSet)
         sample_person = personset.getByEmail('test@canonical.com')
@@ -215,6 +215,27 @@ class ProjectMilestoneTest(unittest.TestCase):
         bugtask.milestone = milestone
         syncUpdate(bugtask)
 
+    def _createProductSeriesBugtask(self, product_name, product_series_name,
+                                    milestone_name):
+        """Create a bugtask for a productseries, assign it to a milestone."""
+        personset = getUtility(IPersonSet)
+        sample_person = personset.getByEmail('test@canonical.com')
+        product = getUtility(IProductSet)[product_name]
+        series = product.getSeries(product_series_name)
+        milestone = product.getMilestone(milestone_name)
+        params = CreateBugParams(
+            title='Milestone test bug for %s series' % product_name,
+            comment='comment',
+            owner=sample_person,
+            status=BugTaskStatus.CONFIRMED)
+        bug = product.createBug(params)
+        getUtility(IBugTaskSet).createTask(bug, owner=sample_person,
+                                           productseries=series)
+        for bugtask in bug.bugtasks:
+            if bugtask.productseries is not None:
+                bugtask.milestone = milestone
+                syncUpdate(bugtask)
+
     def test_milestone_bugtasks(self):
         """Bugtasks and project milestones.
 
@@ -224,9 +245,9 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.createProductMilestone('1.1', 'evolution', None)
         self.createProductMilestone('1.1', 'gnomebaker', None)
         self.createProductMilestone('1.1', 'firefox', None)
-        self._createBugtask('evolution', '1.1')
-        self._createBugtask('gnomebaker', '1.1')
-        self._createBugtask('firefox', '1.1')
+        self._createProductBugtask('evolution', '1.1')
+        self._createProductBugtask('gnomebaker', '1.1')
+        self._createProductBugtask('firefox', '1.1')
 
         milestone = getUtility(IProjectSet)['gnome'].getMilestone('1.1')
         searchparams = BugTaskSearchParams(user=None, milestone=milestone)
@@ -262,8 +283,9 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.createSpecification('1.1', 'evolution')
         self.createSpecification('1.1', 'gnomebaker')
 
-        self._createBugtask('evolution', '1.1')
-        self._createBugtask('gnomebaker', '1.1')
+        self._createProductBugtask('evolution', '1.1')
+        self._createProductBugtask('gnomebaker', '1.1')
+        self._createProductSeriesBugtask('evolution', 'trunk', '1.1')
 
 
 def test_suite():

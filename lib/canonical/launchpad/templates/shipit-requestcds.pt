@@ -85,7 +85,6 @@
       </tal:standard-request>
     </tal:no-prerelease>
     <tal:prerelease condition="view/prerelease_mode">
-    <span tal:replace="view/flavour/title" />
       <p class="informational message">
         Ubuntu <span tal:replace="view/series/title" /> has not been released
         yet, but we'll record your request and send you a CD as soon as that
@@ -130,7 +129,7 @@
     <ul tal:condition="view/flavour/enumvalue:SERVER">
       <li>
         <strong>Server</strong> Edition for x86 based servers (including
-        Intel Pendium, Intel Xeon and AMD Athlon).
+        Intel Pentium, Intel Xeon and AMD Athlon).
       </li>
 
       <li>
