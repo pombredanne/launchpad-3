@@ -58,7 +58,8 @@ distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
+  ...     DistroSeriesStatus, IComponentSet, IDistributionSet,
+  ...     ILibraryFileAliasSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
@@ -66,6 +67,9 @@ address and allow uploads to universe:
   >>> from canonical.launchpad.database import ComponentSelection
   >>> universe = getUtility(IComponentSet)['universe']
   >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+  >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+  >>> trash = hoary['i386'].addOrUpdateChroot(fake_chroot)
+  >>> trash = hoary['hppa'].addOrUpdateChroot(fake_chroot)
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
 the same behaviour than using insecure policy, apart from allowing
