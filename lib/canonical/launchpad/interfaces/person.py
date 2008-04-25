@@ -1206,7 +1206,7 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
-    def join(team, requester=None):
+    def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
@@ -1217,8 +1217,16 @@ class IPersonEditRestricted(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
-        :param requester: The person who requested the membership on behalf of
-        a team or None when a person requests the membership for himself.
+        If may_subscribe_to_list is True, then also attempt to
+        subscribe to the team's mailing list, depending on the list
+        status and the person's auto-subscribe settings.
+
+        :param requester: The person who requested the membership on
+            behalf of a team or None when a person requests the
+            membership for himself.
+
+        :param may_subscribe_to_list: If True, also try subscribing to
+            the team mailing list.
         """
 
     def leave(team):
@@ -1249,7 +1257,8 @@ class IPersonEditRestricted(Interface):
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
+                  comment=None, force_team_add=False,
+                  may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
@@ -1259,6 +1268,11 @@ class IPersonEditRestricted(Interface):
         If the person is actually a team and force_team_add is False, the
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
+
+        If the the person is not a team, and may_subscribe_to_list
+        is True, then the person may be subscribed to the team's
+        mailing list, depending on the list status and the person's
+        auto-subscribe settings.
 
         The given status must be either Approved, Proposed or Admin.
 
