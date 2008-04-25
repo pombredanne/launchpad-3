@@ -168,6 +168,8 @@ description of the service root resource itself.
 
     >>> children = list(tree)
     >>> service_root_type, service_root_repr, resources = children[:3]
+    >>> # We'll deal with the rest of the children later.
+    >>> other_children = children[3:]
 
 The service root is an instance of a special resource type that
 responds only to GET.
@@ -284,13 +286,13 @@ This code stores the <representation> tag in 'collection_rep' and the
 initial <resource_type> tags in 'collection_resource_types'.
 
     >>> collection_rep = None
-    >>> for index, child in enumerate(children[3:]):
+    >>> for index, child in enumerate(other_children):
     ...     if child.tag.endswith('representation'):
     ...         collection_rep = child
-    ...         collection_cutoff = index+3
+    ...         collection_cutoff = index
     ...         break
 
-    >>> collection_resource_types = children[3:collection_cutoff]
+    >>> collection_resource_types = other_children[collection_cutoff]
 
 After that <representation> tag there's a group of three tags for
 every type of entry resource exposed through the web service. The
