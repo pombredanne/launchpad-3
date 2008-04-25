@@ -13,7 +13,7 @@ link on the PPA owner page.
 While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
-    >>> print_structural_info(anon_browser.contents)
+    >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
     Structural title: Celso Providelo
     Tabs:
@@ -23,7 +23,7 @@ While navigating around the PPA the "structural location" remains the
     * Blueprints (http://blueprints.launchpad.dev/~cprov/)
     * Translations (http://translations.launchpad.dev/~cprov/)
     * Answers (http://answers.launchpad.dev/~cprov/)
-    Page title: PPA for Celso Providelo
+    Main heading: PPA for Celso Providelo
 
 You can see the build details of the packages in the archive by using
 the 'View build records' link.
@@ -48,7 +48,7 @@ The user can navigate to an individual build details:
     >>> anon_browser.title
     'Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
-    >>> print_structural_info(anon_browser.contents)
+    >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
     Structural title: Celso Providelo
     Tabs:
@@ -58,7 +58,7 @@ The user can navigate to an individual build details:
     * Blueprints (http://blueprints.launchpad.dev/~cprov/)
     * Translations (http://translations.launchpad.dev/~cprov/)
     * Answers (http://answers.launchpad.dev/~cprov/)
-    Page title:
+    Main heading:
     Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
 From that page the user could return either to the build records listing

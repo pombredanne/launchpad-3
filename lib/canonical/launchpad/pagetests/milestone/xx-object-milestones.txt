@@ -126,6 +126,22 @@ associated with that milestone for products of this project:
     Milestone test bug for gnomebaker gnomebaker Undecided Confirmed ...
     Milestone test bug for evolution series trunk Undecided Confirmed
 
+A project milestone page has the navigation for the project:
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+    >>> print_navigation(anon_browser.contents)
+    Location: Mozilla Firefox
+    Structural title: Mozilla Firefox
+    Tabs:
+    * Overview (http://launchpad.dev/firefox)
+    * Code (http://code.launchpad.dev/firefox)
+    * Bugs (http://bugs.launchpad.dev/firefox)
+    * Blueprints (http://blueprints.launchpad.dev/firefox)
+    * Translations (http://translations.launchpad.dev/firefox)
+    * Answers (http://answers.launchpad.dev/firefox)
+    Main heading: Milestone 1.0 for Mozilla Firefox
+
+
 === Duplicate bugs ===
 
 Milestone bug listings do not show bugs that are marked as duplicates of other

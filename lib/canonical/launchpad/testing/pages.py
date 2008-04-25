@@ -466,7 +466,7 @@ def print_ppa_packages(contents):
         print extract_text(empty_section)
 
 
-def print_structural_info(contents):
+def print_navigation(contents):
     doc = find_tag_by_id(contents, 'document')
     breadcrumbs = doc.findAll(attrs='breadcrumb')
     print "Location: %s" % " > ".join(
@@ -485,7 +485,7 @@ def print_structural_info(contents):
         title = extract_text(title)
     else:
         title = '(No page title)'
-    print "Page title: %s" % title
+    print "Main heading: %s" % title
 
 
 def setupBrowser(auth=None):
@@ -528,6 +528,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation'] = print_navigation
     test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
@@ -535,7 +536,6 @@ def setUpGlobs(test):
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
-    test.globs['print_structural_info'] = print_structural_info
 
 
 class PageStoryTestCase(unittest.TestCase):
