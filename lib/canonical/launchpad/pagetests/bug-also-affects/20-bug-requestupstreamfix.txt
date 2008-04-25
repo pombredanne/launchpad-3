@@ -44,9 +44,8 @@ bug URLs and suchlike:
     ( ) I just want to register that it is upstream right now; I
         don't have any way to link it.
 
-If we choose to just link upstream, without a URL, then a notification
-will be shown when trying to add the task, asking us to confirm that
-we want to add the task without a bug watch.
+We can just link upstream without a URL to say that this has been
+dealt with, but we can't reference it.
 
     >>> user_browser.getControl('I just want to register').selected = True
     >>> print_upstream_linking_form(user_browser)
@@ -58,15 +57,6 @@ we want to add the task without a bug watch.
         don't have any way to link it.
 
     >>> user_browser.getControl('Add to Bug Report').click()
-    >>> user_browser.url
-    'http://.../ubuntu/+source/evolution/+bug/6/+choose-affected-product'
-
-    >>> print get_feedback_messages(user_browser.contents)
-    [u"Mozilla Thunderbird doesn't use Launchpad as its bug tracker...]
-
-Let's confirm adding the task.
-
-    >>> user_browser.getControl('Add Anyway').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/thunderbird/+bug/6'
 
