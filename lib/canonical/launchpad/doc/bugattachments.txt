@@ -11,7 +11,7 @@ Let's look at a bug that has no attachments:
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugAttachment, IMessageSet, IPersonSet)
+    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()

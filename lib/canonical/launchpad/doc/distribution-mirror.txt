@@ -6,9 +6,9 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
-    ...     IDistroArchSeriesSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent,
+    ...     ICountrySet, IDistributionSet, IDistributionMirrorSet,
+    ...     IDistroArchSeriesSet, IDistroSeriesSet, ILibraryFileAliasSet,
+    ...     IPersonSet, MirrorContent, MirrorSpeed,
     ...     PackagePublishingPocket)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)

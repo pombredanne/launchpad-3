@@ -28,8 +28,8 @@ comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
-    ...     IProductSet, IPersonSet, ILaunchBag, IOpenLaunchBag)
+    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
+    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> launchbag = getUtility(IOpenLaunchBag)
@@ -152,7 +152,8 @@ grab a new view to actually see them:
     ...     (latest_ubuntu_bugtask, request), name="+index")
     >>> print len(ubuntu_bugview.comments)
     3
-    >>> [(c.index, c.owner.name, c.text_contents) for c in ubuntu_bugview.comments]
+    >>> [ (c.index, c.owner.name, c.text_contents)
+    ...  for c in ubuntu_bugview.comments ]
     [(0, u'name16', u'Binary package hint: linux-2.6.12\n\na bug in a bin pkg'),
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
