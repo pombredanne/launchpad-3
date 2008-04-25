@@ -100,7 +100,7 @@
 
       <p id="application-summary">
         Launchpad helps people to work together by making it easy to share
-        code, bug reports, translations and ideas. To get started, search here
+        code, bug reports, translations, and ideas. To get started, search here
         for a project you want to know more about.
       </p>
 
@@ -110,9 +110,9 @@
   <tal:no_search condition="not: view/searchrequested">
 
     <p id="application-summary">
-        Launchpad helps people to work together by making it easy to share
-        code, bug reports, translations and ideas. To get started, search here
-        for a project you want to know more about.
+      Launchpad helps people to work together by making it easy to share
+      code, bug reports, translations, and ideas. To get started, search here
+      for a project you want to know more about.
     </p>
 
     <div class="left">
