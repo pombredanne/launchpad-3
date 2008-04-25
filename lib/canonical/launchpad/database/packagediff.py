@@ -98,10 +98,11 @@ class PackageDiff(SQLBase):
 
             # All downloads are done. Construct the name of the resulting
             # diff file.
-            result_filename='%s-%s.diff' % (
-                self.from_source.title, self.to_source.title)
-            strange_chars = re.compile('[^a-zA-Z._\-0-9]')
-            result_filename = strange_chars.sub('', result_filename)
+            result_filename='%s-%s.%s-%s.diff' % (
+                self.from_source.sourcepackagename.name,
+                self.from_source.version,
+                self.to_source.sourcepackagename.name,
+                self.to_source.version)
 
             # Perform the actual diff operation.
             compressed_bytes = self._performDebdiff(
