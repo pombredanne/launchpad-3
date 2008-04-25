@@ -8,7 +8,7 @@ the training site when a user buys some sort of training.
 To do so the shop has to craft a link which takes the user to the
 training site through Launchpad.  This is what the link looks like:
 
-    https://launchpad.net/+pre-authorize-rp?trust_root=...&callback=...
+    https://openid.launchpad.net/+pre-authorize-rp?trust_root=...&callback=...
 
 Where the value of trust_root should be the root URL of the consumer to
 be pre-authorized and callback is the URL to which the user will be
@@ -21,7 +21,8 @@ As an example we'll pre-authorize our own OpenID consumer:
     ...     'trust_root': 'http://launchpad.dev/',
     ...     'callback': 'http://launchpad.dev/people/+me'})
     >>> browser.handleErrors = True
-    >>> browser.open('http://launchpad.dev/+pre-authorize-rp?%s' % args)
+    >>> browser.open(
+    ...     'http://openid.launchpad.dev/+pre-authorize-rp?%s' % args)
 
     # Since the user is not logged in, he'll have to login first.
     >>> browser.title
@@ -45,8 +46,7 @@ to authorize that consumer when he wants to log into it.
     >>> from openid.fetchers import setDefaultFetcher
     >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.testing.openidhelpers import (
-    ...     complete_from_browser, make_identifier_select_endpoint,
-    ...     PublisherFetcher)
+    ...     make_identifier_select_endpoint, PublisherFetcher)
     >>> setDefaultFetcher(PublisherFetcher())
 
     # The authentication process is started by the relying party issuing a
@@ -74,14 +74,19 @@ openid_preauthorization_acl, we will not pre-authorize.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.addHeader('Referer', 'http://www.example.com')
-    >>> browser.open('http://launchpad.dev/+pre-authorize-rp?%s' % args)
+    >>> browser.open(
+    ...     'http://openid.launchpad.dev/+pre-authorize-rp?%s' % args)
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
     >>> print browser.title
     Authenticate to http://launchpad.dev/
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> browser.open('http://launchpad.dev/+pre-authorize-rp?%s' % args)
+    >>> args = urlencode({
+    ...     'trust_root': 'http://example.com/',
+    ...     'callback': 'http://launchpad.dev/people/+me'})
+    >>> browser.open(
+    ...     'http://openid.launchpad.dev/+pre-authorize-rp?%s' % args)
     >>> browser.open(request.redirectURL(
     ...     'http://example.com/', 'http://example.com/+openid-consumer'))
     >>> print browser.title

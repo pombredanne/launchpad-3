@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 import cgi
+import logging
 import pytz
 from datetime import datetime, timedelta
 from time import time
@@ -592,9 +593,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
             if person.preferredemail is None:
                 self.addError(
                         _(
-                    "The email address '${email}' has not yet been confirmed. "
-                    "We sent an email to that address with instructions on "
-                    "how to confirm that it belongs to you.",
+                    "The email address '${email}' has not yet been "
+                    "confirmed. We sent an email to that address with "
+                    "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
@@ -688,9 +689,14 @@ class PreAuthorizeRPView(LaunchpadView):
         callback = form.get('callback')
         if not callback:
             raise UnexpectedFormData("callback was not specified.")
-        for line in config.launchpad.openid_preauthorization_acl.split('\n'):
-            referrer, acl_trust_root = line.split(' ')
-            if (not self.request.getHeader('referer').startswith(referrer)
+        http_referrer = self.request.getHeader('referer', '')
+        acl_lines = []
+        if config.launchpad.openid_preauthorization_acl is not None:
+            acl_lines = config.launchpad.openid_preauthorization_acl.split(
+                '\n')
+        for line in acl_lines:
+            referrer, acl_trust_root = line.strip().split(None, 1)
+            if (not http_referrer.startswith(referrer)
                 or trust_root != acl_trust_root):
                 continue
 
@@ -704,5 +710,9 @@ class PreAuthorizeRPView(LaunchpadView):
             import transaction
             transaction.commit()
             break
+        else:
+            logging.info(
+                "Unauthorized trust root (%s) or referrer (%s).",
+                trust_root, http_referrer)
         self.request.response.redirect(callback)
         return u''
