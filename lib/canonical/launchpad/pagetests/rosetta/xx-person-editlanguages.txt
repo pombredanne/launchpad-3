@@ -66,7 +66,7 @@ languages page from there.
     >>> browser = setupBrowser('Basic test@canonical.com:test')
     >>> # Fake request from a Liechtenstein IP address by setting
     >>> # X-Forwarded-For in the http header, like a proxy would.
-    >>> browser.addHeader('X-Forwarded-For', '87.239.200.0')
+    >>> browser.addHeader('X-Forwarded-For', '80.66.224.0')
     >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
@@ -81,7 +81,7 @@ pt_br language code is recognized properly.
     Your browser languages
     Portuguese (Brazil)
 
-Launchpad detects that the requesting IP address (87.239.200.0) is in a
+Launchpad detects that the requesting IP address (80.66.224.0) is in a
 range assigned to Liechtenstein.
 
     >>> country_portlet = find_portlet(browser.contents,
