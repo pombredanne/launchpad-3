@@ -67,4 +67,10 @@
     handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"
     />
 
+  <subscriber
+    for="canonical.launchpad.interfaces.IMessageApproval
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.mailnotification.notify_message_held"
+    />
+
 </configure>
