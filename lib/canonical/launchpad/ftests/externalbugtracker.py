@@ -470,12 +470,6 @@ def strip_trac_comment(comment):
     if 'user' in comment:
         del comment['user']
 
-    # For some reason bug_info() returns the 'time' field as
-    # 'timestamp'.
-    if 'time' in comment:
-        comment['timestamp'] = comment['time']
-        del comment['time']
-
     return comment
 
 

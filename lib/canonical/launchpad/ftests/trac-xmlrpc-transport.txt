@@ -114,13 +114,13 @@ We'll add some sample comments to demonstrate this.
 
     >>> trac_transport.remote_bugs['1'].comments = [
     ...     {'id': '1-1', 'type': 'comment', 'user': 'test@canonical.com',
-    ...      'comment': 'Hello, world!', 'time': comment_timestamp}]
+    ...      'comment': 'Hello, world!', 'timestamp': comment_timestamp}]
     >>> trac_transport.remote_bugs['2'].comments = [
     ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
     ...      'comment': 'Hello again, world!',
-    ...      'time': comment_timestamp},
+    ...      'timestamp': comment_timestamp},
     ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar@canonical.com',
-    ...      'comment': 'More commentary.', 'time': comment_timestamp}]
+    ...      'comment': 'More commentary.', 'timestamp': comment_timestamp}]
 
     >>> time_snapshot, bugs = trac_transport.bug_info(level=2)
     >>> for bug in bugs:
@@ -145,22 +145,22 @@ metadata, but not including comment authors.
     ...     for comment in bug['comments']:
     ...         print_bug_comment(comment)
     Comments for bug 1:
-    comment: Hello, world!,
+    comment: Hello, world!
     id: 1-1
-    timestamp: 1208514600,
-    type: comment,
-
+    timestamp: 1208514600
+    type: comment
+    <BLANKLINE>
     Comments for bug 2:
     comment: Hello again, world!
     id: 2-1
     timestamp: 1208514600
     type: comment
-
+    <BLANKLINE>
     comment: More commentary.
     id: 2-2
     timestamp: 1208514600
-    type: comment,
-
+    type: comment
+    <BLANKLINE>
     Comments for bug 3:
 
 The criteria dict has two possible keys: modified_since and bugs.
@@ -226,19 +226,19 @@ returned correspond to the comment IDs passed in the comments parameter.
     ...     print_bug_comment(comment)
     comment: Hello, world!
     id: 1-1
-    time: 1208514600
+    timestamp: 1208514600
     type: comment
     user: test@canonical.com
-
+    <BLANKLINE>
     comment: Hello again, world!
     id: 2-1
-    time: 1208514600
+    timestamp: 1208514600
     type: comment
     user: test@canonical.com
-
+    <BLANKLINE>
     comment: More commentary.
     id: 2-2
-    time: 1208514600
+    timestamp: 1208514600
     type: comment
     user: foo.bar@canonical.com
 
