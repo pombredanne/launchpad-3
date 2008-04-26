@@ -133,12 +133,14 @@ ftest_inplace: inplace
 run: inplace stop bzr_version_info
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian -C $(CONFFILE)
 
 run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info

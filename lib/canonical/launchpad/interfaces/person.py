@@ -1582,6 +1582,13 @@ class IPersonSet(Interface):
              away. Bug 221901. -- Bjorn Tillenius, 2008-04-25
         """
 
+    def getPeopleWithBranches(product=None):
+        """Return the people who have branches.
+
+        :param product: If supplied, only people who have branches in the
+            specified product are returned.
+        """
+
     def getSubscribersForTargets(targets, recipients=None):
         """Return the set of subscribers for `targets`.
 
