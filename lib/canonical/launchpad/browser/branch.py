@@ -82,9 +82,6 @@ def quote(text):
 class BranchSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranch`."""
 
-    def isPrivate(self):
-        return self.context.private
-
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername
@@ -93,17 +90,10 @@ class BranchSOP(StructuralObjectPresentation):
 class BranchBadges(HasBadgeBase):
     badges = "private", "bug", "blueprint", "warning"
 
-    def __init__(self, branch):
-        self.branch = branch
-
-    def isPrivateBadgeVisible(self):
-        """Show a private badge if the branch is private."""
-        return self.branch.private
-
     def isBugBadgeVisible(self):
         """Show a bug badge if the branch is linked to bugs."""
         # Only show the badge if at least one bug is visible by the user.
-        for bug in self.branch.related_bugs:
+        for bug in self.context.related_bugs:
             # Stop on the first visible one.
             if check_permission('launchpad.View', bug):
                 return True
@@ -112,11 +102,11 @@ class BranchBadges(HasBadgeBase):
     def isBlueprintBadgeVisible(self):
         """Show a blueprint badge if the branch is linked to blueprints."""
         # When specs get privacy, this will need to be adjusted.
-        return self.branch.spec_links.count() > 0
+        return self.context.spec_links.count() > 0
 
     def isWarningBadgeVisible(self):
         """Show a warning badge if there are mirror failures."""
-        return self.branch.mirror_failures > 0
+        return self.context.mirror_failures > 0
 
     def getBadge(self, badge_name):
         """See `IHasBadges`."""

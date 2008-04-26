@@ -370,6 +370,13 @@
   permission="zope.Public"
   />
 
+<adapter
+  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
+  permission="zope.Public"
+  />
+
 <!--
 Operational statistics. Note that these are publicly available,
 and if we want to restrict access to the LAN then we need to block
