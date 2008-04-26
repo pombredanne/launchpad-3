@@ -399,13 +399,13 @@ Email preferences page.
     >>> browser.title
     "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
 
-Carlos's default setting, 'On registration', is still in place.
+Carlos's default setting, 'Ask me when I join a team', is still in place.
 
     >>> print_radio_button_field(browser.contents,
     ...     'mailing_list_auto_subscribe_policy')
-    ( ) Never
-    (*) On registration
-    ( ) Always subscribe
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
 
 Carlos can update the value at any time using his Email Preferences
 page.
@@ -424,29 +424,29 @@ page.
     ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
 
     >>> set_autosubscribe_policy_and_submit('ALWAYS')
-    ( ) Never
-    ( ) On registration
-    (*) Always subscribe
+    ( ) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    (*) Always subscribe me to mailing lists
 
     # We only need to check this once.
     >>> get_feedback_messages(browser.contents)
     [u'Your auto-subscription policy has been updated.']
 
     >>> set_autosubscribe_policy_and_submit('NEVER')
-    (*) Never
-    ( ) On registration
-    ( ) Always subscribe
+    (*) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
 
     >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
-    ( ) Never
-    (*) On registration
-    ( ) Always subscribe
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
 
 Updating the value twice has no adverse affect.
 
     # Restores the original value while performing the test.
     >>> assert original_value == 'ON_REGISTRATION'
     >>> set_autosubscribe_policy_and_submit(original_value)
-    ( ) Never
-    (*) On registration
-    ( ) Always subscribe
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
