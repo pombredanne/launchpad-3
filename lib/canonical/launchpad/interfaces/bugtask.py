@@ -285,6 +285,7 @@ BUG_SUPERVISOR_BUGTASK_STATUSES = (
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.NEW,
     BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
     BugTaskStatusSearch.CONFIRMED,
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
