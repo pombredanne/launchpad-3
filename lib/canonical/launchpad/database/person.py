@@ -3039,6 +3039,17 @@ class PersonSet:
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    def getValidPersons(self, persons):
+        """See `IPersonSet.`"""
+        person_ids = [person.id for person in persons]
+        if len(person_ids) == 0:
+            return []
+        valid_person_cache = ValidPersonOrTeamCache.select(
+            "id IN %s" % sqlvalues(person_ids))
+        valid_person_ids = set(cache.id for cache in valid_person_cache)
+        return [
+            person for person in persons if person.id in valid_person_ids]
+
     def getPeopleWithBranches(self, product=None):
         """See `IPersonSet`."""
         branch_clause = 'SELECT owner FROM Branch'
