@@ -20,7 +20,7 @@ from zope.interface import Interface
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHeldMessageDetails, MailingListStatus)
+    IHeldMessageDetails, IMailingListSet, ITeam, MailingListStatus)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, action, canonical_url)
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
@@ -200,11 +200,9 @@ class enabled_with_active_mailing_list:
     def __get__(self, obj, type=None):
         """Called by the decorator machinery to return a decorated function.
         """
-        # Avoid circular imports.
-        from canonical.launchpad.interfaces import IMailingListSet
         def enable_if_active(*args, **kws):
             link = self._function(obj, *args, **kws)
-            if not obj.context.isTeam():
+            if not ITeam.providedBy(obj.context) or not obj.context.isTeam():
                 link.enabled = False
             mailing_list = getUtility(IMailingListSet).get(obj.context.name)
             if mailing_list is None or not mailing_list.isUsable():
