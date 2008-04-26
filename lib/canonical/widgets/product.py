@@ -22,6 +22,7 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.vocabularies.dbobjects import (
     WebBugTrackerVocabulary)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.interfaces import IProduct
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -210,3 +211,64 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
+
+    # XXX: EdwinGrubbs 2008-04-11 bug=216040
+    # This entire function can be removed after the deprecated
+    # licenses have been removed from the enum.
+    def renderItemsWithValues(self, values):
+        """Render the list of possible values, with those found in
+        `values` being marked as selected.
+
+        Overrides method in `ItemsEditWidgetBase' so that deprecated
+        license choices can be hidden.
+        """
+        if self._getFormValue() == '':
+            # _getFormValue() is only an empty string when it is first
+            # displayed. If the form is submitted with no boxes checked,
+            # _getFormValue() will return an empty set object.
+            if IProduct.providedBy(self.context.context):
+                checked_licenses = self.context.context.licenses
+            else:
+                # self.context.context is a ProductSet since the
+                # user is creating a brand new product.
+                checked_licenses = []
+        else:
+            checked_licenses = values
+
+
+        cssClass = self.cssClass
+
+        # Multiple items with the same value are not allowed from a
+        # vocabulary, so that does not need to be considered here.
+        rendered_items = []
+        count = 0
+        for term in self.vocabulary:
+            if (term.value.name.startswith('_DEPRECATED_')
+                and term.value not in checked_licenses):
+                # The self.context is the IProduct.licenses field
+                # and self.context.context is the Product object,
+                # so self.context.context.licenses are the product
+                # licenses stored in the database.
+                # Only display a deprecated license choice if it
+                # is still being used by this product.
+                continue
+
+            item_text = self.textForValue(term)
+
+            if term.value in values:
+                rendered_item = self.renderSelectedItem(count,
+                                                        item_text,
+                                                        term.token,
+                                                        self.name,
+                                                        cssClass)
+            else:
+                rendered_item = self.renderItem(count,
+                                                item_text,
+                                                term.token,
+                                                self.name,
+                                                cssClass)
+
+            rendered_items.append(rendered_item)
+            count += 1
+
+        return rendered_items

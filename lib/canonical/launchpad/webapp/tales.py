@@ -63,7 +63,6 @@ from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
-
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
 
@@ -2486,10 +2485,5 @@ class GotoStructuralObject:
         return headercontext
 
     @property
-    def immediate_object_is_private(self):
-        try:
-            headercontext, adapter = nearest_context_with_adapter(
-                self.use_context, IStructuralHeaderPresentation)
-        except NoCanonicalUrl:
-            return False
-        return adapter.isPrivate()
+    def context_badges(self):
+        return IHasBadges(self.use_context)

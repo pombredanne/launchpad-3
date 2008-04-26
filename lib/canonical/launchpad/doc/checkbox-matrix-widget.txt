@@ -28,12 +28,12 @@ If we pass in a value via the request, we'll be able to get the licenses
 as a set from _getFormValue() or getInputValue():
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'field.licenses': ['LGPL', 'GPL']})
+    ...     form={'field.licenses': ['GNU_LGPL_V2_1', 'GNU_GPL_V2']})
     >>> matrix_widget = CheckBoxMatrixWidget(licenses_field, vtype, request)
     >>> matrix_widget._getFormValue()
-    Set([<...License.GPL...>, <...License.LGPL...>])
+    Set([<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>])
     >>> matrix_widget.getInputValue()
-    Set([<...License.GPL...>, <...License.LGPL...>])
+    Set([<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>])
 
 It should render as many rows as are specified by the column_count attribute.
 
