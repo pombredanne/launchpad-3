@@ -762,9 +762,6 @@ class StructuralHeaderPresentation:
     def __init__(self, context):
         self.context = context
 
-    def isPrivate(self):
-        return False
-
     def getIntroHeading(self):
         return None
 

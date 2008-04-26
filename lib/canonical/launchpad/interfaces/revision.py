@@ -103,3 +103,11 @@ class IRevisionSet(Interface):
         :return: ResultSet containing `Revision` or None if no matching
             revisions found.
         """
+
+    def getRecentRevisionsForProduct(product, days):
+        """Get the revisions for product created within so many days.
+
+        In order to get the time the revision was actually created, the time
+        extracted from the revision properties is used.  While this may not
+        be 100% accurate, it is much more accurate than using date created.
+        """

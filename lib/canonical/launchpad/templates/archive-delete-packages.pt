@@ -17,8 +17,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
-
   <h1>Delete packages from <tal:title replace="context/title" /></h1>
 
     <tal:inactive_ppa_header condition="not: view/has_sources">
