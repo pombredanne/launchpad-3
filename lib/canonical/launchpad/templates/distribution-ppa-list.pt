@@ -129,8 +129,8 @@
 
           </div> <!-- left div -->
 
-          <div class="right">
-            <div class=" two column section" id="supports_virtualized_archs"
+          <div style="width: 49%; clear: right; float: right;">
+            <div class="section" id="supports_virtualized_archs"
                  tal:content="structure context/@@+portlet-ppa-architectures" />
           </div>
 

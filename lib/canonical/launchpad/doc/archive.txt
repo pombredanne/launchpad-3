@@ -1220,9 +1220,9 @@ context.
     iceweasel 1.0 in hoary PENDING sabdfl
     iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
 
-'getMostActivePPAsForDistribution' returns a list of dictionaries containing
-up to 5 PPAs with the highest number of publications in the last 7
-days. Each dictionary contains the following keys:
+'getMostActivePPAsForDistribution' returns a list of dictionaries
+containing up to 5 PPAs with the highest number of publications in the
+last 7 days. Each dictionary contains the following keys:
 
  * 'archive': The `IArchive` object;
  * 'uploads': the number of sources uploaded in the last 7 days.
