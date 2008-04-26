@@ -44,4 +44,5 @@
     provides="canonical.launchpad.interfaces.IHeldMessageDetails"
     factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
     />
+
 </configure>

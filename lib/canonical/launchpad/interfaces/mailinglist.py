@@ -792,8 +792,8 @@ class IHeldMessageDetails(Interface):
 
     message = Object(
         schema=IMessage,
-        title=_('The message object'),
-        description=_('The message object'),
+        title=_('The message record'),
+        description=_('The representation of the message in the librarian'),
         required=True)
 
     message_id = Text(
