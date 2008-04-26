@@ -407,23 +407,23 @@ Carlos's default setting, 'On registration', is still in place.
     (*) On registration
     ( ) Always subscribe
 
-Carlos can update the value at any time.
+Carlos can update the value at any time using his Email Preferences
+page.
 
-    # A convenient helper for setting and submitting a new value.
-    >>> def set_and_submit(newvalue):
+    # A convenient helper for setting and submitting a new
+    # auto-subscribe policy.
+    >>> def set_autosubscribe_policy_and_submit(newvalue):
     ...     control = browser.getControl(
     ...         name='field.mailing_list_auto_subscribe_policy')
     ...     control.value = [newvalue]
-    ...     submit = browser.getControl(
-    ...         name='field.actions.update_autosubscribe_policy')
-    ...     submit.click()
+    ...     browser.getControl('Update Policy').click()
     ...     print_radio_button_field(browser.contents,
     ...         'mailing_list_auto_subscribe_policy')
 
     >>> original_value = browser.getControl(
     ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
 
-    >>> set_and_submit('ALWAYS')
+    >>> set_autosubscribe_policy_and_submit('ALWAYS')
     ( ) Never
     ( ) On registration
     (*) Always subscribe
@@ -432,12 +432,12 @@ Carlos can update the value at any time.
     >>> get_feedback_messages(browser.contents)
     [u'Your auto-subscription policy has been updated.']
 
-    >>> set_and_submit('NEVER')
+    >>> set_autosubscribe_policy_and_submit('NEVER')
     (*) Never
     ( ) On registration
     ( ) Always subscribe
 
-    >>> set_and_submit('ON_REGISTRATION')
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
     ( ) Never
     (*) On registration
     ( ) Always subscribe
@@ -446,7 +446,7 @@ Updating the value twice has no adverse affect.
 
     # Restores the original value while performing the test.
     >>> assert original_value == 'ON_REGISTRATION'
-    >>> set_and_submit(original_value)
+    >>> set_autosubscribe_policy_and_submit(original_value)
     ( ) Never
     (*) On registration
     ( ) Always subscribe
