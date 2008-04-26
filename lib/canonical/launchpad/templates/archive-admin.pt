@@ -12,7 +12,6 @@
 <body>
 
   <metal:heading fill-slot="pageheading">
-    <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
     <h1 tal:condition="not: view/label">Administer archive</h1>
   </metal:heading>
 
