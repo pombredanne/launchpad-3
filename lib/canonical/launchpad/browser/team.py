@@ -570,19 +570,11 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 class TeamMailingListModerationView(MailingListTeamBaseView):
     """A view for moderating the held messages of a mailing list."""
 
-    schema = IMailingList
-    field_names = []
+    schema = Interface
     label = 'Mailing list moderation'
 
     def __init__(self, context, request):
-        """Set feedback messages for users who want to edit the mailing list.
-
-        There are a number of reasons why your changes to the mailing
-        list might not take effect immediately. First, the mailing
-        list may not actually be set as the team contact
-        address. Second, the mailing list may be in a transitional
-        state: from MODIFIED to UPDATING to ACTIVE can take a while.
-        """
+        """Allow for review and moderation of held mailing list posts."""
         super(TeamMailingListModerationView, self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
@@ -610,6 +602,8 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         """Commits the moderation actions."""
         # We're somewhat abusing LaunchpadFormView, so the interesting bits
         # won't be in data.  Instead, get it out of the request.
+        reviewable = self.hold_count
+        disposed_count = 0
         for message in self.held_messages:
             action_name = self.request.form_ng.getOne(
                 'field.' + quote(message.message_id))
@@ -630,10 +624,16 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
                     'Invalid moderation action for held message %s: %s' %
                     (message.message_id, action_name))
             if action is not None:
+                disposed_count += 1
                 action(self.user)
                 self.request.response.addInfoNotification(
                     'Held message %s; Message-ID: %s' % (
                         status.title.lower(), message.message_id))
+        still_held = reviewable - disposed_count
+        if still_held > 0:
+            self.request.response.addInfoNotification(
+                'Messages still held for review: %d of %d' %
+                (still_held, reviewable))
         self.next_url = canonical_url(self.context)
 
 

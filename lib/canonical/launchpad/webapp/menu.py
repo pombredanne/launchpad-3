@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'enabled_with_active_mailing_list',
     'enabled_with_permission',
     'escape',
     'nearest_context_with_adapter',
@@ -24,7 +23,7 @@ import cgi
 
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
-from zope.component import getMultiAdapter, getUtility
+from zope.component import getMultiAdapter
 
 from canonical.lazr import decorates
 
@@ -396,28 +395,6 @@ class enabled_with_permission:
         return enable_if_allowed
 
 
-class enabled_with_active_mailing_list:
-    """Disable the output link if the team's mailing list is not active."""
-
-    def __init__(self, function):
-        self._function = function
-
-    def __get__(self, obj, type=None):
-        """Called by the decorator machinery to return a decorated function.
-        """
-        # Avoid circular imports.
-        from canonical.launchpad.interfaces import IMailingListSet
-        def enable_if_active(*args, **kws):
-            link = self._function(obj, *args, **kws)
-            if not obj.context.isTeam():
-                link.enabled = False
-            mailing_list = getUtility(IMailingListSet).get(obj.context.name)
-            if mailing_list is None or not mailing_list.isUsable():
-                link.enabled = False
-            return link
-        return enable_if_active
-
-
 ##
 ## Helpers for working with normal, structured, and internationalized
 ## text.
@@ -439,7 +416,7 @@ def escape(message):
     translated, then santizied.
 
     :param message: This may be a string, `zope.i18n.Message`,
-    	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        `zope.i18n.MessageID`, or an instance of `IStructuredString`.
     """
     if IStructuredString.providedBy(message):
         return message.escapedtext

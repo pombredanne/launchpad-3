@@ -12,7 +12,7 @@
 <div metal:fill-slot="main">
   <div tal:condition="view/hold_count">
     <metal:form metal:use-macro="context/@@launchpad_form/form">
-      <span metal:fill-slot="extra_top" id="legend">
+      <div metal:fill-slot="extra_top" id="legend">
 
         <span tal:replace="view/hold_count">X</span>
         <span tal:condition="python: view.hold_count == 1">
@@ -26,16 +26,16 @@
         <ul>
           <li><strong>Approve</strong> - Accept the message, post it to the
           mailing list, and credit the original author for his or her on-topic
-          posting.
+          posting.</li>
           <li><strong>Decline</strong> - Reject the message, sending a bounce
           message back to the original author and giving no credit for the
-          posting.  Use this action for off-topic non-spam messages.
+          posting.  Use this action for off-topic non-spam messages.</li>
           <li><strong>Discard</strong> - Throw the message away.  Use this
-          action for obvious spam.
+          action for obvious spam.</li>
           <li><strong>Hold</strong> - Continue to hold the message, deferring
-          your decision until later.
+          your decision until later.</li>
         </ul>
-      </span>
+      </div>
       <table class="listing" metal:fill-slot="widgets">
         <thead><tr>
           <th>Message details</th>

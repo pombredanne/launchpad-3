@@ -45,13 +45,4 @@
     factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
     />
 
-  <!-- Helper page for held message approval -->
-  <browser:page
-    name="+moderation"
-    for="canonical.launchpad.interfaces.IMessageApproval"
-    class="canonical.launchpad.browser.HeldMessageView"
-    template="../templates/message-moderation.pt"
-    permission="launchpad.View"
-    />
-
 </configure>

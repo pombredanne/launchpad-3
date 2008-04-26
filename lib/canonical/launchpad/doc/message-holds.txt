@@ -377,3 +377,55 @@ the notification message is properly encoded.
     Regards,
     The Launchpad team
     ----------------------------------------
+
+
+== Held message formatting ==
+
+When held messages are displayed in the u/i, they will be formatted in such a
+way that we can show the body summary with an ellipsis to review more body
+details.  Because formatting email messages for the web can get tricky, we
+take a fairly conservative 80/20 approach.
+
+    >>> from canonical.launchpad.browser.mailinglists import HeldMessageView
+    >>> from canonical.launchpad.interfaces import (
+    ...     IHeldMessageDetails, IPersonSet)
+    >>> from zope.component import getUtility
+    >>> from zope.interface import implements
+
+First, we craft an object like what the view expects.
+
+    >>> person = getUtility(IPersonSet).getByName('name12')
+    >>> class FakeHeldMessageDetails:
+    ...     implements(IHeldMessageDetails)
+    ...     message_id = '<zebra>'
+    ...     subject = 'A subject'
+    ...     date = 'Today'
+    ...     author = person
+    ...     sender = 'test@example.com'
+    ...     body = """\
+    ... What are the Guadamen?  I think I might want to be come one
+    ... but I'm not sure.  Are they men who like guacamole?  Or are
+    ... they men who live on Gauadalcanal?  I used to live on Guadalcanal
+    ... and boy, do I sure like avocados!
+    ...
+    ... Please consider me for Guadamanhood.
+    ...
+    ... -Guy
+    ... """
+
+    >>> view = HeldMessageView(FakeHeldMessageDetails(), None)
+    >>> view.initialize()
+    >>> view.widget_name
+    'field.%3Czebra%3E'
+    >>> view.author
+    u'<a href="http://launchpad.dev/~name12">test@example.com</a>'
+    >>> view.body_summary
+    'What are the Guadamen?  I think I might want to be come one'
+    >>> print view.body_details
+    but I'm not sure.  Are they men who like guacamole?  Or are
+    they men who live on Gauadalcanal?  I used to live on Guadalcanal
+    and boy, do I sure like avocados!
+    <p>
+    Please consider me for Guadamanhood.
+    <p>
+    -Guy

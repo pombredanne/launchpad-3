@@ -133,6 +133,8 @@ from canonical.launchpad.browser.openiddiscovery import (
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
+from canonical.launchpad.browser.mailinglists import (
+    enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
@@ -149,8 +151,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_active_mailing_list, enabled_with_permission,
-    smartquote, stepthrough, stepto)
+    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
 

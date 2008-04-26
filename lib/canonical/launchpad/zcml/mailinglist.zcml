@@ -61,6 +61,15 @@
         permission="launchpad.Admin"
         />
 
+  <!-- Helper page for held message approval -->
+  <browser:page
+    name="+moderation"
+    for="canonical.launchpad.interfaces.IMessageApproval"
+    class="canonical.launchpad.browser.HeldMessageView"
+    template="../templates/message-moderation.pt"
+    permission="launchpad.View"
+    />
+
   <subscriber
     for="canonical.launchpad.interfaces.IMailingList
 	 canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
