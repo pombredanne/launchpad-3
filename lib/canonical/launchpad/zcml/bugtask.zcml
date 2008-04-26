@@ -89,6 +89,20 @@
       />
 
     <adapter
+      provides="canonical.lazr.interfaces.IObjectPrivacy"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskPrivacyAdapter"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskBadges"
+      permission="zope.Public"
+      />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.database.bugtask.BugTaskToBugAdapter" />

@@ -3038,6 +3038,15 @@ class PersonSet:
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    def getPeopleWithBranches(self, product=None):
+        """See `IPersonSet`."""
+        branch_clause = 'SELECT owner FROM Branch'
+        if product is not None:
+            branch_clause += ' WHERE product = %s' % quote(product)
+        return Person.select('''
+            Person.id in (%s)
+            ''' % branch_clause)
+
     def getSubscribersForTargets(self, targets, recipients=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
