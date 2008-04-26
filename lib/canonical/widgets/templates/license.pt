@@ -1,5 +1,11 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <script type="text/javascript"
         tal:condition="view/allow_pending_license">
+//<![CDATA[
   function unsetLicenses() {
     var checkboxes = document.getElementsByName('field.licenses');
     for (var i = 0; i < checkboxes.length; i++) {
@@ -11,9 +17,11 @@
     document.getElementById('license_pending').checked = pending;
     document.getElementById('license_complete').checked = !pending;
   }
+//]]>
 </script>
 <div style="color: black">
 
+  Select the license(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"
      tal:define="is_empty not:view/_getFormInput">
     <input id="license_pending" name="license_status" type="radio"
@@ -38,7 +46,14 @@
     <input tal:replace="structure view/checkbox_matrix" />
   </div>
 
-  Launchpad.net is free to use for software projects that comply with 
-  <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
-  these licensing policies.</a>
+  <p>
+    Launchpad.net is free to use for software projects that share
+    their source code and comply with these
+    <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
+    licensing policies.</a>
+    <br/>
+    <a href="mailto:feedback@launchpad.net">Contact us</a>
+    if your project uses a proprietary license.
+  </p>
 </div>
+</tal:root>
