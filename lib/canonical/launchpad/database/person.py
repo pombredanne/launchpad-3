@@ -3041,6 +3041,8 @@ class PersonSet:
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
+        if len(persons) == 0:
+            return []
         valid_person_cache = ValidPersonOrTeamCache.select(
             "id IN %s" % sqlvalues([person.id for person in persons]))
         valid_person_ids = set(cache.id for cache in valid_person_cache)
