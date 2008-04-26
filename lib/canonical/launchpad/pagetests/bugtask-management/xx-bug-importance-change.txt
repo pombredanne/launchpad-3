@@ -120,3 +120,92 @@ For someone else, on Ubuntu.
     ...     user=no_priv,
     ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
     False
+
+
+== Email Address bugtasks ==
+
+Normally, it's not possible to edit the status of a bugtask associated
+with a bugwatch.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/'
+    ...                   'jokosher/+bug/12/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = u'gnome-terminal'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
+    ...     u'http://mantis.bugtracker/view.php?id=1234')
+    >>> user_browser.getControl('Add to Bug Report').click()
+    >>> user_browser.getControl(
+    ...     'Register Bug Tracker and Add to Bug Report').click()
+
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/gnome-terminal/+bug/12'
+
+Even the product owner cannot see the Importance widget:
+
+    >>> login("foo.bar@canonical.com")
+    >>> gnome_terminal = getUtility(IProductSet).getByName("gnome-terminal")
+    >>> logout()
+
+    >>> gnome_terminal.owner.name
+    u'name12'
+
+    >>> user_sees_importance_widget(
+    ...     user=gnome_terminal.owner,
+    ...     url=('http://bugs.launchpad.dev/'
+    ...          'gnome-terminal/+bug/12/+editstatus'))
+    False
+
+But if we add a bugwatch with an email address, it will be editable.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/'
+    ...                   'gnome-terminal/+bug/12/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = u'alsa-utils'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('I have already emailed').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.upstream_email_address_done').value = (
+    ...     u'bugs@example.com')
+    >>> user_browser.getControl('Add to Bug Report').click()
+
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/alsa-utils/+bug/12'
+
+The Importance widget is visible, but subject to the same restrictions
+as before.
+
+    >>> login("foo.bar@canonical.com")
+    >>> alsa_utils = getUtility(IProductSet).getByName("alsa-utils")
+    >>> logout()
+
+    >>> alsa_utils.owner.name
+    u'sabdfl'
+
+The owner can see the Importance widget.
+
+    >>> user_sees_importance_widget(
+    ...     user=alsa_utils.owner,
+    ...     url=('http://bugs.launchpad.dev/'
+    ...          'alsa-utils/+bug/12/+editstatus'))
+    True
+
+An ordinary user cannot.
+
+    >>> user_sees_importance_widget(
+    ...     user=no_priv,
+    ...     url=('http://bugs.launchpad.dev/'
+    ...          'alsa-utils/+bug/12/+editstatus'))
+    False
+
+But a bug supervisor can.
+
+    >>> login("foo.bar@canonical.com")
+    >>> alsa_utils.setBugContact(no_priv, no_priv)
+    >>> flush_database_updates()
+    >>> logout()
+
+    >>> user_sees_importance_widget(
+    ...     user=no_priv,
+    ...     url=('http://bugs.launchpad.dev/'
+    ...          'alsa-utils/+bug/12/+editstatus'))
+    True
