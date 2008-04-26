@@ -74,9 +74,9 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
-    BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet, IBugBranchSet,
-    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
-    ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
+    BugTaskStatusSearchDisplay, BugTrackerType, IBug, IBugAttachmentSet,
+    IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
+    IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
@@ -823,22 +823,20 @@ class BugTaskEditView(LaunchpadEditFormView):
         if self.context.target_uses_malone:
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
-            editable_field_names = list(self.default_field_names)
-
-            if 'bugwatch' in editable_field_names:
-                editable_field_names.remove('bugwatch')
+            editable_field_names = set(self.default_field_names)
+            editable_field_names.discard('bugwatch')
 
             # XXX, Brad Bollenbach, 2006-09-29: Permission checking
             # doesn't belong here! See https://launchpad.net/bugs/63000
-            if (not self.userCanEditMilestone() and
-                'milestone' in editable_field_names):
+            if ('milestone' in editable_field_names and
+                not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
 
-            if (not self.userCanEditImportance() and
-                'importance' in editable_field_names):
+            if ('importance' in editable_field_names and
+                not self.userCanEditImportance()):
                 editable_field_names.remove("importance")
         else:
-            editable_field_names = ['bugwatch']
+            editable_field_names = set(('bugwatch',))
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Should be possible to edit the product as well,
@@ -846,14 +844,21 @@ class BugTaskEditView(LaunchpadEditFormView):
                 #     watches. The new product might use Launchpad
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
-                editable_field_names += ['sourcepackagename']
+                editable_field_names.add('sourcepackagename')
             if self.context.bugwatch is None:
-                editable_field_names += ['status', 'assignee']
+                editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
                     and self.userCanEditImportance()):
-                    editable_field_names += ["importance"]
+                    editable_field_names.add('importance')
+            else:
+                bugtracker = self.context.bugwatch.bugtracker
+                if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
+                    editable_field_names.add('status')
+                    if ('importance' in self.default_field_names
+                        and self.userCanEditImportance()):
+                        editable_field_names.add('importance')
 
-        return editable_field_names
+        return frozenset(editable_field_names)
 
     @property
     def is_question(self):
