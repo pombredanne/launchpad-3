@@ -329,7 +329,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
       class="canonical.launchpad.browser.BazaarProductView"
-      template="../templates/product-code-index.pt"
+      template="../templates/code-in-branches.pt"
       permission="zope.Public"
       />
   <browser:page

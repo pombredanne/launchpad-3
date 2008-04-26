@@ -116,7 +116,7 @@ it must have quotes and html escaped.
     >>> getUtility(IProductSet).createProduct(
     ...     user, 'bad-displayname',
     ...     'Bad displayname"><script>alert("h4x0r")</script>',
-    ...     'title foo', 'summary foo', licenses=[License.GPL])
+    ...     'title foo', 'summary foo', licenses=[License.GNU_GPL_V2])
     <Product ...>
     >>> flush_database_updates()
     >>> logout()
