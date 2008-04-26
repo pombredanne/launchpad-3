@@ -123,10 +123,12 @@
         <thead>
           <tr>
             <th style="white-space:nowrap; text-align:left;">
-                <label tal:attributes="for widget/name">
-                  When should launchpad subscribe you to a
-                  team&#x2019;s mailing list?
-                </label>
+	      <div style="margin-bottom: 1em;">
+		<label tal:attributes="for widget/name">
+                  When should launchpad automatically subscribe you to
+                  a team&#x2019;s mailing list?
+		</label>
+	      </div>
             </th>
             <td></td>
           </tr>
@@ -136,7 +138,7 @@
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
           <tr>
             <td>
-                <input tal:replace="structure
+              <input tal:replace="structure
                         view/action_update_autosubscribe_policy/render" />
             </td>
             <td></td>
