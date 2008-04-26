@@ -1,6 +1,6 @@
 = Stub Packager Utility =
 
-StubPackager allow us to easily create minimal debian packages to be
+StubPackager allows us to easily create minimal debian packages to be
 used in tests.
 
     >>> import os
@@ -218,12 +218,11 @@ creating the upstream directory.
 StubPackage also allow the user to upload available packages using a
 simplified upload-processor.
 
-In order to upload packages we have to be logged in as a administrator
-user.
+In order to upload packages we have to be logged in as an administrator.
 
     >>> login('foo.bar@canonical.com')
 
-Also, it required the public test gpg keys to be imported in the
+It also requires the public test gpg keys to be imported in the
 database.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
@@ -244,13 +243,11 @@ enable uploads for it.
     >>> selection = ComponentSelection(
     ...     distroseries=hoary, component=universe)
 
-Uploading a generated package is deadly simple, let's use the
-StubPackager object for 'zeca' source
+Uploading a generated package is deadly simple: just call
+`StubPackager.uploadSourceVersion()` passing the desired upload
+version.
 
-Then all we have to do is to call uploadSourceVersion() passing the
-desired upload version.
-
-It raises an error if the version wasn't generated yet.
+It raises an error if the version has not been generated.
 
     >>> upload = zeca_packager.uploadSourceVersion('6.6.6')
     Traceback (most recent call last):
@@ -275,7 +272,7 @@ the source publishing record created are returned.
     >>> print ubuntu.getSourcePackage('zeca').currentrelease.version
     1.0-1
 
-New uploaded versions will immediately shows up as the current
+New uploaded versions will immediately show up as the current
 version in ubuntu.
 
     >>> zeca_pub = zeca_packager.uploadSourceVersion('1.0-2')
@@ -286,7 +283,7 @@ version in ubuntu.
     >>> print ubuntu.getSourcePackage('zeca').currentrelease.version
     1.0-2
 
-We can change the upload policy for a specific upload, for instace to
+We can change the upload policy for a specific upload, for instance to
 allow unsigned uploads.
 
     >>> biscuit_pub = packager.uploadSourceVersion('1.0-1', policy="sync")
@@ -324,7 +321,7 @@ So, uploading to a PPA only requires us to specify the target archive.
     >>> ppa_pub.getBuilds().count()
     1
 
-Upload errors are raised when they happen. In this case packages
+Upload errors are raised when they happen. In this case, packages
 signed by Foo Bar can't be uploaded to Celso's PPA.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -333,4 +330,5 @@ signed by Foo Bar can't be uploaded to Celso's PPA.
     ...     '1.0-5', archive=cprov.archive)
     Traceback (most recent call last):
     ...
-    AssertionError: Upload was rejected: Signer has no upload rights to this PPA
+    AssertionError: Upload was rejected: Signer has no upload rights
+    to this PPA
