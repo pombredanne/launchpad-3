@@ -23,6 +23,86 @@ from canonical.launchpad.interfaces import (
 from canonical.librarian.interfaces import ILibrarianClient
 
 
+def _performDebdiff(tmp_dir, out_filename, from_files, to_files):
+    """Perform a (deb)diff on two packages.
+
+    A debdiff will be invoked on the files associated with the
+    two packages to be diff'ed. The resulting output will be
+    written to 'out_filename'.
+
+    :param tmp_dir: The temporary directory with the package files.
+    :type tmp_dir: ``str``
+    :param out_filename: The name of the file that will hold the
+        resulting debdiff output.
+    :type tmp_dir: ``str``
+    :param from_files: A list with the names of the files associated
+        with the first package.
+    :type from_files: ``list``
+    :param to_files: A list with the names of the files associated
+        with the second package.
+    :type to_files: ``list``
+    """
+    compressed_bytes = -1
+    [from_dsc] = [name for name in from_files
+                  if name.lower().endswith('.dsc')]
+    [to_dsc] = [name for name in to_files
+                if name.lower().endswith('.dsc')]
+    args = ['debdiff', from_dsc, to_dsc]
+
+    full_path = os.path.join(tmp_dir, out_filename)
+    out_file = None
+    try:
+        out_file = open(full_path, 'w')
+
+        # Create a child process for debdiff.
+        child = Popen(args, stdout=out_file, cwd=tmp_dir)
+        # Wait for debdiff to complete.
+        returncode = child.wait()
+
+        assert returncode == 0, 'Internal error: failed to run debdiff.'
+    finally:
+        if out_file is not None:
+            out_file.close()
+
+    # At this point the debdiff run has concluded and we have a diff
+    # file that needs to be compressed.
+    args = ['gzip', out_filename]
+
+    # Create a child process for gzip.
+    child = Popen(args, cwd=tmp_dir)
+    # Wait for gzip to complete.
+    returncode = child.wait()
+    assert returncode == 0, 'Internal error: failed to run gzip.'
+
+    return os.path.getsize(full_path + '.gz')
+
+def _downloadFile(destination_path, libraryfile):
+    """Download a file from the librarian to the destination path.
+
+    :param destination_path: Absolute destination path (where the
+        file should be downloaded to).
+    :type destination_path: ``str``
+    :param libraryfile: The librarian file that is to be downloaded.
+    :type libraryfile: ``LibraryFileAlias``
+    """
+    # We will download librarian files in 256 Kb chunks in order
+    # to avoid excessive memory usage.
+    chunksize = 256*1024
+
+    destination_file = None
+    try:
+        libraryfile.open()
+        destination_file = open(destination_path, 'w')
+        chunk = libraryfile.read(chunksize)
+        while chunk:
+            destination_file.write(chunk)
+            chunk = libraryfile.read(chunksize)
+    finally:
+        libraryfile.close()
+        if destination_file is not None:
+            destination_file.close()
+
+
 class PackageDiff(SQLBase):
     """A Package Diff request."""
 
@@ -89,7 +169,7 @@ class PackageDiff(SQLBase):
 
                     # This file is new, download it.
                     destination_path = os.path.join(tmp_dir, the_name)
-                    self._downloadFile(destination_path, file.libraryfile)
+                    _downloadFile(destination_path, file.libraryfile)
                     downloaded[direction].append(the_name)
                     files_seen.append(the_name)
 
@@ -102,7 +182,7 @@ class PackageDiff(SQLBase):
                 self.to_source.version)
 
             # Perform the actual diff operation.
-            compressed_bytes = self._performDebdiff(
+            compressed_bytes = _performDebdiff(
                 tmp_dir, result_filename, downloaded['from'],
                 downloaded['to'])
 
@@ -125,87 +205,6 @@ class PackageDiff(SQLBase):
             self.date_fulfilled = UTC_NOW
         finally:
             shutil.rmtree(tmp_dir)
-
-    @staticmethod
-    def _performDebdiff(tmp_dir, out_filename, from_files, to_files):
-        """Performs a (deb)diff on two packages.
-
-        A debdiff will be invoked on the files associated with the
-        two packages to be diff'ed. The resulting output will be
-        written to 'out_filename'.
-
-        :param tmp_dir: The temporary directory with the package files.
-        :type tmp_dir: ``str``
-        :param out_filename: The name of the file that will hold the
-            resulting debdiff output.
-        :type tmp_dir: ``str``
-        :param from_files: A list with the names of the files associated
-            with the first package.
-        :type from_files: ``list``
-        :param to_files: A list with the names of the files associated
-            with the second package.
-        :type to_files: ``list``
-        """
-        compressed_bytes = -1
-        [from_dsc] = [name for name in from_files
-                      if name.lower().endswith('.dsc')]
-        [to_dsc] = [name for name in to_files
-                    if name.lower().endswith('.dsc')]
-        args = ['debdiff', from_dsc, to_dsc]
-
-        full_path = os.path.join(tmp_dir, out_filename)
-        out_file = None
-        try:
-            out_file = open(full_path, 'w')
-
-            # Create a child process for debdiff.
-            child = Popen(args, stdout=out_file, cwd=tmp_dir)
-            # Wait for debdiff to complete.
-            returncode = child.wait()
-
-            assert returncode == 0, 'Internal error: failed to run debdiff.'
-        finally:
-            if out_file is not None:
-                out_file.close()
-
-        # At this point the debdiff run has concluded and we have a diff
-        # file that needs to be compressed.
-        args = ['gzip', out_filename]
-
-        # Create a child process for gzip.
-        child = Popen(args, cwd=tmp_dir)
-        # Wait for gzip to complete.
-        returncode = child.wait()
-        assert returncode == 0, 'Internal error: failed to run gzip.'
-
-        return os.path.getsize(full_path + '.gz')
-
-    @staticmethod
-    def _downloadFile(destination_path, libraryfile):
-        """Downloads a file from the librarian to the destination path.
-
-        :param destination_path: Absolute destination path (where the
-            file should be downloaded to).
-        :type destination_path: ``str``
-        :param libraryfile: The librarian file that is to be downloaded.
-        :type libraryfile: ``LibraryFileAlias``
-        """
-        # We will download librarian files in 256 Kb chunks in order
-        # to avoid excessive memory usage.
-        chunksize = 256*1024
-
-        destination_file = None
-        try:
-            libraryfile.open()
-            destination_file = open(destination_path, 'w')
-            chunk = libraryfile.read(chunksize)
-            while chunk:
-                destination_file.write(chunk)
-                chunk = libraryfile.read(chunksize)
-        finally:
-            libraryfile.close()
-            if destination_file is not None:
-                destination_file.close()
 
 
 class PackageDiffSet:
