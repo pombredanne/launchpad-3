@@ -123,12 +123,12 @@
         <thead>
           <tr>
             <th style="white-space:nowrap; text-align:left;">
-	      <div style="margin-bottom: 1em;">
-		<label tal:attributes="for widget/name">
+              <div style="margin-bottom: 1em;">
+                <label tal:attributes="for widget/name">
                   When should launchpad automatically subscribe you to
                   a team&#x2019;s mailing list?
-		</label>
-	      </div>
+                </label>
+              </div>
             </th>
             <td></td>
           </tr>
