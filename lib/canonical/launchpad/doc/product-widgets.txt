@@ -12,6 +12,7 @@ tracker.
 
 Let's take Firefox as an example, it uses Launchpad as its bug tracker.
 
+    >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.official_malone
@@ -29,7 +30,6 @@ selected, since that's what the custom field's missing value represent.
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     LaunchpadTestRequest())
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
@@ -202,7 +202,6 @@ A custom widget to display a link to the license policy.
 
 Set up a test request and test widget.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IProduct, IProductSet, License)
@@ -213,15 +212,16 @@ Set up a test request and test widget.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
 There should be one checkbox for each license, and there should be a
-link to the license policy.
+link to the license policy. There are currently 10 deprecated licenses
+in the License enum.
 
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> len(soup.table('input'))
-    30
+    22 
     >>> len(License)
-    30
-    >>> len(soup.table('input')) == len(License)
+    32
+    >>> len(soup.table('input')) + 10 == len(License)
     True
     >>> soup.a['href']
     u'http://www.ubuntu.com/community/ubuntustory/licensing'
@@ -237,24 +237,25 @@ output should have zero checked inputs.
 One selected licenses should return a single-item set and the html
 output should have one checked input.
 
-    >>> request = LaunchpadTestRequest(form={'field.licenses': ['GPL']})
+    >>> request = LaunchpadTestRequest(form={'field.licenses': ['GNU_GPL_V2']})
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
     >>> license_widget.getInputValue()
-    Set([<DBItem License.GPL, (130) GPL>])
+    Set([<DBItem License.GNU_GPL_V2, (130) ...>])
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<... checked="checked" ... value="GPL" />]
+    [<... checked="checked" ... value="GNU_GPL_V2" />]
 
 Two selected licenses should return a single-item set and the html
 output should have one checked input.
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'field.licenses': ['LGPL', 'GPL']})
+    ...     form={'field.licenses': ['GNU_LGPL_V2_1', 'GNU_GPL_V2']})
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
     >>> license_widget.getInputValue()
-    Set([<...License.GPL...>, <...License.LGPL...>])
+    Set([<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>])
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<...checked="checked"...value="GPL" />, <...checked="checked"...value="LGPL" />]
+    [<...checked="checked"...value="GNU_GPL_V2" />, 
+    <...checked="checked"...value="GNU_LGPL_V2_1" />]

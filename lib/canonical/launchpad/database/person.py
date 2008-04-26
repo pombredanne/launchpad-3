@@ -2489,6 +2489,7 @@ class PersonSet:
             ('vote', 'person'),
             # This table is handled entirely by triggers.
             ('validpersonorteamcache', 'id'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -3036,6 +3037,15 @@ class PersonSet:
             ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
+    def getPeopleWithBranches(self, product=None):
+        """See `IPersonSet`."""
+        branch_clause = 'SELECT owner FROM Branch'
+        if product is not None:
+            branch_clause += ' WHERE product = %s' % quote(product)
+        return Person.select('''
+            Person.id in (%s)
+            ''' % branch_clause)
 
     def getSubscribersForTargets(self, targets, recipients=None):
         """See `IPersonSet`. """

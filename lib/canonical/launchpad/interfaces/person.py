@@ -1566,6 +1566,13 @@ class IPersonSet(Interface):
         Return None if there is no translator.
         """
 
+    def getPeopleWithBranches(product=None):
+        """Return the people who have branches.
+
+        :param product: If supplied, only people who have branches in the
+            specified product are returned.
+        """
+
     def getSubscribersForTargets(targets, recipients=None):
         """Return the set of subscribers for `targets`.
 

@@ -418,6 +418,8 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
+code_in_branches = 'Projects with active branches'
+
 def codeimport(context, view):
     """Return the view's title."""
     return view.title
@@ -1001,15 +1003,12 @@ product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
-product_branches = ContextDisplayName(
-    smartquote("%s's Bazaar branches registered in Launchpad"))
+product_branches = ContextDisplayName("Bazaar branches of %s")
 
-product_branch_overview = ContextDisplayName("Code overview for %s")
+product_code_index = ContextDisplayName("Bazaar branches of %s")
 
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
-
-product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
