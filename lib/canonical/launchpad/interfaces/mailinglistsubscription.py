@@ -35,6 +35,6 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
     ALWAYS = DBItem(2, """
         Always subscribe me to mailing lists
 
-        Launchpad will automatically subscribe you to a team&#x2019;s
+        Launchpad will automatically subscribe you to a team's
         mailing list, even when someone else adds you to the team.
         """)
