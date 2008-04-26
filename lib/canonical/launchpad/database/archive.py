@@ -737,6 +737,11 @@ class ArchiveSet:
 
         cur.execute(query)
 
-        return [(Archive.get(int(archive_id)), archive_activity)
-                for archive_id, archive_activity in cur.fetchall()]
+        most_active = []
+        for archive_id, number_of_uploads in cur.fetchall():
+            archive = Archive.get(int(archive_id))
+            the_dict = {'archive': archive, 'uploads': number_of_uploads}
+            most_active.append(the_dict)
+
+        return most_active
 

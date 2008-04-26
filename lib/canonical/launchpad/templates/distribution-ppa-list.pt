@@ -13,7 +13,7 @@
 
   <div metal:fill-slot="main">
 
-    <h1>Personal Package Archives for <span tal:replace="context/title" /></h1>
+    <h1>Personal Package Archives for <tal:title replace="context/title" /></h1>
 
     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
        packages to be built and published as an apt repository by
@@ -65,7 +65,7 @@
 
         <div style="padding-top: 1em;" tal:condition="view/name_filter">
            No matching Personal Package Archive
-           for '<span tal:replace="view/name_filter" />'.
+           for '<tal:name_filter replace="view/name_filter" />'.
         </div>
 
         <tal:information condition="not: view/name_filter">
@@ -94,21 +94,19 @@
               <h2>Most active</h2>
 
               <p>PPA with the highest number of uploads during  the
-                 last 7 days</p>
+                 last 7 days.</p>
 
               <table>
-                <tr tal:repeat="ppa_and_uploads view/getMostActivePPAs">
-                  <tal:ppa_and_uploads
-                    define="ppa python:ppa_and_uploads[0];
-                            uploads python:ppa_and_uploads[1]">
+                <tr tal:repeat="most_active view/most_active_ppas">
                   <td>
-                    <a tal:attributes="href ppa/fmt:url"
-                       tal:content="ppa/title">PPA for Celso Providelo</a>
+                    <a tal:attributes="href most_active/archive/fmt:url"
+                       tal:content="most_active/archive/title">
+                      PPA for Celso Providelo
+                    </a>
                   </td>
                   <td align="right">
-                    <tal:sources replace="uploads" /> uploads
+                    <tal:sources replace="most_active/uploads" /> uploads
                   </td>
-                  </tal:ppa_and_uploads>
                 </tr>
               </table>
             </div>
@@ -116,7 +114,7 @@
             <div class="section" id="ppa_latest_uploads">
               <h2>Latest uploads</h2>
               <ul class="source package">
-                <li tal:repeat="pub view/getLatestPPASourcePublications">
+                <li tal:repeat="pub view/latest_ppa_source_publications">
                   <tal:source_title replace="pub/displayname">
                     mozilla-firefox - 1.0 in warty
                   </tal:source_title> in

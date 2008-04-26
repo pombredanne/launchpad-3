@@ -523,13 +523,15 @@ class DistributionPPASearchView(LaunchpadView):
         """The number of binaries published across all PPAs."""
         return getUtility(IArchiveSet).number_of_ppa_binaries
 
-    def getLatestPPASourcePublications(self):
+    @property
+    def latest_ppa_source_publications(self):
         """Return the last 5 sources publication in the context PPAs."""
         archive_set = getUtility(IArchiveSet)
         return archive_set.getLatestPPASourcePublicationsForDistribution(
             distribution=self.context)
 
-    def getMostActivePPAs(self):
+    @property
+    def most_active_ppas(self):
         """Return the last 5 most active PPAs."""
         archive_set = getUtility(IArchiveSet)
         return archive_set.getMostActivePPAsForDistribution(

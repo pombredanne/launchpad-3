@@ -59,7 +59,7 @@ we only have 3 PPAs in sampledata they are all presented.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPA with the highest number of uploads during the last 7 days
+    PPA with the highest number of uploads during the last 7 days.
 
 
 Nothing suitable in the sampledata, check the end of this document for
@@ -665,6 +665,10 @@ corresponding build page.
 
 == Populating 'Most Active' section ==
 
+Since the sampledata publications are not recent enough to appear in
+the 'Most active' section we will create some of them on-the-fly so we
+can check how it looks.
+
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> publishToPPA("cprov", "hoary", "commercialpackage", "1.0-1")
@@ -680,17 +684,25 @@ corresponding build page.
 
     >>> logout()
     >>> transaction.commit()
-    >>> flush_database_updates()
 
+Publications created, now when any user access the 'Ubuntu PPAs' page,
+he will be able to see 4 PPAs where we've added publications listed in
+the 'Most active' section.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPA with the highest number of uploads during the last 7 days
+    PPA with the highest number of uploads during the last 7 days.
     PPA for Celso Providelo        4 uploads
     PPA for Mark Shuttleworth      2 uploads
     PPA for Ubuntu Team            2 uploads
     PPA for No Privileges Person   1 uploads
 
+The user can also in any PPA title listed in that section to visit the
+PPA itself.
+
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
+    >>> print anon_browser.title
+    PPA for Celso Providelo
 

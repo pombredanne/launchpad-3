@@ -345,9 +345,13 @@ class IArchiveSet(Interface):
     def getMostActivePPAsForDistribution(distribution):
         """Return the 5 most active PPAs.
 
-        The activity is currently measured by number of published packages
-        cached for each PPA, first source, then binaries.
+        The activity is currently measured by number of uploaded (published)
+        sources for each PPA during the last 7 days.
+
         Private PPAs are excluded from the result.
+
+        :return A list with up to 5 dictionaries containing the ppa 'title'
+            and the number of 'uploads' keys and corresponding values.
         """
 
 
