@@ -429,6 +429,14 @@ class MailingList(SQLBase):
                                posted_date=message.datecreated,
                                mailing_list=self)
 
+    def getReviewableMessages(self):
+        """See `IMailingList`."""
+        return MessageApproval.select("""
+            MessageApproval.mailing_list = %s AND
+            MessageApproval.status = %s
+            """ % sqlvalues(self, PostedMessageStatus.NEW),
+            orderBy=['posted_date', 'message_id'])
+
 
 class MailingListSet:
     implements(IMailingListSet)

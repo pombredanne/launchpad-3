@@ -6,7 +6,7 @@ sender of the message is not a member of the mailing list and their
 personal standing in Launchpad is unknown.
 
     >>> from canonical.launchpad.ftests import mailinglists_helper
-    >>> team, mailing_list = mailinglists_helper.new_team('test-one', True)
+    >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
 
 
 == Initial hold ==
@@ -28,7 +28,7 @@ first created.
 
 Then this message is inserted into the approval queue.
 
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IMessageApproval
     >>> verifyObject(IMessageApproval, held_message)
@@ -94,7 +94,7 @@ No Privileges Person is the team owner who reviews the held message, and
 he decides that it is appropriate for the mailing list, so he approves
 it.
 
-    >>> owner = mailing_list.team.teamowner
+    >>> owner = list_one.team.teamowner
     >>> print owner.displayname
     No Privileges Person
     >>> held_message.approve(owner)
@@ -129,7 +129,7 @@ bounced back to the sender.
     ...
     ... This is my second post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
     >>> held_message.reject(owner)
     >>> syncUpdate(held_message)
 
@@ -157,7 +157,7 @@ message.
     ...
     ... This is my third post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
     >>> held_message.discard(owner)
     >>> syncUpdate(held_message)
 
@@ -188,7 +188,7 @@ A few more messages are held for approval.
     ...
     ... This is my fourth post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
 
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
@@ -199,32 +199,82 @@ A few more messages are held for approval.
     ...
     ... This is my fifth post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
+
+A second mailing list gets created and some messages get held for approval on
+that list too.
+
+    >>> team_two, list_two = mailinglists_helper.new_team('test-two', True)
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-two@lists.launchpad.dev
+    ... Subject: My sixth test
+    ... Message-ID: <sixth-post>
+    ... Date: Fri, 01 Aug 2000 01:09:03 -0000
+    ...
+    ... This is my sixth post!
+    ... """)
+    >>> held_message = list_two.holdMessage(message)
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-two@lists.launchpad.dev
+    ... Subject: My seventh test
+    ... Message-ID: <seventh-post>
+    ... Date: Fri, 01 Aug 2000 01:09:04 -0000
+    ...
+    ... This is my seventh post!
+    ... """)
+    >>> held_message = list_two.holdMessage(message)
+
+Here are some helper functions.
 
     >>> from canonical.launchpad.interfaces import IMessageApprovalSet
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
+    >>> def print_hold(message_hold):
+    ...     messages = message_set.get(message_hold.message_id)
+    ...     assert len(messages) <= 1, 'Duplicate message-ids'
+    ...     message_id = message_hold.message_id
+    ...     subject = messages[0].subject
+    ...     list_name = message_hold.mailing_list.team.name
+    ...     print message_id, list_name, subject
+
     >>> def print_messages(status):
     ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
     ...                            key=attrgetter('message_id'))
-    ...     for hold in held_messages:
-    ...         messages = message_set.get(hold.message_id)
-    ...         assert len(messages) <= 1, 'Duplicate message-ids'
-    ...         print hold.message_id, messages[0].subject
+    ...     for message_hold in held_messages:
+    ...         print_hold(message_hold)
 
 Here are all the messages pending approval...
 
     >>> from canonical.launchpad.interfaces import PostedMessageStatus
     >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
-    <first-post> My first test
+    <first-post> test-one My first test
 
 ...and all the messages pending rejection...
 
     >>> print_messages(PostedMessageStatus.REJECTION_PENDING)
-    <second-post> My second test
+    <second-post> test-one My second test
 
 ...and all the messages where are waiting for any disposition.
 
     >>> print_messages(PostedMessageStatus.NEW)
-    <fifth-post> My fifth test
-    <fourth-post> My fourth test
+    <fifth-post> test-one My fifth test
+    <fourth-post> test-one My fourth test
+    <seventh-post> test-two My seventh test
+    <sixth-post> test-two My sixth test
+
+When managing the held messages for a mailing lists, we will want to query for
+just those new messages needing approval for a specific list.
+
+    >>> for message_hold in list_one.getReviewableMessages():
+    ...     print_hold(message_hold)
+    <fourth-post> test-one My fourth test
+    <fifth-post> test-one My fifth test
+
+    >>> for message_hold in list_two.getReviewableMessages():
+    ...     print_hold(message_hold)
+    <sixth-post> test-two My sixth test
+    <seventh-post> test-two My seventh test
