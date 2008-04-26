@@ -17,7 +17,7 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
-    ICollectionField, IResourceGETOperation, IResourceOperation,
+    ICollectionField, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
 
 class WadlAPI:
@@ -145,7 +145,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
             self._service_root_url(), self.collection_type())
 
 
-class WadlFieldAPI:
+class WadlFieldAPI(WadlAPI):
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
@@ -175,6 +175,18 @@ class WadlFieldAPI:
         """Is this field a link to another resource?"""
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
+
+    def type_link(self):
+        """The URL of the description of the type this field is a link to."""
+        if ICollectionField.providedBy(self.field):
+            return "%s#ScopedCollection" % self._service_root_url()
+        elif IObject.providedBy(self.field):
+            entry_class = getGlobalSiteManager().adapters.lookup(
+                (self.field.schema,), IEntry)
+            return "%s#%s" % (self._service_root_url(),
+                              entry_class.__name__)
+        else:
+            raise AssertionError("Field is not a link to another resource.")
 
     def options(self):
         """An enumeration of acceptable values for this field.
