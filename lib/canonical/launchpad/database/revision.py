@@ -6,14 +6,16 @@ __all__ = [
     'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
     'RevisionSet']
 
+from datetime import datetime, timedelta
 import email
 
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.database.sqlbase import quote, SQLBase
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -190,3 +192,16 @@ class RevisionSet:
             Revision.revision_id = Branch.last_scanned_id
             """ % quote(branch_ids),
             clauseTables=['Branch'], prejoins=['revision_author'])
+
+    def getRecentRevisionsForProduct(self, product, days):
+        """See `IRevisionSet`."""
+        cut_off_date = datetime.now(pytz.UTC) - timedelta(days=days)
+        return Revision.select("""
+            Revision.id in (
+                SELECT br.revision
+                FROM BranchRevision br, Branch b
+                WHERE br.branch = b.id
+                AND b.product = %s)
+            AND Revision.revision_date >= %s
+            """ % sqlvalues(product, cut_off_date),
+            prejoins=['revision_author'])
