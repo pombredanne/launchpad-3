@@ -7,9 +7,6 @@ __all__ = [
     ]
 
 import cElementTree
-import logging
-import os
-import re
 from email.Utils import parseaddr
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -23,6 +20,8 @@ from canonical.launchpad.interfaces import (
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
+from canonical.launchpad.translationformat.xpi_manifest import (
+    make_jarpath, XpiManifest)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -80,32 +79,71 @@ class MozillaZipFile:
     It handles embedded jar, dtd and properties files.
     """
 
-    def __init__(self, filename, content):
+    def __init__(self, filename, content, xpi_path='', manifest=None):
+        """Open zip (or XPI, or jar) file and scan its contents.
+
+        :param filename: Name of this zip (XPI/jar) file.
+        :param content: The data making up this zip file.
+        :param xpi_path: Full path of this file inside the XPI archive.
+            Leave blank for the XPI file itself.
+        :param manifest: `XpiManifest` representing the XPI archive's
+            manifest file, if any.
+        """
         self.filename = filename
         self.header = None
         self.messages = []
         self.last_translator = None
 
-        zip = ZipFile(StringIO(content), 'r')
-        for entry in sorted(zip.namelist()):
+        archive = ZipFile(StringIO(content), 'r')
+        for entry in sorted(archive.namelist()):
+
+            # Figure out filesystem path to contained file, from the root of
+            # the XPI archive.
+            if entry.endswith('.jar'):
+                file_subpath = make_jarpath(xpi_path, entry)
+            else:
+                file_subpath = "%s/%s" % (xpi_path, entry)
+
+            if manifest is not None:
+                chrome_path, locale = manifest.get_chrome_path_and_locale(
+                    file_subpath)
+                if chrome_path is None:
+                    # We have a manifest, and this file is not in it.  Skip.
+                    continue
+            else:
+                chrome_path = None
+
             if entry.endswith('.properties'):
-                data = zip.read(entry)
-                pf = PropertyFile(filename=entry, content=data)
+                data = archive.read(entry)
+                pf = PropertyFile(
+                    filename=entry, chrome_path=chrome_path, content=data)
                 self.extend(pf.messages)
             elif entry.endswith('.dtd'):
-                data = zip.read(entry)
-                dtdf = DtdFile(filename=entry, content=data)
+                data = archive.read(entry)
+                dtdf = DtdFile(
+                    filename=entry, chrome_path=chrome_path, content=data)
                 self.extend(dtdf.messages)
             elif entry.endswith('.jar'):
-                data = zip.read(entry)
-                jarf = MozillaZipFile(filename=entry, content=data)
+                data = archive.read(entry)
+                jarf = MozillaZipFile(filename=entry, xpi_path=file_subpath,
+                    content=data, manifest=manifest)
                 self.extend(jarf.messages)
-            elif entry == 'install.rdf':
-                data = zip.read(entry)
-                self.header = MozillaHeader(data)
             else:
-                # Ignore this file, we don't need to do anything with it.
-                continue
+                # Not a file we know what to do with.
+                pass
+
+        # Eliminate duplicate messages.
+        seen_messages = set()
+        deletions = []
+        for index, message in enumerate(self.messages):
+            identifier = (message.msgid_singular, message.context)
+            if identifier in seen_messages:
+                # This message is a duplicate.  Mark it for removal.
+                deletions.append(index)
+            else:
+                seen_messages.add(identifier)
+        for index in reversed(deletions):
+            del self.messages[index]
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""
@@ -116,7 +154,7 @@ class MozillaZipFile:
             else:
                 filename = self.filename
             message.file_references_list = [
-                os.path.join(filename, file_reference)
+                "%s/%s" % (filename, file_reference)
                 for file_reference in message.file_references_list]
         # Fill file_references field based on the list of files we
         # found.
@@ -159,9 +197,10 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
     msgids are stored as entities. This class extracts it along
     with translations, comments and source references.
     """
-    def __init__(self, parser, filename, messages):
+    def __init__(self, parser, filename, chrome_path, messages):
         self.started = False
         self.last_comment = None
+        self.chrome_path = chrome_path
         self.messages = messages
         self.filename = filename
         xmldtd.WFCDTD.__init__(self, parser)
@@ -201,6 +240,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
         message.addTranslation(TranslationConstants.SINGULAR_FORM, value)
         message.singular_text = value
+        message.context = self.chrome_path
         message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
@@ -212,9 +252,10 @@ class DtdFile:
 
     It uses DTDParser which fills self.messages with parsed messages.
     """
-    def __init__(self, filename, content):
+    def __init__(self, filename, chrome_path, content):
         self.messages = []
         self.filename = filename
+        self.chrome_path = chrome_path
 
         # .dtd files are supposed to be using UTF-8 encoding, if the file is
         # using another encoding, it's against the standard so we reject it
@@ -226,7 +267,7 @@ class DtdFile:
 
         parser = dtdparser.DTDParser()
         parser.set_error_handler(utils.ErrorCounter())
-        dtd = MozillaDtdConsumer(parser, filename, self.messages)
+        dtd = MozillaDtdConsumer(parser, filename, chrome_path, self.messages)
         parser.set_dtd_consumer(dtd)
         parser.parse_string(content)
 
@@ -249,13 +290,14 @@ class PropertyFile:
 
     license_block_text = u'END LICENSE BLOCK'
 
-    def __init__(self, filename, content):
+    def __init__(self, filename, chrome_path, content):
         """Constructs a dictionary from a .properties file.
 
         :arg filename: The file name where the content came from.
         :arg content: The file content that we want to parse.
         """
         self.filename = filename
+        self.chrome_path = chrome_path
         self.messages = []
 
         # Parse the content.
@@ -408,6 +450,7 @@ class PropertyFile:
 
                 message = TranslationMessageData()
                 message.msgid_singular = key
+                message.context = self.chrome_path
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
                 value = translation.strip()
@@ -422,116 +465,6 @@ class PropertyFile:
                 last_comment_line_num = 0
                 is_message = False
                 translation = u''
-
-
-def find_end_of_common_prefix(strings):
-    """Find index of first character (if any) where strings differ.
-
-    :param strings: a list of strings.
-    :return: index directly after that of last character that is identical
-        across all strings.
-    """
-    min_length = min([len(string) for string in strings])
-    if len(strings) <= 1:
-        return min_length
-
-    head = strings[0]
-    tail = strings[1:]
-    for index in xrange(min_length):
-        base_char = head[index]
-        for string in tail:
-            if string[index] != base_char:
-                return index
-
-    # Scan backwards for a slash, and break there.  Things are a bit prettier
-    # if we avoid breaking in the middle of a directory name.
-    while min_length > 0 and head[min_length-1] != '/':
-        min_length -= 1
-
-    return min_length
-
-
-def normalize_file_references(filename):
-    """Strip trailing crud off a file reference string.
-
-    A file reference string consists of comma-separated file paths, each
-    followed by an optional line number and a repetition of the msgid:
-    "foo/bar:123(splat)" or "foo/bar(splat)".  This function whittles
-    either example down to "foo/bar".
-    """
-    return re.sub('(:[0-9]+)?\([^)]+\)', '', filename)
-
-
-def disambiguate(messages):
-    """Resolve possible duplicate message ids in `messages`.
-
-    Where messages are identical and occur in the exact same file(s), one
-    copy is removed.  Context information is added to resolve clashes between
-    identical message identifiers in different files inside the XPI.
-
-    :param messages: a list of `TranslationMessageData` objects representing
-        the full set of messages in an XPI.
-    :return: a disambiguated list of `TranslationMessageData` objects.
-    """
-    result = []
-    # Messages we've already seen.  Maps msgid_singular to a dict that in turn
-    # maps file_references to a previously processed TranslationMessageData.
-    seen = {}
-
-    # Sets of message ids that occur in multiple files, that need
-    # disambiguation by context.
-    clashes = set()
-
-    for message in messages:
-        references = normalize_file_references(message.file_references)
-        if message.msgid_singular in seen:
-            similar_messages = seen[message.msgid_singular]
-            if references in similar_messages:
-                # This is a completely senseless duplication, within the same
-                # file.  Ignore it.
-                logging.info(
-                    "Duplicate message ID '%s' in %s."
-                    % (message.msgid_singular, message.file_references))
-            else:
-                # There is already a message with the same identifier in a
-                # different file.  Accept it as a separate message.
-                similar_messages[references] = message
-                clashes.add(message.msgid_singular)
-                result.append(message)
-        else:
-            # New message.  Store it.
-            seen[message.msgid_singular] = {references: message}
-            result.append(message)
-
-    # Go over messages with clashing identifiers, and provide context.
-    for msgid in clashes:
-        cousins = seen[msgid]
-        filenames = set()
-        for message in cousins.itervalues():
-            filenames.update(message.file_references_list)
-        # Context is based on the originating file's path.  We can't use the
-        # whole path, because it may contain language codes.
-        # Instead, eliminate common prefixes from the file_references strings
-        # for any set of clashing messages, and use the rest of those strings
-        # as context strings.
-        # XXX: JeroenVermeulen 2008-03-20 spec=xpi-manifest-parsing: Context
-        # should really be based on chrome path, and be set for every string.
-        # To figure out proper chrome paths we need to be able to parse
-        # manifest files first.
-        context_start = find_end_of_common_prefix(list(filenames))
-        for message in cousins.itervalues():
-            context_components = []
-
-            for filename in message.file_references_list:
-                component = normalize_file_references(
-                    filename[context_start:])
-                context_components.append(component)
-
-            context = ','.join(context_components)
-            if len(context) > 0:
-                message.context = context
-
-    return result
 
 
 class MozillaXpiImporter:
@@ -563,6 +496,20 @@ class MozillaXpiImporter:
 
     uses_source_string_msgids = True
 
+    def _extract_manifest(self, archive, contained_files):
+        """Extract manifest file from `ZipFile`."""
+        manifest_names = ['chrome.manifest', 'en-US.manifest']
+        for filename in manifest_names:
+            if filename in contained_files:
+                return XpiManifest(archive.read(filename))
+
+        return None
+
+    def _extract_install_rdf(self, archive, contained_files):
+        if 'install.rdf' not in contained_files:
+            raise TranslationFormatInvalidInputError("No install.rdf found")
+        return MozillaHeader(archive.read('install.rdf'))
+
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
         self._translation_file = TranslationFileData()
@@ -577,10 +524,19 @@ class MozillaXpiImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        parser = MozillaZipFile(self.basepath, self.content.read())
+        # Before going into MozillaZipFile, extract metadata.
+        content = self.content.read()
+        archive = ZipFile(StringIO(content), 'r')
+        contained_files = set(archive.namelist())
+        manifest = self._extract_manifest(archive, contained_files)
+        header = self._extract_install_rdf(archive, contained_files)
 
-        self._translation_file.header = parser.header
-        self._translation_file.messages = disambiguate(parser.messages)
+        archive = None
+
+        parser = MozillaZipFile(self.basepath, content, manifest=manifest)
+
+        self._translation_file.header = header
+        self._translation_file.messages = parser.messages
 
         return self._translation_file
 

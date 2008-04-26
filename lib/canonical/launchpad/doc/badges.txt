@@ -29,7 +29,9 @@ Iterating over this collection gives:
     blueprint
     branch
     bug
+    mentoring
     private
+    security
 
 
 == The Badge class ==
@@ -75,43 +77,67 @@ How to determine which badges to show for a given object is defined by
 the IHasBadges interface.
 
 The base badge implementation class, `HasBadgeBase`, provides an
-implementation of IHasBadges.
+implementation of IHasBadges. HasBadgeBase is also a default adapter
+for Interface, which just provides the privacy badge.
 
-Classes that derive from HasBadgeBase need to define a sequence attribute
+    >>> from zope.interface import Interface, Attribute, implements
+    >>> from canonical.launchpad.webapp.badge import IHasBadges, HasBadgeBase
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> class PrivateClass:
+    ...     implements(Interface)
+    ...     private = True
+    >>> private_object = PrivateClass()
+    >>> has_badge_base = HasBadgeBase(private_object)
+    >>> verifyObject(IHasBadges, has_badge_base)
+    True
+    >>> has_badge_base.badges
+    ('private',)
+    >>> has_badge_base.isPrivateBadgeVisible()
+    True
+
+Classes that derive from HasBadgeBase should define a sequence attribute
 called `badges` that list the names of possible badges.  These names
 are then expanded into method calls to determine the visibility of that
 badge.  For example a badge called `bug` will expand to a method call
-`isBugBadgeVisible`.
+`isBugBadgeVisible`. The title, which will provide a tooltip in the
+UI, can be provided for the `bug` badge by defining the `getBugBadgeVisible`
+method.
 
 In order to provide a badge that is not one of the standard ones, the
 badger class needs to implement the method `getBadge`.
 
-    >>> from canonical.launchpad.webapp.badge import HasBadgeBase
     >>> class SimpleBadger(HasBadgeBase):
     ...     badges = ["bug", "fish"]
     ...     def isBugBadgeVisible(self):
-    ...         return False
+    ...         return True
+    ...     def getBugBadgeTitle(self):
+    ...         return 'Bug-Title'
     ...     def isFishBadgeVisible(self):
     ...         return True
+    ...     def getFishBadgeTitle(self):
+    ...         return 'Fish-Tooltip'
     ...     def getBadge(self, badge_name):
     ...         if badge_name == "fish":
-    ...             return Badge('small-fish', 'large-fish', 'fish')
+    ...             return Badge('small-fish', 'large-fish', 'fish',
+    ...                          'Fish-Title')
     ...         else:
     ...             return HasBadgeBase.getBadge(self, badge_name)
 
-    >>> for badge in SimpleBadger().getVisibleBadges():
-    ...     print badge.alt
-    fish
+    >>> for badge in SimpleBadger(private_object).getVisibleBadges():
+    ...     print badge.alt, "/", badge.title
+    bug / Bug-Title
+    fish / Fish-Title
 
 If the class does not implement the approprate method you get a
 NotImplementedError.
 
     >>> SimpleBadger.badges.append("blueprint")
-    >>> for badge in SimpleBadger().getVisibleBadges():
+    >>> for badge in SimpleBadger(private_object).getVisibleBadges():
     ...     print badge.alt
     Traceback (most recent call last):
     ...
-    NotImplementedError: isBlueprintBadgeVisible
+    AttributeError: 'SimpleBadger' object has no attribute 'isBlueprintBadgeVisible'
+
 
 
 == Preferred badging methodology ==
@@ -132,7 +158,6 @@ accessing or counting of the content object's attributes.  The listing
 views then use a decorated object in order to override the badge
 determination methods to use the results of an alternative query.
 
-    >>> from zope.interface import Interface, Attribute
     >>> class IFoo(Interface):
     ...     bugs = Attribute('Some linked bugs')
     ...     blueprints = Attribute('Some linked blueprints')
@@ -171,7 +196,6 @@ IHasBadges.  Here is the sample from the branch.zcml to illustrate.
 
 Luckily zope provides a way to do this in doctests:
 
-    >>> from canonical.launchpad.webapp.badge import IHasBadges
     >>> from zope.app.testing import ztapi
     >>> ztapi.provideAdapter(Foo, IHasBadges, FooBadges)
 

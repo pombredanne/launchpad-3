@@ -83,22 +83,13 @@ registered in Launchpad, the user will be prompted to register it first.
     'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> print get_feedback_messages(user_browser.contents)[0]
-    The bugtracker with the given URL is not registered in Launchpad.
+    The bug tracker with the given URL is not registered in Launchpad.
     Would you like to register it now?
 
 Now the user confirms he wants us to register the bug tracker for him and we
 do that before creating the new bug watch.
 
     >>> user_browser.getControl('Register Bug Tracker').click()
-
-The bugtracker is now registered, but there is one more issue to deal
-with:
-
-    >>> print get_feedback_messages(user_browser.contents)[0]
-    alsa-utils doesn't use Launchpad as its bug tracker. Without a bug
-    URL to watch, the alsa-utils status will not update automatically.
-
-    >>> user_browser.getControl('Add Anyway').click()
 
 The bug watch is linked, and we're redirected to the bug's page.
 

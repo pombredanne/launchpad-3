@@ -3041,6 +3041,8 @@ class PersonSet:
 
     def getSubscribersForTargets(self, targets, recipients=None):
         """See `IPersonSet`. """
+        if len(targets) == 0:
+            return set()
         target_criteria = []
         for target in targets:
             # target_args is a mapping from query arguments
@@ -3056,9 +3058,23 @@ class PersonSet:
                         '%s IS NULL' % key)
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
-        query = ' OR '.join(target_criteria)
-        subscriptions = StructuralSubscription.select(
-            query, prejoins=['subscriber'])
+
+        # Build a UNION query, since using OR slows down the query a lot.
+        subscriptions = StructuralSubscription.select(target_criteria[0])
+        for target_criterion in target_criteria[1:]:
+            subscriptions = subscriptions.union(
+                StructuralSubscription.select(target_criterion))
+
+        # Listify the result, since we want to loop over it multiple times.
+        subscriptions = list(subscriptions)
+
+        # We can't use prejoins in UNION queries, so populate the cache
+        # by getting all the subscribers.
+        subscriber_ids = [
+            subscription.subscriberID for subscription in subscriptions]
+        if len(subscriber_ids) > 0:
+            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+
         subscribers = set()
         for subscription in subscriptions:
             subscribers.add(subscription.subscriber)
