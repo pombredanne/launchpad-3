@@ -449,6 +449,9 @@ class POFileTranslateView(BaseTranslationView):
     def _initializeShowOption(self):
         # Get any value given by the user
         self.show = self.request.form.get('show')
+        self.search_text = self.request.form.get('search')
+        if self.search_text is not None:
+            self.show = 'all'
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
@@ -477,7 +480,15 @@ class POFileTranslateView(BaseTranslationView):
         pofile = self.context
         potemplate = pofile.potemplate
         if self.show == 'all':
-            ret = potemplate.getPOTMsgSets()
+            if self.search_text is not None:
+                if len(self.search_text) > 1:
+                    ret = pofile.findPOTMsgSetsContaining(text=self.search_text)
+                else:
+                    self.request.response.addWarningNotification(
+                        "Please try searching for a longer string.")
+                    ret = potemplate.getPOTMsgSets()
+            else:
+                ret = potemplate.getPOTMsgSets()
         elif self.show == 'translated':
             ret = pofile.getPOTMsgSetTranslated()
         elif self.show == 'need_review':

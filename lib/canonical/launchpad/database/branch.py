@@ -660,8 +660,8 @@ LISTING_SORT_TO_COLUMN = {
     BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
-    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-last_scanned',
-    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'last_scanned',
+    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',
+    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'date_last_modified',
     BranchListingSort.NEWEST_FIRST: '-date_created',
     BranchListingSort.OLDEST_FIRST: 'date_created',
     }

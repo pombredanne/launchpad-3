@@ -13,12 +13,12 @@ import sha
 import shutil
 import tempfile
 
-from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
+from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
 from canonical.database.sqlbase import SQLBase
-from canonical.database.sqlbase import (
-        FakeZopelessConnectionDescriptor, FakeZopelessTransactionManager)
+from canonical.database.sqlbase import FakeZopelessTransactionManager
+
 
 class LibrarianStorageTestCase(unittest.TestCase):
     """Librarian test cases that don't involve the database"""
@@ -61,13 +61,13 @@ class LibrarianStorageTestCase(unittest.TestCase):
                                                  'data ' * 5000))
 
     def test_notSameFile(self):
-        # Make sure sameFile returns False when the files are different, even if
-        # they are the same length.
+        # Make sure sameFile returns False when the files are different, even
+        # if they are the same length.
         self.failIf(self._sameFileTestHelper('data ' * 5000, 'fred ' * 5000))
 
     def test_differentFileShorter(self):
-        # Make sure sameFile returns False when the second file is shorter than
-        # the first, even if they were the same up to that length.
+        # Make sure sameFile returns False when the second file is shorter
+        # than the first, even if they were the same up to that length.
         self.failIf(self._sameFileTestHelper('data ' * 5000, 'data ' * 4999))
 
     def test_differentFileLonger(self):
@@ -87,8 +87,8 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.assertEqual('12/34/56/789', _relFileLocation(0x123456789))
 
     def test_transactionCommit(self):
-        # Use a stub library that doesn't really use the DB, but does record if
-        # the Storage tried to commit the transaction on the fake DB.
+        # Use a stub library that doesn't really use the DB, but does record
+        # if the Storage tried to commit the transaction on the fake DB.
         self.storage.library = StubLibrary()
         data = 'data ' * 50
         digest = sha.sha(data).hexdigest()
@@ -111,8 +111,8 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.failIf(os.path.exists(newfile.tmpfilepath))
 
     def test_transactionAbort(self):
-        # Use a stub library that doesn't really use the DB, but does record if
-        # the Storage tried to commit the transaction on the fake DB.
+        # Use a stub library that doesn't really use the DB, but does record
+        # if the Storage tried to commit the transaction on the fake DB.
         self.storage.library = StubLibrary()
         data = 'data ' * 50
         digest = sha.sha(data).hexdigest()
@@ -136,10 +136,10 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.failIf(os.path.exists(newfile.tmpfilepath))
 
     def test_multipleFilesInOnePrefixedDirectory(self):
-        # Check that creating a file that will be saved in 11/11/11/11 followed
-        # by a file that will be saved in 11/11/11/12 works correctly -- i.e
-        # that creating a file works both if the directory already exists, and
-        # if the directory doesn't already exist.
+        # Check that creating a file that will be saved in 11/11/11/11
+        # followed by a file that will be saved in 11/11/11/12 works
+        # correctly -- i.e that creating a file works both if the directory
+        # already exists, and if the directory doesn't already exist.
         self.storage.library = StubLibrary2()
         data = 'data ' * 50
         newfile = self.storage.startAddFile('file', len(data))
@@ -171,9 +171,6 @@ class StubLibrary:
 
     def lookupBySHA1(self, digest):
         return []
-
-    def hasContent(self, fileid):
-        return False
 
     def add(self, digest, size):
         return 99
