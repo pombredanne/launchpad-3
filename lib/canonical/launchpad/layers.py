@@ -10,6 +10,9 @@ __metaclass__ = type
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
+from canonical.lazr.interfaces.rest import (
+    WebServiceLayer as LazrWebServiceLayer)
+
 
 def setAdditionalLayer(request, layer):
     directlyProvides(request, directlyProvidedBy(request) + layer)
@@ -91,6 +94,6 @@ class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
 
 
-class WebServiceLayer(LaunchpadLayer):
+class WebServiceLayer(LazrWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
 

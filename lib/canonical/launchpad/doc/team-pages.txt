@@ -4,11 +4,12 @@
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> personset = getUtility(IPersonSet)
     >>> def create_view(context, name, form=None):
-    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view = getMultiAdapter(
+    ...         (context, TestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
 
@@ -62,7 +63,8 @@ Posting malformed data to the team home page raises an error.
     >>> broken_request = LaunchpadTestRequest(
     ...     form={})
     >>> broken_request.method = 'POST'
-    >>> team_home = getView(ubuntu_team, '+index', broken_request)
+    >>> team_home = getMultiAdapter(
+    ...     (ubuntu_team, broken_request), name='+index')
     >>> team_home.initialize()
     Traceback (most recent call last):
     ...
