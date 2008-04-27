@@ -79,7 +79,7 @@ from canonical.launchpad.interfaces import (
     ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson, IPersonSet,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
     IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
@@ -175,6 +175,12 @@ def get_visible_comments(comments):
 
         visible_comments.append(comment)
         previous_comment = comment
+
+    # These two lines are here to fill the ValidPersonOrTeamCache cache,
+    # so that checking owner.is_valid_person, when rendering the link,
+    # won't issue a DB query.
+    commenters = set(comment.owner for comment in visible_comments)
+    getUtility(IPersonSet).getValidPersons(commenters)
 
     return visible_comments
 
@@ -2434,6 +2440,16 @@ class BugTasksAndNominationsView(LaunchpadView):
                 if (nomination.status !=
                     BugNominationStatus.APPROVED)
                 ]
+
+        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
+        # so that checking person.is_valid_person, when rendering the
+        # link, won't issue a DB query.
+        assignees = set(
+            bugtask.assignee for bugtask in all_bugtasks
+            if bugtask.assignee is not None)
+        reporters = set(
+            bugtask.owner for bugtask in all_bugtasks)
+        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
 
         return bugtasks_and_nominations
 
