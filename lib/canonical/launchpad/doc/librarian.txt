@@ -25,7 +25,8 @@ because of this should probably never be used.
 
     >>> alias.expires == NEVER_EXPIRES
     True
-    >>> alias = lfas.create('text.txt', len(data), StringIO(data), 'text/plain')
+    >>> alias = lfas.create(
+    ...     'text.txt', len(data), StringIO(data), 'text/plain')
 
 The default expiry of None means the file will expire a few days after
 it is no longer referenced in the database.
@@ -219,6 +220,147 @@ client can't see the database records yet).
     >>> alias = lfas[alias_id]
     >>> print alias.expires.isoformat()
     2005-09-01T12:00:00+00:00
+
+
+== Restricted Librarian ==
+
+Some files should not be generally available publicly. If you know the
+URL, any file can be retrieved directly from the librarian. For this
+reason, there is a restricted librarian to which access is restricted
+(at the system-level). This means that only Launchpad has direct access
+to the host. You use the IRestrictedLibrarianClient to access this
+librarian.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.librarian.interfaces import IRestrictedLibrarianClient
+    >>> restricted_client = getUtility(IRestrictedLibrarianClient)
+    >>> verifyObject(IRestrictedLibrarianClient, restricted_client)
+    True
+
+File alias uploaded through the restricted librarian have the restricted
+attribute set.
+
+    >>> private_content = 'This is private data.'
+    >>> private_file_id = restricted_client.addFile(
+    ...     'private.txt', len(private_content), StringIO(private_content),
+    ...     'text/plain')
+    >>> file_alias = getUtility(ILibraryFileAliasSet)[private_file_id]
+    >>> file_alias.restricted
+    True
+
+    >>> print file_alias.http_url
+    http://localhost:58005/.../private.txt
+
+    >>> transaction.commit()
+    >>> file_alias.open()
+    >>> print file_alias.read()
+    This is private data.
+    >>> file_alias.close()
+
+If you try to retrieve this file through the standard ILibrarianClient,
+you'll get a DownloadFailed error.
+
+    >>> client.getFileByAlias(private_file_id)
+    Traceback (most recent call last):
+      ...
+    DownloadFailed: Alias ... cannot be downloaded from this client.
+
+    >>> client.getURLForAlias(private_file_id)
+    Traceback (most recent call last):
+      ...
+    DownloadFailed: Alias ... cannot be downloaded from this client.
+
+But using the restricted librarian will work:
+
+    >>> restricted_client.getFileByAlias(private_file_id)
+    <canonical.librarian.client._File...>
+
+    >>> file_url = restricted_client.getURLForAlias(private_file_id)
+    >>> print file_url
+    http://localhost:58005/.../private.txt
+
+Trying to access that file directly on the normal librarian will fail
+(by switching the port)
+
+    >>> sneaky_url = file_url.replace(
+    ...     config.librarian.restricted_download_url,
+    ...     config.librarian.download_url)
+    >>> urlopen(sneaky_url).read()
+    Traceback (most recent call last):
+      ...
+    HTTPError: HTTP Error 404: Not Found
+
+But downloading it from the restricted host, will work.
+
+    >>> print urlopen(file_url).read()
+    This is private data.
+
+Trying to retrieve a non-restricted file from the restricted librarian
+also fails:
+
+    >>> public_content = 'This is public data.'
+    >>> public_file_id = getUtility(ILibrarianClient).addFile(
+    ...     'public.txt', len(public_content), StringIO(public_content),
+    ...     'text/plain')
+    >>> file_alias = getUtility(ILibraryFileAliasSet)[public_file_id]
+    >>> file_alias.restricted
+    False
+    >>> transaction.commit()
+
+    >>> restricted_client.getURLForAlias(public_file_id)
+    Traceback (most recent call last):
+      ...
+    DownloadFailed: ...
+
+    >>> restricted_client.getFileByAlias(public_file_id)
+    Traceback (most recent call last):
+      ...
+    DownloadFailed: ...
+
+The remoteAddFile() on the restricted client, also creates a restricted
+file:
+
+    >>> url = restricted_client.remoteAddFile(
+    ...     'another-private.txt', len(private_content),
+    ...     StringIO(private_content), 'text/plain')
+    >>> print url
+    http://localhost:58005/.../another-private.txt
+
+The file can then immediately be retrieved:
+
+    >>> print urlopen(url).read()
+    This is private data.
+
+Another way to create a restricted file is by using the restricted
+parameter to ILibraryFileAliasSet:
+
+    >>> restricted_file = getUtility(ILibraryFileAliasSet).create(
+    ...     'yet-another-private.txt', len(private_content),
+    ...     StringIO(private_content), 'text/plain', restricted=True)
+    >>> restricted_file.restricted
+    True
+
+Even if one has the SHA1 of the file, searching the librarian for it
+will only return the file if it was in the same restriction space.
+
+So searching for the private content on the public librarian will fail:
+
+    >>> transaction.commit()
+    >>> search_query = "search?digest=%s" % restricted_file.content.sha1
+    >>> print urlopen(config.librarian.download_url + search_query).read()
+    0
+
+But on the restricted server, this will work:
+
+    >>> result = urlopen(
+    ...     config.librarian.restricted_download_url + search_query).read()
+    >>> result = result.splitlines()
+    >>> print result[0]
+    3
+    >>> sorted(result[1:])
+    ['.../private.txt',
+     '.../another-private.txt',
+     '.../yet-another-private.txt']
 
 
 == Buildd mechanism ==

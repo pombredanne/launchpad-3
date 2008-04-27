@@ -17,8 +17,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
-
   <h1>Copy packages from <tal:title replace="context/title" /></h1>
 
     <tal:cannot_copy condition="not: view/can_copy">
