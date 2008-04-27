@@ -286,14 +286,14 @@ comment importing functionality.
     ...     {'id': '1-1', 'type': 'comment',
     ...      'user': 'Test <test@canonical.com>',
     ...      'comment': 'Hello, world!',
-    ...      'time': comment_timestamp}]
+    ...      'timestamp': comment_timestamp}]
     >>> test_transport.remote_bugs['2'].comments = [
     ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
     ...      'comment': 'Hello again, world!',
-    ...      'time': comment_timestamp},
+    ...      'timestamp': comment_timestamp},
     ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar',
     ...      'comment': 'More commentary.',
-    ...      'time': comment_timestamp}]
+    ...      'timestamp': comment_timestamp}]
 
 We also need an example Bug, BugTracker and BugWatch.
 
@@ -370,10 +370,14 @@ parsed.
     Using XML-RPC to generate token.
     Successfully validated the token.
 
-    >>> trac.bugs[1]['comments']
-    {'1-1': {'comment': 'Hello, world!', 'time': 1208518200,
-             'type': 'comment', 'id': '1-1',
-             'user': 'Test <test@canonical.com>'}}
+    >>> for comment in trac.bugs[1]['comments'].values():
+    ...     for key in sorted(comment.keys()):
+    ...         print "%s: %s" % (key, comment[key])
+    comment: Hello, world!
+    id: 1-1
+    timestamp: 1208518200
+    type: comment
+    user: Test <test@canonical.com>
 
 getPosterForComment() returns a tuple of (displayname, emailaddress) for
 the poster of a given comment.
