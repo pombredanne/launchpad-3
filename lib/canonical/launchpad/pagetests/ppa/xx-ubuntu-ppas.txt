@@ -42,6 +42,30 @@ published across all ubuntu PPAs.
     4 published binaries
 
 
+Up to 5 latest source publications are also presented in the 'Latest
+sources' section.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
+    Latest uploads
+    cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo ... ago
+    iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth ... ago
+    pmount 0.1-1 in warty in PPA for Celso Providelo ... ago
+    iceweasel 1.0 in warty in PPA for Celso Providelo ... ago
+
+The 5 most active PPAs are listed in the 'Most active' section. Since
+we only have 3 PPAs in sampledata they are all presented.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    Most active
+    PPA with the highest number of uploads during the last 7 days.
+
+
+Nothing suitable in the sampledata, check the end of this document for
+further tests.
+
+
 == Searching PPAs ==
 
 The search results are presented as a table with the columns Owner,
@@ -63,7 +87,45 @@ PENDING or PUBLISHED source record) PPAs.
     1
     1
 
-We have a checkbox to allow inactive PPA results.
+When a search is requested the information sections are not rendered.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_statistics')
+    None
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    None
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    None
+
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_archs')
+    None
+
+The information section will be only rendered if the page is reloaded
+with no 'name_filter' GET argument, in other words, when no search was
+request.
+
+    >>> anon_browser.getLink("Personal Package Archives").click()
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'ppa_statistics') is not None
+    True
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'ppa_most_active') is not None
+    True
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'ppa_latest_uploads') is not None
+    True
+
+    >>> find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_archs') is not None
+    True
+
+Back to the search form again anonymous users can click on a checkbox
+to allow inactive PPA results.
 
     >>> anon_browser.getControl(name="show_inactive").value = True
     >>> anon_browser.getControl("Search").click()
@@ -102,8 +164,8 @@ them properly, see doc/package-archive.txt.
     >>> from zope.component import getUtility
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.interfaces import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -127,6 +189,7 @@ Let's start by adding an extra package to Celso's archive:
 
     >>> import transaction
     >>> from canonical.launchpad.ftests.ppa import publishToPPA
+
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> logout()
@@ -598,3 +661,48 @@ corresponding build page.
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
     Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+
+== Populating 'Most Active' section ==
+
+Since the sampledata publications are not recent enough to appear in
+the 'Most active' section we will create some of them on-the-fly so we
+can check how it looks.
+
+    >>> login(ANONYMOUS)
+    >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
+    >>> publishToPPA("cprov", "hoary", "commercialpackage", "1.0-1")
+    >>> publishToPPA("cprov", "warty", "cdrkit", "1.0")
+
+    >>> publishToPPA("sabdfl", "warty", "commercialpackage", "1.0-1")
+    >>> publishToPPA(
+    ...     "sabdfl", "breezy-autotest", "commercialpackage", "1.0-1")
+
+    >>> publishToTeamPPA(team_name="ubuntu-team")
+
+    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
+
+    >>> logout()
+    >>> transaction.commit()
+
+Publications created, now when any user access the 'Ubuntu PPAs' page,
+he will be able to see 4 PPAs where we've added publications listed in
+the 'Most active' section.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    Most active
+    PPA with the highest number of uploads during the last 7 days.
+    PPA for Celso Providelo        4 uploads
+    PPA for Mark Shuttleworth      2 uploads
+    PPA for Ubuntu Team            2 uploads
+    PPA for No Privileges Person   1 uploads
+
+The user can also in any PPA title listed in that section to visit the
+PPA itself.
+
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
+    >>> print anon_browser.title
+    PPA for Celso Providelo
+
