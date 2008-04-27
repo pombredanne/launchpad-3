@@ -17,7 +17,8 @@ __all__ = [
     'IResourceGETOperation',
     'IResourcePOSTOperation',
     'IScopedCollection',
-    'IServiceRootResource'
+    'IServiceRootResource',
+    'WebServiceLayer',
     ]
 
 from zope.interface import Attribute, Interface
@@ -25,8 +26,8 @@ from zope.interface import Attribute, Interface
 # the import fascist complains because they are not in __all__ there.
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
-from zope.schema import List, Object
-from zope.schema.interfaces import IObject, IField
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.schema.interfaces import IObject
 
 
 class ICollectionField(IObject):
@@ -94,12 +95,8 @@ class ICollectionResource(IHTTPResource):
 class IResourceOperation(Interface):
     """A one-off operation invokable on a resource."""
 
-    params = List(value_type=Object(schema=IField))
-
-    def __call__(**kwargs):
+    def __call__():
         """Invoke the operation and create the HTTP response.
-
-        :param kwargs: Arguments validated based on `params`.
 
         :returns: If the result is a string, it's assumed that the
         Content-Type was set appropriately, and the result is returned
@@ -151,3 +148,8 @@ class IScopedCollection(ICollection):
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
+
+
+class WebServiceLayer(IDefaultBrowserLayer):
+    """Marker interface for requests to the web service."""
+

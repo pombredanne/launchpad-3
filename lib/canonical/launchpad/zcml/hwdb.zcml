@@ -94,4 +94,27 @@
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
         <allow attributes="__call__" />
     </content>
+
+    <content class="canonical.launchpad.database.HWVendorName">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorName" />
+        <allow attributes="id" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWVendorNameSet"
+        provides="canonical.launchpad.interfaces.IHWVendorNameSet">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorNameSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.HWVendorID">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorID" />
+        <allow attributes="id" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWVendorIDSet"
+        provides="canonical.launchpad.interfaces.IHWVendorIDSet">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorIDSet" />
+    </securedutility>
+
 </configure>

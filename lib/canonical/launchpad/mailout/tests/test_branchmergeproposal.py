@@ -114,15 +114,15 @@ Baz Qux has proposed merging foo into bar.
     def test_forModificationWithModificationDelta(self):
         """Ensure the right delta is filled out if there is a change."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
-        self.assertEqual({'old': None, 'new': 'new commit message'},
+        self.assertEqual('new commit message',
             mailer.delta.commit_message)
 
     def test_forModificationWithModificationTextDelta(self):
         """Ensure the right delta is filled out if there is a change."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual(
-            '    Status: Work in progress => Needs review\n'
-            '    Commit Message: (not set) => new commit message',
+            '    Status: Work in progress => Needs review\n\n'
+            'Commit Message changed to:\n\nnew commit message',
             mailer.textDelta())
 
     def test_generateEmail(self):
@@ -136,7 +136,10 @@ Baz Qux has proposed merging foo into bar.
 The proposal to merge foo into bar has been updated.
 
     Status: Work in progress => Needs review
-    Commit Message: (not set) => new commit message
+
+Commit Message changed to:
+
+new commit message
 --
 %s
 %s
