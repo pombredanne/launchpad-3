@@ -7,6 +7,7 @@ __all__ = [
     ]
 
 import cElementTree
+import textwrap
 from email.Utils import parseaddr
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -71,6 +72,17 @@ class MozillaHeader:
         """
         # Nothing to do for this format.
         return
+
+
+def add_source_comment(message, comment):
+    """Add the given comment inside message.source_comment."""
+    if message.source_comment:
+        message.source_comment += comment
+    else:
+        message.source_comment = comment
+
+    if not message.source_comment.endswith('\n'):
+        message.source_comment += '\n'
 
 
 class MozillaZipFile:
@@ -161,15 +173,22 @@ class MozillaZipFile:
         message.file_references = ', '.join(
             message.file_references_list)
 
-    def _isKeyShortcutMessage(self, message):
-        """Whether the message represents a key shortcut."""
+    def _isCommandKeyMessage(self, message):
+        """Whether the message represents a command key shortcut."""
         return (
             self.filename is not None and
             self.filename.startswith('en-US.xpi') and
             message.translations and (
-                message.msgid_singular.endswith('.accesskey') or
                 message.msgid_singular.endswith('.commandkey') or
                 message.msgid_singular.endswith('.key')))
+
+    def _isAccessKeyMessage(self, message):
+        """Whether the message represents an access key shortcut."""
+        return (
+            self.filename is not None and
+            self.filename.startswith('en-US.xpi') and
+            message.translations and (
+                message.msgid_singular.endswith('.accesskey')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
@@ -179,15 +198,26 @@ class MozillaZipFile:
             # Special case accesskeys and commandkeys:
             # these are single letter messages, lets display
             # the value as a source comment.
-            if self._isKeyShortcutMessage(message):
-                comment = (
-                    u"Select the shortcut key that you want to use. Please,\n"
-                    u"don't change this translation if you are not really\n"
-                    u"sure about what you are doing.\n")
-                if message.source_comment:
-                    message.source_comment += comment
-                else:
-                    message.source_comment = comment
+            if self._isCommandKeyMessage(message):
+                comment = u'\n'.join(textwrap.wrap(
+                    u"Select the shortcut key that you want to use. It should"
+                    u" be translated, but often shortcut keys (for example"
+                    u" Ctrl + KEY) are not changed from the original. If a"
+                    u" translation already exists, please don't change it if"
+                    u" you are not sure about it. Please find the context of"
+                    u" the key from the end of the 'Located in' text below."))
+                add_source_comment(message, comment)
+            elif self._isAccessKeyMessage(message):
+                comment = u'\n'.join(textwrap.wrap(
+                    u"Select the access key that you want to use. These have"
+                    u" to be translated in a way that the selected"
+                    u" character is present in the translated string of the"
+                    u" label being referred to, for example 'i' in 'Edit'"
+                    u" menu item in English. If a translation already"
+                    u" exists, please don't change it if you are not sure"
+                    u" about it. Please find the context of the key from the"
+                    u" end of the 'Located in' text below."))
+                add_source_comment(message, comment)
             self.messages.append(message)
 
 
