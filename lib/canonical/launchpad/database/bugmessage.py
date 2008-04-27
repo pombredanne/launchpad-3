@@ -8,7 +8,7 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
@@ -26,6 +26,8 @@ class BugMessage(SQLBase):
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
+    remote_comment_id = StringCol(notNull=False, default=None)
+
 
 class BugMessageSet:
     """See canonical.launchpad.interfaces.IBugMessageSet."""

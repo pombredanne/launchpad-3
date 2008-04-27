@@ -123,8 +123,8 @@ associated with that milestone for products of this project:
     >>> print extract_text(bugtasks)
     Report Product Importance Assignee Status ...
     Milestone test bug for evolution  Evolution  Undecided Confirmed ...
-    Milestone test bug for gnomebaker gnomebaker Undecided Confirmed
-
+    Milestone test bug for gnomebaker gnomebaker Undecided Confirmed ...
+    Milestone test bug for evolution series trunk Undecided Confirmed
 
 === Duplicate bugs ===
 

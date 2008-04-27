@@ -1120,7 +1120,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # off to the librarian.
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain')
+            StringIO(changesfilecontent), 'text/plain',
+            restricted=archive.private)
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,

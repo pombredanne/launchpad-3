@@ -242,3 +242,39 @@ expirable bugs he reads that Debian does not use bug expiration.
     This project has not enabled bug expiration. No bugs can expire.
     Project administrator's may choose to enable bug expiration by
     updating the project's details.
+
+
+== Default search parameters for incomplete bugs ==
+
+Default bug searches look for both Incomplete (with response) and
+Incomplete (without response) bugs.
+
+We set bug #11 to Incomplete again.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+editstatus')
+    >>> user_browser.getControl('Status').value = ['Incomplete']
+    >>> user_browser.getControl('Save Changes').click()
+
+Since no new comments have been added after we changed the status to
+Incomplete, we can now find that bug searching for Incomplete (without
+response) bugs.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.getControl(name='field.status:list').value = (
+    ...     ['INCOMPLETE_WITHOUT_RESPONSE'])
+    >>> user_browser.getControl('Search', index=1).click()
+    >>> ('<a href="/jokosher/+bug/11">' in
+    ...     str(find_tag_by_id(user_browser.contents, 'buglisting')))
+    True
+
+A default search turns that bug up as well.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> user_browser.getControl('Search').click()
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/jokosher/+bugs?...&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE...
+    >>> ('<a href="/jokosher/+bug/11">' in
+    ...     str(find_tag_by_id(user_browser.contents, 'buglisting')))
+    True
