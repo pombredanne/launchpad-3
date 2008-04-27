@@ -197,7 +197,7 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         query = """
             BugMessage.message = Message.id
-            AND Message.rfc822msgid = %s
+            AND BugMessage.remote_comment_id = %s
             AND BugMessage.bugwatch = %s
         """ % sqlvalues(comment_id, self)
 
@@ -220,7 +220,8 @@ class BugWatch(SQLBase):
         bug_watch_updater = getUtility(
             ILaunchpadCelebrities).bug_watch_updater
         bug_message = self.bug.linkMessage(
-            message, bugwatch=self, user=bug_watch_updater)
+            message, bugwatch=self, user=bug_watch_updater,
+            remote_comment_id=comment_id)
 
 
 class BugWatchSet(BugSetBase):
