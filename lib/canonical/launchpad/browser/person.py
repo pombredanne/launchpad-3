@@ -3039,6 +3039,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         return initial
 
     def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
         super(PersonEditEmailsView, self).setUpWidgets(context)
         widget = self.widgets['mailing_list_auto_subscribe_policy']
         widget.display_label = False
@@ -3127,6 +3128,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Create a field for each mailing list auto-subscription option."""
         return FormFields(
             Choice(__name__='mailing_list_auto_subscribe_policy',
+                   title=_('When should launchpad automatically subscribe '
+                           'you to a team&#x2019;s mailing list?'),
                    source=MailingListAutoSubscribePolicy),
             custom_widget=self.custom_widgets[
                     'mailing_list_auto_subscribe_policy'])
@@ -3425,6 +3428,11 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     def validate_action_update_autosubscribe_policy(self, action, data):
         """Ensure that the requested auto-subscribe setting is valid."""
+        # XXX mars 2008-04-27:
+        # This validator appears pointless and untestable, but it is
+        # required for LaunchpadFormView to tell apart the three <form>
+        # elements on the page.  See bug #223303.
+
         widget = self.widgets['mailing_list_auto_subscribe_policy']
         self.validate_widgets(data, widget.name)
         return self.errors
