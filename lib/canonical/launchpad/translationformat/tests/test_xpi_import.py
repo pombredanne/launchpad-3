@@ -25,7 +25,7 @@ command_key_source_comment = (
     u"but often shortcut keys (for example Ctrl + KEY) are not changed from\n"
     u"the original. If a translation already exists, please don't change it\n"
     u"if you are not sure about it. Please find the context of the key from\n"
-    u"the end of the 'Located in' text below.")
+    u"the end of the 'Located in' text below.\n")
 
 access_key_source_comment = (
     u"Select the access key that you want to use. These have to be\n"
@@ -33,7 +33,7 @@ access_key_source_comment = (
     u"translated string of the label being referred to, for example 'i' in\n"
     u"'Edit' menu item in English. If a translation already exists, please\n"
     u"don't change it if you are not sure about it. Please find the context\n"
-    u"of the key from the end of the 'Located in' text below.")
+    u"of the key from the end of the 'Located in' text below.\n")
 
 
 def get_en_US_xpi_file_to_import(subdir):

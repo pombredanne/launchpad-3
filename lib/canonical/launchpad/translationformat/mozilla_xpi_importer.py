@@ -81,6 +81,9 @@ def add_source_comment(message, comment):
     else:
         message.source_comment = comment
 
+    if not message.source_comment.endswith('\n'):
+        message.source_comment += '\n'
+
 
 class MozillaZipFile:
     """Class for reading translatable messages from Mozilla XPI/JAR files.
