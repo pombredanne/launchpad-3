@@ -180,7 +180,8 @@ class OpenIdMixin:
         rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
             self.openid_request.trust_root)
         if rpconfig is None:
-            field_names.clear()
+            # The nickname field is permitted by default.
+            field_names.intersection_update(['nickname'])
         else:
             field_names.intersection_update(rpconfig.allowed_sreg)
 
