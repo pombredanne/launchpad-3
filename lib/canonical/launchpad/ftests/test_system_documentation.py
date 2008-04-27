@@ -291,6 +291,11 @@ def zopelessLaunchpadSecurityTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
 
+def hwdbDeviceTablesSetup(test):
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
@@ -705,6 +710,11 @@ special = {
     'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
             '../doc/build-estimated-dispatch-time.txt',
             setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'hwdb-device-tables.txt': LayeredDocFileSuite(
+            '../doc/hwdb-device-tables.txt',
+            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
             layer=LaunchpadZopelessLayer,
             ),
     }
