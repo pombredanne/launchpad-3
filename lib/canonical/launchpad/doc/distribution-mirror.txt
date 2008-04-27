@@ -6,10 +6,10 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
-    ...     IDistroArchSeriesSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorFreshness,
-    ...     PackagePublishingPocket, PackagePublishingStatus)
+    ...     ICountrySet, IDistributionSet, IDistributionMirrorSet,
+    ...     IDistroArchSeriesSet, IDistroSeriesSet, ILibraryFileAliasSet,
+    ...     IPersonSet, MirrorContent, MirrorSpeed,
+    ...     PackagePublishingPocket)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -505,9 +505,7 @@ case is that one of the uploads made on 2005-06-20 contains an .udeb
 package instead of a .deb, and we don't check .udeb files on the mirror,
 so we need to skip that upload.
 
-    >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.database import (
-    ...     BinaryPackageFile, SecureBinaryPackagePublishingHistory)
+    >>> from canonical.launchpad.database import BinaryPackageFile
 
     >>> warty_i386_mirror = removeSecurityProxy(warty_i386_mirror)
     >>> recent_freshness, threshold = warty_i386_mirror.freshness_times[0]
@@ -554,7 +552,6 @@ If the mirror has no HTTP base url, we'll use the FTP one.
 
 First we need to run the http server that's going to answer our requests.
 
-    >>> from canonical.launchpad.daemons.tachandler import TacTestSetup
     >>> from canonical.launchpad.scripts.ftests.test_distributionmirror_prober \
     ...     import HTTPServerTestSetup
     >>> http_server = HTTPServerTestSetup()
@@ -730,9 +727,7 @@ functions that achieve that.
 
 First we import the classes required to test the view:
 
-  >>> from zope.component import getView
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistribution)
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.browser.distribution import (
   ...     DistributionMirrorsView)
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -740,7 +735,7 @@ First we import the classes required to test the view:
 Create a view to test:
 
   >>> request = LaunchpadTestRequest()
-  >>> view = getView(ubuntu, '+archivemirrors', request)
+  >>> view = getMultiAdapter((ubuntu, request), name='+archivemirrors')
 
 Verify that the view is a DistributionMirrorsView:
 
