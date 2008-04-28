@@ -342,7 +342,7 @@
     schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     name="+portlet-otherpackages"
     permission="zope.Public"
-    class="canonical.launchpad.browser.BugSupervisorPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     fields="distribution sourcepackagename"
     template="../templates/person-portlet-otherpackages.pt"
     />
@@ -386,7 +386,7 @@
     name="+packagebugs-search"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.BugSupervisorPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-search.pt"
     />
@@ -399,7 +399,7 @@
     name="+packagebugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.BugSupervisorPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-overview.pt"
     />
