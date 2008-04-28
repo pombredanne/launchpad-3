@@ -99,27 +99,30 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
-from canonical.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
+from canonical.widgets import (
+    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
+    PasswordChangeWidget)
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
-    CannotSubscribe, CannotUnsubscribe,
+    AccountStatus, BranchListingSort, BugTaskSearchParams,
+    BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
-    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
+    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
+    IPOTemplateSet, IPasswordEncryptor, IPerson,
+    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType,
-    MailingListAutoSubscribePolicy, NotFoundError,
-    PersonCreationRationale, PersonVisibility, QuestionParticipation,
-    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, MailingListAutoSubscribePolicy,
+    NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
@@ -2828,7 +2831,10 @@ class TeamJoinView(PersonView):
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
-            user.join(context)
+            # Shut off mailing list auto-subscription - we want direct
+            # control over it.
+            user.join(context, may_subscribe_to_list=False)
+
             if self.team_is_moderated:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
@@ -2858,26 +2864,25 @@ class TeamJoinView(PersonView):
         """Subscribe the user to the team's mailing list."""
         response = self.request.response
 
-        if not self.user_can_subscribe_to_list:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-            return
-
-        try:
+        if self.user_can_subscribe_to_list:
+            # 'user_can_subscribe_to_list' should have dealt with
+            # all of the error cases.
             self.context.mailing_list.subscribe(self.user)
-        except CannotSubscribe, error:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-        else:
+
             if self.team_is_moderated:
                 response.addInfoNotification(
-                    _('Your mailing list subscription is awaiting '
-                      'approval.'))
+                    _('Your mailing list subscription is '
+                      'awaiting approval.'))
             else:
                 response.addInfoNotification(
                     structured(
-                        _("You have been subscribed to this team&#x2019;s "
-                          "mailing list.")))
+                        _("You have been subscribed to this "
+                          "team&#x2019;s mailing list.")))
+        else:
+            # A catch-all case, perhaps from stale or mangled
+            # form data.
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):
@@ -2988,13 +2993,10 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     schema = IEmailAddress
 
-    # Custom fields for validated and unvalidated email addresses.
     custom_widget('VALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
-
-    # Custom fields for the mailing list auto-subscription policy.
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
 
@@ -3032,16 +3034,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        defaults = dict(VALIDATED_SELECTED=validated,
-                    UNVALIDATED_SELECTED=unvalidated)
+        initial = dict(VALIDATED_SELECTED=validated,
+                       UNVALIDATED_SELECTED=unvalidated)
 
         # Defaults for the mailing list autosubscribe buttons.
         policy = self.context.mailing_list_auto_subscribe_policy
-        defaults.update(mailing_list_auto_subscribe_policy=policy)
+        initial.update(mailing_list_auto_subscribe_policy=policy)
 
-        return defaults
+        return initial
 
     def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
         super(PersonEditEmailsView, self).setUpWidgets(context)
         widget = self.widgets['mailing_list_auto_subscribe_policy']
         widget.display_label = False
@@ -3127,10 +3130,11 @@ class PersonEditEmailsView(LaunchpadFormView):
         return FormFields(*fields)
 
     def _autosubscribe_policy_fields(self):
-        """Create a field for each mailing list auto-subscription option.
-        """
+        """Create a field for each mailing list auto-subscription option."""
         return FormFields(
             Choice(__name__='mailing_list_auto_subscribe_policy',
+                   title=_('When should launchpad automatically subscribe '
+                           'you to a team&#x2019;s mailing list?'),
                    source=MailingListAutoSubscribePolicy),
             custom_widget=self.custom_widgets[
                     'mailing_list_auto_subscribe_policy'])
@@ -3427,10 +3431,13 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "Subscriptions updated.")
         self.next_url = self.action_url
 
-    # Actions to do with mailing list auto-subscription policy.
-
     def validate_action_update_autosubscribe_policy(self, action, data):
         """Ensure that the requested auto-subscribe setting is valid."""
+        # XXX mars 2008-04-27:
+        # This validator appears pointless and untestable, but it is
+        # required for LaunchpadFormView to tell apart the three <form>
+        # elements on the page.  See bug #223303.
+
         widget = self.widgets['mailing_list_auto_subscribe_policy']
         self.validate_widgets(data, widget.name)
         return self.errors

@@ -1206,7 +1206,7 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
-    def join(team, requester=None):
+    def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
@@ -1217,8 +1217,16 @@ class IPersonEditRestricted(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
-        :param requester: The person who requested the membership on behalf of
-        a team or None when a person requests the membership for himself.
+        If may_subscribe_to_list is True, then also attempt to
+        subscribe to the team's mailing list, depending on the list
+        status and the person's auto-subscribe settings.
+
+        :param requester: The person who requested the membership on
+            behalf of a team or None when a person requests the
+            membership for himself.
+
+        :param may_subscribe_to_list: If True, also try subscribing to
+            the team mailing list.
         """
 
     def leave(team):
@@ -1249,7 +1257,8 @@ class IPersonEditRestricted(Interface):
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
+                  comment=None, force_team_add=False,
+                  may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
@@ -1259,6 +1268,11 @@ class IPersonEditRestricted(Interface):
         If the person is actually a team and force_team_add is False, the
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
+
+        If the the person is not a team, and may_subscribe_to_list
+        is True, then the person may be subscribed to the team's
+        mailing list, depending on the list status and the person's
+        auto-subscribe settings.
 
         The given status must be either Approved, Proposed or Admin.
 
@@ -1293,17 +1307,25 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
-    def subscribeToMailingList(mailinglist, requester=None):
+    def autoSubscribeToMailingList(mailinglist, requester=None):
         """Subscribe this person to a mailing list.
 
         This method takes the user's mailing list auto-subscription
         setting into account, and it may or may not result in a list
-        subscription.  It tries to recover gracefully from common
-        problems, such as the mailing list being in an unusable
-        state, the user already being subscribed, or the user not
-        having a preferred email address set.  If you want
-        these problems to raise exceptions consider using
-        `IMailinglist.subscribe()`.
+        subscription.  It will only subscribe the user to the mailing
+        list if all of the following conditions are met:
+
+          * The mailing list is not None.
+          * The mailing list is in an unusable state.
+          * The user is not already subscribed.
+          * The user has a preferred address set.
+          * The user's auto-subscribe preference is ALWAYS, or
+          * The user's auto-subscribe preference is ON_REGISTRATION,
+            and the requester is either themself or None.
+
+        This method will not raise exceptions if any of the above are
+        not true.  If you want these problems to raise exceptions
+        consider using `IMailinglist.subscribe()` directly.
 
         :param mailinglist: The list to subscribe to.  No action is
         	taken if the list is None, or in an unusable state.

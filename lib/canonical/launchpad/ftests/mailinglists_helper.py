@@ -28,8 +28,8 @@ from canonical.config import config
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
-    IMailingListSet, IPersonSet, MailingListStatus, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    IMailingListSet, IPersonSet, MailingListAutoSubscribePolicy,
+    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
@@ -202,12 +202,19 @@ def apply_for_list(browser, team_name):
     browser.getControl('Apply for Mailing List').click()
 
 
-def new_person(first_name, set_preferred_email=True):
+def new_person(first_name, set_preferred_email=True,
+               use_default_autosubscribe_policy=False):
     """Create a new person with the given first name.
 
     The person will be given two email addresses, with the 'long form'
-    (e.g. anne.person@example.com) as the preferred address.  Return the new
-    person object.
+    (e.g. anne.person@example.com) as the preferred address.  Return
+    the new person object.
+
+    The person will also have their mailing list auto-subscription
+    policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
+    set to True. (This requires the Launchpad.Edit permission).  This
+    is useful for testing, where we often want precise control over
+    when a person gets subscribed to a mailing list.
     """
     variable_name = first_name.lower()
     full_name = first_name + ' Person'
@@ -221,6 +228,12 @@ def new_person(first_name, set_preferred_email=True):
         name=variable_name, displayname=full_name)
     if set_preferred_email:
         person.setPreferredEmail(email)
+
+    if not use_default_autosubscribe_policy:
+        # Shut off list auto-subscription so that we have direct control
+        # over subscriptions in the doctests.
+        person.mailing_list_auto_subscribe_policy = \
+            MailingListAutoSubscribePolicy.NEVER
     getUtility(IEmailAddressSet).new(alternative_address, person,
                                      EmailAddressStatus.VALIDATED)
     return person

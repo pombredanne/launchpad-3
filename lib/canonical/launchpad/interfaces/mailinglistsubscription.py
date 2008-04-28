@@ -23,20 +23,21 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
     """
 
     NEVER = DBItem(0, """
-        Never
+        Never subscribe to mailing lists
 
         Do not subscribe to mailing lists.
         """)
 
     ON_REGISTRATION = DBItem(1, """
-        On registration
+        Ask me when I join a team
 
-        Only subscribe when you request to join a team.
+        Launchpad will only ask about mailing subscriptions when you
+        request to join a team.
         """)
 
     ALWAYS = DBItem(2, """
-        Always subscribe
+        Always subscribe me to mailing lists
 
-        Automatically subscribe to mailing lists, even if someone else
-        adds you to the team.
+        Launchpad will automatically subscribe you to a team's
+        mailing list, even when someone else adds you to the team.
         """)
