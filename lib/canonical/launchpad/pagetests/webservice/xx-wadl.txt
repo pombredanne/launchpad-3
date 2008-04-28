@@ -319,12 +319,9 @@ into groups of three and stores the groups in
 First let's look at how the service root WADL describes entry
 resources.
 
-    # XXX leonardr 2008-04-23 bug=221037: The result here can be
-    # simplified once webservice.txt is moved out of the same layer as
-    # this test.
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    [...'BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntry']
+    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntry']
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -605,11 +602,8 @@ of the same collection!
 Let's look at the different collection resource types defined in the
 WADL file.
 
-    # XXX leonardr 2008-04-23 bug=221037: The result here can be
-    # simplified once webservice.txt is moved out of the same layer as
-    # this test.
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    [...'BugCollection', ... 'ScopedCollection']
+    ['BugCollection', ... 'ScopedCollection']
 
 There's one <resource_type> tag for scoped collections, and another
 tag for every specific kind of collection on the site. We'll be taking

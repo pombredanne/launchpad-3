@@ -1130,3 +1130,31 @@ their URLs, we make the change by modifying the cookbook's
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
     u'http://api.launchpad.dev/beta/authors/Julia%20Child'
+
+
+= Cleanup =
+
+The final step is to unregister the adapters registered for this test,
+so that they don't show up in other tests as parts of the site.
+
+    >>> from zope.app import zapi
+    >>> def unregister(required, provided, name=''):
+    ...     manager = zapi.getGlobalSiteManager()
+    ...     manager.adapters.register(required, provided, name, None)
+    ...     del manager._registrations[(tuple(required), provided, name)]
+    >>> unregister([IAuthor], IAuthorEntry)
+    >>> unregister([ICookbook], ICookbookEntry)
+    >>> unregister([IDish], IDishEntry)
+    >>> unregister([IComment], ICommentEntry)
+    >>> unregister([IRecipe], IRecipeEntry)
+
+    >>> unregister([IAuthorSet], ICollection)
+    >>> unregister([ICookbookSet], ICollection)
+    >>> unregister([IDishSet], ICollection)
+
+    >>> unregister([ICookbookSet, IHTTPApplicationRequest],
+    ...                   IResourcePOSTOperation, 'create_cookbook')
+    >>> unregister([ICookbookSet, IHTTPApplicationRequest],
+    ...                    IResourceGETOperation, "find_recipes")
+    >>> unregister([IRecipe, IHTTPApplicationRequest],
+    ...                   IResourceGETOperation, "find_similar_recipes")

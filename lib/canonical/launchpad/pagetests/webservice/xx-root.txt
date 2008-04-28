@@ -4,12 +4,9 @@ The service root (/[version]/) is a resource that responds to GET by
 describing the web service. The description is a JSON map full of
 links to the top-level web service objects.
 
-  # XXX leonardr 2008-04-24 bug=221037: This list includes top-level
-  # collections from the Launchpad web service. This part of the
-  # test can be simplified once the test is moved to another layer.
   >>> top_level_links = webservice.get("/beta/").jsonBody()
   >>> sorted(top_level_links.keys())
-  [...u'BugCollection_collection_link', ...
+  [u'BugCollection_collection_link',
    u'PersonSetCollectionAdapter_collection_link']
   >>> top_level_links['BugCollection_collection_link']
   u'http://api.launchpad.dev/beta/bugs'

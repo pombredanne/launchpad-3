@@ -24,6 +24,7 @@ from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter, getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
+from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
@@ -130,14 +131,14 @@ class HTTPResource(URLDereferencingMixin):
         namespace['context'] = self
         return template.pt_render(namespace)
 
-    def getPreferredSupportedContentType(self, request=None):
+    def getPreferredSupportedContentType(self):
         """Of the content types we serve, which would the client prefer?
 
         The web service supports WADL and JSON representations. The
         default is JSON. This method determines whether the client
         would rather have WADL or JSON.
         """
-        content_types = self.getPreferredContentTypes(request)
+        content_types = self.getPreferredContentTypes()
         try:
             wadl_pos = content_types.index(self.WADL_TYPE)
         except ValueError:
@@ -150,11 +151,9 @@ class HTTPResource(URLDereferencingMixin):
             return self.WADL_TYPE
         return self.JSON_TYPE
 
-    def getPreferredContentTypes(self, request=None):
+    def getPreferredContentTypes(self):
         """Find which content types the client prefers to receive."""
-        if request is None:
-            request = self.request
-        return self._parseAcceptStyleHeader(request.get('HTTP_ACCEPT'))
+        return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
 
 
     def _fieldValueIsObject(self, field):
@@ -719,7 +718,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
 
 class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
-    implements(IServiceRootResource, ICanonicalUrlData)
+    implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
 
     inside = None
     path = ''
@@ -743,25 +742,24 @@ class ServiceRootResource(HTTPResource):
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
         if REQUEST.method == "GET":
-            return self.do_GET(REQUEST)
+            return self.do_GET()
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
 
-    def do_GET(self, request):
+    def do_GET(self):
         """Describe the capabilities of the web service in WADL."""
 
-        if self.getPreferredSupportedContentType(request) == self.WADL_TYPE:
+        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
             result = self.toWADL().encode("utf-8")
-            request.response.setHeader('Content-Type', self.WADL_TYPE)
+            self.request.response.setHeader('Content-Type', self.WADL_TYPE)
             return result
 
         # The client didn't want WADL, so we'll give them JSON.
         # Specifically, a JSON map containing links to all the
         # top-level resources.
-        result = self.toDataForJSON(request)
-        request.response.setHeader('Content-type', self.JSON_TYPE)
-        return simplejson.dumps(result)
+        self.request.response.setHeader('Content-type', self.JSON_TYPE)
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
     def toWADL(self):
         # Find all resource types.
@@ -770,7 +768,7 @@ class ServiceRootResource(HTTPResource):
         collection_classes = []
         for registration in site_manager.registrations():
             provided = registration.provided
-            if hasattr(provided, 'extends'):
+            if IInterface.providedBy(provided):
                 if (provided.isOrExtends(IEntry)
                     and IEntry.implementedBy(registration.value)):
                     # The implementedBy check is necessary because
@@ -794,7 +792,7 @@ class ServiceRootResource(HTTPResource):
         namespace['context'] = self
         return template.pt_render(namespace)
 
-    def toDataForJSON(self, request):
+    def toDataForJSON(self):
         """Return a map of links to top-level collection resources.
 
         A top-level resource is one that adapts a utility.  Currently
@@ -802,18 +800,18 @@ class ServiceRootResource(HTTPResource):
         represented.
         """
         data_for_json = {}
-        publications = self.getTopLevelPublications(request)
+        publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
             data_for_json[link_name] = canonical_url(publication)
         return data_for_json
 
-    def getTopLevelPublications(self, request):
+    def getTopLevelPublications(self):
         """Return a mapping of top-level link names to published objects."""
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
         for registration in site_manager.registrations():
             provided = registration.provided
-            if hasattr(provided, 'extends'):
+            if IInterface.providedBy(provided):
                 if (provided.isOrExtends(ICollection)
                      and ICollection.implementedBy(registration.value)):
                     try:
