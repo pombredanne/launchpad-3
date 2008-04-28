@@ -36,7 +36,8 @@ access_key_source_comment = dedent(u"""
     translated string of the label being referred to, for example 'i' in
     'Edit' menu item in English. If a translation already exists, please
     don't change it if you are not sure about it. Please find the context
-    of the key from the end of the 'Located in' text below.""").strip()
+    of the key from the end of the 'Located in' text below.
+    """).strip()
 
 
 def get_en_US_xpi_file_to_import(subdir):

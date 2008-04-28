@@ -259,7 +259,7 @@ class XpiManifestTestCase(unittest.TestCase):
 
     def test_NormalizeContainsLocales(self):
         # "containsLocales" lookup is normalized, just like chrome path
-        # lookup, so it's not fazed by misspellings.
+        # lookup, so it's not fazed by syntactical misspellings.
         manifest = XpiManifest("locale main kh jar:/x/foo.jar!bar.jar!")
         self.failIf(not manifest.containsLocales("x/foo.jar!//bar.jar!/"))
 

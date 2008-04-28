@@ -60,9 +60,7 @@ class MozillaHeader:
             if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
                 # This file would have more than one contributor, but
                 # we are only getting latest one.
-                thisname, thisemail = parseaddr(elem.text)
-                if '@' in thisemail:
-                    name, email = thisname, thisemail
+                name, email = parseaddr(elem.text)
 
         return name, email
 
@@ -128,7 +126,7 @@ class MozillaZipFile:
             # If we have a manifest, we skip anything that it doesn't list as
             # having something useful for us.
             if manifest is None:
-                chrome_path = ''
+                chrome_path = None
             else:
                 if suffix == 'jar':
                     if not manifest.containsLocales(subpath):
@@ -146,7 +144,7 @@ class MozillaZipFile:
 
             if suffix == 'jar':
                 parsed_file = MozillaZipFile(filename=entry,
-                        xpi_path=subpath, content=data, manifest=manifest)
+                    xpi_path=subpath, content=data, manifest=manifest)
             elif suffix == 'dtd':
                 parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
                     content=data)
@@ -154,7 +152,8 @@ class MozillaZipFile:
                 parsed_file = PropertyFile(filename=entry,
                     chrome_path=chrome_path, content=data)
             else:
-                assert False, "Filename suffix recognition screwed up."
+                raise AssertionError(
+                    "Unexpected filename suffix: %s." % suffix)
 
             # Take messages from parsed file.
             self.extend(parsed_file.messages)
