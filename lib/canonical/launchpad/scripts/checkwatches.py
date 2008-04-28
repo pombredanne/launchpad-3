@@ -23,10 +23,10 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugTrackerSet,
-    IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
-    ISupportsCommentImport, PersonCreationRationale,
-    UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
+    IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
+    IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -407,6 +407,7 @@ class BugWatchUpdater(object):
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.import_comments)
+        can_push_comments = ISupportsCommentPushing.providedBy(remotesystem)
         if can_import_comments and server_time is None:
             can_import_comments = False
             self.warning(
@@ -473,6 +474,8 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if can_import_comments:
                         self.importBugComments(remotesystem, bug_watch)
+                    if can_push_comments:
+                        self.pushBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -595,6 +598,40 @@ class BugWatchUpdater(object):
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
                 {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
+    def pushBugComments(self, external_bugtracker, bug_watch):
+        """Push Launchpad comments to the remote bug.
+
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentPushing`.
+        :param bug_watch: The bug watch to which the comments should be
+            pushed.
+        """
+        pushed_comments = 0
+
+        for message in bug_watch.bug.messages[1:]:
+            bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+                bug_watch.bug, message)
+
+            # We only push those comments that haven't been pushed
+            # already. We don't push any comments not associated with
+            # the bug watch.
+            if (bug_message.remote_comment_id is None and
+                bug_message.bugwatch == bug_watch):
+                bug_message.remote_comment_id = (
+                    external_bugtracker.addRemoteComment(
+                        bug_watch.remotebug, message))
+
+                pushed_comments += 1
+
+        if pushed_comments > 0:
+            self.log.info("Pushed %(count)i comments to remote bug "
+                "%(remotebug)s on %(bugtracker_url)s from Launchpad bug "
+                "%(bug_id)s" %
+                {'count': pushed_comments,
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
