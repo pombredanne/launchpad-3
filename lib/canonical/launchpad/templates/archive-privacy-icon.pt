@@ -1,6 +1,0 @@
-<div style="float: right;">
-  <img tal:condition="context/private"
-       title="This archive is private."
-       alt="(Private)" id="privatebadge" src="/@@/private-large" />
-</div>
-

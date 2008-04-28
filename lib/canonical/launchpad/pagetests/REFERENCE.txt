@@ -135,6 +135,13 @@ Form controls:
 
     >>> browser.getControl(name='field.radiobuttons').value = ['BSD']
 
+Forms without submit buttons:
+
+    >>> browser.getControl("Text field").value = "something"
+    >>> browser.getForm(id="text_form").submit()
+    >>> browser.url
+    'http://where-you-went-after-posting/'
+
 Gotchas:
 
     AttributeError: 'zope.thread.local' object has no attribute 'interaction'

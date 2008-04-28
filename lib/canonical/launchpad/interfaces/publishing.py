@@ -102,6 +102,7 @@ class IPublishing(Interface):
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
     displayname = Attribute("Text representation of the current record.")
+    age = Attribute("Age of the publishing record.")
 
     def publish(diskpool, log):
         """Publish or ensure contents of this publish record

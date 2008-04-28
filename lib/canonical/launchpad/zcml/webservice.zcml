@@ -11,6 +11,7 @@
         <allow
             interface="canonical.launchpad.interfaces.IWebServiceApplication" />
         <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
+        <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
     <!-- TALES namespaces for WADL generation -->
@@ -33,6 +34,20 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
         name="wadl"
+        />
+
+    <adapter
+        for="tuple"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
+        name="wadl_entry"
+        />
+
+    <adapter
+        for="tuple"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
+        name="wadl_collection"
         />
 
     <adapter

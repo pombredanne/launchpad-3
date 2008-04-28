@@ -19,6 +19,7 @@ __all__ = [
 from datetime import datetime
 import simplejson
 
+from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import adapts, getAdapters, getMultiAdapter
 from zope.component.interfaces import ComponentLookupError
@@ -724,10 +725,43 @@ class ServiceRootResource:
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
         if REQUEST.method == "GET":
-            return "This is a web service."
+            return self.do_GET(REQUEST)
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
+
+    def do_GET(self, request):
+        """Describe the capabilities of the web service in WADL."""
+
+        # Find all resource types.
+        site_manager = zapi.getGlobalSiteManager()
+        entry_classes = []
+        collection_classes = []
+        for registration in site_manager.registrations():
+            provided = registration.provided
+            if hasattr(provided, 'extends'):
+                if (provided.isOrExtends(IEntry)
+                    and IEntry.implementedBy(registration.value)):
+                    # The implementedBy check is necessary because
+                    # some IEntry adapters aren't classes with
+                    # schemas; they're functions. We can ignore these
+                    # functions because their return value will be one
+                    # of the classes with schemas, which we do describe.
+                    entry_classes.append((registration.value,
+                                          registration.required))
+                elif (provided.isOrExtends(ICollection)
+                      and ICollection.implementedBy(registration.value)):
+                    # See comment above re: implementedBy check.
+                    collection_classes.append((registration.value,
+                                               registration.required))
+        template = LazrPageTemplateFile('../templates/wadl-root.pt')
+        namespace = template.pt_getContext()
+        namespace['entries'] = entry_classes
+        namespace['collections'] = collection_classes
+        wadl = template.pt_render(namespace).encode('utf8')
+        request.response.setHeader(
+            'Content-Type', 'application/vd.sun.wadl+xml')
+        return wadl
 
 
 class Entry:

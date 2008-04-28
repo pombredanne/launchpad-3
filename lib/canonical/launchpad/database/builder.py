@@ -36,8 +36,8 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
-    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
-    pocketsuffix)
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -271,6 +271,17 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                # Skip archives with no binaries published for the
+                # target distroarchseries.
+                published_binaries = archive.getAllPublishedBinaries(
+                    distroarchseries=build_queue_item.archseries,
+                    status=PackagePublishingStatus.PUBLISHED)
+                if published_binaries.count() == 0:
+                    continue
+
+                # Encode the private PPA repository password in the
+                # sources_list line. Note that the buildlog will be
+                # sanitized to not expose it.
                 if archive.private:
                     uri = URI(archive.archive_url)
                     uri = uri.replace(
@@ -278,6 +289,7 @@ class Builder(SQLBase):
                     url = str(uri)
                 else:
                     url = archive.archive_url
+
                 source_line = (
                     'deb %s %s %s'
                     % (url, dist_name, ogre_components))
