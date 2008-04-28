@@ -162,7 +162,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("All architectures in this series.")
-    ppa_architectures = Attribute(
+    virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
@@ -546,7 +546,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                ppa_supported=False):
+                supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):

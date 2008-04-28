@@ -35,7 +35,7 @@ class IDistroArchSeries(IHasOwner):
         required=True)
     package_count = Attribute('A cache of the number of packages published '
         'in the RELEASE pocket of this port.')
-    ppa_supported = Bool(
+    supports_virtualized = Bool(
         title=_("PPA support available"),
         description=_("Indicate whether or not this port has support "
                       "for building PPA packages."),

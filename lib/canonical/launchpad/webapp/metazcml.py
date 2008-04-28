@@ -39,7 +39,7 @@ from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IAuthorization, IBreadcrumbProvider)
+    IContextMenu, INavigationMenu, IAuthorization, IBreadcrumbProvider)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
 
@@ -217,7 +217,7 @@ def menus(_context, module, classes):
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu]
+    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu, INavigationMenu]
     applicationmenutypes = [IApplicationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
