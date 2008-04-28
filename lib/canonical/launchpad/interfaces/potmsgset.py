@@ -45,6 +45,8 @@ class IPOTMsgSet(Interface):
         readonly=True,
         schema=IPOMsgID)
 
+    sequence = Attribute("The ordering of this set within its file.")
+
     potemplate = Attribute("The template this set is associated with.")
 
     commenttext = Attribute("The manual comments this set has.")
