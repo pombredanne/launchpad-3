@@ -133,6 +133,8 @@ new packager passing a filename available in our test_keys directory
 
     >>> packager = StubPackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+    >>> packager.buildUpstream()
+    >>> packager.buildSource()
 
 GPG key set, now we are able to build a signed version.
 
@@ -143,8 +145,6 @@ StubPackager also allows us to include as many versions it needs
 before building the package. It helps when the content of the
 changelog matters in the test context.
 
-    >>> packager.buildUpstream()
-    >>> packager.buildSource()
     >>> packager.buildVersion('1.0-2', changelog_text="cookies")
     >>> packager.buildVersion('1.0-3', changelog_text="butter cookies")
     >>> packager.buildSource(include_orig=False)

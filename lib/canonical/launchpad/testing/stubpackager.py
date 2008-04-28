@@ -126,6 +126,7 @@ class StubPackager:
             self.gpg_key_id = None
             return
 
+        gpghandler.resetLocalState()
         import_secret_test_key(key_path)
         key = list(gpghandler.localKeys())[0]
 
