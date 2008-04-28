@@ -71,7 +71,8 @@ class PersonEntry(Entry):
 
 
 class GetMembersByStatusOperation(ResourceGETOperation):
-    """An operation that retrieves team members with the given status.
+    """
+    An operation that retrieves team members with the given status.
 
     XXX leonardr 2008-04-01 bug=210265:
     To implement this without creating a custom operation, expose a
@@ -93,7 +94,8 @@ class GetMembersByStatusOperation(ResourceGETOperation):
 
 
 class GetPeopleOperation(ResourceGETOperation):
-    """An operation that retrieves people that match the given filter.
+    """
+    An operation that retrieves people that match the given filter.
 
     XXX leonardr 2008-03-17: This operation does not support
     IPersonSet.find()'s method's 'orderBy' argument because that
@@ -117,7 +119,8 @@ class GetPeopleOperation(ResourceGETOperation):
 
 
 class PersonFactoryOperation(ResourcePOSTOperation):
-    """An operation that creates a new person.
+    """
+    An operation that creates a new person.
 
     XXX leonardr 2008-04-01 bug=210265:
     To implement this without creating a custom operation, define a

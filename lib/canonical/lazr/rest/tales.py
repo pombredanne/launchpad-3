@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from epydoc.markup import epytext
 import urllib
 
 from zope.app.zapi import getGlobalSiteManager
@@ -30,6 +31,18 @@ class WadlAPI:
         """Return the URL to the service root."""
         request = get_current_browser_request()
         return canonical_url(request.publication.getApplication(request))
+
+    def docstringToXHTML(self, doc):
+        """Convert an epydoc docstring to XHTML."""
+        if doc == '' or doc is None:
+            return None
+        errors = []
+        parsed = epytext.parse_docstring(doc, errors)
+        if len(errors) > 0:
+            messages = [str(error) for error in errors]
+            raise AssertionError(
+                "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
+        return parsed.to_html(None)
 
 
 class WadlResourceAPI(WadlAPI):
@@ -132,6 +145,10 @@ class WadlResourceAdapterAPI(WadlAPI):
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
 
+    def doc(self):
+        """Human-readable XHTML documentation for this object type."""
+        return self.docstringToXHTML(self.adapter.__doc__)
+
 
 class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     """Namespace for WADL functions that operate on entry adapter classes."""
@@ -194,6 +211,17 @@ class WadlFieldAPI(WadlAPI):
         else:
             return name
 
+    def doc(self):
+        """The docstring for this field."""
+        title = self.field.title
+        if title != '':
+            title = "<strong>%s</strong>" % title
+            if self.field.description != '':
+                return "%s: %s" % (self.field.title, self.field.description)
+            else:
+                return title
+        return self.field.description
+
     def path(self):
         """The 'path' to this field within a JSON document.
 
@@ -232,7 +260,7 @@ class WadlFieldAPI(WadlAPI):
         return None
 
 
-class WadlOperationAPI:
+class WadlOperationAPI(WadlAPI):
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
@@ -248,3 +276,5 @@ class WadlOperationAPI:
         else:
             raise AssertionError("Named operations must use GET or POST.")
 
+    def doc(self):
+        return self.docstringToXHTML(self.operation.__doc__)

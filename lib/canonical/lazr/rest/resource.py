@@ -37,6 +37,7 @@ from canonical.lazr.enum import BaseItem
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
     IEntryResource, IFieldDeserializer, IHTTPResource, IJSONPublishable,
@@ -732,7 +733,12 @@ class ServiceRootResource(HTTPResource):
         with no request or context, and then passes the request in
         when it calls the service root object.
         """
-        super(ServiceRootResource, self).__init__(None, None)
+        pass
+
+    @property
+    def request(self):
+        """Fetch the current browser request."""
+        return get_current_browser_request()
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
@@ -781,6 +787,8 @@ class ServiceRootResource(HTTPResource):
                                                registration.required))
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
+        namespace['context'] = self
+        namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
         namespace['context'] = self

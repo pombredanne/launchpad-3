@@ -178,7 +178,7 @@ responds only to GET.
     '...resource_type'
     >>> service_root_type.attrib['id']
     'service-root'
-    >>> get, = list(service_root_type)
+    >>> (doc, get) = list(service_root_type)
     >>> get.tag
     '...method'
     >>> get.attrib['name']
@@ -383,6 +383,15 @@ parameter's value.
 So to get the assignee link out of a JSON data structure you need to
 look up the element called "assignee_link".
 
+A parameter may also have human-readable documentation: an optional
+name for the parameter and an optional short description.
+
+    >>> doc = full_params[0][0]
+    >>> doc.tag
+    '...doc'
+    >>> doc.text
+    '<strong>Status</strong>'
+
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
 of the link.
@@ -405,7 +414,7 @@ If the link is a link to collection, the 'type' will always be
     >>> related_tasks, = [
     ...     param for param in full_params
     ...     if param.attrib['name'] == 'related_tasks_collection_link']
-    >>> related_tasks_link, = related_tasks.getchildren()
+    >>> (doc, related_tasks_link) = related_tasks.getchildren()
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['type']
@@ -440,8 +449,10 @@ values.
     ...                   if param.attrib['name'] == 'status']
     >>> status_options = status_param.getchildren()
     >>> status_options[0].tag
+    '...doc'
+    >>> status_options[1].tag
     '...option'
-    >>> sorted(status.attrib['value'] for status in status_options)
+    >>> sorted(status.attrib['value'] for status in status_options[1:])
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
@@ -456,12 +467,20 @@ is kept in the <resource_type> tag.
     >>> resource_type.tag
     '...resource_type'
 
+    >>> doc_and_methods = list(resource_type)
+    >>> doc = doc_and_methods[0]
+    >>> methods = doc_and_methods[1:]
+    >>> get, put, patch, post = methods
+
+A resource type may have some human-readable documentation:
+
+    >>> doc.text
+    'A bugtask.\n'
+
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
 operations.
 
-    >>> methods = list(resource_type)
-    >>> get, put, patch, post = methods
 
 The name of a method is always the HTTP method used to activate
 it. Different operations that use the same method are distinguished by
@@ -519,9 +538,16 @@ link to them instead of describing them every time.
 
 === Custom operations ===
 
+Custom operations may have human-readable documentation.
+
+    >>> post[0].tag
+    '...doc'
+    >>> post[0].text
+    "<p>An operation that modifies a bug task's status.</p>..."
+
 Custom operations define parameters, just like representations do.
 
-    >>> post_params = list(post)
+    >>> post_params = list(post[1:])
     >>> [param.attrib['name'] for param in post_params]
     ['ws_op', 'status']
 
@@ -660,6 +686,6 @@ standard GET operation.
     >>> resource_type = [
     ...     type for type in collection_resource_types
     ...     if type.attrib['id'] == 'ScopedCollection'][0]
-    >>> get, = resource_type
+    >>> (doc, get) = resource_type
     >>> get.attrib['id']
     'ScopedCollection-get'
