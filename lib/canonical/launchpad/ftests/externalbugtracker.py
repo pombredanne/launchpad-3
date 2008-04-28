@@ -21,6 +21,9 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac, TracXMLRPCTransport)
+from canonical.launchpad.components.externalbugtracker.trac import (
+    LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
+    LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -523,6 +526,13 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
 
+    @property
+    def utc_time(self):
+        """Return the current UTC time for this bug tracker."""
+        # This is here for the sake of not having to use
+        # time_snapshot()[2] all the time, which is a bit opaque.
+        return self.time_snapshot()[2]
+
     def bug_info(self, level, criteria=None):
         """Return info about a bug or set of bugs.
 
@@ -588,13 +598,13 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
-        if level == 0:
+        if level == LP_PLUGIN_BUG_IDS_ONLY:
             bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
         # For level 1, we return the bug's metadata, too.
-        elif level == 1:
+        elif level == LP_PLUGIN_METADATA_ONLY:
             bugs_to_return = [bug.asDict() for bug in bugs_to_return]
         # At level 2, we also return comment IDs for each bug.
-        elif level == 2:
+        elif level == LP_PLUGIN_METADATA_AND_COMMENTS:
             bugs_to_return = [
                 dict(bug.asDict(), comments=[
                     comment['id'] for comment in bug.comments])
@@ -602,7 +612,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # At level 3, we return the full comment dicts along with the
         # bug metadata. Tne comment dicts do not include the user field,
         # however.
-        elif level == 3:
+        elif level == LP_PLUGIN_FULL:
             bugs_to_return = [
                 dict(bug.asDict(),
                      comments=[strip_trac_comment(dict(comment))
@@ -615,7 +625,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         missing_bugs = [
             {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
 
-        return [self.time_snapshot()[2], bugs_to_return + missing_bugs]
+        return [self.utc_time, bugs_to_return + missing_bugs]
 
     def get_comments(self, comments):
         """Return a list of comment dicts.
@@ -643,8 +653,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             for comment_id in comments
             if comment_id not in comment_ids_to_return]
 
-        return [self.time_snapshot()[2],
-            comments_to_return + missing_comments]
+        return [self.utc_time, comments_to_return + missing_comments]
 
     def add_comment(self, bugid, comment):
         """Add a comment to a bug.
