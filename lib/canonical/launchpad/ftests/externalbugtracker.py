@@ -526,6 +526,13 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
 
+    @property
+    def utc_time(self):
+        """Return the current UTC time for this bug tracker."""
+        # This is here for the sake of not having to use
+        # time_snapshot()[2] all the time, which is a bit opaque.
+        return self.time_snapshot()[2]
+
     def bug_info(self, level, criteria=None):
         """Return info about a bug or set of bugs.
 
@@ -618,7 +625,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         missing_bugs = [
             {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
 
-        return [self.time_snapshot()[2], bugs_to_return + missing_bugs]
+        return [self.utc_time, bugs_to_return + missing_bugs]
 
     def get_comments(self, comments):
         """Return a list of comment dicts.
@@ -646,8 +653,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             for comment_id in comments
             if comment_id not in comment_ids_to_return]
 
-        return [self.time_snapshot()[2],
-            comments_to_return + missing_comments]
+        return [self.utc_time, comments_to_return + missing_comments]
 
 
 class TestRoundup(Roundup):
