@@ -332,7 +332,7 @@ class XpiTestCase(unittest.TestCase):
             messages)
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
-            u'foozilla.name')
+            u'foozilla.name', context='main/test1.dtd')
         translation = potmsgset.getCurrentTranslationMessage(
             self.spanish_firefox.language)
 
@@ -347,7 +347,7 @@ class XpiTestCase(unittest.TestCase):
                 self.spanish_firefox.language).translations)
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
-            u'foozilla.menu.accesskey')
+            u'foozilla.menu.accesskey', context='main/subdir/test2.dtd')
 
         # access key is a special notation that is supposed to be
         # translated with a key shortcut.
@@ -364,7 +364,7 @@ class XpiTestCase(unittest.TestCase):
             [u'M'])
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
-            u'foozilla.menu.commandkey')
+            u'foozilla.menu.commandkey', context='main/subdir/test2.dtd')
         # command key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
