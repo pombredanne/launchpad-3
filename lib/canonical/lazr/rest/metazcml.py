@@ -39,10 +39,7 @@ def find_exported_interfaces(module):
     """
     for name, interface in inspect.getmembers(module, inspect.isclass):
         if issubclass(interface, Exception):
-            try:
-                # This allows us to not care about mangling.
-                interface.__lazr_webservice_error__
-            except AttributeError:
+            if getattr(interface, '__lazr_webservice_error__', None) is None:
                 continue
             yield interface
 
