@@ -612,6 +612,9 @@ class BugWatchUpdater(object):
         """
         pushed_comments = 0
 
+        # Loop over the local bug's messages. We ignore the first
+        # message since that's the bug's description and doesn't need to
+        # be pushed.
         for message in bug_watch.bug.messages[1:]:
             bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
                 bug_watch.bug, message)
