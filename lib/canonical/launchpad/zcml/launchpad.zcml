@@ -329,7 +329,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
       class="canonical.launchpad.browser.BazaarProductView"
-      template="../templates/product-code-index.pt"
+      template="../templates/code-in-branches.pt"
       permission="zope.Public"
       />
   <browser:page
@@ -367,6 +367,13 @@
   provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
   factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  permission="zope.Public"
+  />
+
+<adapter
+  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
   permission="zope.Public"
   />
 

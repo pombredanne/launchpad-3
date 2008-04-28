@@ -1,4 +1,20 @@
-= Searching for requests = 
+= Searching for requests =
+
+In order to be able to review requests we need to be able to search
+them.  That can be done in the /requests page.
+
+    # This is a helper function which prints all results in a page.
+    >>> def print_results_table(browser):
+    ...     results = find_tag_by_id(
+    ...         browser.contents, 'results').find(id='results-body')
+    ...     headers = [extract_text(header) for header in
+    ...                results.parent.thead.findAll('th')]
+    ...     for row in results.findAll('tr'):
+    ...         cells = [' '.join(extract_text(cell).splitlines())
+    ...                  for cell in row.findAll('td')]
+    ...         print cells[0]
+    ...         for header, cell in zip(headers[1:], cells[1:]):
+    ...             print '  %s: %s' % (header, cell)
 
 Let's have a look at the requests that are still pending approval.
 
@@ -7,11 +23,21 @@ Let's have a look at the requests that are still pending approval.
     >>> browser.getControl(name='statusfilter').value = ['PENDING']
     >>> browser.getControl(name='seriesfilter').value = ['FEISTY']
     >>> browser.getControl('Show').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
-    1 ... of 2 results...
-    id  Recipient...        Status
-    12  Jeff Waugh...       pending
-    13  Marilize...         pending    
+    >>> print_results_table(browser)
+    12
+      Recipient: Jeff Waugh (jeff.waugh@ubuntulinux.com)
+      Date: 2006-03-08
+      Country: British Indian Ocean Territory
+      Requested: 10
+      Approved: 10
+      Status: pending
+    13
+      Recipient: Marilize Coetzee (info@shipit.ubuntu.com)
+      Date: 2006-03-09
+      Country: South Africa
+      Requested: 5
+      Approved: 5
+      Status: pending
 
 Now search for approved requests containing Ubuntu CDs.
 
@@ -19,27 +45,83 @@ Now search for approved requests containing Ubuntu CDs.
     >>> browser.getControl(name='flavourfilter').value = ['UBUNTU']
     >>> browser.getControl(name='seriesfilter').value = ['any']
     >>> browser.getControl('Show').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
-    1 ... of 6 results...
-    id  Recipient...            Status
-    5   David Allouche...       approved (unshipped)
-    3   Helge Kreutzmann...     approved (unshipped)
-    19  Marilize Coetzee...     approved (unshipped)
-    1   No Privileges Person... approved (unshipped)
-    4   Robert Collins...       approved (unshipped)
-    1 ... of 6 results...
+    >>> print_results_table(browser)
+    5
+      Recipient: David Allouche (david.allouche@canonical.com)
+      Date: 2006-03-01
+      Country: British Indian Ocean Territory
+      Requested: 2
+      Approved: 2
+      Status: approved (unshipped)
+    3
+      Recipient: Helge Kreutzmann (kreutzm@itp.uni-hannover.de)
+      Date: 2006-03-01
+      Country: Burkina Faso
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
+    19
+      Recipient: Marilize Coetzee (info@shipit.ubuntu.com)
+      Date: 2006-10-17
+      Country: Antarctica
+      Requested: 150
+      Approved: 150
+      Status: approved (unshipped)
+    1
+      Recipient: No Privileges Person (no-priv@canonical.com)
+      Date: 2006-02-01
+      Country: Bermuda
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
+    4
+      Recipient: Robert Collins (robertc@robertcollins.net)
+      Date: 2006-01-01
+      Country: China
+      Requested: 1
+      Approved: 1
+      Status: approved (unshipped)
 
 Now check the approved ones containing Kubuntu CDs.
 
     >>> browser.getControl(name='flavourfilter').value = ['KUBUNTU']
     >>> browser.getControl('Show').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
-    1 ... of 4 results...
-    id  Recipient...            Status
-    7   Daniel Debonzi...       approved (unshipped)
-    5   David Allouche...       approved (unshipped)
-    16  Jordi Mallach...        approved (unshipped)
-    19  Marilize Coetzee...     approved (unshipped)
+    >>> print_results_table(browser)
+    7
+      Recipient: Daniel Debonzi (daniel.debonzi@canonical.com)
+      Date: 2006-03-01
+      Country: British Indian Ocean Territory
+      Requested: 5
+      Approved: 5
+      Status: approved (unshipped)
+    5
+      Recipient: David Allouche (david.allouche@canonical.com)
+      Date: 2006-03-01
+      Country: British Indian Ocean Territory
+      Requested: 2
+      Approved: 2
+      Status: approved (unshipped)
+    16
+      Recipient: Jordi Mallach (jordi@ubuntu.com)
+      Date: 2006-03-01
+      Country: British Indian Ocean Territory
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
+    19
+      Recipient: Marilize Coetzee (info@shipit.ubuntu.com)
+      Date: 2006-10-17
+      Country: Antarctica
+      Requested: 150
+      Approved: 150
+      Status: approved (unshipped)
+    21
+      Recipient: fdsafdsa fdsafdsa (karl@canonical.com)
+      Date: 2008-04-22
+      Country: Azerbaijan
+      Requested: 6
+      Approved: 6
+      Status: approved (unshipped)
 
 We can also narrow our search based on someone's name or email address.
 
@@ -50,10 +132,14 @@ Kreutzmann.
     >>> browser.getControl(name='statusfilter').value = ['APPROVED']
     >>> browser.getControl(name='recipient_text').value = 'Kreutzmann'
     >>> browser.getControl('Show').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
-    1 ... of 1 result...
-    id  Recipient...            Status
-    3   Helge Kreutzmann...     approved (unshipped)
+    >>> print_results_table(browser)
+    3
+      Recipient: Helge Kreutzmann (kreutzm@itp.uni-hannover.de)
+      Date: 2006-03-01
+      Country: Burkina Faso
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
 
 And here we look for pending orders placed by Jeff Waugh.
 
@@ -61,10 +147,14 @@ And here we look for pending orders placed by Jeff Waugh.
     >>> browser.getControl(name='statusfilter').value = ['PENDING']
     >>> browser.getControl(name='recipient_text').value = 'waugh'
     >>> browser.getControl('Show').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
-    1 ... of 1 result...
-    id  Recipient...            Status
-    12  Jeff Waugh...           pending
+    >>> print_results_table(browser)
+    12
+      Recipient: Jeff Waugh (jeff.waugh@ubuntulinux.com)
+      Date: 2006-03-08
+      Country: British Indian Ocean Territory
+      Requested: 10
+      Approved: 10
+      Status: pending
 
 We can also search for requests in multiple status and order them by priority,
 recipient and the date of request.
@@ -73,13 +163,42 @@ recipient and the date of request.
     >>> browser.getControl(name='recipient_text').value = ''
     >>> browser.getControl(name='orderby').value = ['-highpriority']
     >>> browser.getControl('Show').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
-    1 ... of ...
-    id  Recipient...            Status
-    16  Jordi Mallach...        approved (unshipped)
-    17  James Blackwell...      approved (sent for shipping on 2006-04-01)
-    ...
-    1 ... of ...
+    >>> print_results_table(browser)
+    16
+      Recipient: Jordi Mallach (jordi@ubuntu.com)
+      Date: 2006-03-01
+      Country: British Indian Ocean Territory
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
+    17
+      Recipient: James Blackwell (james.blackwell@ubuntulinux.com)
+      Date: 2006-03-19
+      Country: France
+      Requested: 10
+      Approved: 10
+      Status: approved (sent for shipping on 2006-04-01)
+    1
+      Recipient: No Privileges Person (no-priv@canonical.com)
+      Date: 2006-02-01
+      Country: Bermuda
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
+    2
+      Recipient: Stuart Bishop (stuart.bishop@canonical.com)
+      Date: 2006-04-01
+      Country: Heard Island and McDonald Islands
+      Requested: 5
+      Approved: 5
+      Status: approved (unshipped)
+    3
+      Recipient: Helge Kreutzmann (kreutzm@itp.uni-hannover.de)
+      Date: 2006-03-01
+      Country: Burkina Faso
+      Requested: 10
+      Approved: 10
+      Status: approved (unshipped)
 
 The values we specified are preserved, in case we want to do another search
 or review the values we used.

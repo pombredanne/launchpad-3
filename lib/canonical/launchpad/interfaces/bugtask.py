@@ -285,6 +285,7 @@ BUG_CONTACT_BUGTASK_STATUSES = (
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.NEW,
     BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
     BugTaskStatusSearch.CONFIRMED,
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
@@ -401,6 +402,14 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     is_complete = Attribute(
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
+
+    def getConjoinedMaster(bugtasks):
+        """Return the conjoined master in the given bugtasks, if any.
+
+        This method exists mainly to allow calculating the conjoined
+        master from a cached list of bug tasks, reducing the number of
+        db queries needed.
+        """
 
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
