@@ -7,7 +7,6 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.translationformat.xpi_manifest import XpiManifest
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class XpiManifestTestCase(unittest.TestCase):
