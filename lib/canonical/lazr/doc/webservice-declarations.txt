@@ -409,9 +409,9 @@ results in an error.
 
 === Exporting exceptions ===
 
-When a method raises an exception, the default is to report the error as '500
-Internal Server Error'. In many cases, that's not the case and one of
-the 4XX error would be better.
+When a method raises an exception, the default is to report the error as
+'500 Internal Server Error'. In many cases, that's not the case and one
+of the 4XX error would be better.
 
 Exceptions can be tagged with the webservice_error() declaration to
 state the proper HTTP status code to use for that kind of error.
@@ -870,9 +870,8 @@ service requests.
 
     >>> from canonical.lazr.rest.declarations import WebServiceExceptionView
 
-When the view is executed, it will set the status code to the one
-specified for the web service and return the exception text as the
-content to return to the client.
+That view returns the exception message as content, and sets the
+result code to the one specified using the webservice_error() directive.
 
     >>> exception = InvalidEmail("foo@bar isn't a valid email address")
     >>> error_view = WebServiceExceptionView(exception, MockRequest())
