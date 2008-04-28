@@ -152,7 +152,7 @@ class HeldMessageView(LaunchpadView):
         # Escape the text so that there's no chance of cross-site scripting,
         # then split into lines.
         text_lines = escape(self.details.body).splitlines()
-        # Strip off any leading whitespace-only lines.
+        # Strip off any whitespace only lines from the start of the message.
         text_lines.reverse()
         while len(text_lines) > 0:
             first_line = text_lines.pop()
