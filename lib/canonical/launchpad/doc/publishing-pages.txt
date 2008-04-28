@@ -8,27 +8,49 @@ filenames and filesizes.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.database import (
-    ...     SourcePackagePublishingHistory)
 
-Retrieve any SourcePackagePublishingHistory entry.
+Retrieve the last SourcePackagePublishingHistory entry for alsa-utils
+in ubuntu.
 
-    >>> spph = SourcePackagePublishingHistory.get(10)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet
 
-    >>> view = getMultiAdapter((spph, LaunchpadTestRequest()),
-    ...           name="+listing-ppa-detailed")
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> alsa_utils = ubuntu.getSourcePackage('alsa-utils')
+    >>> alsa_pub = alsa_utils.publishing_history[0]
+
+The SourcePackagePublishingView implements the
+'published_source_and_binary_files' property which returns a list of
+dictionaries containing:
+
+ * url: the librarian file url;
+ * filesize: the filesize stored in librarian;
+ * filename: the filename to be presented to user;
+
+for each file related with the alsa-utils source publication in ubuntu.
+
+    >>> view = getMultiAdapter(
+    ...    (alsa_pub, LaunchpadTestRequest()), name="+listing-ppa-detailed")
 
     >>> view.published_source_and_binary_files
-    [{'url': 'http://.../alsa-utils_1.0.8-1ubuntu1.dsc',
+    [{'url': 'http://.../alsa-utils_1.0.9a-4ubuntu1.dsc',
      'filesize': 3,
-     'filename': u'alsa-utils_1.0.8-1ubuntu1.dsc'}]
+     'filename': u'alsa-utils_1.0.9a-4ubuntu1.dsc'}]
 
-    >>> ice = SourcePackagePublishingHistory.get(28)
+'iceweasel' source in Celso's PPA contains binary files that can be
+inspected.
 
-    >>> view = getMultiAdapter((ice, LaunchpadTestRequest()),
-    ...           name="+listing-ppa-detailed")
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
 
-    >>> view.published_source_and_binary_files
+    >>> iceweasel_source_pub = cprov.archive.getPublishedSources(
+    ...     'iceweasel')[0]
+
+    >>> ppa_source_view = getMultiAdapter(
+    ...     (iceweasel_source_pub, LaunchpadTestRequest()),
+    ...     name="+listing-ppa-detailed")
+
+    >>> ppa_source_view.published_source_and_binary_files
     [{'url': 'http://localhost:58000/3/firefox-0.9.2.orig.tar.gz',
       'filesize': 9922560,
       'filename': u'firefox-0.9.2.orig.tar.gz'},
@@ -38,3 +60,38 @@ Retrieve any SourcePackagePublishingHistory entry.
      {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
       'filesize': 3,
       'filename': u'mozilla-firefox_0.9_i386.deb'}]
+
+Yet using SourcePackagePublishingView classes we can verify how it
+allows the template to find out if it is a source or a binary
+publication.
+
+Continuing to use the 'iceweasel' source publication in Celso's PPA.
+
+    >>> source_details_view = getMultiAdapter(
+    ...     (iceweasel_source_pub, LaunchpadTestRequest()),
+    ...     name="+record-details")
+
+We probe the 'is_source' and 'is_binary' properties.
+
+    >>> print source_details_view.is_source
+    True
+
+    >>> print source_details_view.is_binary
+    False
+
+Similarly, we use one of the 'iceweasel' binaries published in Celso's
+PPA to see how the same mechanism works for
+BinaryPackagePublishingHistoryView.
+
+    >>> iceweasel_binary_pub = iceweasel_source_pub.getPublishedBinaries()[0]
+
+    >>> binary_details_view = getMultiAdapter(
+    ...     (iceweasel_binary_pub, LaunchpadTestRequest()),
+    ...     name="+record-details")
+
+    >>> print binary_details_view.is_source
+    False
+
+    >>> print binary_details_view.is_binary
+    True
+
