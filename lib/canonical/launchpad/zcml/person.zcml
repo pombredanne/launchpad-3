@@ -597,6 +597,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListModerationView"
+    name="+mailinglist-moderate"
+    template="../templates/team-mailinglist-moderate.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonLanguagesView"
     name="+editlanguages"
     template="../templates/person-editlanguages.pt"
