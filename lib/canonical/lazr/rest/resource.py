@@ -732,6 +732,10 @@ class ServiceRootResource(HTTPResource):
         with no request or context, and then passes the request in
         when it calls the service root object.
         """
+        # We're not calling the superclass constructor because
+        # it assumes it's being called in the context of a particular
+        # request.
+        # pylint:disable-msg=W0231
         pass
 
     @property
