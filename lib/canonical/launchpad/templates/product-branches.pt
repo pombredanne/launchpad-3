@@ -6,26 +6,20 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
+<div metal:fill-slot="main">
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+  <tal:branch-summary content="structure context/@@+branch-summary" />
 
-<metal:heading fill-slot="pageheading">
-  <h1>Bazaar branches for <tal:project-name replace="context/displayname"/></h1>
-</metal:heading>
-
-<div metal:fill-slot="main"
-     tal:define="branches view/branches">
-
-  <tal:branchlisting content="structure branches/@@+branch-listing" />
+  <tal:has-branches condition="view/branch_count"
+                    define="branches view/branches">
+    <tal:branchlisting content="structure branches/@@+branch-listing" />
+  </tal:has-branches>
 
 </div>
 

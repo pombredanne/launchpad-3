@@ -190,7 +190,7 @@ class LaunchpadObjectFactory:
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GPL], project=project)
+            licenses=[License.GNU_GPL_V2], project=project)
 
     def makeProject(self, name=None):
         """Create and return a new, arbitrary Project."""

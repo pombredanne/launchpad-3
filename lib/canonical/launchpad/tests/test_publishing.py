@@ -21,7 +21,7 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    BinaryPackageFormat, BuildStatus, IBinaryPackageNameSet, IComponentSet,
     IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
     ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus, SourcePackageUrgency)
@@ -47,6 +47,9 @@ class SoyuzTestPublisher:
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
+        self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
@@ -147,7 +150,7 @@ class SoyuzTestPublisher:
         if pub_source is None:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
-                archive=archive)
+                archive=archive, distroseries=distroseries)
 
         builds = pub_source.createMissingBuilds(ignore_pas=True)
         published_binaries = []
@@ -200,6 +203,7 @@ class SoyuzTestPublisher:
             binpackageformat=BinaryPackageFormat.DEB,
             priority=PackagePublishingPriority.STANDARD)
 
+        build.buildstate = BuildStatus.FULLYBUILT
         # Create the corresponding DEB file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag

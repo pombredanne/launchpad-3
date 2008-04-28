@@ -76,9 +76,6 @@ class ShippingRequest(SQLBase):
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
-                             default=None)
-
     type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
         enum=ShippingRequestStatus, notNull=True,
@@ -447,7 +444,7 @@ class ShippingRequestSet:
 
     def new(self, recipient, recipientdisplayname, country, city,
             addressline1, phone, addressline2=None, province=None,
-            postcode=None, organization=None, reason=None, shockandawe=None):
+            postcode=None, organization=None, reason=None):
         """See IShippingRequestSet"""
         # Only the shipit-admins team can have more than one open request
         # at a time.
@@ -455,9 +452,9 @@ class ShippingRequestSet:
                 or recipient.currentShipItRequest() is None)
 
         request = ShippingRequest(
-            recipient=recipient, reason=reason, shockandawe=shockandawe,
-            city=city, country=country, addressline1=addressline1,
-            addressline2=addressline2, province=province, postcode=postcode,
+            recipient=recipient, reason=reason, city=city, country=country,
+            addressline1=addressline1, addressline2=addressline2,
+            province=province, postcode=postcode,
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
