@@ -464,9 +464,9 @@ subscription settings will see the box checked by default.
     >>> browser.getLink("Change e-mail settings").click()
     >>> print_radio_button_field(browser.contents,
     ...     'mailing_list_auto_subscribe_policy')
-    ( ) Never
-    (*) On registration
-    ( ) Always subscribe
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
@@ -480,9 +480,9 @@ subscription settings will see the box checked by default.
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change e-mail settings").click()
     >>> set_autosubscribe_policy_and_submit('ALWAYS')
-    ( ) Never
-    ( ) On registration
-    (*) Always subscribe
+    ( ) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    (*) Always subscribe me to mailing lists
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
@@ -496,9 +496,9 @@ lists will not have the box checked.
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change e-mail settings").click()
     >>> set_autosubscribe_policy_and_submit('NEVER')
-    (*) Never
-    ( ) On registration
-    ( ) Always subscribe
+    (*) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
@@ -509,6 +509,6 @@ lists will not have the box checked.
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change e-mail settings").click()
     >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
-    ( ) Never
-    (*) On registration
-    ( ) Always subscribe
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
