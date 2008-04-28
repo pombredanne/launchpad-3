@@ -109,7 +109,7 @@ class ISupportsCommentPushing(IExternalBugTracker):
     """An external bug tracker that can push comments to the remote tracker.
     """
 
-    def addRemoteComment(self, remote_bug, message):
+    def addRemoteComment(remote_bug, message):
         """Push a comment to the remote bug.
 
         :param remote_bug: The ID of the bug on the remote tracker to

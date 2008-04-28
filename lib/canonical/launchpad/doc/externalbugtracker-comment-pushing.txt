@@ -72,6 +72,9 @@ ISupportsCommentPushing interface.
     >>> external_bugtracker = CommentPushingExternalBugTracker(
     ...     'http://example.com/')
 
+    >>> ISupportsCommentPushing.providedBy(external_bugtracker)
+    True
+
 The comment attached to the bug currently does not have its
 remote_comment_id set.  This is because it originated in Launchpad and
 has not yet been pushed to the remote bugtracker.
@@ -171,6 +174,9 @@ example ExternalBugTracker that does comment importing.
     ...         '6': "External comment 3."}
     ...
     ...     poster_tuple = ("Test Person", "test@example.com")
+    ...
+    ...     def fetchComments(self, bug_watch, comment_ids):
+    ...         pass
     ...
     ...     def getCommentIds(self, bug_watch):
     ...         return sorted(self.external_comment_dict.keys())
