@@ -1157,6 +1157,36 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
+    def autoSubscribeToMailingList(mailinglist, requester=None):
+        """Subscribe this person to a mailing list.
+
+        This method takes the user's mailing list auto-subscription
+        setting into account, and it may or may not result in a list
+        subscription.  It will only subscribe the user to the mailing
+        list if all of the following conditions are met:
+
+          * The mailing list is not None.
+          * The mailing list is in an unusable state.
+          * The user is not already subscribed.
+          * The user has a preferred address set.
+          * The user's auto-subscribe preference is ALWAYS, or
+          * The user's auto-subscribe preference is ON_REGISTRATION,
+            and the requester is either themself or None.
+
+        This method will not raise exceptions if any of the above are
+        not true.  If you want these problems to raise exceptions
+        consider using `IMailinglist.subscribe()` directly.
+
+        :param mailinglist: The list to subscribe to.  No action is
+        	taken if the list is None, or in an unusable state.
+
+        :param requester: The person requesting the list subscription,
+        	if not the user himself.  The default assumes the user
+        	themself is making the request.
+
+        :return: True if the user was subscribed, false if they weren't.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -1305,36 +1335,6 @@ class IPersonEditRestricted(Interface):
         The given team's renewal policy must be ONDEMAND and the membership
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
-        """
-
-    def autoSubscribeToMailingList(mailinglist, requester=None):
-        """Subscribe this person to a mailing list.
-
-        This method takes the user's mailing list auto-subscription
-        setting into account, and it may or may not result in a list
-        subscription.  It will only subscribe the user to the mailing
-        list if all of the following conditions are met:
-
-          * The mailing list is not None.
-          * The mailing list is in an unusable state.
-          * The user is not already subscribed.
-          * The user has a preferred address set.
-          * The user's auto-subscribe preference is ALWAYS, or
-          * The user's auto-subscribe preference is ON_REGISTRATION,
-            and the requester is either themself or None.
-
-        This method will not raise exceptions if any of the above are
-        not true.  If you want these problems to raise exceptions
-        consider using `IMailinglist.subscribe()` directly.
-
-        :param mailinglist: The list to subscribe to.  No action is
-        	taken if the list is None, or in an unusable state.
-
-        :param requester: The person requesting the list subscription,
-        	if not the user himself.  The default assumes the user
-        	themself is making the request.
-
-        :return: True if the user was subscribed, false if they weren't.
         """
 
 
