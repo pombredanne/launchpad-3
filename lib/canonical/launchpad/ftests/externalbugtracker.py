@@ -21,6 +21,9 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac, TracXMLRPCTransport)
+from canonical.launchpad.components.externalbugtracker.trac import (
+    LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
+    LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -588,13 +591,13 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
-        if level == 0:
+        if level == LP_PLUGIN_BUG_IDS_ONLY:
             bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
         # For level 1, we return the bug's metadata, too.
-        elif level == 1:
+        elif level == LP_PLUGIN_METADATA_ONLY:
             bugs_to_return = [bug.asDict() for bug in bugs_to_return]
         # At level 2, we also return comment IDs for each bug.
-        elif level == 2:
+        elif level == LP_PLUGIN_METADATA_AND_COMMENTS:
             bugs_to_return = [
                 dict(bug.asDict(), comments=[
                     comment['id'] for comment in bug.comments])
@@ -602,7 +605,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         # At level 3, we return the full comment dicts along with the
         # bug metadata. Tne comment dicts do not include the user field,
         # however.
-        elif level == 3:
+        elif level == LP_PLUGIN_FULL:
             bugs_to_return = [
                 dict(bug.asDict(),
                      comments=[strip_trac_comment(dict(comment))

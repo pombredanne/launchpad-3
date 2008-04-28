@@ -26,6 +26,13 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.url import urlappend
 
 
+# Symbolic constants used for the Trac LP plugin.
+LP_PLUGIN_BUG_IDS_ONLY = 0
+LP_PLUGIN_METADATA_ONLY = 1
+LP_PLUGIN_METADATA_AND_COMMENTS = 2
+LP_PLUGIN_FULL = 3
+
+
 class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
 
@@ -251,7 +258,7 @@ class TracLPPlugin(Trac):
             endpoint, transport=self.xmlrpc_transport)
 
         time_snapshot, remote_bugs = server.launchpad.bug_info(
-            2, dict(bugs=bug_ids))
+            LP_PLUGIN_METADATA_AND_COMMENTS, dict(bugs=bug_ids))
         for remote_bug in remote_bugs:
             # We only import bugs whose status isn't 'missing', since
             # those bugs don't exist on the remote system.
@@ -311,7 +318,7 @@ class TracLPPlugin(Trac):
             'modified_since': last_checked_timestamp,
             'bugs': remote_bug_ids,}
         time_snapshot, modified_bugs = server.launchpad.bug_info(
-            0, criteria)
+            LP_PLUGIN_BUG_IDS_ONLY, criteria)
 
         return [bug['id'] for bug in modified_bugs]
 
