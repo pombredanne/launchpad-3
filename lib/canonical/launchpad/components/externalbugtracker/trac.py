@@ -319,9 +319,10 @@ class TracLPPlugin(Trac):
         """See `ISupportsCommentImport`."""
         try:
             bug = self.bugs[int(bug_watch.remotebug)]
-            return [comment_id for comment_id in bug['comments']]
         except KeyError:
             raise BugNotFound(bug_watch.remotebug)
+        else:
+            return [comment_id for comment_id in bug['comments']]
 
     @needs_authentication
     def fetchComments(self, bug_watch, comment_ids):
@@ -353,7 +354,7 @@ class TracLPPlugin(Trac):
 
         # If the name is empty then we return None so that
         # IPersonSet.ensurePerson() can actually do something with it.
-        if display_name is '':
+        if not display_name:
             display_name = None
 
         return (display_name, email)
