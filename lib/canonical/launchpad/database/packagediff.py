@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
 from canonical.librarian.interfaces import ILibrarianClient
 
 
-def _performDebdiff(tmp_dir, out_filename, from_files, to_files):
+def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
     """Perform a (deb)diff on two packages.
 
     A debdiff will be invoked on the files associated with the
@@ -76,7 +76,7 @@ def _performDebdiff(tmp_dir, out_filename, from_files, to_files):
 
     return os.path.getsize(full_path + '.gz')
 
-def _downloadFile(destination_path, libraryfile):
+def download_file(destination_path, libraryfile):
     """Download a file from the librarian to the destination path.
 
     :param destination_path: Absolute destination path (where the
@@ -169,7 +169,7 @@ class PackageDiff(SQLBase):
 
                     # This file is new, download it.
                     destination_path = os.path.join(tmp_dir, the_name)
-                    _downloadFile(destination_path, file.libraryfile)
+                    download_file(destination_path, file.libraryfile)
                     downloaded[direction].append(the_name)
                     files_seen.append(the_name)
 
@@ -182,7 +182,7 @@ class PackageDiff(SQLBase):
                 self.to_source.version)
 
             # Perform the actual diff operation.
-            compressed_bytes = _performDebdiff(
+            compressed_bytes = perform_deb_diff(
                 tmp_dir, result_filename, downloaded['from'],
                 downloaded['to'])
 
