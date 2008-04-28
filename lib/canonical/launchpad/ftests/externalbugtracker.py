@@ -670,14 +670,14 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         comment_dict = {
             'comment': comment,
             'id': comment_id,
-            'time': int(time.time()),
+            'time': self.utc_time,
             'type': 'comment',
             'user': 'launchpad',
             }
 
         comments.append(comment_dict)
 
-        return [self.time_snapshot()[2], comment_id]
+        return [self.utc_time, comment_id]
 
 
 class TestRoundup(Roundup):
