@@ -235,13 +235,16 @@ enable uploads for it.
     >>> from canonical.launchpad.database.component import (
     ...     ComponentSelection)
     >>> from canonical.launchpad.interfaces import (
-    ...     IComponentSet, IDistributionSet)
+    ...     IComponentSet, IDistributionSet, ILibraryFileAliasSet)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
     >>> universe = getUtility(IComponentSet)['universe']
     >>> selection = ComponentSelection(
     ...     distroseries=hoary, component=universe)
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> unused = hoary['i386'].addOrUpdateChroot(fake_chroot)
+    >>> unused = hoary['hppa'].addOrUpdateChroot(fake_chroot)
 
 Uploading a generated package is deadly simple: just call
 `StubPackager.uploadSourceVersion()` passing the desired upload
