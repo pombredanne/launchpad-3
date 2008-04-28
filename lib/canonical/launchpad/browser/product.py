@@ -54,7 +54,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatusFilter, BranchListingSort,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
     ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -1366,8 +1366,27 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # XXX: thumper 2008-04-22
         # When bug 181157 is fixed, only get branches for non-obsolete
         # series.
-        return [series.series_branch for series in self.sorted_series_list
-                if series.series_branch is not None]
+
+        # We want to show each series branch only once, always show the
+        # development focus branch, no matter what's it lifecycle status, and
+        # skip subsequent series where the lifecycle status is Merged or
+        # Abandoned
+        sorted_series = self.sorted_series_list
+        IGNORE_STATUS = (
+            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        # The series will always have at least one series, that of the
+        # development focus.
+        dev_focus_branch = sorted_series[0].series_branch
+        result = []
+        if dev_focus_branch is not None:
+            result.append(dev_focus_branch)
+        for series in sorted_series[1:]:
+            branch = series.series_branch
+            if (branch is not None and
+                branch not in result and
+                branch.lifecycle_status not in IGNORE_STATUS):
+                result.append(branch)
+        return result
 
     @cachedproperty
     def initial_branches(self):

@@ -133,6 +133,8 @@ from canonical.launchpad.browser.openiddiscovery import (
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
+from canonical.launchpad.browser.mailinglists import (
+    enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
@@ -974,7 +976,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
+             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
+             'editlanguages', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
              'activate_ppa', 'show_ppa']
@@ -1065,6 +1068,15 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
+        summary = (
+            'The mailing list associated with %s' % self.context.browsername)
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_active_mailing_list
+    @enabled_with_permission('launchpad.Edit')
+    def moderate_mailing_list(self):
+        target = '+mailinglist-moderate'
+        text = 'Moderate mailing list'
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
         return Link(target, text, summary, icon='edit')
