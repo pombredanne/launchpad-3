@@ -998,6 +998,8 @@ However, this one doesn't show up as external suggestion for Spanish.
 Finally, the new `IPOTMsgSet` should have an entry in the
 `TranslationTemplateItem` table once we assign a sequence number.
 
+    >>> from canonical.launchpad.database import TranslationTemplateItem
+
 First, we need a helper function to check whether the potmsgset exists
 in the table or not.
 
@@ -1005,7 +1007,7 @@ in the table or not.
     >>> def is_potmsgset_in_potemplate(potmsgset, potemplate):
     ...     items = [
     ...         item.potmsgset.id
-    ...         for item in TranslationTemplateItem.selectOneBy(
+    ...         for item in TranslationTemplateItem.selectBy(
     ...             potemplate=potemplate, potmsgset=potmsgset)
     ...         ]
     ...     return potmsgset.id in items
@@ -1019,7 +1021,7 @@ If we assign the sequence == 0, the POTMsgSet object doesn't have an
 entry in the TranslationTemplateItems:
 
     >>> potmsgset.setSequence(potemplate, 0)
-    >>> is_potmsgset_in_translation_template_items(potmsgset)
+    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
     False
     >>> potmsgset.getSequence(potemplate)
     0
@@ -1027,7 +1029,7 @@ entry in the TranslationTemplateItems:
 The used number doesn't matter as long as it's higher than zero.
 
     >>> potmsgset.setSequence(potemplate, 99)
-    >>> is_potmsgset_in_translation_template_items(potmsgset)
+    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
     True
     >>> potmsgset.getSequence(potemplate)
     99
@@ -1035,7 +1037,7 @@ The used number doesn't matter as long as it's higher than zero.
 If we change it back to zero, it's removed from the table:
 
     >>> potmsgset.setSequence(potemplate, 0)
-    >>> is_potmsgset_in_translation_template_items(potmsgset)
+    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
     False
     >>> potmsgset.getSequence(potemplate)
     0
