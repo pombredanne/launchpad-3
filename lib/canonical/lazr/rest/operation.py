@@ -11,9 +11,11 @@ from canonical.lazr.interfaces import (
 
 __metaclass__ = type
 __all__ = [
+    'ResourceOperation',
     'ResourceGETOperation',
     'ResourcePOSTOperation'
 ]
+
 
 class ResourceOperation:
     """A one-off operation associated with a resource."""

@@ -42,7 +42,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.pofile"
-        classes="POFileFacets POFileAppMenus"
+        classes="POFileFacets POFileAppMenus POFileNavigationMenu"
         />
 
     <browser:defaultView

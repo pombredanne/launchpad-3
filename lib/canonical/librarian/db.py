@@ -1,15 +1,28 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+"""Database access layer for the Librarian."""
 
 __metaclass__ = type
+__all__ = [
+    'Library',
+    ]
 
-from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
 
 
 class Library:
+    """Class that encapsulates the database interface for the librarian."""
+
+    def __init__(self, restricted=False):
+        """Create a new database access object.
+
+        :param restricted: If this is set to true, only restricted
+            will be served. Otherwise only public files will be served.
+            Files created in this library will marked as restricted.
+        """
+        self.restricted = restricted
 
     # The following methods are read-only queries.
 
@@ -22,7 +35,8 @@ class Library:
         alias = LibraryFileAlias.selectOne(AND(
             LibraryFileAlias.q.id==aliasid,
             LibraryFileContent.q.deleted==False,
-            LibraryFileAlias.q.contentID==LibraryFileContent.q.id
+            LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
+            LibraryFileAlias.q.restricted==self.restricted,
             ))
         if alias is None:
             raise LookupError
@@ -30,31 +44,12 @@ class Library:
 
     def getAliases(self, fileid):
         results = LibraryFileAlias.select(AND(
-                LibraryFileAlias.q.content==LibraryFileContent.q.id,
+                LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
                 LibraryFileContent.q.id==fileid,
-                LibraryFileContent.q.deleted==False
+                LibraryFileContent.q.deleted==False,
+                LibraryFileAlias.q.restricted==self.restricted,
                 ))
         return [(a.id, a.filename, a.mimetype) for a in results]
-
-    def getByAlias(self, aliasid):
-        """XXX: StuartBishop 2006-12-22: Still needed? Seems to be getAlias
-        except it might raise an SQLObjectNotFound instead of a LookupError.
-        """
-        try:
-            return self.getAlias(aliasid)
-        except LookupError:
-            raise SQLObjectNotFound(
-                    "The object LibraryFileAlias by the ID %d does not exist"
-                    % aliasid
-                    )
-
-    def hasContent(self, contentID):
-        # XXX Stuart Bishop 2005-04-14: write test.
-        content = LibraryFileContent.selectOne(
-                LibraryFileContent.q.id==contentID,
-                LibraryFileContent.q.deleted==False
-                )
-        return content is not None
 
     # the following methods are used for adding to the library
 
@@ -68,5 +63,6 @@ class Library:
         If a matching alias already exists, it will return that ID instead.
         """
         return LibraryFileAlias(contentID=fileid, filename=filename,
-                                mimetype=mimetype, expires=expires).id
+                                mimetype=mimetype, expires=expires,
+                                restricted=self.restricted).id
 

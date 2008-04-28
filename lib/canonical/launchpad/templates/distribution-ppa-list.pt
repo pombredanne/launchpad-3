@@ -13,37 +13,13 @@
 
   <div metal:fill-slot="main">
 
-    <h1>Personal Package Archives for <span tal:replace="context/title" /></h1>
+    <h1>Personal Package Archives for <tal:title replace="context/title" /></h1>
 
     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
        packages to be built and published as an apt repository by
        Launchpad. You can find out more about PPAs and how to use them in our
        <a href="https://help.launchpad.net/PPAQuickStart"
        >quick-start guide</a>.</p>
-
-    <table width="100%">
-      <tr>
-        <td align="left">
-          <div id="ppa_statistics">
-            <h2>Statistics</h2>
-            <ul>
-              <li><tal:ppa_registered replace="view/number_of_registered_ppas"
-                >10</tal:ppa_registered> registered</li>
-              <li><tal:ppa_active replace="view/number_of_active_ppas"
-                >4</tal:ppa_active> active</li>
-              <li><tal:ppa_sources replace="view/number_of_ppa_sources"
-                >20</tal:ppa_sources> published sources</li>
-              <li><tal:ppa_binaries replace="view/number_of_ppa_binaries"
-                >20</tal:ppa_binaries> published binaries</li>
-            </ul>
-          </div>
-        </td>
-        <td align="left">
-          <div id="ppa_supported_archs"
-               tal:content="structure context/@@+portlet-ppa-architectures" />
-        </td>
-      </tr>
-    </table>
 
     <p>Search user-contributed software packages published in any
       <tal:distribution replace="context/title">Ubuntu</tal:distribution>
@@ -86,11 +62,81 @@
       </div>
 
       <div id="empty-result" tal:condition="not: batch">
-        <tal:has_filter condition="view/name_filter">
+
+        <div style="padding-top: 1em;" tal:condition="view/name_filter">
            No matching Personal Package Archive
-           for '<span tal:replace="view/name_filter" />'.
-        </tal:has_filter>
-      </div>
+           for '<tal:name_filter replace="view/name_filter" />'.
+        </div>
+
+        <tal:information condition="not: view/name_filter">
+
+          <div class="left">
+
+            <div class="section" id="ppa_statistics">
+              <h2>Statistics</h2>
+              <ul>
+                <li><tal:ppa_registered
+                      replace="view/number_of_registered_ppas"
+                  >10</tal:ppa_registered> registered</li>
+                <li><tal:ppa_active
+                      replace="view/number_of_active_ppas"
+                  >4</tal:ppa_active> active</li>
+                <li><tal:ppa_sources
+                      replace="view/number_of_ppa_sources"
+                  >20</tal:ppa_sources> published sources</li>
+                <li><tal:ppa_binaries
+                      replace="view/number_of_ppa_binaries"
+                  >20</tal:ppa_binaries> published binaries</li>
+              </ul>
+            </div>
+
+            <div class="section" id="ppa_most_active">
+              <h2>Most active</h2>
+
+              <p>PPA with the highest number of uploads during  the
+                 last 7 days.</p>
+
+              <table>
+                <tr tal:repeat="most_active view/most_active_ppas">
+                  <td>
+                    <a tal:attributes="href most_active/archive/fmt:url"
+                       tal:content="most_active/archive/title">
+                      PPA for Celso Providelo
+                    </a>
+                  </td>
+                  <td align="right">
+                    <tal:sources replace="most_active/uploads" /> uploads
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="section" id="ppa_latest_uploads">
+              <h2>Latest uploads</h2>
+              <ul class="source package">
+                <li tal:repeat="pub view/latest_ppa_source_publications">
+                  <tal:source_title replace="pub/displayname">
+                    mozilla-firefox - 1.0 in warty
+                  </tal:source_title> in
+                  <a tal:attributes="href pub/archive/fmt:url"
+                     tal:content="pub/archive/title"
+                    >PPA for Celso Providelo </a>
+                  <tal:datepublished replace="pub/age/fmt:approximateduration">
+                    3 minutes</tal:datepublished> ago
+               </li>
+              </ul>
+            </div>
+
+          </div> <!-- left div -->
+
+          <div style="width: 49%; clear: right; float: right;">
+            <div class="section" id="supports_virtualized_archs"
+                 tal:content="structure context/@@+portlet-ppa-architectures" />
+          </div>
+
+        </tal:information>
+
+      </div> <!-- empty-results -->
 
     </tal:batch>
 

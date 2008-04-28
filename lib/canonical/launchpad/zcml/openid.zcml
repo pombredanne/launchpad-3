@@ -50,6 +50,15 @@
         attribute="xrds"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
+        name="+pre-authorize-rp"
+        permission="launchpad.AnyPerson"
+        attribute="__call__"
+        />
+
     <!-- OpenID persistent identity URLs -->
     <content
         class="canonical.launchpad.browser.openiddiscovery.OpenIDPersistentIdentity">

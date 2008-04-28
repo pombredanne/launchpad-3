@@ -26,8 +26,14 @@
   </thead>
 
   <tbody>
-    <tal:bugtask-or-nomination repeat="task_or_nom view/getBugTasksAndNominations">
-      <tal:block content="structure task_or_nom/@@+bugtasks-and-nominations-table-row" />
+    <tal:bugtask-or-nomination
+        repeat="task_or_nom view/getBugTasksAndNominations">
+      <tal:block
+          condition="task_or_nom/is_conjoined_slave"
+          replace="structure task_or_nom/row_context/@@+bugtasks-and-nominations-table-row/renderConjoinedSlave" />
+      <tal:block
+          condition="not:task_or_nom/is_conjoined_slave"
+          replace="structure task_or_nom/row_context/@@+bugtasks-and-nominations-table-row/renderNonConjoinedSlave" />
     </tal:bugtask-or-nomination>
   </tbody>
 
