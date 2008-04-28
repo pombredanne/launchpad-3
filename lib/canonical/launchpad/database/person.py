@@ -1240,7 +1240,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         if not person.isTeam() and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,
-                                          requester=reviewer)
+                                              requester=reviewer)
 
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
