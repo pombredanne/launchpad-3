@@ -8,6 +8,7 @@ Launchpad to be eventually displayed in Launchpad's u/i.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     new_person, new_team)
+    >>> login('foo.bar@canonical.com')
     >>> team_one, list_one = new_team('team-one', True)
     >>> anne = new_person('Anne')
 
@@ -27,7 +28,6 @@ approve or reject.
     ... """)
 
     >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
     >>> mailinglist_api.holdMessage('team-one', message_anne.as_string())
     True
 
