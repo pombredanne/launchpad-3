@@ -2529,6 +2529,7 @@ class PersonSet:
             ('vote', 'person'),
             # This table is handled entirely by triggers.
             ('validpersonorteamcache', 'id'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -3076,6 +3077,70 @@ class PersonSet:
             ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
+    def getValidPersons(self, persons):
+        """See `IPersonSet.`"""
+        person_ids = [person.id for person in persons]
+        if len(person_ids) == 0:
+            return []
+        valid_person_cache = ValidPersonOrTeamCache.select(
+            "id IN %s" % sqlvalues(person_ids))
+        valid_person_ids = set(cache.id for cache in valid_person_cache)
+        return [
+            person for person in persons if person.id in valid_person_ids]
+
+    def getPeopleWithBranches(self, product=None):
+        """See `IPersonSet`."""
+        branch_clause = 'SELECT owner FROM Branch'
+        if product is not None:
+            branch_clause += ' WHERE product = %s' % quote(product)
+        return Person.select('''
+            Person.id in (%s)
+            ''' % branch_clause)
+
+    def getSubscribersForTargets(self, targets, recipients=None):
+        """See `IPersonSet`. """
+        if len(targets) == 0:
+            return set()
+        target_criteria = []
+        for target in targets:
+            # target_args is a mapping from query arguments
+            # to query values.
+            target_args = target._target_args
+            target_criteria_clauses = []
+            for key, value in target_args.items():
+                if value is not None:
+                    target_criteria_clauses.append(
+                        '%s = %s' % (key, quote(value)))
+                else:
+                    target_criteria_clauses.append(
+                        '%s IS NULL' % key)
+            target_criteria.append(
+                '(%s)' % ' AND '.join(target_criteria_clauses))
+
+        # Build a UNION query, since using OR slows down the query a lot.
+        subscriptions = StructuralSubscription.select(target_criteria[0])
+        for target_criterion in target_criteria[1:]:
+            subscriptions = subscriptions.union(
+                StructuralSubscription.select(target_criterion))
+
+        # Listify the result, since we want to loop over it multiple times.
+        subscriptions = list(subscriptions)
+
+        # We can't use prejoins in UNION queries, so populate the cache
+        # by getting all the subscribers.
+        subscriber_ids = [
+            subscription.subscriberID for subscription in subscriptions]
+        if len(subscriber_ids) > 0:
+            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+
+        subscribers = set()
+        for subscription in subscriptions:
+            subscribers.add(subscription.subscriber)
+            if recipients is not None:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+        return subscribers
 
 
 class PersonLanguage(SQLBase):

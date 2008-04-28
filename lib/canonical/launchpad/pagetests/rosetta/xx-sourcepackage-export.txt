@@ -6,35 +6,154 @@ translations for a source package.
 
 == Where to request ==
 
-The option is shown in the Translations action bar for a source package.  The
-link is called "Download translations."
+For qualified users (see below), the option is shown in the Translations
+action bar for a source package.  The link is called "Download
+translations."
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> download = user_browser.getLink('Download translations')
+Mark is a qualified user.
+
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
+    >>> download = browser.getLink('Download translations')
     >>> download_url = download.url
     >>> download.click()
-    >>> print user_browser.url
+    >>> print browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+export
 
 
-== Anonymous access ==
+== Authorization ==
 
-Only logged-in users are offered the Download link.  This protects us
-from overload by spambots.
+The option to download a package's full translations is restricted to
+users who are involved in certain ways, in order to keep load to a
+reasonable level.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> anon_browser.getLink('Download translations').click()
-    Traceback (most recent call last):
+    >>> from mechanize import LinkNotFoundError
+    >>> from zope.security.interfaces import Unauthorized
+
+    >>> def can_download_translations(browser):
+    ...     """Can browser download full package translations?
     ...
-    LinkNotFoundError
-
-Even going straight to the download URL will not work for anonymous
-visitors.
-
-    >>> anon_browser.open(download_url)
-    Traceback (most recent call last):
+    ...     Checks for the "Download translations" link on an Ubuntu
+    ...     package.  Also attempts direct access to the same package's
+    ...     download page and sees that the two have consistent access
+    ...     rules.
+    ...     """
+    ...     browser.open(
+    ...         'http://translations.launchpad.dev/'
+    ...         'ubuntu/hoary/+source/mozilla/')
+    ...     try:
+    ...         browser.getLink('Download translations').click()
+    ...     except LinkNotFoundError:
+    ...         see_link = False
+    ...     else:
+    ...         see_link = True
     ...
-    Unauthorized:...
+    ...     try:
+    ...         browser.open(download_url)
+    ...     except Unauthorized:
+    ...         have_access = False
+    ...     else:
+    ...         have_access = True
+    ...
+    ...     if have_access != see_link:
+    ...         if have_access:
+    ...             return "Download link not shown, but direct URL works."
+    ...         else:
+    ...             return "Download link shown to unauthorized user."
+    ...
+    ...     return have_access
+
+An arbitrary user visiting the package's translations page does not see
+the download link for the full package, and cannot download.
+
+    >>> can_download_translations(user_browser)
+    False
+
+It's the same for anonymous visitors.
+
+    >>> can_download_translations(anon_browser)
+    False
+
+An administrator, of course, can download the full translations.
+
+    >>> can_download_translations(admin_browser)
+    True
+
+Oofy Prosser is a Translations expert.  Gussie Fink-Nottle is not an
+admin or expert, but he is one of the owners of a translation group.
+
+    >>> from zope.component import getUtility
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+
+    >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
+    >>> login('foo.bar@canonical.com')
+    >>> personset = getUtility(IPersonSet)
+    >>> factory = LaunchpadObjectFactory()
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    >>> carlos = personset.getByName('carlos')
+    >>> oofy = factory.makePerson(email='oofy@drones.example.com',
+    ...     name='oofy', password='test', displayname='Oofy Prosser')
+    >>> rosetta_admins = personset.getByName('rosetta-admins')
+    >>> rosetta_admins.addMember(oofy, carlos)
+
+    >>> gussie = factory.makePerson(email='gussie@drones.example.com',
+    ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')
+    >>> translators = factory.makeTeam(gussie)
+    >>> group = factory.makeTranslationGroup(translators)
+
+    >>> # Log out so we can go back to using test browsers.
+    >>> logout()
+
+Oofy can download translations; Gussie cannot.
+
+    >>> oofy_browser = setupBrowser(auth='Basic oofy@drones.example.com:test')
+    >>> can_download_translations(oofy_browser)
+    True
+
+    >>> gussie_browser = setupBrowser(
+    ...     auth='Basic gussie@drones.example.com:test')
+    >>> can_download_translations(gussie_browser)
+    False
+
+Gussie's translation group takes charge of Ubuntu translations.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.translationgroup = group
+    >>> logout()
+
+This change gives Gussie the ability to download full package
+translations.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(ubuntu)
+    >>> can_download_translations(gussie_browser)
+    True
+
+The Hon. Freddie Threepwood is not an administrator and is not involved
+in the translation effort.  He is, however, a member of the team that
+is allowed to upload packages to Ubuntu.
+
+    >>> login('foo.bar@canonical.com')
+    >>> freddie = factory.makePerson(
+    ...     email='freddie@blandings.example.com', name='freddie',
+    ...     displayname='Freddie Threepwood', password='test')
+    >>> uploaders = factory.makeTeam(freddie)
+    >>> ubuntu.upload_admin = uploaders
+    >>> syncUpdate(ubuntu)
+    >>> logout()
+
+Freddie can download translations based on this qualification alone.
+
+    >>> freddie_browser = setupBrowser(
+    ...     auth='Basic freddie@blandings.example.com:test')
+    >>> can_download_translations(freddie_browser)
+    True
 
 
 == Making the request ==
@@ -42,17 +161,21 @@ visitors.
 The "Download translations" link leads to a page that lets the user select an
 export format, and request the download.
 
-    >>> print user_browser.title
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/mozilla/+export')
+    >>> print browser.title
     Download translations for "mozilla in Ubuntu Hoary"
 
-    >>> user_browser.getControl('Request Download').click()
+    >>> browser.getControl('Request Download').click()
 
-    >>> print user_browser.url
+    >>> print browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla
 
-    >>> for message in get_feedback_messages(user_browser.contents):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Your request has been received. Expect to receive an email shortly.
+
 
 == Mixed formats ==
 
@@ -65,9 +188,7 @@ native file format.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database.potemplate import POTemplateSubset
-    >>> from canonical.launchpad.database.distribution import DistributionSet
     >>> from canonical.launchpad.interfaces import TranslationFileFormat
-    >>> ubuntu = DistributionSet().getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
     >>> hoary_subset = POTemplateSubset(distroseries=hoary)
     >>> an_evolution_template = hoary_subset.getPOTemplateByPath(
@@ -76,15 +197,19 @@ native file format.
 If the file format for one of these templates were different from the other's,
 a warning would appear on the export request form that wasn't there before.
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
-    >>> for message in get_feedback_messages(user_browser.contents):
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+export')
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
 
     >>> an_evolution_template.source_file_format = TranslationFileFormat.MO
     >>> flush_database_updates()
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
-    >>> for message in get_feedback_messages(user_browser.contents):
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/+export')
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     This package has templates with different native file formats.  If you
     proceed, all translations will be exported in the single format you

@@ -170,7 +170,7 @@ class TestFraudDetection(unittest.TestCase):
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
-            flavour, user_email='karl@canonical.com', form=form)
+            flavour, user_email='tim@canonical.com', form=form)
         self.assertEqual(request.distroseries, request3.distroseries)
         self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.assertEqual(

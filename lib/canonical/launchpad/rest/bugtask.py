@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IBug, IBugTask, ILaunchBag, IPerson)
 from canonical.lazr import decorates
 
-
 class IBugTaskEntry(IEntry):
     """The part of a bugtask that we expose through the web service."""
 
