@@ -17,7 +17,7 @@ class DtdFormatTestCase(unittest.TestCase):
         content = (
             '<!ENTITY utf8.message "\xc2\xbfQuieres? \xc2\xa1S\xc3\xad!">')
 
-        dtd_file = DtdFile('test.dtd', content)
+        dtd_file = DtdFile('test.dtd', None, content)
 
         # There is a single message.
         self.assertEquals(len(dtd_file.messages), 1)
@@ -31,7 +31,8 @@ class DtdFormatTestCase(unittest.TestCase):
 
         content = '<!ENTITY latin1.message "\xbfQuieres? \xa1S\xed!">\n'
 
-        self.assertRaises(TranslationFormatInvalidInputError, DtdFile, 'test.dtd', content)
+        self.assertRaises(TranslationFormatInvalidInputError, DtdFile, None,
+            'test.dtd', content)
 
 
 def test_suite():

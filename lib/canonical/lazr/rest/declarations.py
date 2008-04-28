@@ -9,6 +9,7 @@ __all__ = [
     'FIELD_TYPE',
     'LAZR_WEBSERVICE_EXPORTED',
     'LAZR_WEBSERVICE_NS',
+    'OPERATION_TYPES',
     'REQUEST_USER',
     'call_with',
     'collection_default_content',
@@ -23,10 +24,13 @@ __all__ = [
     'generate_collection_adapter',
     'generate_entry_adapter',
     'generate_entry_interface',
+    'generate_operation_adapter',
     ]
 
+import simplejson
 import sys
 
+from zope.component import getUtility
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
@@ -35,10 +39,17 @@ from zope.schema import getFields
 from zope.schema.interfaces import IField
 from zope.security.checker import CheckerPublic
 
+# XXX flacoste 2008-01-25 bug=185958:
+# canonical_url and ILaunchBag code should be moved into lazr.
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp import canonical_url
+
 from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_attribute
-from canonical.lazr.interfaces.rest import ICollection, IEntry
+from canonical.lazr.interfaces.rest import (
+    ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
+from canonical.lazr.rest.operation import ResourceOperation
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -46,6 +57,7 @@ LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
 COLLECTION_TYPE = 'collection'
 ENTRY_TYPE = 'entry'
 FIELD_TYPE = 'field'
+OPERATION_TYPES = ('factory', 'read_operation', 'write_operation')
 
 # Marker to specify that a parameter should contain the request user.
 REQUEST_USER = object()
@@ -363,15 +375,15 @@ def generate_entry_adapter(content_interface, webservice_interface):
     if not isinstance(webservice_interface, InterfaceClass):
         raise TypeError('webservice_interface is not an interface.')
 
-    cdict = {'schema': webservice_interface}
+    class_dict = {'schema': webservice_interface}
     for name, field in getFields(content_interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        cdict[tag['as']] = Passthrough(name, 'context')
+        class_dict[tag['as']] = Passthrough(name, 'context')
 
     classname = "%sAdapter" % webservice_interface.__name__[1:]
-    factory = type(classname, bases=(Entry,), dict=cdict)
+    factory = type(classname, bases=(Entry,), dict=class_dict)
 
     classImplements(factory, webservice_interface)
 
@@ -386,11 +398,107 @@ def generate_collection_adapter(interface):
 
     tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     method_name = tag['collection_default_content']
-    cdict = {
+    class_dict = {
         'find': lambda self: (getattr(self.context, method_name)()),
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
-    factory = type(classname, bases=(Collection,), dict=cdict)
+    factory = type(classname, bases=(Collection,), dict=class_dict)
 
     protect_schema(factory, ICollection)
     return factory
+
+
+class BaseResourceOperationAdapter(ResourceOperation):
+    """Base class for generated operation adapters."""
+
+    def _getMethodParameters(self, kwargs):
+        """Return the method parameters.
+
+        This takes the validated parameters list and handle any possible
+        renames, and adds the parameters fixed using @call_with.
+
+        :returns: a dictionary.
+        """
+        # Handle renames.
+        renames = dict(
+            (param_def.__name__, orig_name)
+            for orig_name, param_def in self._export_info['params'].items()
+            if param_def.__name__ != orig_name)
+        params = {}
+        for name, value in kwargs.items():
+            name = renames.get(name, name)
+            params[name] = value
+
+        # Handle fixed parameters.
+        for name, value in self._export_info['call_with'].items():
+            if value is REQUEST_USER:
+                value = getUtility(ILaunchBag).user
+            params[name] = value
+        return params
+
+    def call(self, **kwargs):
+        """See `ResourceOperation`."""
+        params = self._getMethodParameters(kwargs)
+        result = getattr(self.context, self._method_name)(**params)
+
+        # The webservice assumes that the request is complete when the
+        # operation returns a string. So we take care of marshalling the
+        # result to json.
+        if isinstance(result, basestring):
+            response = self.request.response
+            response.setHeader('Content-Type', 'application/json')
+            return simplejson.dumps(result)
+        else:
+            # Use the default webservice encoding.
+            return result
+
+
+class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
+    """Base adapter class for factory operations."""
+
+    def call(self, **kwargs):
+        """See `ResourceOperation`.
+
+        Factory uses the 201 status code on success and sets the Location
+        header to the URL to the created object.
+        """
+        params = self._getMethodParameters(kwargs)
+        result = getattr(self.context, self._method_name)(**params)
+        response = self.request.response
+        response.setStatus(201)
+        response.setHeader('Location', canonical_url(result))
+        return u''
+
+
+def generate_operation_adapter(method):
+    """Create an IResourceOperation adapter for the exported method."""
+
+    if not IMethod.providedBy(method):
+        raise TypeError("%r doesn't provide IMethod." % method)
+    tag = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    if tag is None:
+        raise TypeError(
+            "'%s' isn't tagged for webservice export." % method.__name__)
+
+    bases = (BaseResourceOperationAdapter, )
+    if tag['type'] == 'read_operation':
+        prefix = 'GET'
+        provides = IResourceGETOperation
+    elif tag['type'] in ('factory', 'write_operation'):
+        provides = IResourcePOSTOperation
+        prefix = 'POST'
+        if tag['type'] == 'factory':
+            bases = (BaseFactoryResourceOperationAdapter,)
+    else:
+        raise AssertionError('Unknown method export type: %s' % tag['type'])
+
+    name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
+    class_dict = {'params' : tuple(tag['params'].values()),
+             '_export_info': tag,
+             '_method_name': method.__name__}
+    factory = type(name, bases, class_dict)
+    classImplements(factory, provides)
+    protect_schema(factory, provides)
+
+    return factory
+

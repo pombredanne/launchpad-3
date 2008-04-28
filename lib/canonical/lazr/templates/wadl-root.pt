@@ -27,7 +27,8 @@
         <param tal:repeat="field operation/op/params"
                tal:attributes="name field/__name__;
                                required field/required">
-          <link tal:condition="field/wadl:is_link" />
+          <link tal:condition="field/wadl:is_link"
+                tal:attributes="type field/wadl:type_link" />
           <option tal:repeat="option field/wadl:options"
                   tal:attributes="value option/title" />
         </param>
@@ -93,7 +94,8 @@
         <param tal:repeat="field operation/op/params"
                tal:attributes="name field/__name__;
                                required field/required">
-          <link tal:condition="field/wadl:is_link" />
+          <link tal:condition="field/wadl:is_link"
+                tal:attributes="type field/wadl:type_link" />
           <option tal:repeat="option field/wadl:options"
                   tal:attributes="value option/title" />
         </param>
@@ -106,7 +108,8 @@
       <param tal:repeat="field context/wadl_entry:all_fields" required="True"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
-        <link tal:condition="field/wadl:is_link" />
+        <link tal:condition="field/wadl:is_link"
+              tal:attributes="type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
       </param>
@@ -118,7 +121,8 @@
              required="False"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
-        <link tal:condition="field/wadl:is_link" />
+        <link tal:condition="field/wadl:is_link"
+              tal:attributes="type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
       </param>

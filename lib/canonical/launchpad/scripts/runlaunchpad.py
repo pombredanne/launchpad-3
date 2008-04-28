@@ -47,6 +47,8 @@ class TacFile(Service):
             attributes.
         :param pre_launch: A callable that is called before the launch process.
         """
+        # No point calling super's __init__.
+        # pylint: disable-msg=W0231
         self.name = name
         self.tac_filename = tac_filename
         self.config = configuration
@@ -58,6 +60,14 @@ class TacFile(Service):
     @property
     def should_launch(self):
         return self.config is not None and self.config.launch
+
+    @property
+    def logfile(self):
+        """Return the log file to use.
+
+        Default to the value of the configuration key logfile.
+        """
+        return self.config.logfile
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
@@ -105,6 +115,26 @@ class TacFile(Service):
         atexit.register(stop_process)
 
 
+class RestrictedLibrarianService(TacFile):
+    """Custom TacFile launcher for the restricted librarian."""
+    def __init__(self):
+        super(RestrictedLibrarianService, self).__init__(
+            "restricted-librarian", "daemons/librarian.tac",
+            config.librarian_server, prepare_for_librarian)
+
+    def launch(self):
+        """We need to set an environment variable to launch this service."""
+        os.environ['RESTRICTED_LIBRARIAN'] = '1'
+        try:
+            super(RestrictedLibrarianService, self).launch()
+        finally:
+            del os.environ['RESTRICTED_LIBRARIAN']
+
+    @property
+    def logfile(self):
+        return self.config.restricted_logfile
+
+
 class MailmanService(Service):
     @property
     def should_launch(self):
@@ -143,6 +173,7 @@ def prepare_for_librarian():
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
                          config.librarian_server, prepare_for_librarian),
+    'restricted-librarian': RestrictedLibrarianService(),
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
