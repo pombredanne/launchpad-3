@@ -77,43 +77,56 @@
              <tr>
               <td><img src="/@@/news" alt="" /></td>
               <td>
+                <a href="https://help.launchpad.net/PPAQuickStart#copy">
+                <strong>Copy PPA packages</strong><br />
+                Now you can copy source and binary packages between distro releases
+                within a PPA or to any other PPA for which you have upload permission.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+                <a href="http://news.launchpad.net/?p=66">
+                <strong>Meet the bug supervisor</strong><br />
+                Bug contacts are now called bug supervisors. Read our blog post to find out why.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+                <a href="https://code.launchpad.net/+recently-imported-branches">
+                <strong>View recent code imports</strong><br />
+                See the status of all Subversion and CVS imports into Launchpad,
+                including their most recent commit messages.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+                <a href="https://launchpad.net/ubuntu/+ppas">
+                <strong>Improved PPA distro overview page</strong><br />
+                Our new distro PPA overview page highlights the most active archives
+                and the latest PPA uploads, along with supported architectures and
+                distribution releases.
+               </a>
+              </td>
+             </tr>
+            <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
                 <a href="http://news.launchpad.net/?p=57">
                 <strong>Mailing lists for teams!</strong><br />
                 Each team in Launchpad can now have its own mailing list, with full public archives.
                </a>
               </td>
              </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=58">
-                <strong>Six plural forms</strong><br />
-                Translations now support up to six plural forms. Ideal if you're working in Arabic.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=59">
-                <strong>Improved branch listings</strong><br />
-                See a revision's commit message and visit the author's Launchpad profile from our redesigned branch listing pages.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=60">
-                <strong>Easier access to download files</strong><br />
-                Get a project's latest downloadable files direct from its overview page.
-               </a>
-              </td>
-             </tr>
             </tbody>
           </table>
           <div class="discreet" style="text-align: right">
-            Updated 2008-03-26.
+            Updated 2008-04-30.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

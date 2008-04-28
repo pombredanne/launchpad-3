@@ -6,11 +6,13 @@ __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
     'TeamAddView',
+    'TeamBadges',
     'TeamBrandingView',
     'TeamContactAddressView',
-    'TeamMailingListConfigurationView',
     'TeamEditView',
+    'TeamMailingListConfigurationView',
     'TeamMemberAddView',
+    'TeamPrivacyAdapter',
     ]
 
 from zope.event import notify
@@ -18,7 +20,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -33,6 +35,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
@@ -42,6 +45,30 @@ from canonical.launchpad.interfaces import (
     PersonVisibility, TeamContactMethod, TeamMembershipStatus,
     TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.lazr.interfaces import IObjectPrivacy
+
+
+class TeamPrivacyAdapter:
+    """Provides `IObjectPrivacy` for `ITeam`."""
+
+    implements(IObjectPrivacy)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_private(self):
+        """Return True if the bug is private, otherwise False."""
+        return self.context.visibility != PersonVisibility.PUBLIC
+
+
+class TeamBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `ITeam`."""
+
+    def getPrivateBadgeTitle(self):
+        """Return private badge info useful for a tooltip."""
+        return "This is a %s team" % self.context.visibility.title.lower()
+
 
 class HasRenewalPolicyMixin:
     """Mixin to be used on forms which contain ITeam.renewal_policy.

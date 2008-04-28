@@ -1,0 +1,132 @@
+<div
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
+  <div style="float:right" id="floating-buttons">
+    <div>
+      <a href="+addbranch" id="register-branch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
+    <div tal:condition="not: context/official_codehosting">
+      <tal:code-imports define="config modules/canonical.config/config">
+        <tal:production-site
+            condition="not: config/codeimport/expose_code_import">
+          <a href="https://help.launchpad.net/VcsImports">
+            <img alt="Import your project"
+                 src="/+icing/but-lrg-importyourproject.gif"/>
+          </a>
+        </tal:production-site>
+        <tal:non-production-site
+            condition="config/codeimport/expose_code_import">
+          <a href="/+code-imports/+new" id="new-code-import">
+            <img alt="Import your project"
+                 src="/+icing/but-lrg-importyourproject.gif"/>
+          </a>
+        </tal:non-production-site>
+      </tal:code-imports>
+    </div>
+  </div>
+
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
+
+  <div id="application-summary">
+
+  <tal:no-branches condition="not: view/branch_count">
+    There are no branches for <tal:project-name replace="context/displayname"/>
+    in Launchpad.
+    <ul>
+      <li>If there are Bazaar branches of
+      <tal:project-name replace="context/displayname"/>
+      in a publicly accessible location,
+      Launchpad can act as a mirror of the branch by registering a
+      <em>Mirrored</em> branch.
+      <a href="https://help.launchpad.net/CreatingAMirroredBranch">Read more.</a>
+      </li>
+      <li>Launchpad can also act as a primary
+      location for Bazaar branches of
+      <tal:project-name replace="context/displayname"/>.
+      <a href="https://help.launchpad.net/CreatingAHostedBranch">Read more.</a>
+      </li>
+
+      <li>Launchpad can import code from CVS or Subversion into Bazaar
+      branches.
+      <a href="https://help.launchpad.net/VcsImports">Read more.</a>
+      </li>
+
+    </ul>
+  </tal:no-branches>
+
+  <tal:has-branches condition="view/branch_count">
+
+    <strong tal:content="view/branch_count">1234</strong>
+    <tal:branches replace="view/branch_text">branches</tal:branches>
+
+    owned by
+    <tal:individuals condition="view/person_owner_count">
+    <strong tal:content="view/person_owner_count">42</strong>
+    <tal:people replace="view/person_text">people</tal:people
+    ></tal:individuals
+    ><tal:teams condition="view/team_owner_count">
+    <tal:individuals condition="view/person_owner_count">
+      and
+    </tal:individuals>
+    <strong tal:content="view/team_owner_count">1</strong>
+    <tal:people replace="view/team_text">team</tal:people
+    ></tal:teams>,
+
+    <strong tal:content="view/commit_count">23</strong>
+    <tal:commits replace="view/commit_text">commits</tal:commits>
+    <tal:has-committers condition="view/committer_count">
+      by
+    <strong tal:content="view/committer_count">4</strong>
+    <tal:people replace="view/committer_text">people</tal:people>
+    </tal:has-committers>
+    in the last month
+
+    <div tal:condition="view/has_development_focus_branch"
+         style="margin: 1em 0"
+         tal:define="config modules/canonical.config/config;
+                     codebrowse_root config/codehosting/codebrowse_root;
+                     dev_focus context/development_focus/series_branch">
+      You can <a tal:attributes="href string:${codebrowse_root}${dev_focus/unique_name}">browse the source code
+      </a> for development focus branch,
+      or get a copy of the branch using the command:<br/>
+      <tt style="padding-left:2em">bzr branch lp:<tal:project-name replace="context/name"/></tt>
+    </div>
+
+    <tal:missing-dev-focus condition="not: view/has_development_focus_branch">
+      <tal:comment condition="nothing">
+        Only show the div with the warning and link if the user can actually
+        set the dev focus branch.
+      </tal:comment>
+      <div class="warning message"
+           tal:condition="context/required:launchpad.Edit"
+           tal:define="series_link context/development_focus/fmt:url;
+                       edit_link string:${series_link}/+linkbranchtoseries">
+        A branch has not yet been specified as the primary development focus
+        for <tal:project replace="context/displayname"/>
+        (<a tal:attributes="href edit_link">set</a>).
+      </div>
+    </tal:missing-dev-focus>
+
+  </tal:has-branches>
+
+  <p tal:condition="view/latest_release_with_download_files">
+    <img src="/@@/download"/> There are
+    <a tal:define="link context/menu:overview/files"
+       tal:condition="link/enabled"
+       tal:attributes="href link/url"
+       >download files</a>
+    available for <tal:project-name replace="context/displayname"/>.
+  </p>
+
+  </div>
+</div>

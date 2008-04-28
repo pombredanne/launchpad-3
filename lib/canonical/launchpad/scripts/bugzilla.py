@@ -467,7 +467,7 @@ class Bugzilla:
         lp_bug = self.bugset.createBug(params)
 
         # add the bug watch:
-        lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)
+        lp_bug.addWatch(self.bugtracker, str(bug.bug_id), lp_bug.owner)
 
         # add remaining comments, and add CVEs found in all text
         lp_bug.findCvesInText(text, lp_bug.owner)

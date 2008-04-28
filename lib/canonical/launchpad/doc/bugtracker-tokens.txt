@@ -31,8 +31,9 @@ POST request to the token's canonical URL to validate it.
 Visiting the token's +bugtracker-handshake URL will result in an HTTP
 200 response if the token is valid.
 
-    >>> from zope.component import getView
-    >>> view = getView(token, '+bugtracker-handshake', test_request)
+    >>> from zope.component import getMultiAdapter
+    >>> view = getMultiAdapter(
+    ...     (token, test_request), name='+bugtracker-handshake')
     >>> view()
     'Handshake token validated.'
 
@@ -48,7 +49,8 @@ The token has now been consumed.
 If we try to access the +bugtracker-handshake URL again, we will receive
 an HTTP 410 (Gone) response.
 
-    >>> view = getView(token, '+bugtracker-handshake', test_request)
+    >>> view = getMultiAdapter(
+    ...     (token, test_request), name='+bugtracker-handshake')
     >>> view()
     'Token has already been used or is invalid.'
 
@@ -63,7 +65,8 @@ HTTP 405 (Method Not Allowed) response.
     >>> token = getUtility(ILoginTokenSet)[token_string]
     >>> test_request = LaunchpadTestRequest(method='GET')
 
-    >>> view = getView(token, '+bugtracker-handshake', test_request)
+    >>> view = getMultiAdapter(
+    ...     (token, test_request), name='+bugtracker-handshake')
     >>> view()
     'Only POST requests are accepted for bugtracker handshakes.'
 

@@ -120,16 +120,21 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgid "MENU"
             msgstr ""
 
-            #. Select the shortcut key that you want to use. Please,
-            #. don't change this translation if you are not really
-            #. sure about what you are doing.
+            #. Select the access key that you want to use. These have to be
+            #. translated in a way that the selected character is present in the
+            #. translated string of the label being referred to, for example 'i' in
+            #. 'Edit' menu item in English. If a translation already exists, please
+            #. don't change it if you are not sure about it. Please find the context
+            #. of the key from the end of the 'Located in' text below.
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.accesskey)
             msgid "M"
             msgstr ""
 
-            #. Select the shortcut key that you want to use. Please,
-            #. don't change this translation if you are not really
-            #. sure about what you are doing.
+            #. Select the shortcut key that you want to use. It should be translated,
+            #. but often shortcut keys (for example Ctrl + KEY) are not changed from
+            #. the original. If a translation already exists, please don't change it
+            #. if you are not sure about it. Please find the context of the key from
+            #. the end of the 'Located in' text below.
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.commandkey)
             msgid "m"
             msgstr ""

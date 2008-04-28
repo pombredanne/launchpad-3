@@ -8,9 +8,9 @@ __all__ = [
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
-    'BugsBugTaskSearchListingView',
     'BugTargetTraversalMixin',
     'BugTargetView',
+    'BugTaskBadges',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
@@ -18,20 +18,22 @@ __all__ = [
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
-    'BugTasksAndNominationsView',
+    'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
+    'BugTaskSOP',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
-    'BugTaskSOP',
     'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
+    'BugTasksAndNominationsView',
+    'BugsBugTaskSearchListingView',
+    'NominationsReviewTableBatchNavigatorView',
+    'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
-    'NominationsReviewTableBatchNavigatorView',
-    'TextualBugTaskSearchListingView',
     ]
 
 from datetime import datetime, timedelta
@@ -66,6 +68,8 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
+from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
@@ -75,7 +79,7 @@ from canonical.launchpad.interfaces import (
     ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson, IPersonSet,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
     IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
@@ -103,6 +107,7 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr import decorates, EnumeratedType, Item
+from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -170,6 +175,12 @@ def get_visible_comments(comments):
 
         visible_comments.append(comment)
         previous_comment = comment
+
+    # These two lines are here to fill the ValidPersonOrTeamCache cache,
+    # so that checking owner.is_valid_person, when rendering the link,
+    # won't issue a DB query.
+    commenters = set(comment.owner for comment in visible_comments)
+    getUtility(IPersonSet).getValidPersons(commenters)
 
     return visible_comments
 
@@ -631,9 +642,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def reportBugInContext(self):
         """Report the bug affects the current context."""
-        form = self.request.form
         fake_task = self.context
-        if form.get("reportbug"):
+        if self.request.form.get("reportbug"):
             if self.isReportedInContext():
                 self.notices.append(
                     "The bug is already reported in this context.")
@@ -2431,6 +2441,16 @@ class BugTasksAndNominationsView(LaunchpadView):
                     BugNominationStatus.APPROVED)
                 ]
 
+        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
+        # so that checking person.is_valid_person, when rendering the
+        # link, won't issue a DB query.
+        assignees = set(
+            bugtask.assignee for bugtask in all_bugtasks
+            if bugtask.assignee is not None)
+        reporters = set(
+            bugtask.owner for bugtask in all_bugtasks)
+        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
+
         return bugtasks_and_nominations
 
     def currentBugTask(self):
@@ -2584,12 +2604,53 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
         return "Search all bug reports"
 
 
-class BugTaskSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBugTask`."""
+class BugTaskPrivacyAdapter:
+    """Provides `IObjectPrivacy` for `IBugTask`."""
 
-    def isPrivate(self):
+    implements(IObjectPrivacy)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
+
+
+class BugTaskBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `IBugTask`."""
+
+    badges = ('security', 'private', 'mentoring', 'branch')
+
+    def isBranchBadgeVisible(self):
+        return self.context.bug.bug_branches.count() > 0
+
+    def isMentoringBadgeVisible(self):
+        return self.context.bug.mentoring_offers.count() > 0
+
+    def isSecurityBadgeVisible(self):
+        return self.context.bug.security_related
+
+    def getSecurityBadgeTitle(self):
+        """Return info useful for a tooltip."""
+        return "This bug report is about a security vulnerability"
+
+    # HasBadgeBase supplies isPrivateBadgeVisible().
+    def getPrivateBadgeTitle(self):
+        """Return info useful for a tooltip."""
+        if self.context.bug.date_made_private is None:
+            return "This bug report is private"
+        else:
+            date_formatter = DateTimeFormatterAPI(
+                self.context.bug.date_made_private)
+            return "This bug report was made private by %s %s" % (
+                self.context.bug.who_made_private.displayname,
+                date_formatter.displaydate())
+
+
+class BugTaskSOP(StructuralObjectPresentation):
+    """Provides the structural heading for `IBugTask`."""
 
     def getIntroHeading(self):
         """Return None."""
