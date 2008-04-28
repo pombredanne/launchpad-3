@@ -27,3 +27,9 @@ Now, open its home page.
     >>> from_ = find_tag_by_id(anon_browser.contents, 'comment-from')
     >>> print extract_text(from_)
     From Person-name21
+
+We can reply to a comment.
+
+    >>> anon_browser.getLink('Reply').click()
+    >>> anon_browser.url == message_url + '/+reply'
+    True

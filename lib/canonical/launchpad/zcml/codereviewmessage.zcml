@@ -14,6 +14,9 @@
         path_expression="string:comments/${id}"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="CodeReviewMessageNavigation" />
     <browser:defaultView
         for="canonical.launchpad.interfaces.ICodeReviewMessage"
         name="+index" />
@@ -25,6 +28,10 @@
         <browser:page
             name="+index"
             template="../templates/codereviewmessage-index.pt"
+        />
+        <browser:page
+            name="+reply"
+            template="../templates/codereviewmessage-reply.pt"
         />
     </browser:pages>
 </configure>

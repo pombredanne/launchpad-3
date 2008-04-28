@@ -438,6 +438,8 @@ codeofconduct_list = 'Ubuntu Codes of Conduct'
 
 codereviewmessage_index = 'Code review comment'
 
+codereviewmessage_reply = 'Reply to code review comment'
+
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'

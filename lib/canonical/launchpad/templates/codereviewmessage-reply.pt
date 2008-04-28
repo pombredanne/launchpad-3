@@ -22,7 +22,7 @@
       <span tal:replace="structure context/message/owner/fmt:link"/>
   <tt id="comment-subject" tal:content="context/message/subject" />
   <tt id="comment-body" tal:content="context/message/text_contents" />
-  <a href="#" tal:attributes="href view/reply">Reply</a>
+  <a href="#" tal:attributes="href view/reply_link">Reply</a>
 </div>
 
 </body>
