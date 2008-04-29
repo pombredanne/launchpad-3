@@ -701,3 +701,47 @@ class ArchiveSet:
         return Archive.select(
             query, clauseTables=['Person', 'TeamParticipation'],
             orderBy=['Person.displayname'])
+
+    def getLatestPPASourcePublicationsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        query = """
+            SourcePackagePublishingHistory.archive = Archive.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            Archive.private = FALSE AND
+            DistroSeries.distribution = %s AND
+            Archive.purpose = %s
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        return SourcePackagePublishingHistory.select(
+            query, limit=5, clauseTables=['Archive', 'DistroSeries'],
+            orderBy=['-datecreated', '-id'])
+
+
+    def getMostActivePPAsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        cur = cursor()
+        query = """
+             SELECT a.id, count(*) as C
+             FROM Archive a, SourcePackagePublishingHistory spph
+             WHERE
+                 spph.archive = a.id AND
+                 a.private = FALSE AND
+                 spph.datecreated >= now() - INTERVAL '1 week' AND
+                 a.distribution = %s AND
+                 a.purpose = %s
+             GROUP BY a.id
+             ORDER BY C DESC, a.id
+             LIMIT 5
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        cur.execute(query)
+
+        most_active = []
+        for archive_id, number_of_uploads in cur.fetchall():
+            archive = Archive.get(int(archive_id))
+            the_dict = {'archive': archive, 'uploads': number_of_uploads}
+            most_active.append(the_dict)
+
+        return most_active
+

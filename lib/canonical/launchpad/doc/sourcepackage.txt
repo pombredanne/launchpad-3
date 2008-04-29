@@ -319,18 +319,18 @@ XXX julian 2007-09-17
 This is duplicating the page test. Instead it should be more like the bug
 number linkification just below.
 
-    >>> from zope.component import queryView
+    >>> from zope.component import queryMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> mock_form = {}
     >>> request = TestRequest(form=mock_form)
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
-    >>> spr_view = queryView(spr, "+changelog", request)
+    >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")
     >>> print spr_view.changelog_entry
     This is a placeholder changelog for pmount 0.1-2
 
     >>> spr = sp['0.1-1']
-    >>> spr_view = queryView(spr, "+changelog", request)
+    >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")
     >>> print spr_view.changelog_entry
     pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>

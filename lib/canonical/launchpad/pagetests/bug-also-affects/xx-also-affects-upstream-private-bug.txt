@@ -5,7 +5,7 @@ confidential but not a security vulnerability, the user will be told that the
 upstream bug supervisor won't be notified. They will also be given a link to
 the Subscribe someone else page.
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugcontact')
+    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugsupervisor')
     >>> admin_browser.getControl('Bug Supervisor').value = 'name16'
     >>> admin_browser.getControl('Change').click()
 
