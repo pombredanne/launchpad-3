@@ -1930,7 +1930,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
 
-    def shouldShowSupervisortWidget(self):
+    def shouldShowSupervisorWidget(self):
         """
         Should the bug supervisor widget be shown on the advanced search page?
         """
