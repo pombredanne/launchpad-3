@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BaseListView',
     'BeginTeamClaimView',
-    'BugContactPackageBugsSearchListingView',
+    'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'PeopleListView',
     'PersonAddView',
@@ -1471,8 +1471,8 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
-    """Bugs reported on packages for a bug contact."""
+class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
+    """Bugs reported on packages for a bug subscriber."""
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
@@ -1516,13 +1516,13 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
-        for package_counts in self.context.getBugContactOpenBugCounts(
+        for package_counts in self.context.getBugSubscriberOpenBugCounts(
             self.user):
             package = package_counts['package']
             L.append({
                 'package_name': package.displayname,
                 'package_search_url':
-                    self.getBugContactPackageSearchURL(package),
+                    self.getBugSubscriberPackageSearchURL(package),
                 'open_bugs_count': package_counts['open'],
                 'open_bugs_url': self.getOpenBugsURL(package),
                 'critical_bugs_count': package_counts['open_critical'],
@@ -1535,26 +1535,26 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return sorted(L, key=itemgetter('package_name'))
 
-    def getOtherBugContactPackageLinks(self):
-        """Return a list of the other packages for a bug contact.
+    def getOtherBugSubscriberPackageLinks(self):
+        """Return a list of the other packages for a bug subscriber.
 
         This excludes the current package.
         """
         current_package = self.current_package
 
         other_packages = [
-            package for package in self.context.getBugContactPackages()
+            package for package in self.context.getBugSubscriberPackages()
             if package != current_package]
 
         package_links = []
         for other_package in other_packages:
             package_links.append({
                 'title': other_package.displayname,
-                'url': self.getBugContactPackageSearchURL(other_package)})
+                'url': self.getBugSubscriberPackageSearchURL(other_package)})
 
         return package_links
 
-    def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
+    def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
 
@@ -1587,10 +1587,10 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         else:
             return person_url + '/+packagebugs-search?%s' % query_string
 
-    def getBugContactPackageAdvancedSearchURL(self,
+    def getBugSubscriberPackageAdvancedSearchURL(self,
                                               distributionsourcepackage=None):
         """Build the advanced search URL for a distributionsourcepackage."""
-        return self.getBugContactPackageSearchURL(advanced=True)
+        return self.getBugSubscriberPackageSearchURL(advanced=True)
 
     def getOpenBugsURL(self, distributionsourcepackage):
         """Return the URL for open bugs on distributionsourcepackage."""
@@ -1599,7 +1599,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         for status in UNRESOLVED_BUGTASK_STATUSES:
             status_params['field.status'].append(status.title)
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=status_params)
 
@@ -1611,7 +1611,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         for status in UNRESOLVED_BUGTASK_STATUSES:
             critical_bugs_params["field.status"].append(status.title)
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=critical_bugs_params)
 
@@ -1623,7 +1623,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         for status in UNRESOLVED_BUGTASK_STATUSES:
             unassigned_bugs_params["field.status"].append(status.title)
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=unassigned_bugs_params)
 
@@ -1631,7 +1631,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         """Return the URL for unassigned bugs on distributionsourcepackage."""
         inprogress_bugs_params = {"field.status": "In Progress"}
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=inprogress_bugs_params)
 
@@ -1650,7 +1650,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return "Search bugs in %s" % self.current_package.displayname
 
     def getSimpleSearchURL(self):
-        return self.getBugContactPackageSearchURL()
+        return self.getBugSubscriberPackageSearchURL()
 
 
 class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):

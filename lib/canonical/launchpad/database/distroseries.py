@@ -197,9 +197,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See `IDistroSeries`."""
-        return self.distribution.bugcontact
+        return self.distribution.bug_supervisor
 
     @property
     def security_contact(self):

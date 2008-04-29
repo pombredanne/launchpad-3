@@ -380,15 +380,15 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
+    def bugsupervisor(self):
         text = 'Change bug supervisor'
-        return Link('+bugcontact', text, icon='edit')
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
@@ -920,10 +920,10 @@ class ProductReviewView(ProductEditView):
                    "private_bugs", "reviewer_whiteboard"]
 
     def validate(self, data):
-        if data.get('private_bugs') and self.context.bugcontact is None:
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
             self.setFieldError('private_bugs',
                 structured(
-                    'Set a <a href="%s/+bugcontact">bug supervisor</a> '
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
