@@ -22,7 +22,8 @@ from canonical.launchpad.components.externalbugtracker import (
     UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
-    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE)
+    ISupportsCommentImport, ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -238,7 +239,7 @@ def needs_authentication(func):
 class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -378,6 +379,18 @@ class TracLPPlugin(Trac):
             datecreated=comment_datecreated)
 
         return message
+
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, message):
+        """See `ISupportsCommentPushing`."""
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        timestamp, comment_id = server.launchpad.add_comment(
+            remote_bug, message.text_contents)
+
+        return comment_id
 
 
 class TracXMLRPCTransport(xmlrpclib.Transport):

@@ -1280,6 +1280,9 @@ ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 ALTER TABLE bugtrackeralias DISABLE TRIGGER ALL;
 
 INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (1, 7, 'http://savannah.nognu.org/');
+INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (2, 5, 'http://sf.net/');
+INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (3, 5, 'http://www.sf.net');
+INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (4, 5, 'http://www.sourceforge.net/');
 
 
 ALTER TABLE bugtrackeralias ENABLE TRIGGER ALL;
@@ -3950,6 +3953,7 @@ INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, da
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'hgm2VK35vXD6rLg5pxWw', 'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz');
 
 
+
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
 
 
@@ -3957,6 +3961,7 @@ ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
 
 INSERT INTO oauthconsumer (id, date_created, disabled, "key", secret) VALUES (1, '2008-03-18 20:57:19.108004', false, 'foobar123451432', '');
 INSERT INTO oauthconsumer (id, date_created, disabled, "key", secret) VALUES (2, '2008-03-18 20:57:44.710251', false, 'launchpad-library', '');
+
 
 
 ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
