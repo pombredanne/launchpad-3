@@ -12,7 +12,8 @@ DistroArchSeries and Archive.
 To demonstrate this we need to define some variables.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILibraryFileAliasSet)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -21,6 +22,10 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
 
     >>> hoary_i386 = hoary['i386']
     >>> hoary_hppa = hoary['hppa']
+
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> trash = hoary_i386.addOrUpdateChroot(fake_chroot)
+    >>> trash = hoary_hppa.addOrUpdateChroot(fake_chroot)
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')

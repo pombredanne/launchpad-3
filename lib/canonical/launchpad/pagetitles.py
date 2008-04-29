@@ -418,6 +418,8 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
+code_in_branches = 'Projects with active branches'
+
 def codeimport(context, view):
     """Return the view's title."""
     return view.title
@@ -570,7 +572,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
+edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -1001,15 +1003,12 @@ product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
-product_branches = ContextDisplayName(
-    smartquote("%s's Bazaar branches registered in Launchpad"))
+product_branches = ContextDisplayName("Bazaar branches of %s")
 
-product_branch_overview = ContextDisplayName("Code overview for %s")
+product_code_index = ContextDisplayName("Bazaar branches of %s")
 
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
-
-product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
@@ -1389,6 +1388,8 @@ team_join = ContextBrowsername('Join %s')
 team_leave = ContextBrowsername('Leave %s')
 
 team_mailinglist = 'Configure mailing list'
+
+team_mailinglist_moderate = 'Moderate mailing list'
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 

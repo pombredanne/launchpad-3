@@ -1,4 +1,4 @@
-= IHasBugContact =
+= IHasBugSupervisor =
 
 Bug supervisors are people or teams who are responsible for dealing with
 bugs pertaining to a target. All objects with a bug supervisor are also
@@ -8,7 +8,7 @@ is set, a new bug subscription is created as well.
     >>> target.bug_subscriptions
     []
 
-    >>> print target.bugcontact
+    >>> print target.bug_supervisor
     None
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -20,19 +20,19 @@ is set, a new bug subscription is created as well.
 
 We set no_priv as the bug supervisor for the target.
 
-    >>> target.setBugContact(no_priv, foo_bar)
+    >>> target.setBugSupervisor(no_priv, foo_bar)
 
-The bug supervisor can be retrieved using the `bugcontact` property.
+The bug supervisor can be retrieved using the `bug_supervisor` property.
 
-    >>> print target.bugcontact.preferredemail.email
+    >>> print target.bug_supervisor.preferredemail.email
     no-priv@canonical.com
 
 But we can't use it to set the bug supervisor.
 
-    >>> target.bugcontact = None
+    >>> target.bug_supervisor = None
     Traceback (most recent call last):
     ...
-    ForbiddenAttribute: ('bugcontact', <...>)
+    ForbiddenAttribute: ('bug_supervisor', <...>)
 
 After setting no_priv as the bug supervisor, a bug subscription is created
 for the target.
@@ -51,15 +51,15 @@ the target.
 If no_priv unsubscribes, he is still set as the bug supervisor.
 
     >>> target.removeBugSubscription(no_priv)
-    >>> print target.bugcontact.preferredemail.email
+    >>> print target.bug_supervisor.preferredemail.email
     no-priv@canonical.com
     >>> no_priv in bug.getIndirectSubscribers()
     False
 
 But we can remove the bug supervisor by setting it to None.
 
-    >>> target.setBugContact(None, None)
-    >>> print target.bugcontact
+    >>> target.setBugSupervisor(None, None)
+    >>> print target.bug_supervisor
     None
 
 Note that removing a person as a bug contact supervisor not remove their

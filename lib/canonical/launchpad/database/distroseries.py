@@ -197,9 +197,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See `IDistroSeries`."""
-        return self.distribution.bugcontact
+        return self.distribution.bug_supervisor
 
     @property
     def security_contact(self):
@@ -1120,7 +1120,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # off to the librarian.
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain')
+            StringIO(changesfilecontent), 'text/plain',
+            restricted=archive.private)
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,

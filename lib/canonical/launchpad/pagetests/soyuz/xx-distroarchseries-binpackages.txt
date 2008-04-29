@@ -17,7 +17,7 @@ system, so it's impossible to get there except by typing the entire
 URL:
 
     >>> browser.open(
-    ...     'http://localhost/ubuntu/warty/i386/mozilla-firefox')
+    ...     'http://launchpad.dev/ubuntu/warty/i386/mozilla-firefox')
 
 This page provides the publishing history of this BinaryPackage within
 this architecture:
@@ -47,7 +47,7 @@ $LP/ubuntu/$DISTRORELEASE/$ARCHTAG/$BINARYNAME/$VERSION
 
 It's also reachable in a more natural way, starting from distribution page:
 
-    >>> browser.open('http://localhost/ubuntu')
+    >>> browser.open('http://launchpad.dev/ubuntu')
 
 Then we get to the DistroSeries page:
 
@@ -172,3 +172,32 @@ librarian URL and size:
     >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
     commercialpackage_1.0-1_i386.deb (652 bytes)
 
+
+== Tracing copied binary ==
+
+Any user can view the publishing history details for a binary in the
+distribution PRIMARY archive, specifically in the
+DistroArchSeriesBinaryPackage page. It offers enough information to
+trace copied binaries
+
+If the publishing is a copy, the original location, distribution,
+distroseries and archive are shown.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/warty/i386/pmount')
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
+    Date           Status      Target     Pocket  Component Section Version
+    2006-01-26 ... Superseded  warty i386 release universe  editors  0.1-1
+      Published on 2006-01-26
+      Copied from ubuntu hoary-release i386 in Primary Archive for Ubuntu Linux
+    ...
+    2005-05-05 ... Published   warty i386 release  main     base     0.1-1
+      Published on 2005-06-24
+      Copied from ubuntu hoary-release i386 in Primary Archive for Ubuntu Linux
+    ...
+    2005-05-05 ... Published warty i386   release  main     base     2:1.9-1
+      Published on 2005-06-20
+      Copied from  ubuntu hoary-release hppa in Primary Archive for Ubuntu Linux
+    ...

@@ -286,7 +286,8 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingStatus)
+    ...    IDistributionSet, ILibraryFileAliasSet, IPersonSet,
+    ...    PackagePublishingStatus)
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
 
@@ -294,6 +295,9 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> trash = hoary["i386"].addOrUpdateChroot(fake_chroot)
 
     >>> test_publisher = SoyuzTestPublisher()
 

@@ -19,7 +19,7 @@ The use of the Won't Fix status is restricted. We need to use it to
 illustrate conjoined bugtasks, so we'll make 'no-priv' the bug supervisor
 for Ubuntu:
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugcontact')
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugsupervisor')
     >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
 
