@@ -176,8 +176,7 @@ Create BuildQueue record and inspect some parameters:
 
 The build job's archive requires virtualized builds.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(ppa_job).build.archive.require_virtualized
+    >>> ppa_job.build.archive.require_virtualized
     True
 
 But the builder is not virtualized.
