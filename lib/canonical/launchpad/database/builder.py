@@ -40,8 +40,7 @@ from canonical.launchpad.interfaces import (
     ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
-from canonical.librarian.interfaces import (
-    ILibrarianClient, IRestrictedLibrarianClient)
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 
 
@@ -106,13 +105,9 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host', default=None)
     active = BoolCol(dbName='active', default=True)
 
-    def cacheFileOnSlave(self, logger, libraryfilealias, private_file):
+    def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
-        if private_file:
-            librarian = getUtility(IRestrictedLibrarianClient)
-        else:
-            librarian = getUtility(ILibrarianClient)
-        url = librarian.getURLForAlias(libraryfilealias.id)
+        url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
@@ -367,15 +362,14 @@ class Builder(SQLBase):
         """Start the build on the slave builder."""
         # Send chroot.
         chroot = build_queue_item.archseries.getChroot()
-        self.cacheFileOnSlave(logger, chroot, False)
+        self.cacheFileOnSlave(logger, chroot)
 
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         filemap = {}
         for f in build_queue_item.files:
             filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
-            self.cacheFileOnSlave(
-                logger, f.libraryfile, build_queue_item.build.archive.private)
+            self.cacheFileOnSlave(logger, f.libraryfile)
 
         chroot_sha1 = chroot.content.sha1
         try:
