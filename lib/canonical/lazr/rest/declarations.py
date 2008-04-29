@@ -18,13 +18,13 @@ __all__ = [
     'export_as_webservice_entry',
     'export_factory_operation',
     'export_operation_as',
-    'export_parameters_as',
     'export_read_operation',
     'export_write_operation',
     'generate_collection_adapter',
     'generate_entry_adapter',
     'generate_entry_interface',
     'generate_operation_adapter',
+    'rename_parameters_as',
     'webservice_error',
     'WebServiceExceptionView',
     ]
@@ -306,7 +306,7 @@ class export_operation_as(_method_annotator):
         annotations['as'] = self.name
 
 
-class export_parameters_as(_method_annotator):
+class rename_parameters_as(_method_annotator):
     """Decorator specifying the name to export the method parameters as."""
 
     def annotate_method(self, method, annotations):
@@ -318,7 +318,7 @@ class export_parameters_as(_method_annotator):
         for name, export_as in self.params.items():
             if name not in param_defs:
                 raise TypeError(
-                    'export_parameters_as(): no "%s" parameter is exported.' %
+                    'rename_parameters_as(): no "%s" parameter is exported.' %
                         name)
             param_defs[name].__name__ = export_as
 
