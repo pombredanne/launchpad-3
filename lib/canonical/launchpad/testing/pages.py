@@ -467,10 +467,12 @@ def print_ppa_packages(contents):
 
 
 def print_navigation(contents):
+    """Print the location, tabs, and page title of the page."""
     doc = find_tag_by_id(contents, 'document')
-    breadcrumbs = doc.findAll(attrs='breadcrumb')
+    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
     print "Location: %s" % " > ".join(
-        extract_text(tag) for tag in breadcrumbs)
+        extract_text(tag) for tag in breadcrumbs
+        if tag.get('id') != 'homebreadcrumb')
     print "Structural title: %s" % extract_text(
         doc.find(id='structuralobject'))
     print 'Tabs:'
