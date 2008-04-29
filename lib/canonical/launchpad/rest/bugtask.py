@@ -111,8 +111,7 @@ class BugTaskEntry(Entry):
 
 
 class ChangeBugTaskStatusOperation(ResourcePOSTOperation):
-    """
-    An operation that modifies a bug task's status.
+    """An operation that modifies a bug task's status.
 
     XXX leonardr 2008-04-01 bug=210265:
     To implement this without creating a custom operation, call

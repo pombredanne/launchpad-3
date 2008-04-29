@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
-from epydoc.markup import epytext
+import textwrap
 import urllib
+
+from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
@@ -34,10 +36,13 @@ class WadlAPI:
 
     def docstringToXHTML(self, doc):
         """Convert an epydoc docstring to XHTML."""
-        if doc == '' or doc is None:
+        if doc is None:
+            return None
+        doc = textwrap.dedent(doc)
+        if doc == '':
             return None
         errors = []
-        parsed = epytext.parse_docstring(doc, errors)
+        parsed = parse_docstring(doc, errors)
         if len(errors) > 0:
             messages = [str(error) for error in errors]
             raise AssertionError(

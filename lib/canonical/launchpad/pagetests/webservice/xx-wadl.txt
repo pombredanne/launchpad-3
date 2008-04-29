@@ -472,7 +472,7 @@ is kept in the <resource_type> tag.
 A resource type may have some human-readable documentation:
 
     >>> doc.text
-    'A bugtask.\n'
+    'A bugtask.'
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
