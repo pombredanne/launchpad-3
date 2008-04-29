@@ -3,7 +3,7 @@
 
 """Look for and dispatch code import jobs as needed."""
 
-
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from canonical.codehosting.codeimport.dispatcher import CodeImportDispatcher
