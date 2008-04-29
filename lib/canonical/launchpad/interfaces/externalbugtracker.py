@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IExternalBugTracker',
     'IExternalBugTrackerTokenAPI',
+    'ISupportsBugImport',
     'ISupportsCommentImport',
     'ISupportsCommentPushing',
     'UNKNOWN_REMOTE_IMPORTANCE',
