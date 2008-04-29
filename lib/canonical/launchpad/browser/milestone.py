@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
     IStructuralHeaderPresentation)
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, StandardLaunchpadFacets,
+    action, canonical_url, custom_widget,
     ContextMenu, Link, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, enabled_with_permission, GetitemNavigation, Navigation)
 
