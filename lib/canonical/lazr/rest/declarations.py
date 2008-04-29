@@ -15,7 +15,7 @@ __all__ = [
     'collection_default_content',
     'export_as',
     'export_collection',
-    'export_entry',
+    'export_as_webservice_entry',
     'export_factory_operation',
     'export_field',
     'export_parameters_as',
@@ -94,13 +94,13 @@ def _get_interface_tags():
     return f_locals.setdefault(TAGGED_DATA, {})
 
 
-def export_entry():
+def export_as_webservice_entry():
     """Mark the content interface as exported on the web service as an entry.
     """
-    _check_called_from_interface_def('export_entry()')
+    _check_called_from_interface_def('export_as_webservice_entry()')
     def mark_entry(interface):
         """Class advisor that tags the interface once it is created."""
-        _check_interface('export_entry()', interface)
+        _check_interface('export_as_webservice_entry()', interface)
         interface.setTaggedValue(
             LAZR_WEBSERVICE_EXPORTED, dict(type=ENTRY_TYPE))
 
@@ -212,7 +212,7 @@ class _method_annotator:
 
     The actual method will be wrapped in an IMethod specification once the
     Interface is complete. So we save the annotations in an attribute of the
-    method, and the class advisor invoked by export_entry() and
+    method, and the class advisor invoked by export_as_webservice_entry() and
     export_collection() will do the final tagging.
     """
 

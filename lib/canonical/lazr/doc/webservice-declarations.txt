@@ -19,7 +19,7 @@ persons, teams, articles, etc.
 
 Only entries are exported as data. You can mark that one of your content
 interface is exported on the web service as an entry, by using the
-export_entry declaration.
+export_as_webservice_entry() declaration.
 
 You can mark the fields that should be part of the entry data model by
 using the export_field directive. It takes an optional 'as' parameter
@@ -33,10 +33,10 @@ field, but not the inventory_number field.
     >>> from zope.interface import Interface
     >>> from zope.schema import TextLine, Float
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_entry, export_field)
+    ...     export_as_webservice_entry, export_field)
     >>> class IBook(Interface):
     ...     """A simple book data model."""
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
     ...     title = TextLine(title=u'The book title')
     ...     export_field(title)
@@ -92,21 +92,23 @@ Only IField can be exported as entry fields.
       ...
     TypeError: export_field() can only be used on IFields.
 
-In the same vein, export_entry() can only be used on Interface.
+In the same vein, export_as_webservice_entry() can only be used on
+Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     Traceback (most recent call last):
       ...
-    TypeError: export_entry() can only be used on an interface.
+    TypeError: export_as_webservice_entry() can only be used on an
+    interface.
 
 And from within a class declaration.
 
-    >>> export_entry()
+    >>> export_as_webservice_entry()
     Traceback (most recent call last):
       ...
-    TypeError: export_entry() can only be used from within an interface
-    definition.
+    TypeError: export_as_webservice_entry() can only be used from within
+    an interface definition.
 
 
 === Exporting a collection ===
@@ -123,7 +125,7 @@ items:
     >>> from canonical.lazr.rest.schema import CollectionField
     >>> class IBookWithComments(IBook):
     ...     """A book with some comments."""
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
     ...     comments = CollectionField(
     ...         value_type=Object(schema=ISimpleComment))
@@ -205,7 +207,7 @@ declaration:
 And the interface must have been exported as a collection:
 
     >>> class NotExported(Interface):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...     @collection_default_content
     ...     def a_function(): pass
     Traceback (most recent call last):
@@ -286,7 +288,7 @@ user.
     ...     call_with, export_write_operation, REQUEST_USER)
     >>> class IBookOnSteroids(IBook):
     ...     """IBook with some methods."""
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
     ...     @call_with(who=REQUEST_USER, kind='normal')
     ...     @export_write_operation()
@@ -346,7 +348,7 @@ An error is also reported if not enough parameters are defined as
 exported:
 
     >>> class MissingParameter(Interface):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...     @call_with(param1=1)
     ...     @export_read_operation(param2=TextLine())
     ...     def a_method(param1, param2, param3, param4): pass
@@ -359,7 +361,7 @@ Defining a parameter not available on the method also results in an
 error:
 
     >>> class BadParameter(Interface):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...     @export_read_operation(no_such_param=TextLine())
     ...     def a_method(): pass
     Traceback (most recent call last):
@@ -371,14 +373,14 @@ But that's not a problem if the exported method actually takes arbitrary
 keyword parameters:
 
     >>> class AnyParameter(Interface):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...     @export_read_operation(param1=TextLine())
     ...     def a_method(**kwargs): pass
 
 All parameters definitions must be schema fields:
 
     >>> class BadParameterDefinition(Interface):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...     @export_read_operation(a_param=object())
     ...     def a_method(): pass
     Traceback (most recent call last):
@@ -450,7 +452,7 @@ base interface isn't exported itself.
     ...         """Rename the object."""
 
     >>> class IUser(IHasName):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
     ...     nickname = TextLine()
     ...     export_field(nickname)

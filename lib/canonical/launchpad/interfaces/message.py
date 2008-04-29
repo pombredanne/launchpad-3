@@ -20,7 +20,8 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr.rest.declarations import export_entry, export_field
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_field)
 
 class IMessage(Interface):
     """A message.
@@ -28,7 +29,7 @@ class IMessage(Interface):
     This is like an email (RFC822) message, though it could be created through
     the web as well.
     """
-    export_entry()
+    export_as_webservice_entry()
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
