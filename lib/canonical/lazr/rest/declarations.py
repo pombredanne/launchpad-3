@@ -30,6 +30,7 @@ __all__ = [
 import simplejson
 import sys
 
+from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
@@ -133,7 +134,7 @@ def export_field(field, export_as=None):
         LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': export_as})
 
 
-def export_collection():
+def export_collection(entry_schema=None):
     """Mark the interface as exported on the web service as a collection.
 
     :raises TypeError: if the interface doesn't have a method decorated with
@@ -141,10 +142,14 @@ def export_collection():
     """
     _check_called_from_interface_def('export_collection()')
 
-    # Set the tag at this point, so that future declarations can
+    if not IInterface.providedBy(entry_schema):
+        raise TypeError("entry_schema must be an interface.")
+
+    # Set the tags at this point, so that future declarations can
     # check it.
     tags = _get_interface_tags()
-    tags[LAZR_WEBSERVICE_EXPORTED] = dict(type=COLLECTION_TYPE)
+    tags[LAZR_WEBSERVICE_EXPORTED] = dict(
+        type=COLLECTION_TYPE, collection_entry_schema=entry_schema)
 
     def mark_collection(interface):
         """Class advisor that tags the interface once it is created."""
@@ -160,7 +165,6 @@ def export_collection():
         return interface
 
     addClassAdvisor(mark_collection)
-
 
 def collection_default_content(f):
     """Decorates the method that provides the default values of a collection.
@@ -398,8 +402,11 @@ def generate_collection_adapter(interface):
 
     tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     method_name = tag['collection_default_content']
+    entry_schema = tag['collection_entry_schema']
     class_dict = {
         'find': lambda self: (getattr(self.context, method_name)()),
+        'entry_schema' : lambda self: (
+            getGlobalSiteManager().adapters.lookup1(entry_schema, IEntry)),
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
     factory = type(classname, bases=(Collection,), dict=class_dict)

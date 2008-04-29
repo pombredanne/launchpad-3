@@ -204,11 +204,14 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
             self._service_root_url(), self.collection_type())
 
     def collection_representation_id(self):
-        return self.collection_type + '-page'
+        return "%s-page" % self.collection_type()
 
     def collection_representation_link(self):
         return "%s#%s" % (
             self._service_root_url(), self.collection_representation_id())
+
+    def entry_schema(self):
+        return self.adapter.entry_schema
 
 
 class WadlFieldAPI(WadlAPI):

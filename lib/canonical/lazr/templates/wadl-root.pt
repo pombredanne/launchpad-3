@@ -107,7 +107,7 @@
       <param name="entries" path="$['entries']" required="True" />
 
       <param name="entry_links" path="$['entries'][*]['self_link']">
-        <link tal:attributes="type context/entry_schema/wadl_entry:type_link" />
+        <link tal:attributes="type context/wadl_collection:entry_schema" />
       </param>
 
     </representation>

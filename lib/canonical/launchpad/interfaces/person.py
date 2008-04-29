@@ -1341,7 +1341,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_collection()
+    export_collection(IPerson)
 
     title = Attribute('Title')
 
