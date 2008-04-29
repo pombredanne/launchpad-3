@@ -357,6 +357,8 @@ hoary-test.
     >>> hoary_test = breezy_autotest.distribution.getSeries(
     ...     'hoary-test')
     >>> hoary_test.nominatedarchindep = hoary_test["i386"]
+    >>> fake_chroot = test_publisher.addMockFile('fake_chroot.tar.gz')
+    >>> trash = hoary_test["i386"].addOrUpdateChroot(fake_chroot)
 
 Perform the source-only copy.
 
@@ -412,6 +414,47 @@ distroseries to a older one, like a backport rebuild.
     >>> ppa_copied_source.createMissingBuilds()
     []
 
+It is also possible to copy sources and binaries to another
+distroseries within the same PPA. That's usually the case for
+architecture-independent sources.
+
+    >>> ppa_source = test_publisher.getPubSource(
+    ...     archive=cprov.archive, version="999",
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> ppa_binaries = test_publisher.getPubBinaries(
+    ...     pub_source=ppa_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+Let's perform the copy of the source and its i386 binary.
+
+    >>> series = hoary_test
+    >>> pocket = PackagePublishingPocket.RELEASE
+    >>> archive = cprov.archive
+
+    >>> copied_source = ppa_source.copyTo(series, pocket, archive)
+
+    >>> ppa_binary_i386 = ppa_binaries[0]
+    >>> print ppa_binary_i386.displayname
+    foo-bin 999 in breezy-autotest i386
+
+    >>> copied_binary = ppa_binary_i386.copyTo(series, pocket, archive)
+
+The source and binary are present in hoary-test:
+
+    >>> copied_source = SourcePackagePublishingHistory.get(copied_source.id)
+    >>> print copied_source.displayname
+    foo 999 in hoary-test
+
+    >>> for bin in copied_source.getPublishedBinaries():
+    ...     print bin.displayname
+    foo-bin 999 in hoary-test i386
+
+So, no builds are created.
+
+    >>> copied_source.createMissingBuilds()
+    []
+
 
 == getSourceAndBinaryLibraryFiles ==
 
@@ -443,6 +486,19 @@ We can also publish a package in a PPA and query on its files:
 
 Notice that some files appear twice if they are published in more than one
 architecture (e.g. for arch-all files).
+
+
+== Publishing records age ==
+
+Both ISourcePackagePublishingHistory and IBinaryPackagePublishingHistory
+implement the 'age' property which return a timedelta representing
+"NOW - datecreated".
+
+    >>> ppa_source.age
+    datetime.timedelta(...)
+
+    >>> ppa_binaries[0].age
+    datetime.timedelta(...)
 
 
 == Secure Source Publishing ==

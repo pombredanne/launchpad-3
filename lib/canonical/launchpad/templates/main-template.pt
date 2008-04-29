@@ -241,7 +241,8 @@
                       </tal:applicationtabs>
                       <div
                         id="container"
-                        tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
+                        tal:define="context_badges CONTEXTS/lp:context_badges"
+                        tal:attributes="class python: path('view/isPrivate | context_badges/isPrivateBadgeVisible') and 'private' or None"
                       >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
@@ -276,6 +277,10 @@
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
+                          <div id="big-badges" style="float: right">
+                            <tal:big-badges replace="structure context/badges:large"/>
+                          </div>
+
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">

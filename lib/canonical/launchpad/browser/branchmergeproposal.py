@@ -21,6 +21,8 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
+from zope.event import notify as zope_notify
+from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Int
 
@@ -29,6 +31,8 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -39,8 +43,28 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
-from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.authorization import check_permission
+
+
+def notify(func):
+    """Decorate a view method to send a notification."""
+    def decorator(view, *args, **kwargs):
+        snapshot = BranchMergeProposalDelta.snapshot(view.context)
+        result = func(view, *args, **kwargs)
+        zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        return result
+    return decorator
+
+
+def update_and_notify(func):
+    """Decorate an action to update from a form and send a notification."""
+    @notify
+    def decorator(view, action, data):
+        result = func(view, action, data)
+        form.applyChanges(
+            view.context, view.form_fields, data, view.adapters)
+        return result
+    return decorator
 
 
 class BranchMergeProposalSOP(StructuralObjectPresentation):
@@ -238,6 +262,7 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Set as work in progress', name='wip')
+    @notify
     def wip_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.setAsWorkInProgress()
@@ -266,10 +291,10 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Request review', name='review')
+    @update_and_notify
     def review_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.requestReview()
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -360,9 +385,9 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
     field_names = ["whiteboard"]
 
     @action('Resubmit', name='resubmit')
+    @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        self.updateContextFromData(data)
         proposal = self.context.resubmit(self.user)
         self.request.response.addInfoNotification(_(
             "Please update the whiteboard for the new proposal."))
@@ -392,16 +417,16 @@ class BranchMergeProposalReviewView(MergeProposalEditView,
         return {'revision_number': self.context.source_branch.revision_count}
 
     @action('Approve', name='approve')
+    @update_and_notify
     def approve_action(self, action, data):
         """Set the status to approved."""
         self.context.approveBranch(self.user, self._getRevisionId(data))
-        self.updateContextFromData(data)
 
     @action('Reject', name='reject')
+    @update_and_notify
     def reject_action(self, action, data):
         """Set the status to rejected."""
         self.context.rejectBranch(self.user, self._getRevisionId(data))
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -472,6 +497,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Mark as Merged', name='mark_merged')
+    @notify
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
@@ -548,6 +574,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
             self.form_fields['revision_number'].for_display = True
 
     @action('Enqueue', name='enqueue')
+    @update_and_notify
     def enqueue_action(self, action, data):
         """Update the whiteboard and enqueue the merge proposal."""
         if self.context.isPersonValidReviewer(self.user):
@@ -555,7 +582,6 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
         else:
             revision_id = self.context.reviewed_revision_id
         self.context.enqueue(self.user, revision_id)
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -586,10 +612,10 @@ class BranchMergeProposalDequeueView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @action('Dequeue', name='dequeue')
+    @update_and_notify
     def dequeue_action(self, action, data):
         """Update the whiteboard and remove the proposal from the queue."""
         self.context.dequeue()
-        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -612,6 +638,7 @@ class BranchMergeProposalInlineDequeueView(LaunchpadEditFormView):
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
     @action('Dequeue', name='dequeue')
+    @notify
     def dequeue_action(self, action, data):
         """Remove the proposal from the queue if queued."""
         if self.context.queue_status == BranchMergeProposalStatus.QUEUED:
@@ -637,6 +664,7 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
     @action('Move to front', name='move')
+    @notify
     def move_action(self, action, data):
         """Move the proposal to the front of the queue (if queued)."""
         if (self.context.queue_status == BranchMergeProposalStatus.QUEUED and

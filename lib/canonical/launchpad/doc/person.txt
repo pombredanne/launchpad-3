@@ -120,6 +120,22 @@ the person should look like this:
     >>> person.creation_comment
     u'when the ed package was imported into Ubuntu Breezy'
 
+Checking .is_valid_person issues a DB query to the
+ValidPersonOrTeamCache, unless it's already been cached. To avoid many
+small queries when checking whether a lot of people are valid,
+getValidPersons() can be used. This is useful for filling the ORM
+cache, so that code in other places can check .is_valid_person, without
+it issuing a DB query.
+
+    >>> non_valid_person = person
+    >>> non_valid_person.is_valid_person
+    False
+    >>> foobar.is_valid_person
+    True
+    >>> valid_persons = personset.getValidPersons([non_valid_person, foobar])
+    >>> [person.name for person in valid_persons]
+    [u'name16']
+
 
 === Personal standing ===
 

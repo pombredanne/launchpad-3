@@ -52,7 +52,7 @@ those statuses are not shown in the UI:
 
 Ubuntu needs a Bug Supervisor first of all:
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugcontact')
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugsupervisor')
     >>> admin_browser.getControl('Bug Supervisor').value = (
     ...     'test@canonical.com')
     >>> admin_browser.getControl('Change').click()
@@ -63,23 +63,23 @@ Ubuntu needs a Bug Supervisor first of all:
 
 The new Bug Supervisor for Ubuntu can change the status to Won't Fix:
 
-    >>> bug_contact_browser = setupBrowser(
+    >>> bug_supervisor_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
 
-    >>> bug_contact_browser.open(
+    >>> bug_supervisor_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/'
     ...     'mozilla-firefox/+bug/1/+editstatus')
 
-    >>> status_control = bug_contact_browser.getControl('Status')
+    >>> status_control = bug_supervisor_browser.getControl('Status')
     >>> print status_control.displayValue
     ['Confirmed']
 
     >>> status_control.displayValue = ["Won't Fix"]
-    >>> bug_contact_browser.getControl('Save Changes').click()
+    >>> bug_supervisor_browser.getControl('Save Changes').click()
 
-    >>> print bug_contact_browser.url
+    >>> print bug_supervisor_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
-    >>> print_highlighted_bugtask(bug_contact_browser)
+    >>> print_highlighted_bugtask(bug_supervisor_browser)
     mozilla-firefox (Ubuntu)  Won't Fix  Medium
 
 Now the bug has been changed, a regular user can see the Won't Fix
@@ -102,26 +102,26 @@ And a regular user can change other aspects of the bug:
     >>> package_control.value = 'iceweasel'
     >>> user_browser.getControl('Save Changes').click()
 
-    >>> print bug_contact_browser.url
+    >>> print bug_supervisor_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
-    >>> print_highlighted_bugtask(bug_contact_browser)
+    >>> print_highlighted_bugtask(bug_supervisor_browser)
     mozilla-firefox (Ubuntu)  Won't Fix  Medium
 
 The Bug Supervisor for Ubuntu can also change the status to Triaged:
 
-    >>> bug_contact_browser.open(
+    >>> bug_supervisor_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/'
     ...     'iceweasel/+bug/1/+editstatus')
 
-    >>> status_control = bug_contact_browser.getControl('Status')
+    >>> status_control = bug_supervisor_browser.getControl('Status')
     >>> print status_control.displayValue
     ["Won't Fix"]
 
     >>> status_control.displayValue = ["Triaged"]
-    >>> bug_contact_browser.getControl('Save Changes').click()
+    >>> bug_supervisor_browser.getControl('Save Changes').click()
 
-    >>> print bug_contact_browser.url
+    >>> print bug_supervisor_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1
-    >>> print_highlighted_bugtask(bug_contact_browser)
+    >>> print_highlighted_bugtask(bug_supervisor_browser)
     iceweasel (Ubuntu)  Triaged  Medium
 

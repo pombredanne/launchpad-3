@@ -29,7 +29,7 @@ the case with Firefox, the user will get an error:
     ...     print tag.renderContents()
     There is 1 error.
     <BLANKLINE>
-    Set a <a href="...+bugcontact">bug supervisor</a> for this project first.
+    Set a <a href="...+bugsupervisor">bug supervisor</a> for this project first.
 
 == Visual effects ==
 

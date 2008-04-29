@@ -657,11 +657,8 @@ class BranchSorting(TestCase):
         new_person, modified_in_2005, modified_in_2006 = (
             self.createPersonWithTwoBranches())
 
-        # XXX 2007-10-22 MichaelHudson: Currently we (ab)use last_scanned as
-        # the date the branch was last changed.  1.1.11 will introduce a
-        # date_last_modified column, which this test will need to set instead.
-        modified_in_2005.last_scanned = self.xmas(2005)
-        modified_in_2006.last_scanned = self.xmas(2006)
+        modified_in_2005.date_last_modified = self.xmas(2005)
+        modified_in_2006.date_last_modified = self.xmas(2006)
 
         syncUpdate(modified_in_2005)
         syncUpdate(modified_in_2006)

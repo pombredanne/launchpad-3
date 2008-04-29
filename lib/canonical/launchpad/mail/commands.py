@@ -748,9 +748,9 @@ class MilestoneEmailCommand(EditEmailCommand):
         # database class.
 
         pillar = bugtask.pillar
-        bugcontact = pillar.bugcontact
-        if user is not None and bugcontact is not None:
-            if user.inTeam(bugcontact):
+        bug_supervisor = pillar.bug_supervisor
+        if user is not None and bug_supervisor is not None:
+            if user.inTeam(bug_supervisor):
                 return True
         return check_permission("launchpad.Edit", pillar)
 

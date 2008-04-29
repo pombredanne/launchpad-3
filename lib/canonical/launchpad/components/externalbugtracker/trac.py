@@ -6,20 +6,32 @@ __metaclass__ = type
 __all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
 
 import csv
-from datetime import datetime
+import pytz
 import time
 import urllib2
 import xmlrpclib
 
-import pytz
+from datetime import datetime
+from email.Utils import parseaddr
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
     UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+    BugTaskStatus, BugTaskImportance, IMessageSet,
+    ISupportsCommentImport, ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlappend
+
+
+# Symbolic constants used for the Trac LP plugin.
+LP_PLUGIN_BUG_IDS_ONLY = 0
+LP_PLUGIN_METADATA_ONLY = 1
+LP_PLUGIN_METADATA_AND_COMMENTS = 2
+LP_PLUGIN_FULL = 3
 
 
 class Trac(ExternalBugTracker):
@@ -227,6 +239,8 @@ def needs_authentication(func):
 class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
+
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
         super(TracLPPlugin, self).__init__(baseurl)
@@ -245,7 +259,7 @@ class TracLPPlugin(Trac):
             endpoint, transport=self.xmlrpc_transport)
 
         time_snapshot, remote_bugs = server.launchpad.bug_info(
-            1, dict(bugs=bug_ids))
+            LP_PLUGIN_METADATA_AND_COMMENTS, dict(bugs=bug_ids))
         for remote_bug in remote_bugs:
             # We only import bugs whose status isn't 'missing', since
             # those bugs don't exist on the remote system.
@@ -305,9 +319,79 @@ class TracLPPlugin(Trac):
             'modified_since': last_checked_timestamp,
             'bugs': remote_bug_ids,}
         time_snapshot, modified_bugs = server.launchpad.bug_info(
-            0, criteria)
+            LP_PLUGIN_BUG_IDS_ONLY, criteria)
 
         return [bug['id'] for bug in modified_bugs]
+
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        try:
+            bug = self.bugs[int(bug_watch.remotebug)]
+        except KeyError:
+            raise BugNotFound(bug_watch.remotebug)
+        else:
+            return [comment_id for comment_id in bug['comments']]
+
+    @needs_authentication
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
+        bug_comments = {}
+
+        # Use the get_comments() method on the remote server to get the
+        # comments specified.
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        timestamp, remote_comments = server.launchpad.get_comments(
+            comment_ids)
+        for remote_comment in remote_comments:
+            bug_comments[remote_comment['id']] = remote_comment
+
+        # Finally, we overwrite the bug's comments field with the
+        # bug_comments dict. The nice upshot of this is that we can
+        # still loop over the dict and get IDs back.
+        self.bugs[int(bug_watch.remotebug)]['comments'] = bug_comments
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        bug = self.bugs[int(bug_watch.remotebug)]
+        comment = bug['comments'][comment_id]
+
+        display_name, email = parseaddr(comment['user'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if not display_name:
+            display_name = None
+
+        return (display_name, email)
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """See `ISupportsCommentImport`."""
+        bug = self.bugs[int(bug_watch.remotebug)]
+        comment = bug['comments'][comment_id]
+
+        comment_datecreated = datetime.fromtimestamp(
+            comment['timestamp'], pytz.timezone('UTC'))
+        message = getUtility(IMessageSet).fromText(
+            subject='', content=comment['comment'],
+            datecreated=comment_datecreated)
+
+        return message
+
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, message):
+        """See `ISupportsCommentPushing`."""
+        endpoint = urlappend(self.baseurl, 'xmlrpc')
+        server = xmlrpclib.ServerProxy(
+            endpoint, transport=self.xmlrpc_transport)
+
+        timestamp, comment_id = server.launchpad.add_comment(
+            remote_bug, message.text_contents)
+
+        return comment_id
+
 
 class TracXMLRPCTransport(xmlrpclib.Transport):
     """XML-RPC Transport for Trac bug trackers.
