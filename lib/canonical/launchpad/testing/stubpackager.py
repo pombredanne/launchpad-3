@@ -228,8 +228,7 @@ class StubPackager:
         args = [script]
         args.extend(extra_args)
         process = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE)
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
 
         assert process.returncode == 0, (
