@@ -173,16 +173,34 @@ Create BuildQueue record and inspect some parameters:
     True
     >>> ppa_job.buildstart == None
     True
-    >>> ppa_job.is_virtualized
+
+The build job's archive requires virtualized builds.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(ppa_job).build.archive.require_virtualized
     True
+
+But the builder is not virtualized.
+
+    >>> bob_builder.virtualized
+    False
+
+Hence, the builder will not be able to pick up the PPA build job created
+above.
+
+    >>> bob_builder.vm_host = 'localhost.ppa'
+    >>> syncUpdate(bob_builder)
+
+    >>> job = bob_builder.findBuildCandidate()
+    >>> print job
+    None
 
 In order to enable 'bob' to find and build the PPA job, we have to
 change it to virtualized.  This is because PPA builds will only build
 on virtualized builders.
 
     >>> bob_builder.virtualized = True
-    >>> bob_builder.vm_host = 'localhost.ppa'
-    >>> flush_database_updates()
+    >>> syncUpdate(bob_builder)
 
     >>> job = bob_builder.findBuildCandidate()
     >>> ppa_job.id == job.id
