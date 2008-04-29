@@ -71,11 +71,11 @@
         permission="launchpad.AnyPerson"
         attributes="addSubscription addBugSubscription
                     removeBugSubscription" />
-    <!-- IHasBugcontact -->
-    <allow attributes="bugcontact" />
+    <!-- IHasBugSupervisor -->
+    <allow attributes="bug_supervisor" />
     <require
         permission="launchpad.Edit"
-        attributes="setBugContact" />
+        attributes="setBugSupervisor" />
   </content>
 
   <browser:defaultView

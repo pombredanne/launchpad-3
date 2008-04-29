@@ -490,10 +490,10 @@ class Bug(SQLBase):
             if bugtask.milestone is not None:
                 structural_subscription_targets.add(bugtask.milestone)
 
-            # If the target's bug contact isn't set,
+            # If the target's bug supervisor isn't set,
             # we add the owner as a subscriber.
             pillar = bugtask.pillar
-            if pillar.bugcontact is None:
+            if pillar.bug_supervisor is None:
                 also_notified_subscribers.add(pillar.owner)
                 if recipients is not None:
                     recipients.addRegistrant(pillar.owner, pillar)
@@ -1215,11 +1215,11 @@ class BugSet:
         # non-security bugs, this test might be simplified to checking
         # params.private.
         elif params.product and params.product.private_bugs:
-            # Subscribe the bugcontact to all bugs,
+            # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact, params.owner)
+            if params.product.bug_supervisor:
+                bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
         else:

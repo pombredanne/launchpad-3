@@ -246,11 +246,11 @@ no user can set that team as the maintainer of a product.
 To prevent leaking information about a team's private membership,
 no user can set that team as the bug supervisor of a product.
 
-    >>> admin_browser.open('http://launchpad.dev/jokosher/+bugcontact')
-    >>> admin_browser.getControl(name='field.bugcontact').value = 'myteam'
+    >>> admin_browser.open('http://launchpad.dev/jokosher/+bugsupervisor')
+    >>> admin_browser.getControl(name='field.bug_supervisor').value = 'myteam'
     >>> admin_browser.getControl('Change').click()
     >>> admin_browser.url
-    'http://launchpad.dev/jokosher/+bugcontact'
+    'http://launchpad.dev/jokosher/+bugsupervisor'
     >>> get_feedback_messages(admin_browser.contents)
     [...You must choose a valid person or team to be the bug supervisor for...
 
@@ -272,11 +272,11 @@ no user can set that team as the registrant of a distribution.
 To prevent leaking information about a team's private membership,
 no user can set that team as the bug supervisor of a distribution.
 
-    >>> admin_browser.open('http://launchpad.dev/ubuntu/+bugcontact')
-    >>> admin_browser.getControl(name='field.bugcontact').value = 'myteam'
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+bugsupervisor')
+    >>> admin_browser.getControl(name='field.bug_supervisor').value = 'myteam'
     >>> admin_browser.getControl('Change').click()
     >>> admin_browser.url
-    'http://launchpad.dev/ubuntu/+bugcontact'
+    'http://launchpad.dev/ubuntu/+bugsupervisor'
     >>> get_feedback_messages(admin_browser.contents)
     [...You must choose a valid person or team to be the bug supervisor...
 

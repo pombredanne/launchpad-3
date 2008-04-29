@@ -6,12 +6,15 @@ __metaclass__ = type
 
 import unittest
 
+from urlparse import urlunsplit
+
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
+from canonical.launchpad.webapp import urlsplit
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -159,7 +162,7 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
     bugtracker_type = BugTrackerType.SOURCEFORGE
     bug_url = (
-        'http://sf.net/tracker/index.php'
+        'http://sourceforge.net/tracker/index.php'
         '?func=detail&aid=1568562&group_id=84122&atid=575154')
     base_url = 'http://sourceforge.net/'
     bug_id = '1568562'
@@ -168,6 +171,46 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         # The SourceForge tracker is always registered, so this test
         # doesn't make sense for SourceForge URLs.
         pass
+
+    def test_aliases(self):
+        """Test that parsing SourceForge URLs works with the SF aliases."""
+        original_bug_url = self.bug_url
+        original_base_url = self.base_url
+        url_bits = urlsplit(original_bug_url)
+        sf_bugtracker = self.bugtracker_set.getByName(name='sf')
+
+        # Carry out all the applicable tests for each alias.
+        for alias in sf_bugtracker.aliases:
+            alias_bits = urlsplit(alias)
+            self.base_url = alias
+
+            bug_url_bits = (
+                alias_bits[0],
+                alias_bits[1],
+                url_bits[2],
+                url_bits[3],
+                url_bits[4],
+                )
+
+            self.bug_url = urlunsplit(bug_url_bits)
+
+            self.test_registered_tracker_url()
+            self.test_unknown_baseurl()
+
+        self.bug_url = original_bug_url
+        self.base_url = original_base_url
+
+
+class XForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure extractBugTrackerAndBug works with SourceForge-like URLs.
+    """
+
+    bugtracker_type = BugTrackerType.SOURCEFORGE
+    bug_url = (
+        'http://gforge.example.com/tracker/index.php'
+        '?func=detail&aid=90812&group_id=84122&atid=575154')
+    base_url = 'http://gforge.example.com/'
+    bug_id = '90812'
 
 
 class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
@@ -192,7 +235,7 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Savannah URLs.
     """
 
-    bugtracker_type = BugTrackerType.SAVANNAH
+    bugtracker_type = BugTrackerType.SAVANE
     bug_url = 'http://savannah.gnu.org/bugs/?22003'
     base_url = 'http://savannah.gnu.org/'
     bug_id = '22003'
@@ -201,6 +244,16 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         # The Savannah tracker is always registered, so this test
         # doesn't make sense for Savannah URLs.
         pass
+
+
+class SavaneExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Savane URLs.
+    """
+
+    bugtracker_type = BugTrackerType.SAVANE
+    bug_url = 'http://savane.example.com/bugs/?12345'
+    base_url = 'http://savane.example.com/'
+    bug_id = '12345'
 
 
 class EmailAddressExtractBugTrackerAndBugTest(
@@ -231,10 +284,12 @@ def test_suite():
     suite.addTest(
         unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(XForgeExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(SavannahExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(SavaneExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
     return suite
 
