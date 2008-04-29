@@ -242,3 +242,39 @@ returned correspond to the comment IDs passed in the comments parameter.
     type: comment
     user: foo.bar@canonical.com
 
+
+
+== launchpad.add_comment() ==
+
+The Trac XML-RPC API allows us to push comments to remote bug trackers
+via the launchpad.add_comment() method.
+
+Remote bug 3 doesn't have any comments:
+
+    >>> trac_transport.remote_bugs['3'].comments
+    []
+
+We can add one by using the add_comment() method. We'll force the UTC
+value of the remote bugtracker for demonstration purposes.
+
+    >>> trac_transport.seconds_since_epoch = 1209399273
+    >>> trac_transport.local_timezone = 'UTC'
+    >>> trac_transport.utc_offset = 0
+    >>> (time_snapshot, comment_id) = trac_transport.add_comment(
+    ...     3, "This is a test comment being pushed.")
+
+add_comment() will return a new comment ID.
+
+    >>> print comment_id
+    3-1
+
+The comment will be included in the remote bug's comments.
+
+    >>> for comment in trac_transport.remote_bugs['3'].comments:
+    ...     for key in sorted(comment.keys()):
+    ...         print "%s: %s" % (key, comment[key])
+    comment: This is a test comment being pushed.
+    id: 3-1
+    time: 1209399273
+    type: comment
+    user: launchpad

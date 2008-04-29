@@ -655,6 +655,30 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
 
         return [self.utc_time, comments_to_return + missing_comments]
 
+    def add_comment(self, bugid, comment):
+        """Add a comment to a bug.
+
+        :param bugid: The integer ID of the bug to which the comment
+            should be added.
+        :param comment: The comment to be added as a string.
+        """
+        # Calculate the comment ID from the bug's ID and the number of
+        # comments against that bug.
+        comments = self.remote_bugs[str(bugid)].comments
+        comment_id = "%s-%s" % (bugid, len(comments) + 1)
+
+        comment_dict = {
+            'comment': comment,
+            'id': comment_id,
+            'time': self.utc_time,
+            'type': 'comment',
+            'user': 'launchpad',
+            }
+
+        comments.append(comment_dict)
+
+        return [self.utc_time, comment_id]
+
 
 class TestRoundup(Roundup):
     """Roundup ExternalBugTracker for testing purposes.
