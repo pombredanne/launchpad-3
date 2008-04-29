@@ -245,8 +245,8 @@ parameters should be described using decorator arguments, which are
 normal IField instances.
 
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_as, export_factory_operation, export_read_operation,
-    ...     export_parameters_as)
+    ...     export_operation_as, export_factory_operation,
+    ...     export_read_operation, export_parameters_as)
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection()
@@ -257,7 +257,7 @@ normal IField instances.
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""
     ...
-    ...     @export_as('create_book')
+    ...     @export_operation_as('create_book')
     ...     @export_parameters_as(base_price='price')
     ...     @export_factory_operation(
     ...         author=TextLine(title=u"The author's name."),
@@ -269,8 +269,8 @@ normal IField instances.
 In the above example, the exported new() method demonstrates two
 features to support having different names on the web service than in
 the internal API.  It is possible to export a method under a different
-name by using the @export_as decorator which takes the name under which
-the method should be exported.
+name by using the @export_operation_as decorator which takes the name
+under which the method should be exported.
 
 The @export_parameters_as decorator can be used to rename the method
 parameters on the web service.  In the example, the 'base_price' parameter
@@ -328,11 +328,11 @@ exported under the same name:
 
 These decorators can only be used from within an interface definition:
 
-    >>> @export_as('test')
+    >>> @export_operation_as('test')
     ... def a_method1(self): pass
     Traceback (most recent call last):
       ...
-    TypeError: export_as() can only be used from within an interface
+    TypeError: export_operation_as() can only be used from within an interface
     definition.
 
     >>> @export_read_operation()

@@ -13,11 +13,11 @@ __all__ = [
     'REQUEST_USER',
     'call_with',
     'collection_default_content',
-    'export_as',
+    'exported',
     'export_as_webservice_collection',
     'export_as_webservice_entry',
-    'exported',
     'export_factory_operation',
+    'export_operation_as',
     'export_parameters_as',
     'export_read_operation',
     'export_write_operation',
@@ -156,8 +156,8 @@ def export_as_webservice_collection():
         tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if 'collection_default_content' not in tag:
             raise TypeError(
-                "export_as_webservice_collection() is missing a method tagged with "
-                "@collection_default_content.")
+                "export_as_webservice_collection() is missing a method "
+                "tagged with @collection_default_content.")
 
         annotate_exported_methods(interface)
         return interface
@@ -293,12 +293,12 @@ class call_with(_method_annotator):
         annotations['call_with'] = self.params
 
 
-class export_as(_method_annotator):
+class export_operation_as(_method_annotator):
     """Decorator specifying the name to export the method as."""
 
     def __init__(self, name):
         # pylint: disable-msg=W0231
-        _check_called_from_interface_def('export_as()')
+        _check_called_from_interface_def('export_operation_as()')
         self.name = name
 
     def annotate_method(self, method, annotations):
