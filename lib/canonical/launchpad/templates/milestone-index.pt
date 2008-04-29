@@ -20,7 +20,7 @@
     specs view/specifications;
     bugtasks view/bugtasks">
 
-      <h1 tal:content="context/displayname" />
+      <h1 tal:content="context/title" />
       <p tal:condition="context/dateexpected">
         Due <tal:date replace="context/dateexpected/fmt:approximatedate" />
       </p>
