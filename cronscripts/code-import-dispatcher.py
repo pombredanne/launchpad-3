@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-""" """
+"""Look for and dispatch code import jobs as needed."""
 
 
 import _pythonpath
