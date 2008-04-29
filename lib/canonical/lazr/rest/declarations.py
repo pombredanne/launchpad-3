@@ -14,7 +14,7 @@ __all__ = [
     'call_with',
     'collection_default_content',
     'export_as',
-    'export_collection',
+    'export_as_webservice_collection',
     'export_as_webservice_entry',
     'export_factory_operation',
     'export_field',
@@ -135,13 +135,13 @@ def export_field(field, export_as=None):
         LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': export_as})
 
 
-def export_collection():
+def export_as_webservice_collection():
     """Mark the interface as exported on the web service as a collection.
 
     :raises TypeError: if the interface doesn't have a method decorated with
         @collection_default_content.
     """
-    _check_called_from_interface_def('export_collection()')
+    _check_called_from_interface_def('export_as_webservice_collection()')
 
     # Set the tag at this point, so that future declarations can
     # check it.
@@ -150,12 +150,12 @@ def export_collection():
 
     def mark_collection(interface):
         """Class advisor that tags the interface once it is created."""
-        _check_interface('export_collection()', interface)
+        _check_interface('export_as_webservice_collection()', interface)
 
         tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if 'collection_default_content' not in tag:
             raise TypeError(
-                "export_collection() is missing a method tagged with "
+                "export_as_webservice_collection() is missing a method tagged with "
                 "@collection_default_content.")
 
         annotate_exported_methods(interface)
@@ -213,7 +213,7 @@ class _method_annotator:
     The actual method will be wrapped in an IMethod specification once the
     Interface is complete. So we save the annotations in an attribute of the
     method, and the class advisor invoked by export_as_webservice_entry() and
-    export_collection() will do the final tagging.
+    export_as_webservice_collection() will do the final tagging.
     """
 
     def __init__(self, **params):

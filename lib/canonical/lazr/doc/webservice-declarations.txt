@@ -132,15 +132,15 @@ items:
     ...     export_field(comments)
 
 Top-level collections are different though, they are exported by using
-the export_collection() in the *Set class. The method that returns all
-of the collection items must be tagged with @collection_default_content
-decorator.
+the export_as_webservice_collection() in the *Set class. The method that
+returns all of the collection items must be tagged with
+@collection_default_content decorator.
 
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_collection, collection_default_content)
+    ...     export_as_webservice_collection, collection_default_content)
     >>> class IBookSet(Interface):
     ...     """Set of all the books in the system."""
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     ...
     ...     @collection_default_content
     ...     def getAllBooks():
@@ -157,16 +157,16 @@ It's an error to try to export a collection without marking a method as
 exporting the default content.
 
     >>> class MissingDefaultContent(Interface):
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     Traceback (most recent call last):
       ...
-    TypeError: export_collection() is missing a method tagged with
-    @collection_default_content.
+    TypeError: export_as_webservice_collection() is missing a method
+    tagged with @collection_default_content.
 
 As it is an error, to mark more than one methods:
 
     >>> class TwoDefaultContent(Interface):
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     ...     @collection_default_content
     ...     def getAll1():
     ...         """A first getAll()."""
@@ -178,21 +178,22 @@ As it is an error, to mark more than one methods:
     TypeError: only one method should be marked with
     @collection_default_content.
 
-export_collection() can only be used on Interface.
+export_as_webservice_collection() can only be used on Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     Traceback (most recent call last):
       ...
-    TypeError: export_collection() can only be used on an interface.
+    TypeError: export_as_webservice_collection() can only be used on an
+    interface.
 
 And from within a class declaration.
 
-    >>> export_collection()
+    >>> export_as_webservice_collection()
     Traceback (most recent call last):
       ...
-    TypeError: export_collection() can only be used from within an interface
-    definition.
+    TypeError: export_as_webservice_collection() can only be used from
+    within an interface definition.
 
 collection_default_content() can only be used from within an Interface
 declaration:
@@ -251,7 +252,7 @@ normal IField instances.
     ...     export_parameters_as)
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     ...
     ...     @collection_default_content
     ...     @export_read_operation(

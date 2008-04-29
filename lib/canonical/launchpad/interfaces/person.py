@@ -48,7 +48,7 @@ from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.rest.declarations import (
-   collection_default_content, export_collection)
+   collection_default_content, export_as_webservice_collection)
 
 from canonical.launchpad import _
 
@@ -1341,7 +1341,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_collection()
+    export_as_webservice_collection()
 
     title = Attribute('Title')
 
