@@ -58,13 +58,13 @@
     </tr>
     <tr>
       <th>Bug supervisor:</th>
-      <td tal:condition="context/bugcontact">
+      <td tal:condition="context/bug_supervisor">
         <a
-          tal:attributes="href context/bugcontact/fmt:url"
-          tal:content="context/bugcontact/browsername"
+          tal:attributes="href context/bug_supervisor/fmt:url"
+          tal:content="context/bug_supervisor/browsername"
         >foo bar</a>
       </td>
-      <td tal:condition="not:context/bugcontact">Not yet assigned</td>
+      <td tal:condition="not:context/bug_supervisor">Not yet assigned</td>
     </tr>
     <tr>
       <th>Security contact:</th>

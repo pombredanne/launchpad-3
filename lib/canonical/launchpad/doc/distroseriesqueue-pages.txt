@@ -5,7 +5,7 @@ for IDistroSeries context (IDistroSeriesView)
 
 Let's instantiate the view for +queue for anonymous access:
 
-  >>> from zope.component import queryView
+  >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import IDistributionSet
 
@@ -13,7 +13,8 @@ Let's instantiate the view for +queue for anonymous access:
   >>> breezy_autotest = ubuntu['breezy-autotest']
 
   >>> request = TestRequest(form={})
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
 
 View parameters need to be set properly before start:
 
@@ -45,7 +46,7 @@ Let's instantiate the view for a specific queue:
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
-  >>> queue_view = queryView(warty, "+queue", request)
+  >>> queue_view = queryMultiAdapter((warty, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.state.name
   'DONE'
@@ -59,7 +60,7 @@ default value (NEW queue).
   >>> request = TestRequest(
   ...     form={'queue_state': 'foo'})
   >>> warty = ubuntu['warty']
-  >>> queue_view = queryView(warty, "+queue", request)
+  >>> queue_view = queryMultiAdapter((warty, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.state.name
   'NEW'
@@ -71,7 +72,7 @@ If a invalid integer is posted it raises.
   >>> request = TestRequest(
   ...     form={'queue_state': '10'})
   >>> warty = ubuntu['warty']
-  >>> queue_view = queryView(warty, "+queue", request)
+  >>> queue_view = queryMultiAdapter((warty, request), name="+queue")
   >>> queue_view.setupQueueList()
   Traceback (most recent call last):
   ...
@@ -82,7 +83,8 @@ but they are not allowed to perform any action.
 
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.state.name
   'UNAPPROVED'
@@ -96,7 +98,8 @@ Now, let's instantiate the view for +queue as a privileged user:
 
   >>> login('foo.bar@canonical.com')
 
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.availableActions()
   ['Accept', 'Reject']
@@ -105,7 +108,8 @@ Attempt to view and act on UNAPPROVED queue works for administrators.
 
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.state.name
   'UNAPPROVED'
@@ -142,7 +146,8 @@ Anonymous attempts to accept queue items are ignored and an error
 message is presented.
 
   >>> login(ANONYMOUS)
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.performQueueAction()
   >>> print queue_view.error
@@ -156,7 +161,8 @@ message is presented.
 Privileged user can accept queue items.
 
   >>> login('foo.bar@canonical.com')
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
 
   >>> queue_view.performQueueAction()
@@ -183,7 +189,8 @@ Anonymous attempts to reject queue items are ignored and an error
 message is presented.
 
   >>> login(ANONYMOUS)
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.performQueueAction()
   >>> print queue_view.error
@@ -195,7 +202,8 @@ message is presented.
 Privileged user can reject queue items.
 
   >>> login('foo.bar@canonical.com')
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view = queryMultiAdapter(
+  ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
 
   >>> queue_view.performQueueAction()

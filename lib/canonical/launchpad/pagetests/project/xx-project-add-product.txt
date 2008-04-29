@@ -27,7 +27,7 @@ back to the project page:
     >>> browser.getControl('Screenshots URL').value = 'http://screenshots'
     >>> browser.getControl('Download URL').value = 'http://download'
     >>> browser.getControl('Programming Language').value = 'C'
-    >>> browser.getControl(name='field.licenses').value = ['GPL']
+    >>> browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> browser.getControl(name='field.license_info').value = 'foo'
 
     >>> browser.getControl('Add').click()
