@@ -289,10 +289,7 @@ class FileDownloadClient:
             return None
         return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
-    # XXX Julian 2008-04-29 Bug 224301
-    # The is_buildd hack can be removed once the Soyuz dependency on it
-    # has gone after 1.2.4.
-    def getURLForAlias(self, aliasID, is_buildd=False):
+    def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
         alias.
 
@@ -304,8 +301,6 @@ class FileDownloadClient:
         if path is None:
             return None
         base = self.download_url
-        if is_buildd:
-            base = config.librarian.buildd_download_url
         return urljoin(base, path)
 
     def getFileByAlias(self, aliasID):
