@@ -24,6 +24,7 @@ __all__ = [
     'generate_entry_adapter',
     'generate_entry_interface',
     'generate_operation_adapter',
+    'operation_parameters',
     'rename_parameters_as',
     'webservice_error',
     'WebServiceExceptionView',
@@ -217,11 +218,6 @@ class _method_annotator:
     export_as_webservice_collection() will do the final tagging.
     """
 
-    def __init__(self, **params):
-        """All operation specify their parameters using schema fields."""
-        _check_called_from_interface_def('%s()' % self.__class__.__name__)
-        self.params = params
-
     def __call__(self, method):
         """Annotates the function with the fixed arguments."""
         # Everything in the function dictionary ends up as tagged value
@@ -257,7 +253,10 @@ def annotate_exported_methods(interface):
         # Method is exported under its own name by default.
         if 'as' not in annotations:
             annotations['as'] = method.__name__
+
+        # It's possible that call_with or operation_parameters weren't used.
         annotations.setdefault('call_with', {})
+        annotations.setdefault('params', {})
 
         # __name__ will be missing for those exported under the same name.
         for name, param in annotations['params'].items():
@@ -288,6 +287,11 @@ def annotate_exported_methods(interface):
 class call_with(_method_annotator):
     """Decorator specifying fixed parameters for exported methods."""
 
+    def __init__(self, **params):
+        """Specify fixed values for parameters."""
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
+
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         annotations['call_with'] = self.params
@@ -297,8 +301,7 @@ class export_operation_as(_method_annotator):
     """Decorator specifying the name to export the method as."""
 
     def __init__(self, name):
-        # pylint: disable-msg=W0231
-        _check_called_from_interface_def('export_operation_as()')
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
         self.name = name
 
     def annotate_method(self, method, annotations):
@@ -308,6 +311,11 @@ class export_operation_as(_method_annotator):
 
 class rename_parameters_as(_method_annotator):
     """Decorator specifying the name to export the method parameters as."""
+
+    def __init__(self, **params):
+        """params is of the form method_parameter_name=webservice_name."""
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
@@ -323,11 +331,16 @@ class rename_parameters_as(_method_annotator):
             param_defs[name].__name__ = export_as
 
 
-class _export_operation(_method_annotator):
-    """Basic implementation for the webservice operation method decorators."""
+class operation_parameters(_method_annotator):
+    """Specify the parameters taken by the exported operation.
 
-    # Should be overriden in subclasses with the string to use as 'type'.
-    type = None
+    The decorator takes a list of `IField` describing the parameters. The name
+    of the underlying method parameter is taken from the argument name.
+    """
+    def __init__(self, **params):
+        """params is of the form method_parameter_name=Field()."""
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
@@ -336,8 +349,21 @@ class _export_operation(_method_annotator):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
                     'provide IField: %r' % (name, method.__name__, param))
-        annotations['type'] = self.type
         annotations['params'] = self.params
+
+
+class _export_operation(_method_annotator):
+    """Basic implementation for the webservice operation method decorators."""
+
+    # Should be overriden in subclasses with the string to use as 'type'.
+    type = None
+
+    def __init__(self):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+
+    def annotate_method(self, method, annotations):
+        """See `_method_annotator`."""
+        annotations['type'] = self.type
 
 
 class export_factory_operation(_export_operation):

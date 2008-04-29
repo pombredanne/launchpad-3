@@ -241,28 +241,30 @@ addition that the result of the method is a new object and the HTTP
 status code will be set appropriately.
 
 The specification of the web service's acceptable method
-parameters should be described using decorator arguments, which are
-normal IField instances.
+parameters should be described using the @operation_parameters
+decorator, which takes normal IField instances.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     export_operation_as, export_factory_operation,
-    ...     export_read_operation, rename_parameters_as)
+    ...     export_read_operation, operation_parameters, rename_parameters_as)
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection()
     ...
     ...     @collection_default_content
-    ...     @export_read_operation(
+    ...     @operation_parameters(
     ...         text=TextLine(title=u'Text to search for.'))
+    ...     @export_read_operation()
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""
     ...
     ...     @export_operation_as('create_book')
     ...     @rename_parameters_as(base_price='price')
-    ...     @export_factory_operation(
+    ...     @operation_parameters(
     ...         author=TextLine(title=u"The author's name."),
     ...         base_price=Float(title=u"The price."),
     ...         title=TextLine(title=u"The title."))
+    ...     @export_factory_operation()
     ...     def new(author, base_price, title):
     ...         """Create a new book."""
 
@@ -348,7 +350,9 @@ exported:
     >>> class MissingParameter(Interface):
     ...     export_as_webservice_entry()
     ...     @call_with(param1=1)
-    ...     @export_read_operation(param2=TextLine())
+    ...     @operation_parameters(
+    ...         param2=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(param1, param2, param3, param4): pass
     Traceback (most recent call last):
       ...
@@ -360,7 +364,9 @@ error:
 
     >>> class BadParameter(Interface):
     ...     export_as_webservice_entry()
-    ...     @export_read_operation(no_such_param=TextLine())
+    ...     @operation_parameters(
+    ...         no_such_param=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(): pass
     Traceback (most recent call last):
       ...
@@ -372,14 +378,17 @@ keyword parameters:
 
     >>> class AnyParameter(Interface):
     ...     export_as_webservice_entry()
-    ...     @export_read_operation(param1=TextLine())
+    ...     @operation_parameters(
+    ...         param1=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(**kwargs): pass
 
 All parameters definitions must be schema fields:
 
     >>> class BadParameterDefinition(Interface):
     ...     export_as_webservice_entry()
-    ...     @export_read_operation(a_param=object())
+    ...     @operation_parameters(a_param=object())
+    ...     @export_read_operation()
     ...     def a_method(): pass
     Traceback (most recent call last):
       ...
@@ -390,7 +399,8 @@ Renaming a parameter that wasn't defined results in an error:
 
     >>> class NonExistentParameter(Interface):
     ...     @rename_parameters_as(param1='name', param2='name2')
-    ...     @export_read_operation(param1=TextLine())
+    ...     @operation_parameters(param1=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(param1): pass
     Traceback (most recent call last):
       ...
@@ -444,7 +454,8 @@ base interface isn't exported itself.
     >>> class IHasName(Interface):
     ...     name = exported(TextLine())
     ...
-    ...     @export_write_operation(new_name=TextLine())
+    ...     @operation_parameters(new_name=TextLine())
+    ...     @export_write_operation()
     ...     def rename(new_name):
     ...         """Rename the object."""
 
@@ -453,7 +464,8 @@ base interface isn't exported itself.
     ...
     ...     nickname = exported(TextLine())
     ...
-    ...     @export_write_operation(to=Object(IHasName), msg=TextLine())
+    ...     @operation_parameters(to=Object(IHasName), msg=TextLine())
+    ...     @export_write_operation()
     ...     def talk_to(to, msg):
     ...         """Sends a message to another named object."""
 
