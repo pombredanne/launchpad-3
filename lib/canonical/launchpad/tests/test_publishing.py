@@ -21,7 +21,7 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    BinaryPackageFormat, BuildStatus, IBinaryPackageNameSet, IComponentSet,
     IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
     ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus, SourcePackageUrgency)
@@ -203,6 +203,7 @@ class SoyuzTestPublisher:
             binpackageformat=BinaryPackageFormat.DEB,
             priority=PackagePublishingPriority.STANDARD)
 
+        build.buildstate = BuildStatus.FULLYBUILT
         # Create the corresponding DEB file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag

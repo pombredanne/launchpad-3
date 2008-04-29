@@ -1,8 +1,17 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Interfaces for events."""
 
 __metaclass__ = type
+__all__ = [
+    'IJoinTeamEvent',
+    'IKarmaAssignedEvent',
+    'IMessageHeldEvent',
+    'ISQLObjectCreatedEvent',
+    'ISQLObjectDeletedEvent',
+    'ISQLObjectModifiedEvent',
+    'ITeamInvitationEvent',
+    ]
 
 from zope.app.event.interfaces import (
     IObjectModifiedEvent, IObjectEvent, IObjectCreatedEvent)
@@ -49,3 +58,9 @@ class IKarmaAssignedEvent(IObjectEvent):
 
     karma = Attribute("The Karma object assigned to the person.")
 
+
+class IMessageHeldEvent(ISQLObjectCreatedEvent):
+    """A mailing list message has been held for moderator approval."""
+
+    mailing_list = Attribute('The mailing list the message is held for.')
+    message_id = Attribute('The Message-ID of the held message.')

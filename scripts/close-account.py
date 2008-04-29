@@ -123,7 +123,7 @@ def close_account(con, log, username):
         ('TeamParticipation', 'person'),
 
         # Contacts
-        ('PackageBugContact', 'bugcontact'),
+        ('PackageBugSupervisor', 'bug_supervisor'),
         ('AnswerContact', 'person'),
 
         # Pending items in queues
