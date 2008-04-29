@@ -1,6 +1,11 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""XXX."""
+"""The code import dispatcher.
+
+The code import dispatcher is repsonsible for checking if any code
+imports need to be processed and launching child processes to handle
+them.
+"""
 
 __metaclass__ = type
 __all__ = [
@@ -22,25 +27,39 @@ from canonical.launchpad.interfaces import (
 
 
 class CodeImportDispatcher:
-    """XXX."""
+    """A CodeImportDispatcher kicks off the processing of a job if needed.
+
+    The entry point is `dispatchJobs`.
+
+    :ivar txn: A transaction manager.
+    :ivar logger: A `Logger` object.
+    """
 
     worker_script = os.path.join(
         get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
 
     def __init__(self, txn, logger):
-        """XXX."""
+        """Initialize an instance.
+
+        :param txn: A transaction manager.
+        :param logger: A `Logger` object.
+        """
         self.txn = txn
         self.logger = logger
 
     def getHostname(self):
-        """XXX."""
+        """Return the hostname of this machine.
+
+        This usually calls `socket.gethostname` but it can be
+        overriden by the config for tests and developer machines.
+        """
         if config.codeimportdispatcher.forced_hostname:
             return config.codeimportdispatcher.forced_hostname
         else:
             return socket.gethostname()
 
     def dispatchJob(self, job_id):
-        """XXX."""
+        """Start the processing of job `job_id`."""
         # Just launch the process and forget about it.
         log_file = os.path.join(
             config.codeimportdispatcher.worker_log_dir,
@@ -49,13 +68,25 @@ class CodeImportDispatcher:
             [self.worker_script, str(job_id), '-vv', '--log-file', log_file])
 
     def getJobForMachine(self, machine):
-        """XXX."""
+        """Get the id of a job from the scheduler XML-RPC instance.
+
+        Returning 0 means there is no job that needs processing.
+        """
         server_proxy = xmlrpclib.ServerProxy(
             config.codeimportdispatcher.codeimportscheduler_url)
         return server_proxy.getJobForMachine(machine.hostname)
 
     def dispatchJobs(self):
-        """XXX."""
+        """Check for and dispatch a job if necessary.
+
+        If the machine is recorded in the database as OFFLINE or QUIESCING, do
+        not look for jobs.  If the machine is QUIESCING and no jobs are
+        running on this machine, set the machine to OFFLINE.
+
+        This method is perhaps misleadingly named -- currently we only
+        dispatch one job per invocation to help distribute the load between
+        the slaves.
+        """
 
         machine = getUtility(ICodeImportMachineSet).getByHostname(
             self.getHostname())

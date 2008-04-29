@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 
+from optparse import OptionParser
 import os
 import shutil
 import socket
@@ -29,6 +30,7 @@ from canonical.codehosting.codeimport.tests.test_worker_monitor import (
 from canonical.codehosting.codeimport.worker_monitor import (
     writing_transaction)
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import (
     CodeImportMachineOfflineReason, CodeImportMachineState,
     ICodeImportJobWorkflow)
@@ -37,11 +39,19 @@ from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
 
 class CodeImportDispatcherTestMixin:
+    """Helper class for testing CodeImportDispatcher.
+
+    Subclasses must define a 'Dispatcher' attribute, an instance of which will
+    be created during setUp().
+    """
 
     layer = TwistedLaunchpadZopelessLayer
 
     def pushConfig(self, **args):
-        """XXX."""
+        """Push some key-value pairs into the codeimportdispatcher config.
+
+        The config values will be restored during test tearDown.
+        """
         self.config_count += 1
         name = 'test%d' % self.config_count
         body = '\n'.join(["%s: %s"%(k, v) for k, v in args.iteritems()])
@@ -60,28 +70,45 @@ class CodeImportDispatcherTestMixin:
         self.factory = LaunchpadObjectFactory()
 
 
-class FakeScheduler(XMLRPC):
+class StubScheduler(XMLRPC):
+    """A stub version of the CodeImportScheduler XML-RPC service."""
 
     def __init__(self, id_to_return):
+        """Initialize the instance.
+
+        :param id_to_return: Calls to `getJobForMachine` will return this
+            value.
+        """
         XMLRPC.__init__(self)
         self.id_to_return = id_to_return
 
     def xmlrpc_getJobForMachine(self, machine_name):
+        """Return the pre-arranged answer."""
         return self.id_to_return
 
-class FakeSchedulerFixture:
+class StubSchedulerFixture:
+    """A fixture to set up and tear down the stub scheduler XML-RPC service.
+    """
 
     def __init__(self, id_to_return):
+        """Initialize the instance.
+
+        :param id_to_return: Calls to `getJobForMachine` on the XML-RPC
+            service will return this value.
+        """
         self.id_to_return = id_to_return
 
     def setUp(self):
+        """Set up the stub service."""
         self.port = reactor.listenTCP(
-            0, Site(FakeScheduler(self.id_to_return)))
+            0, Site(StubScheduler(self.id_to_return)))
 
     def tearDown(self):
+        """Tear down the stub service."""
         return self.port.stopListening()
 
     def get_url(self):
+        """Return the URL of the stub service's endpoint."""
         tcp_port = self.port.getHost().port
         return 'http://localhost:%s/' % tcp_port
 
@@ -105,6 +132,12 @@ class TestCodeImportDispatcherUnit(CodeImportDispatcherTestMixin, TestCase):
             'test-value')
 
     def writePythonScript(self, script_path, script_body):
+        """Write out an executable Python script.
+
+        This method writes a script header and `script_body` (which should be
+        a list of lines of Python source) to `script_path` and makes the file
+        executable.
+        """
         script = open(script_path, 'w')
         script.write("#!%s\n" % sys.executable)
         for script_line in script_body:
@@ -112,8 +145,7 @@ class TestCodeImportDispatcherUnit(CodeImportDispatcherTestMixin, TestCase):
         os.chmod(script_path, 0700)
 
     def filterOutLoggingOptions(self, arglist):
-        from canonical.launchpad import scripts
-        from optparse import OptionParser
+        """Remove the standard logging options from a list of arguments."""
         parser = OptionParser()
         scripts.logger_options(parser)
         options, args = parser.parse_args(arglist)
@@ -135,22 +167,21 @@ class TestCodeImportDispatcherUnit(CodeImportDispatcherTestMixin, TestCase):
              'open(%r, "w").write(str(sys.argv[1:]))' % output_path])
         self.dispatcher.worker_script = script_path
         self.dispatcher.dispatchJob(10)
-        # It's a little bit dodgy to call os.wait() here: we don't
-        # know for certain that it will be the child launched in
-        # dispatchJob that will be reaped.  It's pretty gosh-darned
-        # likely though.
+        # It's a little bit dodgy to call os.wait() here: we don't know for
+        # certain that it will be the child launched in dispatchJob that will
+        # be reaped, but it is still extremely likely.
         os.wait()
-        arglist = self.filterOutOptions(eval(open(output_path).read()))
+        arglist = self.filterOutLoggingOptions(eval(open(output_path).read()))
         self.assertEqual(arglist, ['10'])
 
     def test_getJobForMachine(self):
         # getJobForMachine calls getJobForMachine on the endpoint
         # described by the codeimportscheduler_url config entry.
-        fake_scheduler_fixture = FakeSchedulerFixture(42)
-        fake_scheduler_fixture.setUp()
-        self.addCleanup(fake_scheduler_fixture.tearDown)
+        stub_scheduler_fixture = StubSchedulerFixture(42)
+        stub_scheduler_fixture.setUp()
+        self.addCleanup(stub_scheduler_fixture.tearDown)
         self.pushConfig(
-            codeimportscheduler_url=fake_scheduler_fixture.get_url())
+            codeimportscheduler_url=stub_scheduler_fixture.get_url())
         @defer_to_thread
         @writing_transaction
         def get_job_id():
@@ -225,7 +256,8 @@ class TestCodeImportDispatcherDispatchJobs(
 
     def test_dispatchJob(self):
         # If the machine is online and there are not already
-        # max_jobs_per_machine jobs running, then we dispatch the job.
+        # max_jobs_per_machine jobs running, then we look for and dispatch
+        # exactly one job.
         self.dispatcher.dispatchJobs()
         self.assertEqual(
             self.dispatcher._calls,
