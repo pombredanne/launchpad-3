@@ -15,10 +15,10 @@
        tal:define="package_being_shown view/current_package">
     <ul style="list-style: none;">
       <li style="margin-left: -15px;"
-          tal:repeat="bug_contact_package_link view/getOtherBugContactPackageLinks">
+          tal:repeat="bug_subscriber_package_link view/getOtherBugSubscriberPackageLinks">
         <a href="#"
-           tal:content="bug_contact_package_link/title"
-           tal:attributes="href bug_contact_package_link/url">
+           tal:content="bug_subscriber_package_link/title"
+           tal:attributes="href bug_subscriber_package_link/url">
         mozilla-firefox (Ubuntu)
         </a>
       </li>
