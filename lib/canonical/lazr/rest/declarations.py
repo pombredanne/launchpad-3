@@ -16,8 +16,8 @@ __all__ = [
     'export_as',
     'export_as_webservice_collection',
     'export_as_webservice_entry',
+    'exported',
     'export_factory_operation',
-    'export_field',
     'export_parameters_as',
     'export_read_operation',
     'export_write_operation',
@@ -104,10 +104,10 @@ def export_as_webservice_entry():
         interface.setTaggedValue(
             LAZR_WEBSERVICE_EXPORTED, dict(type=ENTRY_TYPE))
 
-        # Set the name of the fields that didn't specify it using the 'as'
-        # parameter in export_field. This must be done here, because the
-        # field's __name__ attribute is only set when the interface is
-        # created.
+        # Set the name of the fields that didn't specify it using the
+        # 'export_as' parameter in exported(). This must be done here,
+        # because the field's __name__ attribute is only set when the
+        # interface is created.
         for name, field in getFields(interface).items():
             tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
             if tag is None:
@@ -122,17 +122,18 @@ def export_as_webservice_entry():
     addClassAdvisor(mark_entry)
 
 
-def export_field(field, export_as=None):
+def exported(field, exported_as=None):
     """Mark the field as part of the entry data model.
 
-    :param as: the name under which the field is published in the entry. By
-        default, the same name is used.
+    :param exported_as: the name under which the field is published in the
+        entry. By default, the same name is used.
     :raises TypeError: if called on an object which doesn't provide IField.
     """
     if not IField.providedBy(field):
-        raise TypeError("export_field() can only be used on IFields.")
+        raise TypeError("exported() can only be used on IFields.")
     field.setTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': export_as})
+        LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': exported_as})
+    return field
 
 
 def export_as_webservice_collection():

@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_field)
+    export_as_webservice_entry, exported)
 
 class IMessage(Interface):
     """A message.
@@ -34,30 +34,23 @@ class IMessage(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    export_field(datecreated)
+    datecreated = exported(Datetime(
+            title=_('Date Created'), required=True, readonly=True))
 
-    subject = TextLine(
-            title=_('Subject'), required=True, readonly=True,
-            )
-    export_field(subject)
+    subject = exported(TextLine(
+            title=_('Subject'), required=True, readonly=True))
 
     # XXX flacoste 2006-09-08: This attribute is only used for the
     # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
-    owner = Object(
-            title=_('Person'), schema=IPerson, required=False, readonly=True)
-    export_field(owner)
-
+    owner = exported(Object(
+            title=_('Person'), schema=IPerson, required=False, readonly=True))
 
     # Schema is really IMessage, but this cannot be declared here. It's
     # fixed below after the IMessage definition is complete.
-    parent = Object(
-            title=_('Parent'), schema=Interface,
-            required=False, readonly=True)
-    export_field(parent)
+    parent = exported(Object(
+            title=_('Parent'), schema=Interface, required=False,
+            readonly=True))
 
     distribution = Int(
             title=_('Distribution'), required=False, readonly=True,
@@ -72,10 +65,10 @@ class IMessage(Interface):
     bugs = Attribute(_('Bug List'))
     chunks = Attribute(_('Message pieces'))
 
-    text_contents = Text(
+    text_contents = exported(Text(
         title=_('All the text/plain chunks joined together as a '
-                'unicode string.'))
-    export_field(text_contents, export_as='content')
+                'unicode string.')),
+        exported_as='content')
 
     followup_title = Attribute(_('Candidate title for a followup message.'))
 

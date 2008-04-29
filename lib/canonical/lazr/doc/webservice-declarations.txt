@@ -22,7 +22,7 @@ interface is exported on the web service as an entry, by using the
 export_as_webservice_entry() declaration.
 
 You can mark the fields that should be part of the entry data model by
-using the export_field directive. It takes an optional 'as' parameter
+using the exported() wrapper. It takes an optional 'exported_as' parameter
 that can be used to change the name under which the field will be
 exported.
 
@@ -33,19 +33,18 @@ field, but not the inventory_number field.
     >>> from zope.interface import Interface
     >>> from zope.schema import TextLine, Float
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_as_webservice_entry, export_field)
+    ...     export_as_webservice_entry, exported)
     >>> class IBook(Interface):
     ...     """A simple book data model."""
     ...     export_as_webservice_entry()
     ...
-    ...     title = TextLine(title=u'The book title')
-    ...     export_field(title)
+    ...     title = exported(TextLine(title=u'The book title'))
     ...
-    ...     author = TextLine(title=u"The book's author.")
-    ...     export_field(author)
+    ...     author = exported(TextLine(title=u"The book's author."))
     ...
-    ...     base_price = Float(title=u"The regular price of the book.")
-    ...     export_field(base_price, export_as='price')
+    ...     base_price = exported(Float(
+    ...         title=u"The regular price of the book."),
+    ...         exported_as='price')
     ...
     ...     inventory_number = TextLine(title=u'The inventory part number.')
 
@@ -86,11 +85,10 @@ Only IField can be exported as entry fields.
 
     >>> from zope.interface import Attribute
     >>> class NotAField1(Interface):
-    ...     an_attribute = Attribute('A standard attribute')
-    ...     export_field(an_attribute)
+    ...     an_attribute = exported(Attribute('A standard attribute'))
     Traceback (most recent call last):
       ...
-    TypeError: export_field() can only be used on IFields.
+    TypeError: exported() can only be used on IFields.
 
 In the same vein, export_as_webservice_entry() can only be used on
 Interface.
@@ -114,7 +112,7 @@ And from within a class declaration.
 === Exporting a collection ===
 
 Collections scoped to an entry are exported simply by using
-export_field() on the CollectionField containing the scoped collection
+exported() on the CollectionField containing the scoped collection
 items:
 
     >>> class ISimpleComment(Interface):
@@ -127,9 +125,8 @@ items:
     ...     """A book with some comments."""
     ...     export_as_webservice_entry()
     ...
-    ...     comments = CollectionField(
-    ...         value_type=Object(schema=ISimpleComment))
-    ...     export_field(comments)
+    ...     comments = exported(CollectionField(
+    ...         value_type=Object(schema=ISimpleComment)))
 
 Top-level collections are different though, they are exported by using
 the export_as_webservice_collection() in the *Set class. The method that
@@ -445,8 +442,7 @@ A child interface inherits the markup of its ancestors, even when the
 base interface isn't exported itself.
 
     >>> class IHasName(Interface):
-    ...     name = TextLine()
-    ...     export_field(name)
+    ...     name = exported(TextLine())
     ...
     ...     @export_write_operation(new_name=TextLine())
     ...     def rename(new_name):
@@ -455,8 +451,7 @@ base interface isn't exported itself.
     >>> class IUser(IHasName):
     ...     export_as_webservice_entry()
     ...
-    ...     nickname = TextLine()
-    ...     export_field(nickname)
+    ...     nickname = exported(TextLine())
     ...
     ...     @export_write_operation(to=Object(IHasName), msg=TextLine())
     ...     def talk_to(to, msg):
