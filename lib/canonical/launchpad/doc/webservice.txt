@@ -539,6 +539,8 @@ collection.
     >>> class AuthorCollection(Collection):
     ...     """A collection of authors, as exposed through the web service."""
     ...
+    ...     entry_schema = IAuthor
+    ...
     ...     def find(self):
     ...        """Find all the authors."""
     ...        return self.context.getAllAuthors()
@@ -552,6 +554,8 @@ collection.
     ...     """A collection of cookbooks, as exposed through the web service.
     ...     """
     ...
+    ...     entry_schema = ICollection
+    ...
     ...     def find(self):
     ...        """Find all the cookbooks."""
     ...        return self.context.getAll()
@@ -560,30 +564,53 @@ collection.
     >>> class DishCollection(Collection):
     ...     """A collection of dishes, as exposed through the web service."""
     ...
+    ...     entry_schema = IDish
+    ...
     ...     def find(self):
     ...        """Find all the dishes."""
     ...        return self.context.getAll()
     >>> provideAdapter(DishCollection, [IDishSet], ICollection)
 
 Like Entry, Collection is a simple base class that defines a
-constructor.
+constructor. The 'entry_schema' attribute gives a Collection class
+knowledge about what kind of entry it's supposed to contain.
 
-We need to define a collection of the recipes associated with a
+    >>> DishCollection.entry_schema
+    <InterfaceClass __builtin__.IDish>
+
+We also need to define a collection of the recipes associated with a
 cookbook. We say that the collection of recipes is scoped to a
 cookbook. Scoped collections adapters are looked for based on the type
 of the scope, and the type of the entries contained in the scoped
-collection. There is a default ScopedCollection adapter that work in all
-cases where the scoped collection is available as an iterable attribute
+collection. There is a default ScopedCollection adapter that works
+whenever the scoped collection is available as an iterable attribute
 of the context.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.lazr.interfaces import IScopedCollection
 
-    >>> getMultiAdapter((C1, C1_D1), IScopedCollection)
+    >>> def scope_collection(parent, child, name):
+    ...     """A helper method that simulates a scoped collection lookup."""
+    ...     parent_entry = IEntry(parent)
+    ...     scoped = getMultiAdapter((parent_entry, IEntry(child)),
+    ...                               IScopedCollection)
+    ...     scoped.relationship = parent_entry.schema.get(name)
+    ...     return scoped
+
+The default adapter works just fine with the collection of recipes for
+a cookbook.
+
+    >>> scoped_collection = scope_collection(C1, C1_D1, 'recipes')
+    >>> scoped_collection
     <canonical.lazr.rest.resource.ScopedCollection...>
 
-The default adapter will also work just fine with the comments scoped
-collection.
+Like a regular collection, a scoped collection knows what kind of
+object is inside it. Recall that the 'recipes' collection of a
+cookbook was defined as one that contains Objects with a schema of
+IRecipe. This information is available to the ScopedCollection object.
+
+    >>> scoped_collection.entry_schema
+    <InterfaceClass __builtin__.IRecipe>
 
 
 == Custom operations ==

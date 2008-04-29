@@ -862,6 +862,11 @@ class ScopedCollection:
         # Unknown at this time. Should be set by our call-site.
         self.relationship = None
 
+    @property
+    def entry_schema(self):
+        """The schema for the entries in this collection."""
+        return self.relationship.value_type.schema
+
     def find(self):
         """See `ICollection`."""
         return self.collection

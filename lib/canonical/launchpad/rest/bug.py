@@ -115,6 +115,8 @@ class BugEntry(Entry):
 class BugCollection(Collection):
     """A collection of bugs, as exposed through the web service."""
 
+    entry_type = BugEntry
+
     def find(self):
         """Return all the bugs on the site."""
         # Our context here is IMaloneApplication, that's why

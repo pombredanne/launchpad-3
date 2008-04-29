@@ -142,6 +142,8 @@ class IEntry(Interface):
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
 
+    entry_schema = Attribute("The schema for this collection's entries.")
+
     def find():
         """Retrieve all entries in the collection under the given scope.
 
