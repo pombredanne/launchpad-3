@@ -13,8 +13,11 @@ __all__ = [
     'SourcePackagePublishingHistory',
     ]
 
-from warnings import warn
+
+from datetime import datetime
 import os
+import pytz
+from warnings import warn
 
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
@@ -362,6 +365,11 @@ class ArchivePublisherBase:
         current.scheduleddeletiondate = UTC_NOW
         return current
 
+    @property
+    def age(self):
+        """See `IArchivePublisher`."""
+        return datetime.now(pytz.timezone('UTC')) - self.datecreated
+
 
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
@@ -496,7 +504,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         if self.archive.require_virtualized:
             architectures_available = [
-                arch for arch in self.distroseries.ppa_architectures]
+                arch for arch in self.distroseries.virtualized_architectures]
         else:
             architectures_available = self.distroseries.architectures
 
@@ -515,8 +523,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """Create a build for a given architecture if it doesn't exist yet.
 
         Return the just-created `IBuild` record already scored or None
-        if it was already present.
+        if no chroot is available for the given `IDistroArchSeries` or
+        a suitable build is already present.
         """
+        if arch.getChroot() is None:
+            return None
+
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 

@@ -16,7 +16,7 @@ from email.Utils import formatdate
 import re
 import rfc822
 
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -24,7 +24,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
+    IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
@@ -786,6 +786,7 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
     return sorted(
         also_notified_subscribers,
         key=operator.attrgetter('displayname'))
+
 
 def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
@@ -1725,3 +1726,35 @@ def notify_mailinglist_activated(mailinglist, event):
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)
         simple_sendmail(from_address, to_address, subject, body, headers)
+
+
+def notify_message_held(message_approval, event):
+    """Send a notification of a message hold to all team administrators."""
+    message_details = getAdapter(message_approval, IHeldMessageDetails)
+    team = message_approval.mailing_list.team
+    from_address = format_address(
+        team.displayname, config.canonical.noreply_from_address)
+    subject = (
+        'New mailing list message requiring approval for %s'
+        % team.displayname)
+    template = get_email_template('new-held-message.txt')
+
+    # Most of the replacements are the same for everyone.
+    replacements = {
+        'subject': message_details.subject,
+        'author_name': message_details.author.displayname,
+        'author_url': canonical_url(message_details.author),
+        'date': message_details.date,
+        'message_id': message_details.message_id,
+        'review_url': '%s/+mailinglist-moderate' % canonical_url(team),
+        'team': team.displayname,
+        }
+
+    # Send one message to every team administrator.
+    person_set = getUtility(IPersonSet)
+    for address in team.getTeamAdminsEmailAddresses():
+        user = person_set.getByEmail(address)
+        replacements['user'] = user.displayname
+        body = MailWrapper(72).format(
+            template % replacements, force_wrap=True)
+        simple_sendmail(from_address, address, subject, body)

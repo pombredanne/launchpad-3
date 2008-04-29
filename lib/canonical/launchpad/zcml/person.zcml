@@ -28,6 +28,20 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.lazr.interfaces.IObjectPrivacy"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.badge.IHasBadges"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamBadges"
+    permission="zope.Public"
+    />
+
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -578,6 +592,14 @@
     class="canonical.launchpad.browser.TeamMailingListConfigurationView"
     name="+mailinglist"
     template="../templates/team-mailinglist.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListModerationView"
+    name="+mailinglist-moderate"
+    template="../templates/team-mailinglist-moderate.pt"
     />
 
   <browser:page

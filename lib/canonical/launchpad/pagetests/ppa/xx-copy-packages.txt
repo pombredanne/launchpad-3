@@ -89,6 +89,40 @@ copy package interface can see packages to be copied.
 As mentioned before, James can select one or more sources to be copied
 to a PPA he has permission to upload.
 
+We have to do some preparation in grumpy's sampledata to make it ready
+for packages. This is certainly not part of the doctest story.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILibraryFileAliasSet)
+    >>> from canonical.launchpad.database.processor import ProcessorFamily
+
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> trash = hoary["i386"].addOrUpdateChroot(fake_chroot)
+
+    >>> warty = ubuntu.getSeries('warty')
+    >>> trash = warty["i386"].addOrUpdateChroot(fake_chroot)
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> grumpy = ubuntu.getSeries('grumpy')
+    >>> grumpy_i386 = grumpy.newArch(
+    ...     'i386', ProcessorFamily.get(1), False, cprov,
+    ...     supports_virtualized=True)
+    >>> grumpy.nominatedarchindep = grumpy_i386
+    >>> trash = grumpy_i386.addOrUpdateChroot(fake_chroot)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> logout()
+
 Let's say James wants to rebuild the Celso's 'pmount' source in his PPA.
 
 He is a little confused by the number of packages presented by
@@ -113,10 +147,6 @@ In order to be able to get the details section for a specific package
 in a PPA page, we have to retrieve the source publication ID. This
 helper function will do this job in this test.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-
     >>> def getPPAPubIDsFor(owner_name, source_name=None, status=None):
     ...     login('foo.bar@canonical.com')
     ...     owner = getUtility(IPersonSet).getByName(owner_name)
@@ -135,6 +165,7 @@ The page section id is built using "pub$ID" notation.
     >>> print extract_text(pmount_details)
     Publishing details
       Published on 2007-07-09
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -219,6 +250,7 @@ context.
     ...     jblack_browser.contents, pmount_details_id)
     >>> print extract_text(pmount_details)
     Publishing details
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -264,23 +296,6 @@ already in the pool and can't be overridden.
 
 James, thinks for a minute and realises that he could copy the
 'pmount' source already in his PPA from hoary to grumpy.
-
-We have to do some preparation in grumpy's sampledata to make it ready
-for packages. This is certainly not part of the doctest story.
-
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.launchpad.database.processor import ProcessorFamily
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> grumpy = ubuntu.getSeries('grumpy')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> grumpy_i386 = grumpy.newArch(
-    ...     'i386', ProcessorFamily.get(1), False, cprov,
-    ...     ppa_supported=True)
-    >>> grumpy.nominatedarchindep = grumpy_i386
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> logout()
 
 James goes straight to the copy interface of his PPA.
 

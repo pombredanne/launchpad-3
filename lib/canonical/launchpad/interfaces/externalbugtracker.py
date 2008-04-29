@@ -9,7 +9,7 @@ __all__ = [
     'IExternalBugTracker',
     'IExternalBugTrackerTokenAPI',
     'ISupportsCommentImport',
-    'ISupportsBugImport',
+    'ISupportsCommentPushing',
     'UNKNOWN_REMOTE_IMPORTANCE',
     'UNKNOWN_REMOTE_STATUS',
     ]
@@ -66,7 +66,7 @@ class IExternalBugTracker(Interface):
 
 
 class ISupportsCommentImport(IExternalBugTracker):
-    """A an external bug tracker that supports comment imports."""
+    """An external bug tracker that supports comment imports."""
 
     def fetchComments(bug_watch, comment_ids):
         """Load a given set of remote comments, ready for parsing.
@@ -86,7 +86,7 @@ class ISupportsCommentImport(IExternalBugTracker):
 
 
 class ISupportsBugImport(IExternalBugTracker):
-    """A an external bug tracker that supports bug imports."""
+    """An external bug tracker that supports bug imports."""
 
     def getBugReporter(remote_bug):
         """Return the person who submitted the given bug.
@@ -101,4 +101,20 @@ class ISupportsBugImport(IExternalBugTracker):
         """Return the specific target name of the bug.
 
         Return None if no target can be determined.
+        """
+
+
+class ISupportsCommentPushing(IExternalBugTracker):
+    """An external bug tracker that can push comments to the remote tracker.
+    """
+
+    def addRemoteComment(remote_bug, message):
+        """Push a comment to the remote bug.
+
+        :param remote_bug: The ID of the bug on the remote tracker to
+            which the comment should be attached.
+        :param message: The Launchpad `Message` that should be pushed to
+            the remote bugtracker.
+
+        Return the ID assigned to the comment by the remote bugtracker.
         """

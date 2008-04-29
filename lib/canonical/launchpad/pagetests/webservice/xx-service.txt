@@ -19,6 +19,10 @@ yields a 404 error.
   HTTP/1.1 404 Not Found
   ...
 
+  >>> print webservice.get("/")
+  HTTP/1.1 404 Not Found
+  ...
+
 
 == Nonexistent methods ==
 

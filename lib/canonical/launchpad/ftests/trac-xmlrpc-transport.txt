@@ -103,6 +103,66 @@ its last modified time.
     2: closed.
     3: fixed.
 
+Specifying a level of 2 will return each bug's metadata and a list of
+comment IDs for each bug.
+
+We'll add some sample comments to demonstrate this.
+
+    >>> import time
+    >>> comment_datetime = datetime(2008, 4, 18, 16, 0, 0)
+    >>> comment_timestamp = int(time.mktime(comment_datetime.timetuple()))
+
+    >>> trac_transport.remote_bugs['1'].comments = [
+    ...     {'id': '1-1', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello, world!', 'timestamp': comment_timestamp}]
+    >>> trac_transport.remote_bugs['2'].comments = [
+    ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello again, world!',
+    ...      'timestamp': comment_timestamp},
+    ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar@canonical.com',
+    ...      'comment': 'More commentary.', 'timestamp': comment_timestamp}]
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=2)
+    >>> for bug in bugs:
+    ...     print "%s: %s" % (bug['id'], bug['comments'])
+    1: ['1-1']
+    2: ['2-1', '2-2']
+    3: []
+
+We'll also define a helper function to print comments out.
+
+    >>> def print_bug_comment(comment):
+    ...     for key in sorted(comment.keys()):
+    ...         print "%s: %s" % (key, comment[key])
+    ...     print ""
+
+At level 3 the full list of comment dicts is returned along with the bug
+metadata, but not including comment authors.
+
+    >>> time_snapshot, bugs = trac_transport.bug_info(level=3)
+    >>> for bug in bugs:
+    ...     print "Comments for bug %s:" % bug['id']
+    ...     for comment in bug['comments']:
+    ...         print_bug_comment(comment)
+    Comments for bug 1:
+    comment: Hello, world!
+    id: 1-1
+    timestamp: 1208514600
+    type: comment
+    <BLANKLINE>
+    Comments for bug 2:
+    comment: Hello again, world!
+    id: 2-1
+    timestamp: 1208514600
+    type: comment
+    <BLANKLINE>
+    comment: More commentary.
+    id: 2-2
+    timestamp: 1208514600
+    type: comment
+    <BLANKLINE>
+    Comments for bug 3:
+
 The criteria dict has two possible keys: modified_since and bugs.
 Specifying a value for modified_since will cause only the bugs modified
 since that time to be returned. modified_since is an integer timestamp,
@@ -152,3 +212,33 @@ are in the bugs list being returned.
 
     >>> print bugs
     [{'id': '1'}]
+
+
+== launchpad.get_comments() ==
+
+get_comments() returns a list of comment dicts. The comment dicts
+returned correspond to the comment IDs passed in the comments parameter.
+
+    >>> comments_to_retrieve = ['1-1', '2-1', '2-2']
+    >>> time_snapshot, comments = trac_transport.get_comments(
+    ...     comments_to_retrieve)
+    >>> for comment in comments:
+    ...     print_bug_comment(comment)
+    comment: Hello, world!
+    id: 1-1
+    timestamp: 1208514600
+    type: comment
+    user: test@canonical.com
+    <BLANKLINE>
+    comment: Hello again, world!
+    id: 2-1
+    timestamp: 1208514600
+    type: comment
+    user: test@canonical.com
+    <BLANKLINE>
+    comment: More commentary.
+    id: 2-2
+    timestamp: 1208514600
+    type: comment
+    user: foo.bar@canonical.com
+
