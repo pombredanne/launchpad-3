@@ -51,7 +51,10 @@
       <method name="GET"
               tal:attributes="id string:${context/wadl_collection:collection_type}-get">
         <response>
-          <representation href="#collection-page" />
+          <representation
+             tal:attributes="
+               href context/wadl_collection:collection_representation_link"
+             />
           <representation mediaType="application/vd.sun.wadl+xml"
             tal:attributes="id string:${context/wadl_collection:collection_type}-wadl" />
         </response>
@@ -85,26 +88,32 @@
         </param>
       </method>
     </resource_type>
+
+    <representation mediaType="application/json"
+       tal:attributes="id context/wadl_collection:collection_representation_id">
+      <param name="total_size" path="$['total_size']"
+             required="True" />
+
+      <param name="next_collection_link"
+             path="$['next_collection_link']">
+        <link type="#collection-page"/>
+      </param>
+
+      <param name="prev_collection_link"
+             path="$['prev_collection_link']">
+        <link type="#collection-page"/>
+      </param>
+
+      <param name="entries" path="$['entries']" required="True" />
+
+      <param name="entry_links" path="$['entries'][*]['self_link']">
+        <link tal:attributes="type context/entry_schema/wadl_entry:type_link" />
+      </param>
+
+    </representation>
+
   </tal:collection_classes>
   <!--End resource_type definitions for collection resources.-->
-
-  <!--All collection resources serve the same kind of representation. -->
-  <representation mediaType="application/json" id="collection-page">
-    <param name="total_size" path="$['total_size']"
-           required="True" />
-
-    <param name="next_collection_link"
-           path="$['next_collection_link']">
-      <link type="#collection-page"/>
-    </param>
-
-    <param name="prev_collection_link"
-           path="$['prev_collection_link']">
-      <link type="#collection-page"/>
-    </param>
-
-    <param name="entries" path="$['entries']" required="True" />
-  </representation>
 
   <!--Begin representation and resource_type definitions for entry
       resources. -->

@@ -143,6 +143,7 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
+    >>> open("wadl.html", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root

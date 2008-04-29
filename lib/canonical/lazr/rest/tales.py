@@ -99,6 +99,7 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         return "%s#%s" % (self._service_root_url(),
                           self.resource.collection.__class__.__name__)
 
+
 class WadlServiceRootResourceAPI(WadlAPI):
     """Namespace for functions that operate on the service root resource.
 
@@ -161,13 +162,18 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         """Return the singular name for this object type."""
         return self.adapter.__name__
 
+    def type_link(self):
+        """The URL to the type definition for this kind of resource."""
+        return "%s#%s" % (
+            self._service_root_url(), self.singular_type())
+
     def full_representation_link(self):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
             self._service_root_url(), self.singular_type())
 
     def patch_representation_link(self):
-        """The URL to the description of the object's full representation."""
+        """The URL to the description of the object's patch representation."""
         return "%s#%s-diff" % (
             self._service_root_url(), self.singular_type())
 
@@ -196,6 +202,13 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         """The URL to the type definition for this kind of resource."""
         return "%s#%s" % (
             self._service_root_url(), self.collection_type())
+
+    def collection_representation_id(self):
+        return self.collection_type + '-page'
+
+    def collection_representation_link(self):
+        return "%s#%s" % (
+            self._service_root_url(), self.collection_representation_id())
 
 
 class WadlFieldAPI(WadlAPI):
