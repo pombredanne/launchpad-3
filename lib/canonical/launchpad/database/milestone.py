@@ -66,7 +66,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
     @property
     def displayname(self):
         """See IMilestone."""
-        return "%s: %s" % (self.target.displayname, self.name)
+        return "Milestone %s for %s" % (self.name, self.target.displayname)
 
     @property
     def title(self):

@@ -24,6 +24,12 @@
                         removeBugSubscription" />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+        factory="canonical.launchpad.browser.milestone_to_structuralheading"
+        />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="MilestoneSetNavigation MilestoneNavigation"

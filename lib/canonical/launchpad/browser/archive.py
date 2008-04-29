@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'archive_to_structualheading',
+    'archive_to_structuralheading',
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
@@ -941,7 +941,7 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'Do not specify for non-private archives')
 
 
-def archive_to_structualheading(archive):
+def archive_to_structuralheading(archive):
     """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
     if archive.owner is not None:
         return IStructuralHeaderPresentation(archive.owner)

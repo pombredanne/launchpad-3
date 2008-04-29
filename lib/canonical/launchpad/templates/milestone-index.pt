@@ -16,18 +16,14 @@
   <div tal:replace="structure context/target/@@+portlet-milestones" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>
-    Milestone overview
-  </h1>
-</metal:heading>
-
 <div metal:fill-slot="main" tal:define="
     specs view/specifications;
     bugtasks view/bugtasks">
+
+      <h1 tal:content="context/displayname" />
+      <p tal:condition="context/dateexpected">
+        Due <tal:date replace="context/dateexpected/fmt:approximatedate" />
+      </p>
 
   <p class="informational message" tal:condition="not: context/visible">
     This is an inactive milestone.

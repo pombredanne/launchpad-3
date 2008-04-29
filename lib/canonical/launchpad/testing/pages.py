@@ -467,12 +467,10 @@ def print_ppa_packages(contents):
 
 
 def print_navigation(contents):
-    """Print the location, tabs, and page title of the page."""
     doc = find_tag_by_id(contents, 'document')
-    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
+    breadcrumbs = doc.findAll(attrs='breadcrumb')
     print "Location: %s" % " > ".join(
-        extract_text(tag) for tag in breadcrumbs
-        if tag.get('id') != 'homebreadcrumb')
+        extract_text(tag) for tag in breadcrumbs)
     print "Structural title: %s" % extract_text(
         doc.find(id='structuralobject'))
     print 'Tabs:'
@@ -482,12 +480,12 @@ def print_navigation(contents):
         else:
             link = 'Not active'
         print "* %s (%s)" % (extract_text(tab), link)
-    title = doc.h1
-    if title:
-        title = extract_text(title)
+    main_heading = doc.h1
+    if main_heading:
+        main_heading = extract_text(main_heading)
     else:
-        title = '(No page title)'
-    print "Main heading: %s" % title
+        main_heading = '(No main heading)'
+    print "Main heading: %s" % main_heading
 
 
 def setupBrowser(auth=None):
