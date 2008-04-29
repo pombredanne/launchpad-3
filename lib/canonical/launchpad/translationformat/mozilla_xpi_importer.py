@@ -9,6 +9,7 @@ __all__ = [
 import cElementTree
 import textwrap
 from email.Utils import parseaddr
+from os.path import splitext
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
 from zipfile import ZipFile
@@ -111,14 +112,11 @@ class MozillaZipFile:
 
             # We're only interested in this file if its name ends with one of
             # these dot suffixes.
-            split_name = entry.rsplit('.', 1)
-            if len(split_name) != 2:
-                continue
-            suffix = split_name[1]
-            if suffix not in ('jar', 'dtd', 'properties'):
+            root, suffix = splitext(entry)
+            if suffix not in ['.jar', '.dtd', '.properties']:
                 continue
 
-            if suffix == 'jar':
+            if suffix == '.jar':
                 subpath = make_jarpath(xpi_path, entry)
             else:
                 subpath = "%s/%s" % (xpi_path, entry)
@@ -128,7 +126,7 @@ class MozillaZipFile:
             if manifest is None:
                 chrome_path = None
             else:
-                if suffix == 'jar':
+                if suffix == '.jar':
                     if not manifest.containsLocales(subpath):
                         # Jar file contains no directories with locale files.
                         continue
@@ -142,13 +140,13 @@ class MozillaZipFile:
             # Go ahead, parse!
             data = archive.read(entry)
 
-            if suffix == 'jar':
+            if suffix == '.jar':
                 parsed_file = MozillaZipFile(filename=entry,
                     xpi_path=subpath, content=data, manifest=manifest)
-            elif suffix == 'dtd':
+            elif suffix == '.dtd':
                 parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
                     content=data)
-            elif suffix == 'properties':
+            elif suffix == '.properties':
                 parsed_file = PropertyFile(filename=entry,
                     chrome_path=chrome_path, content=data)
             else:
