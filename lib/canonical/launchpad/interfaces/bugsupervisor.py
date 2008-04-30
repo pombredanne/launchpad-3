@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasBugContact',
+    'IHasBugSupervisor',
     ]
 
 from zope.schema import Choice
@@ -16,13 +16,13 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
-class IHasBugContact(IStructuralSubscriptionTarget):
+class IHasBugSupervisor(IStructuralSubscriptionTarget):
 
-    bugcontact = Choice(
+    bug_supervisor = Choice(
         title=_("Bug Supervisor"),
         description=_(
             "The person or team responsible for bug management."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    def setBugContact(self, bugcontact, user):
+    def setBugSupervisor(self, bug_supervisor, user):
         """Set the bug contact and create a bug subscription."""

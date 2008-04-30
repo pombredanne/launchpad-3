@@ -1353,7 +1353,7 @@ Bug supervisors can set some restricted statuses:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugContact(email_user, email_user)
+    >>> upstream_task.pillar.setBugSupervisor(email_user, email_user)
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> sync(bug_four)
@@ -1372,7 +1372,7 @@ Everyone else gets an explanatory error message:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugContact(None, None)
+    >>> upstream_task.pillar.setBugSupervisor(None, None)
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> login('no-priv@canonical.com')
@@ -2014,7 +2014,7 @@ email too. Just send an email to `help@bugs.launchpad.net`.
     From: help@bugs.launchpad.net
     Subject: Launchpad Bug Tracker Email Interface Help
     ...
-    This document describes the email interface to the bug tracker...
+    You can use Launchpad Bugs via its email interface...
     ...
 
 Only mail coming from verified Launchpad users is answered.

@@ -162,7 +162,7 @@ class XpiManifest:
         """Normalize path.  Here so it can be tested without exporting it."""
         return normalize_path(path)
 
-    def _get_matching_entry(self, file_path):
+    def _getMatchingEntry(self, file_path):
         """Return longest matching entry matching file_path."""
         assert is_valid_path(file_path), (
             "Generated path not valid: %s" % file_path)
@@ -179,12 +179,12 @@ class XpiManifest:
         # No match found.
         return None
 
-    def get_chrome_path_and_locale(self, file_path):
+    def getChromePathAndLocale(self, file_path):
         """Return chrome path and locale applying to a filesystem path.
         """
         assert file_path is not None, "Looking up chrome path for None"
         file_path = self._normalizePath(file_path)
-        entry = self._get_matching_entry(file_path)
+        entry = self._getMatchingEntry(file_path)
 
         if entry is None:
             return None, None
@@ -193,4 +193,16 @@ class XpiManifest:
         replace = len(entry.path)
         chrome_path = "%s/%s" % (entry.chrome, file_path[replace:])
         return chrome_path, entry.locale
+
+    def containsLocales(self, file_path):
+        """Is `file_path` a prefix of any path containing locale files?
+
+        :param file_path: path of a directory or jar file inside this XPI.
+        :return: Boolean: does `file_path` contain locale files?
+        """
+        file_path = self._normalizePath(file_path)
+        for entry in self._locales:
+            if entry.path.startswith(file_path):
+                return True
+        return False
 

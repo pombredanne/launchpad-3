@@ -290,6 +290,44 @@ The administration procedure allows us to:
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
+In this case, the administrator may wish to amend the PPA so that it is
+set up like the ubuntu security PPA, which is private but does not
+build on a virtualized builder.
+
+    >>> admin_browser.getControl(name="field.enabled").value
+    True
+    >>> admin_browser.getControl(name="field.private").value
+    False
+    >>> admin_browser.getControl(name="field.require_virtualized").value
+    True
+
+    >>> admin_browser.getControl(name="field.enabled").value = False
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl(
+    ...     name="field.require_virtualized").value = False
+    >>> admin_browser.getControl(name="field.authorized_size").value = '1'
+    >>> admin_browser.getControl(name="field.whiteboard").value = (
+    ...    'Here lives a lazy community.')
+    >>> admin_browser.getControl("Save").click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive'
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
+    PPA whiteboard:
+    Here lives a lazy community.
+
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.getControl(name="field.enabled").value
+    False
+    >>> admin_browser.getControl(name="field.private").value
+    True
+    >>> admin_browser.getControl(name="field.require_virtualized").value
+    False
+
+
 When the archive is private, the buildd secret must also be set, or an
 error is issued:
 
@@ -314,24 +352,6 @@ generates an error:
     There is 1 error.
     Do not specify for non-private archives
 
-
-    >>> admin_browser.getControl(name="field.enabled").value = False
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl(
-    ...     name="field.require_virtualized").value = True
-    >>> admin_browser.getControl(name="field.authorized_size").value = '1'
-    >>> admin_browser.getControl(name="field.whiteboard").value = (
-    ...    'Here lives a lazy community.')
-    >>> admin_browser.getControl("Save").click()
-
-    >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive'
-
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
-    PPA whiteboard:
-    Here lives a lazy community.
 
 There is a maximum size allowed for authorized_size is set in
 `IArchive`, it is currently 20 * 1024 and the unit used in code is

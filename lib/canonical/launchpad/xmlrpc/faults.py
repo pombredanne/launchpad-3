@@ -290,7 +290,7 @@ class BranchNameInUse(LaunchpadFault):
     """There is already a branch with this name for this product."""
 
     error_code = 220
-    msg_template = "Branch name already in use: %(branch_name)s"
+    msg_template = "Branch name already in use: %(error)s"
 
-    def __init__(self, branch_name):
-        LaunchpadFault.__init__(self, branch_name=branch_name)
+    def __init__(self, error):
+        LaunchpadFault.__init__(self, error=error)

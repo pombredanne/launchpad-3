@@ -258,7 +258,7 @@ Ubuntu's bug supervisor.
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
-    >>> ubuntu.setBugContact(no_priv, no_priv)
+    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
 
 Unlike before, no-priv can now edit the milestone.
 
