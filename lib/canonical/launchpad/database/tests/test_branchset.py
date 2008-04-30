@@ -1056,15 +1056,12 @@ class TestBranchCreation(TestCase):
         logout()
         TestCase.tearDown(self)
 
-    def test_different_owners_same_product_same_name_fails(self):
+    def test_different_owners_same_product_same_name_ok(self):
         factory = LaunchpadObjectFactory()
         product = factory.makeProduct()
-        branch = factory.makeBranch(product=product, name="sample-branch")
-        self.assertRaises(
-            BranchCreationException,
-            factory.makeBranch,
-            product=product,
-            name="sample-branch")
+        b1 = factory.makeBranch(product=product, name="sample-branch")
+        b2 = factory.makeBranch(product=product, name="sample-branch")
+        self.assertTrue(b1.owner != b2.owner)
 
     def test_different_owners_junk_same_name_ok(self):
         factory = LaunchpadObjectFactory()
@@ -1082,7 +1079,6 @@ class TestBranchCreation(TestCase):
 
     def test_same_owner_junk_same_name_fails(self):
         factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
         owner = factory.makePerson()
         name = "sample-branch"
         b1 = factory.makeBranch(owner=owner, explicit_junk=True, name=name)
@@ -1094,6 +1090,23 @@ class TestBranchCreation(TestCase):
             factory.makeBranch,
             owner=owner,
             explicit_junk=True,
+            name="sample-branch")
+
+    def test_same_owner_same_project_same_name_fails(self):
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct()
+        owner = factory.makePerson()
+        name = "sample-branch"
+        b1 = factory.makeBranch(owner=owner, product=product, name=name)
+        self.assertEqual(product, b1.product)
+        self.assertEqual(name, b1.name)
+        self.assertEqual(owner, b1.owner)
+
+        self.assertRaises(
+            BranchCreationException,
+            factory.makeBranch,
+            owner=owner,
+            product=product,
             name="sample-branch")
 
 
