@@ -43,16 +43,16 @@
                 />
               </td>
               <td><input type="submit" value="Search" /></td>
-            <tr>
+            </tr>
             <tr>
               <td></td>
               <td>
-                <label>
-                  <input id="inactive"
-                    type="checkbox"
-                    name="show_inactive"
-                    tal:attributes="checked view/show_inactive"
-                  />
+                <input id="inactive"
+                  type="checkbox"
+                  name="show_inactive"
+                  tal:attributes="checked view/show_inactive"
+                />
+                <label for="inactive">
                   Including descriptions of empty PPAs
                 </label>
               </td>

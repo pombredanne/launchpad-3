@@ -127,10 +127,12 @@ request.
 Back to the search form again anonymous users can click on a checkbox
 to allow inactive PPA results.
 
-    >>> anon_browser.getControl(name="show_inactive").value = True
+    >>> anon_browser.getControl(
+    ...     "Including descriptions of empty PPAs").selected = True
     >>> anon_browser.getControl("Search").click()
 
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_batch_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents,
+    ...                                   'ppa_batch_row'):
     ...    print extract_text(ppa_row)
     Celso Providelo
     packages to help my friends.
@@ -147,12 +149,13 @@ to allow inactive PPA results.
 
 This checkbox value is propagated to subsequent searches:
 
-    >>> anon_browser.getControl(name="show_inactive").value
+    >>> anon_browser.getControl(
+    ...     "Including descriptions of empty PPAs").selected
     True
 
 No data matches the non-existent search string "bustmybuffers".
 
-    >>> field = anon_browser.getControl("PPAs containing:")
+    >>> field = anon_browser.getControl("Show PPAs matching:")
     >>> field.value = 'bustmybuffers'
     >>> anon_browser.getControl("Search").click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
@@ -176,7 +179,7 @@ them properly, see doc/package-archive.txt.
 
 In the three sample data PPAs, only one matches the search string "Celso".
 
-    >>> field = anon_browser.getControl("PPAs containing:")
+    >>> field = anon_browser.getControl("Show PPAs matching:")
     >>> field.value = 'Celso'
     >>> anon_browser.getControl("Search").click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
