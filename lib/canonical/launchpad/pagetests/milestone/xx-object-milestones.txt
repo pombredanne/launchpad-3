@@ -150,7 +150,7 @@ the project group:
     Structural title: Debian GNU/Linux
     Tabs:
     * Overview (http://launchpad.dev/debian/)
-    * Code (http://code.launchpad.dev/debian/)
+    * Code (Not active)
     * Bugs (http://bugs.launchpad.dev/debian/)
     * Blueprints (http://blueprints.launchpad.dev/debian/)
     * Translations (http://translations.launchpad.dev/debian/)
