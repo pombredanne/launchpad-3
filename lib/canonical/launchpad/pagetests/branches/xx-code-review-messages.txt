@@ -8,7 +8,7 @@ Let's get us a code review message and canonical_url
     >>> login('foo.bar@canonical.com')
     >>> factory = LaunchpadObjectFactory()
     >>> message = factory.makeCodeReviewMessage('my subject', 'my body')
-    >>> message_url = canonical_url(message)
+    >>> message_url = str(canonical_url(message))
     >>> print message.message.text_contents
     my body
     >>> logout()

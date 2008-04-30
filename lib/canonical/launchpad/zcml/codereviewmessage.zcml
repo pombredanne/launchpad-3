@@ -30,7 +30,7 @@
         facet="branches"
         for="canonical.launchpad.interfaces.ICodeReviewMessage"
         class="canonical.launchpad.browser.CodeReviewMessageAddView"
-        permission="launchpad.AnyPerson"
+        permission="zope.Public"
         template="../templates/codereviewmessage-reply.pt"
         />
    
