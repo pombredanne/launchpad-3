@@ -119,15 +119,15 @@
             <div class="section" id="ppa_most_active">
               <h2>Most active</h2>
 
-              <p>PPA with the highest number of uploads during  the
+              <p>PPAs with the highest number of uploads during  the
                  last 7 days.</p>
 
               <table>
                 <tr tal:repeat="most_active view/most_active_ppas">
                   <td>
                     <a tal:attributes="href most_active/archive/fmt:url"
-                       tal:content="most_active/archive/title">
-                      PPA for Celso Providelo
+                       tal:content="most_active/archive/owner/displayname">
+                      Celso Providelo
                     </a>
                   </td>
                   <td align="right">

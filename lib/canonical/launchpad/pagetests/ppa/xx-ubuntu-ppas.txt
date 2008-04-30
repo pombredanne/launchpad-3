@@ -59,7 +59,7 @@ we only have 3 PPAs in sampledata they are all presented.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPA with the highest number of uploads during the last 7 days.
+    PPAs with the highest number of uploads during the last 7 days.
 
 
 Nothing suitable in the sampledata, check the end of this document for
@@ -697,16 +697,16 @@ the 'Most active' section.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPA with the highest number of uploads during the last 7 days.
-    PPA for Celso Providelo        4 uploads
-    PPA for Mark Shuttleworth      2 uploads
-    PPA for Ubuntu Team            2 uploads
-    PPA for No Privileges Person   1 uploads
+    PPAs with the highest number of uploads during the last 7 days.
+    Celso Providelo        4 uploads
+    Mark Shuttleworth      2 uploads
+    Ubuntu Team            2 uploads
+    No Privileges Person   1 uploads
 
 The user can also in any PPA title listed in that section to visit the
 PPA itself.
 
-    >>> anon_browser.getLink('PPA for Celso Providelo').click()
+    >>> anon_browser.getLink('Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
 
