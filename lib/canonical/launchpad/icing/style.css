@@ -53,7 +53,7 @@ legend legend {font-weight: normal;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
-tr {vertical-align: top;}
+th, td {vertical-align: baseline}
 th {text-align: right;}
 thead th, tr.thead th {text-align: center;}
 /* make <wbr> work with Opera */
