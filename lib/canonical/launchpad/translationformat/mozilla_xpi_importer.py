@@ -127,6 +127,7 @@ class MozillaZipFile:
                 chrome_path = None
             else:
                 if suffix == '.jar':
+                    chrome_path = None
                     if not manifest.containsLocales(subpath):
                         # Jar file contains no directories with locale files.
                         continue
@@ -137,23 +138,9 @@ class MozillaZipFile:
                         # File is not in a directory containing locale files.
                         continue
 
-            # Go ahead, parse!
-            data = archive.read(entry)
-
-            if suffix == '.jar':
-                parsed_file = MozillaZipFile(filename=entry,
-                    xpi_path=subpath, content=data, manifest=manifest)
-            elif suffix == '.dtd':
-                parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
-                    content=data)
-            elif suffix == '.properties':
-                parsed_file = PropertyFile(filename=entry,
-                    chrome_path=chrome_path, content=data)
-            else:
-                raise AssertionError(
-                    "Unexpected filename suffix: %s." % suffix)
-
-            # Take messages from parsed file.
+            # Parse file, subsume its messages.
+            parsed_file = self._parseFile(
+                archive, entry, subpath, chrome_path, manifest)
             self.extend(parsed_file.messages)
 
         # Eliminate duplicate messages.
@@ -168,6 +155,35 @@ class MozillaZipFile:
                 seen_messages.add(identifier)
         for index in reversed(deletions):
             del self.messages[index]
+
+    def _parseFile(self, archive, entry, subpath, chrome_path, manifest):
+        """Read file "`entry`" from zip file "`archive`", and parse it.
+
+        :param archive: `ZipFile` to read from.
+        :param entry: name (including path) of file within `archive`.
+        :param subpath: file's path inside overall XPI file.  Used to figure
+            out paths inside jar files.
+        :param chrome_path: file's chrome path within the XPI file.
+        :param manifest: optional `XpiManifest` file describint the overall
+            XPI file we're reading.
+        """
+        data = archive.read(entry)
+
+        root, suffix = splitext(entry)
+        if suffix == '.jar':
+            parsed_file = MozillaZipFile(filename=entry, xpi_path=subpath,
+            content=data, manifest=manifest)
+        elif suffix == '.dtd':
+            parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
+                content=data)
+        elif suffix == '.properties':
+            parsed_file = PropertyFile(filename=entry,
+                chrome_path=chrome_path, content=data)
+        else:
+            raise AssertionError(
+                "Unexpected filename suffix: %s." % suffix)
+
+        return parsed_file
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""
