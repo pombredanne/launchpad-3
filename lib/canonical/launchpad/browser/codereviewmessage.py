@@ -20,13 +20,11 @@ class CodeReviewMessageView(LaunchpadView):
         return canonical_url(self.context, view_name='+reply')
 
 
-class CodeReviewMessageAddView(LaunchpadView): #LaunchpadFormView):
+class CodeReviewMessageAddView(LaunchpadFormView):
 
-    #schema = ICodeReviewMessage
-    # fields = ['message', 'vote', 'vote_reason']
-    
-    #@action('Add')
-    #def add_action(self, action, data):
-    #    """Create the comment..."""
-    pass
-        
+    schema = ICodeReviewMessage
+    fields = []
+
+    @action('Add')
+    def add_action(self, action, data):
+        """Create the comment..."""
