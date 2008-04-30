@@ -407,6 +407,35 @@ results in an error.
     TypeError: "a_method" isn't exported on the webservice.
 
 
+=== Exporting exceptions ===
+
+When a method raises an exception, the default is to report the error as
+'500 Internal Server Error'. In many cases, that's not the case and one
+of the 4XX error would be better.
+
+Exceptions can be tagged with the webservice_error() declaration to
+state the proper HTTP status code to use for that kind of error.
+
+    >>> from canonical.lazr.rest.declarations import webservice_error
+    >>> class InvalidEmail(Exception):
+    ...     """Error happening when the email is not valid."""
+    ...     webservice_error(400)
+
+The directive sets the __lazr_webservice_error__ attribute on the
+exception which will be used by the view handling the exception.
+
+    >>> InvalidEmail.__lazr_webservice_error__
+    400
+
+Using that directive outside of a class declaration is an error:
+
+    >>> webservice_error(402)
+    Traceback (most recent call last):
+      ...
+    TypeError: webservice_error() can only be used from within an
+    exception definition.
+
+
 === Export and inheritance ===
 
 A child interface inherits the markup of its ancestors, even when the
@@ -834,6 +863,26 @@ IMethod marked for export:
     TypeError: 'getAllBooks' isn't tagged for webservice export.
 
 
+=== Exceptions ===
+
+There is a generic view class that can handle exceptions during web
+service requests.
+
+    >>> from canonical.lazr.rest.declarations import WebServiceExceptionView
+
+That view returns the exception message as content, and sets the
+result code to the one specified using the webservice_error() directive.
+
+    >>> exception = InvalidEmail("foo@bar isn't a valid email address")
+    >>> error_view = WebServiceExceptionView(exception, MockRequest())
+    >>> error_view()
+    "foo@bar isn't a valid email address"
+    >>> error_view.request.response.headers['Content-Type']
+    'text/plain'
+    >>> error_view.request.response.status
+    400
+
+
 === Security ===
 
 The adapters have checkers defined for them that grant access to all
@@ -884,6 +933,7 @@ handler to inspect.)
     >>> bookexample.IBookOnSteroids = IBookOnSteroids
     >>> bookexample.IBookSetOnSteroids = IBookSetOnSteroids
     >>> bookexample.ISimpleComment = ISimpleComment
+    >>> bookexample.InvalidEmail = InvalidEmail
 
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
@@ -933,6 +983,15 @@ are also available for IBookSetOnSteroids and IBookOnSteroids.
     ...     (IBookOnSteroids, WebServiceLayer), IResourcePOSTOperation,
     ...     'checkout')
     <class '...POST_IBookOnSteroids_checkout'>
+
+There is also a +index view on the WebServiceLayer registered for the
+InvalidEmail exception.
+
+    >>> from zope.interface import implementedBy
+    >>> adapter_registry.lookup(
+    ...     (implementedBy(InvalidEmail), WebServiceLayer), Interface,
+    ...         '+index')
+    <class '...WebServiceExceptionView'>
 
 (Clean-up.)
 
