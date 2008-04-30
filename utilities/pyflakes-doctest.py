@@ -24,6 +24,7 @@ GLOBAL_NAMES = set([
     # for system documentation
     'ANONYMOUS',
     'ILaunchBag',
+    'bugtarget',
     'commit',
     'create_view',
     'flush_database_updates',
@@ -37,6 +38,7 @@ GLOBAL_NAMES = set([
     'browser',
     'extract_link_from_tag',
     'extract_text',
+    'filebug',
     'find_main_content',
     'find_portlet',
     'find_tag_by_id',

@@ -43,7 +43,7 @@ from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
-    BUG_CONTACT_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
     IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
@@ -642,13 +642,13 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bugcontact) or
+        if (user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
             user.id == celebrities.bug_watch_updater.id or
             user.id == celebrities.bug_importer.id):
             return True
         else:
-            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+            return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
 
     def transitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -1236,31 +1236,31 @@ class BugTaskSet:
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
-        # the bug contact relation for distribution source
+        # the bug supervisor relation for distribution source
         # packages, following a conversion to use this object.
         # We know that the behaviour remains the same, but we
         # should change the terminology, or re-instate
-        # PackageBugContact, since the use of this relation here
+        # PackageBugSupervisor, since the use of this relation here
         # is not for subscription to notifications.
         # See bug #191809
-        if params.bug_contact:
-            bug_contact_clause = """BugTask.id IN (
+        if params.bug_supervisor:
+            bug_supervisor_clause = """BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, Product
                 WHERE BugTask.product = Product.id
-                    AND Product.bugcontact = %(bug_contact)s
+                    AND Product.bug_supervisor = %(bug_supervisor)s
                 UNION ALL
                 SELECT BugTask.id
                 FROM BugTask, StructuralSubscription
                 WHERE BugTask.distribution = StructuralSubscription.distribution
                     AND BugTask.sourcepackagename =
                         StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(bug_contact)s
+                    AND StructuralSubscription.subscriber = %(bug_supervisor)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, Distribution
                 WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bugcontact = %(bug_contact)s
-                )""" % sqlvalues(bug_contact=params.bug_contact)
-            extra_clauses.append(bug_contact_clause)
+                    AND Distribution.bug_supervisor = %(bug_supervisor)s
+                )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
+            extra_clauses.append(bug_supervisor_clause)
 
         if params.bug_reporter:
             bug_reporter_clause = (

@@ -107,8 +107,7 @@ class Builder(SQLBase):
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
-        librarian = getUtility(ILibrarianClient)
-        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
+        url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))

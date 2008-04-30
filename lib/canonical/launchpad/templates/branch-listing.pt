@@ -4,7 +4,7 @@
 >
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
-        tal:attributes="action context/request/URL">
+        tal:attributes="action context/view/form_action|context/request/URL">
     <label for="field.lifecycle">
       Branches with status:
     </label>
@@ -73,9 +73,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="branch context/branches"
-          tal:attributes="
-              class python:branch.is_development_focus and 'highlighted' or 'unhighlighted'">
+      <tr tal:repeat="branch context/branches">
         <td>
           <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
@@ -98,6 +96,9 @@ registerLaunchpadFunction(hookUpFilterSubmission);
           </tal:associated-series>
         </td>
         <td align="right" style="padding-right: 5px">
+          <tal:dev_focus condition="branch/is_development_focus">
+            <img src="/@@/favourite-yes" title="Current development focus"/>
+          </tal:dev_focus>
           <tal:badges replace="structure branch/badges:small"/>
         </td>
         <td>
@@ -145,7 +146,6 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                 use-macro="branch/@@+macros/no-revision-message" />
             </em>
           </td>
-          <td></td>
         </tal:no_commit>
 
         <tal:has_commit condition="branch/last_commit">

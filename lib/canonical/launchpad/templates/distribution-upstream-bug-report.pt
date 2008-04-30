@@ -144,17 +144,17 @@
                        tal:attributes="href item/product_edit_url">
                        <small>(fix)</small></a></td>
               </tal:has-no-bugtracker>
-              <tal:has-bugcontact condition="item/product/bugcontact">
+              <tal:has-bug-supervisor condition="item/product/bug_supervisor">
                 <td>
-                  <a tal:attributes="href item/product/bugcontact/fmt:url"
-                     tal:content="item/product/bugcontact/displayname"></a></td>
-              </tal:has-bugcontact>
-              <tal:has-no-bugcontact condition="not: item/product/bugcontact">
+                  <a tal:attributes="href item/product/bug_supervisor/fmt:url"
+                     tal:content="item/product/bug_supervisor/displayname"></a></td>
+              </tal:has-bug-supervisor>
+              <tal:has-no-bug-supervisor condition="not: item/product/bug_supervisor">
                 <td align="center" class="bad">Unspecified
                     <a tal:condition="item/product/required:launchpad.Edit"
-                       tal:attributes="href item/bugcontact_url">
+                       tal:attributes="href item/bug_supervisor_url">
                       <small>(change)</small></a></td>
-              </tal:has-no-bugcontact>
+              </tal:has-no-bug-supervisor>
             </tal:has-product>
             <tal:has-no-product condition="not: item/product">
                 <td align="center" class="bad" colspan="4">
@@ -230,7 +230,7 @@
             <td class="amount"
                 tal:content="view/total/watched_bugs_delta" />
           </tr>
-        <tfoot>
+        </tfoot>
       </table>
 
       <div tal:condition="view/data" 
