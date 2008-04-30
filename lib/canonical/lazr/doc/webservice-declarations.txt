@@ -225,20 +225,24 @@ exported.
 
 1. @export_read_operation
 
-This will mark the method as available as a GET operation on the
-exported resource.
+    This will mark the method as available as a GET operation on the
+    exported resource.
 
 2. @export_write_operation
 
-This will mark the method as available as a POST operation on the
-exported resource.
+    This will mark the method as available as a POST operation on the
+    exported resource.
 
-3. @export_factory_operation
+3. @export_factory_operation(schema, fields)
 
-Like the @export_write_operation decorator, this will mark the method as
-available as a POST operation on the exported resource, with the
-addition that the result of the method is a new object and the HTTP
-status code will be set appropriately.
+    Like the @export_write_operation decorator, this will mark the
+    method as available as a POST operation on the exported resource,
+    with the addition that the result of the method is a new object and
+    the HTTP status code will be set appropriately.
+
+    This decorator takes as parameters the schema of the object it is
+    creating and the name of the fields in the schema that are passed as
+    parameters.
 
 The specification of the web service's acceptable method
 parameters should be described using the @operation_parameters
@@ -260,11 +264,8 @@ decorator, which takes normal IField instances.
     ...
     ...     @export_operation_as('create_book')
     ...     @rename_parameters_as(base_price='price')
-    ...     @operation_parameters(
-    ...         author=TextLine(title=u"The author's name."),
-    ...         base_price=Float(title=u"The price."),
-    ...         title=TextLine(title=u"The title."))
-    ...     @export_factory_operation()
+    ...     @export_factory_operation(
+    ...         IBook, ['author', 'base_price', 'title'])
     ...     def new(author, base_price, title):
     ...         """Create a new book."""
 
@@ -301,6 +302,7 @@ method.
     >>> print_export_tag(IBookSetOnSteroids['new'])
     as: 'create_book'
     call_with: {}
+    creates: <...IBook...>
     params: {'author': <...TextLine...>,
         'base_price': <...Float...>,
         'title': <...TextLine...>}
@@ -318,8 +320,7 @@ method.
     params: {}
     type: 'write_operation'
 
-Parameters for which the exported __name__ wasn't specified are
-exported under the same name:
+Parameters that are not renamed are exported under the same name:
 
     >>> for name, param in sorted(IBookSetOnSteroids['new'].getTaggedValue(
     ...     'lazr.webservice.exported')['params'].items()):
@@ -328,7 +329,27 @@ exported under the same name:
     base_price: price
     title: title
 
-These decorators can only be used from within an interface definition:
+It is possible to use @operation_parameters with @export_factory_operation
+@to specify parameters that are not part of the schema.
+
+    >>> class ComplexBookFactory(Interface):
+    ...     export_as_webservice_entry()
+    ...
+    ...     @operation_parameters(collection=TextLine())
+    ...     @export_factory_operation(IBook, ['author', 'title'])
+    ...     def create_book(author, title, collection):
+    ...         """Create a book in a collection."""
+
+    >>> print_export_tag(ComplexBookFactory['create_book'])
+    as: 'create_book'
+    call_with: {}
+    creates: <...IBook...>
+    params: {'author': <...TextLine...>,
+        'collection': <...TextLine...>,
+        'title': <...TextLine...>}
+    type: 'factory'
+
+All these decorators can only be used from within an interface definition:
 
     >>> @export_operation_as('test')
     ... def a_method1(self): pass
@@ -382,6 +403,38 @@ keyword parameters:
     ...         param1=TextLine())
     ...     @export_read_operation()
     ...     def a_method(**kwargs): pass
+
+When using @export_factory_operation, TypeError will also be raised if
+one of the field doesn't exists in the schema:
+
+    >>> class MissingParameter(Interface):
+    ...     export_as_webservice_entry()
+    ...     @export_factory_operation(IBook, ['no_such_field'])
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: IBook doesn't define 'no_such_field'.
+
+Or if the field name doesn't represent a field:
+
+    >>> class NotAField(Interface):
+    ...     export_as_webservice_entry()
+    ...     @export_factory_operation(IBookOnSteroids, ['checkout'])
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: IBookOnSteroids.checkout doesn't provide IField.
+
+Or if @operation_parameters redefine a field specified in the factory:
+
+    >>> class Redefinition(Interface):
+    ...     export_as_webservice_entry()
+    ...     @operation_parameters(title=TextLine())
+    ...     @export_factory_operation(IBookOnSteroids, ['title'])
+    ...     def create_book(title): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: 'title' parameter is already defined.
 
 All parameters definitions must be schema fields:
 

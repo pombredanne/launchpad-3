@@ -53,6 +53,7 @@ from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
 from canonical.lazr.rest.operation import ResourceOperation
+from canonical.lazr.interface import copy_attribute
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -349,7 +350,14 @@ class operation_parameters(_method_annotator):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
                     'provide IField: %r' % (name, method.__name__, param))
-        annotations['params'] = self.params
+        # It's possible that another decorated created the params
+        # annotation.
+        params = annotations.setdefault('params', {})
+        for name, value in self.params.items():
+            if name in params:
+                raise TypeError(
+                    "'%s' parameter is already defined." % name)
+            params[name] = value
 
 
 class _export_operation(_method_annotator):
@@ -369,6 +377,33 @@ class _export_operation(_method_annotator):
 class export_factory_operation(_export_operation):
     """Decorator marking a method as being a factory on the webservice."""
     type = 'factory'
+
+    def __init__(self, interface, field_names):
+        """Creates a factory decorator.
+
+        :param interface: The interface of object created by this factory.
+        :param field_names: The names of the fields in the schema that
+            are used as parameters by this factory.
+        """
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.interface = interface
+        self.params = {}
+        for name in field_names:
+            field = interface.get(name)
+            if field is None:
+                raise TypeError("%s doesn't define '%s'." % (
+                                interface.__name__, name))
+            if not IField.providedBy(field):
+                raise TypeError("%s.%s doesn't provide IField." % (
+                                interface.__name__, name))
+            self.params[name] = copy_attribute(field)
+
+    def annotate_method(self, method, annotations):
+        """See `_method_annotator`."""
+        super(export_factory_operation, self).annotate_method(
+            method, annotations)
+        annotations['creates'] = self.interface
+        annotations['params'] = self.params
 
 
 class export_read_operation(_export_operation):
