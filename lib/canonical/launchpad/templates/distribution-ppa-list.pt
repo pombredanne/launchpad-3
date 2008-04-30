@@ -26,15 +26,41 @@
       PPA.</p>
 
     <form name="ppa_search" action="" method="GET">
-      <label for="name">PPAs containing:</label>
-      <input id="name" title="Filter" size="20"
-             type="text" name="name_filter"
-             tal:attributes="value view/name_filter"/>
-      <label for="inactive">Include inactive PPAs</label>
-      <input id="inactive" title="Include inactive PPAs"
-             type="checkbox" name="show_inactive"
-             tal:attributes="checked view/show_inactive"/>
-      <input type="submit" value="Search" />
+
+        <table>
+          <tbody>
+            <tr>
+              <th>
+                <label for="name">Show PPAs matching:</label>
+              </th>
+              <td>
+                <input
+                  id="name"
+                  type="text"
+                  name="name_filter"
+                  style="width: 100%;"
+                  tal:attributes="value view/name_filter"
+                />
+              </td>
+              <td><input type="submit" value="Search" /></td>
+            <tr>
+            <tr>
+              <td></td>
+              <td>
+                <label>
+                  <input id="inactive"
+                    type="checkbox"
+                    name="show_inactive"
+                    tal:attributes="checked view/show_inactive"
+                  />
+                  Including descriptions of empty PPAs
+                </label>
+              </td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
     </form>
 
     <tal:batch define="batch view/search_results">
