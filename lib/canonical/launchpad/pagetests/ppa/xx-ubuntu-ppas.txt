@@ -59,7 +59,7 @@ we only have 3 PPAs in sampledata they are all presented.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPAs with the highest number of uploads during the last 7 days.
+    PPAs with the highest number of uploads in the last 7 days.
 
 
 Nothing suitable in the sampledata, check the end of this document for
@@ -697,7 +697,7 @@ the 'Most active' section.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPAs with the highest number of uploads during the last 7 days.
+    PPAs with the highest number of uploads in the last 7 days.
     Celso Providelo        4 uploads
     Mark Shuttleworth      2 uploads
     Ubuntu Team            2 uploads
