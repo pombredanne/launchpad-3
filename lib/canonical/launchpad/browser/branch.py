@@ -442,7 +442,7 @@ class BranchNameValidationMixin:
             if owner == self.user:
                 prefix = "You already have"
             else:
-                prefix = "%s already has" % owner.displayname
+                prefix = "%s already has" % cgi.escape(owner.displayname)
 
             if product is None:
                 message = (
