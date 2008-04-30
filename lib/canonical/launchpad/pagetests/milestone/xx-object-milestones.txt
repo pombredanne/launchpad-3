@@ -142,7 +142,7 @@ A project milestone page has the same navigation as the project:
     Main heading: Milestone 1.0 for Mozilla Firefox
 
 Similarly, a distribution milestone page has the same navigation as
-the project group:
+the distribution:
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestone/3.1')
     >>> print_navigation(anon_browser.contents)
