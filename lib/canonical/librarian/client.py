@@ -289,7 +289,7 @@ class FileDownloadClient:
             return None
         return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
-    def getURLForAlias(self, aliasID, is_buildd=False):
+    def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
         alias.
 
@@ -301,8 +301,6 @@ class FileDownloadClient:
         if path is None:
             return None
         base = self.download_url
-        if is_buildd:
-            base = config.librarian.buildd_download_url
         return urljoin(base, path)
 
     def getFileByAlias(self, aliasID):

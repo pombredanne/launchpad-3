@@ -107,8 +107,7 @@ class Builder(SQLBase):
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
-        librarian = getUtility(ILibrarianClient)
-        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
+        url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
@@ -568,14 +567,9 @@ class Builder(SQLBase):
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
-        if not self.virtualized:
-            clauses.append("""
-                archive.purpose IN %s
-            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
-        else:
-            clauses.append("""
-                archive.purpose = %s
-            """ % sqlvalues(ArchivePurpose.PPA))
+        clauses.append("""
+            archive.require_virtualized = %s
+        """ % sqlvalues(self.virtualized))
 
         query = " AND ".join(clauses)
 
