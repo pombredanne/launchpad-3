@@ -2,6 +2,7 @@
 
 Let's get us a code review message and canonical_url
 
+    # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> message = factory.makeCodeReviewMessage('my subject', 'my body')
     >>> message_url = canonical_url(message)
