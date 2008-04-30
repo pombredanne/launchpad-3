@@ -502,6 +502,7 @@ def setUpGlobs(test):
     test.globs['admin_browser'] = setupBrowser(
         auth="Basic foo.bar@canonical.com:test")
 
+    test.globs['ANONYMOUS'] = ANONYMOUS
     # If a unicode URL is opened by the test browswer, later navigation
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
