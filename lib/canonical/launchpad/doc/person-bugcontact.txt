@@ -4,20 +4,20 @@ A person can be a bug contact for a distribution, source package, and/or
 product. Being a bug contact basically means that the person will
 receive all bugmail related to the bug target.
 
-== Bug Contact Packages ==
+== Bug Subscriber Packages ==
 
-IPerson.getBugContactPackages returns this list of packages, sorted
+IPerson.getBugSubscriberPackages returns this list of packages, sorted
 alphabetically (A to Z) by package name.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> [package.name for package in foo_bar.getBugContactPackages()]
+    >>> [package.name for package in foo_bar.getBugSubscriberPackages()]
     [u'mozilla-firefox', u'pmount']
 
 == Bug Counts For Open Bugs on Packages ==
 
 It's possible to get some basic statistics of the open bugs on each
-package using IPerson.getBugContactOpenBugsCounts, which returns a list
+package using IPerson.getBugSubscriberOpenBugsCounts, which returns a list
 of dicts, containing the package, and the number of open bugs in various
 states.
 
@@ -28,7 +28,7 @@ states.
     ...             value = value.bugtargetdisplayname
     ...         print "%s: %s" % (key, value)
     ...     print # Blank line, to make output more readable.
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(None):
     ...     print_package_counts(package_count)
     open: 1
     open_critical: 0
@@ -56,7 +56,7 @@ open_unassigned count will increase by one.
     >>> bug = ubuntu_firefox.createBug(CreateBugParams(
     ...     foo_bar, 'Critical Bug', comment='Critical bug.'))
 
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(None):
     ...     print_package_counts(package_count)
     open: 2
     open_critical: 0
@@ -74,7 +74,7 @@ If we mark the bug as critical, the open_critical count will increase.
     >>> ubuntu_firefox_bugtask.importance = BugTaskImportance.CRITICAL
     >>> syncUpdate(ubuntu_firefox_bugtask)
 
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(None):
     ...     print_package_counts(package_count)
     open: 2
     open_critical: 1
@@ -89,7 +89,7 @@ decrease.
     >>> ubuntu_firefox_bugtask.transitionToAssignee(foo_bar)
     >>> syncUpdate(ubuntu_firefox_bugtask)
 
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(None):
     ...     print_package_counts(package_count)
     open: 2
     open_critical: 1
@@ -105,7 +105,7 @@ If we mark the bug as In Progress, the open_inprogress will increase.
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> syncUpdate(ubuntu_firefox_bugtask)
 
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(None):
     ...     print_package_counts(package_count)
     open: 2
     open_critical: 1
@@ -125,7 +125,7 @@ open bug, even though there are two.
     >>> syncUpdate(bug)
 
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(no_priv):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(no_priv):
     ...     print_package_counts(package_count)
     open: 1
     open_critical: 0
@@ -136,7 +136,7 @@ open bug, even though there are two.
 
 Foo Bar still can see all the bugs, though.
 
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(foo_bar):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(foo_bar):
     ...     print_package_counts(package_count)
     open: 2
     open_critical: 1
@@ -152,7 +152,7 @@ Duplicates bugs are omitted from the counts.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug.duplicateof = getUtility(IBugSet).get(1)
     >>> syncUpdate(bug)
-    >>> for package_count in foo_bar.getBugContactOpenBugCounts(foo_bar):
+    >>> for package_count in foo_bar.getBugSubscriberOpenBugCounts(foo_bar):
     ...     print_package_counts(package_count)
     open: 1
     open_critical: 0

@@ -16,7 +16,7 @@ from email.Utils import formatdate
 import re
 import rfc822
 
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -24,7 +24,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
+    IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
@@ -131,7 +131,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addDistroBugContact(self, person, distro):
+    def addDistroBugSupervisor(self, person, distro):
         """Registers a distribution bug supervisor for this bug."""
         reason = "Bug Supervisor (%s)" % distro.displayname
         # All displaynames in these reasons should be changed to bugtargetname
@@ -157,7 +157,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamBugContact(self, person, upstream):
+    def addUpstreamBugSupervisor(self, person, upstream):
         """Registers an upstream bug supervisor for this bug."""
         reason = "Bug Supervisor (%s)" % upstream.displayname
         if person.isTeam():
@@ -226,12 +226,12 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     return msg
 
 
-def _send_bug_details_to_new_bugcontacts(
+def _send_bug_details_to_new_bug_subscribers(
     bug, previous_subscribers, current_subscribers):
     """Send an email containing full bug details to new bug subscribers.
 
     This function is designed to handle situations where bugtasks get
-    reassigned to new products or sourcepackages, and the new bugcontacts
+    reassigned to new products or sourcepackages, and the new bug subscribers
     need to be notified of the bug.
     """
     prev_subs_set = set(previous_subscribers)
@@ -775,10 +775,10 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers.update(
             bugtask.milestone.getBugNotificationsRecipients(recipients))
 
-    # If the target's bug contact isn't set,
+    # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
     pillar = bugtask.pillar
-    if pillar.bugcontact is None:
+    if pillar.bug_supervisor is None:
         also_notified_subscribers.add(pillar.owner)
         if recipients is not None:
             recipients.addRegistrant(pillar.owner, pillar)
@@ -840,7 +840,7 @@ def notify_bugtask_edited(modified_bugtask, event):
 
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
-    _send_bug_details_to_new_bugcontacts(
+    _send_bug_details_to_new_bug_subscribers(
         event.object.bug, previous_subscribers, current_subscribers)
     update_security_contact_subscriptions(modified_bugtask, event)
 
@@ -1726,3 +1726,35 @@ def notify_mailinglist_activated(mailinglist, event):
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)
         simple_sendmail(from_address, to_address, subject, body, headers)
+
+
+def notify_message_held(message_approval, event):
+    """Send a notification of a message hold to all team administrators."""
+    message_details = getAdapter(message_approval, IHeldMessageDetails)
+    team = message_approval.mailing_list.team
+    from_address = format_address(
+        team.displayname, config.canonical.noreply_from_address)
+    subject = (
+        'New mailing list message requiring approval for %s'
+        % team.displayname)
+    template = get_email_template('new-held-message.txt')
+
+    # Most of the replacements are the same for everyone.
+    replacements = {
+        'subject': message_details.subject,
+        'author_name': message_details.author.displayname,
+        'author_url': canonical_url(message_details.author),
+        'date': message_details.date,
+        'message_id': message_details.message_id,
+        'review_url': '%s/+mailinglist-moderate' % canonical_url(team),
+        'team': team.displayname,
+        }
+
+    # Send one message to every team administrator.
+    person_set = getUtility(IPersonSet)
+    for address in team.getTeamAdminsEmailAddresses():
+        user = person_set.getByEmail(address)
+        replacements['user'] = user.displayname
+        body = MailWrapper(72).format(
+            template % replacements, force_wrap=True)
+        simple_sendmail(from_address, address, subject, body)

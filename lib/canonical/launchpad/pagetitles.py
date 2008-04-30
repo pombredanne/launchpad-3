@@ -572,7 +572,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug supervisor for %s')
+edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -1388,6 +1388,8 @@ team_join = ContextBrowsername('Join %s')
 team_leave = ContextBrowsername('Leave %s')
 
 team_mailinglist = 'Configure mailing list'
+
+team_mailinglist_moderate = 'Moderate mailing list'
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 

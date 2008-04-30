@@ -17,7 +17,8 @@ from zope.interface import Interface, implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranch, IBranchSet, IBugSet,
+    BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
+    IBranchSet, IBugSet,
     ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
@@ -92,9 +93,6 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.NoSuchPerson(
                 type="author", email_address=author_email)
 
-        if not branch_set.isBranchNameAvailable(owner, product, branch_name):
-            return faults.BranchNameInUse(branch_name)
-
         try:
             if branch_url:
                 branch_type = BranchType.MIRRORED
@@ -109,6 +107,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch.requestMirror()
         except BranchCreationForbidden:
             return faults.BranchCreationForbidden(product.displayname)
+        except BranchCreationException, err:
+            return faults.BranchNameInUse(err)
 
         return canonical_url(branch)
 
