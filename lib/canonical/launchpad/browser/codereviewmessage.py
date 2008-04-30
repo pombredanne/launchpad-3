@@ -1,7 +1,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeReviewMessageAddView', 
+    'CodeReviewMessageAddView',
     'CodeReviewMessageView',
     ]
 
