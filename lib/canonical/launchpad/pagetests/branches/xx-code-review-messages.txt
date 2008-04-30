@@ -2,11 +2,7 @@
 
 Let's get us a code review message and canonical_url
 
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> factory = LaunchpadObjectFactory()
     >>> message = factory.makeCodeReviewMessage('my subject', 'my body')
     >>> message_url = canonical_url(message)
     >>> print message.message.text_contents

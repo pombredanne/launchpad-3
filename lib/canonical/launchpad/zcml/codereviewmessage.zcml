@@ -17,14 +17,12 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ICodeReviewMessage"
         name="+index" />
-    <browser:pages
+    <browser:page
+        name="+index"
+        facet="branches"
         for="canonical.launchpad.interfaces.ICodeReviewMessage"
         class="canonical.launchpad.browser.CodeReviewMessageView"
-        facet="branches"
-        permission="launchpad.View">
-        <browser:page
-            name="+index"
-            template="../templates/codereviewmessage-index.pt"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-index.pt"
         />
-    </browser:pages>
 </configure>
