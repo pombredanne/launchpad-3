@@ -232,7 +232,28 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        
+        # While this is technically correct, this may be slowish
+        # when generating values for listings.
+        use_series = None
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        for series in self.associatedProductSeries():
+            # If the branch is associated with the development focus
+            # then we'll use that, otherwise use the series with the
+            # latest date_created.
+            if series == self.product.development_focus:
+                return lp_prefix + self.product.name
+            else:
+                if (use_series is None or
+                    series.date_created > use_series.date_created):
+                    use_series = series
+        # If there is no series, use the prefix with the unique name.
+        if use_series is None:
+            return lp_prefix + self.unique_name
+        else:
+            return "%(prefix)s%(product)s/%(series)s" % {
+                'prefix': lp_prefix,
+                'product': self.product.name,
+                'series': use_series.name}
 
     def getBzrUploadURL(self, person=None):
         """See `IBranch`."""
