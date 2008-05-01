@@ -769,7 +769,7 @@ class ServiceRootResource(HTTPResource):
         # Find all resource types.
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
-        collection_utilities = []
+        collection_classes = []
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -782,27 +782,21 @@ class ServiceRootResource(HTTPResource):
                     # of the classes with schemas, which we do describe.
                     entry_classes.append((registration.value,
                                           registration.required))
-                else:
-                    # All the collection resources we expose are
-                    # utilities: if it wasn't a utility then by
-                    # definition it would be scoped to some entry,
-                    # and scoped collections are represented in WADL based
-                    # on the entry type. Since it's easier to work with
-                    # instances than classes, the collection list will
-                    # be full of instances.
-                    collection = self._asTopLevelCollection(registration)
-                    if collection is not None:
-                        collection_resource = CollectionResource(
-                            collection, self.request)
-                        collection_utilities.append(
-                            (collection_resource, registration.required))
+                elif (provided.isOrExtends(ICollection)
+                      and ICollection.implementedBy(registration.value)
+                      and not IScopedCollection.implementedBy(
+                        registration.value)):
+                    # See comment above re: implementedBy check.
+                    # We omit IScopedCollection because those are handled
+                    # by the entry classes.
+                    collection_classes.append((registration.value,
+                                               registration.required))
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
         namespace['entry_classes'] = entry_classes
-        namespace['collection_utilities'] = collection_utilities
-        namespace['context'] = self
+        namespace['collection_classes'] = collection_classes
         return template.pt_render(namespace)
 
     def toDataForJSON(self):

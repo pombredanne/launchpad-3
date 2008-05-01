@@ -41,7 +41,7 @@
       service.-->
 
   <!--Begin resource_type definitions for collection resources.-->
-  <tal:collection_utilities tal:repeat="context collection_utilities">
+  <tal:collection_classes tal:repeat="context collection_classes">
     <resource_type tal:attributes="id context/wadl_collection:collection_type">
       <doc tal:content="context/wadl_collection:doc"
            tal:condition="context/wadl_collection:doc"
@@ -49,7 +49,7 @@
         Human-readable description of the resource type, in XHTML format.
       </doc>
       <method name="GET"
-              tal:attributes="id string:${context/wadl_collection:collection_type}-get">
+        tal:attributes="id string:${context/wadl_collection:collection_type}-get">
         <response>
           <representation
              tal:attributes="
@@ -96,12 +96,14 @@
 
       <param name="next_collection_link"
              path="$['next_collection_link']">
-        <link type="#collection-page"/>
+        <link tal:attributes="type
+          string:#${context/wadl_collection:collection_representation_id}" />
       </param>
 
       <param name="prev_collection_link"
              path="$['prev_collection_link']">
-        <link type="#collection-page"/>
+        <link tal:attributes="type
+          string:#${context/wadl_collection:collection_representation_id}" />
       </param>
 
       <param name="entries" path="$['entries']" required="True" />
@@ -113,7 +115,33 @@
 
     </representation>
 
-  </tal:collection_utilities>
+  </tal:collection_classes>
+
+  <resource_type id="scoped-collection">
+    <method name="GET" id="scoped-collection-get">
+      <response>
+        <representation href="#scoped-collection-page" />
+        <representation mediaType="application/vd.sun.wadl+xml"
+                        id="scoped-collection-wadl" />
+      </response>
+    </method>
+  </resource_type>
+
+  <representation mediaType="application/json" id="scoped-collection-page">
+    <param name="total_size" path="$['total_size']" required="True" />
+
+    <param name="next_collection_link"
+           path="$['next_collection_link']">
+      <link type="#scoped-collection-page"/>
+    </param>
+
+    <param name="prev_collection_link"
+           path="$['prev_collection_link']">
+      <link type="#scoped-collection-page"/>
+    </param>
+
+    <param name="entries" path="$['entries']" required="True" />
+  </representation>
   <!--End resource_type definitions for collection resources.-->
 
   <!--Begin representation and resource_type definitions for entry
@@ -176,7 +204,6 @@
         </param>
       </method>
     </resource_type>
-
 
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-full">

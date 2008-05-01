@@ -30,13 +30,6 @@
         />
 
     <adapter
-        for="tuple"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
-        name="wadl_collection"
-        />
-
-    <adapter
         for="canonical.lazr.interfaces.ICollectionResource"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
@@ -55,6 +48,13 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
         name="wadl_entry"
+        />
+
+    <adapter
+        for="tuple"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
+        name="wadl_collection"
         />
 
     <adapter

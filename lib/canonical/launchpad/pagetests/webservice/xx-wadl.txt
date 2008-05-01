@@ -83,6 +83,7 @@ description of an entry. It's an <application> tag that contains a
 
     >>> wadl = webservice.get('/beta/people',
     ...                       'application/vd.sun.wadl+xml').getBody()
+    >>> open("wadl.html", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
     >>> tree.tag
     '...application'
@@ -279,34 +280,43 @@ do directly with the service root: they form a description of the web
 service as a whole. I'll explain the large-scale structure of the
 document and then show some examples in detail.
 
-The first few tags are <resource_type> tags which describe the
-different possible kinds of collections: person collections, bug
-collections, and so on. Then there's a <representation> tag which
-describes the JSON document you get if you send GET to a collection.
-This code stores the <representation> tag in 'collection_rep' and the
-initial <resource_type> tags in 'collection_resource_types'.
+The first few tags alternate <resource_type> tags which describe the
+different possible kinds of top-level collections (person collections,
+bug collections, and so on), and descriptions of the various (but very
+similar) JSON documents a client will receive if they GET one of those
+collections. This code stores each <resource_type> in a 2-tuple with
+its related <representation> tag.
 
-    >>> for index, child in enumerate(other_children):
-    ...     if child.tag.endswith('representation'):
-    ...         last_collection_tag = index
+At the end of the list of collections, there's a special
+<resource_type> and <representation> for collections that are scoped;
+i.e. not top-level collections. Those tags get stored in
+'scoped_collection_type' and 'scoped_collection_representation'.
+
+    >>> collection_resource_descriptions = []
+    >>> for index in range(0, len(other_children), 2):
+    ...     if other_children[index].attrib['id'] == 'scoped-collection':
+    ...         scoped_collection_type = other_children[index]
+    ...         scoped_collection_representation = other_children[index+1]
+    ...         first_entry_type_index = index+2
     ...         break
+    ...     else:
+    ...         collection_resource_descriptions.append(
+    ...             tuple(other_children[index:index+2]))
 
-    >>> collection_resource_types = other_children[:last_collection_tag]
-    >>> collection_rep = other_children[last_collection_tag]
 
 After that <representation> tag there's a group of three tags for
-every type of entry resource exposed through the web service. The
-first tag in a group is a <resource_type> tag that describes the
-capabilities of that resource. The second is a <representation> tag
-that describes the document sent to the client in response to GET
-requests, and expected from the client along with a PUT request. The
-third is a <representation> tag that describes the document sent to
-the client in response to PATCH requests. This code splits the tags
-into groups of three and stores the groups in
+every type of entry resource exposed through the web service. As with
+collections, first tag in a group is a <resource_type> tag that
+describes the capabilities of that resource. The second is a
+<representation> tag that describes the document sent to the client in
+response to GET requests, and expected from the client along with a
+PUT request. The third is a <representation> tag that describes the
+document sent to the client in response to PATCH requests. This code
+splits the tags into 3-tuples and stores the tuples in
 'entry_resource_descriptions'.
 
-    >>> entry_resource_types = other_children[last_collection_tag+1:]
     >>> entry_resource_descriptions = []
+    >>> entry_resource_types = other_children[first_entry_type_index:]
     >>> for index in range(0, len(entry_resource_types), 3):
     ...     resource_type = entry_resource_types[index]
     ...     full_repr = entry_resource_types[index+1]
@@ -566,56 +576,77 @@ valid values.
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
-== The collection representation ==
-
-The representation of one type of entry (say, a person) looks
-different from the representation of another type (say, a bug), but
-all collections look the same, no matter what kind of entries they
-contain. That's why there's only one <representation> tag shared
-between all collection resource types.
-
-    >>> collection_rep.tag
-    '...representation'
-    >>> collection_rep.attrib['mediaType']
-    'application/json'
-    >>> collection_rep.attrib['id']
-    'collection-page'
-    >>> params = list(collection_rep)
-    >>> [param.attrib['name'] for param in params]
-    ['total_size', 'next_collection_link', 'prev_collection_link', 'entries']
-    >>> size, next, prev, entries = params
-
-The 'next_collection_link' and 'prev_collection_link' parameters are
-links to other resources. What are these other resources? Other pages
-of the same collection!
-
-    >>> next_type, = list(next)
-    >>> next_type.attrib['type']
-    '#collection-page'
-
-    >>> prev_type, = list(prev)
-    >>> prev_type.attrib['type']
-    '#collection-page'
-
-
 == A collection resource type ==
 
 Let's look at the different collection resource types defined in the
-WADL file.
+WADL file, and their representations.
 
+    >>> collection_resource_types = [type_and_repr[0]
+    ...                              for type_and_repr in
+    ...                              collection_resource_descriptions]
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['BugCollection', ... 'ScopedCollection']
+    ['BugCollection', 'PersonSetCollectionAdapter']
 
-There's one <resource_type> tag for scoped collections, and another
-tag for every specific kind of collection on the site. We'll be taking
-a close look at the resource type for the collection of people on the
-site.
+There's one <resource_type> tag for every top-level collection on the
+site. We'll be taking a close look at the resource type for the
+site's collection of people.
 
-    >>> resource_type = [
-    ...     type for type in collection_resource_types
-    ...     if type.attrib['id'] == 'PersonSetCollectionAdapter'][0]
+    >>> resource_type, representation = [
+    ...     type_repr for type_repr in collection_resource_descriptions
+    ...     if (type_repr[0].attrib['id']
+    ...                 == 'PersonSetCollectionAdapter')][0]
     >>> resource_type.tag
     '...resource_type'
+
+
+=== The collection representation ===
+
+The representation of one type of entry (say, a person) looks very
+different from the representation of another type (say, a bug), but
+all collections look pretty much the same, no matter what kind of
+entries they contain.
+
+    >>> representation.tag
+    '...representation'
+    >>> representation.attrib['mediaType']
+    'application/json'
+    >>> params = list(representation)
+    >>> [param.attrib['name'] for param in params]
+    ['total_size', 'next_collection_link', 'prev_collection_link',
+     'entries', 'entry_links']
+    >>> size, next, prev, entries, entry_links = params
+
+
+What's the difference between a collection of people and a collection
+of bugs? Well, the ID is different, but that's just a name.
+
+    >>> representation.attrib['id']
+    'PersonSetCollectionAdapter-page'
+
+No, the real difference is the 'entry_links' parameter. It tells the
+client that the collection contains links to objects of type
+#PersonEntry.
+
+    >>> entry_links.attrib['path']
+    "$['entries'][*]['self_link']"
+    >>> link, = list(entry_links)
+    >>> link.attrib['type']
+    'http://api.launchpad.dev/beta/#PersonEntry'
+
+This tells the client that the 'collection of people' resource
+contains lots of links to 'people' resources.
+
+The 'next_collection_link' and 'prev_collection_link' parameters are
+also links to other resources. What are these other resources? Other
+pages of the same collection!
+
+    >>> next_type, = list(next)
+    >>> next_type.attrib['type']
+    '#PersonSetCollectionAdapter-page'
+
+    >>> prev_type, = list(prev)
+    >>> prev_type.attrib['type']
+    '#PersonSetCollectionAdapter-page'
 
 
 === The resource type itself ===
@@ -625,7 +656,8 @@ addition to any custom operations.  This particular type of resource
 exposes two custom operations, 'create_person' (POST) and 'people'
 (GET).
 
-    >>> methods = list(resource_type)
+    >>> doc_and_methods = list(resource_type)
+    >>> methods = doc_and_methods[1:]
 
     >>> [method.attrib['name'] for method in methods]
     ['GET', 'POST', 'GET']
@@ -638,13 +670,14 @@ exposes two custom operations, 'create_person' (POST) and 'people'
     >>> (get, create_person, people) = methods
 
 The standard GET operation is a way of getting either the
-'collection-page' representation defined above, or else a short WADL
-description of a particular collection, like the one shown earlier.
+'[collection]-page' representation shown in the previous section, or
+else a short WADL description of a particular collection, like the one
+shown earlier in this test.
 
     >>> response, = list(get)
     >>> json_rep, wadl_rep = list(response)
     >>> json_rep.attrib['href']
-    '#collection-page'
+    'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter-page'
 
     >>> wadl_rep.attrib['mediaType']
     'application/vd.sun.wadl+xml'
@@ -670,7 +703,7 @@ So does the 'people' custom operation.
     'people'
 
 
-== The scoped collection resource type ==
+== The scoped collection resource type and representation ==
 
 As mentioned earlier, all scoped collections have the same resource
 type: "ScopedCollection". The only difference between ScopedCollection
@@ -678,9 +711,15 @@ and any other collection resource type is that, right now, scoped
 collections never have custom operations. They only support the
 standard GET operation.
 
-    >>> resource_type = [
-    ...     type for type in collection_resource_types
-    ...     if type.attrib['id'] == 'ScopedCollection'][0]
-    >>> (doc, get) = resource_type
+    >>> get, = list(scoped_collection_type)
     >>> get.attrib['id']
-    'ScopedCollection-get'
+    'scoped-collection-get'
+
+The representation of a scoped collection is just like all the other
+collection representations, except it doesnt have an 'entry_links'
+param. Right now there's no way to know what kind of entry a scoped
+collection contains.
+
+    >>> [param.attrib['name']
+    ...     for param in list(scoped_collection_representation)]
+    ['total_size', 'next_collection_link', 'prev_collection_link', 'entries']
