@@ -21,6 +21,9 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac, TracXMLRPCTransport)
+from canonical.launchpad.components.externalbugtracker.trac import (
+    LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
+    LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -422,11 +425,17 @@ class TestTrac(Trac):
 class MockTracRemoteBug:
     """A mockup of a remote Trac bug."""
 
-    def __init__(self, id, last_modified=None, status=None, resolution=None):
+    def __init__(self, id, last_modified=None, status=None, resolution=None,
+        comments=None):
         self.id = id
         self.last_modified = last_modified
         self.status = status
         self.resolution = resolution
+
+        if comments is not None:
+            self.comments = comments
+        else:
+            self.comments = []
 
     def asDict(self):
         """Return the bug's metadata, but not its comments, as a dict."""
@@ -456,6 +465,15 @@ class TestTracInternalXMLRPCTransport:
         token_api = ExternalBugTrackerTokenAPI(None, None)
         print "Using XML-RPC to generate token."
         return token_api.newBugTrackerToken()
+
+
+def strip_trac_comment(comment):
+    """Tidy up a comment dict and return it as the Trac LP Plugin would."""
+    # bug_info() doesn't return comment users, so we delete them.
+    if 'user' in comment:
+        del comment['user']
+
+    return comment
 
 
 class TestTracXMLRPCTransport(TracXMLRPCTransport):
@@ -508,6 +526,13 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         utc_time = local_time - self.utc_offset
         return [self.local_timezone, local_time, utc_time]
 
+    @property
+    def utc_time(self):
+        """Return the current UTC time for this bug tracker."""
+        # This is here for the sake of not having to use
+        # time_snapshot()[2] all the time, which is a bit opaque.
+        return self.time_snapshot()[2]
+
     def bug_info(self, level, criteria=None):
         """Return info about a bug or set of bugs.
 
@@ -515,7 +540,7 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
             requested. This can be one of:
             0: Return IDs only.
             1: Return Metadata only.
-            2: Return Metadata + comments.
+            2: Return Metadata + comment IDs.
             3: Return all data about each bug.
 
         :param criteria: The selection criteria by which bugs will be
@@ -573,11 +598,26 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
 
         # We only return what's required based on the level parameter.
         # For level 0, only IDs are returned.
-        if level == 0:
+        if level == LP_PLUGIN_BUG_IDS_ONLY:
             bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
         # For level 1, we return the bug's metadata, too.
-        elif level == 1:
+        elif level == LP_PLUGIN_METADATA_ONLY:
             bugs_to_return = [bug.asDict() for bug in bugs_to_return]
+        # At level 2, we also return comment IDs for each bug.
+        elif level == LP_PLUGIN_METADATA_AND_COMMENTS:
+            bugs_to_return = [
+                dict(bug.asDict(), comments=[
+                    comment['id'] for comment in bug.comments])
+                for bug in bugs_to_return]
+        # At level 3, we return the full comment dicts along with the
+        # bug metadata. Tne comment dicts do not include the user field,
+        # however.
+        elif level == LP_PLUGIN_FULL:
+            bugs_to_return = [
+                dict(bug.asDict(),
+                     comments=[strip_trac_comment(dict(comment))
+                               for comment in bug.comments])
+                for bug in bugs_to_return]
 
         # Tack the missing bugs onto the end of our list of bugs. These
         # will always be returned in the same way, no matter what the
@@ -585,7 +625,59 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
         missing_bugs = [
             {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
 
-        return [self.time_snapshot()[2], bugs_to_return + missing_bugs]
+        return [self.utc_time, bugs_to_return + missing_bugs]
+
+    def get_comments(self, comments):
+        """Return a list of comment dicts.
+
+        :param comments: The IDs of the comments to return. Comments
+            that don't exist will be returned with a type value of
+            'missing'.
+        """
+        # It's a bit tedious having to loop through all the bugs and
+        # their comments like this, but it's easier than creating a
+        # horribly complex implementation for the sake of testing.
+        comments_to_return = []
+
+        for bug in self.remote_bugs.values():
+            for comment in bug.comments:
+                if comment['id'] in comments:
+                    comments_to_return.append(comment)
+
+        # For each of the missing ones, return a dict with a type of
+        # 'missing'.
+        comment_ids_to_return = sorted([
+            comment['id'] for comment in comments_to_return])
+        missing_comments = [
+            {'id': comment_id, 'type': 'missing'}
+            for comment_id in comments
+            if comment_id not in comment_ids_to_return]
+
+        return [self.utc_time, comments_to_return + missing_comments]
+
+    def add_comment(self, bugid, comment):
+        """Add a comment to a bug.
+
+        :param bugid: The integer ID of the bug to which the comment
+            should be added.
+        :param comment: The comment to be added as a string.
+        """
+        # Calculate the comment ID from the bug's ID and the number of
+        # comments against that bug.
+        comments = self.remote_bugs[str(bugid)].comments
+        comment_id = "%s-%s" % (bugid, len(comments) + 1)
+
+        comment_dict = {
+            'comment': comment,
+            'id': comment_id,
+            'time': self.utc_time,
+            'type': 'comment',
+            'user': 'launchpad',
+            }
+
+        comments.append(comment_dict)
+
+        return [self.utc_time, comment_id]
 
 
 class TestRoundup(Roundup):

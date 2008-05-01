@@ -37,7 +37,7 @@ bugtrackers currently registered:
     http://savannah.gnu.org/
       --> http://savannah.gnu.org/
     &mdash;
-    GNU / NoGNU Savannah
+    Savane
     0
     ------------------------
     ...
