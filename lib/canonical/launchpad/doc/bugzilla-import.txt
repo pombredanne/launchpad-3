@@ -106,10 +106,9 @@ it to return:
   ...         return duplicates
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.ftests import login, ANONYMOUS
+  >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.interfaces import (
-  ...     BugTrackerType, IPersonSet, IBugSet, IBugTrackerSet,
-  ...     ILaunchpadCelebrities)
+  ...     IBugSet, ILaunchpadCelebrities, IPersonSet)
   >>> from canonical.launchpad.scripts import bugzilla
 
 Get a reference to the Ubuntu bug tracker, and log in:

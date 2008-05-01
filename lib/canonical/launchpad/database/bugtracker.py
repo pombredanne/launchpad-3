@@ -84,6 +84,7 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
+
 def make_bugtracker_name(uri):
     """Return a name string for a bug tracker based on a URI.
 
