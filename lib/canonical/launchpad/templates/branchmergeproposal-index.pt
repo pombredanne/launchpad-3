@@ -57,6 +57,7 @@
     <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
+    <a href="#" tal:attributes="href view/comment_location">Comment</a>
   </div>
 </div>
 

@@ -5,8 +5,12 @@ Set up required objects
     # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> merge_proposal = factory.makeBranchMergeProposal()
-    >>> merge_proposal_url = canonical_url(message)
+    >>> merge_proposal_url = canonical_url(merge_proposal)
     >>> logout()
+
+    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open(merge_proposal_url)
+    >>> nopriv_browser.getLink('Comment').click()
 
 Now, open its home page.
 

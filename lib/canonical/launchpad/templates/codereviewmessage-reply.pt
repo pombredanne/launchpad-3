@@ -18,10 +18,12 @@
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>
-  <tt id="comment-from">From
-      <span tal:replace="structure context/message/owner/fmt:link"/>
-  <tt id="comment-subject" tal:content="context/message/subject" />
-  <tt id="comment-body" tal:content="context/message/text_contents" />
+  <tal:previous tal:condition="view/is_reply">
+      <tt id="comment-from">From
+          <span tal:replace="structure context/message/owner/fmt:link"/>
+      <tt id="comment-subject" tal:content="context/message/subject" />
+      <tt id="comment-body" tal:content="context/message/text_contents" />
+  </tal:previous>
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" style="clear: both">
     </div>

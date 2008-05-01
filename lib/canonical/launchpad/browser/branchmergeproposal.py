@@ -249,6 +249,10 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         # with multiple targets if specified.
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
+    @property
+    def comment_location(self):
+        return canonical_url(self.context, view_name='+comment')
+
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
     """The view used to set a proposal back to 'work in progress'."""

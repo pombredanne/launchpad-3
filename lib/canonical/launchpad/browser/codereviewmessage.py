@@ -24,6 +24,7 @@ class CodeReviewMessageView(LaunchpadView):
 
 
 class IEditCodeReviewMessage(Interface):
+
     comment = Text(
         title=_('Comment'), required=False, description=_(
         "This will be rendered as help text"))
@@ -32,6 +33,10 @@ class IEditCodeReviewMessage(Interface):
 class CodeReviewMessageAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewMessage
+
+    @property
+    def is_reply(self):
+        return ICodeReviewMessage.providedBy(self.context)
 
     @action('Add')
     def add_action(self, action, data):

@@ -33,4 +33,11 @@
         permission="launchpad.AnyPerson"
         template="../templates/codereviewmessage-reply.pt"
         />
+  <browser:page
+      name="+comment"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.CodeReviewMessageAddView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/codereviewmessage-reply.pt" />
 </configure>
