@@ -115,7 +115,7 @@ class BugEntry(Entry):
 class BugCollection(Collection):
     """A collection of bugs, as exposed through the web service."""
 
-    entry_type = BugEntry
+    entry_schema = IBug
 
     def find(self):
         """Return all the bugs on the site."""

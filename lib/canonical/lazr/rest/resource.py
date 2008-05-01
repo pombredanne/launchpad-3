@@ -769,7 +769,7 @@ class ServiceRootResource(HTTPResource):
         # Find all resource types.
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
-        collection_classes = []
+        collection_utilities = []
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -782,17 +782,26 @@ class ServiceRootResource(HTTPResource):
                     # of the classes with schemas, which we do describe.
                     entry_classes.append((registration.value,
                                           registration.required))
-                elif (provided.isOrExtends(ICollection)
-                      and ICollection.implementedBy(registration.value)):
-                    # See comment above re: implementedBy check.
-                    collection_classes.append((registration.value,
-                                               registration.required))
+                else:
+                    # All the collection resources we expose are
+                    # utilities: if it wasn't a utility then by
+                    # definition it would be scoped to some entry,
+                    # and scoped collections are represented in WADL based
+                    # on the entry type. Since it's easier to work with
+                    # instances than classes, the collection list will
+                    # be full of instances.
+                    collection = self._asTopLevelCollection(registration)
+                    if collection is not None:
+                        collection_resource = CollectionResource(
+                            collection, self.request)
+                        collection_utilities.append(
+                            (collection_resource, registration.required))
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
-        namespace['entries'] = entry_classes
-        namespace['collections'] = collection_classes
+        namespace['entry_classes'] = entry_classes
+        namespace['collection_utilities'] = collection_utilities
         namespace['context'] = self
         return template.pt_render(namespace)
 
@@ -810,23 +819,33 @@ class ServiceRootResource(HTTPResource):
         return data_for_json
 
     def getTopLevelPublications(self):
-        """Return a mapping of top-level link names to published objects."""
+        """Return a mapping of top-level link names to published objects.
+
+        This method assumes that only collections are exposed at the top
+        level.
+        """
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
         for registration in site_manager.registrations():
-            provided = registration.provided
-            if IInterface.providedBy(provided):
-                if (provided.isOrExtends(ICollection)
-                     and ICollection.implementedBy(registration.value)):
-                    try:
-                        utility = getUtility(registration.required[0])
-                    except ComponentLookupError:
-                        # It's not a top-level resource.
-                        continue
-                    link_name = ("%s_collection_link"
-                                 % registration.value.__name__)
-                    top_level_resources[link_name] = utility
+            utility = self._asTopLevelCollection(registration)
+            if utility is not None:
+                link_name = ("%s_collection_link"
+                             % registration.value.__name__)
+                top_level_resources[link_name] = utility
         return top_level_resources
+
+    def _asTopLevelCollection(self, registration):
+        """Return the top-level collection for the registration, or None."""
+        provided = registration.provided
+        if (IInterface.providedBy(provided)
+            and provided.isOrExtends(ICollection)
+            and ICollection.implementedBy(registration.value)):
+            try:
+                return getUtility(registration.required[0])
+            except ComponentLookupError:
+                # It's not a top-level collection.
+                pass
+        return None
 
 
 class Entry:

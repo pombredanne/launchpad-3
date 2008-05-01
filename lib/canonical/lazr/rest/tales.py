@@ -10,6 +10,7 @@ import urllib
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
+from zope.component import getMultiAdapter
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IChoice, IObject
@@ -78,9 +79,57 @@ class WadlEntryResourceAPI(WadlResourceAPI):
         return "%s#%s" % (self._service_root_url(),
                           self.entry.__class__.__name__)
 
+class WadlHasOperationsAPI:
 
-class WadlCollectionResourceAPI(WadlResourceAPI):
+    def named_operations(self):
+        """Return all named operations registered on the resource.
+
+        :return: a dict containing 'name' and 'op' keys. 'name' is the
+            name of the operation and 'op' is the ResourceOperation
+            object.
+        """
+        operations = getGlobalSiteManager().adapters.lookupAll(
+            (self.context[0], IHTTPApplicationRequest),
+            IResourceOperation)
+        ops = [{'name' : name, 'op' : op} for name, op in operations]
+        return ops
+
+
+class WadlCollectionResourceAPI(WadlResourceAPI, WadlHasOperationsAPI):
     "Namespace for WADL functions that operate on collection resources."
+
+    def __init__(self, resource):
+        if isinstance(resource, tuple):
+            resource, context = resource
+            self.context = context
+        self.resource = resource
+
+    def named_operations(self):
+        """Return all named operations registered on the resource.
+
+        :return: a dict containing 'name' and 'op' keys. 'name' is the
+            name of the operation and 'op' is the ResourceOperation
+            object.
+        """
+        if self.context is None:
+            return [] # Not available
+        operations = getGlobalSiteManager().adapters.lookupAll(
+            (self.context[0], IHTTPApplicationRequest),
+            IResourceOperation)
+        ops = [{'name' : name, 'op' : op} for name, op in operations]
+
+    def doc(self):
+        """Human-readable XHTML documentation for this object type."""
+        return self.docstringToXHTML(self.resource.collection.__class__.__doc__)
+
+    def type_link(self):
+        "The URL to the resource type for the object."
+        return "%s#%s" % (self._service_root_url(),
+                          self.collection_type())
+
+    def collection_type(self):
+        """The name of this kind of resource."""
+        return self.resource.collection.__class__.__name__
 
     def url(self):
         """The full URL to the resource.
@@ -94,10 +143,19 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         else:
             return super(WadlCollectionResourceAPI, self).url()
 
-    def type_link(self):
-        "The URL to the resource type for the object."
-        return "%s#%s" % (self._service_root_url(),
-                          self.resource.collection.__class__.__name__)
+
+    def collection_representation_id(self):
+        return "%s-page" % self.collection_type()
+
+    def collection_representation_link(self):
+        return "%s#%s" % (
+            self._service_root_url(), self.collection_representation_id())
+
+    def entry_schema_type_link(self):
+        import pdb; pdb.set_trace()
+        entry = WadlEntryAdapterAPI(
+            (self.resource.collection.entry_schema(), (None,)))
+        return entry.type_link()
 
 
 class WadlServiceRootResourceAPI(WadlAPI):
@@ -130,33 +188,23 @@ class WadlServiceRootResourceAPI(WadlAPI):
                                    'resource' : resource})
         return resource_dicts
 
-class WadlResourceAdapterAPI(WadlAPI):
-    """Namespace for functions that operate on resource adapter classes."""
+
+class WadlEntryAdapterAPI(WadlAPI, WadlHasOperationsAPI):
+    """Namespace for WADL functions that operate on entry adapter classes.
+
+    The entry adapter class is used to describe entries of a certain
+    type, and scoped collections full of entries of that type.
+    """
 
     def __init__(self, adapter_and_context):
         "Initialize with an adapter class."
         self.adapter, self.context = adapter_and_context
 
-    def named_operations(self):
-        """Return all named operations registered on the resource.
-
-        :return: a dict containing 'name' and 'op' keys. 'name' is the
-            name of the operation and 'op' is the ResourceOperation
-            object.
-        """
-        operations = getGlobalSiteManager().adapters.lookupAll(
-            (self.context[0], IHTTPApplicationRequest),
-            IResourceOperation)
-        ops = [{'name' : name, 'op' : op} for name, op in operations]
-        return ops
+    # XXX probably need some stuff for scoped collections
 
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
         return self.docstringToXHTML(self.adapter.__doc__)
-
-
-class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
-    """Namespace for WADL functions that operate on entry adapter classes."""
 
     def singular_type(self):
         """Return the singular name for this object type."""
@@ -189,29 +237,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         return [field for field in self.all_fields()
                 if (not ICollectionField.providedBy(field)
                     or field.readonly)]
-
-
-class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
-    "Namespace for WADL functions that operate on collection adapters."
-
-    def collection_type(self):
-        """The name of this kind of resource."""
-        return self.adapter.__name__
-
-    def type_link(self):
-        """The URL to the type definition for this kind of resource."""
-        return "%s#%s" % (
-            self._service_root_url(), self.collection_type())
-
-    def collection_representation_id(self):
-        return "%s-page" % self.collection_type()
-
-    def collection_representation_link(self):
-        return "%s#%s" % (
-            self._service_root_url(), self.collection_representation_id())
-
-    def entry_schema(self):
-        return self.adapter.entry_schema
 
 
 class WadlFieldAPI(WadlAPI):

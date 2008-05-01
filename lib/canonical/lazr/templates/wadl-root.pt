@@ -41,7 +41,7 @@
       service.-->
 
   <!--Begin resource_type definitions for collection resources.-->
-  <tal:collection_classes tal:repeat="context collections">
+  <tal:collection_utilities tal:repeat="context collection_utilities">
     <resource_type tal:attributes="id context/wadl_collection:collection_type">
       <doc tal:content="context/wadl_collection:doc"
            tal:condition="context/wadl_collection:doc"
@@ -107,17 +107,18 @@
       <param name="entries" path="$['entries']" required="True" />
 
       <param name="entry_links" path="$['entries'][*]['self_link']">
-        <link tal:attributes="type context/wadl_collection:entry_schema" />
+        <link tal:attributes="type
+        context/wadl_collection:entry_schema_type_link" />
       </param>
 
     </representation>
 
-  </tal:collection_classes>
+  </tal:collection_utilities>
   <!--End resource_type definitions for collection resources.-->
 
   <!--Begin representation and resource_type definitions for entry
       resources. -->
-  <tal:entry_classes tal:repeat="context entries">
+  <tal:entry_classes tal:repeat="context entry_classes">
     <resource_type tal:attributes="id context/wadl_entry:singular_type">
       <doc tal:content="context/wadl_entry:doc"
            tal:condition="context/wadl_entry:doc"
@@ -214,4 +215,5 @@
   </tal:entry_classes>
   <!--End representation and resource_type definitions for entry
       resources. -->
+
 </application>
