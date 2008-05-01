@@ -10,7 +10,6 @@ import urllib
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
-from zope.component import getMultiAdapter
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IChoice, IObject
@@ -78,6 +77,7 @@ class WadlEntryResourceAPI(WadlResourceAPI):
         "The URL to the resource type for the object."
         return "%s#%s" % (self._service_root_url(),
                           self.entry.__class__.__name__)
+
 
 class WadlCollectionResourceAPI(WadlResourceAPI):
     "Namespace for WADL functions that operate on collection resources."
@@ -159,8 +159,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     type, and scoped collections full of entries of that type.
     """
 
-    # XXX probably need some stuff for scoped collections
-
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
         return self.docstringToXHTML(self.adapter.__doc__)
@@ -204,14 +202,14 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         """Human-readable XHTML documentation for this object type."""
         return self.docstringToXHTML(self.adapter.__class__.__doc__)
 
+    def collection_type(self):
+        """The name of this kind of resource."""
+        return self.adapter.__name__
+
     def type_link(self):
         "The URL to the resource type for the object."
         return "%s#%s" % (self._service_root_url(),
                           self.collection_type())
-
-    def collection_type(self):
-        """The name of this kind of resource."""
-        return self.adapter.__name__
 
     def collection_representation_id(self):
         return "%s-page" % self.collection_type()

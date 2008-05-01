@@ -795,8 +795,8 @@ class ServiceRootResource(HTTPResource):
         namespace = template.pt_getContext()
         namespace['context'] = self
         namespace['request'] = self.request
-        namespace['entry_classes'] = entry_classes
-        namespace['collection_classes'] = collection_classes
+        namespace['entries'] = entry_classes
+        namespace['collections'] = collection_classes
         return template.pt_render(namespace)
 
     def toDataForJSON(self):
