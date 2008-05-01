@@ -59,7 +59,8 @@ def copy_attribute(attribute):
         Field.order += 1
         new_attribute.order = Field.order
 
-    # Reset the interface attribute.
+    # Reset the interface attribute. This will be set by the Interface
+    # constructor if the attribute becomes part of an Interface.
     new_attribute.interface = None
 
     return new_attribute
