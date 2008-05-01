@@ -251,13 +251,14 @@ decorator, which takes normal IField instances.
     >>> from canonical.lazr.rest.declarations import (
     ...     export_operation_as, export_factory_operation,
     ...     export_read_operation, operation_parameters, rename_parameters_as)
+    >>> from canonical.lazr.interface import copy_field
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection()
     ...
     ...     @collection_default_content
     ...     @operation_parameters(
-    ...         text=TextLine(title=u'Text to search for.'))
+    ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
     ...     @export_read_operation()
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""

@@ -260,11 +260,6 @@ def annotate_exported_methods(interface):
         annotations.setdefault('call_with', {})
         annotations.setdefault('params', {})
 
-        # __name__ will be missing for those exported under the same name.
-        for name, param in annotations['params'].items():
-            if not param.__name__:
-                param.__name__ = name
-
         # Make sure that all parameters exists and that we miss none.
         info = method.getSignatureInfo()
         defined_params = set(info['optional'])
@@ -351,6 +346,9 @@ class operation_parameters(_method_annotator):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
                     'provide IField: %r' % (name, method.__name__, param))
+            # By default, parameters are exported under their own name.
+            param.__name__ = name
+
         # It's possible that another decorator already created the params
         # annotation.
         params = annotations.setdefault('params', {})
