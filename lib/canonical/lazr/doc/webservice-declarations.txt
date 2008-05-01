@@ -330,7 +330,7 @@ Parameters that are not renamed are exported under the same name:
     title: title
 
 It is possible to use @operation_parameters with @export_factory_operation
-@to specify parameters that are not part of the schema.
+to specify parameters that are not part of the schema.
 
     >>> class ComplexBookFactory(Interface):
     ...     export_as_webservice_entry()

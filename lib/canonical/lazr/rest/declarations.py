@@ -350,7 +350,7 @@ class operation_parameters(_method_annotator):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
                     'provide IField: %r' % (name, method.__name__, param))
-        # It's possible that another decorated created the params
+        # It's possible that another decorator already created the params
         # annotation.
         params = annotations.setdefault('params', {})
         for name, value in self.params.items():
