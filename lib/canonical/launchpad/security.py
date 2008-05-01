@@ -1399,6 +1399,24 @@ class BranchMergeProposalEdit(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
+class CodeReviewMessageEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewMessage
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
 class ViewEntitlement(AuthorizationBase):
     """Permissions to view IEntitlement objects.
 

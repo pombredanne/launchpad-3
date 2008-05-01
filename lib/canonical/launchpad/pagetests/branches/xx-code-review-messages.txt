@@ -13,8 +13,10 @@ Let's get us a code review message and canonical_url
 Now, open its home page.
 
     >>> anon_browser.open(message_url)
-    >>> def print_tag(tag_id):
-    ...     tag = find_tag_by_id(anon_browser.contents, tag_id)
+    >>> def print_tag(tag_id, browser=None):
+    ...     if browser is None:
+    ...         browser = anon_browser
+    ...     tag = find_tag_by_id(browser.contents, tag_id)
     ...     print extract_text(tag)
     >>> print anon_browser.title
     Code review comment
@@ -25,8 +27,23 @@ Now, open its home page.
     >>> print_tag('comment-from')
     From Person-name21
 
-We can reply to a comment.
+Hmm.  Probably shouldn't display this...
 
     >>> anon_browser.getLink('Reply').click()
-    >>> anon_browser.url == message_url + '/+reply'
+    Traceback (most recent call last):
+    Unauthorized:...
+
+We can reply to a comment.
+
+    >>> admin_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> admin_browser.open(message_url)
+    >>> admin_browser.getLink('Reply').click()
+    >>> admin_browser.url == message_url + '/+reply'
     True
+    >>> admin_browser.getControl('Comment').value = 'I like this'
+    >>> admin_browser.getControl('Add').click()
+
+After this, we are taken to the view page for that comment.
+
+    >>> print_tag('comment-body', admin_browser)
+    I like this

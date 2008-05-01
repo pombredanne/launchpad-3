@@ -5,7 +5,10 @@ __all__ = [
     'CodeReviewMessageView',
     ]
 
+from zope.interface import Interface
+from zope.schema import Text
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import ICodeReviewMessage
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView,
@@ -20,11 +23,19 @@ class CodeReviewMessageView(LaunchpadView):
         return canonical_url(self.context, view_name='+reply')
 
 
+class IEditCodeReviewMessage(Interface):
+    comment = Text(
+        title=_('Comment'), required=False, description=_(
+        "This will be rendered as help text"))
+
+
 class CodeReviewMessageAddView(LaunchpadFormView):
 
-    schema = ICodeReviewMessage
-    fields = []
+    schema = IEditCodeReviewMessage
 
     @action('Add')
     def add_action(self, action, data):
         """Create the comment..."""
+        message = self.context.branch_merge_proposal.createMessage(
+            self.user, '', data['comment'], parent=self.context)
+        self.next_url = canonical_url(message)
