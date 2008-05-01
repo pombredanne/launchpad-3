@@ -108,10 +108,6 @@ class CodeImportJobSet(object):
         else:
             return None
 
-    def getJobsRunningOnMachine(self, machine):
-        """See `ICodeImportJobSet`."""
-        return CodeImportJob.selectBy(machine=machine)
-
 
 class CodeImportJobWorkflow:
     """See `ICodeImportJobWorkflow`."""

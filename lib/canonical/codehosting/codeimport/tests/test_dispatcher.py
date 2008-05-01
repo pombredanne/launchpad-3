@@ -24,8 +24,6 @@ from canonical.codehosting.codeimport.tests.test_foreigntree import (
     _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker_monitor import (
     nuke_codeimport_sample_data)
-from canonical.codehosting.codeimport.worker_monitor import (
-    writing_transaction)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import (
@@ -33,10 +31,10 @@ from canonical.launchpad.interfaces import (
     ICodeImportJobWorkflow)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
-from canonical.twistedsupport import defer_to_thread
 
 
 class StubSchedulerClient:
+    """A stub scheduler client that returns a pre-arranged answer."""
 
     def __init__(self, id_to_return):
         self.id_to_return = id_to_return

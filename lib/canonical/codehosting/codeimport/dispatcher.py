@@ -2,7 +2,7 @@
 
 """The code import dispatcher.
 
-The code import dispatcher is repsonsible for checking if any code
+The code import dispatcher is responsible for checking if any code
 imports need to be processed and launching child processes to handle
 them.
 """
@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
 class CodeImportDispatcher:
     """A CodeImportDispatcher kicks off the processing of a job if needed.
 
-    The entry point is `dispatchJobs`.
+    The entry point is `findAndDispatchJob`.
 
     :ivar txn: A transaction manager.
     :ivar logger: A `Logger` object.
@@ -50,7 +50,7 @@ class CodeImportDispatcher:
         """Return the hostname of this machine.
 
         This usually calls `socket.gethostname` but it can be
-        overriden by the config for tests and developer machines.
+        overridden by the config for tests and developer machines.
         """
         if config.codeimportdispatcher.forced_hostname:
             return config.codeimportdispatcher.forced_hostname
