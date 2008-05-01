@@ -55,7 +55,7 @@ it to return:
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '---', 'mozilla-firefox',
   ...          'FIXED', '---', 0, '', '', 'FooBar'),
   ...         # An UPSTREAM bug
-  ...         (5, 1, 'http://bugzilla.gnome.org/show_bug.cgi?id=273041',
+  ...         (5, 1, 'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=273041',
   ...          'blocker', 'UPSTREAM',
   ...          datetime(2005, 4, 4, tzinfo=UTC), 'Test bug 5',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '---', 'evolution',
@@ -389,7 +389,7 @@ and attach a watch to the upstream bug tracker:
       Subject: Test bug 5
       First comment
   <BLANKLINE>
-  http://bugzilla.gnome.org/show_bug.cgi?id=273041
+  http://bugzilla.gnome.org/bugs/show_bug.cgi?id=273041
   <BLANKLINE>
 
 XXX mpt 20060404: In sampledata Evolution uses Malone officially, so adding

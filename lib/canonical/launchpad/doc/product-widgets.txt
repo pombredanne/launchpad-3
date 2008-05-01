@@ -21,7 +21,7 @@ Let's take Firefox as an example, it uses Launchpad as its bug tracker.
 If we render the widget, it will have the 'No bug tracker' option
 selected, since that's what the custom field's missing value represent.
 
-    >>> from canonical.launchpad.interfaces import IProduct 
+    >>> from canonical.launchpad.interfaces import IProduct
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.product import ProductBugTrackerWidget
     >>> product_bugtracker = IProduct['bugtracker'].bind(
@@ -30,19 +30,20 @@ selected, since that's what the custom field's missing value represent.
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     LaunchpadTestRequest())
 
+    >>> from canonical.launchpad.testing.pages import extract_text
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
     ...     for label in labels:
-    ...         print label.renderContents()
     ...         if label.previous.previous.get('checked'):
-    ...             print 'SELECTED'
+    ...             print '(*)', extract_text(label)
     ...         else:
-    ...             print 'NOT SELECTED'
+    ...             print '( )', extract_text(label)
     >>> print_items(widget())
-    In Launchpad NOT SELECTED
-    In a registered bug tracker: NOT SELECTED
-    Somewhere else SELECTED
+    ( ) In Launchpad
+    ( ) In a registered bug tracker:
+    ( ) By emailing an upstream bug contact:
+    (*) Somewhere else
 
 The selected option says "No bug tracker" since Firefox's project
 doesn't have a bug tracker specified
@@ -61,10 +62,10 @@ bug tracker to track its bugs.
     >>> firefox.project.bugtracker = gnome_bugzilla
 
     >>> print_items(widget())
-    In Launchpad NOT SELECTED
-    In a registered bug tracker: NOT SELECTED
-    In the the Mozilla Project bug tracker (<a...>GnomeGBug GTracker</a>)
-    SELECTED
+    ( ) In Launchpad
+    ( ) In a registered bug tracker:
+    ( ) By emailing an upstream bug contact:
+    (*) In the the Mozilla Project bug tracker (GnomeGBug GTracker)
 
 And if Firefox wouldn't have a project at all, "No bug tracker" is once
 again showed.
@@ -73,9 +74,10 @@ again showed.
     >>> firefox.project = None
 
     >>> print_items(widget())
-    In Launchpad NOT SELECTED
-    In a registered bug tracker: NOT SELECTED
-    Somewhere else SELECTED
+    ( ) In Launchpad
+    ( ) In a registered bug tracker:
+    ( ) By emailing an upstream bug contact:
+    (*) Somewhere else
 
 If we call setRenderedValue with a specific bug tracker, the
 External bug tracker option will be selected.
@@ -86,18 +88,20 @@ External bug tracker option will be selected.
     >>> widget.setRenderedValue(mozilla_bugtracker)
 
     >>> print_items(widget())
-    In Launchpad NOT SELECTED
-    In a registered bug tracker: SELECTED
-    Somewhere else NOT SELECTED
+    ( ) In Launchpad
+    (*) In a registered bug tracker:
+    ( ) By emailing an upstream bug contact:
+    ( ) Somewhere else
 
 The custom field has a marker attribute which represents Launchpad. If we call
 setRenderedValue with this marker, the "In Launchpad" option is selected.
 
     >>> widget.setRenderedValue(widget.context.malone_marker)
     >>> print_items(widget())
-    In Launchpad SELECTED
-    In a registered bug tracker: NOT SELECTED
-    Somewhere else NOT SELECTED
+    (*) In Launchpad
+    ( ) In a registered bug tracker:
+    ( ) By emailing an upstream bug contact:
+    ( ) Somewhere else
 
 Now, let's pass some request values to the widget to show how it reacts
 on different user inputs. We start by simply passing 'malone' to it,
