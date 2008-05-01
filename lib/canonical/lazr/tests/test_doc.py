@@ -15,8 +15,8 @@ def test_suite():
         '../doc/decorates.txt',
         '../doc/checker-utilities.txt',
         '../doc/config.txt',
-        '../doc/menus.txt',
         '../doc/interface.txt',
+        '../doc/menus.txt',
         '../doc/webservice-declarations.txt',
         stdout_logging=False)
 
