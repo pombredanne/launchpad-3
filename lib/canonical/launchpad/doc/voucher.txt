@@ -1,0 +1,45 @@
+
+= Subscription Vouchers =
+
+This test covers the implementation of subscription voucher queries
+and redemption between Launchpad and the Salesforce proxy.
+
+For testing purposes we use a custom XML-RPC transport which
+implements a mock proxy in the transport and avoids network traffic.
+
+    >>> from canonical.launchpad.ftests.salesforce import (
+    ...     SalesforceXMLRPCTestTransport)
+    >>> import xmlrpclib
+    >>> test_transport = SalesforceXMLRPCTestTransport()
+    >>> server = xmlrpclib.ServerProxy("http://example.com",
+    ...                                transport=test_transport)
+
+Let's create a convenience function for displaying our voucher lists.
+
+    >>> def print_vouchers(vouchers):
+    ...     for voucher in vouchers:
+    ...         print voucher['voucher'], voucher['status']
+
+We can retrieve all unredeemed vouchers for a person.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IProductSet)
+    >>> mark = getUtility(IPersonSet).getByName('sabdfl')
+
+    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> print_vouchers(vouchers)
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED
+
+A single voucher can be redeemed, but must be associated with a project.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> voucher = vouchers[0]['voucher']
+    >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
+    ...                               firefox.id, firefox.displayname)
+    >>> assert(result, "redeemVoucher failed")
+    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> print_vouchers(vouchers)
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED
