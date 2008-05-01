@@ -87,6 +87,7 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
+
 def make_bugtracker_name(uri):
     """Return a name string for a bug tracker based on a URI.
 
@@ -104,6 +105,25 @@ def make_bugtracker_name(uri):
         base_name = base_uri.host
 
     return 'auto-%s' % base_name
+
+
+def make_bugtracker_title(uri):
+    """Return a title string for a bug tracker based on a URI.
+
+    :param uri: The base URI to be used to identify the bug tracker,
+        e.g. http://bugs.example.com or mailto:bugs@example.com
+    """
+    base_uri = URI(uri)
+    if base_uri.scheme == 'mailto':
+        if valid_email(base_uri.path):
+            local_part, domain = base_uri.path.split('@', 1)
+            domain_parts = domain.split('.')
+            return 'Email to %s@%s' % (local_part, domain_parts[0])
+        else:
+            raise ValueError(
+                'Not a valid email address: %s' % base_uri.path)
+    else:
+        return base_uri.host
 
 
 class BugTracker(SQLBase):
