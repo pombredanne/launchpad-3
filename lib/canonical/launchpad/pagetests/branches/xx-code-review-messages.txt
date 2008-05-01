@@ -2,6 +2,7 @@
 
 Let's get us a code review message and canonical_url
 
+    # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> message = factory.makeCodeReviewMessage('my subject', 'my body')
     >>> message_url = canonical_url(message)
@@ -12,16 +13,16 @@ Let's get us a code review message and canonical_url
 Now, open its home page.
 
     >>> anon_browser.open(message_url)
+    >>> def print_tag(tag_id):
+    ...     tag = find_tag_by_id(anon_browser.contents, tag_id)
+    ...     print extract_text(tag)
     >>> print anon_browser.title
     Code review comment
-    >>> body = find_tag_by_id(anon_browser.contents, 'comment-body')
-    >>> print extract_text(body)
+    >>> print_tag('comment-body')
     my body
-    >>> subject = find_tag_by_id(anon_browser.contents, 'comment-subject')
-    >>> print extract_text(subject)
+    >>> print_tag('comment-subject')
     my subject
-    >>> from_ = find_tag_by_id(anon_browser.contents, 'comment-from')
-    >>> print extract_text(from_)
+    >>> print_tag('comment-from')
     From Person-name21
 
 We can reply to a comment.
