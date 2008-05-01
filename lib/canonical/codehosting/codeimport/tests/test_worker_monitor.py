@@ -30,7 +30,6 @@ from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer, _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
-from canonical.database.sqlbase import commit
 from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
@@ -163,7 +162,8 @@ class TestWorkerMonitorUnit(TestCase):
         self.worker_monitor = self.WorkerMonitor(
             job.id, _make_silent_logger())
         self.worker_monitor._failures = []
-        commit()
+        self.layer.txn.commit()
+        self.layer.switchDbUser('codeimportworker')
 
     def test_getJob(self):
         # getJob() returns the job whose id we passed to the constructor.
@@ -332,7 +332,8 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         self.worker_monitor = self.WorkerMonitor(
             job.id, _make_silent_logger())
         self.worker_monitor.result_status = None
-        commit()
+        self.layer.txn.commit()
+        self.layer.switchDbUser('codeimportworker')
 
     @read_only_transaction
     def assertFinishJobCalledWithStatus(self, ignored, status):
@@ -462,6 +463,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
         This implementation does it in-process.
         """
+        self.layer.switchDbUser('codeimportworker')
         return CodeImportWorkerMonitor(job_id, _make_silent_logger()).run()
 
     def test_import_cvs(self):
@@ -469,7 +471,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
-        commit()
+        self.layer.txn.commit()
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
@@ -478,7 +480,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
-        commit()
+        self.layer.txn.commit()
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
