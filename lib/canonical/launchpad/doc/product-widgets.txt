@@ -93,6 +93,19 @@ External bug tracker option will be selected.
     ( ) By emailing an upstream bug contact:
     ( ) Somewhere else
 
+If the bug tracker is an Email Address bug tracker, the "By emailing"
+option is selected instead.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> widget.setRenderedValue(email_bugtracker)
+
+    >>> print_items(widget())
+    ( ) In Launchpad
+    ( ) In a registered bug tracker:
+    (*) By emailing an upstream bug contact:
+    ( ) Somewhere else
+
 The custom field has a marker attribute which represents Launchpad. If we call
 setRenderedValue with this marker, the "In Launchpad" option is selected.
 
