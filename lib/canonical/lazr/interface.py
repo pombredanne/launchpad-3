@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
         'copy_attribute',
+        'copy_field',
         'use_template'
         ]
 
@@ -13,6 +14,7 @@ from copy import copy
 
 from zope.interface.interfaces import IAttribute
 from zope.schema import Field
+from zope.schema.interfaces import IField
 
 
 def use_template(template, include=None, exclude=None):
@@ -61,3 +63,20 @@ def copy_attribute(attribute):
     new_attribute.interface = None
 
     return new_attribute
+
+
+def copy_field(field, **overrides):
+    """Copy a schema field and set optional field attributes.
+
+    :param field: The IField to copy.
+    :param **overrides: dictionary of attributes to override in the copy.
+    :returns: the new field.
+    """
+    if not IField.providedBy(field):
+        raise TypeError("%r doesn't provide IField." % field)
+    field_copy = copy_attribute(field)
+
+    for name, value in overrides.items():
+        setattr(field_copy, name, value)
+    return field_copy
+
