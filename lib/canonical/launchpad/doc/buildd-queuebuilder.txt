@@ -64,8 +64,14 @@ distroarchseries:
     >>> unsused = PocketChroot(distroarchseries=hoary['i386'], chroot=1)
     >>> unused = PocketChroot(distroarchseries=hoary['hppa'], chroot=2)
 
+    >>> ubuntu = hoary.distribution
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> unused = PocketChroot(
+    ...     distroarchseries=breezy_autotest_i386, chroot=3)
+
     >>> woody = DistroSeries.selectOneBy(name='woody')
-    >>> unused = PocketChroot(distroarchseries=woody['i386'], chroot=3)
+    >>> unused = PocketChroot(distroarchseries=woody['i386'], chroot=4)
 
 Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
@@ -89,6 +95,7 @@ be considered.
     The Warty Warthog Release for i386 (x86)
     The Hoary Hedgehog Release for i386 (x86)
     WOODY for i386 (x86)
+    Breezy Badger Autotest for i386 (x86)
     The Hoary Hedgehog Release for hppa (hppa)
 
 
@@ -254,6 +261,20 @@ depending on lifting the PRIMARY archive PAS restrictions.
     >>> pub_hoary_ppa = test_publisher.getPubSource(
     ...     sourcename='test-ppa', version='674', distroseries=hoary,
     ...     architecturehintlist="i386 hppa", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+When a distroseries exists but does not support any PPA archictecture,
+which is the case of ubuntu/breezy-autotest, source publications in
+PPA context are ignored, they don't result in any build.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> breezy_autotest_i386.supports_virtualized = False
+    >>> syncUpdate(breezy_autotest_i386)
+
+    >>> pub_breezy_autotest_ppa = test_publisher.getPubSource(
+    ...     sourcename='test-no-ppa-support', version='999',
+    ...     distroseries=breezy_autotest, archive=cprov.archive,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 

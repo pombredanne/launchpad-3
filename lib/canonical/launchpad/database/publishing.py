@@ -502,33 +502,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pas_verify = BuildDaemonPackagesArchSpecific(
                 config.builddmaster.root, self.distroseries)
 
-        if self.archive.require_virtualized:
-            architectures_available = [
-                arch for arch in self.distroseries.virtualized_architectures]
-        else:
-            architectures_available = self.distroseries.architectures
+        architectures_available = [
+            arch for arch in self.distroseries.architectures
+            if arch.getPocketChroot() is not None]
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)
 
         builds = []
         for arch in build_architectures:
-            build_candidate = self._createMissingBuildForArchitecture(
+            build_candidate = self.createMissingBuildForArchitecture(
                 arch, logger=logger)
             if build_candidate is not None:
                 builds.append(build_candidate)
         return builds
 
-    def _createMissingBuildForArchitecture(self, arch, logger=None):
-        """Create a build for a given architecture if it doesn't exist yet.
-
-        Return the just-created `IBuild` record already scored or None
-        if no chroot is available for the given `IDistroArchSeries` or
-        a suitable build is already present.
-        """
-        if arch.getChroot() is None:
-            return None
-
+    def createMissingBuildForArchitecture(self, arch, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 
