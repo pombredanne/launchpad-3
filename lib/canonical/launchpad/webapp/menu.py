@@ -23,7 +23,7 @@ import cgi
 
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, queryAdapter
 
 from canonical.lazr import decorates
 
@@ -108,7 +108,7 @@ class LinkData:
     implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True,
-                 site=None):
+                 site=None, menu=None):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -126,6 +126,7 @@ class LinkData:
         The 'site' is None for whatever the current site is, and 'main' or
         'blueprint' for a specific site.
 
+        :param menu: The sub menu used by the page that the link represents.
         """
         self.target = target
         self.text = text
@@ -133,6 +134,7 @@ class LinkData:
         self.icon = icon
         self.enabled = enabled
         self.site = site
+        self.menu = menu
 
 Link = LinkData
 
@@ -355,6 +357,35 @@ class NavigationMenu(MenuBase):
 
     _baseclassname = 'NavigationMenu'
 
+    def _get_link(self, name):
+        return IFacetLink(
+            super(NavigationMenu, self)._get_link(name))
+
+    def iterlinks(self, requesturi=None):
+        """See `INavigationMenu`."""
+        request = get_current_browser_request()
+        if requesturi is None and request is not None:
+            requesturi = request.getURL()
+        if requesturi is None:
+            requesturi = ''
+        requesturi = str(requesturi)
+        # XXX sinzui 2008-04-29: we may get an instancemethod back.
+        # We need a helper function to guarantee the view.
+        if request is not None and len(request.traversed_objects) > 0:
+            view = request.traversed_objects[-1]
+            submenu = queryAdapter(view, INavigationMenu)
+        else:
+            submenu = None
+        for link in MenuBase.iterlinks(self):
+            url = str(link.url)
+            if (requesturi.startswith(url)
+                or (submenu is not None
+                    and isinstance(submenu, link.menu.__class__))):
+                link.selected = True
+            else:
+                link.selected = False
+            link.linked = not requesturi.startswith(url)
+            yield link
 
 class enabled_with_permission:
     """Function decorator that disables the output link unless the current
