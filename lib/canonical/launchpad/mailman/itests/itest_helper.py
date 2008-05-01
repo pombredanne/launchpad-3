@@ -384,6 +384,7 @@ def prepare_for_sync():
     from canonical.launchpad.ftests import login, logout
     from canonical.launchpad.interfaces import IEmailAddressSet
     from zope.component import getUtility
+    # pylint: disable-msg=F0401
     from Mailman import mm_cfg
     from Mailman.MailList import MailList
     from Mailman.Utils import list_names

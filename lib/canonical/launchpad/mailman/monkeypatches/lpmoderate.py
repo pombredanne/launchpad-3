@@ -7,6 +7,7 @@ import xmlrpclib
 
 from email.Utils import formatdate, make_msgid
 
+# pylint: disable-msg=F0401
 from Mailman import Errors
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
