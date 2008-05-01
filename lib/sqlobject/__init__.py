@@ -41,15 +41,15 @@ def sqlrepr(value, dbname=None):
         for orig, repl in _sqlStringReplace:
             value = value.replace(orig, repl)
         return "'%s'" % value
-    elif isinstance(value, int):
-        return repr(int(value))
-    elif isinstance(value, long):
-        return str(value)
     elif isinstance(value, bool):
         if value:
             return "'t'"
         else:
             return "'f'"
+    elif isinstance(value, int):
+        return repr(int(value))
+    elif isinstance(value, long):
+        return str(value)
     elif isinstance(value, float):
         return repr(value)
     elif value is None:
