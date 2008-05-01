@@ -18,10 +18,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    get_bugwatcherrortype_for_error, BugNotFound, BugTrackerConnectError,
-    BugWatchUpdateError, BugWatchUpdateWarning, InvalidBugId,
-    PrivateRemoteBug, UnparseableBugData, UnparseableBugTrackerVersion,
-    UnsupportedBugTrackerVersion, UnknownBugTrackerTypeError,
+    get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
