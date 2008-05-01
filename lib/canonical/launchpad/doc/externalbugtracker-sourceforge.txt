@@ -112,6 +112,16 @@ been set to True:
     >>> sourceforge.bugs[99]['private']
     True
 
+The SourceForge ExternalBugTracker class has an _extractErrorMessage()
+method which can be used to find error messages.
+
+    >>> page_data = open(
+    ...     'lib/canonical/launchpad/ftests/testfiles/'
+    ...     'sourceforge-sample-bug-99.html')
+    >>> print sourceforge._extractErrorMessage(page_data)
+    Artifact: This Artifact Has Been Made Private. Only Group Members
+    Can View Private ArtifactTypes.
+
 
 == Updating Bug Watches ==
 
