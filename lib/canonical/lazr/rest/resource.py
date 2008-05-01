@@ -821,25 +821,19 @@ class ServiceRootResource(HTTPResource):
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
         for registration in site_manager.registrations():
-            utility = self._asTopLevelCollection(registration)
-            if utility is not None:
-                link_name = ("%s_collection_link"
-                             % registration.value.__name__)
-                top_level_resources[link_name] = utility
+            provided = registration.provided
+            if IInterface.providedBy(provided):
+                if (provided.isOrExtends(ICollection)
+                     and ICollection.implementedBy(registration.value)):
+                    try:
+                        utility = getUtility(registration.required[0])
+                    except ComponentLookupError:
+                        # It's not a top-level resource.
+                        continue
+                    link_name = ("%s_collection_link"
+                                 % registration.value.__name__)
+                    top_level_resources[link_name] = utility
         return top_level_resources
-
-    def _asTopLevelCollection(self, registration):
-        """Return the top-level collection for the registration, or None."""
-        provided = registration.provided
-        if (IInterface.providedBy(provided)
-            and provided.isOrExtends(ICollection)
-            and ICollection.implementedBy(registration.value)):
-            try:
-                return getUtility(registration.required[0])
-            except ComponentLookupError:
-                # It's not a top-level collection.
-                pass
-        return None
 
 
 class Entry:
