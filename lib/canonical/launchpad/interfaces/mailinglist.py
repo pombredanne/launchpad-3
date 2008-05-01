@@ -8,6 +8,7 @@ __all__ = [
     'CannotChangeSubscription',
     'CannotSubscribe',
     'CannotUnsubscribe',
+    'IHeldMessageDetails',
     'IMailingList',
     'IMailingListAPIView',
     'IMailingListApplication',
@@ -28,6 +29,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -442,6 +444,15 @@ class IMailingList(Interface):
         :return: The IMessageApproval representing the held message.
         """
 
+    def getReviewableMessages():
+        """Return the set of all held messages for this list requiring review.
+
+        :return: A sequence of `IMessageApproval`s for this mailing list,
+            where the status is `PostedMessageStatus.NEW`.  The returned set
+            is ordered first by the date the message was posted, then by
+            Message-ID.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
@@ -764,6 +775,65 @@ class IMessageApprovalSet(Interface):
         :param status: A PostedMessageStatus enum value.
         :return: An iterator over all the matching held messages.
         """
+
+
+class IHeldMessageDetails(Interface):
+    """Details on a held message.
+
+    This is used via the adaptation machinery to provide a unified detailed
+    set of information about a held message, from several related but separate
+    objects.
+    """
+    message_approval = Object(
+        schema=IMessageApproval,
+        title=_('The held message record'),
+        description=_('The held message record'),
+        required=True)
+
+    message = Object(
+        schema=IMessage,
+        title=_('The message record'),
+        description=_('The representation of the message in the librarian'),
+        required=True)
+
+    message_id = Text(
+        title=_('Message-ID'),
+        description=_('The RFC 2822 Message-ID header.'),
+        required=True, readonly=True)
+
+    subject = Text(
+        title=_('Subject'),
+        description=_('The RFC 2822 Subject header.'),
+        required=True, readonly=True)
+
+    sender = Text(
+        title=_('Message author'),
+        description=_('The message originator (i.e. author), formatted as '
+                      'per RFC 2822 and derived from the RFC 2822 originator '
+                      'fields From and Reply-To.  This is a unicode string.'),
+        required=True, readonly=True)
+
+    author = Object(
+        schema=IPerson,
+        title=_('Message author'),
+        description=_('The person who sent the message'),
+        required=True, readonly=True)
+
+    date = Text(
+        title=_('Date'),
+        description=_('The RFC 2822 Date header.'),
+        required=True, readonly=True)
+
+    body = Text(
+        title=_('Plain text message body'),
+        description=_('The message body as plain text.'),
+        required=True, readonly=True)
+
+    email_message = Text(
+        title=_('The email message object'),
+        description=_('The email.message.Message object created from the '
+                      "original message's raw text."),
+        required=True, readonly=True)
 
 
 class CannotSubscribe(Exception):

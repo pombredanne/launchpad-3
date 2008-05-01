@@ -22,6 +22,14 @@ from canonical.launchpad.interfaces import (
 class BasePublishingRecordView(LaunchpadView):
     """Base Publishing view class."""
 
+    @property
+    def is_source(self):
+        return ISourcePackagePublishingHistory.providedBy(self.context)
+
+    @property
+    def is_binary(self):
+        return IBinaryPackagePublishingHistory.providedBy(self.context)
+
     def wasDeleted(self):
         """Whether or not a publishing record deletion was requested.
 
@@ -88,6 +96,28 @@ class BasePublishingRecordView(LaunchpadView):
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
     __used_for__ = ISourcePackagePublishingHistory
+
+    def wasCopied(self):
+        """Whether or not a source is published in its original location.
+
+        A source is not in its original location when:
+
+         * The publishing `Archive` is not the same than where the source
+            was uploaded. (SSPPH -> SPR -> Archive != SSPPH -> Archive).
+        Or
+
+          * The publishing `DistroSeries` is not the same than where the
+            source was uploaded (SSPPH -> SPR -> DS != SSPPH -> DS).
+        """
+        source = self.context.sourcepackagerelease
+
+        if self.context.archive != source.upload_archive:
+            return True
+
+        if self.context.distroseries != source.upload_distroseries:
+            return True
+
+        return False
 
     @property
     def allow_selection(self):
@@ -213,3 +243,35 @@ class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
 class BinaryPublishingRecordView(BasePublishingRecordView):
     """View class for `IBinaryPackagePublishingHistory`."""
     __used_for__ = IBinaryPackagePublishingHistory
+
+    def wasCopied(self):
+        """Whether or not a binary is published in its original location.
+
+        A binary is not in its original location when:
+
+         * The publishing `Archive` is not the same than where the binary
+           was built. (SBPPH -> BPR -> Build -> Archive != SBPPH -> Archive).
+        Or
+
+          * The publishing `DistroArchSeries` is not the same than where
+            the binary was built (SBPPH -> BPR -> B -> DAS != SBPPH -> DAS).
+
+        Or
+
+          * The publishing pocket is not the same than where the binary was
+            built (SBPPH -> BPR -> B -> Pocket != SBPPH -> Pocket).
+
+        """
+        build = self.context.binarypackagerelease.build
+
+        if self.context.archive != build.archive:
+            return True
+
+        if self.context.distroarchseries != build.distroarchseries:
+            return True
+
+        if self.context.pocket != build.pocket:
+            return True
+
+        return False
+

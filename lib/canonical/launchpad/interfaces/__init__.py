@@ -35,13 +35,13 @@ from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
-from canonical.launchpad.interfaces.bugcontact import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugnomination import *
 from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
+from canonical.launchpad.interfaces.bugsupervisor import *
 from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.bugtarget import *
 from canonical.launchpad.interfaces.bugtracker import *
@@ -160,6 +160,7 @@ from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.translationsoverview import *
+from canonical.launchpad.interfaces.translationtemplateitem import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *

@@ -326,16 +326,16 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve']
 
     def cve(self):
         text = 'CVE reports'
         return Link('+cve', text, icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
+    def bugsupervisor(self):
         text = 'Change bug supervisor'
-        return Link('+bugcontact', text, icon='edit')
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
@@ -522,6 +522,20 @@ class DistributionPPASearchView(LaunchpadView):
     def number_of_ppa_binaries(self):
         """The number of binaries published across all PPAs."""
         return getUtility(IArchiveSet).number_of_ppa_binaries
+
+    @property
+    def latest_ppa_source_publications(self):
+        """Return the last 5 sources publication in the context PPAs."""
+        archive_set = getUtility(IArchiveSet)
+        return archive_set.getLatestPPASourcePublicationsForDistribution(
+            distribution=self.context)
+
+    @property
+    def most_active_ppas(self):
+        """Return the last 5 most active PPAs."""
+        archive_set = getUtility(IArchiveSet)
+        return archive_set.getMostActivePPAsForDistribution(
+            distribution=self.context)
 
 
 class DistributionAllPackagesView(LaunchpadView):

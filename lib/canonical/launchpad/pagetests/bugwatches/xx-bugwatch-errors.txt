@@ -39,7 +39,7 @@ messages are displayed.
     >>> login('test@canonical.com')
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
-    >>> watch = bug12.getBugWatch(tracker, 900)
+    >>> watch = bug12.getBugWatch(tracker, '900')
     >>> watch.last_error_type = BugWatchErrorType.BUG_NOT_FOUND
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()

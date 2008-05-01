@@ -96,10 +96,11 @@ class BugTrackerType(DBEnumeratedType):
         """)
 
     SOURCEFORGE = DBItem(5, """
-        SourceForge
+        SourceForge or SourceForge derivative
 
-        SourceForge is a project hosting service which includes bug,
-        support and request tracking.
+        SorceForge is a collaborative revision control and software
+        development management system. It has several derivatives,
+        including GForge, RubyForge, BerliOS and JavaForge.
         """)
 
     MANTIS = DBItem(6, """
@@ -120,11 +121,12 @@ class BugTrackerType(DBEnumeratedType):
         Bugs are tracked by email, perhaps on a mailing list.
         """)
 
-    SAVANNAH = DBItem(9, """
-        GNU / NoGNU Savannah
+    SAVANE = DBItem(9, """
+        Savane
 
-        Savannah is a web-based project hosting system which includes
-        bug, support and request tracking.
+        Savane is a web-based project hosting system which includes
+        support and request tracking. The best-known example of Savane
+        is GNU's Savannah.
         """)
 
 
