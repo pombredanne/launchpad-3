@@ -109,3 +109,37 @@ The directive can only be used from within a class scope:
     TypeError: use_template() can only be used from within a class
     definition.
 
+
+== copy_attribute() ==
+
+use_templates() uses the copy_attribute() function to copy attributes from
+the original interface.
+
+    >>> from canonical.lazr.interface import copy_attribute
+
+    >>> illuminated = copy_attribute(Initiated['illuminated'])
+    >>> illuminated
+    <...Choice...>
+    >>> illuminated.__name__
+    'illuminated'
+    >>> illuminated.title
+    u'Has seen the fnords?'
+
+The interface attribute is cleared:
+
+    >>> print illuminated.interface
+    None
+
+It also supports the Field ordering (the copied field will have an
+higher order than its original.)
+
+    >>> Initiated['illuminated'].order < illuminated.order
+    True
+
+The parameter to the function must provide IAttribute:
+
+    >>> copy_attribute(MyModel)
+    Traceback (most recent call last):
+      ...
+    TypeError: <...MyModel...> doesn't provide IAttribute.
+

@@ -11,6 +11,7 @@ __all__ = [
 import sys
 from copy import copy
 
+from zope.interface.interfaces import IAttribute
 from zope.schema import Field
 
 
@@ -44,6 +45,9 @@ def copy_attribute(attribute):
 
     This makes sure that the relative ordering of IField is preserved.
     """
+    if not IAttribute.providedBy(attribute):
+        raise TypeError("%r doesn't provide IAttribute." % attribute)
+
     new_attribute = copy(attribute)
     # Fields are ordered based on a global counter in the Field class.
     # We increment and use Field.order to reorder the copied fields.
@@ -52,4 +56,8 @@ def copy_attribute(attribute):
     if isinstance(new_attribute, Field):
         Field.order += 1
         new_attribute.order = Field.order
+
+    # Reset the interface attribute.
+    new_attribute.interface = None
+
     return new_attribute
