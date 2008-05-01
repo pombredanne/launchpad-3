@@ -342,6 +342,7 @@ class XMLRPCRunner(Runner):
                 mlist.personalize = 1
                 mlist.include_rfc2369_headers = False
                 mlist.use_dollar_strings = True
+                mlist.held_message_ids = {}
                 mlist.Save()
                 # Now create the archive directory for MHonArc.
                 path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', team_name)
