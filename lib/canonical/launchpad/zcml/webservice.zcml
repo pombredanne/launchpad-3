@@ -44,14 +44,14 @@
         />
 
     <adapter
-        for="tuple"
+        for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
         name="wadl_entry"
         />
 
     <adapter
-        for="tuple"
+        for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
         name="wadl_collection"

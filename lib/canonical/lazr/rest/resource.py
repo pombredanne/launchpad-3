@@ -780,8 +780,7 @@ class ServiceRootResource(HTTPResource):
                     # schemas; they're functions. We can ignore these
                     # functions because their return value will be one
                     # of the classes with schemas, which we do describe.
-                    entry_classes.append((registration.value,
-                                          registration.required))
+                    entry_classes.append(registration.value)
                 elif (provided.isOrExtends(ICollection)
                       and ICollection.implementedBy(registration.value)
                       and not IScopedCollection.implementedBy(
@@ -789,8 +788,7 @@ class ServiceRootResource(HTTPResource):
                     # See comment above re: implementedBy check.
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
-                    collection_classes.append((registration.value,
-                                               registration.required))
+                    collection_classes.append(registration.value)
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
         namespace['context'] = self

@@ -10,6 +10,7 @@ import urllib
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
+from zope.interface.interfaces import IInterface
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IChoice, IObject
@@ -20,8 +21,8 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
-    ICollectionField, IEntry, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation, IScopedCollection)
+    ICollection, ICollectionField, IEntry, IResourceGETOperation,
+    IResourceOperation, IResourcePOSTOperation, IScopedCollection)
 from canonical.lazr.rest import CollectionResource
 
 
@@ -134,9 +135,19 @@ class WadlServiceRootResourceAPI(WadlAPI):
 class WadlResourceAdapterAPI(WadlAPI):
     """Namespace for functions that operate on resource adapter classes."""
 
-    def __init__(self, adapter_and_context):
+    def __init__(self, adapter, registration_must_extend):
         "Initialize with an adapter class."
-        self.adapter, self.context = adapter_and_context
+        self.adapter = adapter
+        registrations = [reg for reg in getGlobalSiteManager().registrations()
+                         if (IInterface.providedBy(reg.provided)
+                             and reg.provided.isOrExtends(
+                    registration_must_extend)
+                             and reg.value==self.adapter)]
+        if len(registrations) != 1:
+            raise AssertionError("There must be one (and only one) "
+                                 "adapter from %s to %s." % (
+                    self.adapter.__name__, registration_must_extend.__name__))
+        self.context = registrations[0].required
 
     def named_operations(self):
         """Return all named operations registered on the resource.
@@ -158,6 +169,9 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     The entry adapter class is used to describe entries of a certain
     type, and scoped collections full of entries of that type.
     """
+
+    def __init__(self, adapter):
+        super(WadlEntryAdapterAPI, self).__init__(adapter, IEntry)
 
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
@@ -198,6 +212,9 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
 class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     "Namespace for WADL functions that operate on collection adapters."
 
+    def __init__(self, adapter):
+        super(WadlCollectionAdapterAPI, self).__init__(adapter, ICollection)
+
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
         return self.docstringToXHTML(self.adapter.__class__.__doc__)
@@ -218,10 +235,13 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         return "%s#%s" % (
             self._service_root_url(), self.collection_representation_id())
 
+    def entry_schema(self):
+        schema = self.adapter.entry_schema
+        entry_class = getGlobalSiteManager().adapters.lookup1(schema, IEntry)
+        return entry_class
+
     def entry_schema_type_link(self):
-        entry = self.adapter.entry_schema
-        entry = getGlobalSiteManager().adapters.lookup1(entry, IEntry)
-        entry_adapter = WadlEntryAdapterAPI((entry, (None,)))
+        entry_adapter = WadlEntryAdapterAPI((self.entry_schema()))
         return entry_adapter.type_link()
 
 
