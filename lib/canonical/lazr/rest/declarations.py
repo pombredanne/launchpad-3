@@ -129,6 +129,7 @@ def exported(field, exported_as=None):
     :param exported_as: the name under which the field is published in the
         entry. By default, the same name is used.
     :raises TypeError: if called on an object which doesn't provide IField.
+    :returns: The field with an added tagged value.
     """
     if not IField.providedBy(field):
         raise TypeError("exported() can only be used on IFields.")
