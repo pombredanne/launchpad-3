@@ -14,10 +14,7 @@ import tempfile
 from textwrap import dedent
 from unittest import TestLoader
 
-from twisted.internet import reactor
 from twisted.trial.unittest import TestCase
-from twisted.web.server import Site
-from twisted.web.xmlrpc import XMLRPC
 
 from zope.component import getUtility
 
@@ -38,14 +35,30 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
 
-class CodeImportDispatcherTestMixin:
-    """Helper class for testing CodeImportDispatcher.
 
-    Subclasses must define a 'Dispatcher' attribute, an instance of which will
-    be created during setUp().
-    """
+class StubSchedulerClient:
+
+    def __init__(self, id_to_return):
+        self.id_to_return = id_to_return
+
+    def getJobForMachine(self, machine):
+        return self.id_to_return
+
+
+class TestCodeImportDispatcherUnit(TestCase):
+    """Unit tests for `CodeImportDispatcher`."""
 
     layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        nuke_codeimport_sample_data()
+        self.config_count = 0
+        self.pushConfig(forced_hostname='none')
+        self.dispatcher = CodeImportDispatcher(
+            TwistedLaunchpadZopelessLayer.txn, _make_silent_logger())
+        self.factory = LaunchpadObjectFactory()
+        self.machine = self.factory.makeCodeImportMachine(
+            set_online=True, hostname='machine')
 
     def pushConfig(self, **args):
         """Push some key-value pairs into the codeimportdispatcher config.
@@ -60,63 +73,6 @@ class CodeImportDispatcherTestMixin:
             %s
             """ % body))
         self.addCleanup(config.pop, name)
-
-    def setUp(self):
-        nuke_codeimport_sample_data()
-        self.config_count = 0
-        self.pushConfig(forced_hostname='none')
-        self.dispatcher = self.Dispatcher(
-            TwistedLaunchpadZopelessLayer.txn, _make_silent_logger())
-        self.factory = LaunchpadObjectFactory()
-
-
-class StubScheduler(XMLRPC):
-    """A stub version of the CodeImportScheduler XML-RPC service."""
-
-    def __init__(self, id_to_return):
-        """Initialize the instance.
-
-        :param id_to_return: Calls to `getJobForMachine` will return this
-            value.
-        """
-        XMLRPC.__init__(self)
-        self.id_to_return = id_to_return
-
-    def xmlrpc_getJobForMachine(self, machine_name):
-        """Return the pre-arranged answer."""
-        return self.id_to_return
-
-class StubSchedulerFixture:
-    """A fixture to set up and tear down the stub scheduler XML-RPC service.
-    """
-
-    def __init__(self, id_to_return):
-        """Initialize the instance.
-
-        :param id_to_return: Calls to `getJobForMachine` on the XML-RPC
-            service will return this value.
-        """
-        self.id_to_return = id_to_return
-
-    def setUp(self):
-        """Set up the stub service."""
-        self.port = reactor.listenTCP(
-            0, Site(StubScheduler(self.id_to_return)))
-
-    def tearDown(self):
-        """Tear down the stub service."""
-        return self.port.stopListening()
-
-    def get_url(self):
-        """Return the URL of the stub service's endpoint."""
-        tcp_port = self.port.getHost().port
-        return 'http://localhost:%s/' % tcp_port
-
-
-class TestCodeImportDispatcherUnit(CodeImportDispatcherTestMixin, TestCase):
-    """Unit tests for most of `CodeImportDispatcher`."""
-
-    Dispatcher = CodeImportDispatcher
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
@@ -166,110 +122,67 @@ class TestCodeImportDispatcherUnit(CodeImportDispatcherTestMixin, TestCase):
             ['import sys',
              'open(%r, "w").write(str(sys.argv[1:]))' % output_path])
         self.dispatcher.worker_script = script_path
-        self.dispatcher.dispatchJob(10)
-        # It's a little bit dodgy to call os.wait() here: we don't know for
-        # certain that it will be the child launched in dispatchJob that will
-        # be reaped, but it is still extremely likely.
-        os.wait()
+        proc = self.dispatcher.dispatchJob(10)
+        proc.wait()
         arglist = self.filterOutLoggingOptions(eval(open(output_path).read()))
         self.assertEqual(arglist, ['10'])
 
-    def test_getJobForMachine(self):
-        # getJobForMachine calls getJobForMachine on the endpoint
-        # described by the codeimportscheduler_url config entry.
-        stub_scheduler_fixture = StubSchedulerFixture(42)
-        stub_scheduler_fixture.setUp()
-        self.addCleanup(stub_scheduler_fixture.tearDown)
-        self.pushConfig(
-            codeimportscheduler_url=stub_scheduler_fixture.get_url())
-        @defer_to_thread
-        @writing_transaction
-        def get_job_id():
-            return self.dispatcher.getJobForMachine(
-                self.factory.makeCodeImportMachine(set_online=True))
-        return get_job_id().addCallback(self.assertEqual, 42)
-
-
-class TestCodeImportDispatcherDispatchJobs(
-    CodeImportDispatcherTestMixin, TestCase):
-    """Tests for `CodeImportDispatcher.dispatchJobs`."""
-
-    class Dispatcher(CodeImportDispatcher):
-
-        _job_id = 42
-
-        def getHostname(self):
-            return 'machine'
-
-        def getJobForMachine(self, machine):
-            self._calls.append(('getJobForMachine', machine.hostname))
-            return self._job_id
-
-        def dispatchJob(self, job_id):
-            self._calls.append(('dispatchJob', job_id))
-
-    def setUp(self):
-        CodeImportDispatcherTestMixin.setUp(self)
-        self.machine = self.factory.makeCodeImportMachine(
-            set_online=True, hostname='machine')
-        self.dispatcher._calls = []
-
-    def createJobRunningOnOurMachine(self):
-        """XXX."""
+    def createJobRunningOnMachine(self, machine):
+        """Create a job in the database and mark it as running on `machine`.
+        """
         job = self.factory.makeCodeImportJob()
-        getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         flush_database_updates()
 
-    def test_machineIsOffline(self):
+    def test_shouldLookForJob_machineIsOffline(self):
         # When the machine is offline, the dispatcher doesn't look for any
         # jobs.
         self.machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
-        self.dispatcher.dispatchJobs()
-        self.assertEqual(self.dispatcher._calls, [])
+        self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
 
-    def test_machineIsQuiescingNoJobsRunning(self):
+    def test_shouldLookForJob_machineIsQuiescingNoJobsRunning(self):
         # When the machine is quiescing and no jobs are running on this
         # machine, the dispatcher doesn't look for any jobs and sets the
         # machine to be offline.
         self.machine.setQuiescing(self.factory.makePerson(), "reason")
-        self.dispatcher.dispatchJobs()
-        #LaunchpadZopelessLayer.txn.begin() ?
-        self.assertEqual(self.dispatcher._calls, [])
+        self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
         self.assertEqual(self.machine.state, CodeImportMachineState.OFFLINE)
 
-    def test_machineIsQuiescingWithJobsRunning(self):
+    def test_shouldLookForJob_machineIsQuiescingWithJobsRunning(self):
         # When the machine is quiescing and there are jobs running on this
         # machine, the dispatcher doesn't look for any more jobs.
-        self.createJobRunningOnOurMachine()
+        self.createJobRunningOnMachine(self.machine)
         self.machine.setQuiescing(self.factory.makePerson(), "reason")
-        self.dispatcher.dispatchJobs()
-        self.assertEqual(self.dispatcher._calls, [])
+        self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
         self.assertEqual(self.machine.state, CodeImportMachineState.QUIESCING)
 
-    def test_enoughJobsRunningOnMachine(self):
+    def test_shouldLookForJob_enoughJobsRunningOnMachine(self):
         # When there are already enough jobs running on this machine, the
         # dispatcher doesn't look for any more jobs.
         for i in range(config.codeimportdispatcher.max_jobs_per_machine):
-            self.createJobRunningOnOurMachine()
-        self.dispatcher.dispatchJobs()
-        self.assertEqual(self.dispatcher._calls, [])
+            self.createJobRunningOnMachine(self.machine)
+        self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
 
-    def test_dispatchJob(self):
+    def test_shouldLookForJob_shouldLook(self):
         # If the machine is online and there are not already
-        # max_jobs_per_machine jobs running, then we look for and dispatch
-        # exactly one job.
-        self.dispatcher.dispatchJobs()
-        self.assertEqual(
-            self.dispatcher._calls,
-            [('getJobForMachine', 'machine'), ('dispatchJob', 42)])
+        # max_jobs_per_machine jobs running, then we should look for a job.
+        self.assertTrue(self.dispatcher.shouldLookForJob(self.machine))
 
-    def test_noJobWaiting(self):
+    def test_findAndDispatchJob_jobWaiting(self):
+        # If there is a job to dispatch, then we call dispatchJob with its id.
+        calls = []
+        self.pushConfig(forced_hostname=self.machine.hostname)
+        self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        self.dispatcher.findAndDispatchJob(StubSchedulerClient(10))
+        self.assertEqual(calls, [10])
+
+    def test_findAndDispatchJob_noJobWaiting(self):
         # If there is no job to dispatch, then we just exit quietly.
-        self.dispatcher._job_id = 0
-        self.dispatcher.dispatchJobs()
-        self.assertEqual(
-            self.dispatcher._calls,
-            [('getJobForMachine', 'machine')])
+        calls = []
+        self.pushConfig(forced_hostname=self.machine.hostname)
+        self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        self.dispatcher.findAndDispatchJob(StubSchedulerClient(0))
+        self.assertEqual(calls, [])
 
 
 def test_suite():

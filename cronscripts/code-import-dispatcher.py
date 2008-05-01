@@ -6,6 +6,8 @@
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from xmlrpclib import ServerProxy
+
 from canonical.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -17,7 +19,8 @@ class CodeImportDispatcherScript(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        CodeImportDispatcher(self.txn, self.logger).dispatchJobs()
+        CodeImportDispatcher(self.txn, self.logger).findAndDispatchJob(
+            ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
 
 if __name__ == '__main__':

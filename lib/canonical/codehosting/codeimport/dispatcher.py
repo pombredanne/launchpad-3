@@ -15,14 +15,13 @@ __all__ = [
 import os
 import socket
 import subprocess
-import xmlrpclib
 
 from zope.component import getUtility
 
 from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    CodeImportMachineOfflineReason, CodeImportMachineState, ICodeImportJobSet,
+    CodeImportMachineOfflineReason, CodeImportMachineState,
     ICodeImportMachineSet)
 
 
@@ -64,42 +63,29 @@ class CodeImportDispatcher:
         log_file = os.path.join(
             config.codeimportdispatcher.worker_log_dir,
             'code-import-worker-%d.log' % (job_id,))
-        subprocess.Popen(
+        # Return the Popen object to make testing easier.
+        return subprocess.Popen(
             [self.worker_script, str(job_id), '-vv', '--log-file', log_file])
 
-    def getJobForMachine(self, machine):
-        """Get the id of a job from the scheduler XML-RPC instance.
+    def shouldLookForJob(self, machine):
+        """Should we look for a job to run on this machine?
 
-        Returning 0 means there is no job that needs processing.
+        There are three reasons we might not look for a job:
+
+        a) The machine is OFFLINE
+        b) The machine is QUIESCING (in which case we might go OFFLINE)
+        c) There are already enough jobs running on this machine.
         """
-        server_proxy = xmlrpclib.ServerProxy(
-            config.codeimportdispatcher.codeimportscheduler_url)
-        return server_proxy.getJobForMachine(machine.hostname)
-
-    def dispatchJobs(self):
-        """Check for and dispatch a job if necessary.
-
-        If the machine is recorded in the database as OFFLINE or QUIESCING, do
-        not look for jobs.  If the machine is QUIESCING and no jobs are
-        running on this machine, set the machine to OFFLINE.
-
-        This method is perhaps misleadingly named -- currently we only
-        dispatch one job per invocation to help distribute the load between
-        the slaves.
-        """
-
-        machine = getUtility(ICodeImportMachineSet).getByHostname(
-            self.getHostname())
+        # XXX 2008-05-01 MichaelHudson: if this code was part of the
+        # getJobForMachine call, this script wouldn't have to talk to the
+        # database or even call execute_zcml_for_scripts().
+        job_count = machine.current_jobs.count()
 
         if machine.state == CodeImportMachineState.OFFLINE:
             self.logger.info(
                 "Machine is in OFFLINE state, not looking for jobs.")
-            return
-
-        job_set = getUtility(ICodeImportJobSet)
-        job_count = job_set.getJobsRunningOnMachine(machine).count()
-
-        if machine.state == CodeImportMachineState.QUIESCING:
+            return False
+        elif machine.state == CodeImportMachineState.QUIESCING:
             if job_count == 0:
                 self.logger.info(
                     "Machine is in QUIESCING state and no jobs running, "
@@ -108,16 +94,27 @@ class CodeImportDispatcher:
                     CodeImportMachineOfflineReason.QUIESCED)
                 # This is the only case where we modify the database.
                 self.txn.commit()
-                return
+                return False
             self.logger.info(
                 "Machine is in QUIESCING state, not looking for jobs.")
+            return False
+        elif machine.state == CodeImportMachineState.ONLINE:
+            max_jobs = config.codeimportdispatcher.max_jobs_per_machine
+            return job_count < max_jobs
+        else:
+            raise AssertionError(
+                "Unknown machine state %r??" % machine.state)
+
+    def findAndDispatchJob(self, scheduler_client):
+        """Check for and dispatch a job if necessary."""
+
+        machine = getUtility(ICodeImportMachineSet).getByHostname(
+            self.getHostname())
+
+        if not self.shouldLookForJob(machine):
             return
 
-        if job_count >= config.codeimportdispatcher.max_jobs_per_machine:
-            # There are enough jobs running on this machine already.
-            return
-
-        job_id = self.getJobForMachine(machine)
+        job_id = scheduler_client.getJobForMachine(machine.hostname)
 
         if job_id == 0:
             # There are no jobs that need to be run.
