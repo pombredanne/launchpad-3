@@ -171,7 +171,7 @@ remote status for, the bug watch that we have created.
 We now add some more watches against remote bugs in the example.com bug
 tracker with a variety of statuses.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     sourceforge.convertRemoteStatus)
     Remote bug 1722250: New
