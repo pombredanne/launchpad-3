@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'BasePollView',
+    'poll_to_structuralheading',
     'PollAddView',
     'PollContextMenu',
     'PollEditView',
@@ -26,7 +27,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
     IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
-    PollSecrecy, validate_date_interval)
+    IStructuralHeaderPresentation, PollSecrecy, validate_date_interval)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -377,3 +378,7 @@ class PollOptionAddView(AddView):
         self._nextURL = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
 
+
+def poll_to_structuralheading(poll):
+    """Adapts an `IPoll` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(poll.team)
