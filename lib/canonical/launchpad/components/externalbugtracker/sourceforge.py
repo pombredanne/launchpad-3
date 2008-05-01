@@ -57,6 +57,9 @@ class SourceForge(ExternalBugTracker):
 
                 # If the error message suggests that the bug is private,
                 # set the bug's private field to True.
+                # XXX 2008-05-01 gmb:
+                #     We should know more about possible errors and deal
+                #     with them accordingly (bug 225354).
                 if error_message and 'private' in error_message.lower():
                     private = True
                 else:
