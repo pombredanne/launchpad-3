@@ -181,7 +181,7 @@ class BugWatch(SQLBase):
                 " bug trackers.",
             BugWatchErrorType.PRIVATE_REMOTE_BUG: "The bug is marked as "
                 "private on the remote bug tracker. Launchpad cannot import "
-                "the status of private remote bugs."
+                "the status of private remote bugs.",
             }
 
         if self.last_error_type in error_message_mapping:
