@@ -138,6 +138,17 @@ class WadlResourceAdapterAPI(WadlAPI):
     def __init__(self, adapter, registration_must_extend):
         "Initialize with an adapter class."
         self.adapter = adapter
+        self.registration_must_extend = registration_must_extend
+
+    def named_operations(self):
+        """Return all named operations registered on the resource.
+
+        :return: a dict containing 'name' and 'op' keys. 'name' is the
+            name of the operation and 'op' is the ResourceOperation
+            object.
+        """
+        # First, find the class used to register the named operations for
+        # this resource type.
         registrations = [reg for reg in getGlobalSiteManager().registrations()
                          if (IInterface.providedBy(reg.provided)
                              and reg.provided.isOrExtends(
@@ -147,17 +158,10 @@ class WadlResourceAdapterAPI(WadlAPI):
             raise AssertionError("There must be one (and only one) "
                                  "adapter from %s to %s." % (
                     self.adapter.__name__, registration_must_extend.__name__))
-        self.context = registrations[0].required
+        context = registrations[0].required
 
-    def named_operations(self):
-        """Return all named operations registered on the resource.
-
-        :return: a dict containing 'name' and 'op' keys. 'name' is the
-            name of the operation and 'op' is the ResourceOperation
-            object.
-        """
         operations = getGlobalSiteManager().adapters.lookupAll(
-            (self.context[0], IHTTPApplicationRequest),
+            (context[0], IHTTPApplicationRequest),
             IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
