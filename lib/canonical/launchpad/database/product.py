@@ -49,8 +49,8 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget, IHasBugContact,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget,
+    IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
     IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
     NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
@@ -67,9 +67,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IProduct, IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugContact)
+        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     _table = 'Product'
 
@@ -78,8 +78,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         foreignKey="Person",
         storm_validator=validate_public_person, dbName="owner", notNull=True)
-    bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person',
+    bug_supervisor = ForeignKey(
+        dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
@@ -636,11 +636,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         ProductBounty(product=self, bounty=bounty)
         return None
 
-    def setBugContact(self, bugcontact, user):
-        """See `IHasBugContact`."""
-        self.bugcontact = bugcontact
-        if bugcontact is not None:
-            subscription = self.addBugSubscription(bugcontact, user)
+    def setBugSupervisor(self, bug_supervisor, user):
+        """See `IHasBugSupervisor`."""
+        self.bug_supervisor = bug_supervisor
+        if bug_supervisor is not None:
+            subscription = self.addBugSubscription(bug_supervisor, user)
 
 
 class ProductSet:

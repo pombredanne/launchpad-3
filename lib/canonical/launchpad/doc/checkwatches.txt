@@ -28,7 +28,7 @@ contact any external servers.
     DEBUG   No watches to update on http://bugs.debian.org
     WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
     DEBUG   No watches to update on https://bugzilla.mozilla.org/
@@ -79,7 +79,7 @@ First, we create some bug watches to test with:
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1, sample_person)
+    ...     example_bug_tracker, '1', sample_person)
 
     >>> login('no-priv@canonical.com')
 
@@ -174,7 +174,7 @@ transaction if something goes wrong.
     >>> login('test@canonical.com')
     >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
-    ...         example_bug_tracker, bug_id, sample_person)
+    ...         example_bug_tracker, str(bug_id), sample_person)
     >>> for bug_watch in example_bug_tracker.watches:
     ...     sync(bug_watch)
 

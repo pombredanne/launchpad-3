@@ -790,7 +790,8 @@ class TranslationImportQueue:
                     ' IProductSeries, IDistribution, IDistroSeries or'
                     ' ISourcePackage')
         if status is not None:
-            queries.append('status = %s' % sqlvalues(status))
+            queries.append(
+                'TranslationImportQueueEntry.status = %s' % sqlvalues(status))
         if file_extensions:
             extension_clauses = [
                 "path LIKE '%%' || %s" % quote_like(extension)
@@ -839,7 +840,8 @@ class TranslationImportQueue:
         if status is None:
             status_clause = "TRUE"
         else:
-            status_clause = "status = %s" % sqlvalues(status)
+            status_clause = (
+                "TranslationImportQueueEntry.status = %s" % sqlvalues(status))
 
         def product_sort_key(product):
             return product.name

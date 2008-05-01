@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
-"""Database API for the PackageBugContact table."""
+"""Database API for the PackageBugSupervisor table."""
 
 __metaclass__ = type
 
@@ -9,18 +9,22 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.validators.person import validate_public_person
 
-class PackageBugContact(SQLBase):
-    """Database class for the package bug contact.
+
+# This class is not currently in use. It is reserved for future
+# implementation of package bug supervisors.
+
+class PackageBugSupervisor(SQLBase):
+    """Database class for the package bug supervisor.
 
     This class is purely an implementation detail behind
-    IDistributionSourcePackage.bugcontact. This class should otherwise never be
-    imported and/or used directly.
+    `IDistributionSourcePackage.bug_supervisor`. This class should otherwise
+    never be imported and/or used directly.
     """
     distribution = ForeignKey(
         dbName="distribution", notNull=True, foreignKey="Distribution")
     sourcepackagename = ForeignKey(
         dbName="sourcepackagename", notNull=True,
         foreignKey="SourcePackageName")
-    bugcontact = ForeignKey(
-        dbName="bugcontact", notNull=True, foreignKey="Person",
+    bug_supervisor = ForeignKey(
+        dbName="bug_supervisor", notNull=True, foreignKey="Person",
         storm_validator=validate_public_person)

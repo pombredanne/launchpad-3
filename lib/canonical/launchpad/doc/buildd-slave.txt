@@ -59,9 +59,12 @@ What follows are "out-of-place" tests of some of the buildd slave code...
 
   >>> import os
   >>> from canonical.buildd import slave
+  >>> class MockBuildManager(object):
+  ...     """Mock BuildManager class."""
+  ...     is_archive_private = False
   >>> class MungedSlave(slave.BuildDSlave):
   ...     def __init__(self):
-  ...         pass
+  ...         self.manager = MockBuildManager()
   ...     def cachePath(self,p):
   ...         return os.path.join("/var/tmp/buildd/filecache", p)
   ...     _log = True

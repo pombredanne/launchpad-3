@@ -405,9 +405,6 @@ class IHasDateCreated(Interface):
 class IStructuralHeaderPresentation(Interface):
     """Adapter for common aspects of a structural object's presentation."""
 
-    def isPrivate():
-        """Whether read access to the object is restricted."""
-
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 

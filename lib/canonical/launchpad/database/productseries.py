@@ -163,9 +163,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See IProductSeries."""
-        return self.product.bugcontact
+        return self.product.bug_supervisor
 
     @property
     def security_contact(self):

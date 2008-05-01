@@ -147,12 +147,31 @@ class MessageSet:
         return message
 
     def _decode_header(self, header):
-        """Decode an encoded header possibly containing Unicode."""
+        r"""Decode an RFC 2097 encoded header.
+
+            >>> MessageSet()._decode_header('=?iso-8859-1?q?F=F6=F6_b=E4r?=')
+            u'F\xf6\xf6 b\xe4r'
+
+        If the header isn't encoded properly, the characters that can't
+        be decoded are replaced with unicode question marks.
+
+            >>> MessageSet()._decode_header('=?utf-8?q?F=F6=F6_b=E4r?=')
+            u'F\ufffd\ufffd'
+        """
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())
 
         bits = email.Header.decode_header(header)
-        return unicode(email.Header.make_header(bits))
+        # Re-encode the header parts using utf-8, replacing undecodable
+        # characters with question marks.
+        re_encoded_bits = []
+        for bytes, charset in bits:
+            if charset is None:
+                charset = 'us-ascii'
+            re_encoded_bits.append(
+                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
+
+        return unicode(email.Header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,

@@ -7,14 +7,22 @@ import subprocess
 import sys
 import unittest
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.config import config
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
-    PackageLocationError, PackageCopier, SoyuzScriptError)
+    PackageLocationError, PackageCopier, SoyuzScriptError,
+    UnembargoSecurityPackage)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import PackagePublishingStatus
+from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.interfaces import (
+    IComponentSet, IDistributionSet, IPersonSet, PackagePublishingStatus)
+from canonical.librarian.ftests.harness import (
+    cleanupLibrarianFiles, fillLibrarianFile)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -436,6 +444,112 @@ class TestCopyPackage(unittest.TestCase):
         # The source and the binary got copied.
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
+
+    def testUnembargoing(self):
+        """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
+        # Set up a private PPA.
+        cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
+        cprov_ppa.private = True
+        cprov_ppa.buildd_secret = "secret"
+
+        # Fudge one of the packages in the cprov's PPA so
+        # that its files are in the restricted librarian.
+        sourcepackagename = "iceweasel"
+        binarypackagename = "mozilla-firefox"
+        sources = cprov_ppa.getPublishedSources(name=sourcepackagename)
+        binaries = cprov_ppa.getAllPublishedBinaries(name=binarypackagename)
+        [source] = sources
+
+        # Now we fudge the published component in the main archive so
+        # we can check later to see if the ancestry override is working.
+        universe = getUtility(IComponentSet)['universe']
+        warty = getUtility(IDistributionSet)['ubuntu']['warty']
+        warty_i386 = warty['i386']
+        [iceweasel] = warty.main_archive.getPublishedSources(
+            name=sourcepackagename,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=warty,
+            exact_match=True)
+        removeSecurityProxy(iceweasel).secure_record.component = universe
+
+        # For the binary we'll unpublish it entirely and fudge the component
+        # on the binarypackagerelease.  This will make the ancestry check
+        # fall back to the binarypackagerelease to get the component.
+        firefox_pubs = warty.main_archive.getAllPublishedBinaries(
+            name=binarypackagename,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroarchseries=warty_i386,
+            exact_match=True)
+        for firefox in firefox_pubs:
+            firefox = removeSecurityProxy(firefox)
+            firefox.supersede()
+            firefox.binarypackagerelease.component = universe
+        self.layer.txn.commit()
+
+        # Make the files look like they're in the restricted librarian
+        # and add some fake content. fillLibrarianFile() helpfully doesn't
+        # reset the filesize so we have to do it here.
+        #
+        # We also need to pretend to be the librariangc user to update
+        # libraryfilecontent.  Unfortunately the convoluted user switching
+        # is required because librariangc has no permissions to select
+        # on the other tables needed for the loop.
+
+        FAKE_CONTENT = "I am fake!"
+        for publishings in (sources, binaries):
+            for published in publishings:
+                for published_file in published.files:
+                    self.layer.txn.commit()
+                    self.layer.switchDbUser('librariangc')
+                    lfa = published_file.libraryfilealias
+                    lfa = removeSecurityProxy(lfa)
+                    lfa.restricted = True
+                    fillLibrarianFile(lfa.content.id, content=FAKE_CONTENT)
+                    lfa.content.filesize = len(FAKE_CONTENT)
+                    self.layer.txn.commit()
+                    self.layer.switchDbUser('launchpad')
+
+
+        # Now switch the to the user that the script runs as.
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
+
+        # Now we can invoke the unembargo script and check its results.
+        test_args = [
+            "--ppa", "cprov",
+            "-s", "%s" % source.distroseries.name,
+            "%s" % sourcepackagename
+            ]
+
+        script = UnembargoSecurityPackage(
+            name='unembargo',test_args=test_args)
+        script.logger = FakeLogger()
+        script.setupLocation()
+
+        copied = script.mainTask()
+
+        # Check the results.
+        self.checkCopies(copied, script.destination.archive, 2)
+
+        # Check that the librarian files are all unrestricted now.
+        # We must commit the txn for SQL object to see the change.
+        # Also check that the published records are in universe, which
+        # shows that the ancestry override worked.
+        self.layer.txn.commit()
+        for published in copied:
+            # This is cheating a bit but it's fine.  The script updates
+            # the secure publishing record but this change does not
+            # get reflected in SQLObject's cache on the object that comes
+            # from the SQL View, the non-secure record.  No amount of
+            # syncUpdate and flushing seems to want to make it update :(
+            # So, I am checking the secure record in this test.
+            self.assertEqual(
+                published.secure_record.component.name, universe.name)
+            for published_file in published.files:
+                self.assertFalse(published_file.libraryfilealias.restricted)
+
+        cleanupLibrarianFiles()
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,6 +1,6 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702
-# pylint: disable-msg=W0603
+# We like global!
+# pylint: disable-msg=W0603,W0702
 
 """Layers used by Canonical tests.
 
@@ -141,7 +141,7 @@ class BaseLayer:
         BaseLayer.isSetUp = True
 
         # Kill any Librarian left running from a previous test run.
-        LibrarianTestSetup().killTac()
+        LibrarianTestSetup().tearDown()
 
         # Kill any database left lying around from a previous test run.
         try:
@@ -281,6 +281,7 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
+            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)

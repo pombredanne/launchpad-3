@@ -18,18 +18,19 @@ Anyone logged in is able to register a new bug tracker.
   'Register an external bug tracker'
 
 Supported external bug tracker types include Bugzilla, Debbugs,
-Roundup, SourceForge and Trac.  We don't provide all of these as
-options to the user.  We don't provide Debbugs because the status
-synchronisation script requires manual set up of a bug archive mirror,
-and SourceForge because there is only one instance (SourceForge.net).
+Roundup, SourceForge and Trac. We don't provide all of these as
+options to the user. We don't provide Debbugs because the status
+synchronisation script requires manual set up of a bug archive mirror.
 
   >>> for control in user_browser.getControl('Bug Tracker Type').controls:
   ...     print control.optionValue
   Bugzilla
   Roundup
   Trac
+  SourceForge or SourceForge derivative
   Mantis
   Request Tracker (RT)
+  Savane
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.

@@ -27,6 +27,7 @@ __all__ = [
     'LaunchpadXMLRPCView',
     'Link',
     'Navigation',
+    'NavigationMenu',
     'nearest',
     'nearest_adapter',
     'nearest_context_with_adapter',
@@ -57,9 +58,9 @@ from canonical.launchpad.webapp.launchpadform import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
     safe_action)
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
-    enabled_with_permission, nearest_context_with_adapter, nearest_adapter
-    )
+    ApplicationMenu, ContextMenu, FacetMenu, Link, NavigationMenu,
+    enabled_with_permission, nearest_adapter, nearest_context_with_adapter,
+    structured)
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_name, canonical_url, nearest, LaunchpadView, Navigation,
