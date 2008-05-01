@@ -518,6 +518,9 @@ class IBranch(IHasOwner):
     # Don't use Object-- that would cause an import loop with ICodeImport
     code_import = Attribute("The associated CodeImport, if any.")
 
+    bzr_identity = Attribute(
+        "The shortest lp spec URL for this branch.")
+
     def getBzrUploadURL(person=None):
         """Return the URL for this person to push to the branch.
 

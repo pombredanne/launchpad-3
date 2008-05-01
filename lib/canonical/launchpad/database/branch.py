@@ -228,18 +228,27 @@ class Branch(SQLBase):
             name = "<name>"
         return {'user': name}
 
+    @property
+    def bzr_identity(self):
+        """See `IBranch`."""
+        
+
     def getBzrUploadURL(self, person=None):
         """See `IBranch`."""
-        root = config.codehosting.smartserver_root % self._getNameDict(person)
+        if self.private:
+            root = config.codehosting.smartserver_root % (
+                self._getNameDict(person))
+        else:
+            root = config.codehosting.bzr_lp_prefix
         return root + self.unique_name
 
     def getBzrDownloadURL(self, person=None):
         """See `IBranch`."""
         if self.private:
-            root = config.codehosting.smartserver_root
+            root = config.codehosting.smartserver_root % (
+                self._getNameDict(person))
         else:
-            root = config.codehosting.supermirror_root
-        root = root % self._getNameDict(person)
+            root = config.codehosting.bzr_lp_prefix
         return root + self.unique_name
 
     @property
