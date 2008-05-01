@@ -98,6 +98,20 @@ resolution, to demonstrate this:
       ...
     UnparseableBugData: Remote bug 0 does not define a status.
 
+Some SourceForge bugs are marked private. Although we can't import a
+status from them, we don't raise an error when trying to initialize the
+remote bug database. Sample bug 99 is private.
+
+    >>> sourceforge.initializeRemoteBugDB([99])
+    >>> sorted(sourceforge.bugs.keys())
+    [99]
+
+If we look at the bug, however, we can see that its private field has
+been set to True:
+
+    >>> sourceforge.bugs[99]['private']
+    True
+
 
 == Updating Bug Watches ==
 
