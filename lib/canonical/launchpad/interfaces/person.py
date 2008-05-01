@@ -1476,7 +1476,7 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    @collection_default_content
+    @collection_default_content()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.

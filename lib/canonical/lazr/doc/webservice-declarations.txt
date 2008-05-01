@@ -134,20 +134,45 @@ returns all of the collection items must be tagged with
 @collection_default_content decorator.
 
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_as_webservice_collection, collection_default_content)
+    ...     export_as_webservice_collection, collection_default_content,
+    ...     REQUEST_USER)
     >>> class IBookSet(Interface):
     ...     """Set of all the books in the system."""
     ...     export_as_webservice_collection()
     ...
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     def getAllBooks():
     ...         """Return an iterator over all the books."""
+
+In case the method to call requires parameters, the value to use can be
+specified using parameters to the decorator constructor. There special
+REQUEST_USER marker that can be used to specify that this parameter
+should contain the logged in user.
+
+    >>> class ICheckedOutBookSet(Interface):
+    ...     """Give access to the checked out books."""
+    ...     export_as_webservice_collection()
+    ...
+    ...     @collection_default_content(user=REQUEST_USER, title='')
+    ...     def getByTitle(title, user):
+    ...         """Return checked out books.
+    ...         :param title: String to match against the book title.
+    ...             The empty string matches everything.
+    ...         :param user: The user who should have checked the book out.
+    ...         """
 
 Like for entries, this adds tagged value in the 'lazr.webservice'
 namespace.
 
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
+    collection_default_content_params: {}
+    type: 'collection'
+
+    >>> print_export_tag(ICheckedOutBookSet)
+    collection_default_content: 'getByTitle'
+    collection_default_content_params: {'user': <object...>,
+    'title': ''}
     type: 'collection'
 
 It's an error to try to export a collection without marking a method as
@@ -164,10 +189,10 @@ As it is an error, to mark more than one methods:
 
     >>> class TwoDefaultContent(Interface):
     ...     export_as_webservice_collection()
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     def getAll1():
     ...         """A first getAll()."""
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     def getAll2():
     ...         """Another getAll()."""
     Traceback (most recent call last):
@@ -195,7 +220,7 @@ And from within a class declaration.
 collection_default_content() can only be used from within an Interface
 declaration:
 
-    >>> @collection_default_content
+    >>> @collection_default_content()
     ... def a_function(): pass
     Traceback (most recent call last):
       ...
@@ -206,7 +231,7 @@ And the interface must have been exported as a collection:
 
     >>> class NotExported(Interface):
     ...     export_as_webservice_entry()
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     def a_function(): pass
     Traceback (most recent call last):
       ...
@@ -256,7 +281,7 @@ decorator, which takes normal IField instances.
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection()
     ...
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     @operation_parameters(
     ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
     ...     @export_read_operation()
@@ -282,7 +307,7 @@ will be called 'price' when exported on the web service.
 
 When some required parameters of the method should not be provided by
 the webservice client, it is possible to use the @call_with decorator to
-specify the value to use. There is a special REQUEST_USER marker that
+specify the value to use. There special REQUEST_USER marker that
 can be used to specify that this parameter should contain the logged in
 user.
 
@@ -597,6 +622,7 @@ base interface isn't exported itself.
     type: 'write_operation'
 
 
+
 == Generating the webservice ==
 
 === Entry ==
@@ -745,6 +771,31 @@ with the @collection_default_content decorator.
 
     >>> collection_adapter.find()
     ['A book', 'Another book']
+
+If parameters were specified, they'll be passed in to the method by
+find(). The REQUEST_USER marker value will be replaced by the logged in
+user.
+
+    >>> from zope.component import provideUtility
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> class MockLaunchBag:
+    ...     implements(ILaunchBag)
+    ...     user = 'A user'
+    >>> provideUtility(MockLaunchBag(), ILaunchBag)
+
+    >>> class CheckedOutBookSet(object):
+    ...     """Simple ICheckedOutBookSet implementation."""
+    ...     implements(ICheckedOutBookSet)
+    ...
+    ...     def getByTitle(self, title, user):
+    ...         print '%s searched for checked out book matching "%s".' % (
+    ...             user, title)
+
+    >>> checked_out_adapter = generate_collection_adapter(
+    ...     ICheckedOutBookSet)(CheckedOutBookSet())
+
+    >>> checked_out_adapter.find()
+    A user searched for checked out book matching "".
 
 It's an error to call this function on an interface not exported on the
 web service:
@@ -895,13 +946,6 @@ The adapter's params property also contains the available parameters
 The call() method invokes the exported method on the context object. In
 this case, the underlying parameters were set using call_with. The
 REQUEST_USER specification is replaced by the current user.
-
-    >>> from zope.component import provideUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> class MockLaunchBag:
-    ...     implements(ILaunchBag)
-    ...     user = 'A user'
-    >>> provideUtility(MockLaunchBag(), ILaunchBag)
 
     >>> write_method_adapter.call()
     A user did a normal check out of 'The Doors of Perception'.

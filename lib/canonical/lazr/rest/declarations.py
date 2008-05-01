@@ -168,29 +168,40 @@ def export_as_webservice_collection():
     addClassAdvisor(mark_collection)
 
 
-def collection_default_content(f):
+class collection_default_content:
     """Decorates the method that provides the default values of a collection.
 
     :raises TypeError: if not called from within an interface exported as a
         collection, or if used more than once in the same interface.
     """
-    _check_called_from_interface_def('@collection_default_content')
 
-    tags = _get_interface_tags()
-    tag = tags.get(LAZR_WEBSERVICE_EXPORTED)
-    if tag is None or tag['type'] != COLLECTION_TYPE:
-        raise TypeError(
-            "@collection_default_content can only be used from within an "
-            "interface exported as a collection.")
+    def __init__(self, **params):
+        """Create the decorator marking the default collection method.
 
-    if 'collection_default_content' in tag:
-        raise TypeError(
-            "only one method should be marked with "
-            "@collection_default_content.")
+        :param params: Optional parameters value to use when calling the
+            method.
+        """
+        _check_called_from_interface_def('@collection_default_content')
 
-    tag['collection_default_content'] = f.__name__
+        tags = _get_interface_tags()
+        tag = tags.get(LAZR_WEBSERVICE_EXPORTED)
+        if tag is None or tag['type'] != COLLECTION_TYPE:
+            raise TypeError(
+                "@collection_default_content can only be used from within an "
+                "interface exported as a collection.")
 
-    return f
+        if 'collection_default_content' in tag:
+            raise TypeError(
+                "only one method should be marked with "
+                "@collection_default_content.")
+
+        tag['collection_default_content_params'] = params
+
+    def __call__(self, f):
+        """Annotates the collection with the name of the method to call."""
+        tag = _get_interface_tags()[LAZR_WEBSERVICE_EXPORTED]
+        tag['collection_default_content'] = f.__name__
+        return f
 
 
 def webservice_error(status):
@@ -501,17 +512,35 @@ def generate_entry_adapter(content_interface, webservice_interface):
     return factory
 
 
+class BaseCollectionAdapter(Collection):
+    """Base for generated ICollection adapter."""
+
+    # These attributes will be set in the generated subclass.
+    method_name = None
+    params = None
+
+    def find(self):
+        """See `ICollection`."""
+        method = getattr(self.context, self.method_name)
+        params = self.params.copy()
+        # Handle the REQUEST_USER marker.
+        for name, value in self.params.items():
+            if value is REQUEST_USER:
+                params[name] = getUtility(ILaunchBag).user
+        return method(**params)
+
+
 def generate_collection_adapter(interface):
     """Create a class adapting from interface to ICollection."""
     _check_tagged_interface(interface, 'collection')
 
     tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-    method_name = tag['collection_default_content']
     class_dict = {
-        'find': lambda self: (getattr(self.context, method_name)()),
+        'method_name': tag['collection_default_content'],
+        'params': tag['collection_default_content_params'],
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
-    factory = type(classname, bases=(Collection,), dict=class_dict)
+    factory = type(classname, bases=(BaseCollectionAdapter,), dict=class_dict)
 
     protect_schema(factory, ICollection)
     return factory
