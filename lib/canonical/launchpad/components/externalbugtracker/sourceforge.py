@@ -10,7 +10,7 @@ import re
 from BeautifulSoup import BeautifulSoup
 
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId,
+    BugNotFound, ExternalBugTracker, InvalidBugId, PrivateRemoteBug,
     UnknownRemoteStatusError, UnparseableBugData,)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -37,7 +37,7 @@ class SourceForge(ExternalBugTracker):
 
         for bug_id in bug_ids:
             query_url = self.export_url % bug_id
-            page_data = self._getPage(query_url).read()
+            page_data = self._getPage(query_url)
 
             soup = BeautifulSoup(page_data)
             status_tag = soup.find(text=re.compile('Status:'))
@@ -123,6 +123,11 @@ class SourceForge(ExternalBugTracker):
             remote_bug = self.bugs[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
+
+        # If the remote bug is private, raise a PrivateRemoteBug error.
+        if remote_bug['private']:
+            raise PrivateRemoteBug(
+                "Bug %i on %s is private." % (bug_id, self.baseurl))
 
         try:
             return '%(status)s:%(resolution)s' % remote_bug
