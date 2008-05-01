@@ -1,18 +1,15 @@
 = Code Review Messages =
 
-Let's get us a code review message and canonical_url
+Set up required objects
 
     # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
-    >>> message = factory.makeCodeReviewMessage('my subject', 'my body')
-    >>> message_url = canonical_url(message)
-    >>> print message.message.text_contents
-    my body
+    >>> merge_proposal = factory.makeBranchMergeProposal()
+    >>> merge_proposal_url = canonical_url(message)
     >>> logout()
 
 Now, open its home page.
 
-    >>> anon_browser.open(message_url)
     >>> def print_tag(tag_id, browser=None):
     ...     if browser is None:
     ...         browser = anon_browser
