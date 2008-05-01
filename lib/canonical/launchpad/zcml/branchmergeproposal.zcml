@@ -21,11 +21,15 @@
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message"
-        attributes="createMessage deleteProposal
+        attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
                     enqueue dequeue moveToFrontOfQueue nominateReviewer
                     " />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="createMessage"
+    />
   </content>
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
