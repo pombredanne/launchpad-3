@@ -330,8 +330,9 @@ Parameters that are not renamed are exported under the same name:
     base_price: price
     title: title
 
-It is possible to use @operation_parameters with @export_factory_operation
-to specify parameters that are not part of the schema.
+It is possible to use @operation_parameters with
+@export_factory_operation to specify parameters that are not part of the
+schema.
 
     >>> class ComplexBookFactory(Interface):
     ...     export_as_webservice_entry()
@@ -350,7 +351,58 @@ to specify parameters that are not part of the schema.
         'title': <...TextLine...>}
     type: 'factory'
 
-All these decorators can only be used from within an interface definition:
+Parameters default and required attributes are set automatically based
+on the method signature.
+
+    >>> class ComplexParameterDefinition(Interface):
+    ...     export_as_webservice_entry()
+    ...
+    ...     @operation_parameters(
+    ...         required1=TextLine(),
+    ...         required2=TextLine(default=u'Not required'),
+    ...         optional1=TextLine(required=True),
+    ...         optional2=TextLine(),
+    ...         )
+    ...     @export_read_operation()
+    ...     def a_method(required1, required2, optional1='Default',
+    ...                  optional2='Default2'):
+    ...         """Method demonstrating how required/default are set."""
+
+In this example, the required1 definition will be automatically
+considered required.
+
+    >>> param_defs = ComplexParameterDefinition['a_method'].getTaggedValue(
+    ...     'lazr.webservice.exported')['params']
+    >>> param_defs['required1'].required
+    True
+
+But required2 will not be considered required because a default value
+was provided.
+
+    >>> param_defs['required2'].required
+    False
+
+NOTE: It's not possible to make an optional parameter required on the
+webservice. In the above case, required=True was specified on
+"optional1", but that will be overridden. The reason for that is that by
+default required is always True, so it's not possible to distinguish
+between the case where required was set to True, and required is True
+because it's the default value.
+
+    >>> param_defs['optional1'].required
+    False
+    >>> param_defs['optional1'].default
+    u'Default'
+
+And optional2 was exported with the same default than the method:
+
+    >>> param_defs['optional2'].required
+    False
+    >>> param_defs['optional2'].default
+    u'Default2'
+
+All these decorators can only be used from within an interface
+definition:
 
     >>> @export_operation_as('test')
     ... def a_method1(self): pass

@@ -39,7 +39,7 @@ from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
-from zope.schema.interfaces import IField
+from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
 # XXX flacoste 2008-01-25 bug=185958:
@@ -279,6 +279,34 @@ def annotate_exported_methods(interface):
                 'method "%s" needs more parameters definitions to be '
                 'exported: %s' % (
                     method.__name__, ", ".join(sorted(missing_params))))
+
+        _update_default_and_required_params(annotations['params'], info)
+
+
+def _update_default_and_required_params(params, method_info):
+    """Set missing default/required based on the method signature."""
+    optional = method_info['optional']
+    required = method_info['required']
+    for name, param_def in params.items():
+        # If the method parameter is optional and the param didn't have
+        # a default, set it to the same as the method.
+        if name in optional and param_def.default is None:
+            default = optional[name]
+
+            # This is to work around the fact that all strings in
+            # zope schema are expected to be unicode, whereas it's
+            # really possible that the method's default is a simple
+            # string.
+            if isinstance(default, str) and IText.providedBy(param_def):
+                default = unicode(default)
+            param_def.default = default
+            param_def.required = False
+        elif name in required and param_def.default is not None:
+            # A default was provided, so the parameter isn't required.
+            param_def.required = False
+        else:
+            # Nothing to do for that case.
+            pass
 
 
 class call_with(_method_annotator):
