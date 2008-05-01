@@ -1099,7 +1099,10 @@ class WebServiceRequestTraversal:
         """
         stack = self.getTraversalStack()
         # Only accept versioned URLs.
-        last_component = stack.pop()
+        if len(stack) > 0:
+            last_component = stack.pop()
+        else:
+            last_component = ''
         if last_component == 'beta':
             self.setTraversalStack(stack)
             self.setVirtualHostRoot(names=('beta', ))

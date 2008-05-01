@@ -117,20 +117,28 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
             #.  This is a DTD file inside a subdirectory 
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
+            msgctxt "main/subdir/test2.dtd"
             msgid "MENU"
             msgstr ""
 
-            #. Select the shortcut key that you want to use. Please,
-            #. don't change this translation if you are not really
-            #. sure about what you are doing.
+            #. Select the access key that you want to use. These have to be
+            #. translated in a way that the selected character is present in the
+            #. translated string of the label being referred to, for example 'i' in
+            #. 'Edit' menu item in English. If a translation already exists, please
+            #. don't change it if you are not sure about it. Please find the context
+            #. of the key from the end of the 'Located in' text below.
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.accesskey)
+            msgctxt "main/subdir/test2.dtd"
             msgid "M"
             msgstr ""
 
-            #. Select the shortcut key that you want to use. Please,
-            #. don't change this translation if you are not really
-            #. sure about what you are doing.
+            #. Select the shortcut key that you want to use. It should be translated,
+            #. but often shortcut keys (for example Ctrl + KEY) are not changed from
+            #. the original. If a translation already exists, please don't change it
+            #. if you are not sure about it. Please find the context of the key from
+            #. the end of the 'Located in' text below.
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.commandkey)
+            msgctxt "main/subdir/test2.dtd"
             msgid "m"
             msgstr ""
 
@@ -138,37 +146,45 @@ class XPIPOExporterTestCase(unittest.TestCase):
             #. awesome, multiline comment aimed at you directly
             #. from the streets of a .properties file
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.properties:6(foozilla_something)
+            msgctxt "main/subdir/test2.properties"
             msgid "SomeZilla"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.name)
+            msgctxt "main/test1.dtd"
             msgid "FooZilla!"
             msgstr ""
 
             #.  Translators, don't play with fire! 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.play.fire)
+            msgctxt "main/test1.dtd"
             msgid "Do you want to play with fire?"
             msgstr ""
 
             #.  This is just a comment, not a comment for translators 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.play.ice)
+            msgctxt "main/test1.dtd"
             msgid "Play with ice?"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:1(foozilla.title)
+            msgctxt "main/test1.properties"
             msgid "FooZilla Zilla Thingy"
             msgstr ""
 
             #. Translators, if you're older than six, don't translate this
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:3(foozilla.happytitle)
+            msgctxt "main/test1.properties"
             msgid "FooZillingy"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:4(foozilla.nocomment)
+            msgctxt "main/test1.properties"
             msgid "No Comment"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:5(foozilla.utf8)
+            msgctxt "main/test1.properties"
             msgid "\xd0\x94\xd0\xb0\xd0\xbd=Day"
             msgstr ""
             ''').strip()

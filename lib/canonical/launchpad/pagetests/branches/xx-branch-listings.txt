@@ -367,16 +367,19 @@ development focus branch.
     >>> admin_browser.getControl('Update Details').click()
 
 Now when we look at the branches for gnome-terminal, the main branch
-now shows as the "Current development focus".
+now shows as the "Current development focus".  This is indicated by
+both the series link in the first column with the branch unique name,
+but also with a star with the badges.
 
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> # The main branch is the second in the listing.
-    >>> row = table.tbody.fetch('tr')[1]
-    >>> print row['class']
-    highlighted
-    >>> print extract_text(row)
-    ~name12/gnome-terminal/main  Series: trunk  ...
+    >>> # The development focus is always first.
+    >>> row = table.tbody.fetch('tr')[0]
+    >>> cols = row.fetch('td')
+    >>> print extract_text(cols[0])
+    ~name12/gnome-terminal/main  Series: trunk
+    >>> print cols[1].renderContents()
+    <img src="/@@/favourite-yes" title="Current development focus" />
 
 If a branch is associated with more than one series, then the links
 are comma separated and in alphabetical order.

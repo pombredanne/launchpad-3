@@ -651,12 +651,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
-    # XXX Tom Berger 2008-02-14:
-    # The name (and possibly the implementation) of these functions
+    # XXX: TomBerger 2008-02-14, 2008-04-14 bug=191799:
+    # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
-    # rather than package bug contacts.
-    # See bug #191799
-    def getBugContactPackages(self):
+    # rather than package bug supervisors.
+    def getBugSubscriberPackages(self):
         """See `IPerson`."""
         packages = [sub.target for sub in self.structural_subscriptions
                     if (sub.distribution is not None and
@@ -664,7 +663,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBugContactOpenBugCounts(self, user):
+    def getBugSubscriberOpenBugCounts(self, user):
         """See `IPerson`."""
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
@@ -730,7 +729,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # add the rest of the packages as well.
         all_packages = set(
             (distro_package.distribution, distro_package.sourcepackagename)
-            for distro_package in self.getBugContactPackages())
+            for distro_package in self.getBugSubscriberPackages())
         for distribution, sourcepackagename in all_packages.difference(
                 packages_with_bugs):
             package_counts = dict(
@@ -1549,7 +1548,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             ('QuestionSubscription', 'person'),
             ('POSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('PackageBugContact', 'bugcontact'),
+            ('PackageBugSupervisor', 'bug_supervisor'),
             ('AnswerContact', 'person')]
         cur = cursor()
         for table, person_id_column in removals:
@@ -2490,6 +2489,7 @@ class PersonSet:
             ('vote', 'person'),
             # This table is handled entirely by triggers.
             ('validpersonorteamcache', 'id'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -2760,12 +2760,12 @@ class PersonSet:
             ''' % vars())
         skip.append(('bugnotificationrecipient', 'person'))
 
-        # Update PackageBugContact entries.
+        # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugContact SET bugcontact=%(to_id)s
-            WHERE bugcontact=%(from_id)s
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
+            WHERE bug_supervisor=%(from_id)s
             ''', vars())
-        skip.append(('packagebugcontact', 'bugcontact'))
+        skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
@@ -3038,8 +3038,30 @@ class PersonSet:
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    def getValidPersons(self, persons):
+        """See `IPersonSet.`"""
+        person_ids = [person.id for person in persons]
+        if len(person_ids) == 0:
+            return []
+        valid_person_cache = ValidPersonOrTeamCache.select(
+            "id IN %s" % sqlvalues(person_ids))
+        valid_person_ids = set(cache.id for cache in valid_person_cache)
+        return [
+            person for person in persons if person.id in valid_person_ids]
+
+    def getPeopleWithBranches(self, product=None):
+        """See `IPersonSet`."""
+        branch_clause = 'SELECT owner FROM Branch'
+        if product is not None:
+            branch_clause += ' WHERE product = %s' % quote(product)
+        return Person.select('''
+            Person.id in (%s)
+            ''' % branch_clause)
+
     def getSubscribersForTargets(self, targets, recipients=None):
         """See `IPersonSet`. """
+        if len(targets) == 0:
+            return set()
         target_criteria = []
         for target in targets:
             # target_args is a mapping from query arguments
@@ -3055,9 +3077,23 @@ class PersonSet:
                         '%s IS NULL' % key)
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
-        query = ' OR '.join(target_criteria)
-        subscriptions = StructuralSubscription.select(
-            query, prejoins=['subscriber'])
+
+        # Build a UNION query, since using OR slows down the query a lot.
+        subscriptions = StructuralSubscription.select(target_criteria[0])
+        for target_criterion in target_criteria[1:]:
+            subscriptions = subscriptions.union(
+                StructuralSubscription.select(target_criterion))
+
+        # Listify the result, since we want to loop over it multiple times.
+        subscriptions = list(subscriptions)
+
+        # We can't use prejoins in UNION queries, so populate the cache
+        # by getting all the subscribers.
+        subscriber_ids = [
+            subscription.subscriberID for subscription in subscriptions]
+        if len(subscriber_ids) > 0:
+            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+
         subscribers = set()
         for subscription in subscriptions:
             subscribers.add(subscription.subscriber)

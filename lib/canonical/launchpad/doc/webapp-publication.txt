@@ -86,7 +86,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     xmlrpc_private @ xmlrpc-private.launchpad.dev
-    rooturl: http://xmlrpc-private.launchpad.dev/
+    rooturl: http://launchpad.dev/
     althosts:
     ----
 
