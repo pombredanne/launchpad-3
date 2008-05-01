@@ -264,9 +264,11 @@ depending on lifting the PRIMARY archive PAS restrictions.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-When a distroseries exists but does not support any PPA archictecture,
-which is the case of ubuntu/breezy-autotest, source publications in
-PPA context are ignored, they don't result in any build.
+We will removed the virtualization support from
+ubuntu/breezy-autotest/i386, so we can verify that when a distroseries
+exists but does not support any PPA archictecture the source
+publications in PPA context are ignored, they don't result in any
+build neither in a misleading error in determineArchitectureToBuild.
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> breezy_autotest_i386.supports_virtualized = False

@@ -358,7 +358,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         should use `createMissingBuilds` because it's safer.
 
         Return the just-created `IBuild` record already scored or None
-        if or a suitable build is already present.
+        if a suitable build is already present.
         """
 
     def getSourceAndBinaryLibraryFiles():

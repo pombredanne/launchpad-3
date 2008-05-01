@@ -74,8 +74,9 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     if pubrec.archive.require_virtualized:
         legal_archserieses = [
             arch for arch in legal_archserieses if arch.supports_virtualized]
-        # Cope with no vitualization support at all. It usually happens when
-        # a distroseries is opened.
+        # Cope with no virtualization support at all. It usually happens when
+        # a distroseries is opened and it's not yet decided which architecture
+        # will be allowed for PPAs.
         if not legal_archserieses:
             return []
 
@@ -210,11 +211,15 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
-        registered_arch_ids = set(dar.id for dar in self._archserieses.keys())
-        series_arch_ids = set(dar.id for dar in distroseries_architectures)
-        legal_arch_ids = series_arch_ids.intersection(registered_arch_ids)
-        legal_archs = [dar for dar in distroseries_architectures
-                       if dar.id in legal_arch_ids]
+        registered_arch_ids = set(
+            arch_series.id for arch_series in self._archserieses.keys())
+        arch_series_ids = set(
+            arch_series.id for arch_series in distroseries_architectures)
+        legal_arch_ids = arch_series_ids.intersection(registered_arch_ids)
+        legal_archs = [
+            arch_series for arch_series in distroseries_architectures
+            if arch_series.id in legal_arch_ids]
+
         if not legal_archs:
             self._logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)
