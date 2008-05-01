@@ -123,7 +123,7 @@ def make_bugtracker_title(uri):
             raise ValueError(
                 'Not a valid email address: %s' % base_uri.path)
     else:
-        return base_uri.host
+        return base_uri.host + base_uri.path
 
 
 class BugTracker(SQLBase):

@@ -77,7 +77,7 @@ similar, but for the title.
     >>> from canonical.launchpad.database.bugtracker import (
     ...     make_bugtracker_title)
     >>> make_bugtracker_title('http://bugs.example.com/shrubbery')
-    'bugs.example.com'
+    'bugs.example.com/shrubbery'
 
 For email addresses, it uses the first part of the domain too.
 
