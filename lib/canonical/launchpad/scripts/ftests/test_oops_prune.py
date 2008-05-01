@@ -240,13 +240,6 @@ class TestOopsPrune(unittest.TestCase):
         (out, err) = process.communicate()
         self.failUnlessEqual(out, '')
 
-        # The directory containing only old, unreferenced OOPS files should
-        # have been removed.
-        self.failIf(
-            os.path.isdir(os.path.join(default_error_dir, '2006-01-03')),
-            'Script failed to remove 2006-01-03 directory'
-            )
-
     def test_prune_empty_oops_directories(self):
         # And a directory empty of OOPS reports
         os.mkdir(os.path.join(self.oops_dir, '2038-12-01'))
