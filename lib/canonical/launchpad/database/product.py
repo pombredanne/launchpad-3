@@ -601,7 +601,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return ProductSeries.selectOneBy(product=self, name=name)
 
     def newSeries(self, owner, name, summary, branch=None):
-        return ProductSeries(product=self, owner=owner, name=name,
+        # XXX: jamesh 2008-04-11
+        # Set the ID of the new ProductSeries to avoid flush order
+        # loops in ProductSet.createProduct()
+        return ProductSeries(productID=self.id, owner=owner, name=name,
                              summary=summary, user_branch=branch)
 
     def getRelease(self, version):
@@ -732,12 +735,6 @@ class ProductSet:
 
         if len(licenses) > 0:
             product.licenses = licenses
-
-        # XXX: jamesh 2008-04-11
-        # Access the product ID to make sure the object has been
-        # created, removing a flush loop with the trunk product
-        # series.
-        product_id = product.id
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
