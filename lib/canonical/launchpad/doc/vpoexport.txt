@@ -1,0 +1,79 @@
+= VPOExport and VPOExportSet =
+
+POExport is a database view on POFile, POTemplate, TranslationMessage,
+and related tables that is used to facilitate translation exports.  The
+VPOExport and VPOExportSet classes act as a Python interface to those
+tables.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPOTemplateSet, ISourcePackageNameSet,
+    ...     IVPOExportSet)
+
+    >>> vpoexportset = getUtility(IVPOExportSet)
+    >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+    >>> def describe_pofile(pofile):
+    ...     return "%s %s %s" % (
+    ...         pofile.potemplate.sourcepackagename.name,
+    ...         pofile.potemplate.name, pofile.language.code)
+
+To facilitate language pack exports, IVPOExportSet can enumerate all
+current POFiles in a given distro series.
+
+    >>> pofiles = sorted([
+    ...     describe_pofile(pofile)
+    ...     for pofile in vpoexportset.get_distroseries_pofiles(hoary)])
+    >>> for pofile in pofiles:
+    ...     print pofile
+    evolution evolution-2.2 es
+    evolution evolution-2.2 ja
+    evolution evolution-2.2 xh
+    evolution man es
+    mozilla   pkgconf-mozilla cs
+    mozilla   pkgconf-mozilla da
+    mozilla   pkgconf-mozilla de
+    mozilla   pkgconf-mozilla en
+    mozilla   pkgconf-mozilla es
+    mozilla   pkgconf-mozilla fi
+    mozilla   pkgconf-mozilla fr
+    mozilla   pkgconf-mozilla gl
+    mozilla   pkgconf-mozilla it
+    mozilla   pkgconf-mozilla ja
+    mozilla   pkgconf-mozilla lt
+    mozilla   pkgconf-mozilla nl
+    mozilla   pkgconf-mozilla pt_BR
+    mozilla   pkgconf-mozilla tr
+    pmount    pmount ca
+    pmount    pmount cs
+    pmount    pmount de
+    pmount    pmount es
+    pmount    pmount es
+    pmount    pmount fr
+    pmount    pmount hr
+    pmount    pmount it_IT
+    pmount    pmount nb
+
+    >>> print len(pofiles)
+    27
+    >>> print vpoexportset.get_distroseries_pofiles_count(hoary)
+    27
+
+The get_pofile_rows method lists all translations matching its
+arguments.
+
+    >>> def describe_poexport_row(row):
+    ...     return "%s %s %s" % (
+    ...         row.sequence, row.msgid_singular, row.translation0)
+    >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
+    >>> hoary_evolution_templates = getUtility(IPOTemplateSet).getSubset(
+    ...     distroseries=hoary, sourcepackagename=evolution)
+    >>> man_template = hoary_evolution_templates['man']
+    >>> pofile = man_template.getPOFileByLang('es')
+    >>> rows = sorted([
+    ...     describe_poexport_row(row)
+    ...     for row in vpoexportset.get_pofile_rows(pofile)])
+    >>> for row in rows:
+    ...     print row
+    1   test man page   just a translation
+

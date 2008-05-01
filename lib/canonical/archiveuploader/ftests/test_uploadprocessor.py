@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
 
@@ -32,8 +33,9 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IDistroSeriesSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus)
+    IDistroSeriesSet, ILibraryFileAliasSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
+
 from canonical.launchpad.mail import stub
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 
@@ -97,7 +99,8 @@ class TestUploadProcessorBase(unittest.TestCase):
         Use *initialiseFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
 
-        Also sets 'changeslist' and 'nominatedarchindep' properly.
+        Also sets 'changeslist' and 'nominatedarchindep' properly and
+        creates a chroot for breezy-autotest/i386 distroarchseries.
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -109,10 +112,20 @@ class TestUploadProcessorBase(unittest.TestCase):
         breezy_i386 = self.breezy.newArch(
             'i386', bat['i386'].processorfamily, True, self.breezy.owner)
         self.breezy.nominatedarchindep = breezy_i386
+
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        breezy_i386.addOrUpdateChroot(fake_chroot)
+
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
 
-    def queueUpload(self, upload_name, relative_path=""):
+    def addMockFile(self, filename, content="anything"):
+        """Return a librarian file."""
+        return getUtility(ILibraryFileAliasSet).create(
+            filename, len(content), StringIO(content),
+            'application/x-gtar')
+
+    def queueUpload(self, upload_name, relative_path="", test_files_dir=None):
         """Queue one of our test uploads.
 
         upload_name is the name of the test upload directory. It is also
@@ -124,7 +137,9 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         target_path = os.path.join(
             self.queue_folder, "incoming", upload_name, relative_path)
-        upload_dir = os.path.join(self.test_files_dir, upload_name)
+        if test_files_dir is None:
+            test_files_dir = self.test_files_dir
+        upload_dir = os.path.join(test_files_dir, upload_name)
         if relative_path:
             os.makedirs(os.path.dirname(target_path))
         shutil.copytree(upload_dir, target_path)
@@ -311,8 +326,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
+        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
+        pubrec.secure_record.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
@@ -520,13 +535,25 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check the upload is in the DONE queue since pure source uploads
+        # Check the upload is in the DONE queue since single source uploads
         # with ancestry (previously uploaded) will skip the ACCEPTED state.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.DONE,
             version="1.0-2",
             name="foocomm")
         self.assertEqual(queue_items.count(), 1)
+
+        # Single source uploads also get their corrsponding builds created
+        # at upload-time. 'foocomm' only builds in 'i386', thus only one
+        # build gets created.
+        [foocomm_source] = partner_archive.getPublishedSources(
+            name='foocomm', version='1.0-2')
+        [build] = foocomm_source.sourcepackagerelease.builds
+        self.assertEqual(
+            build.title,
+            'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
+        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.buildqueue_record.lastscore, 1255)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")

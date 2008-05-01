@@ -1,0 +1,121 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
+
+<metal:portlets fill-slot="portlets">
+   <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Copy packages from <tal:title replace="context/title" /></h1>
+
+    <tal:cannot_copy condition="not: view/can_copy">
+      <p>To be able to copy packages you have to participate in at least one
+         PPA. <a tal:attributes="href
+         string:${view/user/fmt:url}/+activate-ppa">Activate your own PPA</a>
+         or join a team with an active PPA.</p>
+    </tal:cannot_copy>
+
+    <tal:can_copy condition="view/can_copy">
+
+      <tal:inactive_ppa_header condition="not: view/has_sources">
+        <p>This PPA does not contain any source packages published.</p>
+      </tal:inactive_ppa_header>
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+
+      <div class="form" metal:fill-slot="widgets"
+           tal:condition="view/has_sources">
+
+        <metal:selectable-sources
+          use-macro="context/@@+form-macros/selectable-sources" />
+
+        <table style="margin-top: 1em;"
+          tal:condition="view/available_sources_size">
+
+          <tal:archive
+            define="widget nocall:view/widgets/destination_archive|nothing"
+            condition="widget">
+            <metal:widget
+              metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:archive>
+
+          <tal:series
+            define="widget nocall:view/widgets/destination_series|nothing"
+            condition="widget">
+            <metal:widget
+              metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:series>
+
+          <tal:binaries
+            define="widget nocall:view/widgets/include_binaries|nothing"
+            condition="widget">
+            <metal:widget
+              metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:binaries>
+
+          <tr>
+            <td colspan="2">
+              <input
+                tal:replace="structure view/actions/field.actions.copy/render" />
+            </td>
+          </tr>
+
+        </table>
+
+        </div> <!-- widgets -->
+
+        <div class="actions" metal:fill-slot="buttons">
+        </div> <!--empties buttons section -->
+
+      </div> <!-- launchpad_form -->
+
+    </tal:can_copy>
+
+</div> <!--main -->
+
+<div metal:fill-slot="help">
+
+  <p>This page allows you to copy package from one location to
+    another. To do this, search first for the desired packages,
+    select one of more  of them, select a destination PPA and
+    destination series and whether or not you want the related
+    binaries to be copied too.</p>
+
+  <p>You can copy packages from a PPA to any of the PPAs you have
+    upload rights. It saves your time, not requiring you to download
+    the selected source, rebuild, resign and re-upload the package. In
+    the same way it allows Launchpad to trace the same contents
+    published in different location in a simpler way.</p>
+
+  <p>Via this interface, you can also copy publications within a PPA
+    you have upload rights. It allows having the same source, and
+    potentially the same binaries, published in more than one series
+    within a PPA.</p>
+
+  <p>Deleted sources and its binaries can be undeleted using this
+    interface. They can be undeleted in the original location or
+    anywhere else you select as destination.</p>
+
+  <p>Source-only copies, when you do not copy binaries, will
+    immediately result in the corresponding build records, ready to be
+    dispatched.</p>
+
+  <p>Copies are new publications, as so, they will be processed
+    periodically and will be materialised in disk during the next
+    publisher run, which happens every 20 minutes.</p>
+
+</div>
+
+</body>
+</html>

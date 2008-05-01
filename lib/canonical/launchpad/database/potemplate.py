@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """`SQLObject` implementation of `IPOTemplate` interface."""
@@ -25,7 +25,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
+    SQLBase, quote, flush_database_updates, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
@@ -296,24 +296,19 @@ class POTemplate(SQLBase, RosettaStats):
             POTMsgSet.sequence = %s
             """ % sqlvalues (self.id, sequence))
 
-    def getPOTMsgSets(self, current=True, slice=None):
+
+    def getPOTMsgSets(self, current=True):
         """See `IPOTemplate`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self)
+            ]
+
         if current:
             # Only count the number of POTMsgSet that are current.
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
-                    sqlvalues(self.id),
-                orderBy='sequence')
-        else:
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
-                orderBy='sequence')
+            clauses.append('POTMsgSet.sequence > 0')
 
-        if slice is not None:
-            # Want only a subset specified by slice
-            results = results[slice]
-
-        return results
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
@@ -455,6 +450,19 @@ class POTemplate(SQLBase, RosettaStats):
 
         return file_content
 
+    def _generateTranslationFileDatas(self):
+        """Yield `ITranslationFileData` objects for translations and self.
+
+        This lets us construct the in-memory representations of the template
+        and its translations one by one before exporting them, rather than
+        building them all beforehand and keeping them in memory at the same
+        time.
+        """
+        for translation_file in self.pofiles:
+            yield ITranslationFileData(translation_file)
+
+        yield ITranslationFileData(self)
+
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
         translation_exporter = getUtility(ITranslationExporter)
@@ -462,13 +470,8 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        translation_files = [
-            ITranslationFileData(pofile)
-            for pofile in self.pofiles
-            ]
-        translation_files.append(ITranslationFileData(self))
         return translation_format_exporter.exportTranslationFiles(
-            translation_files)
+            self._generateTranslationFileDatas())
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
@@ -999,7 +1002,7 @@ class POTemplateToTranslationFileDataAdapter:
         messages = []
 
         for row in rows:
-            assert row.potemplate == potemplate, (
+            assert row.potemplate.id == potemplate.id, (
                 'Got a row for a different IPOTemplate.')
 
             # Skip messages which aren't anymore in the PO template.
@@ -1011,7 +1014,9 @@ class POTemplateToTranslationFileDataAdapter:
             msgset.sequence = row.sequence
             msgset.obsolete = False
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
             msgset.context = row.context
             msgset.comment = row.comment
             msgset.source_comment = row.source_comment

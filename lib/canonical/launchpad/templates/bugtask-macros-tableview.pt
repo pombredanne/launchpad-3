@@ -376,21 +376,21 @@
                     </tr>
                   </tal:render-if>
 
-                  <tal:render-if condition="view/shouldShowContactWidget">
+                  <tal:render-if condition="view/shouldShowSupervisorWidget">
                     <tr>
                       <td>
-                          <label for="field.bug_contact">Bug contact:</label>
+                          <label for="field.bug_supervisor">Bug supervisor:</label>
                       </td>
                     </tr>
                     <tr>
                       <td style="white-space: nowrap">
                         <div class="field"
                              tal:define="error
-                             python:view.getFieldError('bug_contact')">
+                             python:view.getFieldError('bug_supervisor')">
                           <div tal:attributes=
                                "class python:error and 'error' or None">
                             <span tal:content="structure
-                                               view/widgets/bug_contact"/>
+                                               view/widgets/bug_supervisor"/>
                             <div tal:condition="error"
                                  class="message"
                                  tal:content="error">An error on owner widget

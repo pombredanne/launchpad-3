@@ -134,7 +134,16 @@ to a content object.  There are currently links defined for:
   * people / teams
   * branches
   * bugs
+  * bug subscriptions
   * bug tasks
+  * branch merge proposals
+  * bug-branch links
+  * code imports
+  * product series
+  * blueprints
+  * blueprint-branch links
+  * projects
+  * questions
 
 
 === Person entries ===
@@ -282,7 +291,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
 
 
 === Blueprint branches ===
@@ -292,7 +301,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
 
 
 === Projects ===
@@ -300,6 +309,101 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> product = factory.makeProduct()
     >>> test_tales('product/fmt:link', product=product)
     u'<a href=...><img alt="" ... src="/@@/product" />&nbsp;...</a>'
+
+
+=== Questions ===
+
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> question = getUtility(IQuestionSet).get(1)
+    >>> test_tales("question/fmt:link", question=question)
+    u'<a...<img ... src="/@@/question" />&nbsp;1:...</a>'
+
+
+== The fmt: namespace for specially formatted object info ===
+
+
+=== Bug Trackers ===
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> bugtracker.aliases = ['mailto:eatme@wundrlnd.com',
+    ...                       'http://bugs.vikingsrool.no/']
+
+The "standard" 'url' name is supported:
+
+    >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
+    u'http://launchpad.dev/bugs/bugtrackers/email'
+
+As are 'external-link' and 'aliases', which help when hiding email
+addresses from users who are not logged in:
+
+    >>> login('test@canonical.com')
+
+    >>> test_tales("bugtracker/fmt:external-link", bugtracker=bugtracker)
+    u'<a class="link-external"
+         href="mailto:bugs@example.com">mailto:bugs@example.com</a>'
+    >>> list(test_tales("bugtracker/fmt:aliases", bugtracker=bugtracker))
+    [u'http://bugs.vikingsrool.no/', u'mailto:eatme@wundrlnd.com']
+
+    >>> logout()
+
+    >>> test_tales("bugtracker/fmt:external-link", bugtracker=bugtracker)
+    u'mailto:&lt;email address hidden&gt;'
+    >>> list(test_tales("bugtracker/fmt:aliases", bugtracker=bugtracker))
+    [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
+
+    >>> login('test@canonical.com')
+
+
+=== Bug Watches ===
+
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> sf_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     getUtility(IBugSet).get(12),
+    ...     getUtility(ILaunchBag).user,
+    ...     getUtility(IBugTrackerSet).getByName('sf'),
+    ...     '1234')
+    >>> email_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     getUtility(IBugSet).get(12),                   # bug
+    ...     getUtility(ILaunchBag).user,                   # owner
+    ...     getUtility(IBugTrackerSet).getByName('email'), # bugtracker
+    ...     '')                                            # remotebug
+
+The "standard" 'url' name is supported:
+
+    >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
+    u'http://launchpad.dev/bugs/12/+watch/13'
+    >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
+    u'http://launchpad.dev/bugs/12/+watch/14'
+
+As are 'external-link' and 'external-link-short', which help when
+hiding email addresses from users who are not logged in:
+
+    >>> login('test@canonical.com')
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">sf #1234</a>'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">1234</a>'
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=email_bugwatch)
+    u'<a class="link-external" href="mailto:bugs@example.com">email</a>'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=email_bugwatch)
+    u'<a class="link-external" href="mailto:bugs@example.com">&mdash;</a>'
+
+    >>> logout()
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">sf #1234</a>'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">1234</a>'
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=email_bugwatch)
+    u'email'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=email_bugwatch)
+    u'&mdash;'
+
+    >>> login('test@canonical.com')
 
 
 == The fmt: namespace to get strings (hiding) ==
@@ -622,6 +726,9 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'
+    ...
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
 
     >>> participation = MockBrowserRequest()
 
@@ -757,3 +864,58 @@ wrapped dbschema items too:
     Traceback (most recent call last):
     ...
     TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
+
+
+== Formatting timedelta objects ==
+
+Representing timedetla objects can be done using either exact or
+approximate durations.
+
+    >>> from datetime import timedelta
+    >>> delta = timedelta(days=2)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '2 days, 0 hours, 0 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'two days'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '2 days'
+
+    >>> delta = timedelta(days=12, hours=6, minutes=30)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '12 days, 6 hours, 30 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    '12 days'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '12 days'
+
+    >>> delta = timedelta(days=0, minutes=62)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 hour, 2 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'an hour'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '1 hour'
+
+    >>> delta = timedelta(days=0, minutes=82)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 hour, 22 minutes, 0.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    '1 hour 20 minutes'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '1 hour 20 minutes'
+
+    >>> delta = timedelta(days=0, seconds=62)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 minute, 2.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'a minute'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '1 minute'
+
+    >>> delta = timedelta(days=0, seconds=90)
+    >>> test_tales('delta/fmt:exactduration', delta=delta)
+    '1 minute, 30.0 seconds'
+    >>> test_tales('delta/fmt:approximateduration', delta=delta)
+    'two minutes'
+    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
+    '2 minutes'

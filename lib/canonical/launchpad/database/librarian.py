@@ -13,7 +13,8 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
-from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed
+from canonical.librarian.interfaces import (
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -37,6 +38,8 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
+    # The updateLastAccessed method has unreachable code.
+    # pylint: disable-msg=W0101
 
     implements(ILibraryFileAlias)
 
@@ -48,6 +51,7 @@ class LibraryFileAlias(SQLBase):
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)
+    restricted = BoolCol(notNull=True, default=False)
     last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
@@ -60,9 +64,17 @@ class LibraryFileAlias(SQLBase):
                                  intermediateTable='SourcePackageReleaseFile')
 
     @property
+    def client(self):
+        """Return the librarian client to use to retrieve that file."""
+        if self.restricted:
+            return getUtility(IRestrictedLibrarianClient)
+        else:
+            return getUtility(ILibrarianClient)
+
+    @property
     def http_url(self):
         """See ILibraryFileAlias.http_url"""
-        return getUtility(ILibrarianClient).getURLForAlias(self.id)
+        return self.client.getURLForAlias(self.id)
 
     @property
     def https_url(self):
@@ -74,7 +86,7 @@ class LibraryFileAlias(SQLBase):
 
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
-        if config.launchpad.vhosts.use_https:
+        if config.vhosts.use_https:
             return self.https_url
         else:
             return self.http_url
@@ -82,8 +94,7 @@ class LibraryFileAlias(SQLBase):
     _datafile = None
 
     def open(self):
-        client = getUtility(ILibrarianClient)
-        self._datafile = client.getFileByAlias(self.id)
+        self._datafile = self.client.getFileByAlias(self.id)
         if self._datafile is None:
             raise DownloadFailed(
                     "Unable to retrieve LibraryFileAlias %d" % self.id
@@ -142,9 +153,14 @@ class LibraryFileAliasSet(object):
 
     implements(ILibraryFileAliasSet)
 
-    def create(self, name, size, file, contentType, expires=None, debugID=None):
-        """See ILibraryFileAliasSet.create"""
-        client = getUtility(ILibrarianClient)
+    def create(
+        self, name, size, file, contentType, expires=None, debugID=None,
+        restricted=False):
+        """See `ILibraryFileAliasSet`"""
+        if restricted:
+            client = getUtility(IRestrictedLibrarianClient)
+        else:
+            client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
         return LibraryFileAlias.get(fid)
 

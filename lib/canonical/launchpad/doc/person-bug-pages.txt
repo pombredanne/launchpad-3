@@ -164,10 +164,10 @@ Using the advanced form we can query for closed bugs someone is subscribed to.
     [(8, 'FIXRELEASED', u'name16')]
 
 
-== Bugs for Bug Contact ==
+== Bugs for Bug Supervisor ==
 
 Malone can generate bug reports for packages on which a user is a bug
-contact. The Person context is used only to get a list of packages that
+supervisor. The Person context is used only to get a list of packages that
 the user has chosen to subscribe to, but any package could be searched
 from these reports, simply by hacking the URL.
 
@@ -249,15 +249,15 @@ Unassigned, and In Progress bug lists.
 A helper method is used to calculate the package bug search URL for the
 "My other packages" portlet:
 
-    >>> packagebugs_search_view.getBugContactPackageSearchURL(
+    >>> packagebugs_search_view.getBugSubscriberPackageSearchURL(
     ...     ubuntu_mozilla_firefox)
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
-There's also a getBugContactPackageAdvancedSearchURL method. If called
+There's also a getBugSubscriberPackageAdvancedSearchURL method. If called
 without a package argument, it defaults to the "current package", found
 by looking in the request.
 
-    >>> packagebugs_search_view.getBugContactPackageAdvancedSearchURL()
+    >>> packagebugs_search_view.getBugSubscriberPackageAdvancedSearchURL()
     u'.../~name12/+packagebugs-search?advanced=1&field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
 
 Finally, there is a helper method that returns a list of dicts used to

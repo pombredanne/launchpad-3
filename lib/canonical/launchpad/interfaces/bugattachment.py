@@ -61,7 +61,8 @@ class IBugAttachment(IHasBug):
         required=True)
     title = Title(
         title=_('Title'),
-        description=_('A short and descriptive description of the attachment'),
+        description=_(
+            'A short and descriptive description of the attachment'),
         required=True)
     libraryfile = Object(
         schema=ILibraryFileAlias,
@@ -80,8 +81,16 @@ class IBugAttachmentSet(Interface):
     """A set for IBugAttachment objects."""
 
     def create(bug, filealias, title, message,
-               type=IBugAttachment['type'].default):
-        """Create a new attachment and return it."""
+               type=IBugAttachment['type'].default, send_notifications=False):
+        """Create a new attachment and return it.
+
+        :param bug: The `IBug` to which the new attachment belongs.
+        :param filealias: The `IFilealias` containing the data.
+        :param message: The `IMessage` to which this attachment belongs.
+        :param type: The type of attachment. See `BugAttachmentType`.
+        :param send_notifications: If True, a notification is sent to
+            subscribers of the bug.
+        """
 
     def __getitem__(id):
         """Get an IAttachment by its id.
@@ -102,6 +111,5 @@ class IBugAttachmentEditForm(Interface):
             "text/plain"),
         required=True)
     patch = Bool(
-        title=u"Patch",
-        description=u"Check this box if the attachment is a patch.",
+        title=u"This attachment is a patch",
         required=True, default=False)

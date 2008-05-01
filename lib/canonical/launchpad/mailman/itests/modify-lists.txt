@@ -14,14 +14,6 @@ mailing list for that team, and an expert will approve that request.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -63,10 +55,10 @@ what that is on the Mailman side.
 Once the list is created, the team owner can change the welcome message
 through the web.
 
-    >>> serial_watcher.resync()
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Salutations team members!')
+    >>> serial_watcher.resync()
     >>> browser.getControl('Save').click()
     >>> serial_watcher.wait()
 

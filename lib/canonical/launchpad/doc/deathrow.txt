@@ -151,9 +151,8 @@ Flush our these updates and kick the DeathRow processor again.
   >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
   >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
   >>> death_row.reap(dry_run=True)
-  DEBUG: 3 Sources
-  DEBUG: 3 Binaries
-  INFO: Removing 3 files marked for reaping
+  DEBUG: ...
+  ...
   DEBUG: (Not really!) removing main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb
   DEBUG: File to remove main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb is not in pool, skipping
   DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
@@ -209,8 +208,8 @@ since it can't be sure whether or not they can be removed.
   >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
   >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
   >>> death_row.reap(dry_run=True)
-  DEBUG: 2 Sources
-  DEBUG: 1 Binaries
+  DEBUG: ...
+  ...
   INFO: Removing 0 files marked for reaping
   INFO: Total bytes freed: 0
   DEBUG: Marking 0 condemned packages as removed.
@@ -245,8 +244,8 @@ Test that bytes freed computing is handled correctly:
   >>> publishing_record.dateremoved = None
   >>> flush_database_updates()
   >>> death_row.reap()
-  DEBUG: 3 Sources
-  DEBUG: 2 Binaries
+  DEBUG: ...
+  ...
   INFO: Removing 2 files marked for reaping
   DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
   DEBUG: (Not really!) removing main evolution/evolution-1.0.tar.gz
@@ -264,8 +263,8 @@ Test that random exceptions are handled correctly:
   >>> publishing_record.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> death_row.reap()
-  DEBUG: 3 Sources
-  DEBUG: 1 Binaries
+  DEBUG: ...
+  ...
   INFO: Removing 1 files marked for reaping
   DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc
   EXC: Removing file main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc generated exception, continuing

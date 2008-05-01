@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BUG_CONTACT_BUGTASK_STATUSES',
+    'BUG_SUPERVISOR_BUGTASK_STATUSES',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -33,12 +33,13 @@ __all__ = [
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'valid_remote_bug_url']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
+    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
@@ -50,6 +51,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -164,7 +166,7 @@ class BugTaskStatus(DBEnumeratedType):
         Triaged
 
         This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug contact to
+        something needing fixing. The user must be a bug supervisor to
         set this status, so it carries more weight than merely
         Confirmed.
         """)
@@ -276,13 +278,14 @@ RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INVALID,
     BugTaskStatus.WONTFIX)
 
-BUG_CONTACT_BUGTASK_STATUSES = (
+BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
     BugTaskStatus.TRIAGED)
 
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.NEW,
     BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
     BugTaskStatusSearch.CONFIRMED,
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
@@ -361,16 +364,21 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             "The age of this task, expressed as the length of time between "
             "datecreated and now."))
     owner = Int()
-    target = Attribute("The software in which this bug should be fixed")
+    target = Object(
+        title=_('Target'), required=False,
+        description=_("The software in which this bug should be fixed."),
+        schema=IBugTarget)
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
-    pillar = Attribute(
-        "The LP pillar (product or distribution) associated with this "
-        "task.")
+    pillar = Choice(
+        title=_('Pillar'),
+        description=_("The LP pillar (product or distribution) "
+                      "associated with this task."),
+        vocabulary='DistributionOrProduct', readonly=True)
     other_affected_pillars = Attribute(
         "The other pillars (products or distributions) affected by this bug. "
         "This returns a list of pillars OTHER THAN the pillar associated "
@@ -378,7 +386,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any
-    # new bugcontacts that should get an email containing full bug details
+    # new subscribers that should get an email containing full bug details
     # (rather than just the standard change mail.) It is a property on
     # IBugTask because we currently only ever need this value for events
     # handled on IBugTask.
@@ -394,6 +402,14 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     is_complete = Attribute(
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
+
+    def getConjoinedMaster(bugtasks):
+        """Return the conjoined master in the given bugtasks, if any.
+
+        This method exists mainly to allow calculating the conjoined
+        master from a cached list of bug tasks, reducing the number of
+        db queries needed.
+        """
 
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
@@ -430,7 +446,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         :user: the user requesting the change
 
         Some status transitions, e.g. Triaged, require that the user
-        be a bug contact or the owner of the project.
+        be a bug supervisor or the owner of the project.
         """
 
     def transitionToStatus(new_status, user):
@@ -495,6 +511,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         in that distribution. If the task is not a package task, returns
         None.
         """
+
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
@@ -578,8 +595,8 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_contact = Choice(
-        title=_('Bug contact'), vocabulary='ValidPersonOrTeam',
+    bug_supervisor = Choice(
+        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
@@ -790,7 +807,7 @@ class BugTaskSearchParams:
                  component=None, pending_bugwatch_elsewhere=False,
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_contact=None, bug_reporter=None, nominated_for=None,
+                 bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False):
         self.bug = bug
         self.searchtext = searchtext
@@ -815,7 +832,7 @@ class BugTaskSearchParams:
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
-        self.bug_contact = bug_contact
+        self.bug_supervisor = bug_supervisor
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
@@ -910,7 +927,7 @@ class IBugTaskSet(Interface):
                    milestone=None):
         """Create a bug task on a bug and return it.
 
-        If the bug is public, bug contacts will be automatically
+        If the bug is public, bug supervisors will be automatically
         subscribed.
 
         If the bug has any accepted series nominations for a supplied
@@ -1019,6 +1036,7 @@ class IAddBugTaskForm(Interface):
         title=_('Visited steps'), required=False,
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
+
 
 class IAddBugTaskWithProductCreationForm(Interface):
 

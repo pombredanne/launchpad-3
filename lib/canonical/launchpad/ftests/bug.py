@@ -2,9 +2,13 @@
 
 """Helper functions for bug-related doctests and pagetests."""
 
+import textwrap
+
 from datetime import datetime, timedelta
 from operator import attrgetter
 from pytz import UTC
+
+from BeautifulSoup import BeautifulSoup
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -80,7 +84,7 @@ def print_remote_bugtasks(content):
         for key, value in img.attrs:
             if '@@/bug-remote' in value:
                 target = extract_text(img.findAllPrevious('td')[-2])
-                print target, extract_text(img.findPrevious('a'))
+                print target, extract_text(img.findNext('a'))
 
 
 def print_bugs_table(content, table_id):
@@ -222,3 +226,34 @@ def sync_bugtasks(bugtasks):
         sync(bugtask.bug)
 
 
+def print_upstream_linking_form(browser):
+    """Print the upstream linking form found via +choose-affected-product.
+
+    The resulting output will look something like:
+    (*) A checked option
+        [A related text field]
+    ( ) An unchecked option
+    """
+    soup = BeautifulSoup(browser.contents)
+
+    link_upstream_how_radio_control = browser.getControl(
+        name='field.link_upstream_how')
+    link_upstream_how_buttons =  soup.findAll(
+        'input', {'name': 'field.link_upstream_how'})
+
+    wrapper = textwrap.TextWrapper(width=65, subsequent_indent='    ')
+    for button in link_upstream_how_buttons:
+        # Print the radio button.
+        label = button.findParent('label')
+        if label is None:
+            label = soup.find('label', {'for': button['id']})
+        if button.get('value') in link_upstream_how_radio_control.value:
+            print wrapper.fill('(*) %s' % extract_text(label))
+        else:
+            print wrapper.fill('( ) %s' % extract_text(label))
+        # Print related text field, if found. Assumes that the text
+        # field is in the same table row as the radio button.
+        text_field = button.findParent('tr').find('input', {'type':'text'})
+        if text_field is not None:
+            text_control = browser.getControl(name=text_field.get('name'))
+            print '    [%s]' % text_control.value.ljust(10)

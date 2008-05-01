@@ -125,6 +125,8 @@ archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
+archive_copy_packages = ContextTitle('Copy packages from %s')
+
 archive_delete_packages = ContextTitle('Delete packages from %s')
 
 archive_edit = ContextTitle('Edit %s')
@@ -168,13 +170,8 @@ branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 branch_edit_subscription = ContextDisplayName(smartquote(
     'Edit subscription to branch "%s"'))
 
-def branch_index(context, view):
-    """Return the branch page title, with the author if it is known."""
-    if context.author:
-        return smartquote('"%s" branch by %s in Launchpad') % (
-            context.displayname, context.author.title)
-    else:
-        return smartquote('"%s" branch in Launchpad') % (context.displayname)
+branch_index = ContextDisplayName(smartquote(
+    '"%s" branch in Launchpad'))
 
 branch_link_to_bug = ContextDisplayName(smartquote(
     'Link branch "%s" to a bug report'))
@@ -189,9 +186,13 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
+branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
+
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_enqueue = 'Queue branch for merging'
 
 branchmergeproposal_index = 'Proposal to merge branch'
 
@@ -387,6 +388,8 @@ builder_index = ContextTitle('Build machine %s')
 
 builder_mode = ContextTitle('Change mode for %s')
 
+builder_new = 'Register a new build machine'
+
 builders_index = 'Launchpad build farm'
 
 calendar_index = ContextTitle('%s')
@@ -415,11 +418,19 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
+code_in_branches = 'Projects with active branches'
+
 def codeimport(context, view):
     """Return the view's title."""
     return view.title
 
+codeimport_edit = 'Edit import details'
+
 codeimport_list = 'Code Imports'
+
+codeimport_machines = ViewLabel()
+
+codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
@@ -561,7 +572,7 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
-edit_bugcontact = ContextTitle('Edit bug contact for %s')
+edit_bug_supervisor = ContextTitle('Edit bug supervisor for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -799,6 +810,8 @@ announcements_all = 'Announcements from all projects hosted in Launchpad'
 
 notification_test = 'Notification test'
 
+oauth_authorize = 'Authorize application to access Launchpad on your behalf'
+
 object_branding = ContextDisplayName('Change the images used to represent '
     '%s in Launchpad')
 
@@ -912,6 +925,8 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
+person_oauth_tokens = "Applications you authorized to access Launchpad"
+
 person_packages = ContextDisplayName('Packages maintained by %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")
@@ -988,15 +1003,12 @@ product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
-product_branches = ContextDisplayName(
-    smartquote("%s's Bazaar branches registered in Launchpad"))
+product_branches = ContextDisplayName("Bazaar branches of %s")
 
-product_branch_overview = ContextDisplayName("Code overview for %s")
+product_code_index = ContextDisplayName("Bazaar branches of %s")
 
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
-
-product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
@@ -1177,6 +1189,8 @@ shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
 
+shipit_index_ubuntu = 'Request an Ubuntu CD'
+
 shipit_login = 'ShipIt'
 
 shipit_myrequest = "Your ShipIt order"
@@ -1186,6 +1200,8 @@ shipit_oops = 'Error: Oops'
 shipit_reports = 'ShipIt reports'
 
 shipit_requestcds = 'Your ShipIt Request'
+
+shipit_survey = 'ShipIt Survey'
 
 shipitrequests_index = 'ShipIt requests'
 
@@ -1240,6 +1256,8 @@ def sourcepackages(context, view):
 sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
+
+sources_list = 'Available code imports'
 
 sourcesource_index = 'Upstream source import'
 
@@ -1371,6 +1389,8 @@ team_leave = ContextBrowsername('Leave %s')
 
 team_mailinglist = 'Configure mailing list'
 
+team_mailinglist_moderate = 'Moderate mailing list'
+
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
 team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
@@ -1407,6 +1427,8 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
+
+token_authorized = 'Almost finished ...'
 
 translationgroup_index = ContextTitle(
     smartquote('"%s" Launchpad translation group'))

@@ -4,38 +4,18 @@ Mailing lists hosted by Launchpad can be used as the contact address of any
 team in Launchpad.  When this feature is used, all notifications sent by
 Launchpad to the team will be sent to the mailing list's address, in fact.
 
-    # This test requires us to start an SMTP server that accepts messages
-    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+We'll now register and approve the mailing list we'll be using as the contact
+address of our new team.  When the mailing lists are created, messages get
+sent to the members of the team informing them of their new list.  We can
+ignore these (there's only one, currently).
+
     >>> import itest_helper
-    >>> smtpd = itest_helper.SMTPServer()
-    >>> smtpd.start()
-
-We'll now register and approve the mailing list we'll be using as the
-contact address of our new team.
-
-    # Create a mailing list for this test.
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
-
-    >>> browser.getLink('Configure mailing list')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> itest_helper.beta_program_enable('itest-one')
-    >>> browser.reload()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
-    >>> list_one = itest_helper.review_list('itest-one')
-    >>> from Mailman.Utils import list_names
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> from operator import itemgetter
+    >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
+    ...     print message['subject']
+    New Mailing List for Itest One
+    >>> smtpd.reset()
 
 Subscribe someone to the team and mailing list so that these messages can get
 delivered.
@@ -60,9 +40,9 @@ delivered.
     >>> commit()
     >>> serial_watcher.wait()
 
-It's possible to set the team as a project's answer contact.  Then creating
-new questions will email the mailing list.
+It's possible to set the team as a project's answer contact.
 
+    >>> browser = itest_helper.make_browser()
     >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
@@ -73,8 +53,11 @@ new questions will email the mailing list.
 
     >>> browser.open('http://answers.launchpad.dev/firefox/+answer-contact')
     >>> browser.getControl(name='field.answer_contact_teams').displayValue = [
-    ...     'ITest One']
+    ...     'Itest One']
     >>> browser.getControl('Continue').click()
+
+When the contact address for the team is its mailing list, creating new
+questions will email the mailing list.
 
     >>> smtp_watcher = itest_helper.LogWatcher('smtp')
 
@@ -96,9 +79,6 @@ these messages is by the Sender header, which will be unique in all cases.
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     3
-
-    >>> from operator import itemgetter
-    >>> messages.sort(key=itemgetter('sender'))
 
 Here is the message to the person who added the question.
 
@@ -166,7 +146,7 @@ Here is the message to Anne, a member of the mailing list.
     <BLANKLINE>
     --
     You received this question notification because you are a member of
-    ITest One, which is an answer contact for Mozilla Firefox.
+    Itest One, which is an answer contact for Mozilla Firefox.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
@@ -338,7 +318,7 @@ member.
     -- =
     <BLANKLINE>
     You received this question notification because you are a member of
-    ITest One, which is an answer contact for Mozilla Firefox.
+    Itest One, which is an answer contact for Mozilla Firefox.
     <BLANKLINE>
     <BLANKLINE>
 
@@ -405,8 +385,3 @@ address both get copies of the message.
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
-
-
-== Clean up ==
-
-    >>> smtpd.stop()

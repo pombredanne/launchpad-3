@@ -1,9 +1,9 @@
 = Buildd Dispatching =
 
-  >>> import transaction
-  >>> import logging
-  >>> logger = logging.getLogger()
-  >>> logger.setLevel(logging.DEBUG)
+    >>> import transaction
+    >>> import logging
+    >>> logger = logging.getLogger()
+    >>> logger.setLevel(logging.DEBUG)
 
 The buildd dispatching basically consists of finding a available
 Buildd-slave in IDLE state, push required files to it, then request
@@ -12,89 +12,89 @@ the it to start a build procedure.
 Those tasks are implemented by the BuilddMaster and BuilderGroup
 classes.
 
-  >>> from canonical.buildmaster.master import BuilddMaster
-  >>> bm = BuilddMaster(logger, transaction)
+    >>> from canonical.buildmaster.master import BuilddMaster
+    >>> bm = BuilddMaster(logger, transaction)
 
 Setup the test builder:
 
-  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
-  >>> BuilddSlaveTestSetup().setUp()
+    >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+    >>> BuilddSlaveTestSetup().setUp()
 
 Setup a suitable chroot for Hoary i386:
 
-  >>> from canonical.librarian.interfaces import ILibrarianClient
-  >>> from StringIO import StringIO
-  >>> librarian_client = getUtility(ILibrarianClient)
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from StringIO import StringIO
+    >>> librarian_client = getUtility(ILibrarianClient)
 
-  >>> content = 'anything'
-  >>> alias_id = librarian_client.addFile(
-  ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
+    >>> content = 'anything'
+    >>> alias_id = librarian_client.addFile(
+    ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ILibraryFileAliasSet)
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
-  >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
-  >>> hoary_i386 = hoary['i386']
+    >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+    >>> hoary_i386 = hoary['i386']
 
-  >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
-  >>> pc = hoary_i386.addOrUpdateChroot(chroot=chroot)
+    >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
+    >>> pc = hoary_i386.addOrUpdateChroot(chroot=chroot)
 
 Activate builders present in sampledata, we need to be logged in as a
 member of launchpad-buildd-admin:
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login('celso.providelo@canonical.com')
+    >>> from canonical.launchpad.ftests import login
+    >>> login('celso.providelo@canonical.com')
 
 Set IBuilder.builderok of all present builders:
 
-  >>> from canonical.launchpad.interfaces import IBuilderSet
-  >>> builder_set = getUtility(IBuilderSet)
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> builder_set = getUtility(IBuilderSet)
 
-  >>> builder_set.count()
-  2
+    >>> builder_set.count()
+    2
 
-  >>> from canonical.launchpad.ftests import syncUpdate
-  >>> for b in builder_set:
-  ...     b.builderok = True
-  ...     syncUpdate(b)
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> for b in builder_set:
+    ...     b.builderok = True
+    ...     syncUpdate(b)
 
 Clean up previous BuildQueue results from sampledata:
 
-  >>> from canonical.launchpad.interfaces import IBuildQueueSet
-  >>> lost_job = getUtility(IBuildQueueSet).get(1)
-  >>> lost_job.builder.name
-  u'bob'
-  >>> lost_job.destroySelf()
+    >>> from canonical.launchpad.interfaces import IBuildQueueSet
+    >>> lost_job = getUtility(IBuildQueueSet).get(1)
+    >>> lost_job.builder.name
+    u'bob'
+    >>> lost_job.destroySelf()
 
 Setup BuilddMaster class:
 
-  >>> bm.addDistroArchSeries(hoary_i386)
-  >>> bm.setupBuilders(hoary_i386)
-  WARNING:root.builders.x86:frog (http://localhost:9221/) marked as failed due to: (111, 'Connection refused')
-  Traceback (most recent call last):
-  ...
-  error: (111, 'Connection refused')
+    >>> bm.addDistroArchSeries(hoary_i386)
+    >>> bm.setupBuilders(hoary_i386)
+    WARNING:root.builders.x86:frog (http://localhost:9221/) marked as failed due to: (111, 'Connection refused')
+    Traceback (most recent call last):
+    ...
+    error: (111, 'Connection refused')
 
 Check if there are builders available:
 
-  >>> bob_builder = builder_set['bob']
-  >>> bob_builder.name
-  u'bob'
-  >>> bob_builder.trusted
-  True
-  >>> bob_builder.is_available
-  True
+    >>> bob_builder = builder_set['bob']
+    >>> bob_builder.name
+    u'bob'
+    >>> bob_builder.virtualized
+    False
+    >>> bob_builder.is_available
+    True
 
 Verify how the nonexistent builder was excluded, marked as failed:
 
-  >>> frog_builder = builder_set['frog']
-  >>> frog_builder.builderok
-  False
-  >>> print frog_builder.failnotes
-  (111, 'Connection refused')
-  >>> frog_builder.is_available
-  False
+    >>> frog_builder = builder_set['frog']
+    >>> frog_builder.builderok
+    False
+    >>> print frog_builder.failnotes
+    (111, 'Connection refused')
+    >>> frog_builder.is_available
+    False
 
 
 == Builder dispatching API ==
@@ -102,174 +102,191 @@ Verify how the nonexistent builder was excluded, marked as failed:
 Now let's check the build candidates which will be considered for the
 builder 'bob':
 
-  >>> job = bob_builder.findBuildCandidate()
+    >>> job = bob_builder.findBuildCandidate()
 
-The single BuildQueue found is a trusted pending build:
+The single BuildQueue found is a non-virtual pending build:
 
-  >>> job.id
-  2
-  >>> job.build.buildstate.name
-  'NEEDSBUILD'
-  >>> job.builder is None
-  True
-  >>> job.buildstart is None
-  True
-  >>> job.is_trusted
-  True
+    >>> job.id
+    2
+    >>> job.build.buildstate.name
+    'NEEDSBUILD'
+    >>> job.builder is None
+    True
+    >>> job.buildstart is None
+    True
+    >>> job.is_virtualized
+    False
 
 Update the SourcePackageReleaseFile corresponding to this job:
 
-  >>> content = 'anything'
-  >>> alias_id = librarian_client.addFile(
-  ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
+    >>> content = 'anything'
+    >>> alias_id = librarian_client.addFile(
+    ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
 
-  >>> sprf = job.build.sourcepackagerelease.files[0]
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> naked_sprf = removeSecurityProxy(sprf)
-  >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
-  >>> flush_database_updates()
+    >>> sprf = job.build.sourcepackagerelease.files[0]
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_sprf = removeSecurityProxy(sprf)
+    >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
+    >>> flush_database_updates()
 
 Check the dispatching method itself:
 
-  >>> bob_builder.dispatchBuildCandidate(job)
-  >>> flush_database_updates()
+    >>> bob_builder.dispatchBuildCandidate(job)
+    >>> flush_database_updates()
 
 Verify if the job (BuildQueue) was updated appropriately:
 
-  >>> job.builder.id == bob_builder.id
-  True
-  >>> job.build.buildstate.name
-  'BUILDING'
-  >>> job.buildstart
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> job.builder.id == bob_builder.id
+    True
+    >>> job.build.buildstate.name
+    'BUILDING'
+    >>> job.buildstart
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
 
-  >>> BuilddSlaveTestSetup().tearDown()
+    >>> BuilddSlaveTestSetup().tearDown()
 
-  >>> from canonical.launchpad.interfaces import BuildStatus
-  >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
-  >>> job.destroySelf()
-  >>> flush_database_updates()
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> job.destroySelf()
+    >>> flush_database_updates()
 
 
 == PPA build dispatching ==
 
 Create new Build record of the same source targeted for a PPA archive:
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> ppa_build = sprf.sourcepackagerelease.createBuild(
-  ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov.archive)
+    >>> ppa_build = sprf.sourcepackagerelease.createBuild(
+    ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov.archive)
 
 Create BuildQueue record and inspect some parameters:
 
-  >>> ppa_job = ppa_build.createBuildQueueEntry()
-  >>> ppa_job.id
-  3L
-  >>> ppa_job.builder == None
-  True
-  >>> ppa_job.buildstart == None
-  True
-  >>> ppa_job.is_trusted
-  False
+    >>> ppa_job = ppa_build.createBuildQueueEntry()
+    >>> ppa_job.id
+    3L
+    >>> ppa_job.builder == None
+    True
+    >>> ppa_job.buildstart == None
+    True
+
+The build job's archive requires virtualized builds.
+
+    >>> ppa_job.build.archive.require_virtualized
+    True
+
+But the builder is not virtualized.
+
+    >>> bob_builder.virtualized
+    False
+
+Hence, the builder will not be able to pick up the PPA build job created
+above.
+
+    >>> bob_builder.vm_host = 'localhost.ppa'
+    >>> syncUpdate(bob_builder)
+
+    >>> job = bob_builder.findBuildCandidate()
+    >>> print job
+    None
 
 In order to enable 'bob' to find and build the PPA job, we have to
-change it to 'untrusted' mode.  This is because PPA builds will only build
-on untrusted builders.
+change it to virtualized.  This is because PPA builds will only build
+on virtualized builders.
 
-  >>> bob_builder.trusted = False
-  >>> bob_builder.vm_host = 'localhost.ppa'
-  >>> flush_database_updates()
+    >>> bob_builder.virtualized = True
+    >>> syncUpdate(bob_builder)
 
-  >>> job = bob_builder.findBuildCandidate()
-  >>> ppa_job.id == job.id
-  True
+    >>> job = bob_builder.findBuildCandidate()
+    >>> ppa_job.id == job.id
+    True
 
 Start buildd-slave to be able to dispatch jobs.
 
-  >>> BuilddSlaveTestSetup().setUp()
+    >>> BuilddSlaveTestSetup().setUp()
 
 Before dispatching we can check if the builder is protected against
-mistakes in code that results in a attempt to build a untrusted job in
-a trusted build.
+mistakes in code that results in a attempt to build a virtual job in
+a non-virtual build.
 
-  >>> bob_builder.trusted = True
-  >>> flush_database_updates()
-  >>> bob_builder.dispatchBuildCandidate(ppa_job)
-  Traceback (most recent call last):
-  ...
-  AssertionError: Attempt to build untrusted item on a trusted-only builder.
+    >>> bob_builder.virtualized = False
+    >>> flush_database_updates()
+    >>> bob_builder.dispatchBuildCandidate(ppa_job)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to build non-virtual item on a virtual builder.
 
-Mark the builder as untrusted again, so we can dispatch the ppa job
+Mark the builder as virtual again, so we can dispatch the ppa job
 successfully.
 
-  >>> bob_builder.trusted = False
-  >>> flush_database_updates()
+    >>> bob_builder.virtualized = True
+    >>> flush_database_updates()
 
-  >>> bob_builder.dispatchBuildCandidate(ppa_job)
-  >>> flush_database_updates()
+    >>> bob_builder.dispatchBuildCandidate(ppa_job)
+    >>> flush_database_updates()
 
 PPA job is building.
 
-  >>> ppa_job.builder.name
-  u'bob'
-  >>> ppa_job.build.buildstate.name
-  'BUILDING'
-  >>> ppa_job.buildstart
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> ppa_job.builder.name
+    u'bob'
+    >>> ppa_job.build.buildstate.name
+    'BUILDING'
+    >>> ppa_job.buildstart
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
-buildqueue record and make 'bob' builder trusted again,  so the
+buildqueue record and make 'bob' builder non-virtual again,  so the
 environment is back to the initial state.
 
-  >>> BuilddSlaveTestSetup().tearDown()
+    >>> BuilddSlaveTestSetup().tearDown()
 
-  >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
-  >>> ppa_job.destroySelf()
-  >>> bob_builder.trusted = True
-  >>> flush_database_updates()
+    >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> ppa_job.destroySelf()
+    >>> bob_builder.virtualized = False
+    >>> flush_database_updates()
 
 
 == Security build dispatching ==
 
 Setup chroot for warty/i386.
 
-  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
-  >>> warty_i386 = warty['i386']
-  >>> pc = warty_i386.addOrUpdateChroot(chroot=chroot)
+    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+    >>> warty_i386 = warty['i386']
+    >>> pc = warty_i386.addOrUpdateChroot(chroot=chroot)
 
 Create a new Build record for test source targeted to warty/i386
 architecture and SECURITY pocket:
 
-  >>> sec_build = sprf.sourcepackagerelease.createBuild(
-  ...     warty_i386, PackagePublishingPocket.SECURITY, hoary.main_archive)
+    >>> sec_build = sprf.sourcepackagerelease.createBuild(
+    ...     warty_i386, PackagePublishingPocket.SECURITY, hoary.main_archive)
 
 Create BuildQueue record and inspect some parameters:
 
-  >>> sec_job = sec_build.createBuildQueueEntry()
-  >>> sec_job.id
-  4L
-  >>> print sec_job.builder
-  None
-  >>> print sec_job.buildstart
-  None
-  >>> sec_job.is_trusted
-  True
+    >>> sec_job = sec_build.createBuildQueueEntry()
+    >>> sec_job.id
+    4L
+    >>> print sec_job.builder
+    None
+    >>> print sec_job.buildstart
+    None
+    >>> sec_job.is_virtualized
+    False
 
 In normal conditions the next available candidate would be the job
 targeted to SECURITY pocket. However, the builders are forbidden to
 accept such jobs until we have finished the EMBARGOED archive
 implementation.
 
-  >>> BuilddSlaveTestSetup().setUp()
-  >>> bob_builder.dispatchBuildCandidate(sec_job)
-  Traceback (most recent call last):
-  ...
-  AssertionError: Soyuz is not yet capable of building SECURITY uploads.
-  >>> BuilddSlaveTestSetup().tearDown()
+    >>> BuilddSlaveTestSetup().setUp()
+    >>> bob_builder.dispatchBuildCandidate(sec_job)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Soyuz is not yet capable of building SECURITY uploads.
+    >>> BuilddSlaveTestSetup().tearDown()
 
 To solve this problem temporarily until we start building security
 uploads, we will mark builds targeted to the SECURITY pocket as
@@ -278,34 +295,34 @@ FAILEDTOBUILD during the findBuildCandidate look-up.
 We will also create another build candidate in breezy-autotest/i386 to
 check if legitimate pending candidates will remain valid.
 
-  >>> breezy = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
-  >>> breezy_i386 = breezy['i386']
-  >>> pc = breezy_i386.addOrUpdateChroot(chroot=chroot)
+    >>> breezy = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
+    >>> breezy_i386 = breezy['i386']
+    >>> pc = breezy_i386.addOrUpdateChroot(chroot=chroot)
 
-  >>> pending_build = sprf.sourcepackagerelease.createBuild(
-  ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
-  >>> pending_job = pending_build.createBuildQueueEntry()
+    >>> pending_build = sprf.sourcepackagerelease.createBuild(
+    ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
+    >>> pending_job = pending_build.createBuildQueueEntry()
 
 We increase the score of the security job to ensure it is considered
 before the legitimate job.
 
-  >>> sec_job.lastscore = 1000
-  >>> flush_database_updates()
+    >>> sec_job.lastscore = 1000
+    >>> flush_database_updates()
 
 New we can check that the next valid candidate is the just-added
 'pending_job'.
 
-  >>> candidate = bob_builder.findBuildCandidate()
-  >>> flush_database_updates()
-  >>> candidate.id == pending_job.id
-  True
+    >>> candidate = bob_builder.findBuildCandidate()
+    >>> flush_database_updates()
+    >>> candidate.id == pending_job.id
+    True
 
 And as expected, the security job was marked as FAILEDTOBUILD and the
 corresponding BuildQueue record was removed.  This way the security
 builds, created due to missing binary uploads from DAK, will be
 appropriately recorded and ignored.
 
-  >>> print sec_build.buildstate.name
-  FAILEDTOBUILD
-  >>> print sec_build.buildqueue_record
-  None
+    >>> print sec_build.buildstate.name
+    FAILEDTOBUILD
+    >>> print sec_build.buildqueue_record
+    None

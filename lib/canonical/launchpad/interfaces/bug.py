@@ -278,7 +278,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
-    def getBugNotificationRecipients(duplicateof=None):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -289,10 +289,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         details of this implementation.
         """
 
-    def addChangeNotification(text, person):
+    def addChangeNotification(text, person, recipients=None, when=None):
         """Add a bug change notification."""
 
-    def addCommentNotification(message):
+    def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
     def expireNotifications():
@@ -380,6 +380,18 @@ class IBug(IMessageTarget, ICanBeMentored):
     def getQuestionCreatedFromBug():
         """Return the question created from this Bug, or None."""
 
+    def linkMessage(message, bugwatch=None, user=None,
+                    remote_comment_id=None):
+        """Add a comment to this bug.
+
+            :param message: The `IMessage` to be used as a comment.
+            :param bugwatch: The `IBugWatch` of the bug this comment was
+                imported from, if it's an imported comment.
+            :param user: The `IPerson` adding the comment.
+            :param remote_comment_id: The id this comment has in the
+                remote bug tracker, if it's an imported comment.
+        """
+
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
@@ -466,6 +478,7 @@ class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
 
     bug = Attribute("The IBug, after it's been edited.")
+    bug_before_modification = Attribute("The IBug, before it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
 

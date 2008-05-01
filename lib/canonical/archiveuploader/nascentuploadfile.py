@@ -21,10 +21,8 @@ import apt_pkg
 import os
 import md5
 import sha
-import shutil
 import subprocess
 import sys
-import tempfile
 import time
 
 from zope.component import getUtility
@@ -269,7 +267,8 @@ class CustomUploadFile(NascentUploadFile):
         libraryfile = self.librarian.create(
             self.filename, self.size,
             open(self.filepath, "rb"),
-            self.content_type)
+            self.content_type,
+            restricted=self.policy.archive.private)
         return libraryfile
 
 
@@ -692,36 +691,17 @@ class BaseBinaryUploadFile(PackageUploadFile):
             deb_file = open(self.filepath, "rb")
             apt_inst.debExtract(deb_file, tar_checker.callback,
                                 "control.tar.gz")
-            # XXX 2008-01-18 Julian
-            # To work around a bug in debExtract which fails on lzma
-            # archives, we'll extract the archive ourselves to a temp
-            # directory.  This code should be changed when python-apt is
-            # fixed.
-            # Oh, and bring on Python 2.5 that lets me use
-            # try/except/finally properly. :/
-            tmpdir = tempfile.mkdtemp()
-            deb_file.seek(0)
-            try:
-                # apt_inst kindly changes the CWD under our feet, let's
-                # save it and restore after this call.  This only seems
-                # to be a problem for the test harness, explicitly when
-                # the tmp dir gets removed later.
-                cwd = os.getcwd()
-                apt_inst.debExtractArchive(deb_file, tmpdir)
-                os.chdir(cwd)
-            except SystemError:
-                yield UploadError("Unable to unpack %s." % self.filename)
-                deb_file.close()
-                shutil.rmtree(tmpdir)
-                return
-            deb_file.close()
-
-            # Examine all the files that were extracted:
-            for dirpath, dirnames, filenames in os.walk(tmpdir):
-                for filename in filenames:
-                    tar_checker.check_cutoff(
-                        filename,
-                        os.stat(os.path.join(dirpath, filename)).st_mtime)
+            # Only one of these files is present in the archive, so loop
+            # until we find one of them, otherwise fail.
+            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma")
+            for file in data_files:
+                deb_file.seek(0)
+                try:
+                    apt_inst.debExtract(deb_file, tar_checker.callback, file)
+                except SystemError:
+                    continue
+                else:
+                    deb_file.close()
 
                     future_files = tar_checker.future_files.keys()
                     if future_files:
@@ -744,6 +724,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
                             "far into the future (e.g. %s [%s])."
                              % (self.filename, len(ancient_files), first_file,
                                 timestamp))
+                    return
+
+            deb_file.close()
+            yield UploadError(
+                "Could not find data tarball in %s" % self.filename)
 
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -756,7 +741,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError("%s: deb contents timestamp check failed: %s"
                  % (self.filename, error))
 
-        shutil.rmtree(tmpdir)
 
 #
 #   Database relationship methods
@@ -926,7 +910,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,
-             self.size, open(self.filepath, "rb"), self.content_type)
+             self.size, open(self.filepath, "rb"), self.content_type,
+             restricted=self.policy.archive.private)
         binary.addFile(library_file)
         return binary
 

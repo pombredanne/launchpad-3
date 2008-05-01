@@ -120,32 +120,21 @@ the person should look like this:
     >>> person.creation_comment
     u'when the ed package was imported into Ubuntu Breezy'
 
+Checking .is_valid_person issues a DB query to the
+ValidPersonOrTeamCache, unless it's already been cached. To avoid many
+small queries when checking whether a lot of people are valid,
+getValidPersons() can be used. This is useful for filling the ORM
+cache, so that code in other places can check .is_valid_person, without
+it issuing a DB query.
 
-In case of failure of creating a new person or email the method returns
-(None, None). Let's demonstrate this trying to create a person with
-an invalid email.
-
-    >>> p2, invalid_email = personset.createPersonAndEmail(
-    ...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
-    >>> p2, invalid_email
-    (None, None)
-
-And now with the same name of a existing account
-
-    >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN,
-    ...     name='name12')
-    >>> p3, invalid_email
-    (None, None)
-
-    >>> vcs_imports = personset.getByName('vcs-imports')
-    >>> vcs_imports.teamowner is None
+    >>> non_valid_person = person
+    >>> non_valid_person.is_valid_person
     False
-    >>> vcs_imports.is_valid_person # Not valid person because it is a team
-    False
-    >>> lifeless = personset.getByName('lifeless')
-    >>> lifeless.teamowner is None
+    >>> foobar.is_valid_person
     True
+    >>> valid_persons = personset.getValidPersons([non_valid_person, foobar])
+    >>> [person.name for person in valid_persons]
+    [u'name16']
 
 
 === Personal standing ===
@@ -156,6 +145,7 @@ It's a form of automatic moderation.  Most people have unknown standing,
 which is the default.
 
     >>> login('foo.bar@canonical.com')
+    >>> lifeless = personset.getByName('lifeless')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
@@ -419,6 +409,7 @@ when checking permissions.
 
     >>> ddaa.is_valid_person
     True
+    >>> vcs_imports = personset.getByName('vcs-imports')
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
     True
 
@@ -530,6 +521,23 @@ BugSubscription.subscribed_by attributes.
     InvalidField: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
+== Latest Team Memberships ==
+
+The key concept in displaying the latest team memberships is that the team
+list is actually sorted by date joined.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> foobar = personset.getByName('name16')
+    >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
+    >>> for membership in membership_list:
+    ...     print membership.datejoined
+    2007-01-17 14:13:39.692693+00:00
+    2006-05-15 22:23:29.062603+00:00
+    2005-10-13 13:03:41.668724+00:00
+    2005-07-12 14:36:09.587753+00:00
+    2005-04-14 00:00:00+00:00
 
 == Deactivating user accounts ==
 
@@ -772,14 +780,10 @@ question to any PPA.
     >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
-    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
-    (u'at', u'Ubuntu Hoary', u'0.00')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
@@ -792,7 +796,6 @@ question to any PPA.
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'sabdfl', u'Ubuntu Warty')
-    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
 We will change modify the first SourcePackageRelease to reproduce the
 issue mentioned in bug 157303, where source with same creator and
@@ -812,7 +815,6 @@ maintainer got omitted from the results:
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
-    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
 
 == Pillars owned or driven by a person or team ==

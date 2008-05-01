@@ -11,17 +11,18 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, IArchive, IBazaarApplication, IBranch,
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
-    ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
+    ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportMachine, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
-    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
-    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
-    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISourcePackageRelease, ISpecification,
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
+    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISourcePackage, ISourcePackageRelease, ISpecification,
     ISpecificationBranch, ISpecificationSubscription, ISprint,
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
@@ -62,6 +63,15 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditOAuthAccessToken(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthAccessToken
+
+    def checkAuthenticated(self, user):
+        return (self.obj.person == user
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -410,13 +420,12 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         return user.inTeam(admins)
 
 
-class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
-    permission = 'launchpad.Admin'
+class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Owner'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """Only the team owner and Launchpad admins have launchpad.Admin on a
-        team.
+        """Only the team owner and Launchpad admins need this.
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
@@ -871,16 +880,6 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportSet
 
 
-class SeeCodeImport(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImport.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImport
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
@@ -889,16 +888,6 @@ class EditCodeImport(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImport
-
-
-class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportJob.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportJob
 
 
 class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
@@ -919,17 +908,6 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportJobWorkflow
-
-
-class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImportMachine listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportMachineSet
 
 
 class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
@@ -1031,6 +1009,37 @@ class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
 class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationGroupSet
+
+
+class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
+    """Restrict full `SourcePackage` translation downloads.
+
+    Experience shows that the export queue can easily get swamped by
+    large export requests.  Email leads us to believe that many of the
+    users making these requests are looking for language packs, or for
+    individual translations rather than the whole package.  That's why
+    this class defines who is allowed to make those requests.
+    """
+
+    permission = 'launchpad.ExpensiveRequest'
+    usedfor = ISourcePackage
+
+    def checkAuthenticated(self, user):
+        """Define who may download these translations.
+
+        Admins and Translations admins have access, as do the owner of
+        the translation group (if applicable) and whoever is allowed to
+        upload new versions of the source package.
+        """
+        translation_group = self.obj.distribution.translationgroup
+        return (
+            # User is admin of some relevant kind.
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User has upload rights to this package.
+            user.inTeam(self.obj.distribution.upload_admin) or
+            # User is owner of applicable translation group.
+            (translation_group is not None and
+             user.inTeam(translation_group.owner)))
 
 
 class EditBugTracker(EditByRegistryExpertsOrOwnersOrAdmins):
@@ -1144,11 +1153,25 @@ class ViewBuildRecord(EditBuildRecord):
             # Anyone can see non-private archives.
             return True
 
+        # If the permission check on the sourcepackagerelease for this
+        # build passes then it means the build can be released from
+        # privacy since the source package is published publicly.
+        # This happens when copy-package is used to re-publish a private
+        # package in the primary archive.
+        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        if auth_spr.checkAuthenticated(user):
+            return True
+
         return EditBuildRecord.checkAuthenticated(self, user)
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
-        return not self.obj.archive.private
+        if not self.obj.archive.private:
+            return True
+
+        # See comment above.
+        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        return auth_spr.checkUnauthenticated()
 
 
 class AdminQuestion(AdminByAdminsTeam):
@@ -1246,10 +1269,34 @@ class AccessBranch(AuthorizationBase):
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
                 return True
-        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
     def checkUnauthenticated(self):
         return not self.obj.private
+
+
+class EditBranch(AuthorizationBase):
+    """The owner, bazaar experts or admins can edit branches."""
+    permission = 'launchpad.Edit'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
+
+
+class AdminBranch(AuthorizationBase):
+    """The bazaar experts or admins can administer branches."""
+    permission = 'launchpad.Admin'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
@@ -1277,8 +1324,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         Any team member can edit a branch subscription for their team.
         Launchpad Admins can also edit any branch subscription.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.person) or user.inTeam(admins)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
@@ -1323,12 +1372,13 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the reviewer for the target_branch
           * an administrator
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
                 user.inTeam(self.obj.target_branch.owner) or
                 user.inTeam(self.obj.target_branch.reviewer) or
-                user.inTeam(admins))
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class ViewEntitlement(AuthorizationBase):

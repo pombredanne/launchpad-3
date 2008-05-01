@@ -84,7 +84,7 @@ what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
-  ...      IDistributionSet, QueueInconsistentStateError)
+  ...      QueueInconsistentStateError)
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
@@ -681,6 +681,62 @@ Clear existing mail stack:
   >>> rubbish = pop_notifications()
 
 
+== Overriding uploads ==
+
+Sources and binaries for the upload may be overridden via the methods
+overrideSource() and overrideBinaries().  The former allows overriding
+of component and section and the latter both those plus the section.
+
+The alsa-utils source is already in the queue with component "main"
+and section "base".
+
+    >>> [item] = breezy_autotest.getQueueItems(
+    ...     PackageUploadStatus.NEW, name='alsa-utils')
+    >>> [source] = item.sources
+    >>> print "%s/%s" % (
+    ...     source.sourcepackagerelease.component.name,
+    ...     source.sourcepackagerelease.section.name)
+    main/base
+
+We can override it to restricted/web.  overrideSource() returns
+True if it completed the task.
+
+    >>> restricted = getUtility(IComponentSet)['restricted']
+    >>> web = getUtility(ISectionSet)['web']
+    >>> print item.overrideSource(new_component=restricted, new_section=web)
+    True
+    >>> print "%s/%s" % (
+    ...     source.sourcepackagerelease.component.name,
+    ...     source.sourcepackagerelease.section.name)
+    restricted/web
+
+Similarly for binaries:
+
+    >>> [item] = breezy_autotest.getQueueItems(
+    ...     PackageUploadStatus.NEW, name='pmount')
+    >>> [build] = item.builds
+    >>> [binary_package] = build.build.binarypackages
+    >>> print "%s/%s/%s" % (
+    ...     binary_package.component.name,
+    ...     binary_package.section.name,
+    ...     binary_package.priority.title)
+    main/heaven/Important
+
+    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA)
+    True
+    >>> print "%s/%s/%s" % (
+    ...     binary_package.component.name,
+    ...     binary_package.section.name,
+    ...     binary_package.priority.title)
+    restricted/web/Extra
+
+
+== Queue Manipulation ==
+
 Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
 accept or reject the item and send an email respectively.
 
@@ -702,6 +758,22 @@ Two emails are generated.  We won't look what is inside them here, that is
 well shown in nascentupload-announcements.txt.
 
   >>> [notification, announcement] = pop_notifications()
+
+When accepting single sources we also immediately create its
+corresponding build records. It means that the source will be ready to
+build once it was accepted, using 'queue-tool' or via the Web UI.
+
+  >>> queue_source = items[1].sources[0]
+  >>> [build] = queue_source.sourcepackagerelease.builds
+
+  >>> print build.title
+  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
+
+  >>> print build.buildstate.name
+  NEEDSBUILD
+
+  >>> print build.buildqueue_record.lastscore
+  10
 
 Let's reject something in the queue:
 

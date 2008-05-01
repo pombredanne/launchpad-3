@@ -1,4 +1,6 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# We like global!
+# pylint: disable-msg=W0603,W0702
 
 """Layers used by Canonical tests.
 
@@ -23,15 +25,18 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError',
-    'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
-    'TwistedLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
+    'ExperimentalLaunchpadZopelessLayer', 'TwistedLaunchpadZopelessLayer'
     ]
 
+import gc
 import logging
 import os
+import signal
 import socket
 import sys
+from textwrap import dedent
+import threading
 import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -97,8 +102,8 @@ class LayerIsolationError(LayerError):
     This generally indicates a test has screwed up by not resetting
     something correctly to the default state.
 
-    The test suite should abort as further test failures may well
-    be spurious.
+    The test suite should abort if it cannot clean up the mess as further
+    test failures may well be spurious.
     """
 
 
@@ -136,7 +141,7 @@ class BaseLayer:
         BaseLayer.isSetUp = True
 
         # Kill any Librarian left running from a previous test run.
-        LibrarianTestSetup().killTac()
+        LibrarianTestSetup().tearDown()
 
         # Kill any database left lying around from a previous test run.
         try:
@@ -154,6 +159,10 @@ class BaseLayer:
     @classmethod
     @profiled
     def testSetUp(cls):
+        # Store currently running threads so we can detect if a test
+        # leaves new threads running.
+        BaseLayer._threads = threading.enumerate()
+
         BaseLayer.check()
 
         BaseLayer.original_working_directory = os.getcwd()
@@ -198,6 +207,28 @@ class BaseLayer:
         BaseLayer.test_name = None
 
         BaseLayer.check()
+
+        # Check for tests that leave live threads around early.
+        # A live thread may be the cause of other failures, such as
+        # uncollectable garbage.
+        new_threads = [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+        if new_threads:
+            BaseLayer.flagTestIsolationFailure(
+                    "Test left new live threads: %s" % repr(new_threads))
+        del BaseLayer._threads
+
+        # Objects with __del__ methods cannot participate in refence cycles.
+        # Fail tests with memory leaks now rather than when Launchpad crashes
+        # due to a leak because someone ignored the warnings.
+        if gc.garbage:
+            gc.collect() # Expensive, so only do if there might be garbage.
+            if gc.garbage:
+                BaseLayer.flagTestIsolationFailure(
+                        "Test left uncollectable garbage\n"
+                        "%s (referenced from %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
 
     @classmethod
     @profiled
@@ -250,6 +281,7 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
+            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)
@@ -351,10 +383,6 @@ class LibrarianLayer(BaseLayer):
             LibrarianLayer.reveal()
         LibrarianLayer._check_and_reset()
 
-    # The hide and reveal methods mess with the config. Store the
-    # original values so things can be recovered.
-    _orig_librarian_port = config.librarian.upload_port
-
     # Flag maintaining state of hide()/reveal() calls
     _hidden = False
 
@@ -381,7 +409,11 @@ class LibrarianLayer(BaseLayer):
             LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
 
         host, port = LibrarianLayer._fake_upload_socket.getsockname()
-        config.librarian.upload_port = port
+        librarian_data = dedent("""
+            [librarian]
+            upload_port: %s
+            """ % port)
+        config.push('hide_librarian', librarian_data)
 
     @classmethod
     @profiled
@@ -391,7 +423,7 @@ class LibrarianLayer(BaseLayer):
         This just involves restoring the config to the original value.
         """
         LibrarianLayer._hidden = False
-        config.librarian.upload_port = LibrarianLayer._orig_librarian_port
+        config.pop('hide_librarian')
 
 
 # We store a reference to the DB-API connect method here when we
@@ -714,8 +746,23 @@ class TwistedLayer(BaseLayer):
         pass
 
     @classmethod
+    def _save_signals(cls):
+        """Save the current signal handlers."""
+        TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
+        TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
+        TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+
+    @classmethod
+    def _restore_signals(cls):
+        """Restore the signal handlers."""
+        signal.signal(signal.SIGINT, TwistedLayer._original_sigint)
+        signal.signal(signal.SIGTERM, TwistedLayer._original_sigterm)
+        signal.signal(signal.SIGCHLD, TwistedLayer._original_sigchld)
+
+    @classmethod
     @profiled
     def testSetUp(cls):
+        TwistedLayer._save_signals()
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
         if interfaces.IReactorThreads.providedBy(reactor):
@@ -739,6 +786,7 @@ class TwistedLayer(BaseLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
+        TwistedLayer._restore_signals()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):

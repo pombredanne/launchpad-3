@@ -11,7 +11,7 @@ import _pythonpath
 from optparse import OptionParser
 import sys
 
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts import db_options
 from canonical.launchpad.scripts.logger import log, logger_options
 
@@ -38,7 +38,7 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=AUTOCOMMIT_ISOLATION)
+con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 #  People have so far updated translation credits, often mis-crediting people,
 #  or removing credits to upstream translators: we want to disable all of these

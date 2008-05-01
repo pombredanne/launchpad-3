@@ -61,12 +61,14 @@
                 />
               </a>
             </center>
-           </p>
+          </p>
+          <tal:not-beta-team-member condition="not: view/isBetaUser">
            <h2>Join the Launchpad beta team</h2>
            <p id="beta-test">
-             Get first access to new features and take part in the Launchpad development process.
-             Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
-          </p>
+            Get first access to new features and take part in the Launchpad development process.
+            Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
+           </p>
+          </tal:not-beta-team-member>
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
@@ -75,44 +77,56 @@
              <tr>
               <td><img src="/@@/news" alt="" /></td>
               <td>
-              <a href="https://help.launchpad.net/BugSubscriptions">
-                <strong>Improved bug subscriptions</strong><br />
-                Get email notifications of bugs associated with a milestone, project, package or distribution.
+                <a href="https://help.launchpad.net/PPAQuickStart#copy">
+                <strong>Copy PPA packages</strong><br />
+                Now you can copy source and binary packages between distro releases
+                within a PPA or to any other PPA for which you have upload permission.
                </a>
               </td>
              </tr>
              <tr>
               <td><img src="/@@/news" alt="" /></td>
               <td>
-               <a href="https://help.launchpad.net/BugTrackerEmailInterface#attachments">
-                <strong>Bug attachments by email</strong><br />
-                You can now attach files to bug reports using the Bug Tracker's email interface.
+                <a href="http://news.launchpad.net/?p=66">
+                <strong>Meet the bug supervisor</strong><br />
+                Bug contacts are now called bug supervisors. Read our blog post to find out why.
                </a>
               </td>
              </tr>
              <tr>
               <td><img src="/@@/news" alt="" /></td>
               <td>
-               <a href="https://help.launchpad.net/BranchMergeProposals">
-                <strong>Approve branch merge proposals</strong><br />
-                Mark branch merge proposals as approved or rejected.
+                <a href="https://code.launchpad.net/+recently-imported-branches">
+                <strong>View recent code imports</strong><br />
+                See the status of all Subversion and CVS imports into Launchpad,
+                including their most recent commit messages.
                </a>
               </td>
              </tr>
              <tr>
-               <td><img src="/@@/news" alt="" /></td>
-               <td>
-                 <a href="https://help.launchpad.net/logo">
-                   <strong>Logo competition!</strong><br />
-                   Submit your design for the new Launchpad logo for
-                   the chance to win an Ubuntu Messenger bag.
-                 </a>
-               </td>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+                <a href="https://launchpad.net/ubuntu/+ppas">
+                <strong>Improved PPA distro overview page</strong><br />
+                Our new distro PPA overview page highlights the most active archives
+                and the latest PPA uploads, along with supported architectures and
+                distribution releases.
+               </a>
+              </td>
+             </tr>
+            <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+                <a href="http://news.launchpad.net/?p=57">
+                <strong>Mailing lists for teams!</strong><br />
+                Each team in Launchpad can now have its own mailing list, with full public archives.
+               </a>
+              </td>
              </tr>
             </tbody>
           </table>
           <div class="discreet" style="text-align: right">
-            Updated 2008-02-20.
+            Updated 2008-04-30.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
@@ -158,4 +172,4 @@
     </div>
   </body>
 </html>
-<!-- 1-0 inprogress Needs images and marketing material -->
+<!-- 1-0 done could use a team icon though -->

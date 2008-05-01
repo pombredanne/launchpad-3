@@ -20,12 +20,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
-    IProduct, IProject, IProjectSeries, IProjectSet,
-    ISearchableByQuestionOwner,
-    ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationFilter, SpecificationImplementationStatus,
-    SpecificationSort, SprintSpecificationStatus, TranslationPermission)
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
+    IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
+    IStructuralSubscriptionTarget, ImportStatus, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus, TranslationPermission)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -47,16 +47,19 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.question import QuestionTargetSearch
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin):
+              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner)
+               IHasMugshot, ISearchableByQuestionOwner,
+               IStructuralSubscriptionTarget)
 
     _table = "Project"
 
@@ -367,6 +370,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 FROM Milestone, Product
                 WHERE Product.project = %s
                     AND Milestone.product = product.id
+                    AND Product.active
                 GROUP BY Milestone.name
                 %s
                 ORDER BY min(Milestone.dateexpected), Milestone.name

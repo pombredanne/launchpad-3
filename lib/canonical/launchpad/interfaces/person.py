@@ -13,8 +13,10 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
+    'InvalidName',
     'IObjectReassignment',
     'IPerson',
+    'IPersonAdminWriteRestricted',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonEditRestricted',
@@ -27,6 +29,7 @@ __all__ = [
     'ITeamCreation',
     'ITeamReassignment',
     'JoinNotAllowed',
+    'NameAlreadyTaken',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -44,6 +47,8 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.rest.declarations import (
+   collection_default_content, export_collection)
 
 from canonical.launchpad import _
 
@@ -59,8 +64,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.teammembership import (
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -222,7 +226,7 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     USER_CREATED = DBItem(11, """
-        Created by a user to represent a person which does not uses Launchpad.
+        Created by a user to represent a person which does not use Launchpad.
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
@@ -331,13 +335,6 @@ class PersonVisibility(DBEnumeratedType):
 
         Only launchpad admins and team members can view the
         membership list for this team.
-        """)
-
-    PRIVATE = DBItem(30, """
-        Private
-
-        Only launchpad admins and team members can see that
-        this team even exists in launchpad.
         """)
 
 
@@ -531,6 +528,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute(
         'Bounties to which this person subscribes.')
+
+    oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
     sshkeys = Attribute(_('List of SSH keys'))
 
@@ -731,13 +730,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
-    visibility = Choice(
-        title=_("Teams may be Public, Private Membership, or Private."),
-        required=True, vocabulary=PersonVisibility,
-        default=PersonVisibility.PUBLIC)
-
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
+
+    visibility_consistency_warning = Attribute(
+        "Warning that a private team may leak membership info.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -814,15 +811,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
-    def getBugContactPackages():
-        """Return a list of packages for which this person is a bug contact.
+    def getBugSubscriberPackages():
+        """Return the packages for which this person is a bug subscriber.
 
         Returns a list of IDistributionSourcePackage's, ordered alphabetically
         (A to Z) by name.
         """
 
-    def getBugContactOpenBugCounts(user):
-        """Return open bug counts for this bug contact's packages.
+    def getBugSubscriberOpenBugCounts(user):
+        """Return open bug counts for this bug subscriber's packages.
 
             :user: The user doing the search. Private bugs that this
                    user doesn't have access to won't be included in the
@@ -1257,9 +1254,48 @@ class IPersonEditRestricted(Interface):
         team.
         """
 
+    def deactivateAllMembers(comment, reviewer):
+        """Deactivate all the members of this team."""
+
+    def acceptInvitationToBeMemberOf(team, comment):
+        """Accept an invitation to become a member of the given team.
+
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to APPROVED.
+        """
+
+    def declineInvitationToBeMemberOf(team, comment):
+        """Decline an invitation to become a member of the given team.
+
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to INVITATION_DECLINED.
+        """
+
+    def renewTeamMembership(team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+
+class IPersonAdminWriteRestricted(Interface):
+    """IPerson attributes that require launchpad.Admin permission to set."""
+
+    visibility = Choice(
+        title=_("Visibility"),
+        description=_(
+            "Public visibility is standard, and Private Membership"
+            " means that a team's members are hidden."),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
+
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IHasStanding):
+              IPersonAdminWriteRestricted, IHasStanding):
     """A Person."""
 
 
@@ -1305,6 +1341,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
+    export_collection()
 
     title = Attribute('Title')
 
@@ -1315,17 +1352,36 @@ class IPersonSet(Interface):
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
-        """Create a new Person and an EmailAddress with the given email.
+        """Create and return an `IPerson` and `IEmailAddress`.
 
-        The comment must be of the following form: "when %(action_details)s"
-        (e.g. "when the foo package was imported into Ubuntu Breezy").
+        The newly created EmailAddress will have a status of NEW and will be
+        linked to the newly created Person.
 
-        Return the newly created Person and EmailAddress if everything went
-        fine or a (None, None) tuple otherwise.
+        If the given name is None, we generate a unique nickname from the
+        email address given.
 
-        Generate a unique nickname from the email address provided, create a
-        Person with that nickname and then create an EmailAddress (with status
-        NEW) for the new Person.
+        :param email: The email address, as text.
+        :param rationale: An item of `PersonCreationRationale` to be used as
+            the person's creation_rationale.
+        :param comment: A comment explaining why the person record was
+            created (usually used by scripts which create them automatically).
+            Must be of the following form: "when %(action_details)s"
+            (e.g. "when the foo package was imported into Ubuntu Breezy").
+        :param name: The person's name.
+        :param displayname: The person's displayname.
+        :param password: The person's password.
+        :param passwordEncrypted: Whether or not the given password is
+            encrypted.
+        :param registrant: The user who created this person, if any.
+        :param hide_email_addresses: Whether or not Launchpad should hide the
+            person's email addresses from other users.
+        :raises InvalidName: When the given name is not valid.
+        :raises InvalidEmailAddress: When the given email is not valid.
+        :raises NameAlreadyTaken: When the given name is already in use.
+        :raises EmailAddressAlreadyTaken: When the given email is already in
+            use.
+        :raises NicknameGenerationError: When no name is provided and we can't
+            generate a nickname from the given email address.
         """
 
     def ensurePerson(email, displayname, rationale, comment=None,
@@ -1420,7 +1476,8 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    def find(text, orderBy=None):
+    @collection_default_content
+    def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
 
@@ -1508,6 +1565,41 @@ class IPersonSet(Interface):
 
         Return None if there is no translator.
         """
+
+    def getValidPersons(self, persons):
+        """Get all the Persons that are valid.
+
+        This method is more effective than looking at
+        Person.is_valid_person_or_team, since it avoids issuing one DB
+        query per person. It queries the ValidPersonOrTeamCache table,
+        issuing one query for all the person records. This makes the
+        method useful for filling the ORM cache, so that checks to
+        .is_valid_person won't issue any DB queries.
+
+        XXX: This method exists mainly to fill the ORM cache for
+             ValidPersonOrTeamCache. It would be better to add a column
+             to the Person table. If we do that, this method can go
+             away. Bug 221901. -- Bjorn Tillenius, 2008-04-25
+        """
+
+    def getPeopleWithBranches(product=None):
+        """Return the people who have branches.
+
+        :param product: If supplied, only people who have branches in the
+            specified product are returned.
+        """
+
+    def getSubscribersForTargets(targets, recipients=None):
+        """Return the set of subscribers for `targets`.
+
+        :param targets: The sequence of targets for which to get the
+                        subscribers.
+        :param recipients: An optional instance of
+                           `BugNotificationRecipients`.
+                           If present, all found subscribers will be
+                           added to it.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
@@ -1613,3 +1705,11 @@ class ITeamContactAddressForm(Interface):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+
+
+class InvalidName(Exception):
+    """The name given for a person is not valid."""
+
+
+class NameAlreadyTaken(Exception):
+    """The name given for a person is already in use by other person."""

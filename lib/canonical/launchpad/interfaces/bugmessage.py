@@ -11,8 +11,8 @@ __all__ = [
     'IBugMessageSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Int, Text, Object
+from zope.interface import Attribute, Interface
+from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
 
 from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.bug import IBug
@@ -30,6 +30,8 @@ class IBugMessage(IHasBug):
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
+    remote_comment_id = TextLine(
+        title=u"The id this comment has in the bugwatch's bug tracker.")
 
 
 class IBugMessageSet(Interface):
@@ -56,6 +58,13 @@ class IBugMessageSet(Interface):
         """Return the corresponding IBugMesssage.
 
         Return None if no such IBugMesssage exists.
+        """
+
+    def getImportedBugMessages(bug):
+        """Return all the imported IBugMesssages for a bug.
+
+        An IBugMesssage is considered imported if it's linked to a bug
+        watch.
         """
 
 

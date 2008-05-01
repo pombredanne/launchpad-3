@@ -7,16 +7,18 @@ __all__ = [
     'BugEntry',
     'BugCollection',
     'IBugEntry',
+    'bugcomment_to_entry',
     ]
 
-from zope.component import adapts
+from zope.component import adapts, getUtility
 from zope.schema import Bool, Datetime, Int, List, Object, Text
 
 from canonical.lazr.rest import Collection, Entry
+from canonical.lazr.interfaces.rest import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.rest.messagetarget import IMessageTargetEntry
-from canonical.launchpad.interfaces import IBug, IBugTask, IPerson
+from canonical.launchpad.interfaces import IBug, IBugSet, IBugTask, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
 from canonical.lazr import decorates
@@ -99,8 +101,6 @@ class BugEntry(Entry):
     decorates(IBugEntry)
     schema = IBugEntry
 
-    parent_collection_name = 'bugs'
-
     @property
     def duplicate_of(self):
         """See `IBug`."""
@@ -115,15 +115,17 @@ class BugEntry(Entry):
 class BugCollection(Collection):
     """A collection of bugs, as exposed through the web service."""
 
-    def getEntryPath(self, entry):
-        """See `ICollection`."""
-        return str(entry.id)
-
-    def lookupEntry(self, name_or_id):
-        """Find a Bug by name or ID."""
-        return self.context.getByNameOrID(name_or_id)
-
     def find(self):
         """Return all the bugs on the site."""
-        return self.context.searchAsUser(None)
+        # Our context here is IMaloneApplication, that's why
+        # we need getUtility.
+        return getUtility(IBugSet).searchAsUser(None)
 
+
+def bugcomment_to_entry(comment):
+    """Will adapt to the bugcomment to the real IMessage.
+
+    This is needed because navigation to comments doesn't return
+    real IMessage instances but IBugComment.
+    """
+    return IEntry(comment.bugtask.bug.messages[comment.index])

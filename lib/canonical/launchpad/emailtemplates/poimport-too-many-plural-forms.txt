@@ -2,7 +2,8 @@ Hello %(importer)s,
 
 On %(dateimport)s (%(elapsedtime)s), you uploaded a file with %(language)s translations for %(template)s to Launchpad.
 
-We were unable to import it because it declares more plural forms than Launchpad can currently handle.  The maximum supported is 4.
+We were unable to import it because it declares more plural forms than
+Launchpad can currently handle.  The maximum supported is %(max_plural_forms)d.
 
 Please see if you can get by with fewer plural forms.  You can find Launchpad's default plural-forms information for %(language)s here:
 

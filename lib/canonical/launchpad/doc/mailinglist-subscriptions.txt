@@ -4,10 +4,12 @@ Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
 people, a team and its team mailing list.
 
+    # We'll need this throughout the test script.
+    >>> from canonical.launchpad.ftests import syncUpdate
+
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
     >>> anne = new_person('Anne')
-    >>> flush_database_updates()
 
 Anne gets two email addresses.  One is her preferred address...
 
@@ -20,7 +22,6 @@ Anne gets two email addresses.  One is her preferred address...
     u'aperson@example.org'
 
     >>> bart = new_person('Bart')
-    >>> flush_database_updates()
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one, list_one = new_team('team-one', with_list=True)
 
@@ -52,15 +53,7 @@ other than his preferred email address.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org']
 
-Someone who is not a member of the team may not subscribe to the team's list.
-
-    >>> cris = new_person('Cris')
-    >>> list_one.subscribe(cris)
-    Traceback (most recent call last):
-    ...
-    CannotSubscribe: Cris Person is not a member of team Team One
-
-Neither can a team subscribe to a mailing list.
+A team can not subscribe to a mailing list.
 
     >>> list_one.subscribe(team_one)
     Traceback (most recent call last):
@@ -91,7 +84,7 @@ Once Anne validates her new address, she can post from it.
 
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
-    >>> flush_database_updates()
+    >>> syncUpdate(alternative)
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'anne.x.person@example.net',
      u'aperson@example.org',
@@ -99,7 +92,7 @@ Once Anne validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> flush_database_updates()
+    >>> syncUpdate(alternative)
 
 
 == MailingListSubscription objects ==
@@ -126,12 +119,6 @@ associated with any specific address.
     >>> print list_one.getSubscription(anne).email_address
     None
 
-If a user is not subscribed to a mailing list, they will have no
-MailingListSubscription object for that mailing list.
-
-    >>> print list_one.getSubscription(cris)
-    None
-
 
 == Nested teams ==
 
@@ -149,6 +136,7 @@ we first create team-two as a subteam of team-one.
 Cris joins team-two, becoming a direct member of team-two and an indirect
 member of team-one.
 
+    >>> cris = new_person('Cris')
     >>> cris.join(team_two)
     >>> sorted(member.displayname for member in team_two.allmembers)
     [u'Cris Person', u'No Privileges Person']
@@ -186,7 +174,7 @@ to post to the mailing list.
 Once Cris validates her new address, she can post from it.
 
     >>> alternative.status = EmailAddressStatus.VALIDATED
-    >>> flush_database_updates()
+    >>> syncUpdate(alternative)
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
@@ -195,6 +183,7 @@ Once Cris validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
+    >>> syncUpdate(alternative)
 
 People can subscribe to both a superteam's mailing list and a subteam's
 mailing list.
@@ -230,7 +219,7 @@ allowed due to indirect membership in the superteam.
     [u'dirk.person@example.com']
 
 Once the subteam is deactivated from the superteam, subteam members who have
-no other indirect membership in the superteam cannot subscribe to the
+no other indirect membership in the superteam will be unsubscribed to the
 superteam's mailing list.
 
     >>> dirk.leave(team_two)
@@ -241,10 +230,29 @@ superteam's mailing list.
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
+However, their mail-list settings for the super-team will remain via a
+MailingListSubscription object.
+
+    >>> print list_one.getSubscription(dirk)
+    <security ...MailingListSubscription instance ...>
+
+
+Sub-team members may still ask to subscribe to the super-team's list,
+but their subscription will not become active, as they are not an
+approved member of the super-team.
+
+    # This will raise an error because the subscription object
+    # already exists.  However, the UI should have taken this into
+    # account.
     >>> list_one.subscribe(dirk)
     Traceback (most recent call last):
     ...
-    CannotSubscribe: Dirk Person is not a member of team Team One
+    CannotSubscribe: Dirk Person is already subscribed to list Team One
+
+    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    [u'anne.person@example.com', u'bperson@example.org',
+     u'cris.person@example.com']
+
 
 Teams, even subteams, cannot subscribe to mailing lists.
 
@@ -262,7 +270,6 @@ preferred email address, this will automatically track changes to their
 preferred address.
 
     >>> elle = new_person('Elle')
-    >>> flush_database_updates()
     >>> elle.preferredemail.email
     u'elle.person@example.com'
     >>> elle_alternative = get_alternative_email(elle)
@@ -409,7 +416,7 @@ A list that is not active cannot be subscribed to.
     >>> list_one.subscribe(anne)
     Traceback (most recent call last):
     ...
-    CannotSubscribe: Mailing list is not active: Team One
+    CannotSubscribe: Mailing list is not usable: Team One
 
 
 == Persistence of preferences ==
@@ -436,7 +443,6 @@ This is true even if they subscribe with an address that's different than
 their preferred email address.
 
     >>> kara = new_person('Kara')
-    >>> flush_database_updates()
     >>> kara.join(team_six)
     >>> kara_alternative = get_alternative_email(kara)
     >>> kara_alternative.email
@@ -501,12 +507,50 @@ subscription address.
         the mailing list: Team Six
 
 
+== Subscribing while requesting a team membership ==
+
+Someone who is not a member of a team may subscribe to the team's
+mailing list.  Full membership is only required to post to or receive
+emails from it.
+
+    >>> team_seven, list_seven = new_team('team-7', with_list=True)
+    >>> sam = new_person('Samuel')
+
+    >>> list_seven.subscribe(sam)
+    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    []
+
+Samuel may not post to the mailing list using any of his addresses.
+
+    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    []
+
+Samuel will have a corresponding subscription object in the database,
+but his subscription will not be fully active or visible until
+his team membership is approved.
+
+    >>> print list_seven.getSubscription(sam)
+    <security ...MailingListSubscription instance ...>
+
+    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    []
+    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    []
+
+    >>> sam.join(team_seven)
+    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    [u'samuel.person@example.com']
+    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    [u'samuel.person@example.com', u'sperson@example.org']
+
+
 == Deleting addresses ==
 
 When a user deletes an email address, all of their mailing list
 subscriptions that use that address are automatically deleted as well.
 
     >>> list_six.changeAddress(kara, kara_alternative)
+    >>> flush_database_updates()
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     [u'kperson@example.org']
@@ -515,3 +559,85 @@ subscriptions that use that address are automatically deleted as well.
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     []
+
+
+== Subscription states ==
+
+A user can subscribe to a mailing list only when the list is active (as
+show above), but for purposes of subscription, we also consider lists in
+the MODIFIED, UPDATING, and MOD_FAILED states to be active.  This is
+because the first two states are transitional states, while the latter
+state does not affect the usability of the mailing list.  Thus, if the
+mailing list is usable, then it can be subscribed to.  See above also
+for states in which the list /cannot/ be subscribed to, such as the
+DEACTIVATED state.
+
+    >>> team_eight, list_eight = new_team('team-8', with_list=True)
+    >>> teri = new_person('Teri')
+    >>> teri.join(team_seven)
+
+    # We don't need to test the ACTIVE state, as that's represented above.
+    # However, because 'status' is a protected attribute, we need to unwrap
+    # the security context in order to set it.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.MODIFIED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.UPDATING
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.MOD_FAILED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+But in other, non-usable states, the mailing list cannot be subscribed
+to.
+
+    # We don't need to test the INACTIVE state, as that's represented above.
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.REGISTERED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.APPROVED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.DECLINED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.CONSTRUCTING
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.FAILED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = (
+    ...     MailingListStatus.DEACTIVATING)
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7

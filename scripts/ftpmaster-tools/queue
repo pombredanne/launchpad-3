@@ -13,9 +13,9 @@ import sys
 from optparse import OptionParser
 
 from canonical.config import config
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp import initZopeless
 
 from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.scripts.queue import (
@@ -102,8 +102,8 @@ def main():
 
     print ("Initialising connection to queue %s" % options.queue_name)
 
-    ztm = initZopeless(
-        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser=config.uploadqueue.dbuser,
+                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
     execute_zcml_for_scripts()
 
     for single_args in args_list:

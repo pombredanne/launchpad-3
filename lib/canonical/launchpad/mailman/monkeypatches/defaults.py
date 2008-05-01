@@ -48,3 +48,7 @@ GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
 #   CookHeaders
 index = GLOBAL_PIPELINE.index('CookHeaders')
 GLOBAL_PIPELINE.insert(index + 1, 'LaunchpadHeaders')
+# - Insert our own moderation handlers instead of the standard Mailman
+#   handler.
+index = GLOBAL_PIPELINE.index('Moderate')
+GLOBAL_PIPELINE[index:index + 1] = ['LPStanding', 'LPModerate']

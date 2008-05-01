@@ -17,7 +17,9 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_answers enable_bug_expiration
+                      official_blueprints official_malone official_answers
+                      official_codehosting
+                      enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot
                       license_info licenses bug_reporting_guidelines"
@@ -32,7 +34,8 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate private_bugs"
+      set_attributes="name active reviewed autoupdate private_bugs 
+                      reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
@@ -68,11 +71,11 @@
         permission="launchpad.AnyPerson"
         attributes="addSubscription addBugSubscription
                     removeBugSubscription" />
-    <!-- IHasBugcontact -->
-    <allow attributes="bugcontact" />
+    <!-- IHasBugSupervisor -->
+    <allow attributes="bug_supervisor" />
     <require
         permission="launchpad.Edit"
-        attributes="setBugContact" />
+        attributes="setBugSupervisor" />
   </content>
 
   <browser:defaultView
@@ -312,6 +315,10 @@
       name="+portlet-latestbranches"
       template="../templates/product-portlet-latestbranches.pt"
       />
+    <browser:page
+      name="+portlet-productfiles"
+      template="../templates/product-portlet-latestfiles.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -325,11 +332,20 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductBranchOverviewView"
+    class="canonical.launchpad.browser.ProductCodeIndexView"
     facet="branches"
     permission="zope.Public"
     name="+code-index"
-    template="../templates/product-branch-overview.pt"
+    template="../templates/product-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.ProductCodeIndexView"
+    facet="branches"
+    permission="zope.Public"
+    name="+branch-summary"
+    template="../templates/product-branch-summary.pt"
     />
 
   <browser:page

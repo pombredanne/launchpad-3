@@ -1,51 +1,207 @@
 = Introduction =
 
-The Launchpad web service exposes a collection of people and teams,
-which responds to GET.
+All collections published by the Launchpad web service work pretty
+much the same way. This document illustrates the general features of
+entries, using Launchpad's collection of people and teams as an example.
 
-  >>> people_collection = webservice(r"""
-  ... GET /people HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+== Collections and pagination ===
 
-  >>> people_collection[0]['name']
-  u'andrelop'
-  >>> people_collection[0]['self_link']
-  u'http://api.launchpad.dev/people/andrelop'
-  >>> people_collection[-1]['name']
-  u'ubuntu-team'
+A collection responds to GET by serving one page of the objects in the
+collection.
+
+  >>> people_collection = webservice.get("/beta/people").jsonBody()
+  >>> people_collection['total_size']
+  62
+  >>> people_collection['next_collection_link']
+  u'http://api.launchpad.dev/beta/people?ws_start=5&ws_size=5'
+  >>> people_collection.get('prev_collection_link') is None
+  True
+
+  >>> people_entries = sorted(people_collection['entries'])
+  >>> len(people_entries)
+  5
+  >>> people_entries[0]['name']
+  u'spiv'
+  >>> people_entries[0]['self_link']
+  u'http://api.launchpad.dev/beta/~spiv'
+  >>> people_entries[-1]['name']
+  u'bug-importer'
+
+You can get other pages of the collection by following links:
+
+  >>> result = webservice.get("/beta/people?ws_start=5&ws_size=5")
+  >>> second_batch = result.jsonBody()
+  >>> second_batch['next_collection_link']
+  u'http://api.launchpad.dev/beta/people?ws_start=10&ws_size=5'
+  >>> second_batch['prev_collection_link']
+  u'http://api.launchpad.dev/beta/people?ws_start=0&ws_size=5'
+
+  >>> people_entries = sorted(second_batch['entries'])
+  >>> people_entries[0]['name']
+  u'valyag'
+
+You can also get a larger batch than the default:
+
+  >>> big_batch = webservice.get("/beta/people?ws_size=50").jsonBody()
+  >>> len(big_batch['entries'])
+  50
+  >>> big_batch.get('next_collection_link')
+  u'http://api.launchpad.dev/beta/people?ws_start=50&ws_size=50'
+
+  >>> bigger_batch = webservice.get("/beta/people?ws_size=75").jsonBody()
+  >>> len(bigger_batch['entries'])
+  62
+  >>> bigger_batch.get('next_collection_link') is None
+  True
+
+
+== Element lookup ==
 
 The elements of a collection can be looked up by unique identifier:
 
-  >>> admins_team = webservice(r"""
-  ... GET /people/admins HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> admins_team = webservice.get("/beta/~admins").jsonBody()
   >>> sorted(admins_team.items())
-  [(u'members_collection_link',
-      u'http://api.launchpad.dev/people/admins/members'),
+  [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
+   (u'displayname', u'Launchpad Administrators'),
+   (u'member_memberships_collection_link',
+    u'http://api.launchpad.dev/beta/~admins/member_memberships'),
+   (u'members_collection_link',
+      u'http://api.launchpad.dev/beta/~admins/members'),
    (u'name', u'admins'),
-   (u'self_link', u'http://api.launchpad.dev/people/admins'),
-   (u'teamowner_link', u'http://api.launchpad.dev/people/sabdfl')]
+   (u'self_link', u'http://api.launchpad.dev/beta/~admins'),
+   (u'team_memberships_collection_link',
+    u'http://api.launchpad.dev/beta/~admins/team_memberships'),
+   (u'teamowner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
 
 A collection may be scoped to an element:
 
-  >>> team_members = webservice(r"""
-  ... GET /people/admins/members HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> result = webservice.get("/beta/~admins/members")
+  >>> team_members = sorted(result.jsonBody()['entries'])
   >>> len(team_members)
-  11
+  5
   >>> team_members[0]['name']
-  u'carlos'
+  u'spiv'
   >>> team_members[-1]['name']
-  u'stub'
+  u'kinnison'
 
 But not every element may have that collection scoped to it:
 
-  >>> print webservice(r"""
-  ... GET /people/spiv/members HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).getStatus()
+  >>> print webservice.get("/beta/~spiv/members").getStatus()
   404
 
+
+== Custom operations ==
+
+A collection may expose custom named operations in response to GET
+requests. A named operation may do anything consistent with the nature
+of a GET request, but it's usually used to serve search results. The
+custom operation to be invoked is named in the query string's
+'ws_op' argument. Here's a custom operation on the collection of
+people, called 'people'.
+
+  >>> def search_people(text, start=0):
+  ...     return webservice.get(
+  ...         "/beta/people?ws_op=people&text=%s&ws_start=%s" %
+  ...             (text, start)).jsonBody()
+
+A custom operation that returns a list of objects is paginated, just
+like a collection.
+
+  >>> s_people = search_people("s")
+  >>> s_people['total_size']
+  8
+  >>> s_people['next_collection_link']
+  u'http://api.launchpad.dev/beta/people?ws_op=people&text=s&ws_start=5&ws_size=5'
+  >>> [p['name'] for p in sorted(s_people['entries'])]
+  [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
+
+  >>> s_people_batch_2 = search_people("s", 5)
+  >>> [p['name'] for p in sorted(s_people_batch_2['entries'])]
+  [u'skacel', u'stub', u'ubuntu-team']
+
+Just as a collection may be empty, a custom operation may return an
+empty list of results:
+
+  >>> empty_list = search_people("nosuchperson")
+  >>> empty_list['total_size']
+  0
+  >>> [p['name'] for p in empty_list['entries']]
+  []
+
+Custom operations may have custom error handling.
+
+  >>> print webservice.get("/beta/people?ws_op=people&text=")
+  HTTP/1.1 400 Bad Request
+  ...
+  text: Required input is missing.
+
+A collection may also expose named operations in response to POST
+requests. These operations are usually factories. Here's a helper
+method that creates a new person by invoking a factory operation on
+the collection of people.
+
+  >>> def create_person(email_address, comment, name,
+  ...                   display_name, password):
+  ...     return webservice.named_post(
+  ...         "/beta/people", "create_person", {},
+  ...         email_address=email_address, comment=comment, name=name,
+  ...         display_name=display_name, password=password)
+
+  >>> print webservice.get('/beta/~serviceuser')
+  HTTP/1.1 404 Not Found
+  ...
+
+  >>> print create_person("serviceuser@example.com",
+  ...                     "Comment", "serviceuser", "Service User",
+  ...                     "password")
+  HTTP/1.1 201 Created
+  ...
+  Location: http://api.launchpad.dev/beta/~serviceuser
+  <BLANKLINE>
+
+  >>> print webservice.get('/beta/~serviceuser')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print create_person("serviceuser2@example.com",
+  ...                     "", "", "Your Name Here", "")
+  HTTP/1.1 201 Created
+  ...
+  Location: http://api.launchpad.dev/beta/~serviceuser2
+  <BLANKLINE>
+
+  >>> print webservice.get('/beta/~serviceuser2')
+  HTTP/1.1 200 Ok
+  ...
+
+Standard person-creation rules apply. For instance, you can't create a
+person with a name that's taken.
+
+  >>> print create_person("serviceuser3@example.com", "", "serviceuser",
+  ...                     "Name already taken", "password")
+  HTTP/1.1 409 Conflict
+  ...
+  The name 'serviceuser' is already taken.
+
+You also can't create a person with an email address that's taken.
+
+  >>> print create_person("serviceuser@example.com", "", "serviceuser3",
+  ...                     "Email address already taken", "password")
+  HTTP/1.1 409 Conflict
+  ...
+  The email address 'serviceuser@example.com' is already registered.
+
+A POST request has no meaning right now unless it specifies a custom
+operation.
+
+  >>> print webservice.post("/beta/people", 'text/plain', '')
+  HTTP/1.1 400 Bad Request
+  ...
+  No operation name given.
+
+You can't invoke a nonexistent operation:
+
+  >>> print webservice.named_post("/beta/people", "nosuchop", {})
+  HTTP/1.1 400 Bad Request
+  ...
+  No such operation: nosuchop

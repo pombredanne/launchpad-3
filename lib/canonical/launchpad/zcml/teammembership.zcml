@@ -13,11 +13,17 @@
         <allow interface="canonical.launchpad.interfaces.ITeamMembershipSet" />
     </securedutility>
 
+    <!-- XXX: Need to refactor ITeamMembership into specific interfaces for
+    each persmission. Guilherme Salgado, 2008-02-15 -->
     <content class="canonical.launchpad.database.TeamMembership">
         <require
             permission="zope.Public"
-            attributes="team person reviewer status datejoined dateexpires
-                        reviewercomment statusname isExpired
+            attributes="team person status proposed_by acknowledged_by
+                        reviewed_by last_changed_by date_proposed
+                        date_acknowledged date_reviewed datejoined dateexpires
+                        date_created proponent_comment
+                        acknowledger_comment reviewer_comment
+                        last_change_comment isExpired
                         sendExpirationWarningEmail canBeRenewedByMember
                         sendSelfRenewalNotification canChangeExpirationDate
                         sendAutoRenewalNotification" />
@@ -26,7 +32,7 @@
             attributes="setStatus setExpirationDate" />
         <require
             permission="launchpad.Edit"
-            set_attributes="reviewer datejoined reviewercomment" />
+            set_attributes="reviewed_by reviewer_comment" />
     </content>
 
     <browser:url

@@ -10,9 +10,10 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
-    'IArchiveEditDependenciesForm',
     'IArchiveSet',
+    'IArchiveSourceSelectionForm',
     'IPPAActivateForm',
     ]
 
@@ -56,6 +57,11 @@ class IArchive(IHasOwner):
         title=_("Private"), required=False,
         description=_("Whether the PPA is private to the owner or not."))
 
+    require_virtualized = Bool(
+        title=_("Require Virtualized Builder"), required=False,
+        description=_("Whether this archive requires its packages to be "
+                      "built on a virtual builder."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
         max=(20 * 1024),
@@ -69,6 +75,24 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    buildd_secret = TextLine(
+        title=_("Buildd Secret"), required=False,
+        description=_("The password used by the builder to access the "
+                      "archive.")
+        )
+
+    sources_cached = Int(
+        title=_("Number of sources cached"), required=False,
+        description=_("Number of source packages cached in this PPA."))
+
+    binaries_cached = Int(
+        title=_("Number of binaries cached"), required=False,
+        description=_("Number of binary packages cached in this PPA."))
+
+    package_description_cache = Attribute(
+        "Concatenation of the source and binary packages published in this "
+        "archive. Its content is used for indexed searches across archives.")
+
     distribution = Attribute(
         "The distribution that uses or is used by this archive.")
 
@@ -76,7 +100,13 @@ class IArchive(IHasOwner):
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
 
+    expanded_archive_dependencies = Attribute(
+        "The expanded list of archive dependencies. It includes the implicit "
+        "PRIMARY archive dependency for PPAs.")
+
     archive_url = Attribute("External archive URL.")
+
+    is_ppa = Attribute("True if this archive is a PPA.")
 
     title = Attribute("Archive Title.")
 
@@ -174,6 +204,26 @@ class IArchive(IHasOwner):
         :return: True or False
         """
 
+    def updateArchiveCache():
+        """Concentrate cached information about the archive contents.
+
+        Group the relevant package information (source name, binary names,
+        binary summaries and distroseries with binaries) strings in the
+        IArchive.package_description_cache search indexes (fti).
+
+        Updates 'sources_cached' and 'binaries_cached' counters.
+
+        Also include owner 'name' and 'displayname' to avoid inpecting the
+        Person table indexes while searching.
+        """
+
+    def findDepCandidateByName(distroarchseries, name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
+        """
+
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
 
@@ -214,17 +264,30 @@ class IPPAActivateForm(Interface):
         required=True, default=False)
 
 
-class IArchivePackageDeletionForm(Interface):
-    """Schema used to delete packages within a archive."""
+class IArchiveSourceSelectionForm(Interface):
+    """Schema used to select sources within an archive."""
 
     name_filter = TextLine(
         title=_("Package name"), required=False, default=None,
         description=_("Display packages only with name matching the given "
                       "filter."))
 
+
+class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
+    """Schema used to delete packages within an archive."""
+
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
         description=_("The reason why the package is being deleted."))
+
+
+class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
+    """Schema used to copy packages across archive."""
+
+    include_binaries = Bool(
+        title=_("Copy binaries"), required=False, default=False,
+        description=_("Whether or not to copy the binary packages for "
+                      "the selected sources."))
 
 
 class IArchiveEditDependenciesForm(Interface):
@@ -239,6 +302,12 @@ class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
+
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
 
     def new(distribution=None, purpose=None, owner=None, description=None):
         """Create a new archive.
@@ -260,6 +329,31 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAsForUser(user):
+        """Return all PPAs the given user can participate.
+
+        The result is ordered by PPA owner's displayname.
+        """
+
+    def getLatestPPASourcePublicationsForDistribution(distribution):
+        """The latest 5 PPA source publications for a given distribution.
+
+        Private PPAs are excluded from the result.
+        """
+
+    def getMostActivePPAsForDistribution(distribution):
+        """Return the 5 most active PPAs.
+
+        The activity is currently measured by number of uploaded (published)
+        sources for each PPA during the last 7 days.
+
+        Private PPAs are excluded from the result.
+
+        :return A list with up to 5 dictionaries containing the ppa 'title'
+            and the number of 'uploads' keys and corresponding values.
+        """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

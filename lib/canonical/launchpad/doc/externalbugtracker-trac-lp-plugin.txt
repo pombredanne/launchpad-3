@@ -1,0 +1,479 @@
+= ExternalBugTracker: TracLPPlugin =
+
+This covers the implementation of the ExternalBugTracker class for Trac
+instances having the LP XML-RPC plugin installed.
+
+For testing purposes, a custom XML-RPC transport can be passed to it,
+so that we can avoid network traffic in tests.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     TracLPPlugin)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracXMLRPCTransport)
+    >>> test_transport = TestTracXMLRPCTransport()
+    >>> trac = TracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    >>> trac.xmlrpc_transport is test_transport
+    True
+
+
+== Authentication ==
+
+Before any XML-RPC methods can be used, we need to authenticate with the
+Trac instance. To authenticate we create a special login token in
+Launchpad. We then give that token to the Trac instance, which checks
+whether the token is valid, and returns a cookie we can send with the
+XML-RPC requests.
+
+We give the token to Trac by issuing a HTTP request at
+$base_url/launchpad-auth/$token. A request to such an URL will cause
+Trac to validate $token and return a Set-Cookie header.
+
+    >>> import random
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.webapp.url import urlappend
+    >>> from canonical.launchpad.interfaces import ILoginTokenSet
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> class FakeResponse:
+    ...     def __init__(self):
+    ...         self.headers = {}
+
+    >>> class TestTracLPPlugin(TracLPPlugin):
+    ...     def urlopen(self, url):
+    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+    ...         if not url.startswith(base_auth_url + '/'):
+    ...             raise AssertionError("Unexpected URL: %s" % url)
+    ...         token_text = url.split('/')[-1]
+    ...         token = getUtility(ILoginTokenSet)[token_text]
+    ...         if token.tokentype.name != 'BUGTRACKER':
+    ...             raise AssertionError(
+    ...                 'Invalid token type: %s' % token.tokentype.name)
+    ...         if token.date_consumed is not None:
+    ...             raise AssertionError("Token has already been consumed.")
+    ...         token.consume()
+    ...         print "Successfully validated the token."
+    ...         response = FakeResponse()
+    ...         response.headers['Set-Cookie'] = (
+    ...             'trac_auth=random_token-' + str(random.random()))
+    ...         LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    ...         return response
+
+To generate the token, the internal XML-RPC server is used. By using the
+XML-RPC server rather than talking to the database directy means that we
+don't have to bother about commiting the transaction to make the token
+visible to Trac.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestTracInternalXMLRPCTransport)
+    >>> test_transport = TestTracXMLRPCTransport()
+    >>> trac = TestTracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
+
+The method that authenticates with Trac is _authenticate().
+
+    >>> trac._authenticate()
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+After it has been called, the XML-RPC transport will have its
+auth_cookie attribute set.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token-...'
+
+There's another method, _extractAuthCookie(), which gets the cookie from
+the Set-Cookie header.
+
+    >>> trac._extractAuthCookie(
+    ...     'trac_auth=some_token; expires=Some date; path=/some/path;'
+    ...     ' domain=some.name.example.com; secure')
+    'trac_auth=some_token'
+
+    >>> print trac._extractAuthCookie(
+    ...     'other_cookie=some_token; expires=Some date; path=/some/path;'
+    ...     ' domain=some.name.example.com; secure')
+    None
+
+The XML-RPC transport will then take the auth_cookie and set the Cookie
+header in its requests.
+
+    >>> trac = TracLPPlugin('http://example.com/')
+    >>> transport = trac.xmlrpc_transport
+    >>> transport.auth_cookie = 'trac_auth=random_token'
+
+    >>> class FakeConnection:
+    ...     def putheader(self, header, value):
+    ...         print "%s: %s" % (header, value)
+    >>> transport.send_host(FakeConnection(), 'example.com')
+    Host: example.com
+    Cookie: trac_auth=random_token
+
+
+== Current time ==
+
+The current time is always returned in UTC, no matter if the Trac
+instance returns another time zone.
+
+    >>> test_transport = TestTracXMLRPCTransport()
+    >>> trac = TestTracLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
+
+    >>> import time
+    >>> from datetime import datetime
+    >>> trac_time = datetime(2008, 4, 9, 3, 2, 1)
+    >>> test_transport.seconds_since_epoch = int(time.mktime(
+    ...     trac_time.timetuple()))
+    >>> test_transport.local_timezone = 'CET'
+    >>> test_transport.utc_offset = 60*60
+    >>> trac.getCurrentDBTime()
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+An authorization request was automatically sent, since the method needed
+authentication. Because the cookie is now set, other calls won't cause
+an authorization request.
+
+    >>> test_transport.auth_cookie
+    'trac_auth=random_token-...'
+    >>> trac.getCurrentDBTime()
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+If the cookie gets expired, an authorization request is automatically
+sent again.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.getCurrentDBTime()
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    datetime.datetime(2008, 4, 9, 2, 2, 1, tzinfo=<UTC>)
+
+
+== Getting modified bugs ==
+
+We only want to update the bug watches whose remote bugs have been
+modified since the last time we checked.
+
+In order to demonstrate this, we'll create some mock remote bugs for our
+test XML-RPC transport to check.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     MockTracRemoteBug)
+
+    >>> remote_bugs = {
+    ...     '1': MockTracRemoteBug('1', datetime(2008, 4, 1, 0, 0, 0)),
+    ...     '2': MockTracRemoteBug('2', datetime(2007, 1, 1, 1, 1, 1)),
+    ...     '3': MockTracRemoteBug('3', datetime(2008, 1, 1, 1, 2, 3)),
+    ...     }
+
+    >>> test_transport.remote_bugs = remote_bugs
+
+Calling the getModifiedRemoteBugs() method of our Trac instance and
+passing it a list of bug IDs and a datetime object will return a list
+of the IDs of the bugs which have been modified since that time.
+
+    >>> bug_ids_to_check = ['1', '2', '3']
+    >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> sorted(trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked))
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    ['1', '3']
+
+Different last_checked times will result in different numbers of bugs
+being returned.
+
+    >>> last_checked = datetime(2008, 2, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    ['1']
+
+If no bugs have been updated since last_checked, getModifiedRemoteBugs()
+will return an empty list.
+
+    >>> last_checked = datetime(2008, 5, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    []
+
+If we ask for bug ids that don't exist on the remote server, they will
+also be returned. This is so that when we try to retrieve the status of
+the missing bugs an error will be raised that we can then investigate.
+
+    >>> bug_ids_to_check = ['1', '2', '3', '99', '100']
+    >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> sorted(trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked))
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+    ['1', '100', '3', '99']
+
+
+== Getting the status of remote bugs ==
+
+Like all other ExternalBugTrackers, the TracLPPlugin ExternalBugTracker
+allows us to fetch bugs statuses from the remote bug tracker.
+
+To demonstrate this, we'll add some statuses to our mock remote bugs.
+
+    >>> test_transport.remote_bugs['1'].status = 'open'
+    >>> test_transport.remote_bugs['2'].status = 'fixed'
+    >>> test_transport.remote_bugs['3'].status = 'reopened'
+
+We need to call initializeRemoteBugDB() on our TracLPPlugin instance to
+be able to retrieve remote statuses.
+
+    >>> last_checked = datetime(2008, 1, 1, 0, 0, 0)
+    >>> bugs_to_update = trac.getModifiedRemoteBugs(
+    ...     bug_ids_to_check, last_checked)
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.initializeRemoteBugDB(bugs_to_update)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+Calling getRemoteStatus() on our example TracLPPlugin instance will
+return the status for whichever bug we request.
+
+    >>> trac.getRemoteStatus('1')
+    'open'
+
+    >>> trac.getRemoteStatus('3')
+    'reopened'
+
+If we try to get the status of bug 2 we'll get a BugNotFound error,
+since that bug wasn't in the list of bugs that were modified since our
+last_checked time.
+
+    >>> trac.getRemoteStatus('2')
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 2
+
+
+== Importing Comments ==
+
+The TracLPPlugin class allows Launchpad to import comments from remote
+systems that have the Launchpad plugin installed.
+
+TracLPPlugin implements the ISupportsCommentImport interface, providing
+three methods: getCommentIds(), getPosterForComment() and
+getMessageForComment().
+
+    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> ISupportsCommentImport.providedBy(trac)
+    True
+
+We'll add some comments to our example bugs in order to demonstrate the
+comment importing functionality.
+
+    >>> import time
+    >>> comment_datetime = datetime(2008, 4, 18, 17, 0, 0)
+    >>> comment_timestamp = int(time.mktime(comment_datetime.timetuple()))
+
+    >>> test_transport.remote_bugs['1'].comments = [
+    ...     {'id': '1-1', 'type': 'comment',
+    ...      'user': 'Test <test@canonical.com>',
+    ...      'comment': 'Hello, world!',
+    ...      'timestamp': comment_timestamp}]
+    >>> test_transport.remote_bugs['2'].comments = [
+    ...     {'id': '2-1', 'type': 'comment', 'user': 'test@canonical.com',
+    ...      'comment': 'Hello again, world!',
+    ...      'timestamp': comment_timestamp},
+    ...     {'id': '2-2', 'type': 'comment', 'user': 'foo.bar',
+    ...      'comment': 'More commentary.',
+    ...      'timestamp': comment_timestamp}]
+
+We also need an example Bug, BugTracker and BugWatch.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, CreateBugParams, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+
+    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> bug = firefox.createBug(
+    ...     CreateBugParams(sample_person, "Yet another test bug",
+    ...         "Yet another test description.",
+    ...         subscribe_reporter=False))
+
+    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    >>> bug_watch_three = bug.addWatch(bug_tracker, '3', sample_person)
+    >>> bug_watch_broken = bug.addWatch(bug_tracker, '123', sample_person)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+getCommentIds() returns all the comment IDs for a given bug watch.
+bug_watch is against remote bug 1, which has one comment.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> bugs_to_update = ['1', '2', '3']
+    >>> trac.initializeRemoteBugDB(bugs_to_update)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+    >>> trac.getCommentIds(bug_watch)
+    ['1-1']
+
+bug_watch_two is against remote bug 2, which has two comments.
+
+    >>> trac.getCommentIds(bug_watch_two)
+    ['2-1', '2-2']
+
+bug_watch_three is against bug 3, which has no comments.
+
+    >>> trac.getCommentIds(bug_watch_three)
+    []
+
+Trying to call getCommentIds() on a bug that doesn't exist will raise a
+BugNotFound error.
+
+    >>> trac.getCommentIds(bug_watch_broken)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 123
+
+The fetchComments() method is used to pre-load a given set of comments
+for a given bug before they are parsed.
+
+Before fetchComments() is called for a given remote bug, that remote
+bug's 'comments' field will be a list of comment IDs.
+
+    >>> trac.bugs[1]['comments']
+    ['1-1']
+
+After fetchComments() is called the bug's 'comments' field will contain
+a dict in the form {<comment_id>: <comment_dict>}, which can then be
+parsed.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> trac.fetchComments(bug_watch, ['1-1'])
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+    >>> for comment in trac.bugs[1]['comments'].values():
+    ...     for key in sorted(comment.keys()):
+    ...         print "%s: %s" % (key, comment[key])
+    comment: Hello, world!
+    id: 1-1
+    timestamp: 1208518200
+    type: comment
+    user: Test <test@canonical.com>
+
+getPosterForComment() returns a tuple of (displayname, emailaddress) for
+the poster of a given comment.
+
+    >>> trac.getPosterForComment(bug_watch, '1-1')
+    ('Test', 'test@canonical.com')
+
+getPosterForComment() handles situations in which only an email address
+is supplied for the 'user' field by returning None as the user's
+displayname. When this is passed to IPersonSet.ensurePerson() a display
+name will be generated for the user from their email address.
+
+    >>> trac.fetchComments(bug_watch_two, ['2-1', '2-2'])
+    >>> trac.getPosterForComment(bug_watch_two, '2-1')
+    (None, 'test@canonical.com')
+
+getPosterForComment() will also return displayname, email tuples in
+cases where the 'user' field is set to a plain username (e.g. 'foo').
+This is to avoid having to add unnecessary error checking to
+BugWatchUpdater.importBugComments(), however, when the contents of the
+tuple are passed to ensurePerson() an InvalidEmailAddress error will be
+raised, thus avoiding invalid data being imported into Launchpad.
+
+    >>> trac.getPosterForComment(bug_watch_two, '2-2')
+    (None, 'foo.bar')
+
+Finally, getMessageForComment() will return a Message instance for a
+given comment. For the sake of brevity we'll use test@canonical.com as
+the comment's poster.
+
+    >>> from zope.component import getUtility
+    >>> poster = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> message_one = trac.getMessageForComment(bug_watch, '1-1', poster)
+
+The Message returned by getMessageForComment() contains the full text of
+the original comment.
+
+    >>> print message_one.text_contents
+    Hello, world!
+
+
+== Pushing comments ==
+
+The TracLPPlugin ExternalBugTracker implements the
+ISupportsCommentPushing interface, which allows Launchpad to use it to
+push comments to the remote bug tracker.
+
+    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> ISupportsCommentPushing.providedBy(trac)
+    True
+
+ISupportsCommentPushing defines a method, addRemoteComment(), which is
+responsible for pushing comments to the remote bug tracker. It accepts
+two parameters: the ID of the remote bug to which to push the comment
+and a Message instance containing the comment to be pushed. It returns
+the ID assigned to the comment by the remote bug tracker.
+
+To demonstrate this method, we'll create a comment to push.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     "A subject", "An example comment to push.", poster)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+Calling addRemoteComment() on our TracLPPlugin instance will push the
+comment to the remote bug tracker. We'll add it to bug three on the
+remote tracker, which as yet has no comments.
+
+    >>> test_transport.remote_bugs['3'].comments
+    []
+
+addRemoteComment() requires authentication with the remote trac
+instance. We'll expire our auth cookie to demonstrate this.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+
+    >>> remote_comment_id = trac.addRemoteComment('3', message)
+    Using XML-RPC to generate token.
+    Successfully validated the token.
+
+    >>> print remote_comment_id
+    3-1
+
+If we look at our example remote server we can see that the comment has
+been pushed to bug 3.
+
+    >>> for comment in test_transport.remote_bugs['3'].comments:
+    ...     for key in sorted(comment.keys()):
+    ...         print "%s: %s" % (key, comment[key])
+    comment: An example comment to push.
+    id: 3-1
+    time: ...
+    type: comment
+    user: launchpad

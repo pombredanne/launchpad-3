@@ -6,6 +6,7 @@ from canonical.launchpad.database.codeimportevent import *
 from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.codeimportresult import *
+from canonical.launchpad.database.codereviewvote import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.personlocation import *
@@ -64,7 +65,8 @@ from canonical.launchpad.database.distroseriespackagecache import *
 from canonical.launchpad.database.distroseriessourcepackagerelease import *
 from canonical.launchpad.database.distroarchseries import *
 from canonical.launchpad.database.distroarchseriesbinarypackage import *
-from canonical.launchpad.database.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
+    import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.languagepack import *
@@ -72,6 +74,7 @@ from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translationmessage import *
 from canonical.launchpad.database.translationsoverview import *
+from canonical.launchpad.database.translationtemplateitem import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.branch import *
@@ -132,3 +135,5 @@ from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.archivedependency import *
+from canonical.launchpad.database.packagediff import *
+from canonical.launchpad.database.codereviewmessage import *

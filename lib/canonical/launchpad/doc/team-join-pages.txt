@@ -1,0 +1,93 @@
+= Joining a Team =
+
+Tests for the team '+join' page's raw view objects.
+
+== Joining and Subscribing to the List ==
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+
+    # Set up a harness to make form submission testing easier.
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> def join_team(team):
+    ...     form = {'join': '1', 'mailinglist_subscribe': '1'}
+    ...     request = LaunchpadTestRequest(method='POST', form=form)
+    ...     view = getMultiAdapter((team, request), name='+join')
+    ...     view.initialize()
+    ...     for notification in request.notifications:
+    ...         print notification.message
+
+    # Define a helper for creating teams with a specific subscription
+    # policy.
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
+    >>> def make_team(teamname, subscription_policy):
+    ...     creator = personset.getByName('no-priv')
+    ...     team = personset.newTeam(creator, teamname, teamname,
+    ...         subscriptionpolicy=subscription_policy)
+    ...     return team
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> subscribers = getUtility(IMailingListSet)
+
+Posting a mailing list subscription request to a team that has no list
+results in an error notification.  (This is probably the result of
+mangled form data.)
+
+    >>> sample_person = personset.getByName('name12')
+
+    # XXX mars 2008-02-21:
+    # Remove this when the mailing list beta is over.  See bug #190974.
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> beta_testers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_beta_testers
+    >>> salgado = personset.getByName('salgado')
+    >>> login(salgado.preferredemail.email)
+    >>> beta_testers.addMember(sample_person, reviewer=salgado)
+
+    >>> login(sample_person.preferredemail.email)
+
+    >>> no_list_team = make_team(
+    ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
+
+    >>> join_team(no_list_team)
+    You have successfully joined open-team-no-list.
+    Mailing list subscription failed.
+
+Someone subscribing to a moderated team's list will be shown an
+informative message regarding the delayed subscription.
+
+    >>> moderated_team = make_team(
+    ...     'moderated-team-with-list',
+    ...     TeamSubscriptionPolicy.MODERATED)
+    >>> moderated_list = new_list_for_team(moderated_team)
+
+    >>> join_team(moderated_team)
+    Your request to join moderated-team-with-list is awaiting approval.
+    Your mailing list subscription is awaiting approval.
+
+    >>> sorted(email.email for email in
+    ...     moderated_list.getSubscribedAddresses())
+    []
+
+    # The subscription object is in the database, waiting for the
+    # team membership approval.
+    >>> moderated_list.getSubscription(sample_person)
+    <MailingListSubscription ...>
+
+Users joining an open team will be immediately subscribed to the
+team's list.
+
+    >>> open_team = make_team(
+    ...     'open-team-with-list', TeamSubscriptionPolicy.OPEN)
+    >>> open_list = new_list_for_team(open_team)
+
+    >>> join_team(open_team)
+    You have successfully joined open-team-with-list.
+    You have been subscribed to this team&#x2019;s mailing list.
+
+    >>> sorted(email.email for email in
+    ...     open_list.getSubscribedAddresses())
+    [u'test@canonical.com']

@@ -83,8 +83,8 @@ zope.exceptions.NotFoundError:
 
 The database associates milestones only with products and distroserieses.
 The interface IProjectMilestone provides a virtual view of milestones
-that are related to a project by collecting all milestones that are 
-associated with products that belong to a project. 
+that are related to a project by collecting all milestones that are
+associated with products that belong to a project.
 
 The class ProjectMilestone collects the milestone names from products that
 belong to one project and creates virtual milestones for each distinct
@@ -130,7 +130,7 @@ increase the number of Gnome milestones.
     [u'1.1']
     >>> print [milestone.name for milestone in gnome.all_milestones]
     [u'1.1']
-    
+
 Since project milestones are generated from the names of the product
 milestones, milestone names with typos like '1.1.' instead of '1.1' will
 appear as separate project milestones.
@@ -160,6 +160,20 @@ same name is visible.
     >>> syncUpdate(evolution_1_1)
     >>> print gnome.getMilestone('1.1').visible
     False
+
+A project milestone is not shown for visible milestones from inactive products.
+
+    >>> print [milestone.name for milestone in gnome.milestones]
+    [u'1.1.']
+    >>> netapplet.active = False
+    >>> syncUpdate(netapplet)
+    >>> print [milestone.name for milestone in gnome.milestones]
+    []
+
+    # Reset the product back to original status so future tests pass.
+    >>> netapplet.active = True
+    >>> syncUpdate(netapplet)
+
 
 The dateexpected attribute is set to the minimum of the dateexpected values
 of the product milestones.
@@ -204,3 +218,61 @@ milestone, it is "inheritied" by the project milestone.
     [u'applets-specification']
     >>> [spec.name for spec in gnome.getMilestone('1.1').specifications]
     [u'applets-specification']
+
+
+== Target change notifications ==
+
+When we change the milestone for a bug task, subscribers to both the old
+milestone and the new one are notified.
+
+    >>> from canonical.launchpad.database.bugnotification import (
+    ...     BugNotification)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.event.sqlobjectevent import (
+    ...     SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from zope.event import notify
+    >>> from zope.interface import providedBy
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> milestone_one = firefox_trunk.milestones[0]
+    >>> milestone_two = firefox_trunk.newMilestone('2.0')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_task = bug_one.bugtasks[0]
+    >>> bug_task.milestone = milestone_one
+
+The first task of bug #1 is targeted to milestone 1.0. Celso is
+subscribed to milestone 1.0, and David is subscribed to milestone 2.0.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> milestone_one.addBugSubscription(cprov, cprov)
+    <StructuralSubscription at ...>
+    >>> milestone_two.addBugSubscription(ddaa, ddaa)
+    <StructuralSubscription at ...>
+
+We change the milestone for the task from 1.0 to 2.0, and fire the
+change event.
+
+    >>> bugtask_before_modification = Snapshot(
+    ...     bug_task, providing=providedBy(bug_task))
+    >>> bug_task.milestone = milestone_two
+    >>> notify(
+    ...     SQLObjectModifiedEvent(
+    ...         object=bug_task,
+    ...         object_before_modification=bugtask_before_modification,
+    ...         edited_fields=['milestone']))
+
+A new bug notification is created, and both Celso and David are in the
+list of recipients.
+
+    >>> notification = BugNotification.select("date_emailed IS NULL")[-1]
+    >>> print notification.message.chunks[0].content
+    ** Changed in: firefox
+           Target: 1.0 => 2.0
+    >>> for recipient in notification.recipients:
+    ...     print recipient.person.name, recipient.reason_header
+    cprov Subscriber (Mozilla Firefox: 1.0)
+    ddaa Subscriber (Mozilla Firefox: 2.0)
+    ...

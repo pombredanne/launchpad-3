@@ -147,12 +147,31 @@ class MessageSet:
         return message
 
     def _decode_header(self, header):
-        """Decode an encoded header possibly containing Unicode."""
+        r"""Decode an RFC 2097 encoded header.
+
+            >>> MessageSet()._decode_header('=?iso-8859-1?q?F=F6=F6_b=E4r?=')
+            u'F\xf6\xf6 b\xe4r'
+
+        If the header isn't encoded properly, the characters that can't
+        be decoded are replaced with unicode question marks.
+
+            >>> MessageSet()._decode_header('=?utf-8?q?F=F6=F6_b=E4r?=')
+            u'F\ufffd\ufffd'
+        """
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())
 
         bits = email.Header.decode_header(header)
-        return unicode(email.Header.make_header(bits))
+        # Re-encode the header parts using utf-8, replacing undecodable
+        # characters with question marks.
+        re_encoded_bits = []
+        for bytes, charset in bits:
+            if charset is None:
+                charset = 'us-ascii'
+            re_encoded_bits.append(
+                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
+
+        return unicode(email.Header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
@@ -337,15 +356,25 @@ class MessageSet:
             content = part.get_payload(decode=True)
 
             # Store the part as a MessageChunk
-            if mime_type == 'text/plain':
+            #
+            # We want only the content type text/plain as "main content".
+            # Exceptions to this rule:
+            # - if the content disposition header explicitly says that
+            #   this part is an attachment, text/plain content is stored
+            #   as a blob,
+            # - if the content-disposition header provides a filename,
+            #   text/plain content is stored as a blob.
+            content_disposition = part.get('Content-disposition', '').lower()
+            no_attachment = not content_disposition.startswith('attachment')
+            if (mime_type == 'text/plain' and no_attachment 
+                and part.get_filename() is None):
                 charset = part.get_content_charset()
                 if charset:
                     content = content.decode(charset, 'replace')
                 if content.strip():
                     MessageChunk(
                         message=message, sequence=sequence,
-                        content=content
-                        )
+                        content=content)
                     sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'

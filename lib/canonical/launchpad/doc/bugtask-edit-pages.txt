@@ -9,7 +9,7 @@ modified on its +editstatus page.
 Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> login('test@canonical.com')
@@ -28,8 +28,8 @@ Person:
     ...    'ubuntu_thunderbird.sourcepackagename':
     ...        ubuntu_thunderbird_task.sourcepackagename.name}
     >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
-    >>> edit_view = getView(
-    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (ubuntu_thunderbird_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
@@ -49,8 +49,8 @@ assigned to linux-source-2.6.15 instead.
     >>> ubuntu_thunderbird = ubuntu_thunderbird_task.sourcepackagename
     >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'linux-2.6.12'
     >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
-    >>> edit_view = getView(
-    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (ubuntu_thunderbird_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> ubuntu_thunderbird_task.sourcepackagename.name
     u'linux-source-2.6.15'
@@ -62,7 +62,7 @@ changed to the corresponding source package.
     ...     print notification.message
     'linux-2.6.12' is a binary package. This bug has been assigned to
     its source package 'linux-source-2.6.15' instead.
-    The bug contacts for linux-source-2.6.15 (Ubuntu) have been
+    The bug supervisor for linux-source-2.6.15 (Ubuntu) has been
     subscribed to this bug.
 
     >>> ubuntu_thunderbird_task.sourcepackagename = ubuntu_thunderbird
@@ -72,8 +72,8 @@ exist in Launchpad. we'll get an error message.
 
     >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'no-such-package'
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
-    >>> edit_view = getView(
-    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (ubuntu_thunderbird_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
@@ -111,7 +111,8 @@ fail.
     ...    'ubuntu.sourcepackagename': ubuntu_evolution.name,
     ...     }
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
-    >>> edit_view = getView(ubuntu_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (ubuntu_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
@@ -142,7 +143,8 @@ directly, let's add a grumpy task first.
     ...    'ubuntu_grumpy.sourcepackagename': ubuntu_evolution.name,
     ...     }
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
-    >>> edit_view = getView(ubuntu_grumpy_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (ubuntu_grumpy_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
@@ -183,8 +185,8 @@ XXX: We really should update the status from the bug watch, but that's
     ...         'thunderbird.status': 'Confirmed',
     ...         'thunderbird.importance': 'Critical',
     ...         'thunderbird.bugwatch': '6'})
-    >>> edit_view = getView(
-    ...     thunderbird_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (thunderbird_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> thunderbird_task.bugwatch == bugzilla_watch
     True
@@ -199,8 +201,8 @@ set to their default values:
     ...     form={
     ...         'thunderbird.actions.save': 'Save Changes',
     ...         'thunderbird.bugwatch-empty-marker': '1'})
-    >>> edit_view = getView(
-    ...     thunderbird_task, '+editstatus-page', request)
+    >>> edit_view = getMultiAdapter(
+    ...     (thunderbird_task, request), name='+editstatus-page')
     >>> edit_view.initialize()
     >>> thunderbird_task.bugwatch is None
     True
@@ -228,7 +230,8 @@ The distribution owner gets an edit widget for the distribution task.
 
     >>> request = LaunchpadTestRequest()
     >>> ubuntu_task = getUtility(IBugTaskSet).get(17)
-    >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
+    >>> bugtask_edit_view = getMultiAdapter(
+    ...     (ubuntu_task, request), name="+editstatus-page")
     >>> bugtask_edit_view.initialize()
 
     >>> IInputWidget.providedBy(bugtask_edit_view.widgets['milestone'])
@@ -240,25 +243,27 @@ But an unprivileged user does not.
 
     >>> login("no-priv@canonical.com")
 
-    >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
+    >>> bugtask_edit_view = getMultiAdapter(
+    ...     (ubuntu_task, request), name="+editstatus-page")
     >>> bugtask_edit_view.initialize()
 
     >>> isinstance(bugtask_edit_view.widgets['milestone'], ItemDisplayWidget)
     True
 
-A bug contact can also change the milestone. Let's set no-priv as Ubuntu's bug
-contact.
+A bug supervisor can also change the milestone. Let's set no-priv as
+Ubuntu's bug supervisor.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
-    >>> ubuntu.setBugContact(no_priv, no_priv)
+    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
 
 Unlike before, no-priv can now edit the milestone.
 
-    >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
+    >>> bugtask_edit_view = getMultiAdapter(
+    ...     (ubuntu_task, request), name="+editstatus-page")
     >>> bugtask_edit_view.initialize()
 
     >>> IInputWidget.providedBy(bugtask_edit_view.widgets['milestone'])

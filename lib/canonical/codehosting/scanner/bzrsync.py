@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
     IBranchRevisionSet, IBugBranchSet, IBugSet,
     IRevisionSet, NotFoundError)
-from canonical.launchpad.mailnotification import (
+from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 
 UTC = pytz.timezone('UTC')
@@ -205,7 +205,7 @@ class BranchMailer:
         self.pending_emails = []
         self.subscribers_want_notification = False
         self.initial_scan = None
-        self.email_from = config.noreply_from_address
+        self.email_from = config.canonical.noreply_from_address
 
     def initializeEmailQueue(self, initial_scan):
         """Create an email queue and determine whether to create diffs.
@@ -332,7 +332,7 @@ class BzrSync:
 
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
-        self.email_from = config.noreply_from_address
+        self.email_from = config.canonical.noreply_from_address
 
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
@@ -385,7 +385,9 @@ class BzrSync:
         self.retrieveDatabaseAncestry()
         (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges()
-        self.syncRevisions(bzr_branch, revisions_to_insert_or_check)
+        self.syncRevisions(
+            bzr_branch, revisions_to_insert_or_check,
+            branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
@@ -474,7 +476,7 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        branchrevisions_to_insert = list(
+        branchrevisions_to_insert = dict(
             self.getRevisions(added_merged.union(added_history)))
 
         # We must insert, or check for consistency, all revisions which were
@@ -484,7 +486,8 @@ class BzrSync:
         return (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert)
 
-    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check):
+    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check,
+                      branchrevisions_to_insert):
         """Import all the revisions added to the ancestry of the branch."""
         self.logger.info("Inserting or checking %d revisions.",
             len(revisions_to_insert_or_check))
@@ -498,12 +501,13 @@ class BzrSync:
                 self.logger.debug("%d of %d: %s is a ghost",
                                   self.curr, self.last, revision_id)
                 continue
-            self.syncOneRevision(revision)
+            self.syncOneRevision(revision, branchrevisions_to_insert)
 
-    def syncOneRevision(self, bzr_revision):
+    def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
+        :param branchrevisions_to_insert: a dict of revision ids to revno
         :type bzr_revision: bzrlib.revision.Revision
         """
         revision_id = bzr_revision.revision_id
@@ -553,6 +557,9 @@ class BzrSync:
                 revision_author=bzr_revision.get_apparent_author(),
                 parent_ids=bzr_revision.parent_ids,
                 properties=bzr_revision.properties)
+            # If a mainline revision, add the bug branch link.
+            if branchrevisions_to_insert[revision_id] is not None:
+                self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
     def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.
@@ -568,9 +575,9 @@ class BzrSync:
         for (index, revision_id) in enumerate(self.bzr_history):
             if revision_id in limit:
                 # sequence numbers start from 1
-                yield index + 1, revision_id
+                yield revision_id, index + 1
         for revision_id in limit.difference(set(self.bzr_history)):
-            yield None, revision_id
+            yield revision_id, None
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
@@ -603,7 +610,7 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
         revision_set = getUtility(IRevisionSet)
-        for sequence, revision_id in branchrevisions_to_insert:
+        for revision_id, sequence in branchrevisions_to_insert.iteritems():
             db_revision = revision_set.getByRevisionId(revision_id)
             self.db_branch.createBranchRevision(sequence, db_revision)
 
@@ -619,7 +626,6 @@ class BzrSync:
                     continue
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
-                self._bug_linker.createBugBranchLinksForRevision(revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""

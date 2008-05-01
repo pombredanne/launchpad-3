@@ -18,6 +18,8 @@
 
 <div metal:fill-slot="main">
 
+      <div tal:content="structure context/specification/fmt:link" />
+
   <h1>Accept for agenda of <span
   tal:replace="context/sprint/title">Firefox</span>?</h1>
 

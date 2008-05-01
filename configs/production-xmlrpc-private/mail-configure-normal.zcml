@@ -1,0 +1,11 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:mail="http://namespaces.zope.org/mail"
+    i18n_domain="zope">
+
+    <mail:queuedDelivery
+        permission="zope.SendMail"
+        mailer="smtp"
+        queuePath="/srv/xmlrpc.lp.internal/var/tmp/launchpad_mailqueue" />
+
+</configure>

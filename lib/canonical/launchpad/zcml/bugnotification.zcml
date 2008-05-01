@@ -8,7 +8,9 @@
           />
   </class>
 
-
+  <class class="canonical.launchpad.database.BugNotificationRecipient">
+    <allow interface="canonical.launchpad.interfaces.IBugNotificationRecipient" />
+  </class>
 
   <class class="canonical.launchpad.mailnotification.BugNotificationRecipients">
     <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />

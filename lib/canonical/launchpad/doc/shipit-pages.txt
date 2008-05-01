@@ -1,13 +1,12 @@
-ShipIt Pages
-============
+= ShipIt Pages =
 
     >>> from canonical.launchpad.database import ShippingRequest
-    >>> from canonical.launchpad.layers import ShipItUbuntuLayer
+    >>> from canonical.launchpad.layers import (
+    ...     ShipItKUbuntuLayer, ShipItUbuntuLayer)
     >>> jordis_request = ShippingRequest.get(16)
 
 
-/shipit/myrequest
------------------
+== /shipit/myrequest ==
 
 This is the only page that normal users have access to. Here they can make new
 requests, change/cancel existing ones and see the previous one that were
@@ -27,22 +26,20 @@ StandardShipItRequests.
     >>> shipit = ShipItApplication()
     >>> myrequest_view = create_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
-    >>> html = myrequest_view.renderStandardrequestForm()
-    >>> 'Request CDs' in html
-    True
-    >>> 'ShipIt is currently closed' in html
-    False
-
     >>> myrequest_view.is_open = False
     >>> html = myrequest_view.renderStandardrequestForm()
-    >>> 'How many CDs would you like?' in html
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> print BeautifulSoup(html).findAll('h1')[-1].renderContents()
+    ShipIt is currently closed
+
+    >>> myrequest_view.is_open = True
+    >>> html = myrequest_view.renderStandardrequestForm()
+    >>> headers = BeautifulSoup(html).findAll('h1')
+    >>> 'ShipIt is currently closed' in headers
     False
-    >>> 'ShipIt is currently closed' in html
-    True
 
 
-/shipit/requests/$request.id
------------------
+== /shipit/requests/$request.id ==
 
 This is the page where shipit admins go to approve, deny or change an existing
 request.
@@ -57,7 +54,7 @@ class.
     >>> review_request_view = create_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
-    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Server']
+    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Ubuntu Server Edition']
 
     >>> [arch.title for arch in review_request_view.ordered_architectures]
     ['PC', '64-bit PC']
@@ -76,7 +73,7 @@ And this is the order we use when generating the widgets matrix.
     ['Ubuntu', u'PC', u'64-bit PC']
     ['Kubuntu', u'PC', u'64-bit PC']
     ['Edubuntu', u'PC', None]
-    ['Server', u'PC', u'64-bit PC']
+    ['Ubuntu Server Edition', u'PC', u'64-bit PC']
 
 Similarly to the quantity widgets, we use a table to display the quantities
 requested by the user. But in this case, the shipit admins are not supposed to
@@ -117,4 +114,35 @@ widgets.
      'ubuntu_quantityx86approved': 10, 'kubuntu_quantityx86approved': 0,
      'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0,
      'server_quantityamd64approved': 0, 'server_quantityx86approved': 0}
+
+
+== Hardy-specific changes ==
+
+Although Hardy is an LTS release it has been decided that Kubuntu Hardy
+will not be LTS, so we need a small hack to make sure we don't say
+"8.04 LTS" when talking about Kubuntu in the same way we do when talking
+about Ubuntu/Edubuntu.
+
+The simplest way to do so is by storing a modified HARDY item from
+ShipItDistroSeries in the views that render public pages.
+
+    >>> view = create_view(shipit, '+index', layer=ShipItUbuntuLayer)
+    >>> view.initialize()
+    >>> view.series.title
+    '8.04 LTS (Hardy Heron)'
+    >>> create_view(shipit, 'login', layer=ShipItUbuntuLayer).series.title
+    '8.04 LTS (Hardy Heron)'
+    >>> create_view(
+    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer).series.title
+    '8.04 LTS (Hardy Heron)'
+
+    >>> view = create_view(shipit, '+index', layer=ShipItKUbuntuLayer)
+    >>> view.initialize()
+    >>> view.series.title
+    '8.04 (Hardy Heron)'
+    >>> create_view(shipit, 'login', layer=ShipItKUbuntuLayer).series.title
+    '8.04 (Hardy Heron)'
+    >>> create_view(
+    ...     shipit, 'myrequest', layer=ShipItKUbuntuLayer).series.title
+    '8.04 (Hardy Heron)'
 

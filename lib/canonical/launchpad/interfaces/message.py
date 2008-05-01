@@ -4,23 +4,31 @@
 __metaclass__ = type
 
 __all__ = [
-    'IMessage',
-    'IMessageSet',
-    'IMessageChunk',
-    'UnknownSender',
-    'MissingSubject',
     'DuplicateMessageId',
+    'IMessage',
+    'IMessageChunk',
+    'IMessageSet',
     'InvalidEmailMessage',
+    'MissingSubject',
+    'UnknownSender',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine, Bool
+from zope.schema import Datetime, Int, Object, Text, TextLine
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.person import IPerson
+
+from canonical.lazr.rest.declarations import export_entry, export_field
 
 class IMessage(Interface):
-    """A message. This is like an email (RFC822) message, though it could be
-    created through the web as well."""
+    """A message.
+
+    This is like an email (RFC822) message, though it could be created through
+    the web as well.
+    """
+    export_entry()
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -28,18 +36,28 @@ class IMessage(Interface):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
+    export_field(datecreated)
+
     subject = TextLine(
             title=_('Subject'), required=True, readonly=True,
             )
+    export_field(subject)
+
     # XXX flacoste 2006-09-08: This attribute is only used for the
     # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
-    owner = Int(
-            title=_('Person'), required=False, readonly=True,
-            )
-    parent = Int(
-            title=_('Parent'), required=False, readonly=True,
-            )
+    owner = Object(
+            title=_('Person'), schema=IPerson, required=False, readonly=True)
+    export_field(owner)
+
+
+    # Schema is really IMessage, but this cannot be declared here. It's
+    # fixed below after the IMessage definition is complete.
+    parent = Object(
+            title=_('Parent'), schema=Interface,
+            required=False, readonly=True)
+    export_field(parent)
+
     distribution = Int(
             title=_('Distribution'), required=False, readonly=True,
             )
@@ -52,9 +70,14 @@ class IMessage(Interface):
             )
     bugs = Attribute(_('Bug List'))
     chunks = Attribute(_('Message pieces'))
-    text_contents = Attribute(
-        'All the text/plain chunks joined together as a unicode string.')
+
+    text_contents = Text(
+        title=_('All the text/plain chunks joined together as a '
+                'unicode string.'))
+    export_field(text_contents, export_as='content')
+
     followup_title = Attribute(_('Candidate title for a followup message.'))
+
     title = Attribute(_('The message title, usually just the subject.'))
     bugattachments = Attribute("A list of BugAttachments connected to this "
         "message.")
@@ -64,6 +87,8 @@ class IMessage(Interface):
     def __iter__():
         """Iterate over all the message chunks."""
 
+# Fix for self-referential schema.
+IMessage['parent'].schema = IMessage
 
 class IMessageSet(Interface):
     """Set of IMessage"""

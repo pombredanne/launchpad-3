@@ -1,7 +1,7 @@
 = Advanced searching using person-based filters =
 
 The advanced search form allows us to filter bugs based on the people
-related to them: assignees, commenters, bug contacts and subscribers.
+related to them: assignees, commenters, bug supervisors and subscribers.
 
 == Widget basics ==
 
@@ -116,29 +116,29 @@ Entering an existing person shows all bugs that person has commented on.
       linux-source-2.6.15 Medium New
 
 
-== Searching for a bug contact's bugs ==
+== Searching for a bug supervisor's bugs ==
 
-On the advanced search there's a field for specifying a bug contact.
+On the advanced search there's a field for specifying a bug supervisor.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl('Bug contact') is not None
+    >>> anon_browser.getControl('Bug supervisor') is not None
     True
 
 If an non-existent person is entered there, an error message is
 displayed.
 
-    >>> anon_browser.getControl('Bug contact').value = 'non-existent'
+    >>> anon_browser.getControl('Bug supervisor').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
     There's no person with the name or email address 'non-existent'.
 
 Entering an existing person shows all bugs for packages or products that the
-person is a bug contact for. Since we're in the ubuntu context, only bugs for
-Ubuntu packages will be returned. In Ubuntu Foo Bar is a bug contact for
-mozilla-firefox and pmount, but there aren't any bugs open for pmount.
+person is a bug supervisor for. Since we're in the ubuntu context, only bugs
+for Ubuntu packages will be returned. In Ubuntu, Foo Bar is a bug supervisor
+for mozilla-firefox and pmount, but there aren't any bugs open for pmount.
 
-    >>> anon_browser.getControl('Bug contact').value = 'foo.bar@canonical.com'
+    >>> anon_browser.getControl('Bug supervisor').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks

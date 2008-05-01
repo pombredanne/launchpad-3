@@ -53,9 +53,10 @@ class SystemErrorView:
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
         self.computeDebugOutput()
-        if config.show_tracebacks:
+        if config.canonical.show_tracebacks:
             self.show_tracebacks = True
-        # if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
+        # if canonical.launchpad.layers.PageTestLayer.providedBy(
+        #     self.request):
         #     self.pagetesting = True
         # XXX 20080109 mpt: We don't use this any more. See bug 181472.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
@@ -113,6 +114,20 @@ class SystemErrorView:
                 return self.inside_div(self.htmltext)
         else:
             return ''
+
+    @property
+    def oops_id_text(self):
+        """Return the OOPS ID, linkified if appropriate."""
+        oopsid = self.request.oopsid
+        oops_root_url = config.launchpad.oops_root_url
+        oops_code = '<code class="oopsid">%s</code>' % oopsid
+        if self.specialuser:
+            # The logged-in user is a Launchpad Developer,
+            # so linkify the OOPS
+            return '<a href="%s%s">%s</a>' % (
+                oops_root_url, oopsid, oops_code)
+        else:
+            return oops_code
 
     def render_as_text(self):
         """Render the exception as text.

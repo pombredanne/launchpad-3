@@ -1,34 +1,14 @@
 = Mailing list subscriptions =
 
 Both direct and indirect members of a team may subscribe to a team's mailing
-list.  First, create the mailing list.
+list.  First, create the mailing list, which will send a notification messages
+to all the members of the mailing list.  We can ignore these messages.
 
     >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> smtpd.reset()
 
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
-    >>> list_one = itest_helper.review_list('itest-one')
-    >>> from Mailman.Utils import list_names
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
-
-Because subscriptions are not yet exposed through the web, we'll add some
-people and join them to teams through the backdoor.
+Anne registers with Launchpad and decides to subscribe to the mailing list.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
@@ -167,3 +147,53 @@ Once Anne validates her address though, she may post from it.
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
     Dirk Person <dperson@example.org> False
+
+
+== Case-preservation ==
+
+Mailing lists preserve the case of the subscribed email address,
+although for subscription purposes, two email addresses that differs
+only in case are the same address.
+
+Emma joins Launchpad as normal, then subscribes a mixed-case alternative
+email address.
+
+    >>> login('foo.bar@canonical.com')
+    >>> emma = new_person('Emma')
+    >>> emma.join(team_one)
+    >>> email = email_set.new('EmmaXPerson@example.org', emma)
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> list_one.subscribe(emma, email)
+    >>> logout()
+
+Wait for Mailman to go through two cycles of downloading the
+subscription information for this mailing list.  This ensures that
+everyone is properly handling case-preservation without error.  See LP
+bug #218628.
+
+    >>> error_watcher = itest_helper.LogWatcher('error')
+    >>> serial_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+    >>> xmlrpc_watcher = itest_helper.LogWatcher('xmlrpc')
+    >>> xmlrpc_watcher.wait()
+    >>> xmlrpc_watcher.wait()
+    >>> error_watcher.wait()
+    'Timed out'
+
+Emma is now a member of the mailing list, using her case-preserved email
+address.
+
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <anne.x.person@example.net> False
+    Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False
+    Emma Person <emma.person@example.com> False
+    Emma Person <EmmaXPerson@example.org> True
+    Emma Person <eperson@example.org> False

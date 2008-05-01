@@ -21,10 +21,8 @@ create a new ExternalBugTracker for an email address will fail.
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_tracker = get_external_bugtracker(
-    ...     txn, new_bugtracker(BugTrackerType.EMAILADDRESS))
+    ...     new_bugtracker(BugTrackerType.EMAILADDRESS))
     Traceback (most recent call last):
       ...
     UnknownBugTrackerTypeError: EMAILADDRESS

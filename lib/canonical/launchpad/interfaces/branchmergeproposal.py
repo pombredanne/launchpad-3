@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -141,7 +141,10 @@ class IBranchMergeProposal(Interface):
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
 
-    queue_status = Attribute(_("The current state of the proposal."))
+    queue_status = Choice(
+        title=_('Status'),
+        vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+        description=_("The current state of the proposal."))
 
     reviewer = Attribute(
         _("The person that accepted (or rejected) the code for merging."))
@@ -192,6 +195,25 @@ class IBranchMergeProposal(Interface):
         title=_('Date Reviewed'), required=False, readonly=True)
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
+    # Cannote use Object as this would cause circular dependencies.
+    root_message = Attribute(
+        _("The first message in discussion of this merge proposal"))
+
+    def getNotificationRecipients(min_level):
+        """Return the people who should be notified.
+
+        Recipients will be returned as a dictionary where the key is the
+        person, and the values are (subscription, rationale) tuples.
+
+        :param min_level: The minimum notification level needed to be
+            notified.
+        """
+
+
+    # Cannot specify value type without creating a circular dependency
+    votes = List(
+        title=_('The votes cast or expected for this proposal'),
+        )
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
@@ -313,6 +335,24 @@ class IBranchMergeProposal(Interface):
         source branch that are not in the revision history of the target
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
+        """
+
+    def nominateReviewer(reviewer, registrant):
+        """Create a vote for the specified person."""
+
+    def createMessage(owner, subject, content=None, vote=None, parent=None,
+                      _date_created=None):
+        """Create an ICodeReviewMessage associated with this merge proposal.
+
+        :param owner: The person who the message is from.
+        :param subject: The subject line to use for the message.
+        :param content: The text to use for the message content.  If
+            unspecified, the text of the merge proposal is used.
+        :param parent: The previous CodeReviewMessage in the thread.  If
+            unspecified, the root message is used.
+        :param _date_created: The date the message was created.  Provided only
+            for testing purposes, as it can break
+            BranchMergeProposal.root_message.
         """
 
     def deleteProposal():

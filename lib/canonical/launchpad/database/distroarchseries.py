@@ -29,7 +29,6 @@ from canonical.launchpad.database.distroarchseriesbinarypackage import (
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
-from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -50,7 +49,7 @@ class DistroArchSeries(SQLBase):
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
-    ppa_supported = BoolCol(notNull=False, default=False)
+    supports_virtualized = BoolCol(notNull=False, default=False)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -230,13 +229,6 @@ class DistroArchSeries(SQLBase):
             orderBy=['-id'])
 
         return shortlist(published)
-
-    def findDepCandidateByName(self, name):
-        """See IPublishedSet."""
-        return PublishedPackage.selectFirstBy(
-            binarypackagename=name, distroarchseries=self,
-            packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
-            orderBy=['-id'])
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See ICanPublishPackages."""

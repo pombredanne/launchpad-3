@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
-    ICodeImportSet, ILibraryFileAliasSet)
+    ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.ftests import login, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.librarian.interfaces import ILibrarianClient
@@ -602,6 +602,7 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
             getUtility(ICodeImportJobWorkflow).startJob,
             job, machine)
 
+
 class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
         AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.updateHeartbeat."""
@@ -688,6 +689,19 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         self.assertEqual(
             new_job.date_due - running_job.date_due,
             code_import.effective_update_interval)
+
+    def test_doesntCreateNewJobIfCodeImportNotReviewed(self):
+        # finishJob() creates a new CodeImportJob for the given CodeImport,
+        # unless the CodeImport has been suspended or marked invalid.
+        running_job = self.makeRunningJob()
+        running_job_date_due = running_job.date_due
+        code_import = running_job.code_import
+        ddaa = getUtility(IPersonSet).getByEmail(
+            'david.allouche@canonical.com')
+        code_import.suspend({}, ddaa)
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS, None)
+        self.assertTrue(code_import.import_job is None)
 
     def test_createsResultObject(self):
         # finishJob() creates a CodeImportResult object for the given import.
@@ -815,6 +829,38 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         self.assertEventLike(
             finish_event, CodeImportEventType.FINISH,
             code_import, machine)
+
+    def test_successfulResultUpdatesCodeImportLastSuccessful(self):
+        # finishJob() updates CodeImport.date_last_successful if and only if
+        # the status was success.
+        for status in CodeImportResultStatus.items:
+            running_job = self.makeRunningJob()
+            code_import = running_job.code_import
+            machine = running_job.machine
+            self.assertTrue(code_import.date_last_successful is None)
+            getUtility(ICodeImportJobWorkflow).finishJob(
+                running_job, status, None)
+            if status == CodeImportResultStatus.SUCCESS:
+                self.assertTrue(code_import.date_last_successful is not None)
+            else:
+                self.assertTrue(code_import.date_last_successful is None)
+
+    def test_successfulResultCallsRequestMirror(self):
+        # finishJob() calls requestMirror() on the import branch if and only
+        # if the status was success.
+        for status in CodeImportResultStatus.items:
+            running_job = self.makeRunningJob()
+            code_import = running_job.code_import
+            machine = running_job.machine
+            self.assertTrue(code_import.date_last_successful is None)
+            getUtility(ICodeImportJobWorkflow).finishJob(
+                running_job, status, None)
+            if status == CodeImportResultStatus.SUCCESS:
+                self.assertTrue(
+                    code_import.branch.next_mirror_time is not None)
+            else:
+                self.assertTrue(
+                    code_import.branch.next_mirror_time is None)
 
 
 def test_suite():

@@ -28,10 +28,27 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.lazr.interfaces.IObjectPrivacy"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.badge.IHasBadges"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamBadges"
+    permission="zope.Public"
+    />
+
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
+    <allow
+      interface="canonical.launchpad.interfaces.IPersonAdminWriteRestricted"
+      />
 
     <require
       permission="launchpad.View"
@@ -46,20 +63,15 @@
       set_schema="canonical.launchpad.interfaces.IPersonPublic"
       />
     <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.IPersonAdminWriteRestricted"
+      />
+    <require
       permission="launchpad.Special"
       attributes="deactivateAccount"
       />
     <require
       permission="launchpad.Edit"
-      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
-                  renewTeamMembership"
-      />
-    <require
-      permission="launchpad.Admin"
-      attributes="deactivateAllMembers"
-      />
-    <require
-      permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
   </content>
@@ -330,7 +342,7 @@
     schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     name="+portlet-otherpackages"
     permission="zope.Public"
-    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     fields="distribution sourcepackagename"
     template="../templates/person-portlet-otherpackages.pt"
     />
@@ -374,7 +386,7 @@
     name="+packagebugs-search"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-search.pt"
     />
@@ -387,7 +399,7 @@
     name="+packagebugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-overview.pt"
     />
@@ -527,6 +539,14 @@
     />
 
   <browser:page
+    name="+oauth-tokens"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonOAuthTokensView"
+    permission="launchpad.Edit"
+    template="../templates/person-oauth-tokens.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView"
@@ -577,6 +597,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListModerationView"
+    name="+mailinglist-moderate"
+    template="../templates/team-mailinglist-moderate.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonLanguagesView"
     name="+editlanguages"
     template="../templates/person-editlanguages.pt"
@@ -600,7 +628,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Admin"
+    permission="launchpad.Owner"
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"

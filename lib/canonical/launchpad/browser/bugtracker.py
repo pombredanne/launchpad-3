@@ -24,25 +24,33 @@ from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
 
+from canonical.cachedproperty import cachedproperty
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import english_list, shortlist
 from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
+    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag,
+    ILaunchpadCelebrities, IRemoteBug)
 from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
-    redirection)
+    redirection, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import DelimitedListWidget
+
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.
 SINGLE_INSTANCE_TRACKERS = (
     BugTrackerType.DEBBUGS,
-    BugTrackerType.EMAILADDRESS,
-    BugTrackerType.SAVANNAH,
-    BugTrackerType.SOURCEFORGE,
     )
+
+# A set of bug tracker types that we should not allow direct creation
+# of.
+NO_DIRECT_CREATION_TRACKERS = (
+    SINGLE_INSTANCE_TRACKERS + (
+        BugTrackerType.EMAILADDRESS,))
+
 
 class BugTrackerSetNavigation(GetitemNavigation):
 
@@ -86,7 +94,7 @@ class BugTrackerAddView(LaunchpadFormView):
         # multiple instances in the bugtrackertype Choice widget.
         vocab_items = [
             item for item in BugTrackerType.items.items
-                if item not in SINGLE_INSTANCE_TRACKERS]
+                if item not in NO_DIRECT_CREATION_TRACKERS]
         fields = []
         for field_name in self.field_names:
             if field_name == 'bugtrackertype':
@@ -177,25 +185,23 @@ class BugTrackerEditView(LaunchpadEditFormView):
     custom_widget('aliases', DelimitedListWidget, height=3)
 
     def validate(self, data):
-        """See `LaunchpadFormView`."""
         # Normalise aliases to an empty list if it's None.
         if data.get('aliases') is None:
             data['aliases'] = []
 
-        # Check that none of the new aliases are used elsewhere.
-        current_aliases = set(self.context.aliases)
-        requested_aliases = set(data['aliases'])
-        new_aliases = requested_aliases - current_aliases
-        bugtracker_set = getUtility(IBugTrackerSet)
-        used_alias_errors = []
-        for alias_url in new_aliases:
-            bugtracker = bugtracker_set.queryByBaseURL(alias_url)
-            if bugtracker is not None and bugtracker != self.context:
-                used_alias_errors.append(
-                    "%s already refers to %s" % (
-                        alias_url, bugtracker.title))
-        if len(used_alias_errors) > 0:
-            self.setFieldError('aliases', '; '.join(used_alias_errors))
+        # If aliases has an error, unwrap the Dantean exception from
+        # Zope so that we can tell the user something useful.
+        if self.getFieldError('aliases'):
+            # XXX: GavinPanella 2008-04-02 bug=210901: The error
+            # messages may already be escaped (with `cgi.escape`), but
+            # the water is muddy, so we won't attempt to unescape them
+            # or otherwise munge them, in case we introduce a
+            # different problem. For now, escaping twice is okay as we
+            # won't see any artifacts of that during normal use.
+            aliases_errors = self.widgets['aliases']._error.errors.args[0]
+            self.setFieldError('aliases', structured(
+                    '<br />'.join(['%s'] * len(aliases_errors)),
+                    *aliases_errors))
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -208,10 +214,92 @@ class BugTrackerEditView(LaunchpadEditFormView):
             data['aliases'].append(current_baseurl)
 
         self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    @cachedproperty
+    def delete_not_possible_reasons(self):
+        """A list of reasons why the context cannot be deleted.
+
+        An empty list means that there are no reasons, so the delete
+        can go ahead.
+        """
+        reasons = []
+        celebrities = getUtility(ILaunchpadCelebrities)
+
+        # We go through all of the conditions why the bug tracker
+        # can't be deleted, and record reasons for all of them. We do
+        # this so that users can discover the logic behind the
+        # decision, and try something else, seek help, or give up as
+        # appropriate. Just showing the first problem would stop users
+        # from being able to help themselves.
+
+        # Check that no products or projects use this bugtracker.
+        pillars = (
+            getUtility(IBugTrackerSet).getPillarsForBugtrackers(
+                [self.context]).get(self.context, []))
+        if len(pillars) > 0:
+            reasons.append(
+                'This is the bug tracker for %s.' % english_list(
+                    sorted(pillar.title for pillar in pillars)))
+
+        # Only admins and registry experts can delete bug watches en
+        # masse.
+        if self.context.watches.count() > 0:
+            admin_teams = [celebrities.admin, celebrities.registry_experts]
+            for team in admin_teams:
+                if self.user.inTeam(team):
+                    break
+            else:
+                reasons.append(
+                    'There are linked bug watches and only members of %s '
+                    'can delete them en masse.' % english_list(
+                        sorted(team.title for team in admin_teams)))
+
+        # Bugtrackers with imported messages cannot be deleted.
+        if self.context.imported_bug_messages.count() > 0:
+            reasons.append(
+                'Bug comments have been imported via this bug tracker.')
+
+        # If the bugtracker is a celebrity then we protect it from
+        # deletion.
+        celebrities_set = set(
+            getattr(celebrities, name)
+            for name in ILaunchpadCelebrities.names())
+        if self.context in celebrities_set:
+            reasons.append(
+                'This bug tracker is protected from deletion.')
+
+        return reasons
+
+    def delete_condition(self, action):
+        return len(self.delete_not_possible_reasons) == 0
+
+    @action('Delete', name='delete', condition=delete_condition)
+    def delete_action(self, action, data):
+        # First unlink bug watches from all bugtasks, flush updates,
+        # then delete the watches themselves.
+        for watch in self.context.watches:
+            for bugtask in watch.bugtasks:
+                if len(bugtask.bug.bugtasks) < 2:
+                    raise AssertionError(
+                        'There should be more than one bugtask for a bug '
+                        'when one of them is linked to the original bug via '
+                        'a bug watch.')
+                bugtask.bugwatch = None
+        flush_database_updates()
+        for watch in self.context.watches:
+            watch.destroySelf()
+
+        # Now delete the aliases and the bug tracker itself.
+        self.context.aliases = []
+        self.context.destroySelf()
+
+        # Hey, it worked! Tell the user.
+        self.request.response.addInfoNotification(
+            '%s has been deleted.' % (self.context.title,))
+
+        # Go back to the bug tracker listing.
+        self.next_url = canonical_url(getUtility(IBugTrackerSet))
 
 
 class BugTrackerNavigation(Navigation):

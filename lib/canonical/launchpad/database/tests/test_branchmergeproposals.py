@@ -6,10 +6,14 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
-    BadStateTransition, BranchMergeProposalStatus, EmailAddressStatus)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+    BadStateTransition, BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    EmailAddressStatus)
+from canonical.launchpad.testing import (
+     capture_events, LaunchpadObjectFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -255,6 +259,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         # Remove the proposal from the middle of the queue.
         proposal = queued_proposals[1]
         proposal.dequeue()
+        syncUpdate(proposal)
 
         del new_queue_order[1]
 
@@ -265,6 +270,142 @@ class TestBranchMergeProposalQueueing(TestCase):
             new_queue_order, queue_order,
             "There should be only two queued items now. "
             "Expected %s, got %s" % (new_queue_order, queue_order))
+
+
+class TestRootMessage(TestCase):
+    """Test the behavior of the root_message attribute"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+
+    def test_orderedByDateNotInsertion(self):
+        """Root is determined by create date, not insert order"""
+        counter = time_counter()
+        oldest_date, middle_date, newest_date = [counter.next() for index in
+            (1, 2, 3)]
+        message1 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject",
+            _date_created=middle_date)
+        self.assertEqual(message1, self.merge_proposal.root_message)
+        message2 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject",
+            _date_created=newest_date)
+        self.assertEqual(message1, self.merge_proposal.root_message)
+        message3 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject",
+            _date_created=oldest_date)
+        self.assertEqual(message3, self.merge_proposal.root_message)
+
+
+class TestMergeProposalNotification(TestCase):
+    """Test that events are created when merge proposals are manipulated"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+
+    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
+        """Assert that a callable performs a given notification.
+
+        :param event_type: The type of event that notification is expected
+            for.
+        :param callable_obj: The callable to call.
+        :param *args: The arguments to pass to the callable.
+        :param **kwargs: The keyword arguments to pass to the callable.
+        :return: (result, event), where result was the return value of the
+            callable, and event is the event emitted by the callable.
+        """
+        result, events = capture_events(callable_obj, *args, **kwargs)
+        if len(events) == 0:
+            raise AssertionError('No notification was performed.')
+        elif len(events) > 1:
+            raise AssertionError('Too many (%d) notifications performed.'
+                % len(events))
+        elif not isinstance(events[0], event_type):
+            raise AssertionError('Wrong event type: %r (expected %r).' %
+                (events[0], event_type))
+        return result, events[0]
+
+    def test_notifyOnCreate(self):
+        """Ensure that a notification is emitted on creation"""
+        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeBranch(product=source_branch.product)
+        registrant = self.factory.makePerson()
+        result, event = self.assertNotifies(SQLObjectCreatedEvent,
+            source_branch.addLandingTarget, registrant, target_branch)
+        self.assertEqual(result, event.object)
+
+    def test_getNotificationRecipients(self):
+        """Ensure that recipients can be added/removed with subscribe"""
+        bmp = self.factory.makeBranchMergeProposal()
+        self.assertEqual({},
+            bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS))
+        source_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(source_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        self.assertEqual([source_subscriber], recipients.keys())
+        bmp.source_branch.subscribe(source_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        self.assertEqual([], recipients.keys())
+
+    def test_getNotificationRecipientLevels(self):
+        """Ensure that only recipients with the right level are returned"""
+        bmp = self.factory.makeBranchMergeProposal()
+        full_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(full_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        status_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(status_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.STATUS)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        self.assertEqual(set([full_subscriber, status_subscriber]),
+            set(recipients.keys()))
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual([full_subscriber], recipients.keys())
+
+    def test_getNotificationRecipientsAnyBranch(self):
+        dependent_branch = self.factory.makeBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            dependent_branch=dependent_branch)
+        self.assertEqual({},
+        bmp.getNotificationRecipients(
+            BranchSubscriptionNotificationLevel.NOEMAIL))
+        source_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(source_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        target_subscriber = self.factory.makePerson()
+        bmp.target_branch.subscribe(target_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        dependent_subscriber = self.factory.makePerson()
+        bmp.dependent_branch.subscribe(dependent_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual(
+            set([source_subscriber, target_subscriber, dependent_subscriber]),
+            set(recipients.keys()))
 
 
 def test_suite():

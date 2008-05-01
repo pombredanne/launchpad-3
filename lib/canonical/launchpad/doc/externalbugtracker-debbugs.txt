@@ -17,20 +17,17 @@ You can specify the db_location explicitly:
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     DebBugs)
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
-    >>> external_debbugs = DebBugs(txn, debbugs, db_location=test_db_location)
+    >>> external_debbugs = DebBugs(
+    ...     'http://example.com/', db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location
     True
 
 Or, if we create a DebBugs instance without specifying a db location, it
 will use the config value:
 
-    >>> external_debbugs = DebBugs(txn, debbugs)
+    >>> external_debbugs = DebBugs('http://example.com/')
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
@@ -67,6 +64,15 @@ Bug 563 resides in the archive. It is also fetchable:
     'done normal'
 
 
+== Getting the time ==
+
+We don't have acccess to the Debian servers exact time, but we trust it
+being correct.
+
+    >>> external_debbugs.getCurrentDBTime()
+    datetime.datetime(...)
+
+
 == Checking debbugs bug watches ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
@@ -82,10 +88,13 @@ tested later.
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.import_comments = False
+    >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
-    INFO:...:Updating 5 watches on http://bugs.some.where
+    INFO:...:Updating 5 watches on http://...
 
-    >>> for bug_watch in bug_watches:
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> for bug_watch_id in bug_watch_ids:
+    ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     280883: done grave woody security
     304014: open important
@@ -226,33 +235,26 @@ All other tags we map to 'New'.
     ...     'open normal unreproducible lfs woody').title
     New
 
-If we pass in a malformed status string, we map it to 'Unknown' and
-log an error.
+If we pass in a malformed status string an UnknownRemoteStatusError will
+be raised.
 
-    >>> print external_debbugs.convertRemoteStatus('open').title
-    WARNING:...:Malformed debbugs status: 'open'.
-    Unknown
-
-UNKNOWN_REMOTE_STATUS maps to Unknown.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> print external_debbugs.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    Unknown
+    >>> print external_debbugs.convertRemoteStatus('open')
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Importing bugs ==
 
 The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
-It pulls a bug from the Debbugs db, and create a bug in Launchpad with
-the same summary and description.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> debian.official_malone
-    False
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import ISupportsBugImport
+    >>> verifyObject(ISupportsBugImport, external_debbugs)
+    True
 
-The bug reporter doesn't have to have a Launchpad account. If a person
-doesn't exist in Launchpad, a new one will be created automatically.
+The bug reporter gets taken from the From field in the debbugs bug
+report.
 
     >>> report = email.message_from_file(
     ...     open(os.path.join(
@@ -260,15 +262,15 @@ doesn't exist in Launchpad, a new one will be created automatically.
     >>> print report['From']
     Moritz Muehlenhoff <jmm@inutil.org>
 
-    >>> from email.Utils import parseaddr
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> reporter_name, reporter_email = parseaddr(report['From'])
-    >>> print getUtility(IPersonSet).getByEmail(reporter_email)
-    None
+    >>> name, email = external_debbugs.getBugReporter('322535')
+    >>> print name
+    Moritz Muehlenhoff
+    >>> print email
+    jmm@inutil.org
 
-The importBug method reads the bug report from the debbugs db,
-and creates a Launchpad bug report, using the debbugs subject as the
-summary, and the description as the description.
+The getBugSummaryAndDescription method reads the bug report from the
+debbugs db, and returns the debbugs subject as the summary, and the
+description as the description.
 
     >>> print report['Subject']
     evolution: Multiple format string vulnerabilities in Evolution
@@ -284,11 +286,12 @@ summary, and the description as the description.
     for details. 2.3.7 fixes all these issues.
     ...
 
-    >>> bug = external_debbugs.importBug(debian, '322535')
-
-    >>> print bug.title
+    >>> summary, description = external_debbugs.getBugSummaryAndDescription(
+    ...     '322535')
+    >>> print summary
     evolution: Multiple format string vulnerabilities in Evolution
-    >>> print bug.description
+
+    >>> print description
     Package: evolution
     Severity: grave
     Tags: security
@@ -299,236 +302,86 @@ summary, and the description as the description.
     for details. 2.3.7 fixes all these issues.
     ...
 
-The bug reporter got created automatically:
+Which package to file the bug against is determined by the
+getBugTargetName() method.
 
-    >>> getUtility(IPersonSet).getByEmail(reporter_email) is not None
-    True
-    >>> print bug.owner.displayname
-    Moritz Muehlenhoff
-
-Since he didn't have a Launchpad account before, he doesn't have a
-preferred e-mail address, and the one that is associated with his
-account is marked as NEW, since we don't know whether it's valid.
-
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
-    >>> reporter_email_adresses = getUtility(IEmailAddressSet).getByPerson(
-    ...     bug.owner)
-    >>> for email_address in reporter_email_adresses:
-    ...     print "%s: %s" % (email_address.email, email_address.status.name)
-    jmm@inutil.org: NEW
-    >>> print bug.owner.preferredemail
-    None
-
-    >>> bug.owner.creation_rationale.name
-    'BUGIMPORT'
-    >>> bug.owner.creation_comment
-    u'when importing debbugs bug #322535'
-
-No one got subscribed to the created bug, since the relevant people
-already get e-mail notifications via Debbugs.
-
-    >>> [person.name for person in bug.getDirectSubscribers()]
-    []
-
-The bug got filed against the evolution package in Debian, and it has a
-bug watch pointing to the original Debian bug, so that the bug report is
-kept in sync.
-
-    >>> [debian_task] = bug.bugtasks
-    >>> debian_task.bugtargetname
-    u'evolution (Debian)'
-
-    >>> debian_task.bugwatch.bugtracker.name
-    u'debbugs-checkwatches-1'
-    >>> debian_task.bugwatch.remotebug
-    u'322535'
-
-
-=== Non-existent source package ===
-
-If a Debian package doesn't exist in Launchpad already, it will be
-filed on Debian itself, with no source package specified. The package is
-always included in the description of Debian bugs, so that information
-isn't lost. A warning is also logged, so that the one running the script
-gets notified about it.
-
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     TestDebBugs, TestDebianBug)
-    >>> external_debbugs = TestDebBugs(
-    ...     txn, debbugs, {'1234': TestDebianBug(
-    ...         package='no-such-package', id=1234)})
-    >>> print debian.getSourcePackage('no-such-package')
-    None
-    >>> bug = external_debbugs.importBug(debian, '1234')
-    WARNING:...:Unknown Debian package (debbugs #1234): no-such-package
-
-    >>> [debian_task] = bug.bugtasks
-    >>> debian_task.distribution.name
-    u'debian'
-    >>> print debian_task.sourcepackagename
-    None
-
-
-=== Syncing status ===
-
-After the bug watch has been created for the imported bug, the status is
-not synced immediately. The status will be updated the next time all the
-bug watches for this bug tracker gets updated. This is to avoid making
-one request per imported bug.
-
-    >>> external_debbugs = TestDebBugs(
-    ...     txn, debbugs, {'1234': TestDebianBug(status='done', id=1234)})
-    >>> real_status = external_debbugs.convertRemoteStatus(
-    ...     external_debbugs.getRemoteStatus('1234'))
-    >>> real_status.name
-    'FIXRELEASED'
-    >>> bug = external_debbugs.importBug(debian, '1234')
-
-    >>> [debian_task] = bug.bugtasks
-    >>> debian_task.status.name
-    'NEW'
-    >>> print debian_task.bugwatch.lastchecked
-    None
-
-
-=== Reporter already registered in Launchpad ===
-
-Even if the reporter of the bug has an account in Launchpad (and thus a
-valid e-mail address), he still won't be subscribed to the imported bug.
-
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv.preferredemail is not None
-    True
-    >>> no_priv_bug = TestDebianBug(
-    ...     reporter_email=no_priv.preferredemail.email, id=1234)
-    >>> external_debbugs = TestDebBugs(txn, debbugs, {'1234': no_priv_bug})
-    >>> bug = external_debbugs.importBug(debian, '1234')
-
-    >>> bug.owner.name
-    u'no-priv'
-    >>> [person.name for person in bug.getDirectSubscribers()]
-    []
+    >>> print external_debbugs.getBugTargetName('322535')
+    evolution
 
 
 == Importing Comments ==
 
 Along with importing debian bug reports, comments on those bug reports
-are also imported. This activity is usually carried out as part of a
-status update (though this is disabled in our Test DebBugs
-implementation), so we need to pass a bug watch to the function.
+can also be imported. The DebBugs class implements the
+ISupportsCommentImport interface.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     get_external_bugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, ISupportsCommentImport)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> external_debbugs = get_external_bugtracker(
+    ...     new_bugtracker(BugTrackerType.DEBBUGS))
+
+    >>> ISupportsCommentImport.providedBy(external_debbugs)
+    True
+
+ISupportsCommentImport defines four methods: getCommentIds(),
+fetchComments(), getPosterForComment() and getMessageForComment().
+DebBugs implements all of these.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestDebBugs, TestDebianBug)
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)
     >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
-    >>> external_debbugs.importBugComments(bug_watch)
-    INFO:...:Imported 1 comments for remote bug 1234...
-    into Launchpad bug 4.
+    >>> external_debbugs = TestDebBugs(
+    ...     'http://example.com/', {'1234': TestDebianBug(
+    ...         package='evolution', id=1234)})
 
-These comments will have been added to the bug. If we look at the
-message chunks for the bug we will see the comments that have been
-imported, along with the creation comment of the bug.
+getCommentIds() will return a list of the comment IDs for a given remote
+bug. DebBugs comment IDs are RFC822 message IDs.
 
-    >>> chunks = bug.getMessageChunks()
-    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
-    ...     for chunk in chunks]):
-    ...     print chunk
-    Malone pages that use more complex layouts with portlets and fancy
-    CSS are sometimes not getting properly reflowed after rendering.
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> print comment_ids
+    ['<20040309081430.98BF411EE67@tux>']
+
+The debbugs implementation of fetchComments() doesn't actually do
+anything, since DebBugs comments are stored locally and there is no need
+to pre-fetch them. It exists, nevertheless, so that
+BugWatchUpdater.importBugComments() can call it.
+
+    >>> external_debbugs.fetchComments(bug_watch, comment_ids)
+
+getPosterForComment() will return a tuple of displayname, email for a
+given comment ID.
+
+    >>> comment_id = comment_ids[0]
+    >>> poster_name, poster_email = external_debbugs.getPosterForComment(
+    ...     bug_watch, comment_id)
+    >>> print "%s <%s>" % (poster_name, poster_email)
+    Teun Vink <teun@tux.office.luna.net>
+
+getMessageForComment() will return an imported comment as a Launchpad
+Message. It requires a Person instance to be used as the Message's
+owner, so we'll turn Teun Vink into a Person.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, PersonCreationRationale)
+    >>> poster = getUtility(IPersonSet).ensurePerson(
+    ...     poster_email, poster_name, PersonCreationRationale.BUGIMPORT,
+    ...     comment='when importing comments for %s.' % bug_watch.title)
+
+    >>> message = external_debbugs.getMessageForComment(
+    ...     bug_watch, comment_id, poster)
+
+    >>> print message.owner.displayname
+    Teun Vink
+
+    >>> print message.text_contents
     Things happen.
-
-The author of the comment will have had a Launchpad Person created for
-them if they didn't exist already:
-
-    >>> message = chunks[0].message
-    >>> message.owner.displayname
-    u'Teun Vink'
-
-    >>> print message.owner.creation_comment
-    when importing comments for Debian Bug tracker #1234.
-
-No notifications will be generated for the imported comments:
-
-    >>> from canonical.launchpad.interfaces import IBugNotificationSet
-    >>> from canonical.launchpad.scripts.bugnotification import (
-    ...     get_email_notifications)
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    0
-
-If a second comment is added and then the comments imported, the
-existing comment will remain unaltered and the new comment will be
-imported into Launchpad as normal. We can demonstrate this by telling
-our test debbugs DB to load sample data for more than one comment
-
-    >>> chunks = bug.getMessageChunks()
-    >>> len(chunks)
-    2
-
-    >>> external_debbugs.debbugs_db._data_file = 'debbugs-2-comments.txt'
-    >>> external_debbugs.importBugComments(bug_watch)
-    INFO:...:Imported 1 comments for remote bug 1234...
-
-    >>> chunks = bug.getMessageChunks()
-    >>> len(chunks)
-    3
-
-    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
-    ...     for chunk in chunks]):
-    ...     print chunk
-    Malone pages that use more complex layouts with portlets and fancy
-    CSS are sometimes not getting properly reflowed after rendering.
-    Things happen.
-    Anything that, in happening, causes something else to happen, causes
-    something else to happen.
-
-If a comment already exists in our database and is then imported from
-the debbugs database, it will be linked to the bug then next time the
-comment import code runs. We can demonstrate this by adding a new
-message:
-
-    >>> import os
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import IMessageSet
-    >>> msg_path = os.path.join(external_debbugs.debbugs_db._data_path,
-    ...     'debbugs-existing-comment.txt')
-    >>> msg_string = open(msg_path).read()
-    >>> message = getUtility(IMessageSet).fromEmail(msg_string)
-    >>> commit()
-
-If we run the import against the same data file - thus finding the same
-message - the comment will be linked to the bug.
-
-    >>> external_debbugs.debbugs_db._data_file = (
-    ...     'debbugs-existing-comment.txt')
-    >>> external_debbugs.importBugComments(bug_watch)
-    INFO:...:Imported 1 comments for remote bug 1234...
-    into Launchpad bug 4.
-
-    >>> chunks = bug.getMessageChunks()
-    >>> len(chunks)
-    4
-
-    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
-    ...     for chunk in chunks]):
-    ...     print chunk
-    Malone pages that use more complex layouts with portlets and fancy
-    CSS are sometimes not getting properly reflowed after rendering.
-    Things happen.
-    Anything that, in happening, causes something else to happen, causes
-    something else to happen.
-    It doesn't necessarily happen in that order, though.
-
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
-Comments for bugs in the archive can also be imported:
-
-    >>> archive_bug_watch = bug.addWatch(debbugs, '563', no_priv)
-    >>> external_debbugs = DebBugs(txn, debbugs)
-    >>> external_debbugs.importBugComments(archive_bug_watch)
-    INFO:...:Imported 3 comments for remote bug 563 on
-    http://bugs.debian.org into Launchpad bug 4.
 
 
 === Script for importing Debian bugs, linking them to Ubutu ===
@@ -537,6 +390,7 @@ There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]

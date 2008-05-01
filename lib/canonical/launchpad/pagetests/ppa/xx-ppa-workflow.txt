@@ -284,12 +284,28 @@ The administration procedure allows us to:
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
  * Make the PPA private or public.
+ * For private PPAs, set the buildd secret.
+ * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
+In this case, the administrator may wish to amend the PPA so that it is
+set up like the ubuntu security PPA, which is private but does not
+build on a virtualized builder.
+
+    >>> admin_browser.getControl(name="field.enabled").value
+    True
+    >>> admin_browser.getControl(name="field.private").value
+    False
+    >>> admin_browser.getControl(name="field.require_virtualized").value
+    True
+
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl(
+    ...     name="field.require_virtualized").value = False
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'Here lives a lazy community.')
@@ -302,6 +318,40 @@ The administration procedure allows us to:
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:
     Here lives a lazy community.
+
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.getControl(name="field.enabled").value
+    False
+    >>> admin_browser.getControl(name="field.private").value
+    True
+    >>> admin_browser.getControl(name="field.require_virtualized").value
+    False
+
+
+When the archive is private, the buildd secret must also be set, or an
+error is issued:
+
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = ""
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents, 'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Required for private archives.
+
+Conversely, setting the buildd secret for non-private archives also
+generates an error:
+
+    >>> admin_browser.getControl(name="field.private").value = False
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents, 'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Do not specify for non-private archives
+
 
 There is a maximum size allowed for authorized_size is set in
 `IArchive`, it is currently 20 * 1024 and the unit used in code is
@@ -333,7 +383,7 @@ PPA overview page and discards the changes.
 
     >>> admin_browser.getControl("Cancel").click()
     >>> admin_browser.title
-    'PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.whiteboard").value = (
@@ -341,7 +391,7 @@ PPA overview page and discards the changes.
     >>> admin_browser.getControl("Cancel").click()
 
     >>> admin_browser.title
-    'PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:

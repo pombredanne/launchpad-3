@@ -23,10 +23,23 @@
 
     <div metal:use-macro="context/@@launchpad_form/form">
 
-    <p metal:fill-slot="extra_info">
-      If you need to change the type of bug tracker, please ask for
-      admin support on #launchpad (see the bottom of the page for details).
-    </p>
+    <metal:extra-info fill-slot="extra_info">
+      <div id="bugtracker-delete-not-possible-reasons"
+           tal:define="reasons view/delete_not_possible_reasons"
+           tal:condition="reasons">
+        <p>
+          Please note, this bug tracker cannot be deleted because:
+        </p>
+        <ul>
+          <li tal:repeat="reason reasons" tal:content="reason" />
+        </ul>
+      </div>
+
+      <p>
+        If you need to change the type of bug tracker, please ask for
+        admin support on #launchpad (see the bottom of the page for details).
+      </p>
+    </metal:extra-info>
 
   </div>
 

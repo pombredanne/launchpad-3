@@ -11,7 +11,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1 content="context/title">Bug #123 in bugzilla.gnome.org</h1>
+      <h1 tal:content="context/title">Bug #123 in bugzilla.gnome.org</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">

@@ -16,6 +16,11 @@
          interface="canonical.launchpad.interfaces.IMailingListSubscription"/>
     </content>
 
+    <content class="canonical.launchpad.database.MessageApproval">
+        <allow
+          interface="canonical.launchpad.interfaces.IMessageApproval"/>
+    </content>
+
     <securedutility
         class="canonical.launchpad.database.MailingListSet"
         provides="canonical.launchpad.interfaces.IMailingListSet">
@@ -27,6 +32,13 @@
         provides="canonical.launchpad.interfaces.IMailingListApplication">
         <allow
          interface="canonical.launchpad.interfaces.IMailingListApplication"/>
+    </securedutility>
+
+    <securedutility
+        class="canonical.launchpad.database.MessageApprovalSet"
+        provides="canonical.launchpad.interfaces.IMessageApprovalSet">
+        <allow
+          interface="canonical.launchpad.interfaces.IMessageApprovalSet"/>
     </securedutility>
 
     <xmlrpc:view
@@ -48,5 +60,26 @@
         template="../templates/mailinglists-review.pt"
         permission="launchpad.Admin"
         />
+
+  <!-- Helper page for held message approval -->
+  <browser:page
+    name="+moderation"
+    for="canonical.launchpad.interfaces.IMessageApproval"
+    class="canonical.launchpad.browser.HeldMessageView"
+    template="../templates/message-moderation.pt"
+    permission="launchpad.View"
+    />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.IMailingList
+	 canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"
+    />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.IMessageApproval
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.mailnotification.notify_message_held"
+    />
 
 </configure>

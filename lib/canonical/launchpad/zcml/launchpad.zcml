@@ -204,6 +204,33 @@
       permission="zope.Public"
       />
 
+  <!-- OAuth-related pages. -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+request-token"
+      class="canonical.launchpad.browser.OAuthRequestTokenView"
+      permission="zope.Public" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+oauth-authorize"
+      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      template="../templates/oauth-authorize.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+token-authorized"
+      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
+      template="../templates/token-authorized.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+access-token"
+      class="canonical.launchpad.browser.OAuthAccessTokenView"
+      permission="zope.Public" />
+
 
   <!-- Declare robots.txt file for the root -->
   <browser:page
@@ -228,6 +255,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="*"
+      name="+navigationmenutabs"
+      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+      template="../templates/launchpad-navigation-menutabs.pt"
+      permission="zope.Public"
+      />
+
   <browser:defaultView
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
@@ -238,6 +273,14 @@
       name="+link"
       class="canonical.launchpad.browser.launchpad.LinkView"
       template="../templates/launchpad-link.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-link.pt"
       permission="zope.Public"
       />
 
@@ -286,7 +329,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
       class="canonical.launchpad.browser.BazaarProductView"
-      template="../templates/product-code-index.pt"
+      template="../templates/code-in-branches.pt"
       permission="zope.Public"
       />
   <browser:page
@@ -310,8 +353,29 @@
       template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+code-import-list"
+      class="canonical.launchpad.browser.ProductSeriesSourceListView"
+      template="../templates/sources-list.pt"
+      permission="zope.Public"
+      />
 
 </facet>
+
+<adapter
+  provides="canonical.lazr.interfaces.IObjectPrivacy"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  permission="zope.Public"
+  />
+
+<adapter
+  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
+  permission="zope.Public"
+  />
 
 <!--
 Operational statistics. Note that these are publicly available,
@@ -351,6 +415,14 @@ these URLs in Apache.
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
   class="canonical.launchpad.browser.launchpad.IcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-ubuntu"
+  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
   attribute="__call__"
   permission="zope.Public"
   />

@@ -8,107 +8,88 @@ lot of state and many relationships to other objects.
 
 At the top level we provide a collection of bugs.
 
-  >>> bugs = webservice(r"""
-  ... GET /bugs HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
-  >>> len(bugs)
+  >>> import operator
+  >>> bugs = webservice.get("/beta/bugs").jsonBody()
+  >>> bugs['total_size']
   14
-  >>> sorted(bugs[0].items())
-  [(u'bugtasks_collection_link', u'http://api.launchpad.dev/bugs/1/bugtasks'),
+  >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
+  >>> sorted(bug_entries[0].items())
+  [(u'bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/10/bugtasks'),
    (u'can_expire', False),
    (u'date_last_message', None),
-   (u'date_last_updated', u'2006-05-19T06:37:40.344941+00:00'),
+   (u'date_last_updated', u'2006-07-14T08:54:19.453881+00:00'),
    (u'date_made_private', None),
-   (u'datecreated', u'2004-01-01T20:58:04.553583+00:00'),
-   (u'description', u'Firefox needs to support embedded SVG images...'),
+   (u'datecreated', u'2004-01-10T19:42:21.890299+00:00'),
+   (u'description', u'test bug'),
    (u'duplicates_collection_link',
-      u'http://api.launchpad.dev/bugs/1/duplicates'),
-   (u'followup_subject', u'Re: Firefox does not support SVG'),
-   (u'id', 1),
+    u'http://api.launchpad.dev/beta/bugs/10/duplicates'),
+   (u'followup_subject', u'Re: another test bug'),
+   (u'id', 10),
    (u'is_complete', False),
-   (u'messages_collection_link', u'http://api.launchpad.dev/bugs/1/messages'),
+   (u'messages_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/10/messages'),
    (u'name', None),
-   (u'owner_link', u'http://api.launchpad.dev/people/name12'),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
    (u'permits_expiration', False),
    (u'private', False),
    (u'security_related', False),
-   (u'self_link', u'http://api.launchpad.dev/bugs/1'),
-   (u'tags', []),
-   (u'title', u'Firefox does not support SVG')]
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/10'),
+   (u'tags', [u'crash']),
+   (u'title', u'another test bug')]
 
 Bugs are indexed by number beneath the top-level collection.
 
-  >>> from urlparse import urlsplit
-  >>> bug_one_url = bugs[0]['self_link']
-  >>> bug_one_url
-  u'http://api.launchpad.dev/bugs/1'
-  >>> bug_one = webservice(r"""
-  ... GET %s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % urlsplit(bug_one_url)[2]).jsonBody()
-  >>> bug_one == bugs[0]
-  True
+  >>> bug_one = webservice.get("/beta/bugs/1").jsonBody()
+  >>> bug_one['id']
+  1
 
 Bugs have relationships to other bugs, like "duplicate_of".
 
-  >>> duplicates_of_five = webservice(r"""
-  ... GET /bugs/5/duplicates HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> duplicates_of_five = webservice.get(
+  ...     "/beta/bugs/5/duplicates").jsonBody()['entries']
   >>> len(duplicates_of_five)
   1
   >>> duplicates_of_five[0]['id']
   6
 
+  >>> from urlparse import urlsplit
   >>> bug_six_url = urlsplit(duplicates_of_five[0]['self_link'])[2]
-  >>> bug_six = webservice(r"""
-  ... GET %s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % bug_six_url).jsonBody()
+  >>> bug_six = webservice.get(bug_six_url).jsonBody()
   >>> bug_six['duplicate_of_link']
-  u'http://api.launchpad.dev/bugs/5'
+  u'http://api.launchpad.dev/beta/bugs/5'
 
 
 == Bugs as message targets ==
 
 Each bug has a collection of messages.
 
-  >>> messages = webservice(r"""
-  ... GET /bugs/5/messages HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> messages = webservice.get("/beta/bugs/5/messages").jsonBody()['entries']
   >>> sorted(messages[0].items())
   [(u'content',
       u'All ways of downloading firefox should provide...'),
    (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
-   (u'owner_link', u'http://api.launchpad.dev/people/name12'),
-   (u'self_link', u'http://api.launchpad.dev/bugs/5/messages/1'),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'self_link', u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
    (u'subject', u'Firefox install instructions should be complete')]
 
 The messages are stored beneath the bug-specific collection. Their
 URLs are based on their position with respect to the
-bug. /bugs/5/messages/1 is the first bug for message 5, and it's
-different from /bugs/4/messages/1.
+bug. /firefox/+bug/5/comments/0 is the first message for bug 5, and it's
+different from /firefox/+bug/1/comments/0.
 
   >>> message_path = urlsplit(messages[0]['self_link'])[2]
   >>> message_path
-  u'/bugs/5/messages/1'
+  u'/beta/firefox/+bug/5/comments/0'
 
-  >>> message = webservice(r"""
-  ... GET /%s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % message_path).jsonBody()
+  >>> message = webservice.get(message_path).jsonBody()
   >>> message == messages[0]
   True
 
 There is no top-level collection of messages; they only exist in
 relation to some bug.
 
-  >>> webservice(r"""
-  ... GET /messages HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).getStatus()
+  >>> webservice.get("/beta/messages").getStatus()
   404
 
 
@@ -118,15 +99,13 @@ Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
 
   >>> bug_one_bugtasks_url = urlsplit(bug_one['bugtasks_collection_link'])[2]
-  >>> bug_one_bugtasks = webservice(r"""
-  ... GET %s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % bug_one_bugtasks_url).jsonBody()
+  >>> bug_one_bugtasks = sorted(webservice.get(
+  ...     bug_one_bugtasks_url).jsonBody()['entries'])
   >>> len(bug_one_bugtasks)
   3
 
   >>> sorted(bug_one_bugtasks[0].items())
-  [(u'bug_link', u'http://api.launchpad.dev/bugs/1'),
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
    (u'bug_target_name', u'mozilla-firefox (Debian)'),
    (u'date_assigned', u'2005-01-04T11:07:20.584746+00:00'),
@@ -136,27 +115,22 @@ data in a bug task is derived from the bug.
    (u'date_inprogress', None),
    (u'importance', u'Low'),
    (u'is_complete', False),
-   (u'owner_link', u'http://api.launchpad.dev/people/name12'),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'related_tasks_collection_link',
-      u'http://api.launchpad.dev/bugtasks/4/related_tasks'),
-   (u'self_link', u'http://api.launchpad.dev/bugtasks/4'),
+    u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'),
+   (u'self_link',
+    u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
    (u'status_explanation', u''),
    (u'title', u'Bug #1 in mozilla-firefox (Debian):...')]
 
   >>> bugtask_path = urlsplit(bug_one_bugtasks[0]['self_link'])[2]
-  >>> bugtask = webservice(r"""
-  ... GET %s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """ % bugtask_path).jsonBody()
+  >>> bugtask = webservice.get(bugtask_path).jsonBody()
   >>> bugtask == bug_one_bugtasks[0]
   True
 
 The collection of bug tasks is not exposed as a resource:
 
-  >>> webservice(r"""
-  ... GET /bugtasks/ HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).getStatus()
+  >>> webservice.get("/beta/bugtasks").getStatus()
   404
 

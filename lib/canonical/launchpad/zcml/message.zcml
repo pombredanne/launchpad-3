@@ -33,4 +33,16 @@
       <allow interface="canonical.launchpad.interfaces.IMessageSet" />
   </securedutility>
 
+  <!-- Some message have a canonical_url -->
+  <adapter for="canonical.launchpad.interfaces.IMessage"
+    provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+    factory="canonical.launchpad.browser.message.message_to_canonical_url_data"
+    />
+
+  <!-- Adapt several related objects to provide unified details -->
+  <adapter for="canonical.launchpad.interfaces.IMessageApproval"
+    provides="canonical.launchpad.interfaces.IHeldMessageDetails"
+    factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
+    />
+
 </configure>

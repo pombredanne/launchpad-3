@@ -11,7 +11,7 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.transport import SSHServerTransport
+from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 
 from twisted.python import failure
 from twisted.python.util import sibpath
@@ -22,7 +22,9 @@ from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from canonical.launchpad.daemons.sftp import getPublicKeyString
+from canonical.testing.layers import (
+    TwistedLaunchpadZopelessLayer, TwistedLayer)
 
 
 class MockRealm:
@@ -61,6 +63,10 @@ class MockSSHTransport(SSHServerTransport):
             return lambda: None
 
     def __init__(self, portal):
+        # In Twisted 8.0.1, Conch's transport starts referring to
+        # currentEncryptions where it didn't before. Provide a dummy value for
+        # it.
+        self.currentEncryptions = SSHCiphers('none', 'none', 'none', 'none')
         self.packets = []
         self.factory = self.Factory()
         self.factory.portal = portal
@@ -83,7 +89,7 @@ class UserAuthServerMixin:
         return userauth.messages[message_type]
 
     def assertMessageOrder(self, message_types):
-        """Assert that the given message types were sent in the order given."""
+        """Assert that SSH messages were sent in the given order."""
         self.assertEqual(
             [userauth.messages[msg_type] for msg_type in message_types],
             [userauth.messages[packet_type]
@@ -107,11 +113,11 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 
     def test_sendBanner(self):
         # sendBanner should send an SSH 'packet' with type MSG_USERAUTH_BANNER
-        # and two fields. The first field is the message itself, and the second
-        # is the language tag.
+        # and two fields. The first field is the message itself, and the
+        # second is the language tag.
         #
-        # sendBanner automatically adds a trailing newline, because openssh and
-        # Twisted don't add one when displaying the banner.
+        # sendBanner automatically adds a trailing newline, because openssh
+        # and Twisted don't add one when displaying the banner.
         #
         # See RFC 4252, Section 5.4.
         message = u"test message"
@@ -139,7 +145,8 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
             return None
         def mock_eb_bad_auth(reason):
             reason.trap(ConchError)
-        tryAuth, self.user_auth.tryAuth = self.user_auth.tryAuth, mock_try_auth
+        tryAuth = self.user_auth.tryAuth
+        self.user_auth.tryAuth = mock_try_auth
         _ebBadAuth, self.user_auth._ebBadAuth = (self.user_auth._ebBadAuth,
                                                  mock_eb_bad_auth)
         self.user_auth.serviceStarted()
@@ -181,7 +188,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     Section 5.4 for more information.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
@@ -194,10 +201,13 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def _makeKey(self):
         keydir = sibpath(__file__, 'keys')
-        public_key = keys.getPublicKeyString(
+        public_key = getPublicKeyString(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa.pub'), 'rb').read())
-        return chr(0) + NS('rsa') + NS(public_key)
+        if isinstance(public_key, str):
+            return chr(0) + NS('rsa') + NS(public_key)
+        else:
+            return chr(0) + NS('rsa') + NS(public_key.blob())
 
     def requestFailedAuthentication(self):
         return self.user_auth.ssh_USERAUTH_REQUEST(
@@ -259,7 +269,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         return d.addCallback(check).addBoth(cleanup)
 
     def test_configuredBannerNotSentOnFailure(self):
-        # Failed authentication attempts do not get the configured banner sent.
+        # Failed authentication attempts do not get the configured banner
+        # sent.
         config.codehosting.banner = 'banner'
 
         d = self.requestFailedAuthentication()
@@ -289,8 +300,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     def test_unsupportedAuthMethodNotLogged(self):
         # Trying various authentication methods is a part of the normal
         # operation of the SSH authentication protocol. We should not spam the
-        # client with warnings about this, as whenever it becomes a problem, we
-        # can rely on the SSH client itself to report it to the user.
+        # client with warnings about this, as whenever it becomes a problem,
+        # we can rely on the SSH client itself to report it to the user.
         d = self.requestUnsupportedAuthentication()
         def check(ignored):
             # Check that we received only a FAILRE.
@@ -320,20 +331,27 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         self.checker = sshserver.PublicKeyFromLaunchpadChecker(
             self.authserver_client)
         self.public_key = self.authserver.getPublicKey()
+        if not isinstance(self.public_key, str):
+            self.public_key = self.public_key.blob()
         self.sigData = (
             NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
             + NS(self.valid_login) + NS('none') + NS('publickey') + '\xff'
             + NS('ssh-dss') + NS(self.public_key))
-        self.signature = keys.signData(
-            self.authserver.getPrivateKey(), self.sigData)
+        Key = getattr(keys, 'Key', None)
+        if Key is None:
+            self.signature = keys.signData(
+                self.authserver.getPrivateKey(), self.sigData)
+        else:
+            self.signature = self.authserver.getPrivateKey().sign(
+                self.sigData)
 
     def tearDown(self):
         return self.authserver.tearDown()
 
     def test_successful(self):
         # We should be able to login with the correct public and private
-        # key-pair. This test exists primarily as a control to ensure our other
-        # tests are checking the right error conditions.
+        # key-pair. This test exists primarily as a control to ensure our
+        # other tests are checking the right error conditions.
         creds = SSHPrivateKey(self.valid_login, 'ssh-dss', self.public_key,
                               self.sigData, self.signature)
         d = self.checker.requestAvatarId(creds)
@@ -369,7 +387,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                               self.sigData, self.signature)
         return self.assertLoginError(
             creds,
-            "Launchpad user %r doesn't have a registered SSH key" % 'lifeless')
+            "Launchpad user %r doesn't have a registered SSH key"
+            % 'lifeless')
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you

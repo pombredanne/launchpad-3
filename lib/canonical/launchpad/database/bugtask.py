@@ -43,35 +43,14 @@ from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
-    BUG_CONTACT_BUGTASK_STATUSES,
-    BugNominationStatus,
-    BugTaskImportance,
-    BugTaskSearchParams,
-    BugTaskStatus,
-    BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
-    IBugTask,
-    IBugTaskDelta,
-    IBugTaskSet,
-    IDistribution,
-    IDistributionSourcePackage,
-    IDistroBugTask,
-    IDistroSeries,
-    IDistroSeriesBugTask,
-    ILaunchpadCelebrities,
-    INullBugTask,
-    IProduct,
-    IProductSeries,
-    IProductSeriesBugTask,
-    IProject,
-    IProjectMilestone,
-    ISourcePackage,
-    IUpstreamBugTask,
-    NotFoundError,
-    PackagePublishingStatus,
-    RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
-    )
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
+    IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
+    ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -131,9 +110,10 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 status=None, importance=None, assignee=None,
-                 milestone=None, statusexplanation=None, bugwatch=None):
+    def __init__(self, bugtask, product=None,
+                 sourcepackagename=None, status=None, importance=None,
+                 assignee=None, milestone=None, statusexplanation=None,
+                 bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -456,14 +436,13 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagename == prev_sourcepackagename):
                     bugtask.sourcepackagename = self.sourcepackagename
 
-    @property
-    def conjoined_master(self):
+    def getConjoinedMaster(self, bugtasks):
         """See `IBugTask`."""
         conjoined_master = None
         if (IDistroBugTask.providedBy(self) and
             self.distribution.currentseries is not None):
             current_series = self.distribution.currentseries
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in bugtasks:
                 if (bugtask.distroseries == current_series and
                     bugtask.sourcepackagename == self.sourcepackagename):
                     conjoined_master = bugtask
@@ -472,7 +451,7 @@ class BugTask(SQLBase, BugTaskMixin):
             assert self.product.development_focus is not None, (
                 'A product should always have a development series.')
             devel_focus = self.product.development_focus
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in bugtasks:
                 if bugtask.productseries == devel_focus:
                     conjoined_master = bugtask
                     break
@@ -481,6 +460,11 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
+
+    @property
+    def conjoined_master(self):
+        """See `IBugTask`."""
+        return self.getConjoinedMaster(shortlist(self.bug.bugtasks))
 
     @property
     def conjoined_slave(self):
@@ -606,14 +590,6 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-        # We use the forbidden underscore attributes below because, with
-        # SQLObject, hitting self.product means querying and
-        # instantiating an object; prejoining doesn't help because this
-        # happens when the bug task is being instantiated -- too early
-        # in cases where we prejoin other things in.
-        # XXX: kiko 2006-03-21:
-        # we should use a specific SQLObject API here to avoid the
-        # privacy violation.
         if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
         elif self.productseriesID is not None:
@@ -666,13 +642,13 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bugcontact) or
+        if (user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
             user.id == celebrities.bug_watch_updater.id or
             user.id == celebrities.bug_importer.id):
             return True
         else:
-            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+            return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
 
     def transitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -684,7 +660,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:
@@ -784,7 +760,7 @@ class BugTask(SQLBase, BugTaskMixin):
             component = self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
             # Pull the component from the package published in the
-            # latest distribution series. 
+            # latest distribution series.
             packages = self.target.get_distroseries_packages()
             if packages:
                 component = packages[0].latest_published_component
@@ -1150,13 +1126,6 @@ class BugTaskSet:
                             AND Milestone.name = %s)
                 """ % sqlvalues(params.milestone.target,
                                 params.milestone.name)
-
-                # A bug may have bugtasks in more than one series, and these
-                # bugtasks may have the same milestone value. To avoid
-                # duplicate result rows for one bug, ensure that only that
-                # bugtask is returned, that is directly assigned to the
-                # product.
-                extra_clauses.append("BugTask.product IS NOT null")
             else:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
@@ -1267,31 +1236,31 @@ class BugTaskSet:
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
-        # the bug contact relation for distribution source
+        # the bug supervisor relation for distribution source
         # packages, following a conversion to use this object.
         # We know that the behaviour remains the same, but we
         # should change the terminology, or re-instate
-        # PackageBugContact, since the use of this relation here
+        # PackageBugSupervisor, since the use of this relation here
         # is not for subscription to notifications.
         # See bug #191809
-        if params.bug_contact:
-            bug_contact_clause = """BugTask.id IN (
+        if params.bug_supervisor:
+            bug_supervisor_clause = """BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, Product
                 WHERE BugTask.product = Product.id
-                    AND Product.bugcontact = %(bug_contact)s
+                    AND Product.bug_supervisor = %(bug_supervisor)s
                 UNION ALL
                 SELECT BugTask.id
                 FROM BugTask, StructuralSubscription
                 WHERE BugTask.distribution = StructuralSubscription.distribution
                     AND BugTask.sourcepackagename =
                         StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(bug_contact)s
+                    AND StructuralSubscription.subscriber = %(bug_supervisor)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, Distribution
                 WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bugcontact = %(bug_contact)s
-                )""" % sqlvalues(bug_contact=params.bug_contact)
-            extra_clauses.append(bug_contact_clause)
+                    AND Distribution.bug_supervisor = %(bug_supervisor)s
+                )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
+            extra_clauses.append(bug_supervisor_clause)
 
         if params.bug_reporter:
             bug_reporter_clause = (
@@ -1504,8 +1473,8 @@ class BugTaskSet:
             bugtasks = bugtasks.union(BugTask.select(
                 query, clauseTables=clauseTables), orderBy=orderby,
                 joins=joins)
-        bugtasks.prejoin(['sourcepackagename', 'product'])
-        bugtasks.prejoinClauseTables(['Bug'])
+        bugtasks = bugtasks.prejoin(['sourcepackagename', 'product'])
+        bugtasks = bugtasks.prejoinClauseTables(['Bug'])
         return bugtasks
 
     # XXX: salgado 2007-03-19:
@@ -1651,13 +1620,14 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
+                    AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(min_days_old),
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
@@ -1856,7 +1826,7 @@ class BugTaskSet:
 
         return orderby_arg
 
+
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select()
-
+        return BugTask.select(orderBy='id')

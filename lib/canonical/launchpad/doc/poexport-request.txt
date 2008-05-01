@@ -32,113 +32,183 @@ This is a dummy logger class to capture the export's log messages.
 
 Here's somebody to make a request.
 
-  >>> from canonical.launchpad.database import Person
-  >>> person = Person.get(1)
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.get(1)
 
 
 == Requesting PO files ==
 
 Our user requests the Catalan and Czech translations of a template.
 
-  >>> from canonical.launchpad.database import POTemplate
-  >>> potemplate = POTemplate.get(2)
-  >>> ca = potemplate.getPOFileByLang('ca')
-  >>> cs = potemplate.getPOFileByLang('cs')
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(2)
+    >>> ca = potemplate.getPOFileByLang('ca')
+    >>> cs = potemplate.getPOFileByLang('cs')
 
-  >>> request_set = getUtility(IPOExportRequestSet)
-  >>> request_set.addRequest(person, None, [ca, cs])
+    >>> request_set = getUtility(IPOExportRequestSet)
+    >>> request_set.addRequest(person, None, [ca, cs])
 
 Now we request that the queue be processed.
 
-  >>> class MockTransactionManager:
-  ...     def commit(self):
-  ...         pass
+    >>> class MockTransactionManager:
+    ...     def commit(self):
+    ...         pass
 
-  >>> from canonical.launchpad.scripts.po_export_queue import process_queue
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for Mark Shuttleworth, related to template pmount in
-  Ubuntu Hoary package "pmount"
+    >>> from canonical.launchpad.scripts.po_export_queue import process_queue
+    >>> process_queue(MockTransactionManager(), MockLogger())
+    log> Exporting objects for Mark Shuttleworth, related to template pmount
+    in Ubuntu Hoary package "pmount"
+    log> Stored file at http://.../launchpad-export.tar.gz
 
 We need to make sure the Librarian data has settled into place.
 
-  >>> import transaction
-  >>> transaction.commit()
+    >>> import transaction
+    >>> transaction.commit()
 
 The user receives a confirmation email.
 
-  >>> def print_mail_body(body):
-  ...     lines = body[body.index('\n\n')+2:].split('\n')
-  ...     for line in lines:
-  ...         print ">", line
+    >>> def print_mail_body(body):
+    ...     lines = body[body.index('\n\n')+2:].split('\n')
+    ...     for line in lines:
+    ...         print ">", line
 
-  >>> from canonical.launchpad.mail.stub import test_emails
-  >>> len(test_emails)
-  1
-  >>> from_addr, to_addrs, body = test_emails.pop()
-  >>> to_addrs
-  ['mark@hbd.com']
-  >>> print_mail_body(body)
-  >
-  > Hello Mark Shuttleworth,
-  >
-  > The files you requested from Rosetta are ready for download
-  > from the following location:
-  >
-  >     http://localhost:58000/.../launchpad-export.tar.gz
+    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> len(test_emails)
+    1
+    >>> from_addr, to_addrs, body = test_emails.pop()
+    >>> to_addrs
+    ['mark@hbd.com']
+    >>> print_mail_body(body)
+    >
+    > Hello Mark Shuttleworth,
+    >
+    > The files you requested from Rosetta are ready for download
+    > from the following location:
+    >
+    >     http://localhost:58000/.../launchpad-export.tar.gz
 
 The email contains a URL linking to where the exported file can be downloaded.
 
-  >>> import re
+    >>> import re
 
-  >>> def extract_url(text):
-  ...     urls = re.compile(r'^ *(http://.*)$', re.M).findall(text)
-  ...     return urls[0]
+    >>> def extract_url(text):
+    ...     urls = re.compile(r'^ *(http://.*)$', re.M).findall(text)
+    ...     return urls[0]
 
-  >>> url = extract_url(body)
+    >>> url = extract_url(body)
 
 Let's download it and make sure the contents look ok.
 
-  >>> import urllib2
-  >>> from canonical.launchpad.helpers import string_to_tarfile
-  >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
-  >>> for name in sorted(tarball.getnames()):
-  ...   print name
-  pmount/
-  pmount/pmount-ca.po
-  pmount/pmount-cs.po
+    >>> import urllib2
+    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
+    >>> for name in sorted(tarball.getnames()):
+    ...   print name
+    pmount/
+    pmount/pmount-ca.po
+    pmount/pmount-cs.po
+
+
+== Duplicate requests ==
+
+On another occasion, the user requests just Catalan translation.  The
+queue is initially empty.
+
+    >>> def render_request(request):
+    ...     if request.pofile is None:
+    ...         return request.potemplate.name
+    ...     else:
+    ...         return "%s:%s" % (request.potemplate.name,
+    ...                           request.pofile.language.code)
+    >>> from canonical.launchpad.database.poexportrequest import (
+    ...     POExportRequest)
+    >>> def print_queue():
+    ...     requests = [
+    ...         render_request(request)
+    ...         for request in POExportRequest.select()]
+    ...     for request in sorted(requests):
+    ...         print request
+    >>> print_queue()
+
+    >>> request_set.addRequest(person, None, [ca])
+
+The request is on the queue, as you'd expect.
+
+    >>> print_queue()
+    pmount:ca
+
+The same user now makes a separate, new request for the Catalan and
+Czech translations.
+
+    >>> request_set.addRequest(person, None, [ca, cs])
+
+Since the request for the Catalan translation is a duplicate, only the
+Czech one is added to the export queue.
+
+    >>> print_queue()
+    pmount:ca
+    pmount:cs
+
+The user also requests the template again.
+
+    >>> request_set.addRequest(person, potemplate)
+    >>> print_queue()
+    pmount
+    pmount:ca
+    pmount:cs
+
+The user now requests all of these files again, as well as the Spanish
+translation.
+
+    >>> es = potemplate.getPOFileByLang('es')
+    >>> request_set.addRequest(person, potemplate, [ca, cs, es])
+
+Most of this request consists of duplications, and those are ignored.
+Only the Spanish request is new, and that goes into the queue.
+
+    >>> print_queue()
+    pmount
+    pmount:ca
+    pmount:cs
+    pmount:es
+
+    >>> # Clean up the queue again.
+    >>> for request in POExportRequest.select():
+    ...     request.destroySelf()
 
 
 == Requesting MO files ==
 
 Let's try requesting an export in MO format:
 
-  >>> from canonical.launchpad.interfaces import TranslationFileFormat
-  >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for Mark Shuttleworth, related to template pmount in
-  Ubuntu Hoary package "pmount"
+    >>> from canonical.launchpad.interfaces import TranslationFileFormat
+    >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
+    >>> process_queue(MockTransactionManager(), MockLogger())
+    log> Exporting objects for Mark Shuttleworth, related to template pmount
+    in Ubuntu Hoary package "pmount"
+    log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
 
-  >>> transaction.commit()
+    >>> transaction.commit()
 
-  >>> len(test_emails)
-  1
-  >>> from_addr, to_addrs, body = test_emails.pop()
-  >>> to_addrs
-  ['mark@hbd.com']
-  >>> print_mail_body(body)
-  > 
-  > Hello Mark Shuttleworth,
-  > 
-  > The files you requested from Rosetta are ready for download
-  > from the following location:
-  > 
-  >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
-  >>> url = extract_url(body)
+    >>> len(test_emails)
+    1
+    >>> from_addr, to_addrs, body = test_emails.pop()
+    >>> to_addrs
+    ['mark@hbd.com']
+    >>> print_mail_body(body)
+    > 
+    > Hello Mark Shuttleworth,
+    > 
+    > The files you requested from Rosetta are ready for download
+    > from the following location:
+    > 
+    >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
+    >>> url = extract_url(body)
 
 Check whether we generated a good .mo file.
 
-  >>> is_valid_mofile(urllib2.urlopen(url).read())
-  True
+    >>> is_valid_mofile(urllib2.urlopen(url).read())
+    True
 
 
 == Cron script ==
@@ -151,43 +221,43 @@ The queue can contain requests for translations from both distributions and
 products.  Each request may request a template, or a list of templates, or
 just PO files.
 
-  # We need to request again some files.
-  >>> ca.potemplate.distroseries is None
-  False
-  >>> cs.potemplate.distroseries is None
-  False
-  >>> request_set.addRequest(person, None, [ca, cs])
-  >>> product_template = potemplate.get(1)
-  >>> product_template.productseries is None
-  False
-  >>> request_set.addRequest(person, product_template)
-  >>> alsa_template = POTemplate.selectOneBy(path='po/alsa-utils.pot')
-  >>> alsa_es = alsa_template.getPOFileByLang('es')
-  >>> netapplet_template = POTemplate.selectOneBy(path='po/netapplet.pot')
-  >>> request_set.addRequest(
-  ...     person, [alsa_template, netapplet_template], [alsa_es])
-  >>> transaction.commit()
+    # We need to request again some files.
+    >>> ca.potemplate.distroseries is None
+    False
+    >>> cs.potemplate.distroseries is None
+    False
+    >>> request_set.addRequest(person, None, [ca, cs])
+    >>> product_template = potemplate.get(1)
+    >>> product_template.productseries is None
+    False
+    >>> request_set.addRequest(person, product_template)
+    >>> alsa_template = POTemplate.selectOneBy(path='po/alsa-utils.pot')
+    >>> alsa_es = alsa_template.getPOFileByLang('es')
+    >>> netapplet_template = POTemplate.selectOneBy(path='po/netapplet.pot')
+    >>> request_set.addRequest(
+    ...     person, [alsa_template, netapplet_template], [alsa_es])
+    >>> transaction.commit()
 
 The script is run.
 
-  >>> import subprocess
-  >>> import sys
-  >>> process = subprocess.Popen([
-  ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
-  ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-  ...     stderr=subprocess.STDOUT
-  ...     )
-  >>> (output, empty) = process.communicate()
-  >>> print output
-  INFO    creating lockfile
-  DEBUG   Exporting objects for Mark Shuttleworth, related to template
-  evolution-2.2 in Evolution trunk
-  DEBUG   Exporting objects for Mark Shuttleworth, related to template pmount
-  in Ubuntu Hoary package "pmount"
-  DEBUG   Exporting objects for Mark Shuttleworth, related to template
-  netapplet in NetApplet trunk
-  DEBUG   Exporting objects for Mark Shuttleworth, related to template
-  alsa-utils in alsa-utils trunk
-  DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
-  <BLANKLINE>
+    >>> import subprocess
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    creating lockfile
+    DEBUG   Exporting objects for Mark Shuttleworth, related to template
+    evolution-2.2 in Evolution trunk
+    DEBUG   Exporting objects for Mark Shuttleworth, related to template
+    pmount in Ubuntu Hoary package "pmount"
+    DEBUG   Exporting objects for Mark Shuttleworth, related to template
+    netapplet in NetApplet trunk
+    DEBUG   Exporting objects for Mark Shuttleworth, related to template
+    alsa-utils in alsa-utils trunk
+    INFO    Stored file at http://.../launchpad-export.tar.gz
+    DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
+    <BLANKLINE>
 

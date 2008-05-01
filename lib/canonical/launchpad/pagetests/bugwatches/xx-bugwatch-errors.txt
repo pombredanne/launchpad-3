@@ -24,7 +24,8 @@ no existing bug watches.
     >>> bug_url = 'https://bugzilla.mozilla.org/show_bug.cgi?id=900'
     >>> user_browser.getControl('Project:').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('URL:').value = bug_url
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = bug_url
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/thunderbird/+bug/12'
@@ -38,7 +39,7 @@ messages are displayed.
     >>> login('test@canonical.com')
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
-    >>> watch = bug12.getBugWatch(tracker, 900)
+    >>> watch = bug12.getBugWatch(tracker, '900')
     >>> watch.last_error_type = BugWatchErrorType.BUG_NOT_FOUND
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()

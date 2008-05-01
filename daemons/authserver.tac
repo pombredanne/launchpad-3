@@ -3,15 +3,18 @@
 # This configuration creates an XML-RPC service listening on port 8999.
 # See canonical.launchpad.daemons.authserver for more information.
 
+from canonical.config import config
+# Make sure we get the authserver's database configuration. This has to happen
+# before anything else.
+config.setProcess('authserver')
+
 from twisted.application import service
+
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.daemons.tachandler import ReadyService
-
-from canonical.config import dbconfig
-
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
-dbconfig.setConfigSection('authserver')
+
 execute_zcml_for_scripts(use_web_security=True)
 
 application = service.Application("authserver")

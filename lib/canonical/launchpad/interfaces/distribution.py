@@ -141,8 +141,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
-    source_package_caches = Attribute("The set of all source package "
-        "info caches for this distribution.")
     is_read_only = Attribute(
         "True if this distro is just monitored by Launchpad, rather than "
         "allowing you to use Launchpad to actually modify the distro.")
@@ -247,19 +245,31 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
 
-    def removeOldCacheItems(log):
+    def getSourcePackageCaches(archive=None):
+        """The set of all source package info caches for this distribution.
+
+        If 'archive' is not given it will return all caches stored for the
+        distribution main archives (PRIMARY and PARTNER).
+        """
+
+    def removeOldCacheItems(archive, log):
         """Delete any cache records for removed packages."""
 
-    def updateCompleteSourcePackageCache(log, ztm):
+    def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
         Consider every non-REMOVED sourcepackage.
-        'log' is required an only prints debug level information.
-        'ztm' is required for partial commits, every chunk of 50 updates
-        are committed.
+
+        :param archive: target `IArchive`;
+        :param log: logger object for printing debug level information;
+        :param ztm:  transaction used for partial commits, every chunk of
+            'commit_chunk' updates is committed;
+        :param commit_chunk: number of updates before commit, defaults to 500.
+
+        :return the number packages updated done
         """
 
-    def updateSourcePackageCache(log, sourcepackagename):
+    def updateSourcePackageCache(sourcepackagename, archive, log):
         """Update cached source package details.
 
         Update cache details for a given ISourcePackageName, including

@@ -36,12 +36,26 @@ DOCTEST_FLAGS = (doctest.ELLIPSIS |
                  doctest.REPORT_NDIFF)
 
 
-def integrationTestCleanUp(test):
+def integrationTestSetUp(testobj):
+    """Set up for all integration doctests."""
+    # We'll always need an smtp server.
+    smtpd = itest_helper.SMTPServer()
+    smtpd.start()
+    if testobj is not None:
+        testobj.globs['smtpd'] = smtpd
+
+
+def integrationTestCleanUp(testobj):
     """Common tear down for the integration tests."""
+    # Ensure the smtp server is stopped and cleared.
+    if testobj is not None:
+        smtpd = testobj.globs['smtpd']
+        smtpd.reset()
+        smtpd.stop()
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
-    'anne', 'bart', 'cris', 'dirk'
+    'anne', 'bart', 'cris', 'dirk', 'emma'
     );
 
     DELETE FROM AnswerContact
@@ -70,6 +84,17 @@ def integrationTestCleanUp(test):
 
     DELETE FROM TeamParticipation
     WHERE person IN (SELECT id FROM DeathRow);
+
+    DELETE FROM MessageChunk
+    WHERE message IN (SELECT id from Message WHERE owner IN
+                      (SELECT id FROM DeathRow));
+
+    DELETE FROM Message
+    WHERE owner IN (SELECT id FROM DeathRow);
+
+    DELETE FROM MessageApproval
+    WHERE mailing_list IN (SELECT id from MailingList WHERE team IN
+                           (SELECT id FROM DeathRow));
 
     DELETE FROM MailingList
     WHERE team IN (SELECT id FROM DeathRow);
@@ -112,6 +137,18 @@ def integrationTestCleanUp(test):
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
+    # Clean up the library data.  Remove only the librarian files, not any
+    # intermediate directories.
+    from canonical.config import config
+    for dirpath, dirnames, filenames in os.walk(config.librarian_server.root):
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            os.remove(path)
+    # Remove all the locks except the master lock.
+    lock_dir = os.path.join(VAR_PREFIX, 'locks')
+    for filename in os.listdir(lock_dir):
+        if not filename.startswith('master-qrunner'):
+            os.remove(os.path.join(lock_dir, filename))
 
 
 def find_tests(match_regexps):
@@ -133,6 +170,7 @@ def find_tests(match_regexps):
             continue
         test = doctest.DocFileSuite(
             filename,
+            setUp=integrationTestSetUp,
             tearDown=integrationTestCleanUp,
             optionflags=DOCTEST_FLAGS)
         suite.addTest(test)

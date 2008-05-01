@@ -165,12 +165,12 @@ We have 16 requests, and two of them are cancelled
      (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
      (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
      (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-     (20, u'sabdfl'), (21L, u'name16')]
+     (20, u'sabdfl'), (21, u'karl'), (22L, u'name16')]
 
     >>> cancelled = ShippingRequestStatus.CANCELLED
     >>> sorted((shipreq.id, shipreq.recipient.name) 
     ...        for shipreq in requestset.search(status=cancelled))
-    [(6, u'cprov'), (21L, u'name16')]
+    [(6, u'cprov'), (22L, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -186,7 +186,8 @@ Eight are approved but not yet shipped.
     >>> sorted((shipreq.id, shipreq.recipient.name) 
     ...         for shipreq in requestset.search(status=approved))
     [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-     (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins')]
+     (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins'),
+     (21, u'karl')]
 
 And finally, four of them are already shipped.
 
@@ -204,7 +205,8 @@ of a given distroseries (or both, obviously).
     ...  for shipreq in requestset.search(flavour=kubuntu)]
     [(u'Celso Providelo', 6), (u'David Allouche', 5),
      (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-     (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
+     (u'James Blackwell', 17), (u'ShipIt Administrators', 19),
+     (u'Karl Tilbury', 21)]
 
     >>> [(shipreq.recipient.displayname , shipreq.id)
     ...  for shipreq in requestset.search(distroseries=feisty)]
@@ -214,7 +216,7 @@ of a given distroseries (or both, obviously).
      (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
      (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
      (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-     (u'Stuart Bishop', 2), (u'Foo Bar', 21L)]
+     (u'Stuart Bishop', 2), (u'Foo Bar', 22L)]
 
     >>> edubuntu = ShipItFlavour.EDUBUNTU
     >>> [(shipreq.recipient.displayname , shipreq.id)
@@ -308,18 +310,30 @@ When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
 getUnshippedRequestsIDs method of ShippingRequestSet.
 
-    >>> import transaction
-    >>> transaction.commit()
     >>> high = ShippingRequestPriority.HIGH
     >>> unshipped_requests = requestset.getUnshippedRequestsIDs(
     ...     high, distroseries=feisty)
     >>> len(unshipped_requests)
     1
 
+    # Add some Ubuntu/Server CDs to our unshipped request. These CDs
+    # will be included in exports and reports just like other flavours.
+    >>> request = requestset.get(unshipped_requests[0])
+    >>> quantities = {ShipItFlavour.SERVER: {X86: 2},
+    ...               ShipItFlavour.UBUNTU: {X86: 5, AMD64: 3}}
+    >>> quantities.update({ShipItFlavour.KUBUNTU:
+    ...     request.getQuantitiesOfFlavour(ShipItFlavour.KUBUNTU)})
+    >>> quantities.update({ShipItFlavour.EDUBUNTU:
+    ...     request.getQuantitiesOfFlavour(ShipItFlavour.EDUBUNTU)})
+    >>> request.setQuantities(quantities, request.distroseries)
+    >>> flush_database_updates()
+
 To actually export the files and upload them to Librarian we use
 ShippingRequestSet.exportRequestsToFiles(). Let's do an export of all high
 priority requests.
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> requestset.exportRequestsToFiles(
     ...     high, transaction, distroseries=feisty)
     >>> flush_database_updates()
@@ -329,6 +343,7 @@ priority requests.
     >>> run.requests[0].highpriority
     True
 
+    # Define a helper function to print CSV files in a nicer way.
     >>> def pprint_csv(content):
     ...     lines = content.split('\n')
     ...     headings = [heading.replace('"', '').strip()
@@ -371,13 +386,13 @@ priority requests.
                      Ship to country: IO
                        Ship to phone: +55 16 3374-2027
                Ship to email address: jordi@ubuntu.com
-             ship Ubuntu quantity PC: 0
-      ship Ubuntu quantity 64-bit PC: 0
+             ship Ubuntu quantity PC: 5
+      ship Ubuntu quantity 64-bit PC: 3
             ship Kubuntu quantity PC: 5
      ship Kubuntu quantity 64-bit PC: 0
            ship Edubuntu quantity PC: 5
     ship Edubuntu quantity 64-bit PC: 0
-             ship Server quantity PC: 0
+             ship Server quantity PC: 2
       ship Server quantity 64-bit PC: 0
                                token: ...
                             Ship via: TNT
@@ -442,147 +457,147 @@ ShipItConstants.current_distroseries.
                Total Shipped Ubuntu: 10
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 10
              Shipped Ubuntu x86 CDs: 8
            Shipped Ubuntu AMD64 CDs: 1
-             Shipped Ubuntu PPC CDs: 1
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 10
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 9.80%
+    Percentage of total shipped CDs: 8.93%
                           Continent: North America
     ------------------------------------------------------------ Line 2
                             Country: British Indian Ocean Territory
-               Total Shipped Ubuntu: 25
+               Total Shipped Ubuntu: 33
               Total Shipped Kubuntu: 11
              Total Shipped Edubuntu: 5
-                      Total Shipped: 41
-             Shipped Ubuntu x86 CDs: 9
-           Shipped Ubuntu AMD64 CDs: 6
-             Shipped Ubuntu PPC CDs: 10
+               Total Shipped Server: 2
+                      Total Shipped: 51
+             Shipped Ubuntu x86 CDs: 14
+           Shipped Ubuntu AMD64 CDs: 9
             Shipped Kubuntu x86 CDs: 6
           Shipped Kubuntu AMD64 CDs: 5
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 5
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 2
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 3
                 High-prio shipments: 1
-               Average request size: 10
+               Average request size: 12
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 40.20%
+    Percentage of total shipped CDs: 45.54%
                           Continent: Asia
     ------------------------------------------------------------ Line 3
                             Country: Burkina Faso
                Total Shipped Ubuntu: 10
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 10
              Shipped Ubuntu x86 CDs: 10
            Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 10
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 9.80%
+    Percentage of total shipped CDs: 8.93%
                           Continent: Africa
     ------------------------------------------------------------ Line 4
                             Country: China
                Total Shipped Ubuntu: 1
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 1
              Shipped Ubuntu x86 CDs: 0
            Shipped Ubuntu AMD64 CDs: 1
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 1
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 0.98%
+    Percentage of total shipped CDs: 0.89%
                           Continent: Asia
     ------------------------------------------------------------ Line 5
                             Country: France
                Total Shipped Ubuntu: 0
               Total Shipped Kubuntu: 10
              Total Shipped Edubuntu: 1
+               Total Shipped Server: 0
                       Total Shipped: 11
              Shipped Ubuntu x86 CDs: 0
            Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 8
           Shipped Kubuntu AMD64 CDs: 2
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 1
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 1
                Average request size: 5
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 10.78%
+    Percentage of total shipped CDs: 9.82%
                           Continent: Europe
     ------------------------------------------------------------ Line 6
                             Country: Heard Island and McDonald Islands
                Total Shipped Ubuntu: 5
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 5
              Shipped Ubuntu x86 CDs: 5
            Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 5
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 4.90%
+    Percentage of total shipped CDs: 4.46%
                           Continent: Antarctica
     ------------------------------------------------------------ Line 7
                             Country: United States
                Total Shipped Ubuntu: 24
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 24
              Shipped Ubuntu x86 CDs: 9
            Shipped Ubuntu AMD64 CDs: 6
-             Shipped Ubuntu PPC CDs: 9
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 24
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 23.53%
+    Percentage of total shipped CDs: 21.43%
                           Continent: North America
 
     >>> csv_file = requestset.generateCountryBasedReport(
@@ -593,126 +608,126 @@ ShipItConstants.current_distroseries.
                Total Shipped Ubuntu: 10
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 10
              Shipped Ubuntu x86 CDs: 8
            Shipped Ubuntu AMD64 CDs: 1
-             Shipped Ubuntu PPC CDs: 1
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 10
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 18.52%
+    Percentage of total shipped CDs: 15.62%
                           Continent: North America
     ------------------------------------------------------------ Line 2
                             Country: British Indian Ocean Territory
-               Total Shipped Ubuntu: 1
+               Total Shipped Ubuntu: 9
               Total Shipped Kubuntu: 11
              Total Shipped Edubuntu: 5
-                      Total Shipped: 17
-             Shipped Ubuntu x86 CDs: 0
-           Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 1
+               Total Shipped Server: 2
+                      Total Shipped: 27
+             Shipped Ubuntu x86 CDs: 5
+           Shipped Ubuntu AMD64 CDs: 3
             Shipped Kubuntu x86 CDs: 6
           Shipped Kubuntu AMD64 CDs: 5
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 5
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 2
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 2
                 High-prio shipments: 1
-               Average request size: 5
+               Average request size: 9
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 31.48%
+    Percentage of total shipped CDs: 42.19%
                           Continent: Asia
     ------------------------------------------------------------ Line 3
                             Country: Burkina Faso
                Total Shipped Ubuntu: 10
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 10
              Shipped Ubuntu x86 CDs: 10
            Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 10
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 18.52%
+    Percentage of total shipped CDs: 15.62%
                           Continent: Africa
     ------------------------------------------------------------ Line 4
                             Country: China
                Total Shipped Ubuntu: 1
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 1
              Shipped Ubuntu x86 CDs: 0
            Shipped Ubuntu AMD64 CDs: 1
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 1
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 1.85%
+    Percentage of total shipped CDs: 1.56%
                           Continent: Asia
     ------------------------------------------------------------ Line 5
                             Country: France
                Total Shipped Ubuntu: 0
               Total Shipped Kubuntu: 10
              Total Shipped Edubuntu: 1
+               Total Shipped Server: 0
                       Total Shipped: 11
              Shipped Ubuntu x86 CDs: 0
            Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 8
           Shipped Kubuntu AMD64 CDs: 2
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 1
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 1
                Average request size: 5
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 20.37%
+    Percentage of total shipped CDs: 17.19%
                           Continent: Europe
     ------------------------------------------------------------ Line 6
                             Country: Heard Island and McDonald Islands
                Total Shipped Ubuntu: 5
               Total Shipped Kubuntu: 0
              Total Shipped Edubuntu: 0
+               Total Shipped Server: 0
                       Total Shipped: 5
              Shipped Ubuntu x86 CDs: 5
            Shipped Ubuntu AMD64 CDs: 0
-             Shipped Ubuntu PPC CDs: 0
             Shipped Kubuntu x86 CDs: 0
           Shipped Kubuntu AMD64 CDs: 0
-            Shipped Kubuntu PPC CDs: 0
            Shipped Edubuntu x86 CDs: 0
          Shipped Edubuntu AMD64 CDs: 0
-           Shipped Edubuntu PPC CDs: 0
+             Shipped Server x86 CDs: 0
+           Shipped Server AMD64 CDs: 0
               Normal-prio shipments: 1
                 High-prio shipments: 0
                Average request size: 5
           Approved CDs (percentage): 100.00%
-    Percentage of total shipped CDs: 9.26%
+    Percentage of total shipped CDs: 7.81%
                           Continent: Antarctica
 
 
@@ -737,8 +752,11 @@ ShipItConstants.current_distroseries.
     Number of Shipments: 2
     ------------------------------------------------------------ Line 4
           Number of CDs: 10
-    Number of Shipments: 4
+    Number of Shipments: 3
     ------------------------------------------------------------ Line 5
+          Number of CDs: 20
+    Number of Shipments: 1
+    ------------------------------------------------------------ Line 6
           Number of CDs: 24
     Number of Shipments: 2
 
@@ -756,8 +774,10 @@ ShipItConstants.current_distroseries.
     Number of Shipments: 2
     ------------------------------------------------------------ Line 4
           Number of CDs: 10
-    Number of Shipments: 4
-
+    Number of Shipments: 3
+    ------------------------------------------------------------ Line 5
+          Number of CDs: 20
+    Number of Shipments: 1
 
 There's also a report of requests by week, which can be tweaked to report only
 requests for CDs of the current distroseries or all requests.
@@ -775,34 +795,34 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 2
                                 Year: 2006
                          Week number: 9
                           Week start: 2006-02-27
                             Requests: 5
-                        Ubuntu Total: 11
+                        Ubuntu Total: 18
                        Kubuntu Total: 11
                       Edubuntu Total: 6
-                         Grand Total: 28
-             Ubuntu Requested PC CDs: 10
-      Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 1
+                        Server Total: 2
+                         Grand Total: 37
+             Ubuntu Requested PC CDs: 15
+      Ubuntu Requested 64-bit PC CDs: 3
             Kubuntu Requested PC CDs: 6
      Kubuntu Requested 64-bit PC CDs: 5
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 6
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 2
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 3
                                 Year: 2006
                          Week number: 10
@@ -811,16 +831,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 10
                        Kubuntu Total: 0
                       Edubuntu Total: 5
+                        Server Total: 0
                          Grand Total: 15
              Ubuntu Requested PC CDs: 10
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 5
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 4
                                 Year: 2006
                          Week number: 11
@@ -829,16 +849,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 10
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 10
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 8
      Kubuntu Requested 64-bit PC CDs: 2
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 5
                                 Year: 2006
                          Week number: 12
@@ -847,16 +867,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 6
                                 Year: 2006
                          Week number: 13
@@ -865,16 +885,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 5
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 5
              Ubuntu Requested PC CDs: 5
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
 
     >>> start_date = date(2005, 5, 1)
     >>> end_date = date(2005, 5, 23)
@@ -889,16 +909,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 2
                                 Year: 2005
                          Week number: 18
@@ -907,16 +927,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 3
                                 Year: 2005
                          Week number: 19
@@ -925,16 +945,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 4
                                 Year: 2005
                          Week number: 20
@@ -943,16 +963,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
  
     >>> csv_file = requestset.generateWeekBasedReport(
     ...     start_date, end_date, only_current_distroseries=False)
@@ -962,19 +982,19 @@ requests for CDs of the current distroseries or all requests.
                          Week number: 17
                           Week start: 2005-04-25
                             Requests: 1
-                        Ubuntu Total: 24
+                        Ubuntu Total: 15
                        Kubuntu Total: 0
                       Edubuntu Total: 0
-                         Grand Total: 24
+                        Server Total: 0
+                         Grand Total: 15
              Ubuntu Requested PC CDs: 9
       Ubuntu Requested 64-bit PC CDs: 6
-            Ubuntu Requested Mac CDs: 9
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 2
                                 Year: 2005
                          Week number: 18
@@ -983,16 +1003,16 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 3
                                 Year: 2005
                          Week number: 19
@@ -1001,34 +1021,34 @@ requests for CDs of the current distroseries or all requests.
                         Ubuntu Total: 0
                        Kubuntu Total: 0
                       Edubuntu Total: 0
+                        Server Total: 0
                          Grand Total: 0
              Ubuntu Requested PC CDs: 0
       Ubuntu Requested 64-bit PC CDs: 0
-            Ubuntu Requested Mac CDs: 0
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
     ------------------------------------------------------------ Line 4
                                 Year: 2005
                          Week number: 20
                           Week start: 2005-05-16
                             Requests: 1
-                        Ubuntu Total: 24
+                        Ubuntu Total: 15
                        Kubuntu Total: 0
                       Edubuntu Total: 0
-                         Grand Total: 24
+                        Server Total: 0
+                         Grand Total: 15
              Ubuntu Requested PC CDs: 9
       Ubuntu Requested 64-bit PC CDs: 6
-            Ubuntu Requested Mac CDs: 9
             Kubuntu Requested PC CDs: 0
      Kubuntu Requested 64-bit PC CDs: 0
-           Kubuntu Requested Mac CDs: 0
            Edubuntu Requested PC CDs: 0
     Edubuntu Requested 64-bit PC CDs: 0
-          Edubuntu Requested Mac CDs: 0
+             Server Requested PC CDs: 0
+      Server Requested 64-bit PC CDs: 0
 
 
 To help identify if we're reaching new users with every series, we have a
@@ -1104,7 +1124,7 @@ This is the description of each column, in its context:
              # of people: 0
                        %: 0.0
        people with karma: 0
-      avg CDs per shipment: 0
+    avg CDs per shipment: 0
              # of people: 8
                        %: 80.0
        people with karma: 1
@@ -1118,11 +1138,11 @@ This is the description of each column, in its context:
              # of people: 9
                        %: 90.0
        people with karma: 1
-     avg CDs per request: 7.66
+     avg CDs per request: 8.77
              # of people: 7
                        %: 87.5
        people with karma: 0
-      avg CDs per shipment: 7.28
+    avg CDs per shipment: 8.71
              # of people: 2
                        %: 20.0
        people with karma: 0
@@ -1140,7 +1160,7 @@ This is the description of each column, in its context:
              # of people: 1
                        %: 12.5
        people with karma: 0
-      avg CDs per shipment: 1.5
+    avg CDs per shipment: 1.5
              # of people: 0
                        %: 0.0
        people with karma: 0
@@ -1166,3 +1186,47 @@ the shipit-reports cronscript.
     >>> process.returncode
     0
 
+
+== Server survey ==
+
+When requesting CDs, people may be asked to answer a small survey.
+At this point we're not doing anything with their answers, so we have
+a single method which takes a dictionary mapping questions to answers
+and store them in the database.
+
+The keys in this dictionary must be attribute names of
+ShipItSurveySchema and the values have to be either None or one or more
+lazr.Item objects.
+
+    >>> from canonical.launchpad.interfaces.shipit import (
+    ...     EnvironmentVocabulary, EvaluatedUsesVocabulary, IShipItSurveySet,
+    ...     ShipItSurveySchema)
+    >>> schema = ShipItSurveySchema
+    >>> answers = {
+    ...     'environment': EnvironmentVocabulary.HOME,
+    ...     'evaluated_uses': [EvaluatedUsesVocabulary.CRM,
+    ...                        EvaluatedUsesVocabulary.PROXY],
+    ...     'business_sector': None}
+    >>> survey_set = getUtility(IShipItSurveySet)
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> survey = survey_set.new(salgado, answers)
+    >>> survey
+    <ShipItSurvey...
+
+We also have a method to tell us whether or not a given person has
+already answered the survey.
+
+    >>> survey_set.personHasAnswered(salgado)
+    True
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> survey_set.personHasAnswered(sabdfl)
+    False
+
+If all answers are None or empty sequences, we won't record the person
+as having answered the survey.
+
+    >>> answers = {'environment': None, 'evaluated_uses': []}
+    >>> print survey_set.new(sabdfl, answers)
+    None
+    >>> survey_set.personHasAnswered(sabdfl)
+    False

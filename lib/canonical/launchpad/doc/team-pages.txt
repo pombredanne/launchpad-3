@@ -4,11 +4,12 @@
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, ITeamMembershipSet)
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> personset = getUtility(IPersonSet)
     >>> def create_view(context, name, form=None):
-    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view = getMultiAdapter(
+    ...         (context, TestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
 
@@ -56,3 +57,16 @@ If new members are added/proposed, they'll show up at the top of the lists.
     name12: Proposed
     justdave: Proposed
 
+Posting malformed data to the team home page raises an error.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> broken_request = LaunchpadTestRequest(
+    ...     form={})
+    >>> broken_request.method = 'POST'
+    >>> team_home = getMultiAdapter(
+    ...     (ubuntu_team, broken_request), name='+index')
+    >>> team_home.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: The mailing list form did not receive the expected
+    form fields.

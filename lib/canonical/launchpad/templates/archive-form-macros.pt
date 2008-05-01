@@ -1,0 +1,75 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<metal:selectable_sources define-macro="selectable-sources">
+
+  <tal:comment replace="nothing">
+    Presents a table with selectable sources for an
+    IArchiveSelectableSourceView.
+  </tal:comment>
+
+  <tal:search define="name_widget nocall:view/widgets/name_filter">
+     <label tal:attributes="for name_widget/name">
+       Show only sources with name matching:
+     </label>
+     <input tal:replace="structure name_widget"/>
+     <input
+       tal:replace="structure view/actions/field.actions.update/render" />
+  </tal:search>
+
+  <tal:no_sources tal:condition="not:view/available_sources_size">
+    <div id="empty-result" style="border: 1px solid;">
+      <p>No matching source packages for '<tal:name_filter
+         tal:replace="request/field.name_filter|nothing" />'.</p>
+    </div>
+  </tal:no_sources>
+
+  <tal:sources condition="view/available_sources_size"
+               define="widget nocall:view/widgets/selected_sources;
+                       field_name widget/context/__name__;
+                       error python:view.getFieldError(field_name);">
+    <table class="listing" style="margin-top: 1em;">
+      <thead>
+      <tr class="ppa_package_row">
+        <th colspan="2">Source</th>
+        <th tal:condition="context/owner/isTeam">Uploader</th>
+        <th>Published</th>
+        <th>Status</th>
+        <th>Series</th>
+        <th>Section</th>
+        <th>Built</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tal:terms tal:repeat="term widget/vocabulary">
+        <tal:block
+          define="pub term/value"
+          replace="structure pub/@@+listing-ppa-detailed-selectable" />
+      </tal:terms>
+      </tbody>
+      <tfoot tal:condition="view/has_undisplayed_sources">
+         <tr>
+           <td colspan="8" tal:condition="context/owner/isTeam">
+             <div>Presenting only <tal:presented replace="
+               view/max_sources_presented"/> of <tal:available replace="
+               view/available_sources_size" /> available sources.</div>
+           </td>
+           <td colspan="7" tal:condition="not: context/owner/isTeam">
+             <div>Presenting only <tal:presented replace="
+               view/max_sources_presented"/> of <tal:available replace="
+               view/available_sources_size" /> available sources.</div>
+           </td>
+         </tr>
+      </tfoot>
+    </table>
+    <input tal:attributes="name string:${widget/name}-empty-marker"
+           type="hidden" value="1" />
+    <div class="error message" tal:condition="error"
+         tal:content="structure error">Error message</div>
+  </tal:sources>
+
+</metal:selectable_sources>
+
+</tal:root>

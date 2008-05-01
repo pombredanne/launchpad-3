@@ -7,9 +7,8 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     >>> from canonical.launchpad.webapp import (
     ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
-    ...     ILink, ILinkData, IFacetLink
-    ...     )
+    ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
+    ...     IFacetMenu, ILink, ILinkData)
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
@@ -152,7 +151,6 @@ mark is as being "structured".
     >>> full_link.enabled
     False
 
-
 The menu infrastructure adapts a Link instance to ILink (for context and
 application menus) and IFacetLink (for facet menus).  This (morally speaking)
 allows the menu infrastructure to set the 'name', 'url', 'linked' and
@@ -249,8 +247,10 @@ are as we expect.
     enabled: True
     escapedtext: Foo
     icon: None
+    icon_url: None
     linked: True
     name: foo
+    render: <bound method FacetLink.render ...>
     selected: False
     site: None
     sort_key: 0
@@ -262,8 +262,10 @@ are as we expect.
     enabled: True
     escapedtext: Bar
     icon: None
+    icon_url: None
     linked: True
     name: bar
+    render: <bound method FacetLink.render ...>
     selected: False
     site: None
     sort_key: 1
@@ -321,12 +323,12 @@ Now, we can make an instance of this class.
 
 == The MenuLink and FacetLink adapter classes ==
 
-The menus system needs to be able to adapt ILinkData objects to objects
-that provide ILink or IFacetLink.  The menus system needs to be able to
-set the 'enabled', 'name', 'url', 'linked, and for IFacetLink, 'selected'
-attributes, but without altering the underlying ILinkData object.  Also,
-an ILink object provides an HTML escaped version of the text in the
-attribute 'escapedtext'.
+The menus system needs to be able to adapt ILinkData objects to
+objects that provide ILink or IFacetLink.  The menus system needs to
+be able to set the 'enabled', 'name', 'url', 'linked, and for
+IFacetLink, 'selected' attributes, but without altering the underlying
+ILinkData object.  ILink objects also provide an HTML-escaped version
+of the link text, and a render() method for returning the link as HTML.
 
     >>> somelink = Link('target', 'text', 'summary', icon='icon')
     >>> ILinkData.providedBy(somelink)
@@ -359,7 +361,6 @@ if we want to, and have distinct views on facet and other links.
     >>> somelink.enabled
     True
 
-
 Checking out the escapedtext attribute.
 
     >>> link = Link('+target', 'text -->')
@@ -377,7 +378,6 @@ Checking out the escapedtext attribute.
     >>> IFacetLink(link).escapedtext
     u'some <b> --&gt; </b> text'
 
-
 We can test the 'structured' helper directly.
 
     >>> structured('foo').escapedtext
@@ -393,6 +393,28 @@ We can test the 'structured' helper directly.
     Traceback (most recent call last):
     ...
     TypeError:...
+
+Next, we return the link as HTML.
+
+    # We need to use a real launchpad test request so the view adapter
+    # lookups will work.  That request also needs to implement
+    # IParticipation so that the login machinery will work.
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.security.interfaces import IParticipation
+    >>> class InteractiveTestRequest(LaunchpadTestRequest):
+    ...     implements(IParticipation)
+    ...     principal = None
+    ...     interaction = None
+    >>> request = InteractiveTestRequest()
+    >>> login(ANONYMOUS, request)
+
+    >>> link = Link('+target', 'text-->', 'summary', icon='icon')
+    >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
+    <span class="action"><img alt="" class="inlineLinkIcon"
+                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
+
+    # Clean up our special login.
+    >>> login(ANONYMOUS)
 
 
 == How do we tell which link from a facetmenu is the selected one? ==
@@ -466,6 +488,8 @@ To test this, we need a dummy request object that provides `getURL()`.
     >>> class DummyRequest:
     ...     implements(IHTTPApplicationRequest, IBrowserRequest)
     ...
+    ...     interaction = None
+    ...
     ...     def __init__(self, url, query=None, url1=None):
     ...         self.url = url
     ...         self.query = query
@@ -491,7 +515,9 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...             return default
     ...         else:
     ...             return self.query
-
+    ...
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
     >>> from canonical.launchpad.webapp.uri import URI
 
 The following request is for a url that is different from all of the facet
@@ -683,8 +709,10 @@ are as we expect.
     enabled: True
     escapedtext: First menu
     icon: None
+    icon_url: None
     linked: True
     name: first
+    render: <bound method MenuLink.render ...>
     site: None
     sort_key: 0
     summary: None
@@ -745,14 +773,92 @@ are as we expect.
     enabled: True
     escapedtext: First context menu item
     icon: None
+    icon_url: None
     linked: True
     name: first
+    render: <bound method MenuLink.render ...>
     site: None
     sort_key: 0
     summary: None
     target: +firstcontext
     text: First context menu item
     url: http://launchpad.dev/sesamestreet/number73/+firstcontext
+
+
+== Navigation Menus ==
+
+Navigation menus are defined for a context or view object.  Each object has
+just one navigation menu, and it is available at all times.
+
+Defining a NavigationMenu works like defining a FacetMenu.
+
+    >>> from canonical.launchpad.webapp import NavigationMenu
+
+NavigationMenu is meant to be used as a base-class for writing your own
+INavigationMenu classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = NavigationMenu(object())
+    >>> for link in bad_idea_menu.iterlinks():
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of NavigationMenu must provide self.links
+
+So, we must test NavigationMenu by making our own menu subclass.  We'll
+just call our menu 'MyNavigationMenu'.
+
+One thing missing from this class is the 'usedfor' declaration, which tells
+the registration machinery how to render this menu as an adapter.  For this
+part of the test, we won't worry about that.
+
+    >>> class MyNavigationMenu(NavigationMenu):
+    ...
+    ...     links = ['first']
+    ...
+    ...     def first(self):
+    ...         target = '+firstnavigation'
+    ...         text = 'First navigation menu item'
+    ...         return Link(target, text)
+
+Now, we can make an instance of this MyNavigationMenu class.
+
+    >>> housefoonavigationmenu = MyNavigationMenu(house)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect, what we defined in MyNavigationMenu class.
+
+    >>> for link in housefoonavigationmenu.iterlinks():
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names(all=True)):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link first ---
+    enabled: True
+    escapedtext: First navigation menu item
+    icon: None
+    icon_url: None
+    linked: True
+    name: first
+    render: <bound method MenuLink.render...
+    site: None
+    sort_key: 0
+    summary: None
+    target: +firstnavigation
+    text: First navigation menu item
+    url: http://launchpad.dev/sesamestreet/number73/+firstnavigation
+
+There is a helper view class to retrieve all links to render for the
+navigationmenu attached to an object, however, if the object doesn't have
+a navigation menu we get an empty list of links.
+
+    >>> from canonical.launchpad.browser import NavigationMenuTabs
+    >>> request = DummyRequest('http://launchpad.dev/sesamestreet/+bar')
+    >>> class NoMenuObject:
+    ...     pass
+    >>> object_without_menu = NoMenuObject()
+    >>> view = NavigationMenuTabs(object_without_menu, request)
+    >>> view.initialize()
+    >>> view.links
+    []
 
 
 == Registering menus in ZCML ==
@@ -911,7 +1017,6 @@ Let's try again, this time with a request from the participation.
 
     >>> participation = DummyRequest(
     ...     'http://launchpad.dev/sesamestreet/+bar')
-    >>> participation.interaction = None
     >>> login(ANONYMOUS, participation)
 
     >>> links = test_tales(
@@ -1044,6 +1149,24 @@ And thus, we don't have a facet to navigate to:
     TraversalError: ..., 'foo')
 
 
+== Shortcuts for rendering menu items ==
+
+A thing's menu may be rendered directly as HTML using the menu link's
+render() method.
+
+    >>> request = InteractiveTestRequest()
+    >>> login(ANONYMOUS, request)
+
+    >>> html = test_tales('context/menu:foo/first/render',
+    ...                   context=house, view=view, request=request)
+    >>> print html #doctest: +NORMALIZE_WHITESPACE
+    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
+          class="menu-link-first">First menu</a></span>
+
+    # Clean up our special login.
+    >>> login(ANONYMOUS)
+
+
 == Cleaning up ==
 
 We're done testing the zcml, so we can clean up the canonical.launchpad.ftests
@@ -1090,4 +1213,3 @@ Now, we log in as foo.bar@canonical.com, an admin.
     >>> foolink = somemenu.foo()
     >>> foolink.enabled
     True
-

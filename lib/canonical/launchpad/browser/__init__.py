@@ -26,13 +26,13 @@ from canonical.launchpad.browser.bugalsoaffects import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugcomment import *
-from canonical.launchpad.browser.bugcontact import *
 from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugmessage import *
 from canonical.launchpad.browser.bugnomination import *
 from canonical.launchpad.browser.bugpackageinfestation import *
 from canonical.launchpad.browser.bugsubscription import *
+from canonical.launchpad.browser.bugsupervisor import *
 from canonical.launchpad.browser.bugtarget import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
@@ -73,6 +73,7 @@ from canonical.launchpad.browser.marketing import *
 from canonical.launchpad.browser.mentoringoffer import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
+from canonical.launchpad.browser.oauth import *
 from canonical.launchpad.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.packaging import *

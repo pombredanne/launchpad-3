@@ -7,10 +7,16 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet',
-    'SSHKey', 'SSHKeySet',
-    'WikiName', 'WikiNameSet',
-    'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
+    'IrcID',
+    'IrcIDSet',
+    'JabberID',
+    'JabberIDSet',
+    'Person',
+    'PersonSet',
+    'SSHKey',
+    'SSHKeySet',
+    'WikiName',
+    'WikiNameSet']
 
 from datetime import datetime, timedelta
 import pytz
@@ -22,8 +28,8 @@ from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
-    SQLObjectNotFound, SQLRelatedJoin, StringCol)
+    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
+    SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -41,6 +47,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.oauth import OAuthAccessToken
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -55,11 +62,12 @@ from canonical.launchpad.interfaces import (
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
-    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
-    ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
-    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, PersonVisibility,
+    INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress, InvalidName,
+    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
+    IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
+    PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
     PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
     ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
@@ -95,7 +103,10 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.person import (
+    public_person_validator, visibility_validator)
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -211,7 +222,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     # XXX: matsubara 2006-03-06 bug=33935:
     # Is this really needed? There's no attribute 'claimant' in the Bounty
     # database class or interface, but the column exists in the database.
-    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
+    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
@@ -225,13 +236,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
     visibility = EnumCol(
         enum=PersonVisibility,
-        default=PersonVisibility.PUBLIC)
+        default=PersonVisibility.PUBLIC,
+        validator=visibility_validator)
 
     personal_standing = EnumCol(
-        enum=PersonalStanding, default=PersonalStanding.UNKNOWN)
+        enum=PersonalStanding, default=PersonalStanding.UNKNOWN,
+        notNull=True)
 
-    personal_standing_reason = StringCol(
-        default=None, dbName='personal_standing_reason_text')
+    personal_standing_reason = StringCol(default=None)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -252,7 +264,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Add the owner as a team admin manually because we know what we're
         # doing and we don't want any email notifications to be sent.
         TeamMembershipSet().new(
-            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
+            team_owner, self, TeamMembershipStatus.ADMIN, team_owner)
+
+    @property
+    def oauth_access_tokens(self):
+        """See `IPerson`."""
+        return OAuthAccessToken.select("""
+            person = %s
+            AND (date_expires IS NULL OR date_expires > %s)
+            """ % sqlvalues(self, UTC_NOW))
 
     @cachedproperty
     def _location(self):
@@ -631,12 +651,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
-    # XXX Tom Berger 2008-02-14:
-    # The name (and possibly the implementation) of these functions
+    # XXX: TomBerger 2008-02-14, 2008-04-14 bug=191799:
+    # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
-    # rather than package bug contacts.
-    # See bug #191799
-    def getBugContactPackages(self):
+    # rather than package bug supervisors.
+    def getBugSubscriberPackages(self):
         """See `IPerson`."""
         packages = [sub.target for sub in self.structural_subscriptions
                     if (sub.distribution is not None and
@@ -644,7 +663,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBugContactOpenBugCounts(self, user):
+    def getBugSubscriberOpenBugCounts(self, user):
         """See `IPerson`."""
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
@@ -687,10 +706,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_bugs = set()
         L = []
-        for row in shortlist(cur.dictfetchall()):
-            distribution = distribution_set.get(row['distribution'])
-            sourcepackagename = sourcepackagename_set.get(
-                row['sourcepackagename'])
+        for (distro_id, spn_id, open_bugs,
+             open_critical_bugs, open_unassigned_bugs,
+             open_inprogress_bugs) in shortlist(cur.fetchall()):
+            distribution = distribution_set.get(distro_id)
+            sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
             # XXX: Bjorn Tillenius 2006-12-15:
             # Add a tuple instead of the distribution package
@@ -699,17 +719,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(
                 package=source_package,
-                open=row['open_bugs'],
-                open_critical=row['open_critical_bugs'],
-                open_unassigned=row['open_unassigned_bugs'],
-                open_inprogress=row['open_inprogress_bugs'])
+                open=open_bugs,
+                open_critical=open_critical_bugs,
+                open_unassigned=open_unassigned_bugs,
+                open_inprogress=open_inprogress_bugs)
             L.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
         # add the rest of the packages as well.
         all_packages = set(
             (distro_package.distribution, distro_package.sourcepackagename)
-            for distro_package in self.getBugContactPackages())
+            for distro_package in self.getBugSubscriberPackages())
         for distribution, sourcepackagename in all_packages.difference(
                 packages_with_bugs):
             package_counts = dict(
@@ -1202,16 +1222,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm = TeamMembership.selectOneBy(person=person, team=self)
         if tm is not None:
             old_status = tm.status
-            tm.reviewer = reviewer
             # We can't use tm.setExpirationDate() here because the reviewer
             # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
-            tm.reviewercomment = comment
-            tm.setStatus(status, reviewer)
+            tm.setStatus(status, reviewer, comment)
         else:
             TeamMembershipSet().new(
-                person, self, status, dateexpires=expires, reviewer=reviewer,
-                reviewercomment=comment)
+                person, self, status, reviewer, dateexpires=expires,
+                comment=comment)
             notify(event(person, self))
 
     # The three methods below are not in the IPerson interface because we want
@@ -1230,7 +1248,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user,
-            reviewercomment=comment)
+            comment=comment)
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
@@ -1244,7 +1262,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
-            getUtility(ILaunchBag).user, reviewercomment=comment)
+            getUtility(ILaunchBag).user, comment=comment)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
@@ -1281,7 +1299,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
         tm.setExpirationDate(expires, reviewer)
-        tm.setStatus(status, reviewer, reviewercomment=comment)
+        tm.setStatus(status, reviewer, comment=comment)
 
     def getAdministratedTeams(self):
         """See `IPerson`."""
@@ -1530,7 +1548,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             ('QuestionSubscription', 'person'),
             ('POSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('PackageBugContact', 'bugcontact'),
+            ('PackageBugSupervisor', 'bug_supervisor'),
             ('AnswerContact', 'person')]
         cur = cursor()
         for table, person_id_column in removals:
@@ -1550,6 +1568,96 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             new_name = base_new_name + str(count)
             count += 1
         self.name = new_name
+
+    @property
+    def visibility_consistency_warning(self):
+        """Warning used when changing the team's visibility.
+
+        A private-membership team cannot be connected to other
+        objects, since it may be possible to infer the membership.
+        """
+        cur = cursor()
+        references = list(postgresql.listReferences(cur, 'person', 'id'))
+        # These tables will be skipped since they do not risk leaking
+        # team membership information, except StructuralSubscription
+        # which will be checked further down to provide a clearer warning.
+        skip = [
+            ('emailaddress', 'person'),
+            ('gpgkey', 'owner'),
+            ('ircid', 'person'),
+            ('jabberid', 'person'),
+            ('karma', 'person'),
+            ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
+            ('logintoken', 'requester'),
+            ('personlanguage', 'person'),
+            ('personlocation', 'person'),
+            ('signedcodeofconduct', 'owner'),
+            ('sshkey', 'person'),
+            ('structuralsubscription', 'subscriber'),
+            # Private-membership teams can have members, but they
+            # cannot be members of other teams.
+            ('teammembership', 'team'),
+            # A private-membership team must be able to participate in itself.
+            ('teamparticipation', 'person'),
+            ('teamparticipation', 'team'),
+            # This table is handled entirely by triggers.
+            ('validpersonorteamcache', 'id'),
+            ]
+        warnings = set()
+        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+            if (src_tab, src_col) in skip:
+                continue
+            cur.execute('SELECT 1 FROM %s WHERE %s=%d LIMIT 1'
+                        % (src_tab, src_col, self.id))
+            if cur.rowcount > 0:
+                if src_tab[0] in 'aeiou':
+                    article = 'an'
+                else:
+                    article = 'a'
+                warnings.add('%s %s' % (article, src_tab))
+
+        # Add warnings for subscriptions in StructuralSubscription table
+        # describing which kind of object is being subscribed to.
+        cur.execute("""
+            SELECT
+                count(product) AS product_count,
+                count(productseries) AS productseries_count,
+                count(project) AS project_count,
+                count(milestone) AS milestone_count,
+                count(distribution) AS distribution_count,
+                count(distroseries) AS distroseries_count,
+                count(sourcepackagename) AS sourcepackagename_count
+            FROM StructuralSubscription
+            WHERE subscriber=%d LIMIT 1
+            """ % self.id)
+
+        row = cur.dictfetchone()
+        for column, warning in [
+            ('product_count', 'a project subscriber'),
+            ('productseries_count', 'a project series subscriber'),
+            ('project_count', 'a project subscriber'),
+            ('milestone_count', 'a milestone subscriber'),
+            ('distribution_count', 'a distribution subscriber'),
+            ('distroseries_count', 'a distroseries subscriber'),
+            ('sourcepackagename_count', 'a source package subscriber'),
+            ]:
+            if row[column] > 0:
+                warnings.add(warning)
+
+        # Compose warning string.
+        warnings = sorted(warnings)
+        if len(warnings) == 0:
+            return None
+        else:
+            if len(warnings) == 1:
+                message = warnings[0]
+            else:
+                message = '%s and %s' % (
+                    ', '.join(warnings[:-1]),
+                    warnings[-1])
+            return ('This team cannot be made private since it is referenced'
+                    ' by %s.' % message)
 
     def getActiveMemberships(self):
         """See `IPerson`."""
@@ -1585,7 +1693,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
         result = self.myactivememberships
-        result.orderBy(['-datejoined'])
+        result = result.orderBy(['-date_joined', '-id'])
         return result[:limit]
 
     @property
@@ -1884,24 +1992,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
-        query_clause = " AND ".join(clauses)
+        query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
                                     upload_archive)
-                       sourcepackagerelease.id
-                  FROM sourcepackagerelease, archive
-                 WHERE %s
-              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
-                       dateuploaded DESC
+                    sourcepackagerelease.id
+                FROM sourcepackagerelease, archive,
+                    securesourcepackagepublishinghistory sspph
+                WHERE
+                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
+                    sspph.archive = archive.id AND
+                    sspph.status = %(pub_status)s AND
+                    %(more_query_clauses)s
+                ORDER BY upload_distroseries, sourcepackagename,
+                    upload_archive, dateuploaded DESC
               )
-              """ % (query_clause)
+              """ % dict(pub_status=quote(PackagePublishingStatus.PUBLISHED),
+                         more_query_clauses=query_clauses)
 
-        return SourcePackageRelease.select(
+        rset = SourcePackageRelease.select(
             query,
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+
+        return rset
 
     def isUploader(self, distribution):
         """See `IPerson`."""
@@ -1996,7 +2112,7 @@ class PersonSet:
         # we're doing (so we don't need to do any sanity checks) and we don't
         # want any email notifications to be sent.
         TeamMembershipSet().new(
-            teamowner, team, TeamMembershipStatus.ADMIN, reviewer=teamowner)
+            teamowner, team, TeamMembershipStatus.ADMIN, teamowner)
         return team
 
     def createPersonAndEmail(
@@ -2004,14 +2120,21 @@ class PersonSet:
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
+        if not valid_email(email):
+            raise InvalidEmailAddress(
+                "%s is not a valid email address." % email)
+
         if name is None:
-            try:
-                name = nickname.generate_nick(email)
-            except nickname.NicknameGenerationError:
-                return None, None
+            name = nickname.generate_nick(email)
+        elif not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a person." % name)
         else:
-            if self.getByName(name, ignore_merged=False) is not None:
-                return None, None
+            # The name should be okay, move on...
+            pass
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
 
         if not passwordEncrypted and password is not None:
             password = getUtility(IPasswordEncryptor).encrypt(password)
@@ -2109,7 +2232,7 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text, orderBy=None):
+    def find(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
@@ -2364,8 +2487,9 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
-            # This table is handled entirely by triggers
+            # This table is handled entirely by triggers.
             ('validpersonorteamcache', 'id'),
+            ('translationrelicensingagreement', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -2390,13 +2514,13 @@ class PersonSet:
         to_id = to_person.id
         from_id = from_person.id
 
-        # Update PersonLocation, which is a Person-decorator table
+        # Update PersonLocation, which is a Person-decorator table.
         self._merge_person_decoration(
             to_person, from_person, skip, cur, 'PersonLocation', 'person',
             ['last_modified_by', ])
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
-        # know that
+        # know that.
         cur.execute(
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
@@ -2426,7 +2550,7 @@ class PersonSet:
             )
         skip.append(('wikiname', 'person'))
 
-        # Update shipit shipments
+        # Update shipit shipments.
         cur.execute('''
             UPDATE ShippingRequest SET recipient=%(to_id)s
             WHERE recipient = %(from_id)s AND (
@@ -2466,7 +2590,7 @@ class PersonSet:
         skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
-        # ones that *do* conflict
+        # ones that *do* conflict.
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
@@ -2494,7 +2618,7 @@ class PersonSet:
         # Update MailingListSubscription. Note that no remaining records
         # will have email_address set, as we assert earlier that the
         # from_person has no email addresses.
-        # Update records that don't conflict
+        # Update records that don't conflict.
         cur.execute('''
             UPDATE MailingListSubscription
             SET person=%(to_id)d
@@ -2505,13 +2629,13 @@ class PersonSet:
                     WHERE person=%(to_id)d
                     )
             ''' % vars())
-        # Then trash the remainders
+        # Then trash the remainders.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('mailinglistsubscription', 'person'))
 
-        # Update only the BranchSubscription that will not conflict
+        # Update only the BranchSubscription that will not conflict.
         cur.execute('''
             UPDATE BranchSubscription
             SET person=%(to_id)d
@@ -2522,15 +2646,13 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('branchsubscription', 'person'))
 
-        # Update only the BountySubscriptions that will not conflict
-        # XXX: StuartBishop 2005-03-31:
-        # Add sampledata and test to confirm this case
+        # Update only the BountySubscriptions that will not conflict.
         cur.execute('''
             UPDATE BountySubscription
             SET person=%(to_id)d
@@ -2541,13 +2663,13 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM BountySubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
-        # Update only the AnswerContacts that will not conflict
+        # Update only the AnswerContacts that will not conflict.
         cur.execute('''
             UPDATE AnswerContact
             SET person=%(to_id)d
@@ -2570,13 +2692,13 @@ class PersonSet:
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM AnswerContact WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('answercontact', 'person'))
 
-        # Update only the QuestionSubscriptions that will not conflict
+        # Update only the QuestionSubscriptions that will not conflict.
         cur.execute('''
             UPDATE QuestionSubscription
             SET person=%(to_id)d
@@ -2587,13 +2709,13 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('questionsubscription', 'person'))
 
-        # Update only the MentoringOffers that will not conflict
+        # Update only the MentoringOffers that will not conflict.
         cur.execute('''
             UPDATE MentoringOffer
             SET owner=%(to_id)d
@@ -2614,7 +2736,7 @@ class PersonSet:
                 WHERE team = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM MentoringOffer
             WHERE owner=%(from_id)d OR team=%(from_id)d
@@ -2622,12 +2744,28 @@ class PersonSet:
         skip.append(('mentoringoffer', 'owner'))
         skip.append(('mentoringoffer', 'team'))
 
-        # Update PackageBugContact entries
+        # Update BugNotificationRecipient entries that will not conflict.
         cur.execute('''
-            UPDATE PackageBugContact SET bugcontact=%(to_id)s
-            WHERE bugcontact=%(from_id)s
+            UPDATE BugNotificationRecipient
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT id FROM BugNotificationRecipient
+                WHERE person=%(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BugNotificationRecipient
+            WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('bugnotificationrecipient', 'person'))
+
+        # Update PackageBugSupervisor entries.
+        cur.execute('''
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
+            WHERE bug_supervisor=%(from_id)s
             ''', vars())
-        skip.append(('packagebugcontact', 'bugcontact'))
+        skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
@@ -2899,6 +3037,70 @@ class PersonSet:
             ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
+    def getValidPersons(self, persons):
+        """See `IPersonSet.`"""
+        person_ids = [person.id for person in persons]
+        if len(person_ids) == 0:
+            return []
+        valid_person_cache = ValidPersonOrTeamCache.select(
+            "id IN %s" % sqlvalues(person_ids))
+        valid_person_ids = set(cache.id for cache in valid_person_cache)
+        return [
+            person for person in persons if person.id in valid_person_ids]
+
+    def getPeopleWithBranches(self, product=None):
+        """See `IPersonSet`."""
+        branch_clause = 'SELECT owner FROM Branch'
+        if product is not None:
+            branch_clause += ' WHERE product = %s' % quote(product)
+        return Person.select('''
+            Person.id in (%s)
+            ''' % branch_clause)
+
+    def getSubscribersForTargets(self, targets, recipients=None):
+        """See `IPersonSet`. """
+        if len(targets) == 0:
+            return set()
+        target_criteria = []
+        for target in targets:
+            # target_args is a mapping from query arguments
+            # to query values.
+            target_args = target._target_args
+            target_criteria_clauses = []
+            for key, value in target_args.items():
+                if value is not None:
+                    target_criteria_clauses.append(
+                        '%s = %s' % (key, quote(value)))
+                else:
+                    target_criteria_clauses.append(
+                        '%s IS NULL' % key)
+            target_criteria.append(
+                '(%s)' % ' AND '.join(target_criteria_clauses))
+
+        # Build a UNION query, since using OR slows down the query a lot.
+        subscriptions = StructuralSubscription.select(target_criteria[0])
+        for target_criterion in target_criteria[1:]:
+            subscriptions = subscriptions.union(
+                StructuralSubscription.select(target_criterion))
+
+        # Listify the result, since we want to loop over it multiple times.
+        subscriptions = list(subscriptions)
+
+        # We can't use prejoins in UNION queries, so populate the cache
+        # by getting all the subscribers.
+        subscriber_ids = [
+            subscription.subscriberID for subscription in subscriptions]
+        if len(subscriber_ids) > 0:
+            list(Person.select("id IN %s" % sqlvalues(subscriber_ids)))
+
+        subscribers = set()
+        for subscription in subscriptions:
+            subscribers.add(subscription.subscriber)
+            if recipients is not None:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+        return subscribers
 
 
 class PersonLanguage(SQLBase):

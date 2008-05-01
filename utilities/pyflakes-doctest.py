@@ -9,6 +9,14 @@ import os
 import sys
 
 import pyflakes
+# XXX sinzui 2008-04-03:
+# pyflakes broke its API. We should be using pyflakes.checker.Checker,
+# but while we are transitioning to Hardy, we will preserve the old
+# behaviour.
+try:
+    from pyflakes.checker import Checker
+except ImportError:
+    Checker = pyflakes.Checker
 
 
 # Names we define in the globals for our doctests
@@ -16,6 +24,8 @@ GLOBAL_NAMES = set([
     # for system documentation
     'ANONYMOUS',
     'ILaunchBag',
+    'bugtarget',
+    'commit',
     'create_view',
     'flush_database_updates',
     'getUtility',
@@ -28,6 +38,7 @@ GLOBAL_NAMES = set([
     'browser',
     'extract_link_from_tag',
     'extract_text',
+    'filebug',
     'find_main_content',
     'find_portlet',
     'find_tag_by_id',
@@ -35,11 +46,13 @@ GLOBAL_NAMES = set([
     'first_tag_by_class',
     'get_feedback_messages',
     'http',
+    'mailinglist_api',
     'parse_relationship_section',
     'print_action_links',
     'print_batch_header',
     'print_comments',
     'print_portlet_links',
+    'print_ppa_packages',
     'print_radio_button_field',
     'print_submit_buttons',
     'print_tab_links',
@@ -48,6 +61,8 @@ GLOBAL_NAMES = set([
     'webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
+    # For buildd tests
+    'test_dbuser'
     ])
 
 
@@ -128,7 +143,7 @@ def check_doctest(filename):
         print >> sys.stderr, line
         print >> sys.stderr, " " * (offset-1), "^"
     else:
-        w = pyflakes.Checker(tree, filename)
+        w = Checker(tree, filename)
         for warning in sorted(w.messages, key=operator.attrgetter('lineno')):
             if suppress_warning(warning):
                 continue

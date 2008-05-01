@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -25,20 +25,21 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
-    DummyTranslationMessage, TranslationMessage)
+    DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
     OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
-    TranslationPermission, TranslationValidationStatus)
+    TranslationConstants, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError, TranslationPermission,
+    TranslationValidationStatus)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
@@ -185,6 +186,80 @@ class POFileMixIn(RosettaStats):
                                                             context=context)
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
+
+    def findPOTMsgSetsContaining(self, text):
+        """See `IPOFile`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
+            # Only count the number of POTMsgSet that are current.
+            'POTMsgSet.sequence > 0',
+            ]
+
+        if text is not None:
+            assert len(text) > 1, (
+                "You can not search for strings shorter than 2 characters.")
+
+            english_match = """
+            -- Step 1: find POTMsgSets with msgid_singular containing `text`.
+            -- To avoid seqscans on POMsgID table (what LIKE usually does),
+            -- we do ILIKE comparison on them in a subselect first filtered
+            -- by this POTemplate.
+               ((POTMsgSet.msgid_singular IS NOT NULL AND
+                 POTMsgSet.msgid_singular IN (
+                   SELECT POMsgID.id FROM POMsgID
+                     WHERE id IN (
+                       SELECT DISTINCT(msgid_singular)
+                         FROM POTMsgSet
+                         WHERE POTMsgSet.potemplate=%s
+                     ) AND
+                     msgid ILIKE '%%' || %s || '%%')) OR
+            -- Step 1b: like above, just on msgid_plural.
+                (POTMsgSet.msgid_plural IS NOT NULL AND
+                 POTMsgSet.msgid_plural IN (
+                   SELECT POMsgID.id FROM POMsgID
+                     WHERE id IN (
+                       SELECT DISTINCT(msgid_plural)
+                         FROM POTMsgSet
+                         WHERE POTMsgSet.potemplate=%s
+                     ) AND
+                     msgid ILIKE '%%' || %s || '%%'))
+               )""" % (quote(self.potemplate), quote_like(text),
+                       quote(self.potemplate), quote_like(text))
+
+            # Do not look for translations in a DummyPOFile.
+            if self.id is not None:
+                # XXX 2008-04-21 DaniloSegan: bug #221353.
+                # We are currently searching only through the first form of
+                # translation.  This needs to be fixed, however, the query
+                # would need some prettyfying before that can happen, and
+                # some performance testing as well (though, I expect it to
+                # be ok, I decided to do initial phase with only one form).
+                translation_match = """
+                -- Step 2: find POTMsgSets with translations containing `text`.
+                -- Like above, to avoid seqscans on POTranslation table,
+                -- we do ILIKE comparison on them in a subselect which is
+                -- first filtered by the POFile.
+                (POTMsgSet.id IN (
+                   SELECT POTMsgSet.id FROM POTMsgSet
+                     JOIN TranslationMessage
+                       ON TranslationMessage.potmsgset=POTMsgSet.id
+                     WHERE
+                       TranslationMessage.pofile=%s AND
+                       TranslationMessage.msgstr0 IN (
+                         SELECT POTranslation.id FROM POTranslation WHERE
+                           POTranslation.id IN (
+                             SELECT DISTINCT(msgstr0) FROM TranslationMessage
+                               WHERE TranslationMessage.pofile=%s
+                           ) AND
+                           POTranslation.translation ILIKE '%%' || %s || '%%')
+                   ))""" % (quote(self), quote(self), quote_like(text))
+                clauses.append("(%s OR %s)" % (english_match,
+                                               translation_match))
+            else:
+                clauses.append(english_match)
+
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
 
 class POFile(SQLBase, POFileMixIn):
@@ -450,9 +525,8 @@ class POFile(SQLBase, POFileMixIn):
                 POTMsgSet.potemplate = %s AND
                 (TranslationMessage.id IS NULL OR
                  (NOT TranslationMessage.is_fuzzy AND (%s))))
-            """ % tuple(
-                sqlvalues(self, self.potemplate) +
-                (' OR '.join(incomplete_check),))
+            """ % (quote(self), quote(self.potemplate),
+                   ' OR '.join(incomplete_check))
         return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
@@ -491,6 +565,9 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
+
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -507,11 +584,8 @@ class POFile(SQLBase, POFileMixIn):
             WHERE
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))
-            ''' % sqlvalues(self, self.potemplate),
+                (%s))
+            ''' % (quote(self), quote(self.potemplate), not_nulls),
             orderBy='POTmsgSet.sequence')
 
         return results
@@ -593,7 +667,6 @@ class POFile(SQLBase, POFileMixIn):
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
 
-
     def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -628,6 +701,8 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
@@ -636,10 +711,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
                 NOT imported.was_fuzzy_in_last_import AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))''')
+                (%s))''' % not_nulls)
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -764,6 +836,7 @@ class POFile(SQLBase, POFileMixIn):
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'language_code': self.language.code,
+            'max_plural_forms': TranslationConstants.MAX_PLURAL_FORMS,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }
@@ -1258,23 +1331,20 @@ class POFileToTranslationFileDataAdapter:
 
         for row in rows:
             assert row.pofile == pofile, 'Got a row for a different IPOFile.'
-
-            # Skip messages which are neither in the PO template nor in the PO
-            # file. (Messages which are in the PO template but not in the PO
-            # file are untranslated, and messages which are not in the PO
-            # template but in the PO file are obsolete.)
-            if row.sequence == 0 and not row.is_imported:
-                continue
+            assert row.sequence != 0 or row.is_imported, (
+                "Got uninteresting row.")
 
             # Create new message set
             msgset = TranslationMessageData()
             msgset.is_obsolete = (row.sequence == 0)
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
 
-            forms = [
-                (0, row.translation0), (1, row.translation1),
-                (2, row.translation2), (3, row.translation3)]
+            forms = list(enumerate([
+                getattr(row, "translation%d" % form)
+                for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]))
             max_forms = pofile.plural_forms
             for (pluralform, translation) in forms[:max_forms]:
                 if translation is not None:

@@ -13,9 +13,15 @@
           <li tal:condition="context/reviewed">Reviewed</li>
           <li tal:condition="context/active">Active</li>
           <li tal:condition="not: context/active">Disabled</li>
+          <li tal:condition="context/official_codehosting">Uses Code</li>
+          <li tal:condition="not: context/official_codehosting"
+          >Doesn&rsquo;t use Code</li>
           <li tal:condition="context/official_malone">Uses Bugs</li>
           <li tal:condition="not: context/official_malone"
           >Doesn&rsquo;t use Bugs</li>
+          <li tal:condition="context/official_blueprints">Uses Blueprints</li>
+          <li tal:condition="not: context/official_blueprints"
+          >Doesn&rsquo;t use Blueprints</li>
           <li tal:condition="context/official_rosetta"
           >Uses Translations</li>
           <li tal:condition="not: context/official_rosetta"
@@ -51,14 +57,14 @@
       <td tal:condition="not:context/driver">Not yet assigned</td>
     </tr>
     <tr>
-      <th>Bug contact:</th>
-      <td tal:condition="context/bugcontact">
+      <th>Bug supervisor:</th>
+      <td tal:condition="context/bug_supervisor">
         <a
-          tal:attributes="href context/bugcontact/fmt:url"
-          tal:content="context/bugcontact/browsername"
+          tal:attributes="href context/bug_supervisor/fmt:url"
+          tal:content="context/bug_supervisor/browsername"
         >foo bar</a>
       </td>
-      <td tal:condition="not:context/bugcontact">Not yet assigned</td>
+      <td tal:condition="not:context/bug_supervisor">Not yet assigned</td>
     </tr>
     <tr>
       <th>Security contact:</th>

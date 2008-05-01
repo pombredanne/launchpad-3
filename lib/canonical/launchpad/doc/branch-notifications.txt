@@ -11,6 +11,7 @@ There are two situations where emails are sent out for branches:
  - when a user modifies the state of the branch object using the UI
  - when the branch scanner scans new revisions in the branches history
 
+
 == Email Format ==
 
 All branch notification emails use a standard email template.
@@ -29,9 +30,8 @@ also sends the email to the list of recipients.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    ...     IBranchSet)
-    >>> from canonical.launchpad.mail import stub
-    >>> from canonical.launchpad.mailnotification import (
+    ...     CodeReviewNotificationLevel, IBranchSet)
+    >>> from canonical.launchpad.mailout.branch import (
     ...     email_branch_modified_notifications)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> branch = getUtility(IBranchSet).getByUniqueName(
@@ -39,7 +39,8 @@ also sends the email to the list of recipients.
     >>> subscription = branch.subscribe(
     ...     branch.owner,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.WHOLEDIFF)
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> email_branch_modified_notifications(
     ...     branch, ['test@canonical.com'], 'foo@canonical.com',
     ...     'The contents.', branch.getNotificationRecipients())
@@ -99,43 +100,50 @@ previous one.  The size limit is one of the following:
     >>> branch.subscribe(
     ...     personset.getByEmail('no-priv@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
-    ...     BranchSubscriptionDiffSize.NODIFF)
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('test@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-    ...     BranchSubscriptionDiffSize.NODIFF)
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('carlos@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.NODIFF)
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('jeff.waugh@ubuntulinux.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.HALFKLINES)
+    ...     BranchSubscriptionDiffSize.HALFKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('celso.providelo@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.ONEKLINES)
+    ...     BranchSubscriptionDiffSize.ONEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('daf@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('mark@hbd.com'),
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.WHOLEDIFF)
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
 Team are subscribed in the same way.
@@ -143,7 +151,8 @@ Team are subscribed in the same way.
     >>> branch.subscribe(
     ...     personset.getByName('launchpad'),
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.WHOLEDIFF)
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
 And to make sure we have them:
@@ -200,7 +209,7 @@ We need to create some sufficiently large diffs to compare against.
     >>> diff = '\n'.join([str(value) for value in xrange(6000)])
     >>> message = 'Test message.\n'
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from canonical.launchpad.mailout.branch import (
     ...     send_branch_revision_notifications)
 
 Send the revision notifications.
@@ -339,13 +348,15 @@ then that email address is used for the notifications.
     >>> branch.subscribe(
     ...     personset.getByEmail('david.allouche@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.HALFKLINES)
+    ...     BranchSubscriptionDiffSize.HALFKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByName('vcs-imports'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
 The ubuntu-team has an email address supplied (support@ubuntu.com), so
@@ -354,7 +365,8 @@ that is used rather than the email addresses of the seven members.
     >>> branch.subscribe(
     ...     personset.getByName('ubuntu-team'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.ONEKLINES)
+    ...     BranchSubscriptionDiffSize.ONEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> recipients = branch.getNotificationRecipients()
@@ -385,7 +397,8 @@ Resubscribe our test user.
     >>> branch.subscribe(
     ...     personset.getByEmail('test@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-    ...     BranchSubscriptionDiffSize.NODIFF)
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     <BranchSubscription ...
 
     >>> from zope.event import notify

@@ -58,6 +58,32 @@ Each listed binary links to the corresponding page.
     >>> anon_browser.getLink("mozilla-firefox 0.9").url
     'http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9'
 
+The user can see the estimated build start time field for each job
+still in the build queue.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/11")
+    >>> build_details = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
+    >>> print_text(build_details)
+    Changes file:
+    not available
+    Archive:
+    ubuntu archive
+    Component:
+    main
+    Status:
+    Needs building
+    Queued:
+    2006-02-14
+    Estimated build start:
+    not available
+    Build score:
+    10
+    Build log:
+    not available
+    Finished:
+    not available
 
 == Build Retrying ==
 
@@ -291,12 +317,16 @@ lp-buildd-admins) have access for retrying PPA build.
     >>> admin_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(admin_browser.contents)
+    View PPA: http://launchpad.dev/~no-priv/+archive
+    View build records: http://launchpad.dev/~no-priv/+archive/+builds
     Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
     Rescore build (disabled)
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(user_browser.contents)
+    View PPA: http://launchpad.dev/~no-priv/+archive
+    View build records: http://launchpad.dev/~no-priv/+archive/+builds
     Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
     Rescore build (disabled)
 
@@ -304,7 +334,7 @@ PPA build pages also have some text telling the viewer that they can retry
 the build if that action is possible:
 
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Build details
+    Build details for i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     You can retry this build if you think
     the failure was transient. Be aware that the previous
     build log and timestamps will be purged.

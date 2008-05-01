@@ -25,7 +25,7 @@ from canonical.launchpad.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
-    StandardLaunchpadFacets, action, redirection)
+    StandardLaunchpadFacets, action, canonical_url, redirection)
 
 
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
@@ -55,9 +55,9 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['managebugcontacts', 'publishinghistory']
+    links = ['subscribe', 'publishinghistory']
 
-    def managebugcontacts(self):
+    def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
@@ -69,7 +69,7 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['managebugcontacts']
+    links = ['subscribe']
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
@@ -177,6 +177,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
               product=productseries.product.displayname,
               productseries=productseries.displayname,
               distroseries=distroseries.displayname)))
+        self.next_url = canonical_url(self.context)
 
     def version_listing(self):
         result = []

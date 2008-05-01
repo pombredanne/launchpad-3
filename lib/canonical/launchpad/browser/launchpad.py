@@ -10,11 +10,13 @@ __all__ = [
     'MaintenanceMessage',
     'MenuBox',
     'MaloneContextMenu',
+    'NavigationMenuTabs',
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'OneZeroTemplateStatus',
     'IcingFolder',
+    'UbuntuIcingFolder',
     'StructuralHeaderPresentationView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
@@ -73,7 +75,6 @@ from canonical.launchpad.interfaces import (
     IProductSet,
     IProjectSet,
     IQuestionSet,
-    IRegistryApplication,
     IRosettaApplication,
     ISourcePackageNameSet,
     ISpecificationSet,
@@ -87,7 +88,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link,
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
-from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
+from canonical.launchpad.webapp.interfaces import (
+    POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -169,7 +171,34 @@ class MenuBox(LaunchpadView):
             key=operator.attrgetter('sort_key'))
 
     def render(self):
-        if not self.contextmenuitems and not self.applicationmenuitems:
+        if (not self.contextmenuitems and not self.applicationmenuitems):
+            return ''
+        else:
+            return self.template()
+
+
+class NavigationMenuTabs(LaunchpadView):
+    """View class that helps its template render the navigation menu tabs.
+
+    Nothing at all is rendered if there are no navigation menu items.
+    """
+
+    def initialize(self):
+        menu = INavigationMenu(self.context, None)
+        if menu is None:
+            # There are no menu entries.
+            self.links = []
+            return
+
+        # We are only interested on enabled links in non development mode.
+        menu.request = self.request
+        self.links = sorted([
+            link for link in menu.iterlinks() if (link.enabled or
+                                                  config.devmode)],
+            key=operator.attrgetter('sort_key'))
+
+    def render(self):
+        if not self.links:
             return ''
         else:
             return self.template()
@@ -185,7 +214,11 @@ class LinkView(LaunchpadView):
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
         if self.context.enabled or config.devmode:
-            return self.template()
+            # XXX: TomBerger 2008-04-16 bug=218706:
+            # We strip the result of the template rendering
+            # since ZPT seems to always insert a line break
+            # at the end of an embedded template.
+            return self.template().strip()
         else:
             return ''
 
@@ -454,7 +487,6 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
-        'registry': IRegistryApplication,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -534,7 +566,7 @@ class LaunchpadRootNavigation(Navigation):
             return None
 
         # If no redirection host is set, don't redirect.
-        mainsite_host = config.launchpad.vhosts.mainsite.hostname
+        mainsite_host = config.vhost.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host
         if redirection_host is None:
             return None
@@ -584,7 +616,7 @@ class SoftTimeoutView(LaunchpadView):
             raise Unauthorized
 
         self.request.response.setHeader('content-type', 'text/plain')
-        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        soft_timeout = intOrZero(config.database.soft_request_timeout)
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 
@@ -653,7 +685,8 @@ class OneZeroTemplateStatus(LaunchpadView):
                 output_category = self.pages
 
             num_one_zero_comments = 0
-            html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+            html_comments = soup.findAll(
+                text=lambda text:isinstance(text, Comment))
             for html_comment in html_comments:
                 matchobj = self.onezero_re.match(html_comment)
                 if matchobj:
@@ -661,7 +694,8 @@ class OneZeroTemplateStatus(LaunchpadView):
                     status, comment = matchobj.groups()
                     if status not in self.valid_status_values:
                         status = 'error'
-                        comment = 'status not one of %s' % ', '.join(sorted(self.valid_status_values))
+                        comment = 'status not one of %s' % ', '.join(
+                            sorted(self.valid_status_values))
 
             if num_one_zero_comments == 0:
                 is_page = soup.html is not None
@@ -673,14 +707,15 @@ class OneZeroTemplateStatus(LaunchpadView):
                     continue
             elif num_one_zero_comments > 1:
                 status = "error"
-                comment = "There were %s one-zero comments in the document." % num_one_zero_comments
+                comment = (
+                    "There were %s one-zero comments in the document." %
+                    num_one_zero_comments)
 
             xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
             helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
             if helptextsoup:
-                #helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
                 helptext = unicode(helptextsoup)
             else:
                 helptext = ''
@@ -698,6 +733,13 @@ class IcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
+
+
+class UbuntuIcingFolder(ExportedFolder):
+    """Export the Ubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):
@@ -719,9 +761,6 @@ class StructuralHeaderPresentation:
 
     def __init__(self, context):
         self.context = context
-
-    def isPrivate(self):
-        return False
 
     def getIntroHeading(self):
         return None

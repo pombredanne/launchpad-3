@@ -9,9 +9,8 @@ __all__ = []
 import _pythonpath
 
 from optparse import OptionParser
-import sys
 
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts import db_options
 from canonical.launchpad.scripts.logger import log, logger_options
 
@@ -38,7 +37,7 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=AUTOCOMMIT_ISOLATION)
+con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 update_until_done(con, 'person', """
     UPDATE Person

@@ -49,8 +49,8 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget, IHasBugContact,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget,
+    IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
     IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
     NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
@@ -67,9 +67,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IProduct, IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugContact)
+        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     _table = 'Product'
 
@@ -78,8 +78,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         foreignKey="Person",
         validator=public_person_validator, dbName="owner", notNull=True)
-    bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person',
+    bug_supervisor = ForeignKey(
+        dbName='bug_supervisor', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
@@ -122,14 +122,26 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     official_answers = BoolCol(
         dbName='official_answers', notNull=True, default=False)
+    official_blueprints = BoolCol(
+        dbName='official_blueprints', notNull=True, default=False)
+    official_codehosting = BoolCol(
+        dbName='official_codehosting', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+
+    @property
+    def official_anything(self):
+        return True in (self.official_malone, self.official_rosetta,
+                        self.official_blueprints, self.official_answers,
+                        self.official_codehosting)
+
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
@@ -621,11 +633,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         ProductBounty(product=self, bounty=bounty)
         return None
 
-    def setBugContact(self, bugcontact, user):
-        """See `IHasBugContact`."""
-        self.bugcontact = bugcontact
-        if bugcontact is not None:
-            subscription = self.addBugSubscription(bugcontact, user)
+    def setBugSupervisor(self, bug_supervisor, user):
+        """See `IHasBugSupervisor`."""
+        self.bug_supervisor = bug_supervisor
+        if bug_supervisor is not None:
+            subscription = self.addBugSubscription(bug_supervisor, user)
 
 
 class ProductSet:
@@ -683,6 +695,7 @@ class ProductSet:
             Product.id in (
                 select distinct(product) from Branch
                 where lifecycle_status in %s)
+            and Product.active
             ''' % sqlvalues(DEFAULT_BRANCH_STATUS_IN_LISTING),
             orderBy='name')
         if num_products is not None:
@@ -692,6 +705,7 @@ class ProductSet:
     def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
         return Product.select('''
+            Product.active and
             Product.development_focus = ProductSeries.id and
             ProductSeries.user_branch = Branch.id and
             Branch.branch_type in %s

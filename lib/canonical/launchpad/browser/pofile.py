@@ -9,6 +9,7 @@ __all__ = [
     'POFileFacets',
     'POFileFilteredView',
     'POFileNavigation',
+    'POFileNavigationMenu',
     'POFileSOP',
     'POFileTranslateView',
     'POFileUploadView',
@@ -31,7 +32,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
+    ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation,
+    NavigationMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -97,13 +99,11 @@ class POFileSOP(POTemplateSOP):
         POTemplateSOP.__init__(self, context.potemplate)
 
 
-class POFileAppMenus(ApplicationMenu):
-    usedfor = IPOFile
-    facet = 'translations'
-    links = ['overview', 'translate', 'upload', 'download']
+class POFileMenuMixin:
+    """Mixin class to share code between navigation and action menus."""
 
-    def overview(self):
-        text = 'Overview'
+    def description(self):
+        text = 'Description'
         return Link('', text)
 
     def translate(self):
@@ -117,6 +117,20 @@ class POFileAppMenus(ApplicationMenu):
     def download(self):
         text = 'Download'
         return Link('+export', text, icon='download')
+
+
+class POFileAppMenus(ApplicationMenu, POFileMenuMixin):
+    """Application menus for `IPOFile` objects."""
+    usedfor = IPOFile
+    facet = 'translations'
+    links = ['description', 'translate', 'upload', 'download']
+
+
+class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
+    """Navigation menus for `IPOFile` objects."""
+    usedfor = IPOFile
+    facet = 'translations'
+    links = ['description', 'translate', 'upload', 'download']
 
 
 class POFileView(LaunchpadView):
@@ -432,6 +446,9 @@ class POFileTranslateView(BaseTranslationView):
     def _initializeShowOption(self):
         # Get any value given by the user
         self.show = self.request.form.get('show')
+        self.search_text = self.request.form.get('search')
+        if self.search_text is not None:
+            self.show = 'all'
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
@@ -460,7 +477,15 @@ class POFileTranslateView(BaseTranslationView):
         pofile = self.context
         potemplate = pofile.potemplate
         if self.show == 'all':
-            ret = potemplate.getPOTMsgSets()
+            if self.search_text is not None:
+                if len(self.search_text) > 1:
+                    ret = pofile.findPOTMsgSetsContaining(text=self.search_text)
+                else:
+                    self.request.response.addWarningNotification(
+                        "Please try searching for a longer string.")
+                    ret = potemplate.getPOTMsgSets()
+            else:
+                ret = potemplate.getPOTMsgSets()
         elif self.show == 'translated':
             ret = pofile.getPOTMsgSetTranslated()
         elif self.show == 'need_review':

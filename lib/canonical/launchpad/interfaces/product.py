@@ -39,35 +39,40 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class License(DBEnumeratedType):
-    """Licenses in which a project's code can be released."""
+    """Licenses under which a project's code can be released."""
+
+    # XXX: EdwinGrubbs 2008-04-11 bug=216040
+    # The deprecated licenses can be removed in the next cycle.
 
     ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "Affero GPL")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
-    CDDL = DBItem(60, "CDDL")
-    CECILL = DBItem(70, "CeCILL License")
+    _DEPRECATED_CDDL = DBItem(60, "CDDL")
+    _DEPRECATED_CECILL = DBItem(70, "CeCILL License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
-    EIFFEL = DBItem(110, "Eiffel Forum License")
-    GNAT = DBItem(120, "GNAT Modified GPL")
-    GPL = DBItem(130, "GPL")
-    IBM = DBItem(140, "IBM Public License")
-    LGPL = DBItem(150, "LGPL")
+    _DEPRECATED_EIFFEL = DBItem(110, "Eiffel Forum License")
+    _DEPRECATED_GNAT = DBItem(120, "GNAT Modified GPL")
+    GNU_GPL_V2 = DBItem(130, "GNU GPL v2")
+    GNU_GPL_V3 = DBItem(135, "GNU GPL v3")
+    GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1")
+    GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3")
+    _DEPRECATED_IBM = DBItem(140, "IBM Public License")
     MIT = DBItem(160, "MIT / X / Expat License")
     MPL = DBItem(170, "Mozilla Public License")
-    OPEN_CONTENT = DBItem(180, "Open Content License")
+    _DEPRECATED_OPEN_CONTENT = DBItem(180, "Open Content License")
     OPEN_SOFTWARE = DBItem(190, "Open Software License")
     PERL = DBItem(200, "Perl License")
     PHP = DBItem(210, "PHP License")
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
-    QPL = DBItem(240, "Q Public License")
-    SUN_PUBLIC = DBItem(250, "SUN Public License")
-    W3C = DBItem(260, "W3C License")
-    ZLIB = DBItem(270, "zlib/libpng License")
+    _DEPRECATED_QPL = DBItem(240, "Q Public License")
+    _DEPRECATED_SUN_PUBLIC = DBItem(250, "SUN Public License")
+    _DEPRECATED_W3C = DBItem(260, "W3C License")
+    _DEPRECATED_ZLIB = DBItem(270, "zlib/libpng License")
     ZPL = DBItem(280, "Zope Public License")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
@@ -245,6 +250,14 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
+    reviewer_whiteboard = Text(
+        title=_('Notes for the project reviewer'),
+        required=False, 
+        description=_(
+            "Notes on the project, viewable only by reviewers "
+            "(administrators and registry experts)."))
+
+
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License))
@@ -375,7 +388,7 @@ class IProductSet(Interface):
         """
 
     def getProductsWithBranches(num_products=None):
-        """Return an iterator over all products that have branches.
+        """Return an iterator over all active products that have branches.
 
         If num_products is not None, then the first `num_products` are
         returned.
@@ -383,6 +396,8 @@ class IProductSet(Interface):
 
     def getProductsWithUserDevelopmentBranches():
         """Return products that have a user branch for the development series.
+
+        Only active products are returned.
 
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """

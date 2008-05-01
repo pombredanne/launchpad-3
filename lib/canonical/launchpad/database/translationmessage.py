@@ -1,9 +1,11 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
-    'TranslationMessage',
     'DummyTranslationMessage',
+    'make_plurals_sql_fragment',
+    'make_plurals_fragment',
+    'TranslationMessage',
     'TranslationMessageSet'
     ]
 
@@ -14,20 +16,45 @@ from zope.interface import implements
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
-    TranslationValidationStatus)
+    TranslationConstants, TranslationValidationStatus)
 from canonical.launchpad.validators.person import public_person_validator
+
+
+def make_plurals_fragment(fragment, separator):
+    """Repeat text fragment for each plural form, separated by separator.
+
+    Inside fragment, use "%(form)d" to represent the applicable plural
+    form number.
+    """
+    return separator.join([
+        fragment % {'form': form}
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+
+
+def make_plurals_sql_fragment(fragment, separator="AND"):
+    """Compose SQL fragment consisting of clauses for each plural form.
+
+    Creates fragments like "msgstr0 IS NOT NULL AND msgstr1 IS NOT NULL" etc.
+
+    :param fragment: a piece of SQL text to repeat for each msgstr*, using
+        "%(form)d" to represent the number of each form: "msgstr%(form)d IS
+        NOT NULL".  Parentheses are added.
+    :param separator: string to insert between the repeated clauses, e.g.
+        "AND" (default) or "OR".  Spaces are added.
+    """
+    return make_plurals_fragment("(%s)" % fragment, " %s " % separator)
 
 
 class TranslationMessageMixIn:
     """This class is not designed to be used directly.
 
-    You should inherite from it and implement full ITranslationMessage
+    You should inherit from it and implement the full `ITranslationMessage`
     interface to use the methods and properties defined here.
     """
 
@@ -66,16 +93,19 @@ class DummyTranslationMessage(TranslationMessageMixIn):
 
         self.id = None
         self.pofile = pofile
+        self.potemplate = pofile.potemplate
+        self.language = pofile.language
+        self.variant = pofile.variant
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
         self.submitter = None
         self.date_reviewed = None
         self.reviewer = None
-        self.msgstr0 = None
-        self.msgstr1 = None
-        self.msgstr2 = None
-        self.msgstr3 = None
+
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            setattr(self, 'msgstr%d' % form, None)
+
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
@@ -93,6 +123,11 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         else:
             self.translations = [None] * self.plural_forms
 
+    @property
+    def all_msgstrs(self):
+        """See `ITranslationMessage`."""
+        return [None] * TranslationConstants.MAX_PLURAL_FORMS
+
     def destroySelf(self):
         """See `ITranslationMessage`."""
         # This object is already non persistent, so nothing needs to be done.
@@ -105,6 +140,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     _table = 'TranslationMessage'
 
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    potemplate = ForeignKey(
+        foreignKey='POTemplate', dbName='potemplate', notNull=False,
+        default=None)
+    language = ForeignKey(
+        foreignKey='Language', dbName='language', notNull=False, default=None)
+    variant = StringCol(dbName='variant', notNull=False, default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(
@@ -117,14 +158,23 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
-    msgstr0 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr0', notNull=True)
-    msgstr1 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr1', notNull=True)
-    msgstr2 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr2', notNull=True)
-    msgstr3 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr3', notNull=True)
+
+    assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
+        "Change this code to support %d plural forms."
+        % TranslationConstants.MAX_PLURAL_FORMS)
+    msgstr0 = ForeignKey(foreignKey='POTranslation', dbName='msgstr0',
+                         notNull=False, default=DEFAULT)
+    msgstr1 = ForeignKey(foreignKey='POTranslation', dbName='msgstr1',
+                         notNull=False, default=DEFAULT)
+    msgstr2 = ForeignKey(foreignKey='POTranslation', dbName='msgstr2',
+                         notNull=False, default=DEFAULT)
+    msgstr3 = ForeignKey(foreignKey='POTranslation', dbName='msgstr3',
+                         notNull=False, default=DEFAULT)
+    msgstr4 = ForeignKey(foreignKey='POTranslation', dbName='msgstr4',
+                         notNull=False, default=DEFAULT)
+    msgstr5 = ForeignKey(foreignKey='POTranslation', dbName='msgstr5',
+                         notNull=False, default=DEFAULT)
+
     comment = StringCol(
         dbName='comment', notNull=False, default=None)
     origin = EnumCol(
@@ -211,9 +261,16 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return self._SO_get_was_fuzzy_in_last_import()
 
     @cachedproperty
+    def all_msgstrs(self):
+        """See `ITranslationMessage`."""
+        return [
+            getattr(self, 'msgstr%d' % form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
+    @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
-        msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
+        msgstrs = self.all_msgstrs
         translations = []
         # Return translations for no more plural forms than the POFile knows.
         for msgstr in msgstrs[:self.plural_forms]:

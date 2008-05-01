@@ -14,12 +14,13 @@ import sys
 import subprocess
 
 from canonical.config import config
+from canonical.launchpad.mailman.config import configure_prefix
 from canonical.launchpad.mailman.monkeypatches import monkey_patch
 
 
 def stop_mailman(quiet=False):
     """Stop the Mailman master qrunner, which kills all its subprocesses."""
-    mailman_path = config.mailman.build.prefix
+    mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin  = os.path.join(mailman_path, 'bin')
     args = ['./mailmanctl', 'stop']
     if quiet:
@@ -39,7 +40,7 @@ def start_mailman(quiet=False):
     """
     # We need the Mailman bin directory so we can run some of Mailman's
     # command line scripts.
-    mailman_path = config.mailman.build.prefix
+    mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin  = os.path.join(mailman_path, 'bin')
     # Monkey-patch the installed Mailman 2.1 tree.
     monkey_patch(mailman_path, config)
