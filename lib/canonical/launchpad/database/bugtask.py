@@ -1470,11 +1470,9 @@ class BugTaskSet:
                             AutoTables(SQL("1=1"), clauseTables))
         for arg in args:
             query, clauseTables, dummy = self.buildQuery(arg)
-            other_result = store.find((BugTask, bugtask_fti), query,
-                                      AutoTables(SQL("1=1"), clauseTables))
-            other_result._add_select_also(SQL('BugTask.fti'))
-
-            result = result.union(other_result)
+            result = result.union(
+                store.find((BugTask, bugtask_fti), query,
+                           AutoTables(SQL("1=1"), clauseTables)))
 
         # Build up the joins
         from canonical.launchpad.database import (
