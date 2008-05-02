@@ -187,6 +187,25 @@ test.
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
+However, when bad data is encountered in single ticket import mode,
+initializeRemoteBugDB() will fail silently. This is because
+failures in initializeRemoteBugDB() will halt the process of updating
+the bugtracker as a whole. However, the bad data may only be in one bug,
+so it is safer to fail silently here and allow the error to be picked up
+later.
+
+    >>> trac.supports_single_exports = True
+    >>> trac.initializeRemoteBugDB([6])
+    CALLED urlopen(u'http://test.trac/ticket/6?format=csv')
+
+Trying to get the remote status of the bug will raise a BugNotFound
+error since the bug was never imported.
+
+    >>> trac.getRemoteStatus(6)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 6
+
 
 == Updating Bug Watches ==
 
