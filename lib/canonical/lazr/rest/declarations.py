@@ -53,7 +53,6 @@ from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
 from canonical.lazr.rest.operation import ResourceOperation
-from canonical.lazr.interface import copy_attribute
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -423,6 +422,7 @@ class export_factory_operation(_export_operation):
         :param field_names: The names of the fields in the schema that
             are used as parameters by this factory.
         """
+        # pylint: disable-msg=W0231
         _check_called_from_interface_def('%s()' % self.__class__.__name__)
         self.interface = interface
         self.params = {}
