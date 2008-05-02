@@ -94,7 +94,8 @@ class CodeImport(SQLBase):
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
-    import_job = Reference("<primary key>", "CodeImportJob.code_importID")
+    import_job = Reference("<primary key>", "CodeImportJob.code_importID",
+                           on_remote=True)
 
     def _removeJob(self):
         """If there is a pending job, remove it."""
