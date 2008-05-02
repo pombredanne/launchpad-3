@@ -539,7 +539,7 @@ collection.
     >>> class AuthorCollection(Collection):
     ...     """A collection of authors, as exposed through the web service."""
     ...
-    ...     entry_schema = IAuthor
+    ...     entry_schema = IAuthorEntry
     ...
     ...     def find(self):
     ...        """Find all the authors."""
@@ -554,7 +554,7 @@ collection.
     ...     """A collection of cookbooks, as exposed through the web service.
     ...     """
     ...
-    ...     entry_schema = ICollection
+    ...     entry_schema = ICookbookEntry
     ...
     ...     def find(self):
     ...        """Find all the cookbooks."""
@@ -564,7 +564,7 @@ collection.
     >>> class DishCollection(Collection):
     ...     """A collection of dishes, as exposed through the web service."""
     ...
-    ...     entry_schema = IDish
+    ...     entry_schema = IDishEntry
     ...
     ...     def find(self):
     ...        """Find all the dishes."""
@@ -576,7 +576,7 @@ constructor. The 'entry_schema' attribute gives a Collection class
 knowledge about what kind of entry it's supposed to contain.
 
     >>> DishCollection.entry_schema
-    <InterfaceClass __builtin__.IDish>
+    <InterfaceClass __builtin__.IDishEntry>
 
 We also need to define a collection of the recipes associated with a
 cookbook. We say that the collection of recipes is scoped to a
@@ -610,7 +610,7 @@ cookbook was defined as one that contains Objects with a schema of
 IRecipe. This information is available to the ScopedCollection object.
 
     >>> scoped_collection.entry_schema
-    <InterfaceClass __builtin__.IRecipe>
+    <InterfaceClass __builtin__.IRecipeEntry>
 
 
 == Custom operations ==

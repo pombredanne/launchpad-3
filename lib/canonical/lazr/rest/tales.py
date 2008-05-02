@@ -135,10 +135,15 @@ class WadlServiceRootResourceAPI(WadlAPI):
 class WadlResourceAdapterAPI(WadlAPI):
     """Namespace for functions that operate on resource adapter classes."""
 
-    def __init__(self, adapter, registration_must_extend):
+    def __init__(self, adapter, adapter_interface):
         "Initialize with an adapter class."
         self.adapter = adapter
-        self.registration_must_extend = registration_must_extend
+        self.adapter_interface = adapter_interface
+        if not (adapter_interface.implementedBy(adapter)
+                or (IInterface.providedBy(adapter)
+                    and adapter.isOrExtends(adapter_interface))):
+            raise AssertionError("%s does not implement or extend %s" % (
+                    self.adapter.__name__, self.adapter_interface.__name__))
 
     def named_operations(self):
         """Return all named operations registered on the resource.
@@ -152,13 +157,13 @@ class WadlResourceAdapterAPI(WadlAPI):
         registrations = [
             reg for reg in getGlobalSiteManager().registrations()
             if (IInterface.providedBy(reg.provided)
-                and reg.provided.isOrExtends(self.registration_must_extend)
+                and reg.provided.isOrExtends(self.adapter_interface)
                 and reg.value==self.adapter)]
         if len(registrations) != 1:
             raise AssertionError("There must be one (and only one) "
                                  "adapter from %s to %s." % (
                     self.adapter.__name__,
-                    self.registration_must_extend.__name__))
+                    self.adapter_interface.__name__))
         context = registrations[0].required
 
         operations = getGlobalSiteManager().adapters.lookupAll(
@@ -214,6 +219,7 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
                 if (not ICollectionField.providedBy(field)
                     or field.readonly)]
 
+
 class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     "Namespace for WADL functions that operate on collection adapters."
 
@@ -242,10 +248,6 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
 
     def entry_schema(self):
         return self.adapter.entry_schema
-
-    def entry_schema_type_link(self):
-        entry_adapter = WadlEntryAdapterAPI(self.adapter.entry_schema)
-        return entry_adapter.type_link()
 
 
 class WadlFieldAPI(WadlAPI):
