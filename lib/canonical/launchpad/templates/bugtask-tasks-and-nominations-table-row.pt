@@ -1,11 +1,13 @@
-<tal:bugtask 
+<tal:bugtask
   xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
   define="expandable view/canSeeTaskDetails;
           indent_task view/shouldIndentTask;
           is_conjoined_slave view/is_conjoined_slave;
           tasklink view/taskLink;
+          row_id string:tasksummary${context/id};
           form_row_id string:task${context/id}">
-  <tr tal:attributes="class view/getTaskRowCSSClass">
+  <tr tal:attributes="class view/getTaskRowCSSClass; id row_id">
     <td class="icon left right">
       <metal:expander
           metal:define-macro="expander"
@@ -72,19 +74,15 @@
 
     <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
-        <a style="display: block; text-decoration: none; padding: 0.25em"
-           tal:attributes="href context/bugwatch/url">
+        <div style="text-decoration: none; padding: 0.25em">
           <img tal:condition="not:context/bugwatch/last_error_type"
-            alt="Linked to "
-            src="/@@/bug-remote"
-          />
+               alt="Linked to " src="/@@/bug-remote" />
           <img tal:condition="context/bugwatch/last_error_type"
-            alt="Error updating bug watch"
-            src="/@@/warning"
-          />
-          <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
-          #<span tal:replace="context/bugwatch/remotebug">123</span>
-        </a>
+            alt="Error updating bug watch" src="/@@/warning" />
+          <a tal:replace="structure context/bugwatch/fmt:external-link">
+            Zilla #123
+          </a>
+        </div>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch">
 
