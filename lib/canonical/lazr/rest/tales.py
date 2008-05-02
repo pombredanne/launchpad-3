@@ -149,15 +149,16 @@ class WadlResourceAdapterAPI(WadlAPI):
         """
         # First, find the class used to register the named operations for
         # this resource type.
-        registrations = [reg for reg in getGlobalSiteManager().registrations()
-                         if (IInterface.providedBy(reg.provided)
-                             and reg.provided.isOrExtends(
-                    registration_must_extend)
-                             and reg.value==self.adapter)]
+        registrations = [
+            reg for reg in getGlobalSiteManager().registrations()
+            if (IInterface.providedBy(reg.provided)
+                and reg.provided.isOrExtends(self.registration_must_extend)
+                and reg.value==self.adapter)]
         if len(registrations) != 1:
             raise AssertionError("There must be one (and only one) "
                                  "adapter from %s to %s." % (
-                    self.adapter.__name__, registration_must_extend.__name__))
+                    self.adapter.__name__,
+                    self.registration_must_extend.__name__))
         context = registrations[0].required
 
         operations = getGlobalSiteManager().adapters.lookupAll(
@@ -240,12 +241,10 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
             self._service_root_url(), self.collection_representation_id())
 
     def entry_schema(self):
-        schema = self.adapter.entry_schema
-        entry_class = getGlobalSiteManager().adapters.lookup1(schema, IEntry)
-        return entry_class
+        return self.adapter.entry_schema
 
     def entry_schema_type_link(self):
-        entry_adapter = WadlEntryAdapterAPI((self.entry_schema()))
+        entry_adapter = WadlEntryAdapterAPI(self.adapter.entry_schema)
         return entry_adapter.type_link()
 
 

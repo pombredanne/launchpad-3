@@ -395,9 +395,25 @@ def generate_entry_adapter(content_interface, webservice_interface):
         factory, webservice_interface, write_permission=CheckerPublic)
     return factory
 
-#class CollectionEntrySchema:
-#    def __get__(self, instance, owner):
-#        return getGlobalSiteManager().adapters.lookup1(self.entry_schema, IEntry)
+
+class CollectionEntrySchema(object):
+    """A descriptor for converting a model schema into an entry schema.
+
+    The entry schema class for a resource may not have been defined at
+    the time the collection adapter is generated, but the data model
+    class certainly will have been. This descriptor performs the lookup
+    as needed, at runtime.
+    """
+
+    def __init__(self, model_schema):
+        """Initialize with a model schema."""
+        self.model_schema = model_schema
+
+    def __get__(self, instance, owner):
+        """Look up the entry schema that adapts the model schema."""
+        return getGlobalSiteManager().adapters.lookup1(
+            self.model_schema, IEntry)
+
 
 def generate_collection_adapter(interface):
     """Create a class adapting from interface to ICollection."""
@@ -408,7 +424,7 @@ def generate_collection_adapter(interface):
     entry_schema = tag['collection_entry_schema']
     class_dict = {
         'find': lambda self: (getattr(self.context, method_name)()),
-        'entry_schema' : entry_schema
+        'entry_schema' : CollectionEntrySchema(entry_schema)
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
     factory = type(classname, bases=(Collection,), dict=class_dict)
