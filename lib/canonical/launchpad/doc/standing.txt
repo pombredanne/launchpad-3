@@ -1,72 +1,24 @@
-= Personal standing =
+= Updating personal standing =
 
-People have a property called 'personal standing', which affects their
-ability to post to mailing lists that 72they are not members of.  It's a
-form of automatic moderation.  Most people have unknown standing, which
-is the default.
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> login('foo.bar@canonical.com')
-    >>> lifeless = getUtility(IPersonSet).getByName('lifeless')
-    >>> lifeless.personal_standing
-    <DBItem PersonalStanding.UNKNOWN...
-
-A person also has a reason for why their standing is what it is.  The
-default value of None means that no reason for the personal_standing
-value is available.
-
-    >>> print lifeless.personal_standing_reason
-    None
-
-A Launchpad administrator may change a person's standing, and may give a
-reason for the change.
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> from canonical.launchpad.interfaces import PersonalStanding
-    >>> lifeless.personal_standing = PersonalStanding.GOOD
-    >>> lifeless.personal_standing_reason = 'Such a cool guy!'
-    >>> syncUpdate(lifeless)
-
-    >>> lifeless.personal_standing
-    <DBItem PersonalStanding.GOOD...
-    >>> print lifeless.personal_standing_reason
-    Such a cool guy!
-
-Non-administrators may not change a person's standing.
-
-    >>> login('test@canonical.com')
-    >>> lifeless.personal_standing = PersonalStanding.POOR
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
-    >>> lifeless.personal_standing_reason = 'Such a cool guy!'
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
-
-    >>> login('foo.bar@canonical.com')
-    >>> lifeless.personal_standing
-    <DBItem PersonalStanding.GOOD...
-    >>> print lifeless.personal_standing_reason
-    Such a cool guy!
-    >>> login(ANONYMOUS)
-
-
-== Automatic updates ==
-
-Standing can also be calculated by a cron script from the history of
-reviewed messages that have been approved by a person.  If a person
-posts a message to a mailing list they are not a member of, their
-message gets held for moderator approval.
+People have a personal standing which controls whether their postings to
+mailing lists they are not members require moderation or not.  Personal
+standing can be set explicitly by a Launchpad administrator, but it can
+also be calculated by a cron script from the history of reviewed and
+approved messages.  If a person posts a message to a mailing list they
+are not a member of, their message gets held for moderator approval.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, PersonalStanding)
+    >>> from canonical.launchpad.ftests import sync, syncUpdate
+
+    >>> lifeless = getUtility(IPersonSet).getByName('lifeless')
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> lifeless.personal_standing_reason = ''
+    >>> syncUpdate(lifeless)
 
     # A helper for posting messages to a list.
     >>> from canonical.launchpad.interfaces import (
@@ -89,11 +41,14 @@ message gets held for moderator approval.
     >>> from canonical.launchpad.scripts.standing import (
     ...     UpdatePersonalStanding)
     >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.ftests.logger import MockLogger
     >>> class TestableScript(UpdatePersonalStanding):
     ...     """A testable version of `UpdatePersonalStanding`."""
     ...     def main(self):
     ...         """Set up and restore the script's environment."""
     ...         # Simulate Mailman acting changed state.
+    ...         flush_database_updates()
     ...         mailinglists_helper.mailman.act()
     ...         # Commit the in-progress transaction, since switching
     ...         # database users does an abort.
@@ -101,6 +56,7 @@ message gets held for moderator approval.
     ...         LaunchpadZopelessLayer.switchDbUser(
     ...             config.standingupdater.dbuser)
     ...         self.txn = LaunchpadZopelessLayer.txn
+    ...         self.logger = MockLogger()
     ...         results = super(TestableScript, self).main()
     ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
     ...         return results
@@ -112,6 +68,10 @@ After one approval, Robert's standing does not change.
     >>> message = post_message('test-one', '<aardvark>')
     >>> message.approve(foobar)
     >>> script.main()
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -120,17 +80,21 @@ Robert's personal standing does not change.
 
     >>> message = post_message('test-one', '<badger>')
     >>> message.approve(foobar)
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
     >>> message = post_message('test-one', '<caribou>')
     >>> message.approve(foobar)
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -143,9 +107,11 @@ his personal standing can be updated.
 
     >>> message = post_message('test-two', '<dingo>')
     >>> message.approve(foobar)
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -153,17 +119,21 @@ Rejected and discarded messages don't count.
 
     >>> message = post_message('test-three', '<elephant>')
     >>> message.reject(foobar)
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
     >>> message = post_message('test-three', '<falcon>')
     >>> message.discard(foobar)
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -172,9 +142,12 @@ approved.  As a result, his personal standing gets updated.
 
     >>> message = post_message('test-three', '<giraffe>')
     >>> message.approve(foobar)
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Setting standing for lifeless to GOOD
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
@@ -186,23 +159,29 @@ case, no amount of approved messages will kick them back to Good
 standing.
 
     >>> lifeless.personal_standing = PersonalStanding.POOR
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.POOR...>
 
     >>> lifeless.personal_standing = PersonalStanding.GOOD
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
     >>> lifeless.personal_standing = PersonalStanding.EXCELLENT
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.EXCELLENT...>
 
@@ -210,13 +189,14 @@ Should Robert's standing get kicked back to Unknown, then his approved
 messages will count toward his good standing again.
 
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
-    >>> syncUpdate(lifeless)
     >>> script.main()
-    >>> syncUpdate(lifeless)
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Setting standing for lifeless to GOOD
+    log> Done.
+    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
-
-    >>> login(ANONYMOUS)
 
 
 == Cron script ==

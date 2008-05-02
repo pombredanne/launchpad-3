@@ -137,6 +137,60 @@ it issuing a DB query.
     [u'name16']
 
 
+=== Personal standing ===
+
+People have a property called 'personal standing', which affects for
+example their ability to post to mailing lists they are not members of.
+It's a form of automatic moderation.  Most people have unknown standing,
+which is the default.
+
+    >>> login('foo.bar@canonical.com')
+    >>> lifeless = personset.getByName('lifeless')
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...
+
+A person also has a reason for why their standing is what it is.  The
+default value of None means that no reason for the personal_standing
+value is available.
+
+    >>> print lifeless.personal_standing_reason
+    None
+
+A Launchpad administrator may change a person's standing, and may give a
+reason for the change.
+
+    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> lifeless.personal_standing = PersonalStanding.GOOD
+    >>> lifeless.personal_standing_reason = 'Such a cool guy!'
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(lifeless)
+
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.GOOD...
+    >>> print lifeless.personal_standing_reason
+    Such a cool guy!
+
+Non-administrators may not change a person's standing.
+
+    >>> login('test@canonical.com')
+    >>> lifeless.personal_standing = PersonalStanding.POOR
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+    >>> lifeless.personal_standing_reason = 'Such a cool guy!'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.GOOD...
+    >>> print lifeless.personal_standing_reason
+    Such a cool guy!
+    >>> login(ANONYMOUS)
+
+
 === Ubunteros ===
 
 Anybody who signed the last version of Ubuntu's Code of Conduct is considered
@@ -263,7 +317,6 @@ The team owner is also added as an administrator of its team.
 And we can even add other members to our new team!
 
     >>> login('foo.bar@canonical.com')
-    >>> lifeless = personset.getByName('lifeless')
     >>> not_a_person.addMember(lifeless, reviewer=ddaa)
     >>> login(ANONYMOUS)
     >>> [member.name for member in not_a_person.activemembers]
