@@ -99,7 +99,7 @@ def make_bugtracker_name(uri):
         if valid_email(base_uri.path):
             base_name = base_uri.path.split('@', 1)[0]
         else:
-            raise ValueError(
+            raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
     else:
         base_name = base_uri.host
@@ -120,7 +120,7 @@ def make_bugtracker_title(uri):
             domain_parts = domain.split('.')
             return 'Email to %s@%s' % (local_part, domain_parts[0])
         else:
-            raise ValueError(
+            raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
     else:
         return base_uri.host + base_uri.path
