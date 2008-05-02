@@ -20,10 +20,12 @@ __all__ = [
     ]
 
 import cgi
+from new import instancemethod
 
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
 from zope.component import getMultiAdapter, queryAdapter
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.lazr import decorates
 
@@ -362,30 +364,47 @@ class NavigationMenu(MenuBase):
             super(NavigationMenu, self)._get_link(name))
 
     def iterlinks(self, requesturi=None):
-        """See `INavigationMenu`."""
+        """See `INavigationMenu`.
+
+        Menus may be associated with content objects and their views. The
+        state of a menu's links depends upon the requesturi (or the URL of
+        the request) and whether a menu associated with a link is available.
+        """
         request = get_current_browser_request()
-        if requesturi is None and request is not None:
-            requesturi = request.getURL()
         if requesturi is None:
-            requesturi = ''
-        requesturi = str(requesturi)
-        # XXX sinzui 2008-04-29: we may get an instancemethod back.
-        # We need a helper function to guarantee the view.
-        if request is not None and len(request.traversed_objects) > 0:
-            view = request.traversed_objects[-1]
-            submenu = queryAdapter(view, INavigationMenu)
+            requesturi = request.getURL()
         else:
-            submenu = None
+            requesturi = str(requesturi)
+
         for link in MenuBase.iterlinks(self):
-            url = str(link.url)
-            if (requesturi.startswith(url)
-                or (submenu is not None
-                    and isinstance(submenu, link.menu.__class__))):
+            link_url = str(link.url)
+            link.linked = not requesturi.startswith(link_url)
+            # A link is selected when the requestURI matches the link's URL
+            # or because the link's menu is available.
+            if (requesturi.startswith(link_url)
+                or self._is_submenu_available(link, request)):
                 link.selected = True
             else:
                 link.selected = False
-            link.linked = not requesturi.startswith(url)
             yield link
+
+    def _is_submenu_available(self, link, request):
+        """Return True if a link's menu is available, otherwise False.
+
+        A link's menu is a submenu. The submenu is associates with a view.
+        A link is considered selected when the current view can be adapted
+        to the link's menu.
+        """
+        view = request.traversed_objects[-1]
+        # Note: The last traversed object may be a view's instance method.
+        bare = removeSecurityProxy(view)
+        if isinstance(bare, instancemethod):
+            view = bare.im_self
+        submenu = queryAdapter(view, INavigationMenu)
+        if submenu is None:
+            return False
+        return isinstance(submenu, link.menu.__class__)
+
 
 class enabled_with_permission:
     """Function decorator that disables the output link unless the current

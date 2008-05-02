@@ -81,16 +81,19 @@ Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam
     >>> cookbook = Cookbook('joy-of-cooking', root)
     >>> recipe = Recipe('fried-spam', cookbook)
 
+    >>> request.traversed_objects = [cookbook, recipe, None]
+    >>> request._traversed_names = ['joy-of-cooking', 'fried-spam', '+index']
+
     >>> canonical_url(cookbook)
     u'http://launchpad.dev/joy-of-cooking'
     >>> canonical_url(recipe)
     u'http://launchpad.dev/joy-of-cooking/fried-spam'
 
-# flacoste To run in the unit test layer, you'll have to setup an 
+# flacoste To run in the unit test layer, you'll have to setup an
 # interaction to provide the current request using endInteraction() and
 # newInteraction. (See webservice-declarations.txt)
 
-Content objects are not suitable for presentation by themselves; they 
+Content objects are not suitable for presentation by themselves; they
 require a view class to adapt them to the required format. An object
 may have many views, each delegated to one aspect of the object.
 
@@ -273,10 +276,22 @@ is defined in by the RecipeMenu class and the view of recipe.
         text: Summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
 
+NavigationMenus.iterlinks() requires a `IHTTPApplicationRequest`
+(a request object) present in the `Interaction` to determine the
+state of its links. Without a request, an error is raised.
+
+    >>> endInteraction()
+    >>> list_links(
+    ...     RecipeMenu(recipe),
+    ...     uri='http://launchpad.dev/joy-of-cooking/fried-spam/+index')
+    Traceback (most recent call last):
+     ...
+    AttributeError: 'NoneType' object has no attribute 'participations'
+
 
 == Registering menus as adapters for content objects and views ==
 
-# Navigation menu on content object should be looked-up by facet (see bug 
+# Navigation menu on content object should be looked-up by facet (see bug
 # 223921). With the existing code, you can have one NavigationMenu for
 # a content object and one for a view.
 
@@ -409,7 +424,7 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> from canonical.launchpad.webapp.tales import MenuAPI
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
-    # approximates what is done in the code:
+    # approximates what is done by the code:
     >>> classImplements(MenuAPI, IPathAdapter)
     >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
     >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
