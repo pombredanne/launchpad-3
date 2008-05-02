@@ -115,6 +115,9 @@ class PackageUpload(SQLBase):
                                   joinColumn='packageupload')
 
 
+    # XXX jamesh 2008-05-02:
+    # This needs to be turned into a Storm validator, probably using
+    # the same technique as for conjoined bug task attributes.
     def _set_status(self, value):
         """Directly write on 'status' is forbidden.
 
