@@ -130,7 +130,7 @@ class Trac(ExternalBugTracker):
             [remote_bug] = self._fetchBugData(query_url)
         except ValueError, error:
             # If we get a value error that means that we've got either
-            # not enough or too much data for our single ticket query.
+            # not enough or too many data for our single ticket query.
             # We can't continue.
             raise UnparseableBugData(
                 "Remote bugtracker %s returned wrong amount of data for bug "

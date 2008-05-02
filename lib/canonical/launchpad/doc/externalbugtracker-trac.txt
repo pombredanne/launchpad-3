@@ -206,6 +206,39 @@ error since the bug was never imported.
       ...
     BugNotFound: 6
 
+Both the single and batch ticket import modes use the _fetchBugData()
+method to retrieve the CSV data from the remote Trac instance. This
+method accepts a URL from which to retrieve the data as a parameter.
+
+    >>> trac.supports_single_exports = False
+    >>> trac.csv_export_file = None
+
+    >>> query_url = 'http://example.com/query?id=%s&format=csv'
+    >>> query_string = '&id='.join(['1', '2', '3', '4', '5'])
+    >>> query_url = query_url % query_string
+
+    >>> remote_bugs = trac._fetchBugData(query_url)
+    CALLED urlopen('http://example.com/query?id=1&id=2...&format=csv')
+
+However, _fetchBugData() doesn't actually check the results it returns
+except for checking that they are valid Trac CSV exports. in this case,
+the IDs returned are nothing like the ones we asked for:
+
+    >>> bug_ids = sorted([int(bug['id']) for bug in remote_bugs])
+    >>> print bug_ids
+    [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
+
+If _fetchBugData() receives a response that isn't a valid Trac CSV
+export, it will raise an UnparseableBugData error.
+
+    >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
+    >>> trac._fetchBugData(query_url)
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData: External bugtracker http://test.trac does not
+    define all the necessary fields for bug status imports (Defined
+    field names: ['<html>']).
+
 
 == Updating Bug Watches ==
 
