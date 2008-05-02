@@ -149,7 +149,7 @@ An Email Address bug tracker is automatically created.
 
     >>> registrant_browser.open('http://launchpad.dev/bugs/bugtrackers')
     >>> registrant_browser.getLink(
-    ...     "mailto:puff@magicdragon.example.com").click()
+    ...     "Email to puff@magicdragon").click()
     >>> print extract_text(
     ...     find_tag_by_id(registrant_browser.contents, 'bugtracker-urls'))
     mailto:puff@magicdragon.example.com
