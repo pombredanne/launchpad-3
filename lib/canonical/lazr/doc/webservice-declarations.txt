@@ -138,7 +138,7 @@ decorator.
     ...     export_collection, collection_default_content)
     >>> class IBookSet(Interface):
     ...     """Set of all the books in the system."""
-    ...     export_collection()
+    ...     export_collection(IBook)
     ...
     ...     @collection_default_content
     ...     def getAllBooks():
@@ -149,13 +149,32 @@ namespace.
 
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
+    collection_entry_schema: <InterfaceClass __builtin__.IBook>
     type: 'collection'
+
+The entry schema for a collection must be provided and must be an
+interface:
+
+    >>> class MissingEntrySchema(Interface):
+    ...     export_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_collection() takes exactly 1 argument (0 given)
+
+    >>> class InvalidEntrySchema(Interface):
+    ...     export_collection("not an interface")
+    Traceback (most recent call last):
+      ...
+    TypeError: entry_schema must be an interface.
 
 It's an error to try to export a collection without marking a method as
 exporting the default content.
 
+    >>> class IDummyInterface(Interface):
+    ...     pass
+
     >>> class MissingDefaultContent(Interface):
-    ...     export_collection()
+    ...     export_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_collection() is missing a method tagged with
@@ -164,7 +183,7 @@ exporting the default content.
 As it is an error, to mark more than one methods:
 
     >>> class TwoDefaultContent(Interface):
-    ...     export_collection()
+    ...     export_collection(IDummyInterface)
     ...     @collection_default_content
     ...     def getAll1():
     ...         """A first getAll()."""
@@ -179,14 +198,14 @@ As it is an error, to mark more than one methods:
 export_collection() can only be used on Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_collection()
+    ...     export_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_collection() can only be used on an interface.
 
 And from within a class declaration.
 
-    >>> export_collection()
+    >>> export_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_collection() can only be used from within an interface
@@ -249,7 +268,7 @@ normal IField instances.
     ...     export_parameters_as)
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
-    ...     export_collection()
+    ...     export_collection(IBook)
     ...
     ...     @collection_default_content
     ...     @export_read_operation(
@@ -851,7 +870,7 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(collection_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: find
+        public: entry_schema, find
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)

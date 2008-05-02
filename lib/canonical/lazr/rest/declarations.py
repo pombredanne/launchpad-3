@@ -134,7 +134,7 @@ def export_field(field, export_as=None):
         LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': export_as})
 
 
-def export_collection(entry_schema=None):
+def export_collection(entry_schema):
     """Mark the interface as exported on the web service as a collection.
 
     :raises TypeError: if the interface doesn't have a method decorated with

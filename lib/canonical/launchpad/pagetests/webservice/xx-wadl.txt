@@ -83,7 +83,6 @@ description of an entry. It's an <application> tag that contains a
 
     >>> wadl = webservice.get('/beta/people',
     ...                       'application/vd.sun.wadl+xml').getBody()
-    >>> open("wadl.html", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
     >>> tree.tag
     '...application'
@@ -144,7 +143,6 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> open("wadl.html", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root
