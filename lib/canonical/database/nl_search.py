@@ -78,7 +78,8 @@ def nl_phrase_search(phrase, table, constraints='',
         where_clause = []
         if constraints:
             where_clause.append('(' + constraints + ')')
-        where_clause.append('%s.fti @@ ftq(%s)' % (table._table, quote(term)))
+        where_clause.append('%s.fti @@ ftq(%s)'
+                            % (table.__storm_table__, quote(term)))
         matches = table.select(
             ' AND '.join(where_clause),
             clauseTables=extra_constraints_tables).count()
