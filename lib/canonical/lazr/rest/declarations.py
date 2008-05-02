@@ -369,22 +369,22 @@ class operation_parameters(_method_annotator):
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
+        # It's possible that another decorator already created the params
+        # annotation.
+        params = annotations.setdefault('params', {})
         for name, param in self.params.items():
             if not IField.providedBy(param):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
                     'provide IField: %r' % (name, method.__name__, param))
-            # By default, parameters are exported under their own name.
-            param.__name__ = name
-
-        # It's possible that another decorator already created the params
-        # annotation.
-        params = annotations.setdefault('params', {})
-        for name, value in self.params.items():
             if name in params:
                 raise TypeError(
                     "'%s' parameter is already defined." % name)
-            params[name] = value
+
+            # By default, parameters are exported under their own name.
+            param.__name__ = name
+
+            params[name] = param
 
 
 class _export_operation(_method_annotator):
@@ -408,7 +408,8 @@ class export_factory_operation(_export_operation):
     def __init__(self, interface, field_names):
         """Creates a factory decorator.
 
-        :param interface: The interface of object created by this factory.
+        :param interface: The interface where fields specified in field_names
+            are looked-up.
         :param field_names: The names of the fields in the schema that
             are used as parameters by this factory.
         """
