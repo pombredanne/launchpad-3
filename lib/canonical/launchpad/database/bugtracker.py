@@ -24,7 +24,7 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, sqlvalues)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
