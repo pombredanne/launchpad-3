@@ -346,15 +346,14 @@ class operation_parameters(_method_annotator):
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
+        # It's possible that another decorator already created the params
+        # annotation.
+        params = annotations.setdefault('params', {})
         for name, param in self.params.items():
             if not IField.providedBy(param):
                 raise TypeError(
                     'export definition of "%s" in method "%s" must '
                     'provide IField: %r' % (name, method.__name__, param))
-        # It's possible that another decorator already created the params
-        # annotation.
-        params = annotations.setdefault('params', {})
-        for name, value in self.params.items():
             if name in params:
                 raise TypeError(
                     "'%s' parameter is already defined." % name)
