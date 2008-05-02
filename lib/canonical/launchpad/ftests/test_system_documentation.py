@@ -744,12 +744,13 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
-    ]
+        'standing.txt',
+        ]
 
     doctests_with_logging = [
         'incomingmail.txt',
         'spec-mail-exploder.txt'
-    ]
+        ]
 
     @classmethod
     def addTestsToSpecial(cls):
