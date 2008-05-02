@@ -231,4 +231,4 @@ class CodeImportSet:
 
     def search(self, review_status):
         """See `ICodeImportSet`."""
-        return CodeImport.selectBy(review_status=review_status.value)
+        return CodeImport.selectBy(review_status=review_status)

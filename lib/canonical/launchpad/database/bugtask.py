@@ -323,6 +323,11 @@ def validate_conjoined_attribute(self, attr, value):
     if isinstance(value, PassthroughValue):
         return value.value
 
+    # If this bugtask has no bug yet, then we are probably being
+    # instantiated.
+    if self.bug is None:
+        return value
+
     if self._isConjoinedBugTask():
         raise ConjoinedBugTaskEditError(
             "This task cannot be edited directly, it should be"

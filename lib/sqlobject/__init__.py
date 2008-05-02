@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import datetime
 
+from storm.expr import SQL
 from storm.sqlobject import *
 
 # Provide the same interface from these other locations.
@@ -37,6 +38,8 @@ def sqlrepr(value, dbname=None):
         return value.__sqlrepr__(dbname)
     elif hasattr(value, 'getquoted'):
         return value.getquoted()
+    elif isinstance(value, SQL):
+        return value.expr
     elif isinstance(value, (str, unicode)):
         for orig, repl in _sqlStringReplace:
             value = value.replace(orig, repl)

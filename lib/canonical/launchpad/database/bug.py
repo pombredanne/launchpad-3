@@ -617,12 +617,12 @@ class Bug(SQLBase):
         """See `IBug`."""
         # We shouldn't add duplicate bug watches.
         bug_watch = self.getBugWatch(bugtracker, remotebug)
-        if bug_watch is not None:
-            return bug_watch
-        else:
-            return BugWatch(
+        if bug_watch is None:
+            bug_watch = BugWatch(
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
+            Store.of(bug_watch).flush()
+        return bug_watch
 
     def addAttachment(self, owner, file_, comment, filename,
                       is_patch=False, content_type=None, description=None):
@@ -972,7 +972,7 @@ class Bug(SQLBase):
         # is a user editable text string. We should improve the
         # matching so that for example '#42' matches '42' and so on.
         return BugWatch.selectFirstBy(
-            bug=self, bugtracker=bugtracker, remotebug=remote_bug,
+            bug=self, bugtracker=bugtracker, remotebug=str(remote_bug),
             orderBy='id')
 
     def setStatus(self, target, status, user):
