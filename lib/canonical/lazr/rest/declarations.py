@@ -382,7 +382,8 @@ class export_factory_operation(_export_operation):
     def __init__(self, interface, field_names):
         """Creates a factory decorator.
 
-        :param interface: The interface of object created by this factory.
+        :param interface: The interface where fields specified in field_names
+            are looked-up.
         :param field_names: The names of the fields in the schema that
             are used as parameters by this factory.
         """
