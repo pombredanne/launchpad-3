@@ -112,7 +112,7 @@ The directive can only be used from within a class scope:
 
 == copy_attribute() ==
 
-use_templates() uses the copy_attribute() function to copy attributes from
+use_template() uses the copy_attribute() function to copy attributes from
 the original interface. It can also be used on its own to make a copy of
 an interface attribute or schema field.
 
