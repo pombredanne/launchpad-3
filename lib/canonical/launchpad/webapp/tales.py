@@ -57,7 +57,7 @@ from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, nearest)
+    get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
@@ -93,13 +93,20 @@ class MenuAPI:
             # We also want to see if the view has a __launchpad_facetname__
             # attribute.
             self._context = context['context']
-            view = context['view']
+            self.view = context['view']
             self._request = context['request']
             self._selectedfacetname = getattr(
-                view, '__launchpad_facetname__', None)
+                self.view, '__launchpad_facetname__', None)
+        elif zope_isinstance(context, LaunchpadView):
+            self.view = context
+            self._context = self.view.context
+            self._request = self.view.request
+            self._selectedfacetname = getattr(
+                self.view, '__launchpad_facetname__', None)
         else:
             self._context = context
             self._request = get_current_browser_request()
+            self.view = None
             self._selectedfacetname = None
 
     def __getattr__(self, attribute_name):
@@ -192,7 +199,10 @@ class MenuAPI:
     @property
     def navigation(self):
         """Navigation menu links list."""
-        menu = INavigationMenu(self._context, None)
+        # NavigationMenus may be associated with content object or their
+        # views. Views take precedence.
+        context = self.view or self._context
+        menu = INavigationMenu(context, None)
         if menu is None:
             return {}
         else:

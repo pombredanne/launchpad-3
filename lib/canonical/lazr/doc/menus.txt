@@ -349,25 +349,24 @@ Under these same circumstances, a link is also selected.
         selected: True
         linked: False
 
-    >>> logout()
-
 And the RecipeEditMenu can be retrieved by adapting the view for
 +edit-ingredients.
+
+    # Start a new request.
+    >>> endInteraction()
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/joy-of-cooking/fried-spam/+edit-ingredients')
+    >>> newInteraction(request)
 
     >>> recipe_ingredients_view = getMultiAdapter(
     ...     (recipe, request), name='+edit-ingredients')
 
     # Set the traversed objects that the publisher would have found.
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/joy-of-cooking/fried-spam/+edit-ingredients')
-    >>> request.traversed_objects = [
-    ...     cookbook, recipe, recipe_ingredients_view]
     >>> request._traversed_names = [
     ...     'joy-of-cooking', 'fried-spam', '+edit-ingredients']
-
-    >>> endInteraction()
-    >>> newInteraction(request)
+    >>> request.traversed_objects = [
+    ...     cookbook, recipe, recipe_ingredients_view]
 
     >>> recipe_overview_menu = queryAdapter(
     ...     recipe_ingredients_view, INavigationMenu)
@@ -402,23 +401,30 @@ Most of the interaction with menus happens in page templates. The
 TAL names 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
-    >>> from zope.interface import implementedBy
-    >>> from zope.app.traversing.interfaces import IPathAdapter
+    >>> from zope.interface import classImplements
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from zope.app.traversing.adapters import DefaultTraversable
+    >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
+
+    # MenuAPI is normally registered as an IPathAdapter in ZCML. This
+    # approximates what is done in the code:
+    >>> classImplements(MenuAPI, IPathAdapter)
     >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
+    >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
 
     >>> def summarise_links_dict(links_dict):
     ...     """List the links and their attributes in the dict."""
     ...     for link_name in links_dict:
-    ...         link = links_dict[link_name]
+    ...         link = removeSecurityProxy(links_dict[link_name])
     ...         print 'link %s' % link.name
     ...         attributes = ['url', 'selected', 'linked']
     ...         for attrname in attributes:
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
     >>> links_dict = test_tales(
-    ...     'context/menu:context', context=recipe, request=request)
+    ...     'context/menu:navigation', context=recipe, request=request)
     >>> summarise_links_dict(links_dict)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
