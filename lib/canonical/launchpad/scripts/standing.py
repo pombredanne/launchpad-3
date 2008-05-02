@@ -65,5 +65,6 @@ class UpdatePersonalStanding(LaunchpadCronScript):
                                  person.name)
                 person.personal_standing = PersonalStanding.GOOD
 
+        # All done.
         self.txn.commit()
         self.logger.info('Done.')
