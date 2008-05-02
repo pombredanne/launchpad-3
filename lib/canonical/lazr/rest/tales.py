@@ -145,6 +145,10 @@ class WadlResourceAdapterAPI(WadlAPI):
             raise AssertionError("%s does not implement or extend %s" % (
                     self.adapter.__name__, self.adapter_interface.__name__))
 
+    def doc(self):
+        """Human-readable XHTML documentation for this object type."""
+        return self.docstringToXHTML(self.adapter.__doc__)
+
     def named_operations(self):
         """Return all named operations registered on the resource.
 
@@ -182,10 +186,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
 
     def __init__(self, adapter):
         super(WadlEntryAdapterAPI, self).__init__(adapter, IEntry)
-
-    def doc(self):
-        """Human-readable XHTML documentation for this object type."""
-        return self.docstringToXHTML(self.adapter.__doc__)
 
     def singular_type(self):
         """Return the singular name for this object type."""
@@ -225,10 +225,6 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
 
     def __init__(self, adapter):
         super(WadlCollectionAdapterAPI, self).__init__(adapter, ICollection)
-
-    def doc(self):
-        """Human-readable XHTML documentation for this object type."""
-        return self.docstringToXHTML(self.adapter.__class__.__doc__)
 
     def collection_type(self):
         """The name of this kind of resource."""

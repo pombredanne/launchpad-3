@@ -654,9 +654,7 @@ addition to any custom operations.  This particular type of resource
 exposes two custom operations, 'create_person' (POST) and 'people'
 (GET).
 
-    >>> doc_and_methods = list(resource_type)
-    >>> methods = doc_and_methods[1:]
-
+    >>> methods = list(resource_type)
     >>> [method.attrib['name'] for method in methods]
     ['GET', 'POST', 'GET']
 
