@@ -145,9 +145,9 @@ returns all of the collection items must be tagged with
     ...         """Return an iterator over all the books."""
 
 In case the method to call requires parameters, the value to use can be
-specified using parameters to the decorator constructor. There special
-REQUEST_USER marker that can be used to specify that this parameter
-should contain the logged in user.
+specified using parameters to the decorator constructor. There is a
+special REQUEST_USER marker that can be used to specify that this
+parameter should contain the logged in user.
 
     >>> class ICheckedOutBookSet(Interface):
     ...     """Give access to the checked out books."""
@@ -161,8 +161,8 @@ should contain the logged in user.
     ...         :param user: The user who should have checked the book out.
     ...         """
 
-Like for entries, this adds tagged value in the 'lazr.webservice'
-namespace.
+Like for entries, this adds keys in the 'lazr.webservice.exported' tagged
+value.
 
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
@@ -307,9 +307,8 @@ will be called 'price' when exported on the web service.
 
 When some required parameters of the method should not be provided by
 the webservice client, it is possible to use the @call_with decorator to
-specify the value to use. There special REQUEST_USER marker that
-can be used to specify that this parameter should contain the logged in
-user.
+specify the value to use. The special REQUEST_USER marker can be used to
+specify that this parameter should contain the logged in user.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     call_with, export_write_operation, REQUEST_USER)
