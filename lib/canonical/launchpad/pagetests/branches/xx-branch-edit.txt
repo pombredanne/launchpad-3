@@ -211,7 +211,7 @@ reasons given in xx-branch-reassign.txt.
 
 The product and branch name contributes to the unique name of a branch.
 The name of a branch has to be unique over all the branches of that
-product.
+product for the given branch owner.
 
 There is an existing main branch in Firefox that is owned by Sample Person.
 
@@ -235,7 +235,7 @@ This should have displayed an error message next to the name field.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    There is already a branch for firefox called main.
+    You already have a branch for firefox called main.
 
 Since we are clearly in a substance-induced state of altered consciousness, we
 will now try to rename this branch in a way that conflicts with an existing
@@ -269,7 +269,7 @@ combinations of changing name and product that can cause an error.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    There is already a branch for gnome-terminal called 2.6.
+    You already have a branch for gnome-terminal called 2.6.
 
 If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't

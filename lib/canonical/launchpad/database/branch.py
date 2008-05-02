@@ -924,10 +924,10 @@ class BranchSet:
                 params['context'] = owner.name
             else:
                 params['maybe_junk'] = ''
-                params['context'] = product.name
+                params['context'] = "%s in %s" % (owner.name, product.name)
             raise BranchCreationException(
                 'A %(maybe_junk)sbranch with the name "%(name)s" already '
-                'exists for "%(context)s".' % params)
+                'exists for %(context)s.' % params)
 
         branch = Branch(
             registrant=registrant,
@@ -1387,10 +1387,5 @@ class BranchSet:
 
     def isBranchNameAvailable(self, owner, product, branch_name):
         """See `IBranchSet`."""
-        if product is None:
-            results = Branch.selectBy(
-                owner=owner, product=None, name=branch_name)
-        else:
-            results = Branch.selectBy(product=product, name=branch_name)
-
-        return results.count() == 0
+        branch = self.getBranch(owner, product, branch_name)
+        return branch is None

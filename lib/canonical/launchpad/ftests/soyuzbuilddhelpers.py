@@ -138,7 +138,7 @@ class OkSlave:
         return ('BuilderStatus.IDLE', '')
 
     def ensurepresent(self, sha1, url):
-        print "ensurepresent called"
+        print "ensurepresent called, url=%s" % url
         return True, None
 
     def build(self, buildid, buildtype, chroot, filemap, args):
