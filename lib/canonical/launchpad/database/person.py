@@ -3102,6 +3102,24 @@ class PersonSet:
                     subscription.subscriber, subscription.target)
         return subscribers
 
+    def updatePersonalStandings(self):
+        """See `IPersonSet`."""
+        from launchpad.canonical.interfaces import (
+            PersonalStanding, PostedMessageStatus)
+        cur = cursor()
+        cur.execute("""
+        UPDATE Person
+        SET personal_standing = %s
+        WHERE personal_standing = %s
+        AND id IN (
+            SELECT posted_by FROM Person, MessageApproval
+            WHERE status = %
+            AND Person.id = MessageApproval.posted_by
+            AND COUNT(DISTINCT mailing_list) >= %s
+        """ % sqlvalues(PersonalStanding.GOOD,
+                        PersonalStanding.UNKNOWN,
+                        PostedMessageStatus.APPROVED,
+                        config.standingupdater.approvals_needed))
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'

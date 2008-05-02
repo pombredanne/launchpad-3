@@ -20,23 +20,35 @@ are not a member of, their message gets held for moderator approval.
     >>> lifeless.personal_standing_reason = ''
     >>> syncUpdate(lifeless)
 
+    # A unique Message-ID generator.
+    >>> from itertools import count
+    >>> def message_id_generator():
+    ...     for numeric_id in count(100100):
+    ...         yield '<%s>' % numeric_id
+    >>> message_ids = message_id_generator()
+
     # A helper for posting messages to a list.
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingListSet, IMessageSet)
     >>> from email.Utils import formatdate
-    >>> def post_message(team_name, message_id):
+    >>> def post_message(from_address, to_team_name):
     ...     message = getUtility(IMessageSet).fromEmail("""\
-    ... From: robertc@robertcollins.net
+    ... From: %s
     ... To: %s@lists.launchpad.dev
     ... Subject: Something to think about
     ... Message-ID: %s
     ... Date: %s
     ...
     ... Point of order!
-    ... """ % (team_name, message_id, formatdate()))
-    ...     mailing_list = getUtility(IMailingListSet).get(team_name)
+    ... """ % (from_address, to_team_name, message_ids.next(), formatdate()))
+    ...     mailing_list = getUtility(IMailingListSet).get(to_team_name)
     ...     held_message = mailing_list.holdMessage(message)
     ...     return held_message
+
+    # A helper for the common case.  IWBNI we had Python 2.5 because
+    # then we could just use functools.partial().
+    >>> def lifeless_post(to_team_name):
+    ...     return post_message('robertc@robertcollins.net', to_team_name)
 
     >>> from canonical.launchpad.scripts.standing import (
     ...     UpdatePersonalStanding)
@@ -65,7 +77,7 @@ are not a member of, their message gets held for moderator approval.
 After one approval, Robert's standing does not change.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> message = post_message('test-one', '<aardvark>')
+    >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
     log> Analyzing approved messages
@@ -78,7 +90,7 @@ After one approval, Robert's standing does not change.
 Even after three approvals, if the message was posted to the same list,
 Robert's personal standing does not change.
 
-    >>> message = post_message('test-one', '<badger>')
+    >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
     log> Analyzing approved messages
@@ -88,7 +100,7 @@ Robert's personal standing does not change.
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
-    >>> message = post_message('test-one', '<caribou>')
+    >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
     log> Analyzing approved messages
@@ -105,7 +117,7 @@ his personal standing can be updated.
     >>> team_three, list_three = mailinglists_helper.new_team(
     ...     'test-three', True)
 
-    >>> message = post_message('test-two', '<dingo>')
+    >>> message = lifeless_post('test-two')
     >>> message.approve(foobar)
     >>> script.main()
     log> Analyzing approved messages
@@ -117,7 +129,7 @@ his personal standing can be updated.
 
 Rejected and discarded messages don't count.
 
-    >>> message = post_message('test-three', '<elephant>')
+    >>> message = lifeless_post('test-three')
     >>> message.reject(foobar)
     >>> script.main()
     log> Analyzing approved messages
@@ -127,8 +139,24 @@ Rejected and discarded messages don't count.
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
-    >>> message = post_message('test-three', '<falcon>')
+    >>> message = lifeless_post('test-three')
     >>> message.discard(foobar)
+    >>> script.main()
+    log> Analyzing approved messages
+    log> Updating personal standings
+    log> Done.
+    >>> sync(lifeless)
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+
+Neither do approved messages from someone else.
+
+    >>> message = post_message('carlos@canonical.com', 'test-two')
+    >>> message.approve(foobar)
+    
+    >>> message = post_message('carlos@canonical.com', 'test-three')
+    >>> message.approve(foobar)
+
     >>> script.main()
     log> Analyzing approved messages
     log> Updating personal standings
@@ -140,7 +168,7 @@ Rejected and discarded messages don't count.
 Robert's next message goes to a third mailing list, and this gets
 approved.  As a result, his personal standing gets updated.
 
-    >>> message = post_message('test-three', '<giraffe>')
+    >>> message = lifeless_post('test-three')
     >>> message.approve(foobar)
     >>> script.main()
     log> Analyzing approved messages
