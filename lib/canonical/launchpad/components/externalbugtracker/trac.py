@@ -91,18 +91,15 @@ class Trac(ExternalBugTracker):
             # assume that CSV exports of single tickets aren't supported.
             return False
 
-    def getRemoteBug(self, bug_id):
-        """See `ExternalBugTracker`."""
-        bug_id = int(bug_id)
-        query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
-        reader = csv.DictReader(self._fetchPage(query_url))
-        return (bug_id, reader.next())
+    def _fetchBugData(self, query_url):
+        """Retrieve the CSV bug data from a URL and return it.
 
-    def getRemoteBugBatch(self, bug_ids):
-        """See `ExternalBugTracker`."""
-        id_string = '&'.join(['id=%s' % id for id in bug_ids])
-        query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+        :param query_url: The URL from which to retrieve the CSV bug
+            data.
 
+        :return: A list of dicts, with each dict representing a single
+            row in the CSV data retrieved from `query_url`.
+        """
         # We read the remote bugs into a list so that we can check that
         # the data we're getting back from the remote server are valid.
         csv_reader = csv.DictReader(self._fetchPage(query_url))
@@ -121,6 +118,31 @@ class Trac(ExternalBugTracker):
                 "External bugtracker %s does not define all the necessary "
                 "fields for bug status imports (Defined field names: %r)."
                 % (self.baseurl, csv_reader.fieldnames))
+
+        return remote_bugs
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        bug_id = int(bug_id)
+        query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
+
+        try:
+            [remote_bug] = self._fetchBugData(query_url)
+        except ValueError, error:
+            # If we get a value error that means that we've got either
+            # not enough or too much data for our single ticket query.
+            # We can't continue.
+            raise UnparseableBugData(
+                "Remote bugtracker %s returned wrong amount of data for bug "
+                "%i: %s" % (self.baseurl, bug_id, str(error)))
+
+        return (bug_id, remote_bug)
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        id_string = '&'.join(['id=%s' % id for id in bug_ids])
+        query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+        remote_bugs = self._fetchBugData(query_url)
 
         bugs = {}
         for remote_bug in remote_bugs:
@@ -153,10 +175,21 @@ class Trac(ExternalBugTracker):
         if (len(bug_ids) < self.batch_query_threshold and
             self.supportsSingleExports(bug_ids)):
             for bug_id in bug_ids:
-                # If we can't get the remote bug for any reason a
-                # BugTrackerConnectError will be raised at this point.
-                remote_id, remote_bug = self.getRemoteBug(bug_id)
-                self.bugs[remote_id] = remote_bug
+                try:
+                    # If we can't get the remote bug for any reason a
+                    # BugTrackerConnectError will be raised at this point.
+                    remote_id, remote_bug = self.getRemoteBug(bug_id)
+                    self.bugs[remote_id] = remote_bug
+                except UnparseableBugData:
+                    # If we hit an UnparseableBugData error at this
+                    # point we simply don't add the bug to our list of
+                    # imported bugs. This is because UnparseableBugData
+                    # errors will stop a bugtracker update in its
+                    # tracks. Since we're only handling a single bug
+                    # here we don't want to do that. Attempting to call
+                    # getRemoteStatus() on the bug will result in a
+                    # BugNotFound error, which suits our needs.
+                    pass
 
         # For large lists of bug ids we retrieve bug statuses as a batch
         # from the remote bug tracker so as to avoid effectively DOSing
