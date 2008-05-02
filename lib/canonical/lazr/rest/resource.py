@@ -870,8 +870,8 @@ class ScopedCollection:
     @property
     def entry_schema(self):
         """The schema for the entries in this collection."""
-        # We are given a model schema. Look through registrations
-        # to find the corresponding entry schema.
+        # We are given a model schema (IFoo). Look up the
+        # corresponding entry schema (IFooEntry).
         model_schema = self.relationship.value_type.schema
         return zapi.getGlobalSiteManager().adapters.lookup1(
             model_schema, IEntry).schema
