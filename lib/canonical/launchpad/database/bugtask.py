@@ -51,10 +51,12 @@ from canonical.launchpad.interfaces import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
-    IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
-    ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+    IDistribution, IDistributionSet, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesSet, IDistroSeriesBugTask,
+    ILaunchpadCelebrities, INullBugTask, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProductSeriesSet, IProductSet, IProject,
+    IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
+    IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
@@ -309,6 +311,38 @@ def BugTaskToBugAdapter(bugtask):
     return bugtask.bug
 
 
+@block_implicit_flushes
+def validate_target_attribute(self, attr, value):
+    """Update the targetnamecache."""
+    # Don't update targetnamecache during _init().
+    if self._SO_creating:
+        return value
+    # Determine the new target attributes.
+    target_params = dict(
+        product=self.product,
+        productseries=self.productseries,
+        sourcepackagename=self.sourcepackagename,
+        distribution=self.distribution,
+        distroseries=self.distroseries)
+    utility_iface = {
+        'productID': IProductSet,
+        'productseriesID': IProductSeriesSet,
+        'sourcepackagenameID': ISourcePackageNameSet,
+        'distributionID': IDistributionSet,
+        'distroseriesID': IDistroSeriesSet
+        }[attr]
+    if value is None:
+        target_params[attr[:-2]] = None
+    else:
+        target_params[attr[:-2]] = getUtility(utility_iface).get(value)
+
+    # Use a NullBugTask to determine the new target.
+    nulltask = NullBugTask(self.bug, **target_params)
+    self.updateTargetNameCache(nulltask.target)
+
+    return value
+
+
 class PassthroughValue:
     """A wrapper to allow setting values on conjoined bug tasks."""
     def __init__(self, value):
@@ -360,7 +394,7 @@ def validate_assignee(self, attr, value):
 def validate_sourcepackagename(self, attr, value):
     value = validate_conjoined_attribute(self, attr, value)
     self._syncSourcePackages(value)
-    return value
+    return validate_target_attribute(self, attr, value)
 
 
 class BugTask(SQLBase, BugTaskMixin):
@@ -378,20 +412,24 @@ class BugTask(SQLBase, BugTaskMixin):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     productseries = ForeignKey(
         dbName='productseries', foreignKey='ProductSeries',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None,
         storm_validator=validate_sourcepackagename)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     distroseries = ForeignKey(
         dbName='distroseries', foreignKey='DistroSeries',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None,
@@ -608,28 +646,6 @@ class BugTask(SQLBase, BugTaskMixin):
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
 
-    def _SO_setValue(self, name, value, fromPython, toPython):
-        """Set a SQLObject value and update the targetnamecache."""
-        SQLBase._SO_setValue(self, name, value, fromPython, toPython)
-
-        # The bug target may have just changed, so update the
-        # targetnamecache.
-        if name != 'targetnamecache':
-            self.updateTargetNameCache()
-
-    def set(self, **kw):
-        """Update multiple attributes and update the targetnamecache."""
-        # We need to overwrite this method to make sure the targetnamecache
-        # column is updated when multiple attributes of a bugtask are
-        # modified. We can't rely on event subscribers for doing this because
-        # they can run in a unpredictable order.
-        SQLBase.set(self, **kw)
-        # We also can't simply update kw with the value we want for
-        # targetnamecache because we need to access bugtask attributes
-        # that may be available only after SQLBase.set() is called.
-        SQLBase.set(
-            self, **{'targetnamecache': self.target.bugtargetdisplayname})
-
     def setImportanceFromDebbugs(self, severity):
         """See `IBugTask`."""
         try:
@@ -746,9 +762,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
 
-    def updateTargetNameCache(self):
+    def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
-        targetname = self.target.bugtargetdisplayname
+        if newtarget is None:
+            newtarget = self.target
+        targetname = newtarget.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
@@ -1543,6 +1561,8 @@ class BugTaskSet:
 
         if bugtask.conjoined_slave:
             bugtask._syncFromConjoinedSlave()
+
+        bugtask.updateTargetNameCache()
 
         return bugtask
 
