@@ -357,7 +357,7 @@ class operation_parameters(_method_annotator):
             if name in params:
                 raise TypeError(
                     "'%s' parameter is already defined." % name)
-            params[name] = value
+            params[name] = param
 
 
 class _export_operation(_method_annotator):
