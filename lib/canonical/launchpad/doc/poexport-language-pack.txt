@@ -211,8 +211,8 @@ the translations in .po file format.
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/xpi/
     |     0 | rosetta-grumpy/xpi/firefox/
-    |    82 | rosetta-grumpy/xpi/firefox/es.po
-    |    74 | rosetta-grumpy/xpi/firefox/en.po
+    |    98 | rosetta-grumpy/xpi/firefox/es.po
+    |    90 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/xpi/firefox/en-US.xpi
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
@@ -223,7 +223,7 @@ We got a valid en-US.xpi file.
     >>> from zipfile import ZipFile
     >>> zip = ZipFile(fh, 'r')
     >>> sorted(zip.namelist())
-    ['chrome/en-US.jar', 'copyover3.png', 'install.rdf']
+    ['chrome.manifest', 'chrome/en-US.jar', 'copyover3.png', 'install.rdf']
 
 
 == Base language pack export using Librarian with date limits ==
@@ -333,8 +333,8 @@ Check that the log looks ok.
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/xpi/
     |     0 | rosetta-grumpy/xpi/firefox/
-    |    82 | rosetta-grumpy/xpi/firefox/es.po
-    |    74 | rosetta-grumpy/xpi/firefox/en.po
+    |    98 | rosetta-grumpy/xpi/firefox/es.po
+    |    90 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/es/
     |     0 | rosetta-grumpy/es/LC_MESSAGES/
     |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
@@ -432,8 +432,8 @@ xpi entries because those are outside the scope of this test.
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/xpi/
     |     0 | rosetta-grumpy/xpi/firefox/
-    |    82 | rosetta-grumpy/xpi/firefox/es.po
-    |    74 | rosetta-grumpy/xpi/firefox/en.po
+    |    98 | rosetta-grumpy/xpi/firefox/es.po
+    |    90 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
@@ -477,8 +477,8 @@ template has.  That's why we get both translations:
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/xpi/
     |     0 | rosetta-grumpy/xpi/firefox/
-    |    82 | rosetta-grumpy/xpi/firefox/es.po
-    |    74 | rosetta-grumpy/xpi/firefox/en.po
+    |    98 | rosetta-grumpy/xpi/firefox/es.po
+    |    90 | rosetta-grumpy/xpi/firefox/en.po
     |     0 | rosetta-grumpy/es/
     |     0 | rosetta-grumpy/es/LC_MESSAGES/
     |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po

@@ -79,7 +79,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson, IPersonSet,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
     IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
@@ -175,6 +175,12 @@ def get_visible_comments(comments):
 
         visible_comments.append(comment)
         previous_comment = comment
+
+    # These two lines are here to fill the ValidPersonOrTeamCache cache,
+    # so that checking owner.is_valid_person, when rendering the link,
+    # won't issue a DB query.
+    commenters = set(comment.owner for comment in visible_comments)
+    getUtility(IPersonSet).getValidPersons(commenters)
 
     return visible_comments
 
@@ -1006,9 +1012,9 @@ class BugTaskEditView(LaunchpadEditFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ((product_or_distro.bugcontact and
+            ((product_or_distro.bug_supervisor and
                  self.user and
-                 self.user.inTeam(product_or_distro.bugcontact)) or
+                 self.user.inTeam(product_or_distro.bug_supervisor)) or
                 check_permission("launchpad.Edit", product_or_distro)))
 
     def userCanEditImportance(self):
@@ -1019,9 +1025,9 @@ class BugTaskEditView(LaunchpadEditFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ((product_or_distro.bugcontact and
+            ((product_or_distro.bug_supervisor and
                  self.user and
-                 self.user.inTeam(product_or_distro.bugcontact)) or
+                 self.user.inTeam(product_or_distro.bug_supervisor)) or
                 check_permission("launchpad.Edit", product_or_distro)))
 
     def _getProductOrDistro(self):
@@ -1242,7 +1248,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
             # The source package was changed, so tell the user that we've
-            # subscribed the new bug contacts.
+            # subscribed the new bug supervisors.
             self.request.response.addNotification(
                 "The bug supervisor for %s has been subscribed to this bug."
                  % (bugtask.bugtargetdisplayname))
@@ -1929,8 +1935,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
 
-    def shouldShowContactWidget(self):
-        """Should the contact widget be shown on the advanced search page?"""
+    def shouldShowSupervisorWidget(self):
+        """
+        Should the bug supervisor widget be shown on the advanced search page?
+        """
         return True
 
     def shouldShowNoPackageWidget(self):
@@ -2068,7 +2076,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         error_message = _(
             "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_contact',
+        for name in ('assignee', 'bug_reporter', 'bug_supervisor',
                      'bug_commenter', 'subscriber'):
             if self.getFieldError(name):
                 self.setFieldError(
@@ -2440,6 +2448,16 @@ class BugTasksAndNominationsView(LaunchpadView):
                     BugNominationStatus.APPROVED)
                 ]
 
+        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
+        # so that checking person.is_valid_person, when rendering the
+        # link, won't issue a DB query.
+        assignees = set(
+            bugtask.assignee for bugtask in all_bugtasks
+            if bugtask.assignee is not None)
+        reporters = set(
+            bugtask.owner for bugtask in all_bugtasks)
+        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
+
         return bugtasks_and_nominations
 
     def currentBugTask(self):
@@ -2731,7 +2749,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         The question will be unlinked from the bug. The question is not
         altered in any other way; it belongs to the question workflow.
         The bug's bugtasks are editable, though none are changed. Bug
-        contacts are responsible for updating the bugtasks.
+        supervisors are responsible for updating the bugtasks.
         """
         question = self.context.bug.getQuestionCreatedFromBug()
         if question is None:

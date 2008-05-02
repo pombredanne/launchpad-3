@@ -98,6 +98,8 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
+from canonical.launchpad.webapp.tales import FormattersAPI
+
 
 class BasePersonVocabulary:
     """This is a base class used by all different Person Vocabularies."""
@@ -1408,6 +1410,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         return obj in self._all_specs()
 
+
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
 
@@ -1424,10 +1427,33 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(watch)
 
     def toTerm(self, watch):
-        return SimpleTerm(
-            watch, watch.id, '%s <a href="%s">#%s</a>' % (
-                cgi.escape(watch.bugtracker.title), watch.url,
-                cgi.escape(watch.remotebug)))
+        def escape(string):
+            return cgi.escape(string, quote=True)
+
+        if watch.url.startswith('mailto:'):
+            user = getUtility(ILaunchBag).user
+            if user is None:
+                title = FormattersAPI(
+                    watch.bugtracker.title).obfuscate_email()
+                return SimpleTerm(
+                    watch, watch.id, escape(title))
+            else:
+                url = watch.url
+                title = escape(watch.bugtracker.title)
+                if url in title:
+                    title = title.replace(
+                        url, '<a href="%s">%s</a>' % (
+                            escape(url), escape(url)))
+                else:
+                    title = '%s &lt;<a href="%s">%s</a>&gt;' % (
+                        title, escape(url), escape(url[7:]))
+                return SimpleTerm(watch, watch.id, title)
+        else:
+            return SimpleTerm(
+                watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                    escape(watch.bugtracker.title),
+                    escape(watch.url),
+                    escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):

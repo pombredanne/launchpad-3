@@ -49,7 +49,7 @@ product or distro, can edit Importance.
 For a product bug supervisor.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.setBugContact(no_priv, no_priv)
+    >>> firefox.setBugSupervisor(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
@@ -76,7 +76,7 @@ For someone else. We'll unset no_priv as the bug supervisor, and note that
 he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
     >>> flush_database_updates()
     >>> logout()
 
@@ -88,7 +88,7 @@ he can no longer see the widget.
 For a distribution bug supervisor.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.setBugContact(no_priv, no_priv)
+    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
@@ -114,7 +114,7 @@ For a distribution owner.
 For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.setBugContact(None, None)
+    >>> ubuntu.setBugSupervisor(None, None)
     >>> flush_database_updates()
     >>> logout()
 

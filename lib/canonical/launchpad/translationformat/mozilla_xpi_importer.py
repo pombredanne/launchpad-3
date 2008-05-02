@@ -7,7 +7,9 @@ __all__ = [
     ]
 
 import cElementTree
+import textwrap
 from email.Utils import parseaddr
+from os.path import splitext
 from StringIO import StringIO
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
 from zipfile import ZipFile
@@ -73,6 +75,17 @@ class MozillaHeader:
         return
 
 
+def add_source_comment(message, comment):
+    """Add the given comment inside message.source_comment."""
+    if message.source_comment:
+        message.source_comment += comment
+    else:
+        message.source_comment = comment
+
+    if not message.source_comment.endswith('\n'):
+        message.source_comment += '\n'
+
+
 class MozillaZipFile:
     """Class for reading translatable messages from Mozilla XPI/JAR files.
 
@@ -97,40 +110,51 @@ class MozillaZipFile:
         archive = ZipFile(StringIO(content), 'r')
         for entry in sorted(archive.namelist()):
 
-            # Figure out filesystem path to contained file, from the root of
-            # the XPI archive.
-            if entry.endswith('.jar'):
-                file_subpath = make_jarpath(xpi_path, entry)
-            else:
-                file_subpath = "%s/%s" % (xpi_path, entry)
+            # We're only interested in this file if its name ends with one of
+            # these dot suffixes.
+            root, suffix = splitext(entry)
+            if suffix not in ['.jar', '.dtd', '.properties']:
+                continue
 
-            if manifest is not None:
-                chrome_path, locale = manifest.get_chrome_path_and_locale(
-                    file_subpath)
-                if chrome_path is None:
-                    # We have a manifest, and this file is not in it.  Skip.
-                    continue
+            if suffix == '.jar':
+                subpath = make_jarpath(xpi_path, entry)
             else:
+                subpath = "%s/%s" % (xpi_path, entry)
+
+            # If we have a manifest, we skip anything that it doesn't list as
+            # having something useful for us.
+            if manifest is None:
                 chrome_path = None
-
-            if entry.endswith('.properties'):
-                data = archive.read(entry)
-                pf = PropertyFile(
-                    filename=entry, chrome_path=chrome_path, content=data)
-                self.extend(pf.messages)
-            elif entry.endswith('.dtd'):
-                data = archive.read(entry)
-                dtdf = DtdFile(
-                    filename=entry, chrome_path=chrome_path, content=data)
-                self.extend(dtdf.messages)
-            elif entry.endswith('.jar'):
-                data = archive.read(entry)
-                jarf = MozillaZipFile(filename=entry, xpi_path=file_subpath,
-                    content=data, manifest=manifest)
-                self.extend(jarf.messages)
             else:
-                # Not a file we know what to do with.
-                pass
+                if suffix == '.jar':
+                    if not manifest.containsLocales(subpath):
+                        # Jar file contains no directories with locale files.
+                        continue
+                else:
+                    chrome_path, locale = manifest.getChromePathAndLocale(
+                        subpath)
+                    if chrome_path is None:
+                        # File is not in a directory containing locale files.
+                        continue
+
+            # Go ahead, parse!
+            data = archive.read(entry)
+
+            if suffix == '.jar':
+                parsed_file = MozillaZipFile(filename=entry,
+                    xpi_path=subpath, content=data, manifest=manifest)
+            elif suffix == '.dtd':
+                parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
+                    content=data)
+            elif suffix == '.properties':
+                parsed_file = PropertyFile(filename=entry,
+                    chrome_path=chrome_path, content=data)
+            else:
+                raise AssertionError(
+                    "Unexpected filename suffix: %s." % suffix)
+
+            # Take messages from parsed file.
+            self.extend(parsed_file.messages)
 
         # Eliminate duplicate messages.
         seen_messages = set()
@@ -161,15 +185,22 @@ class MozillaZipFile:
         message.file_references = ', '.join(
             message.file_references_list)
 
-    def _isKeyShortcutMessage(self, message):
-        """Whether the message represents a key shortcut."""
+    def _isCommandKeyMessage(self, message):
+        """Whether the message represents a command key shortcut."""
         return (
             self.filename is not None and
             self.filename.startswith('en-US.xpi') and
             message.translations and (
-                message.msgid_singular.endswith('.accesskey') or
                 message.msgid_singular.endswith('.commandkey') or
                 message.msgid_singular.endswith('.key')))
+
+    def _isAccessKeyMessage(self, message):
+        """Whether the message represents an access key shortcut."""
+        return (
+            self.filename is not None and
+            self.filename.startswith('en-US.xpi') and
+            message.translations and (
+                message.msgid_singular.endswith('.accesskey')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
@@ -179,15 +210,26 @@ class MozillaZipFile:
             # Special case accesskeys and commandkeys:
             # these are single letter messages, lets display
             # the value as a source comment.
-            if self._isKeyShortcutMessage(message):
-                comment = (
-                    u"Select the shortcut key that you want to use. Please,\n"
-                    u"don't change this translation if you are not really\n"
-                    u"sure about what you are doing.\n")
-                if message.source_comment:
-                    message.source_comment += comment
-                else:
-                    message.source_comment = comment
+            if self._isCommandKeyMessage(message):
+                comment = u'\n'.join(textwrap.wrap(
+                    u"Select the shortcut key that you want to use. It should"
+                    u" be translated, but often shortcut keys (for example"
+                    u" Ctrl + KEY) are not changed from the original. If a"
+                    u" translation already exists, please don't change it if"
+                    u" you are not sure about it. Please find the context of"
+                    u" the key from the end of the 'Located in' text below."))
+                add_source_comment(message, comment)
+            elif self._isAccessKeyMessage(message):
+                comment = u'\n'.join(textwrap.wrap(
+                    u"Select the access key that you want to use. These have"
+                    u" to be translated in a way that the selected"
+                    u" character is present in the translated string of the"
+                    u" label being referred to, for example 'i' in 'Edit'"
+                    u" menu item in English. If a translation already"
+                    u" exists, please don't change it if you are not sure"
+                    u" about it. Please find the context of the key from the"
+                    u" end of the 'Located in' text below."))
+                add_source_comment(message, comment)
             self.messages.append(message)
 
 

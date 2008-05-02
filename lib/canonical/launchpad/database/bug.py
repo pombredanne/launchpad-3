@@ -28,9 +28,10 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
     IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
-    IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
-    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
+    IDistribution, IDistributionSourcePackage, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IPersonSet,
+    IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -487,13 +488,21 @@ class Bug(SQLBase):
                     structural_subscription_targets.add(
                         bugtask.target.parent_subscription_target)
 
+            if ISourcePackage.providedBy(bugtask.target):
+                # Distribution series bug tasks with a package have the
+                # source package set as their target, so we add the
+                # distroseries explicitly to the set of subscription
+                # targets.
+                structural_subscription_targets.add(
+                    bugtask.distroseries)
+
             if bugtask.milestone is not None:
                 structural_subscription_targets.add(bugtask.milestone)
 
-            # If the target's bug contact isn't set,
+            # If the target's bug supervisor isn't set,
             # we add the owner as a subscriber.
             pillar = bugtask.pillar
-            if pillar.bugcontact is None:
+            if pillar.bug_supervisor is None:
                 also_notified_subscribers.add(pillar.owner)
                 if recipients is not None:
                     recipients.addRegistrant(pillar.owner, pillar)
@@ -581,14 +590,15 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message, bugwatch=None, user=None):
+    def linkMessage(self, message, bugwatch=None, user=None,
+                    remote_comment_id=None):
         """See `IBug`."""
         if message not in self.messages:
             if user is None:
                 user = message.owner
 
             result = BugMessage(bug=self, message=message,
-                bugwatch=bugwatch)
+                bugwatch=bugwatch, remote_comment_id=remote_comment_id)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
@@ -1214,11 +1224,11 @@ class BugSet:
         # non-security bugs, this test might be simplified to checking
         # params.private.
         elif params.product and params.product.private_bugs:
-            # Subscribe the bugcontact to all bugs,
+            # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact, params.owner)
+            if params.product.bug_supervisor:
+                bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
         else:
