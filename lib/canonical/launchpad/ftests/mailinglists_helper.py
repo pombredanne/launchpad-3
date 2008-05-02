@@ -25,7 +25,6 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
     IMailingListSet, IMessageApprovalSet, IPersonSet, MailingListStatus,
