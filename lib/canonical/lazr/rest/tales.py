@@ -227,12 +227,7 @@ class WadlFieldAPI(WadlAPI):
         return self.field.description
 
     def path(self):
-        """The 'path' to this field within a JSON document.
-
-        This is just a string that looks like Python code you'd write
-        to do a dictionary lookup. There's no XPath-like standard for
-        JSON so we made something up that seems JSONic.
-        """
+        """The JSONPath path to this field within a JSON document."""
         return "$['%s']" % self.name()
 
     def is_link(self):
