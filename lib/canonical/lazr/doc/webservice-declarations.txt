@@ -161,8 +161,8 @@ parameter should contain the logged in user.
     ...         :param user: The user who should have checked the book out.
     ...         """
 
-Like for entries, this adds keys in the 'lazr.webservice.exported' tagged
-value.
+Like for entries, this adds keys in the 'lazr.webservice.exported'
+tagged value.
 
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
@@ -777,10 +777,10 @@ user.
 
     >>> from zope.component import provideUtility
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> class MockLaunchBag:
+    >>> class FakeLaunchBag:
     ...     implements(ILaunchBag)
     ...     user = 'A user'
-    >>> provideUtility(MockLaunchBag(), ILaunchBag)
+    >>> provideUtility(FakeLaunchBag(), ILaunchBag)
 
     >>> class CheckedOutBookSet(object):
     ...     """Simple ICheckedOutBookSet implementation."""
@@ -849,7 +849,7 @@ parameters accepted by the operation.
 
 The call() method calls the underlying method and return its result.
 
-    >>> class MockResponse(object):
+    >>> class FakeResponse(object):
     ...     """Simple response wrapper object."""
     ...     def __init__(self):
     ...         self.status = 200
@@ -862,13 +862,13 @@ The call() method calls the underlying method and return its result.
     ...         self.headers[name] = value
 
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class MockRequest(object):
+    >>> class FakeRequest(object):
     ...     """Simple request object for testing purpose."""
     ...     # This makes us eligible for get_current_browser_request()
     ...     implements(IHTTPApplicationRequest)
     ...
     ...     def __init__(self):
-    ...         self.response = MockResponse()
+    ...         self.response = FakeResponse()
     ...         self.principal = None
     ...         self.interaction = None
     ...
@@ -886,7 +886,7 @@ The call() method calls the underlying method and return its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
-    >>> request = MockRequest()
+    >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(
     ...     BookSetOnSteroids(), request)
     >>> verifyObject(IResourceGETOperation, read_method_adapter)
@@ -937,7 +937,7 @@ The adapter's params property also contains the available parameters
     >>> write_method_adapter = write_method_adapter_factory(
     ...     BookOnSteroids(
     ...         'Aldous Huxley', 'The Doors of Perception', 8, 'unknown'),
-    ...     MockRequest())
+    ...     FakeRequest())
 
     >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
     True
@@ -958,7 +958,7 @@ IResourcePOSTOperation.
     True
 
     >>> factory_method_adapter = factory_method_adapter_factory(
-    ...     BookSetOnSteroids(), MockRequest())
+    ...     BookSetOnSteroids(), FakeRequest())
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
 
@@ -1033,7 +1033,7 @@ That view returns the exception message as content, and sets the
 result code to the one specified using the webservice_error() directive.
 
     >>> exception = InvalidEmail("foo@bar isn't a valid email address")
-    >>> error_view = WebServiceExceptionView(exception, MockRequest())
+    >>> error_view = WebServiceExceptionView(exception, FakeRequest())
     >>> error_view()
     "foo@bar isn't a valid email address"
     >>> error_view.request.response.headers['Content-Type']

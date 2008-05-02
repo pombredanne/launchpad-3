@@ -177,8 +177,9 @@ class collection_default_content:
     def __init__(self, **params):
         """Create the decorator marking the default collection method.
 
-        :param params: Optional parameters value to use when calling the
-            method.
+        :param params: Optional parameter values to use when calling the
+            method. This is to be used when the method has required
+            parameters.
         """
         _check_called_from_interface_def('@collection_default_content')
 
