@@ -18,10 +18,12 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    IArchivePermission, IComponent, ISourcePackageName, ISourcePackageNameSet)
+    ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
+    IComponent, ISourcePackageName, ISourcePackageNameSet)
 
 
 class ArchivePermission(SQLBase):
+    """See `IArchivePermission`."""
     implements(IArchivePermission)
     _table = 'ArchivePermission'
     _defaultOrder = 'id'
@@ -41,7 +43,7 @@ class ArchivePermission(SQLBase):
         foreignKey='Component', dbName='component', notNull=False)
 
     sourcepackagename = ForeignKey(
-        foreignKey='Sourcepackagename', dbname='sourcepackagename',
+        foreignKey='SourcePackageName', dbName='sourcepackagename',
         notNull=False)
 
 
@@ -53,14 +55,14 @@ class ArchivePermissionSet:
         """See `IArchivePermissionSet`."""
         if IComponent.providedBy(item):
             auth = ArchivePermission.selectBy(
-                archive=archive, permission=permission, person=person,
+                archive=archive, permission=permission, person=user,
                 component=item)
         elif ISourcePackageName.providedBy(item):
             auth = ArchivePermission.selectBy(
                 archive=archive, permission=permission, person=user,
                 sourcepackagename=item)
         else:
-            raise AssertionError(
+            raise TypeError(
                 "'item' is not an IComponent or an ISourcePackageName")
 
         return auth

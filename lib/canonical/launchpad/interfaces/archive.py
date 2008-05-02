@@ -249,6 +249,25 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
+    def canUpload(user, component=None):
+        """Check to see if user is allowed to upload to component.
+
+        :param user: An `IPerson` whom should be checked for authentication.
+        :param component: An optional context `IComponent` for the check.
+
+        Return True if 'user' is allowed to upload to 'component'.  If
+        'component' is not supplied, all components are considered.
+        """
+
+    def canAdministrateQueue(user, component):
+        """Check to see if user is allowed to administrate queue items.
+
+        :param user: An `IPerson` whom should be checked for authenticate.
+        :param component: The context `IComponent` for the check.
+
+        Return True if 'user' is allowed to administrate the package upload
+        queue for items with 'component'.
+        """
 
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""

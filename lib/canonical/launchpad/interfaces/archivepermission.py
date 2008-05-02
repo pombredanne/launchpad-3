@@ -31,7 +31,7 @@ class ArchivePermissionType(DBEnumeratedType):
         """)
 
     QUEUE_ADMIN = DBItem(2, """
-        Queue administration rights
+        Queue Administration Rights
 
         This permission allows a user to administer the distroseries
         upload queue.
