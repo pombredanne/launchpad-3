@@ -1,14 +1,13 @@
 = Hardware Database Device Tables =
 
 These tables represent devices and complete systems in the database. They
-allow to look up devices by their bus IDs and by their human readable
-vendor and product name. They also link a device to drivers.
-
+allow look up of devices by their bus IDs and by their human readable
+vendor and product names. They also link devices to drivers.
 
 == HWVendorName ==
 
 HWVendorName is a simple list of vendor names. A new entry is created by
-IHWVendorNameSet.create.
+IHWVendorNameSet.create().
 
     >>> from canonical.launchpad.interfaces import IHWVendorNameSet
     >>> vendor_name_set = getUtility(IHWVendorNameSet)
@@ -17,7 +16,7 @@ IHWVendorNameSet.create.
     Intel
 
 Each name in the table must be unique. The attempt to create a second
-row with the same name raises a IntegrityError error.
+row with the same name raises an IntegrityError error.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
@@ -267,7 +266,7 @@ a device.
 Aside from "real" devices like keyboards, mice, hard disks, PCI cards,
 i.e., "thingies" one can connect to and remove from a computer, we also
 store data about "systems" (computers) and "components" in the HWDevice
-table. A component is a part that is "permanently build" into a system,
+table. A component is a part that is "permanently built" into a system,
 like a hard disk controller that is soldered onto the main board.
 
 A new device record is created by IHWDeviceSet.create.
@@ -312,8 +311,6 @@ ID.)
 USB and PCI IDs are represented as strings with a four-digit hexadecimal
 number, prefixed by '0x'; the digits a..f must be lower cases characters.
 Other ID values raise a ValueError.
-
-The characters a..f are accepted as digits.
 
     >>> another_pci_product = device_set.create(bus=HWBus.PCI,
     ...                                         vendor_id='0x8086',
@@ -436,7 +433,7 @@ Strings with less than 16 characters are not allowed as SCSI product IDs...
     ...
     ValueError: '123456789012345' is not a valid product ID for SCSI
 
-...as well as strings with more than eight characters.
+...as well as strings with more than 16 characters.
 
     >>> device_set.create(bus=HWBus.SCSI,
     ...                   vendor_id='INTEL   ',
@@ -449,11 +446,11 @@ Strings with less than 16 characters are not allowed as SCSI product IDs...
 
 === Unknown Vendor IDs ===
 
-If IHWDevice.create is called with a vendor ID that has not yet a
-IHWVendorID record, the latter is automatically created. Since
+If IHWDevice.create is called with a vendor ID that for which there
+is no IHWVendorID record, the latter is automatically created. Since
 we do not pass the vendor name to IHWDevice.create, this method
 cannot set the real vendor name for the new IHWVendorID record.
-Instead, the vendor name is set to "unknown".
+Instead, the vendor name is set to "Unknown".
 
 Reason: IHWDevice will be populated with data collected by the
 HWDB client, which gets most of the device data from HAL, and HAL
@@ -473,8 +470,8 @@ http://standards.ieee.org/regauth/oui/oui.txt
 
 === Device Variants ===
 
-While most devices can be uniquely identifed by their vendor and product
-IDs, there are some cases, where different devices have identical IDs_
+While most devices can be uniquely identified by their vendor and product
+IDs, there are some cases, where different devices have identical IDs:
 
 (a) The IDs are assigned to a USB chipset that is used in different
     devices.
@@ -507,9 +504,9 @@ attribute set.
     >>> print some_plustek_scanner.variant
     None
 
-Once we know that a tuple bus, vendor ID, product ID does not uniquely
-identify a device, we can "disambiguate" these devices by creating
-IHWDevice records, where the attribute variant is for example set
+Once we know that (bus, vendor ID, product ID) does not uniquely
+identify a device, we can disambiguate these devices by creating
+IHWDevice records, where the attribute variant is, for example, set
 to the product name.
 
     >>> optic_pro_ut12 = device_set.create(bus=HWBus.USB,
@@ -601,7 +598,7 @@ vendor and product names to a device.
     >>> print variant.product_name
     MD 1234
 
-We count the number of submissions which told us an alternatvie device
+We count the number of submissions which told us an alternative device
 name.
 
     >>> print variant.submissions

@@ -6,4 +6,4 @@ CREATE UNIQUE INDEX hwdevice__bus_vendor_id__bus_product_id__key
 CREATE UNIQUE INDEX hwdriver__name__key ON hwdriver USING btree (name) 
   WHERE package_name IS NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 33, 0);
