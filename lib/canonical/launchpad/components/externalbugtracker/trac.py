@@ -19,7 +19,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
-    UnknownRemoteStatusError)
+    UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
     ISupportsCommentImport, ISupportsCommentPushing,
@@ -102,7 +102,25 @@ class Trac(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         id_string = '&'.join(['id=%s' % id for id in bug_ids])
         query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
-        remote_bugs = csv.DictReader(self._fetchPage(query_url))
+
+        # We read the remote bugs into a list so that we can check that
+        # the data we're getting back from the remote server are valid.
+        csv_reader = csv.DictReader(self._fetchPage(query_url))
+        remote_bugs = [remote_bug for remote_bug in csv_reader]
+
+        # We consider the data we're getting from the remote server to
+        # be valid if there is an ID field and a status field in the CSV
+        # header. If the fields don't exist we raise an
+        # UnparseableBugData error. If these fields are defined but not
+        # filled in for each row, that error will be handled in
+        # getRemoteBugStatus() (i.e.  with a BugNotFound or an
+        # UnknownRemoteStatusError).
+        if ('id' not in csv_reader.fieldnames or
+            'status' not in csv_reader.fieldnames):
+            raise UnparseableBugData(
+                "External bugtracker %s does not define all the necessary "
+                "fields for bug status imports (Defined field names: %r)."
+                % (self.baseurl, csv_reader.fieldnames))
 
         bugs = {}
         for remote_bug in remote_bugs:

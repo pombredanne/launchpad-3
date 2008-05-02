@@ -183,7 +183,9 @@ test.
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
     Traceback (most recent call last):
       ...
-    UnparseableBugData
+    UnparseableBugData: External bugtracker http://test.trac does not
+    define all the necessary fields for bug status imports (Defined
+    field names: ['<html>']).
 
 
 == Updating Bug Watches ==
