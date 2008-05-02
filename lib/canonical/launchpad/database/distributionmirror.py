@@ -401,7 +401,7 @@ class DistributionMirrorSet:
         if country is not None:
             country_id = country.id
         base_query = AND(
-            DistributionMirror.q.content == sqlvalues(mirror_type),
+            DistributionMirror.q.content == mirror_type,
             DistributionMirror.q.enabled == True,
             DistributionMirror.q.http_base_url != None,
             DistributionMirror.q.official_candidate == True,
