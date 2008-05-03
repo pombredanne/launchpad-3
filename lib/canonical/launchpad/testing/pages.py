@@ -484,7 +484,8 @@ def print_navigation(contents):
         print "* %s (%s)" % (extract_text(tab), link)
     main_heading = doc.h1
     if main_heading:
-        main_heading = extract_text(main_heading).encode('us-ascii', 'replace')
+        main_heading = extract_text(main_heading).encode(
+            'us-ascii', 'replace')
     else:
         main_heading = '(No main heading)'
     print "Main heading: %s" % main_heading
