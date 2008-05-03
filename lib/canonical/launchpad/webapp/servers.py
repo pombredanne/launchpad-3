@@ -625,6 +625,8 @@ class LaunchpadTestRequest(TestRequest):
     """
     implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
+    principal = None
+    interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
@@ -635,29 +637,6 @@ class LaunchpadTestRequest(TestRequest):
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
-        self._principal = None
-        self._interaction = None
-
-    @property
-    def principal(self):
-        """The principal involved in the participation."""
-        return self._principal
-
-    def setPrincipal(self, principal):
-        """set the principal involved in the participation."""
-        self._principal = principal
-
-    def get_interaction(self):
-        """The interaction involved in the participation."""
-        return self._interaction
-
-    def set_interaction(self, interaction):
-        """Set the interaction involved in the participation."""
-        self._interaction = interaction
-
-    interaction = property(
-        get_interaction, set_interaction, doc=get_interaction.__doc__)
-
 
     @property
     def uuid(self):
