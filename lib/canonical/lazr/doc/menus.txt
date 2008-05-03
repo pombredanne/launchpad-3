@@ -11,15 +11,6 @@ We require a considerable amount of setup to construct navigationmenus
 and observe their behaviour. At a minimum, we need interfaces,
 content objects, and views registered before implementing menus.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/')
-
-    >>> from zope.security.management import endInteraction, newInteraction
-    >>> endInteraction()
-    >>> newInteraction(request)
-
 
 === Content objects that have menus ===
 
@@ -73,37 +64,57 @@ behaviours for traversable objects.
 === Content views associates with menus ===
 
 The content object is discovered by traversing the URL hierarchy.
-Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam
+Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam.
+Each object has a canonical url derived from it's place the hierarchy.
 
+    >>> from zope.security.management import endInteraction, newInteraction
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    # Menu testing requires a request object that provides the traversed
+    # objects. This function does most of the work, but views must be
+    # appended to the traversed_objects list after they are created.
+    >>> def make_fake_request(url, traversed_objects=None):
+    ...     """Return a fake request object for menu testing."""
+    ...     all_names = url.split('/')
+    ...     server_url = '/'.join(all_names[0:3])
+    ...     traversed_names = all_names[3:]
+    ...     path_info = '/' + '/'.join(traversed_names)
+    ...     request = LaunchpadTestRequest(
+    ...         SERVER_URL=server_url,
+    ...         PATH_INFO=path_info)
+    ...     request._traversed_names = traversed_names
+    ...     request.traversed_objects = traversed_objects
+    ...     endInteraction()
+    ...     newInteraction(request)
+    ...     return request
 
     >>> root = Root('', None)
     >>> cookbook = Cookbook('joy-of-cooking', root)
     >>> recipe = Recipe('fried-spam', cookbook)
 
-    >>> request.traversed_objects = [cookbook, recipe, None]
-    >>> request._traversed_names = ['joy-of-cooking', 'fried-spam', '+index']
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     traversed_objects=[cookbook, recipe, None])
 
     >>> canonical_url(cookbook)
     u'http://launchpad.dev/joy-of-cooking'
     >>> canonical_url(recipe)
     u'http://launchpad.dev/joy-of-cooking/fried-spam'
 
-# flacoste To run in the unit test layer, you'll have to setup an
-# interaction to provide the current request using endInteraction() and
-# newInteraction. (See webservice-declarations.txt)
-
 Content objects are not suitable for presentation by themselves; they
 require a view class to adapt them to the required format. An object
 may have many views, each delegated to one aspect of the object.
 
-Menus are used to connect the views. The views implements() marker
-interfaces that will be used by menus.
+Menus are used to connect the views into pseudo-hierarchy from the
+last traversed content object. Some views implement a marker
+interface to associate themselves with a specific sub menu below
+a content object's menu.
+
+    >>> from canonical.launchpad.webapp import LaunchpadView
 
     >>> class IRecipeEditMenuMarker(Interface):
     ...     """A marker interface of the RecipeEditMenu."""
-
-    >>> from canonical.launchpad.webapp import LaunchpadView
 
     >>> class RecipeIndexView(LaunchpadView):
     ...     """View for summary of a recipe."""
@@ -126,7 +137,7 @@ interfaces that will be used by menus.
     >>> cookingexample.RecipeEditIngredientsView = RecipeEditIngredientsView
 
 The views for IRecipe are registered using ZCML. Each pages requires
-a name, for, class, and permssion. The facet directive is optional,
+a name, for, class, and permission. The facet directive is optional,
 though it is requires for FacetMenus.
 
 # XXX sinzui 2008-04-28: Why, oh Why, do I get an unknown directive
@@ -169,7 +180,10 @@ though it is requires for FacetMenus.
 == The NavigationMenu class ==
 
 Navigation menus are defined for content or view objects.  Each object
-has just one navigation menu, and it is available at all times.
+has just one navigation menu, and it is available at all times. A page
+may display the content object's menu and the content object's view's
+menu. The view's menu may be considered to be a sub menu because is may
+be subordinate to the content object's menu.
 
 NavigationMenu is a base-class for writing your own INavigationMenu
 classes. It cannot be used directly:
@@ -183,7 +197,7 @@ classes. It cannot be used directly:
     ...
     AssertionError: Subclasses of NavigationMenu must provide self.links
 
-We will use two subclasses to demonstrate how navigationmenus are
+We will use two subclasses to demonstrate how NavigationMenus are
 associated with content objects. Each menu defines a 'usedfor'
 attribute, which tells the registration machinery how to render this
 menu as an adapter. The sub menu is indirectly associated to the main
@@ -247,15 +261,6 @@ is defined in by the RecipeMenu class and the view of recipe.
     ...         for attrname in sorted(IFacetLink.names(all=True)):
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
-    # Set the traversed objects that the publisher would have found.
-    >>> endInteraction()
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/joy-of-cooking/fried-spam/+index')
-    >>> request.traversed_objects = [cookbook, recipe, None]
-    >>> request._traversed_names = ['joy-of-cooking', 'fried-spam', '+index']
-    >>> newInteraction(request)
-
     >>> list_links(
     ...     RecipeMenu(recipe),
     ...     uri='http://launchpad.dev/joy-of-cooking/fried-spam/+index')
@@ -303,10 +308,11 @@ the cookery objects cannot be adapted to menus.
     >>> from zope.component import getMultiAdapter, queryAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/joy-of-cooking/fried-spam/+index')
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     traversed_objects=[cookbook, recipe])
     >>> recipe_view = getMultiAdapter((recipe, request), name='+index')
+    >>> request.traversed_objects.append(recipe_view)
     >>> print queryAdapter(recipe_view, INavigationMenu)
     None
 
@@ -320,22 +326,32 @@ the cookery objects cannot be adapted to menus.
     ... </configure>
     ... """)
 
-Once registered, the objects can be adapted. When the menu's context
-is a LaunchpadView subclass, iterlinks() does not use a requesturi;
-the view's request provides the URI.
+Once registered, the objects can be adapted. The RecipeMenu can be
+adapted from a Recipe.
 
     >>> recipe_navigationmenu = queryAdapter(recipe, INavigationMenu)
     >>> recipe_navigationmenu
     <RecipeMenu ...>
 
-# How the example relates to the explanation?
+And the RecipeEditMenu can be retrieved by adapting the recipe's
+view +edit-ingredients.
+
+    >>> recipe_ingredients_view = getMultiAdapter(
+    ...     (recipe, request), name='+edit-ingredients')
+    >>> recipe_overview_menu = queryAdapter(
+    ...     recipe_ingredients_view, INavigationMenu)
+    >>> recipe_overview_menu
+    <RecipeEditMenu ...>
 
 
 === NavigationMenu linked and selected links ===
 
-A link is not linked when its URL matches the request URI. The URI
+A link is not linked when its URL matches the request URI; the user
+should not navigate to a page he is already seeing. The matched URI
 comes from the view's request or from requesturi kwarg for iterlinks().
-Under these same circumstances, a link is also selected.
+
+Under these same circumstances, a link is also selected. Selected means
+that the page is in the path of traversed objects.
 
     >>> def summarise_links(menu, uri=None):
     ...     """List the links and their attributes."""
@@ -345,18 +361,6 @@ Under these same circumstances, a link is also selected.
     ...         for attrname in attributes:
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
-    >>> recipe_view = getMultiAdapter((recipe, request), name='+index')
-
-    # Set the traversed objects that the publisher would have found.
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/joy-of-cooking/fried-spam/+index')
-    >>> request.traversed_objects = [cookbook, recipe, recipe_view]
-    >>> request._traversed_names = ['joy-of-cooking', 'fried-spam', '+index']
-
-    >>> endInteraction()
-    >>> newInteraction(request)
-
     >>> recipe_navigationmenu = queryAdapter(recipe, INavigationMenu)
     >>> summarise_links(recipe_navigationmenu)
     link summary
@@ -364,34 +368,25 @@ Under these same circumstances, a link is also selected.
         selected: True
         linked: False
 
-And the RecipeEditMenu can be retrieved by adapting the view for
-+edit-ingredients.
-
-    # Start a new request.
-    >>> endInteraction()
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/joy-of-cooking/fried-spam/+edit-ingredients')
-    >>> newInteraction(request)
-
-    >>> recipe_ingredients_view = getMultiAdapter(
-    ...     (recipe, request), name='+edit-ingredients')
-
-    # Set the traversed objects that the publisher would have found.
-    >>> request._traversed_names = [
-    ...     'joy-of-cooking', 'fried-spam', '+edit-ingredients']
-    >>> request.traversed_objects = [
-    ...     cookbook, recipe, recipe_ingredients_view]
-
-    >>> recipe_overview_menu = queryAdapter(
-    ...     recipe_ingredients_view, INavigationMenu)
-    >>> recipe_overview_menu
-    <RecipeEditMenu ...>
+Navigational menus can be associated with a content object and one
+of its views to act as a menu and a sub menu. The view's sub menu
+belongs to a link in the content object's menu.
 
 A link will be selected and linked if requesturi matches one of the
 links in the link's menu. A link's menu contains child links in the
 navigational hierarchy--when a child link is selected, the parent
 link is selected too.
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev'
+    ...     '/joy-of-cooking/fried-spam/+edit-ingredients',
+    ...     traversed_objects=[cookbook, recipe])
+    >>> recipe_ingredients_view = getMultiAdapter(
+    ...     (recipe, request), name='+edit-ingredients')
+    >>> request.traversed_objects.append(recipe_ingredients_view)
+
+    >>> recipe_overview_menu = queryAdapter(
+    ...     recipe_ingredients_view, INavigationMenu)
 
     >>> summarise_links(RecipeMenu(recipe))
     link summary
@@ -423,12 +418,6 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
 
-    # MenuAPI is normally registered as an IPathAdapter in ZCML. This
-    # approximates what is done by the code:
-    >>> classImplements(MenuAPI, IPathAdapter)
-    >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
-    >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
-
     >>> def summarise_links_dict(links_dict):
     ...     """List the links and their attributes in the dict."""
     ...     for link_name in links_dict:
@@ -437,6 +426,12 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     ...         attributes = ['url', 'selected', 'linked']
     ...         for attrname in attributes:
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
+
+    # MenuAPI is normally registered as an IPathAdapter in ZCML. This
+    # approximates what is done by the code:
+    >>> classImplements(MenuAPI, IPathAdapter)
+    >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
+    >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
 
     >>> links_dict = test_tales(
     ...     'context/menu:navigation', context=recipe, request=request)
