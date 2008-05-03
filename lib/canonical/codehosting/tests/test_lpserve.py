@@ -27,9 +27,8 @@ from canonical.codehosting import plugins
 from canonical.config import config
 from canonical.codehosting.tests.servers import Authserver
 
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing import TwistedLayer
 from canonical.twistedsupport import defer_to_thread
-
 
 ROCKETFUEL_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(bzrlib.__file__)))
@@ -37,7 +36,7 @@ ROCKETFUEL_ROOT = os.path.dirname(
 
 class TestLaunchpadServerCommand(TrialTestCase, TestCaseInTempDir):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)

@@ -81,9 +81,14 @@ class Archive(SQLBase):
     buildd_secret = StringCol(dbName='buildd_secret', default=None)
 
     @property
+    def is_ppa(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PPA
+
+    @property
     def title(self):
         """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PPA:
+        if self.is_ppa:
             title = 'PPA for %s' % self.owner.displayname
             if self.private:
                 title = "Private %s" % title
@@ -119,7 +124,7 @@ class Archive(SQLBase):
     def expanded_archive_dependencies(self):
         """See `IArchive`."""
         archives = []
-        if self.purpose == ArchivePurpose.PPA:
+        if self.is_ppa:
             archives.append(self.distribution.main_archive)
         archives.append(self)
         archives.extend(
@@ -134,7 +139,7 @@ class Archive(SQLBase):
             ArchivePurpose.PARTNER : '-partner',
         }
 
-        if self.purpose == ArchivePurpose.PPA:
+        if self.is_ppa:
             if self.private:
                 url = config.personalpackagearchive.private_base_url
             else:
@@ -157,7 +162,7 @@ class Archive(SQLBase):
 
         if self.purpose == ArchivePurpose.PRIMARY:
             pass
-        elif self.purpose == ArchivePurpose.PPA:
+        elif self.is_ppa:
             if self.private:
                 pubconf.distroroot = ppa_config.private_root
             else:
@@ -595,7 +600,7 @@ class Archive(SQLBase):
             raise ArchiveDependencyError(
                 "An archive should not depend on itself.")
 
-        if dependency.purpose != ArchivePurpose.PPA:
+        if not dependency.is_ppa:
             raise ArchiveDependencyError(
                 "Archive dependencies only applies to PPAs.")
 
@@ -658,6 +663,32 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
+    @property
+    def number_of_ppa_sources(self):
+        cur = cursor()
+        q = """
+             SELECT SUM(sources_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(q)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
+
+    @property
+    def number_of_ppa_binaries(self):
+        cur = cursor()
+        q = """
+             SELECT SUM(binaries_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(q)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         query = """
@@ -670,3 +701,47 @@ class ArchiveSet:
         return Archive.select(
             query, clauseTables=['Person', 'TeamParticipation'],
             orderBy=['Person.displayname'])
+
+    def getLatestPPASourcePublicationsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        query = """
+            SourcePackagePublishingHistory.archive = Archive.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            Archive.private = FALSE AND
+            DistroSeries.distribution = %s AND
+            Archive.purpose = %s
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        return SourcePackagePublishingHistory.select(
+            query, limit=5, clauseTables=['Archive', 'DistroSeries'],
+            orderBy=['-datecreated', '-id'])
+
+
+    def getMostActivePPAsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        cur = cursor()
+        query = """
+             SELECT a.id, count(*) as C
+             FROM Archive a, SourcePackagePublishingHistory spph
+             WHERE
+                 spph.archive = a.id AND
+                 a.private = FALSE AND
+                 spph.datecreated >= now() - INTERVAL '1 week' AND
+                 a.distribution = %s AND
+                 a.purpose = %s
+             GROUP BY a.id
+             ORDER BY C DESC, a.id
+             LIMIT 5
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        cur.execute(query)
+
+        most_active = []
+        for archive_id, number_of_uploads in cur.fetchall():
+            archive = Archive.get(int(archive_id))
+            the_dict = {'archive': archive, 'uploads': number_of_uploads}
+            most_active.append(the_dict)
+
+        return most_active
+

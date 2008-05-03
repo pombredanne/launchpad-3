@@ -34,7 +34,7 @@ Adding a private branch that is only visible by No Privileges Person
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = getUtility(IBranchSet).new(
-    ...     BranchType.HOSTED, name='testing-branch', creator=no_priv,
+    ...     BranchType.HOSTED, name='testing-branch', registrant=no_priv,
     ...     owner=no_priv, product=None, url=None, title='A Private Branch')
     >>> branch.private = True
     >>> branch.product = landscape
@@ -134,12 +134,17 @@ listing tab.
     >>> def print_landscape_code_listing(browser):
     ...     browser.open('http://code.launchpad.dev/landscape/+branches')
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
-    ...     for row in table.tbody.fetch('tr'):
-    ...         print extract_text(row)
+    ...     # If there are no branches, the table is not shown.
+    ...     # So print the text shown in the application summary.
+    ...     if table is None:
+    ...         print extract_text(find_tag_by_id(
+    ...             browser.contents, 'application-summary'))
+    ...     else:
+    ...         for row in table.tbody.fetch('tr'):
+    ...             print extract_text(row)
 
     >>> print_landscape_code_listing(anon_browser)
-    There are no branches registered for The Landscape Project in Launchpad
-    today...
+    There are no branches for The Landscape Project in Launchpad...
 
     >>> print_landscape_code_listing(no_priv_browser)
     ~no-priv/landscape/testing-branch      New   ...

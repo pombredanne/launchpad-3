@@ -10,6 +10,7 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
@@ -104,6 +105,8 @@ class IArchive(IHasOwner):
         "PRIMARY archive dependency for PPAs.")
 
     archive_url = Attribute("External archive URL.")
+
+    is_ppa = Attribute("True if this archive is a PPA.")
 
     title = Attribute("Archive Title.")
 
@@ -278,6 +281,15 @@ class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
         description=_("The reason why the package is being deleted."))
 
 
+class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
+    """Schema used to copy packages across archive."""
+
+    include_binaries = Bool(
+        title=_("Copy binaries"), required=False, default=False,
+        description=_("Whether or not to copy the binary packages for "
+                      "the selected sources."))
+
+
 class IArchiveEditDependenciesForm(Interface):
     """Schema used to edit dependencies settings within a archive."""
 
@@ -290,6 +302,12 @@ class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
+
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
 
     def new(distribution=None, purpose=None, owner=None, description=None):
         """Create a new archive.
@@ -316,6 +334,24 @@ class IArchiveSet(Interface):
         """Return all PPAs the given user can participate.
 
         The result is ordered by PPA owner's displayname.
+        """
+
+    def getLatestPPASourcePublicationsForDistribution(distribution):
+        """The latest 5 PPA source publications for a given distribution.
+
+        Private PPAs are excluded from the result.
+        """
+
+    def getMostActivePPAsForDistribution(distribution):
+        """Return the 5 most active PPAs.
+
+        The activity is currently measured by number of uploaded (published)
+        sources for each PPA during the last 7 days.
+
+        Private PPAs are excluded from the result.
+
+        :return A list with up to 5 dictionaries containing the ppa 'title'
+            and the number of 'uploads' keys and corresponding values.
         """
 
 

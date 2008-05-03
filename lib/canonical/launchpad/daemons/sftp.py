@@ -86,7 +86,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        set_up_logging(configure_oops_reporting=True)
+        set_up_logging()
         service.Service.startService(self)
         self.service.startService()
 

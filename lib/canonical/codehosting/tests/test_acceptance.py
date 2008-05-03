@@ -10,6 +10,7 @@ import os
 import sys
 import thread
 import unittest
+import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
@@ -22,8 +23,8 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
-from canonical.codehosting.tests.helpers import adapt_suite, ServerTestCase
-from canonical.authserver.client.twistedclient import get_blocking_proxy
+from canonical.codehosting.tests.helpers import (
+    adapt_suite, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -33,7 +34,6 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
-
 
 class SSHTestCase(ServerTestCase):
 
@@ -151,7 +151,7 @@ class SSHTestCase(ServerTestCase):
         Used to create branches that the test user is not able to create, and
         might not even be able to view.
         """
-        authserver = get_blocking_proxy(self.server.authserver.get_url())
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
         if creator is None:
             creator_id = authserver.getUser(user)['id']
         else:
@@ -598,7 +598,6 @@ class SmartserverTests(SSHTestCase):
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
 
-
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
         CodeHostingTestProviderAdapter)
@@ -623,8 +622,12 @@ def make_smoke_tests(base_suite):
 def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
-    suite.addTest(make_server_tests(
-            base_suite, [make_sftp_server, make_bzr_ssh_server]))
+
+    # XXX: Disabling the AcceptanceTests tests due to them failing
+    #      intermittently. Bug 221762. -- Bjorn Tillenius, 2008-04-25
+    #suite.addTest(make_server_tests(
+    #        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))

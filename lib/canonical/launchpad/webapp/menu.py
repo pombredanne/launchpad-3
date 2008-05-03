@@ -12,6 +12,7 @@ __all__ = [
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
+    'NavigationMenu',
     'Link',
     'LinkData',
     'FacetLink',
@@ -27,11 +28,11 @@ from zope.component import getMultiAdapter
 from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
-    IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
-    IFacetLink, ILink, ILinkData, IStructuredString)
+    IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
+    IMenuBase, INavigationMenu, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator,
-    get_current_browser_request, UserAttributeCache)
+    canonical_url, canonical_url_iterator, get_current_browser_request,
+    LaunchpadView, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -247,7 +248,15 @@ class MenuBase(UserAttributeCache):
             "The following names may not be links: %s" %
             ', '.join(self._forbiddenlinknames))
 
-        contexturlobj = URI(canonical_url(self.context))
+        if isinstance(self.context, LaunchpadView):
+            # It's a navigation menu for a view instead of a db object. Views
+            # don't have a canonical URL, they use the db object one used as
+            # the context for that view.
+            context = self.context.context
+        else:
+            context = self.context
+
+        contexturlobj = URI(canonical_url(context))
 
         if self.enable_only is ALL_LINKS:
             enable_only = set(self.links)
@@ -339,6 +348,14 @@ class ContextMenu(MenuBase):
     _baseclassname = 'ContextMenu'
 
 
+class NavigationMenu(MenuBase):
+    """Base class for navigation menus."""
+
+    implements(INavigationMenu)
+
+    _baseclassname = 'NavigationMenu'
+
+
 class enabled_with_permission:
     """Function decorator that disables the output link unless the current
     user has the given permission on the context.
@@ -399,7 +416,7 @@ def escape(message):
     translated, then santizied.
 
     :param message: This may be a string, `zope.i18n.Message`,
-    	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        `zope.i18n.MessageID`, or an instance of `IStructuredString`.
     """
     if IStructuredString.providedBy(message):
         return message.escapedtext

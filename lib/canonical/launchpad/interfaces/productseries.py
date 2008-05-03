@@ -242,7 +242,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'This list is made up of any drivers or owners from this '
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
-    bugcontact = Attribute(
+    bug_supervisor = Attribute(
         'Currently just a reference to the Product bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Product security contact.')
@@ -261,7 +261,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='BranchRestrictedOnProduct',
+        vocabulary='Branch',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))
@@ -468,3 +468,6 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no ProductSeries with the
         given details.
         """
+
+    def getSeriesForBranches(branches):
+        """Return the ProductSeries associated with a branch in branches."""

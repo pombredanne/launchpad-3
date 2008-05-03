@@ -49,7 +49,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     )
 from canonical.launchpad.webapp.interfaces import (
-    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+    IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
+    NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import (
@@ -61,7 +62,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
-
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -184,6 +184,17 @@ class MenuAPI:
         menu = IContextMenu(self._context, None)
         if menu is None:
             return  {}
+        else:
+            menu.request = self._request
+            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            return dict((link.name, link) for link in links)
+
+    @property
+    def navigation(self):
+        """Navigation menu links list."""
+        menu = INavigationMenu(self._context, None)
+        if menu is None:
+            return {}
         else:
             menu.request = self._request
             links = list(menu.iterlinks(requesturi=self._requesturi()))
@@ -2337,7 +2348,8 @@ class PageMacroDispatcher:
             pageheading=True,
             portlets=False,
             structuralheaderobject=False,
-            pagetypewasset=True
+            pagetypewasset=True,
+            actionsmenu=True
             ):
             self.elements = vars()
 
@@ -2360,6 +2372,14 @@ class PageMacroDispatcher:
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True),
+        'defaultnomenu':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
+                actionsmenu=False),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
@@ -2432,10 +2452,5 @@ class GotoStructuralObject:
         return headercontext
 
     @property
-    def immediate_object_is_private(self):
-        try:
-            headercontext, adapter = nearest_context_with_adapter(
-                self.use_context, IStructuralHeaderPresentation)
-        except NoCanonicalUrl:
-            return False
-        return adapter.isPrivate()
+    def context_badges(self):
+        return IHasBadges(self.use_context)

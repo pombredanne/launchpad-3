@@ -200,6 +200,36 @@ class IPackageUpload(Interface):
         :param logger: Specify a logger object if required.  Mainly for tests.
         """
 
+    def overrideSource(new_component, new_section):
+        """Override the source package contained in this queue item.
+
+        :param new_component: An IComponent to replace the existing one
+            in the upload's source.
+        :param new_section: An ISection to replace the existing one
+            in the upload's source.
+
+        The override values may be None, in which case they are not
+        changed.
+
+        :return: True if the source was overridden.
+        """
+
+    def overrideBinaries(new_component, new_section, new_priority):
+        """Override all the binaries in a binary queue item.
+
+        :param new_component: An IComponent to replace the existing one
+            in the upload's source.
+        :param new_section: An ISection to replace the existing one
+            in the upload's source.
+        :param new_priority: A valid PackagePublishingPriority to replace
+            the existing one in the upload's binaries.
+
+        The override values may be None, in which case they are not
+        changed.
+
+        :return: True if the binaries were overridden.
+        """
+
 
 class IPackageUploadBuild(Interface):
     """A Queue item's related builds (for Lucille)"""

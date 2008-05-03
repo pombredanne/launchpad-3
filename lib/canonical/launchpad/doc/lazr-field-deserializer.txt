@@ -105,16 +105,18 @@ vocabulary item, the deserializer returns that item. Otherwise it
 raises a ValueError.
 
     >>> from canonical.launchpad.interfaces import IPerson
-    >>> person = deserializer.deserialize("http://api.launchpad.dev/~salgado")
+    >>> person = deserializer.deserialize(
+    ...     "http://api.launchpad.dev/beta/~salgado")
     >>> IPerson.providedBy(person)
     True
     >>> person.name
     u'salgado'
 
-    >>> deserializer.deserialize("http://api.launchpad.dev/~nosuchperson")
+    >>> deserializer.deserialize(
+    ...     "http://api.launchpad.dev/beta/~nosuchperson")
     Traceback (most recent call last):
     ...
-    ValueError: No such object "http://api.launchpad.dev/~nosuchperson".
+    ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
 
     >>> deserializer.deserialize("salgado")
     Traceback (most recent call last):

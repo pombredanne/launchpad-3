@@ -254,10 +254,14 @@ offical bug tracker.
     >>> evolution_task.target.official_malone
     True
 
+    >>> transaction.commit()
+
 If we try to add a task for ALSA, which doesn't use Malone, it won't go
 as smoothly as above.
 
     >>> form['field.product'] = u'alsa-utils'
+    >>> form['field.link_upstream_how'] = u'LINK_UPSTREAM'
+    >>> form['field.bug_url'] = u''
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
 
@@ -266,20 +270,20 @@ as smoothly as above.
     >>> print add_task_view.widgets['product']._getFormInput()
     alsa-utils
 
-As you can see, we're still in the second step, but this time the user
-sees message asking if it's okay to create the bugtask without a bug
-watch.
+As you can see, we're still in the second step, because the user has
+tried to create a bugtask without a bug watch.
 
     >>> len(add_task_view.errors)
-    0
-    >>> print add_task_view.notifications
-    [...alsa-utils doesn\'t use Launchpad as its bug tracker...]
+    1
+    >>> add_task_view.getFieldError('bug_url')
+    u'Required input is missing.'
     >>> add_task_view.next_url is None
     True
 
-If the user confirms, a bugtask will be added to the bug.
+The user must explictly choose to create a bugtask without a bug
+watch.
 
-    >>> form['ignore_missing_remote_bug'] = u'1'
+    >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     SQLObjectCreatedEvent: <BugTask at ...>
@@ -318,11 +322,13 @@ URL. If we don't enter a valid URL, we get an error message.
     >>> print add_task_view.getFieldError('bug_url')
     Launchpad does not recognize the bug tracker at this URL.
 
-Note that this caused the transaction to be aborted, thus the bugtasks
-that got added earlier are now gone:
+Note that this caused the transaction to be aborted, thus the
+alsa-utils bugtask added earlier is now gone:
 
-    >>> len(bug_four.bugtasks)
-    1
+    >>> for bugtask in bug_four.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
 If the URL is valid but there's no bugtracker registered with that URL,
 we ask the user if he wants to register the bugtracker as well.
@@ -347,11 +353,12 @@ linked to the new bug watch.
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
     APTonCD
+    Evolution
     Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
-    'Bug tracker at http://bugzilla.somewhere.org/bugs/': 84
+    bugzilla.somewhere.org/bugs/: 84
 
 If we specify a URL of an already registered bug tracker, both the task
 and the bug watch will be added without any confirmation needed:
@@ -372,12 +379,13 @@ and the bug watch will be added without any confirmation needed:
     ...     print bugtask.bugtargetdisplayname
     alsa-utils
     APTonCD
+    Evolution
     Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
     GnomeGBug GTracker: 84
-    'Bug tracker at http://bugzilla.somewhere.org/bugs/': 84
+    bugzilla.somewhere.org/bugs/: 84
 
 The bug watch got linked to the created task, and all the bug task's
 attributes got initialised to Unknown. The bugtask will be synced with

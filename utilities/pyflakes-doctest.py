@@ -24,6 +24,7 @@ GLOBAL_NAMES = set([
     # for system documentation
     'ANONYMOUS',
     'ILaunchBag',
+    'bugtarget',
     'commit',
     'create_view',
     'flush_database_updates',
@@ -37,6 +38,7 @@ GLOBAL_NAMES = set([
     'browser',
     'extract_link_from_tag',
     'extract_text',
+    'filebug',
     'find_main_content',
     'find_portlet',
     'find_tag_by_id',
@@ -59,6 +61,8 @@ GLOBAL_NAMES = set([
     'webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
+    # For buildd tests
+    'test_dbuser'
     ])
 
 

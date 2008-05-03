@@ -14,7 +14,8 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="authorized_size buildd_secret distribution enabled private purpose"
+      set_attributes="authorized_size buildd_secret distribution enabled
+                      private purpose require_virtualized"
       />
   </content>
 
@@ -22,6 +23,13 @@
       for="canonical.launchpad.interfaces.IArchive"
       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
       factory="canonical.launchpad.browser.archive_to_structualheading"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.ArchiveBadges"
+      permission="zope.Public"
       />
 
   <browser:menus
@@ -51,14 +59,6 @@
    permission="zope.Public"
    template="../templates/archive-form-macros.pt"
    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IArchive"
-    permission="zope.Public"
-    facet="overview"
-    template="../templates/archive-privacy-icon.pt"
-    name="+privacy-icon"
-    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
@@ -117,6 +117,17 @@
       template="../templates/archive-delete-packages.pt"
       facet="overview"
       name="+delete-packages"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.ArchivePackageCopyingView">
+    <browser:page
+      template="../templates/archive-copy-packages.pt"
+      facet="overview"
+      name="+copy-packages"
       />
   </browser:pages>
 

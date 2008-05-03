@@ -36,7 +36,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
@@ -332,7 +332,9 @@ class PackageUpload(SQLBase):
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
-        return ",".join(names)
+        # Make sure the list items have a whitespace separator so
+        # that they can be wrapped in table cells in the UI.
+        return ", ".join(names)
 
     @cachedproperty
     def displayarchs(self):
@@ -858,6 +860,40 @@ class PackageUpload(SQLBase):
                 extra_headers
             )
 
+    def overrideSource(self, new_component, new_section):
+        """See `IPackageUpload`."""
+        if not self.contains_source:
+            return False
+
+        if new_component is None and new_section is None:
+            # Nothing needs overriding, bail out.
+            return False
+
+        for source in self.sources:
+            source.sourcepackagerelease.override(
+                component=new_component, section=new_section)
+
+        return self.sources.count() > 0
+
+    def overrideBinaries(self, new_component, new_section, new_priority):
+        """See `IPackageUpload`."""
+        if not self.contains_build:
+            return False
+
+        if (new_component is None and new_section is None and
+            new_priority is None):
+            # Nothing needs overriding, bail out.
+            return False
+
+        for build in self.builds:
+            for binarypackage in build.build.binarypackages:
+                binarypackage.override(
+                    component=new_component,
+                    section=new_section,
+                    priority=new_priority)
+
+        return self.builds.count() > 0
+
 
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
@@ -876,7 +912,9 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
-            if binary.component not in distroseries.upload_components:
+            if (not self.packageupload.archive.is_ppa and
+                binary.component not in distroseries.upload_components):
+                # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
@@ -902,6 +940,7 @@ class PackageUploadBuild(SQLBase):
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
+        main_component = getUtility(IComponentSet)['main']
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
@@ -916,10 +955,16 @@ class PackageUploadBuild(SQLBase):
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
                 # What do we do about embargoed binaries here?
+                if self.packageupload.archive.is_ppa:
+                    # We override PPA to always publish in the main component.
+                    component = main_component
+                else:
+                    component = binary.component
+
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
-                    component=binary.component,
+                    component=component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
@@ -1009,7 +1054,9 @@ class PackageUploadSource(SQLBase):
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if component not in distroseries.upload_components:
+        if (not self.packageupload.archive.is_ppa and
+            component not in distroseries.upload_components):
+            # Only complain about non-PPA uploads.
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))
@@ -1030,10 +1077,16 @@ class PackageUploadSource(SQLBase):
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
+        if self.packageupload.archive.is_ppa:
+            # We override PPA to always publish in the main component.
+            component = getUtility(IComponentSet)['main']
+        else:
+            component = self.sourcepackagerelease.component
+
         sspph = SecureSourcePackagePublishingHistory(
             distroseries=self.packageupload.distroseries,
             sourcepackagerelease=self.sourcepackagerelease,
-            component=self.sourcepackagerelease.component,
+            component=component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,

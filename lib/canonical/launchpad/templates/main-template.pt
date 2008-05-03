@@ -241,7 +241,8 @@
                       </tal:applicationtabs>
                       <div
                         id="container"
-                        tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
+                        tal:define="context_badges CONTEXTS/lp:context_badges"
+                        tal:attributes="class python: path('view/isPrivate | context_badges/isPrivateBadgeVisible') and 'private' or None"
                       >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
@@ -257,10 +258,29 @@
                           </tal:notifications>
                           <metal:block define-slot="main" />
                         </tal:noportlets>
+                        <div id="navigation-tabs"
+                             tal:condition="not:view/macro:pagehas/actionsmenu">
+                          <div id="context-navigation-tabs"
+                               tal:condition="context/menu:navigation">
+                            <tal:menu
+                              replace="structure context/@@+navigationmenutabs"
+                              />
+                          </div>
+                          <div id="view-navigation-tabs"
+                               tal:condition="view/menu:navigation">
+                            <tal:menu
+                              replace="structure view/@@+navigationmenutabs"
+                              />
+                          </div>
+                        </div>
                         <div
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
+                          <div id="big-badges" style="float: right">
+                            <tal:big-badges replace="structure context/badges:large"/>
+                          </div>
+
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
@@ -279,7 +299,8 @@
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:menu replace="structure CONTEXTS/@@+menubox" />
+                          <tal:menu condition="view/macro:pagehas/actionsmenu"
+                                    replace="structure CONTEXTS/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
                           <metal:portlets define-slot="portlets_one" />
@@ -330,7 +351,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.2.4</a> | build
+              Version 1.2.5</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>

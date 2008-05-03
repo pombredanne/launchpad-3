@@ -132,6 +132,21 @@ def uploadQueueSetUp(test):
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
+def uploaderBugsSetUp(test):
+    """Set up a test suite using the 'uploader' db user.
+
+    Some aspects of the bug tracker are being used by the Soyuz uploader.
+    In order to test that these functions work as expected from the uploader,
+    we run them using the same db user used by the uploader.
+    """
+    test_dbuser = config.uploader.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+def uploaderBugsTearDown(test):
+    logout()
+
 def uploadQueueTearDown(test):
     logout()
 
@@ -291,6 +306,11 @@ def zopelessLaunchpadSecurityTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
 
+def hwdbDeviceTablesSetup(test):
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
@@ -366,6 +386,18 @@ special = {
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+     'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
             layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
@@ -434,10 +466,22 @@ special = {
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'bug-set-status.txt-uploader': LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
             '../doc/closing-bugs-from-changelogs.txt',
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
+            '../doc/closing-bugs-from-changelogs.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'bugtask-expiration.txt': LayeredDocFileSuite(
@@ -547,6 +591,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-comment-pushing.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-pushing.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-debbugs.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-debbugs.txt',
@@ -606,6 +657,13 @@ special = {
     'externalbugtracker-trac.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-trac.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-trac-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac-lp-plugin.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
@@ -686,6 +744,16 @@ special = {
     'manage-chroot.txt': LayeredDocFileSuite(
             '../doc/manage-chroot.txt',
             setUp=manageChrootSetup,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
+            '../doc/build-estimated-dispatch-time.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'hwdb-device-tables.txt': LayeredDocFileSuite(
+            '../doc/hwdb-device-tables.txt',
+            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
             layer=LaunchpadZopelessLayer,
             ),
     }

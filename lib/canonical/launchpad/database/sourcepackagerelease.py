@@ -372,21 +372,24 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-        # First we try to follow any possibly published architecture-specific
-        # binaries for this source in the given (distroarchseries, archive)
-        # location.
+        # First we try to follow any binaries built from the given source
+        # in a distroarchseries with the given architecturetag and published
+        # in the given (distroarchseries, archive) location.
         clauseTables = [
-            'BinaryPackagePublishingHistory', 'BinaryPackageRelease']
+            'BinaryPackagePublishingHistory', 'BinaryPackageRelease',
+            'DistroArchSeries']
 
         query = """
+            Build.sourcepackagerelease = %s AND
             BinaryPackageRelease.build = Build.id AND
+            DistroArchSeries.id = Build.distroarchseries AND
+            DistroArchSeries.architecturetag = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.architecturespecific = true AND
-            Build.sourcepackagerelease = %s AND
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive = %s
-        """ % sqlvalues(self, distroarchseries, archive)
+        """ % sqlvalues(self, distroarchseries.architecturetag,
+                        distroarchseries, archive)
 
         select_results = Build.select(
             query, clauseTables=clauseTables, distinct=True,
@@ -423,23 +426,26 @@ class SourcePackageRelease(SQLBase):
         parent_architectures = []
         archtag = distroarchseries.architecturetag
 
-        # XXX cprov 20070720: this code belongs to IDistroSeries content
-        # class as 'parent_series' property. Other parts of the system
-        # can benefit of this, like SP.packagings, for instance.
-        parent_series = []
-        candidate = distroarchseries.distroseries
-        while candidate is not None:
-            parent_series.append(candidate)
-            candidate = candidate.parent_series
+        if archive.purpose != ArchivePurpose.PPA:
+            # XXX cprov 20070720: this code belongs to IDistroSeries content
+            # class as 'parent_series' property. Other parts of the system
+            # can benefit of this, like SP.packagings, for instance.
+            parent_series = []
+            candidate = distroarchseries.distroseries
+            while candidate is not None:
+                parent_series.append(candidate)
+                candidate = candidate.parent_series
 
-        for series in parent_series:
-            try:
-                candidate = series[archtag]
-            except NotFoundError:
-                pass
-            else:
-                parent_architectures.append(candidate)
-        # end-of-XXX.
+            for series in parent_series:
+                try:
+                    candidate = series[archtag]
+                except NotFoundError:
+                    pass
+                else:
+                    parent_architectures.append(candidate)
+            # end-of-XXX.
+        else:
+            parent_architectures.append(distroarchseries)
 
         architectures = [
             architecture.id for architecture in parent_architectures]

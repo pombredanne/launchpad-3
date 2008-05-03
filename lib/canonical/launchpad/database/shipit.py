@@ -76,9 +76,6 @@ class ShippingRequest(SQLBase):
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
-                             default=None)
-
     type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
         enum=ShippingRequestStatus, notNull=True,
@@ -264,7 +261,7 @@ class ShippingRequest(SQLBase):
         for arch in ShipItArchitecture.items:
             arch_requested_cds = requested_cds[arch]
             # Any of {x86,amd64,ppc}_requested_cds can be None here, so we use
-            # a default value for getattr to make things easier.
+            # a default value for getattr() to make things easier.
             quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
         return quantities
 
@@ -447,7 +444,7 @@ class ShippingRequestSet:
 
     def new(self, recipient, recipientdisplayname, country, city,
             addressline1, phone, addressline2=None, province=None,
-            postcode=None, organization=None, reason=None, shockandawe=None):
+            postcode=None, organization=None, reason=None):
         """See IShippingRequestSet"""
         # Only the shipit-admins team can have more than one open request
         # at a time.
@@ -455,9 +452,9 @@ class ShippingRequestSet:
                 or recipient.currentShipItRequest() is None)
 
         request = ShippingRequest(
-            recipient=recipient, reason=reason, shockandawe=shockandawe,
-            city=city, country=country, addressline1=addressline1,
-            addressline2=addressline2, province=province, postcode=postcode,
+            recipient=recipient, reason=reason, city=city, country=country,
+            addressline1=addressline1, addressline2=addressline2,
+            province=province, postcode=postcode,
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
@@ -603,6 +600,37 @@ class ShippingRequestSet:
                 # can't export it.
                 continue
             assert not (request.isCancelled() or request.isShipped())
+
+            # Make sure we ship at least one Ubuntu CD for each Edubuntu CD
+            # that we approved in this request.
+            requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
+            requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
+            requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
+            edubuntu_total_approved = 0
+            for arch, requested_cds in requested_edubuntu.items():
+                if requested_cds is None:
+                    continue
+                edubuntu_total_approved += requested_cds.quantityapproved
+            if edubuntu_total_approved > 0:
+                all_requested_arches = set(
+                    requested_ubuntu.keys() + requested_edubuntu.keys())
+                new_ubuntu_quantities = {}
+                for arch in all_requested_arches:
+                    # Need to use getattr() here because
+                    # requested_edubuntu[arch] will be None if the request
+                    # doesn't contain any Edubuntu CDs of that architecture.
+                    edubuntu_qty = getattr(
+                        requested_edubuntu[arch], 'quantityapproved', 0)
+                    if edubuntu_qty == 0:
+                        continue
+                    ubuntu_qty = getattr(
+                        requested_ubuntu[arch], 'quantityapproved', 0)
+                    if edubuntu_qty > ubuntu_qty:
+                        ubuntu_qty = edubuntu_qty
+                    new_ubuntu_quantities[arch] = ubuntu_qty
+                request.setApprovedQuantities(
+                    {ShipItFlavour.UBUNTU: new_ubuntu_quantities})
+
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)

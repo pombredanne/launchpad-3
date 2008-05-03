@@ -36,8 +36,8 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
-    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
-    pocketsuffix)
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -107,8 +107,7 @@ class Builder(SQLBase):
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
-        librarian = getUtility(ILibrarianClient)
-        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
+        url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
@@ -271,6 +270,17 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                # Skip archives with no binaries published for the
+                # target distroarchseries.
+                published_binaries = archive.getAllPublishedBinaries(
+                    distroarchseries=build_queue_item.archseries,
+                    status=PackagePublishingStatus.PUBLISHED)
+                if published_binaries.count() == 0:
+                    continue
+
+                # Encode the private PPA repository password in the
+                # sources_list line. Note that the buildlog will be
+                # sanitized to not expose it.
                 if archive.private:
                     uri = URI(archive.archive_url)
                     uri = uri.replace(
@@ -278,6 +288,7 @@ class Builder(SQLBase):
                     url = str(uri)
                 else:
                     url = archive.archive_url
+
                 source_line = (
                     'deb %s %s %s'
                     % (url, dist_name, ogre_components))
@@ -413,6 +424,10 @@ class Builder(SQLBase):
         args['suite'] = suite
         archive_purpose = build_queue_item.build.archive.purpose.name
         args['archive_purpose'] = archive_purpose
+
+        # Let the build slave know whether this is a build in a private
+        # archive.
+        args['archive_private'] = build_queue_item.build.archive.private
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
@@ -552,14 +567,9 @@ class Builder(SQLBase):
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
-        if not self.virtualized:
-            clauses.append("""
-                archive.purpose IN %s
-            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
-        else:
-            clauses.append("""
-                archive.purpose = %s
-            """ % sqlvalues(ArchivePurpose.PPA))
+        clauses.append("""
+            archive.require_virtualized = %s
+        """ % sqlvalues(self.virtualized))
 
         query = " AND ".join(clauses)
 
@@ -699,3 +709,8 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
+
+    def getBuildersForQueue(self, processor, virtualized):
+        """See `IBuilderSet`."""
+        return Builder.selectBy(builderok=True, processor=processor,
+                                virtualized=virtualized)
