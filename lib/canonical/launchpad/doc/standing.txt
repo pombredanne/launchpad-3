@@ -50,6 +50,7 @@ are not a member of, their message gets held for moderator approval.
     >>> def lifeless_post(to_team_name):
     ...     return post_message('robertc@robertcollins.net', to_team_name)
 
+    >>> import logging
     >>> from canonical.launchpad.scripts.standing import (
     ...     UpdatePersonalStanding)
     >>> from canonical.config import config
@@ -69,6 +70,7 @@ are not a member of, their message gets held for moderator approval.
     ...             config.standingupdater.dbuser)
     ...         self.txn = LaunchpadZopelessLayer.txn
     ...         self.logger = MockLogger()
+    ...         self.logger.setLevel(logging.CRITICAL)
     ...         results = super(TestableScript, self).main()
     ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
     ...         return results
@@ -80,9 +82,6 @@ After one approval, Robert's standing does not change.
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -93,9 +92,6 @@ Robert's personal standing does not change.
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -103,9 +99,6 @@ Robert's personal standing does not change.
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -120,9 +113,6 @@ his personal standing can be updated.
     >>> message = lifeless_post('test-two')
     >>> message.approve(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -132,9 +122,6 @@ Rejected and discarded messages don't count.
     >>> message = lifeless_post('test-three')
     >>> message.reject(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -142,9 +129,6 @@ Rejected and discarded messages don't count.
     >>> message = lifeless_post('test-three')
     >>> message.discard(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -158,9 +142,6 @@ Neither do approved messages from someone else.
     >>> message.approve(foobar)
 
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
@@ -171,10 +152,6 @@ approved.  As a result, his personal standing gets updated.
     >>> message = lifeless_post('test-three')
     >>> message.approve(foobar)
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Setting standing for lifeless to GOOD
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
@@ -188,27 +165,18 @@ standing.
 
     >>> lifeless.personal_standing = PersonalStanding.POOR
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.POOR...>
 
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
     >>> lifeless.personal_standing = PersonalStanding.EXCELLENT
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.EXCELLENT...>
@@ -218,10 +186,6 @@ messages will count toward his good standing again.
 
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> script.main()
-    log> Analyzing approved messages
-    log> Updating personal standings
-    log> Setting standing for lifeless to GOOD
-    log> Done.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>

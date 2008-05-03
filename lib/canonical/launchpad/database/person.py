@@ -62,15 +62,16 @@ from canonical.launchpad.interfaces import (
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
-    INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress, InvalidName,
-    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
-    IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
+    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
+    IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
+    ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
+    ITranslationGroupSet, IWikiName, IWikiNameSet, InvalidEmailAddress,
+    InvalidName, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
     PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
-    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    PersonalStanding, PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH,
+    SSHKeyType, ShipItConstants, ShippingRequestStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -3104,18 +3105,20 @@ class PersonSet:
 
     def updatePersonalStandings(self):
         """See `IPersonSet`."""
-        from launchpad.canonical.interfaces import (
-            PersonalStanding, PostedMessageStatus)
         cur = cursor()
         cur.execute("""
         UPDATE Person
         SET personal_standing = %s
         WHERE personal_standing = %s
         AND id IN (
-            SELECT posted_by FROM Person, MessageApproval
-            WHERE status = %
-            AND Person.id = MessageApproval.posted_by
-            AND COUNT(DISTINCT mailing_list) >= %s
+            SELECT posted_by FROM (
+                SELECT posted_by,
+                       COUNT(DISTINCT mailing_list) as approved_count
+                FROM MessageApproval
+                WHERE status = %s
+                GROUP BY posted_by
+            ) AS ApprovedMessages
+            WHERE approved_count >= %s)
         """ % sqlvalues(PersonalStanding.GOOD,
                         PersonalStanding.UNKNOWN,
                         PostedMessageStatus.APPROVED,
