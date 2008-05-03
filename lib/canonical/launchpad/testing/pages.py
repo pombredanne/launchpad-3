@@ -466,6 +466,30 @@ def print_ppa_packages(contents):
         print extract_text(empty_section)
 
 
+def print_navigation(contents):
+    """Print the location, tabs, and page title of the page."""
+    doc = find_tag_by_id(contents, 'document')
+    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
+    print "Location: %s" % " > ".join(
+        extract_text(tag) for tag in breadcrumbs
+        if tag.get('id') != 'homebreadcrumb')
+    print "Structural title: %s" % extract_text(
+        doc.find(id='structuralobject'))
+    print 'Tabs:'
+    for tab in doc.find(id='applicationchooser').findAll('li'):
+        if tab.a:
+            link = tab.a['href']
+        else:
+            link = 'Not active'
+        print "* %s (%s)" % (extract_text(tab), link)
+    main_heading = doc.h1
+    if main_heading:
+        main_heading = extract_text(main_heading)
+    else:
+        main_heading = '(No main heading)'
+    print "Main heading: %s" % main_heading
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -506,6 +530,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation'] = print_navigation
     test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
