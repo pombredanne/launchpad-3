@@ -754,7 +754,7 @@ class TestSourceForge(SourceForge):
         file_path = os.path.join(
             os.path.dirname(__file__), 'testfiles',
             'sourceforge-sample-bug-%s.html' % bug_id)
-        return open(file_path, 'r')
+        return open(file_path, 'r').read()
 
 
 class TestDebianBug(debbugs.Bug):

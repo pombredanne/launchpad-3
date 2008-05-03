@@ -23,9 +23,9 @@ from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
     IStructuralHeaderPresentation)
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget,
-    ContextMenu, Link, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, enabled_with_permission, GetitemNavigation, Navigation)
+    action, canonical_url, custom_widget, ContextMenu, Link,
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    enabled_with_permission, GetitemNavigation, Navigation)
 
 from canonical.widgets import DateWidget
 

@@ -357,6 +357,36 @@ interpretation is that it is a comment.
     Comment
 
 
+=== Answers linked to FAQ questions ===
+
+Answers may also be linked to FAQ questions.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> login('foo.bar@canonical.com')
+    >>> faq = question.target.newFAQ(
+    ...     no_priv, 'Why everyone think this is weird.',
+    ...     "That's an easy one. It's because it is!")
+    >>> removeSecurityProxy(question).faq = faq
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> login('no-priv@canonical.com')
+
+    # Make sure that the database security and permissions are set up
+    # correctly for answers that link to FAQs.  If they are not, then
+    # this will raise an error; See bug #196661.
+    >>> msgid =  send_question_email(
+    ...     question.id, 'test@canonical.com', 'Fnord',
+    ...     "You will probably need to install some RAM to see the fnords.")
+    >>> message = question.messages[-1]
+    >>> message.rfc822msgid == msgid
+    True
+    >>> print message.action.title
+    Answer
+
+
 == AnswerTrackerHandler Integration ==
 
 The general mail processor delegates all emails to the

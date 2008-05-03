@@ -155,20 +155,17 @@ silently rejected.
     >>> print bigjools.account_status.name
     NOACCOUNT
 
-    >>> import email
-    >>> msg = email.message_from_string(
-    ... """From: Julian Edwards <launchpad@julian-edwards.com>
-    ... To: 123@foo.com
-    ... X-Original-To: 123@foo.com
-    ... Subject: doesn't matter
-    ...
-    ... doesn't matter
-    ... """)
+    >>> msg = read_test_message('unsigned_inactive.txt')
     >>> msgid = sendmail(msg, ['edit@malone-domain'])
     >>> handleMail(zopeless_transaction)
     >>> msgid not in foo_handler.handledMails
     True
 
+    >>> msg = read_test_message('invalid_signed_inactive.txt')
+    >>> msgid = sendmail(msg, ['edit@malone-domain'])
+    >>> handleMail(zopeless_transaction)
+    >>> msgid not in foo_handler.handledMails
+    True
 
 == X-Original-To ==
 
@@ -209,6 +206,7 @@ attempting to process incoming mail.
 
 And submit an email to the handler.
 
+    >>> import email
     >>> msg = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: launchpad@oops.com

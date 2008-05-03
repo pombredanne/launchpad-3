@@ -18,10 +18,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, InvalidBugId, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError)
+    get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
+    UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
@@ -32,24 +31,6 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-
-
-_exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (socket.timeout, BugWatchErrorType.TIMEOUT)]
-
-
-def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchErrorType` for a given error."""
-    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
-        if isinstance(error, exc_type):
-            return bugwatcherrortype
-    else:
-        return BugWatchErrorType.UNKNOWN
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -458,6 +439,16 @@ class BugWatchUpdater(object):
                     self.warning(
                         "Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, remotesystem.baseurl, local_ids),
+                        properties=[
+                            ('bug_id', bug_id),
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
+                        info=sys.exc_info())
+                except PrivateRemoteBug:
+                    error = BugWatchErrorType.PRIVATE_REMOTE_BUG
+                    self.warning(
+                        "Remote bug %r on %s is private (local bugs: %s)." %
+                            (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
                             ('bug_id', bug_id),
                             ('local_ids', local_ids)] +
