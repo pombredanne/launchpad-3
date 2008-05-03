@@ -1,8 +1,10 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the CodeImportWorkerMonitor and related classes."""
 
 __metaclass__ = type
+__all__ = [
+    'nuke_codeimport_sample_data']
 
 
 import os
@@ -372,21 +374,22 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         return self.worker_monitor.run()
 
 
+def nuke_codeimport_sample_data():
+    """Delete all the sample data that might interfere with tests."""
+    for job in CodeImportJob.select():
+        job.destroySelf()
+    for code_import in CodeImport.select():
+        code_import.destroySelf()
+
+
 class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     layer = TwistedLaunchpadZopelessLayer
 
-    def nukeCodeImportSampleData(self):
-        """Delete all the sample data that might interfere with tests."""
-        for job in CodeImportJob.select():
-            job.destroySelf()
-        for code_import in CodeImport.select():
-            code_import.destroySelf()
-
     def setUp(self):
         TestCaseWithMemoryTransport.setUp(self)
         self.factory = LaunchpadObjectFactory()
-        self.nukeCodeImportSampleData()
+        nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
