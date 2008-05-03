@@ -471,10 +471,10 @@ def print_navigation(contents):
     doc = find_tag_by_id(contents, 'document')
     breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
     print "Location: %s" % " > ".join(
-        extract_text(tag) for tag in breadcrumbs
+        extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
         if tag.get('id') != 'homebreadcrumb')
     print "Structural title: %s" % extract_text(
-        doc.find(id='structuralobject'))
+        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
     print 'Tabs:'
     for tab in doc.find(id='applicationchooser').findAll('li'):
         if tab.a:
@@ -484,7 +484,8 @@ def print_navigation(contents):
         print "* %s (%s)" % (extract_text(tab), link)
     main_heading = doc.h1
     if main_heading:
-        main_heading = extract_text(main_heading)
+        main_heading = extract_text(main_heading).encode(
+            'us-ascii', 'replace')
     else:
         main_heading = '(No main heading)'
     print "Main heading: %s" % main_heading
