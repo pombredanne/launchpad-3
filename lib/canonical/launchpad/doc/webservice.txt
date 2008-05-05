@@ -813,7 +813,7 @@ describes the capabilities of the web service as a whole.
 If the resources are improperly configured, the WADL can't be
 generated. Here's an example, where DishCollection is registered as an
 adapter twice. Earlier it was registered as the adapter for IDishSet;
-here's it's also registered as the adapter for IAuthorSet. The WADL
+here it's also registered as the adapter for IAuthorSet. The WADL
 generation doesn't know whether to describe DishCollection using the
 named operations defined against IAuthorSet or the named operations
 defined against IDishSet, so there's an AssertionError.
