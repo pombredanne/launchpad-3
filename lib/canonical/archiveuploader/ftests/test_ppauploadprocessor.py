@@ -17,6 +17,7 @@ from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.config import config
+from canonical.launchpad.database import Component
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
@@ -812,6 +813,52 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # restricted librarian as the PPA is private.
         [queue_item] = queue_items
         self.checkFilesRestrictedInLibrarian(queue_item, True)
+
+    def testPPAInvalidComponentUpload(self):
+        """Upload source and binary packages with invalid components.
+
+        Components invalid in the distroseries should be ignored since
+        PPAs are always published in "main".
+        """
+        # The component contrib does not exist in the sample data, so
+        # add it here.
+        Component(name='contrib')
+
+        # Upload a source package first.
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_contrib_component", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.DONE, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+
+        # The upload was accepted despite the fact that it does
+        # not have a valid component:
+        self.assertEqual(queue_items.count(), 1)
+        [queue_item] = queue_items
+        self.assertTrue(
+            queue_item.sourcepackagerelease.component not in
+            self.breezy.upload_components)
+
+        # Binary uploads should exhibit the same behaviour:
+        [build] = self.name16.archive.getBuildRecords(name="bar")
+        self.options.context = 'buildd'
+        self.options.buildid = build.id
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_contrib_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+
+        # The binary is accepted despite the fact that it does not have
+        # a valid component:
+        self.assertEqual(queue_items.count(), 1)
+        [queue_item] = queue_items
+        [build] = queue_item.builds
+        for binary in build.build.binarypackages:
+            self.assertTrue(
+                binary.component not in self.breezy.upload_components)
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):

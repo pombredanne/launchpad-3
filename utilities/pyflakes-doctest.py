@@ -51,6 +51,7 @@ GLOBAL_NAMES = set([
     'print_action_links',
     'print_batch_header',
     'print_comments',
+    'print_navigation',
     'print_portlet_links',
     'print_ppa_packages',
     'print_radio_button_field',

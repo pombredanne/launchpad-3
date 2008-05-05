@@ -47,6 +47,7 @@ class FakeLaunchpad:
 
     def requestMirror(self, loginID, branch_id):
         self._request_mirror_log.append((loginID, branch_id))
+        return defer.succeed(None)
 
 
 class TestTopLevelDir(AvatarTestCase):

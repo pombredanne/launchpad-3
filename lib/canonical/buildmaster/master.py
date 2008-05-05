@@ -72,6 +72,13 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     if pubrec.archive.require_virtualized:
         legal_archserieses = [
             arch for arch in legal_archserieses if arch.supports_virtualized]
+        # Cope with no virtualization support at all. It usually happens when
+        # a distroseries is created and initialized, by default no
+        # architecture supports its. Distro-team might take some time to
+        # decide which architecture will be allowed for PPAs and queue-builder
+        # will continue to work meanwhile.
+        if not legal_archserieses:
+            return []
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
