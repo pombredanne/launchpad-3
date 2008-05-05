@@ -169,7 +169,7 @@ new bug watch.
 And we can check that the remote bug number was stripped.
 
     >>> user_browser.getLink('mozilla.org #1234')
-    <Link text='Linked to [IMG] mozilla.org #1234'
+    <Link text='mozilla.org #1234'
       url='https://bugzilla.mozilla.org/show_bug.cgi?id=1234'>
 
 And now we try to add the same upstream again.

@@ -121,12 +121,13 @@ def set_up_logging(configure_oops_reporting=False):
                 '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
         handler.setLevel(logging.DEBUG)
         log.addHandler(handler)
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.CRITICAL)
 
     # Don't log 'codehosting' messages to stderr.
     if getattr(trace, '_stderr_handler', None) is not None:
         trace._stderr_handler.addFilter(_NotFilter('codehosting'))
-
-    log.setLevel(logging.DEBUG)
 
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')

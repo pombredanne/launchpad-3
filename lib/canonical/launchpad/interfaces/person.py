@@ -48,7 +48,7 @@ from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.rest.declarations import (
-   collection_default_content, export_collection)
+   collection_default_content, export_as_webservice_collection)
 
 from canonical.launchpad import _
 
@@ -1341,7 +1341,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_collection()
+    export_as_webservice_collection()
 
     title = Attribute('Title')
 
@@ -1476,7 +1476,7 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    @collection_default_content
+    @collection_default_content()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.

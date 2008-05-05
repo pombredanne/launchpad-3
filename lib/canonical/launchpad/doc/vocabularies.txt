@@ -7,7 +7,7 @@ Vocabularies are lists of terms. In Launchpad's Component Architecture
 style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -1504,7 +1504,7 @@ All processors type available in Launchpad.
 
 === BugWatchVocabulary ===
 
-All bug watches associated with a bugtask's bug
+All bug watches associated with a bugtask's bug.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask = bug_one.bugtasks[0]
@@ -1515,6 +1515,50 @@ All bug watches associated with a bugtask's bug
     The Mozilla.org Bug Tracker <a...>#2000</a>
     The Mozilla.org Bug Tracker <a...>#42</a>
     Debian Bug tracker <a...>#304014</a>
+
+Bug watches with an email address URL (i.e. starts with "mailto:") are
+treated differently.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugWatchSet, IBugTrackerSet)
+
+    >>> bug_twelve = getUtility(IBugSet).get(12)
+    >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> email_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     bug_twelve, launchbag.user, email_bugtracker, '')
+    >>> email_bugwatch.url
+    u'mailto:bugs@example.com'
+
+The title is rendered differently compared to other bug watches.
+
+    >>> bugtask = bug_twelve.bugtasks[0]
+    >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")
+    >>> for term in vocab:
+    ...     print term.title
+    Email bugtracker &lt;<a...>bugs@example.com</a>&gt;
+
+Additionally, if the bug tracker's title contains the bug tracker's
+URL, then the title is linkified instead.
+
+    >>> email_bugtracker.title = (
+    ...     'Lionel Richtea (%s)' % (
+    ...         email_bugtracker.baseurl,))
+
+    >>> for term in vocab:
+    ...     print term.title
+    Lionel Richtea (<a...>mailto:bugs@example.com</a>)
+
+When there is no logged-in user, the title is much different. The
+email address is hidden, and there is no hyperlink.
+
+    >>> current_user = launchbag.user.preferredemail.email
+    >>> login(ANONYMOUS)
+
+    >>> for term in vocab:
+    ...     print term.title
+    Lionel Richtea (mailto:&lt;email address hidden&gt;)
+
+    >>> login(current_user)
 
 
 === DistributionOrProductVocabulary ===
