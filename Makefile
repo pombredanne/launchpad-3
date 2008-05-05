@@ -214,14 +214,14 @@ clean:
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 	rm -rf lib/mailman
-    rm -rf $(CODEHOSTING_ROOT)
+	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean
 	rm -f TAGS tags
 	$(PYTHON) setup.py clean -a
 
 clean_codehosting:
-    rm -rf $(CODEHOSTING_ROOT)
+	rm -rf $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/push-branches
 
