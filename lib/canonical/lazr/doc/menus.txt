@@ -247,7 +247,7 @@ is defined in by the RecipeMenu class and the view of recipe.
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IFacetLink, ILink, ILinkData)
     >>> from canonical.launchpad.webapp.menu import (
-    ...     FacetLink, LinkData, MenuLink)
+    ...     FacetLink, MenuLink)
 
     # The adapters for the link types used by menus are registered in ZCML.
     # That is not the focus of this test so they are manually registered.
@@ -306,7 +306,6 @@ This is normally performed in ZCML; without the ZCML registration,
 the cookery objects cannot be adapted to menus.
 
     >>> from zope.component import getMultiAdapter, queryAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
