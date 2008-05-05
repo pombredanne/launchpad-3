@@ -8,7 +8,9 @@ __all__ = ['SalesforceVouchers']
 
 import xmlrpclib
 from canonical.config import config
-from canonical.ftests.salesforce import SalesforceXMLRPCTestTransport
+from canonical.launchpad.ftests.salesforce import (
+    SalesforceXMLRPCTestTransport,
+    )
 
 
 class SalesforceVouchers:

@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 
+import copy
 import os
 import re
 import time
@@ -32,7 +33,7 @@ class Voucher:
         self.project_name = None
 
     def __repr__(self):
-        return self.id
+        return "%s %s" % (self.id, self.status)
 
 
 class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
@@ -44,6 +45,9 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
                 Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004', 'cprov_oid'),
                 Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005', 'cprov_oid'),
                 ]
+
+    def __init__(self):
+        self.vouchers = copy.deepcopy(self.vouchers)
 
     def _findVoucher(self, voucher_id):
         for voucher in self.vouchers:
