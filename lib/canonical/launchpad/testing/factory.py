@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    IEmailAddressSet,
     IPersonSet,
     IProductSet,
     IProjectSet,
@@ -160,11 +161,18 @@ class LaunchpadObjectFactory:
 
     def makeTeam(self, team_member, email=None, password=None,
                  displayname=None):
-        team = self.makePerson(displayname=displayname, email=email,
-                               password=password)
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team, team)
+        name = self.getUniqueString('person-name')
+        if displayname is None:
+            displayname = self.getUniqueString('person-display-name')
+        team = getUtility(IPersonSet).newTeam(
+            team_member, name, displayname=displayname,
+            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+
+        if email is None:
+            email = "%s@example.com" % self.getUniqueString('email')
+        address = getUtility(IEmailAddressSet).new(email, team)
+        team.setContactAddress(address)
+
         return team
 
     def makeTranslationGroup(
