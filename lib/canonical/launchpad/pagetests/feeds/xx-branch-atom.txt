@@ -10,41 +10,30 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
 == Create some specific branches to use for this test ==
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> from canonical.launchpad.testing import (
     ...     LaunchpadObjectFactory, time_counter)
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> factory = LaunchpadObjectFactory()
-    >>> owner = factory.makePerson(name='mike', displayname='Mike Murphy')
+    >>> date_generator = time_counter(
+    ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
+    >>> def make_branch(owner, product, name, factory, date_generator):
+    ...     factory.makeBranch(name=name, product=product,
+    ...         displayname=name, date_created=date_generator.next())
+    >>> owner1 = factory.makePerson(name='mike', displayname='Mike Murphy')
+    >>> owner2 = factory.makePerson(name='mary', displayname='Mary Murphy')
     >>> project = factory.makeProject(name='oh-man', displayname='Oh Man')
     >>> product1 = factory.makeProduct(
     ...     name='fooix', project=project, displayname="Fooix")
     >>> product2 = factory.makeProduct(
     ...     name='fooey', project=project, displayname="Fooey")
-    >>> date_generator = time_counter(
-    ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
-    >>> branch = factory.makeBranch(
-    ...     owner=owner, product=product1, name='first',
-    ...     date_created=date_generator.next())
-    >>> branch = factory.makeBranch(
-    ...     owner=owner, product=product2, name='second',
-    ...     date_created=date_generator.next())
-    >>> branch = factory.makeBranch(
-    ...     owner=owner, product=product1, name='third',
-    ...     date_created=date_generator.next())
-    >>> branch = factory.makeBranch(
-    ...     owner=owner, product=product2, name='fourth',
-    ...     date_created=date_generator.next())
-    >>> owner = factory.makePerson(name='mary', displayname='Mary Murphy')
-    >>> branch = factory.makeBranch(
-    ...     owner=owner, product=product1, name='fifth',
-    ...     date_created=date_generator.next())
-    >>> branch = factory.makeBranch(
-    ...     owner=owner, product=product2, name='sixth',
-    ...     date_created=date_generator.next())
-    >>> logout()
+    >>> make_branch(owner1, product1, 'first', factory, date_generator)
+    >>> make_branch(owner1, product2, 'second', factory, date_generator)
+    >>> make_branch(owner1, product1, 'third', factory, date_generator)
+    >>> make_branch(owner2, product2, 'fourth', factory, date_generator)
+    >>> make_branch(owner2, product1, 'fifth', factory, date_generator)
+    >>> make_branch(owner2, product2, 'sixth', factory, date_generator)
 
 
 == Feed for a person's branches ==

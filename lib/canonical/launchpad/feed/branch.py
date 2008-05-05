@@ -127,7 +127,11 @@ class ProductBranchFeed(BranchListingFeed):
     usedfor = IProduct
 
     def _getRawItems(self):
-        """Get the branches from the BranchSet directly."""
+        """See `BranchFeedBase._getRawItems`.
+
+        Return the branches for this product sorted by date_created in
+        descending order.
+        """
         branch_query = getUtility(IBranchSet).getBranchesForProduct(
             product=self.context, visible_by_user=None,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -141,7 +145,11 @@ class ProjectBranchFeed(BranchListingFeed):
     usedfor = IProject
 
     def _getRawItems(self):
-        """Get the branches from the BranchSet directly."""
+        """See `BranchFeedBase._getRawItems`.
+
+        Return the branches for this product sorted by date_created in
+        descending order.
+        """
         branch_query = getUtility(IBranchSet).getBranchesForProject(
             project=self.context, visible_by_user=None,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -155,7 +163,11 @@ class PersonBranchFeed(BranchListingFeed):
     usedfor = IPerson
 
     def _getRawItems(self):
-        """Get the branches from the BranchSet directly."""
+        """See `BranchFeedBase._getRawItems`.
+        
+        Return the branchs for this person sorted by date_created in descending
+        order.
+        """
         branch_query = getUtility(IBranchSet).getBranchesForPerson(
             person=self.context, visible_by_user=None,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
