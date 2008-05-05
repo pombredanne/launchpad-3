@@ -38,9 +38,23 @@ class CodeReviewMessageAddView(LaunchpadFormView):
     def is_reply(self):
         return ICodeReviewMessage.providedBy(self.context)
 
+    @property
+    def branch_merge_proposal(self):
+        if self.is_reply:
+            return self.context.branch_merge_proposal
+        else:
+            return self.context
+
+    @property
+    def reply_to(self):
+        if self.is_reply:
+            return self.context
+        else:
+            return None
+
     @action('Add')
     def add_action(self, action, data):
         """Create the comment..."""
-        message = self.context.branch_merge_proposal.createMessage(
-            self.user, '', data['comment'], parent=self.context)
+        message = self.branch_merge_proposal.createMessage(
+            self.user, '', data['comment'], parent=self.reply_to)
         self.next_url = canonical_url(message)
