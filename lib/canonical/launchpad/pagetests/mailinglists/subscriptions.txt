@@ -385,3 +385,130 @@ does not show either link.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+
+== Mailing list auto-subscription settings ==
+
+Launchpad may automatically subscribe a person to a team's mailing
+list.  The setting that controls this behaviour is on the person's
+Email preferences page.
+
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~carlos')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+Carlos's default setting, 'Ask me when I join a team', is still in place.
+
+    >>> print_radio_button_field(browser.contents,
+    ...     'mailing_list_auto_subscribe_policy')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+Carlos can update the value at any time using his Email Preferences
+page.
+
+    # A convenient helper for setting and submitting a new
+    # auto-subscribe policy.
+    >>> def set_autosubscribe_policy_and_submit(newvalue):
+    ...     control = browser.getControl(
+    ...         name='field.mailing_list_auto_subscribe_policy')
+    ...     control.value = [newvalue]
+    ...     browser.getControl('Update Policy').click()
+    ...     print_radio_button_field(browser.contents,
+    ...         'mailing_list_auto_subscribe_policy')
+
+    >>> original_value = browser.getControl(
+    ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
+
+    >>> set_autosubscribe_policy_and_submit('ALWAYS')
+    ( ) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    (*) Always subscribe me to mailing lists
+
+    # We only need to check this once.
+    >>> get_feedback_messages(browser.contents)
+    [u'Your auto-subscription policy has been updated.']
+
+    >>> set_autosubscribe_policy_and_submit('NEVER')
+    (*) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+Updating the value twice has no adverse affect.
+
+    # Restores the original value while performing the test.
+    >>> assert original_value == 'ON_REGISTRATION'
+    >>> set_autosubscribe_policy_and_submit(original_value)
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+These settings also effect what a user sees when they go to join a new
+team.  The 'Team Join' page has a checkbox that allows a user to sign
+up for the team mailing list at the same time as joining the
+team. Users who have chosen the 'On registration' or 'Always'
+subscription settings will see the box checked by default.
+
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> print_radio_button_field(browser.contents,
+    ...     'mailing_list_auto_subscribe_policy')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins/+join'
+
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    ['subscribe']
+
+    # Change James' setting
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy_and_submit('ALWAYS')
+    ( ) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    (*) Always subscribe me to mailing lists
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    ['subscribe']
+
+Users who have chosen to never be auto-subscribed to mailing
+lists will not have the box checked.
+
+    # Change James' setting
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy_and_submit('NEVER')
+    (*) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    []
+
+    # Restore James' setting.
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists

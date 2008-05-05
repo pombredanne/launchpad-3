@@ -9,6 +9,7 @@ __all__ = [
 import cElementTree
 import textwrap
 from email.Utils import parseaddr
+from os.path import splitext
 from StringIO import StringIO
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
 from zipfile import ZipFile
@@ -109,40 +110,51 @@ class MozillaZipFile:
         archive = ZipFile(StringIO(content), 'r')
         for entry in sorted(archive.namelist()):
 
-            # Figure out filesystem path to contained file, from the root of
-            # the XPI archive.
-            if entry.endswith('.jar'):
-                file_subpath = make_jarpath(xpi_path, entry)
-            else:
-                file_subpath = "%s/%s" % (xpi_path, entry)
+            # We're only interested in this file if its name ends with one of
+            # these dot suffixes.
+            root, suffix = splitext(entry)
+            if suffix not in ['.jar', '.dtd', '.properties']:
+                continue
 
-            if manifest is not None:
-                chrome_path, locale = manifest.get_chrome_path_and_locale(
-                    file_subpath)
-                if chrome_path is None:
-                    # We have a manifest, and this file is not in it.  Skip.
-                    continue
+            if suffix == '.jar':
+                subpath = make_jarpath(xpi_path, entry)
             else:
+                subpath = "%s/%s" % (xpi_path, entry)
+
+            # If we have a manifest, we skip anything that it doesn't list as
+            # having something useful for us.
+            if manifest is None:
                 chrome_path = None
-
-            if entry.endswith('.properties'):
-                data = archive.read(entry)
-                pf = PropertyFile(
-                    filename=entry, chrome_path=chrome_path, content=data)
-                self.extend(pf.messages)
-            elif entry.endswith('.dtd'):
-                data = archive.read(entry)
-                dtdf = DtdFile(
-                    filename=entry, chrome_path=chrome_path, content=data)
-                self.extend(dtdf.messages)
-            elif entry.endswith('.jar'):
-                data = archive.read(entry)
-                jarf = MozillaZipFile(filename=entry, xpi_path=file_subpath,
-                    content=data, manifest=manifest)
-                self.extend(jarf.messages)
             else:
-                # Not a file we know what to do with.
-                pass
+                if suffix == '.jar':
+                    if not manifest.containsLocales(subpath):
+                        # Jar file contains no directories with locale files.
+                        continue
+                else:
+                    chrome_path, locale = manifest.getChromePathAndLocale(
+                        subpath)
+                    if chrome_path is None:
+                        # File is not in a directory containing locale files.
+                        continue
+
+            # Go ahead, parse!
+            data = archive.read(entry)
+
+            if suffix == '.jar':
+                parsed_file = MozillaZipFile(filename=entry,
+                    xpi_path=subpath, content=data, manifest=manifest)
+            elif suffix == '.dtd':
+                parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
+                    content=data)
+            elif suffix == '.properties':
+                parsed_file = PropertyFile(filename=entry,
+                    chrome_path=chrome_path, content=data)
+            else:
+                raise AssertionError(
+                    "Unexpected filename suffix: %s." % suffix)
+
+            # Take messages from parsed file.
+            self.extend(parsed_file.messages)
 
         # Eliminate duplicate messages.
         seen_messages = set()

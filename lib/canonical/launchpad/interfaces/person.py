@@ -48,7 +48,7 @@ from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.rest.declarations import (
-   collection_default_content, export_collection)
+   collection_default_content, export_as_webservice_collection)
 
 from canonical.launchpad import _
 
@@ -56,12 +56,14 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import (
-    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
@@ -700,6 +702,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
+    mailing_list_auto_subscribe_policy = Choice(
+        title=_('Mailing List Auto-subscription Policy'),
+        required=True,
+        vocabulary=MailingListAutoSubscribePolicy,
+        default=MailingListAutoSubscribePolicy.ON_REGISTRATION,
+        description=_(
+            "This attribute determines whether a person is "
+            "automatically subscribed to a team's mailing list when the "
+            "person joins said team."))
+
     merged = Int(
         title=_('Merged Into'), required=False, readonly=True,
         description=_(
@@ -1145,6 +1157,36 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
+    def autoSubscribeToMailingList(mailinglist, requester=None):
+        """Subscribe this person to a mailing list.
+
+        This method takes the user's mailing list auto-subscription
+        setting into account, and it may or may not result in a list
+        subscription.  It will only subscribe the user to the mailing
+        list if all of the following conditions are met:
+
+          * The mailing list is not None.
+          * The mailing list is in an unusable state.
+          * The user is not already subscribed.
+          * The user has a preferred address set.
+          * The user's auto-subscribe preference is ALWAYS, or
+          * The user's auto-subscribe preference is ON_REGISTRATION,
+            and the requester is either themself or None.
+
+        This method will not raise exceptions if any of the above are
+        not true.  If you want these problems to raise exceptions
+        consider using `IMailinglist.subscribe()` directly.
+
+        :param mailinglist: The list to subscribe to.  No action is
+        	taken if the list is None, or in an unusable state.
+
+        :param requester: The person requesting the list subscription,
+        	if not the user himself.  The default assumes the user
+        	themself is making the request.
+
+        :return: True if the user was subscribed, false if they weren't.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -1194,7 +1236,7 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
-    def join(team, requester=None):
+    def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
@@ -1205,8 +1247,16 @@ class IPersonEditRestricted(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
-        :param requester: The person who requested the membership on behalf of
-        a team or None when a person requests the membership for himself.
+        If may_subscribe_to_list is True, then also attempt to
+        subscribe to the team's mailing list, depending on the list
+        status and the person's auto-subscribe settings.
+
+        :param requester: The person who requested the membership on
+            behalf of a team or None when a person requests the
+            membership for himself.
+
+        :param may_subscribe_to_list: If True, also try subscribing to
+            the team mailing list.
         """
 
     def leave(team):
@@ -1237,7 +1287,8 @@ class IPersonEditRestricted(Interface):
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
+                  comment=None, force_team_add=False,
+                  may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
@@ -1247,6 +1298,11 @@ class IPersonEditRestricted(Interface):
         If the person is actually a team and force_team_add is False, the
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
+
+        If the the person is not a team, and may_subscribe_to_list
+        is True, then the person may be subscribed to the team's
+        mailing list, depending on the list status and the person's
+        auto-subscribe settings.
 
         The given status must be either Approved, Proposed or Admin.
 
@@ -1341,7 +1397,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_collection()
+    export_as_webservice_collection()
 
     title = Attribute('Title')
 
@@ -1476,7 +1532,7 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    @collection_default_content
+    @collection_default_content()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.

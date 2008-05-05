@@ -138,7 +138,7 @@ to HTTP on their behalf:
 Similar things happen when the upstream link is an email address:
 
     >>> user_browser.open(
-    ...    'http://bugs.launchpad.dev/evolution/+bug/6/'
+    ...    'http://bugs.launchpad.dev/jokosher/+bug/12/'
     ...    '+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'gnome-terminal'
     >>> user_browser.getControl('Continue').click()
@@ -162,7 +162,7 @@ confirmation.
 
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/gnome-terminal/+bug/6'
+    'http://bugs.launchpad.dev/gnome-terminal/+bug/12'
 
     >>> def print_remote_bug_watches_portlet(browser):
     ...     bug_watches = find_portlet(
@@ -175,9 +175,37 @@ confirmation.
     ...         else:
     ...             print '  --> %s' % bug_watch_link.get('href')
 
+    >>> import re
+    >>> def print_assigned_bugtasks(browser):
+    ...     bugtasks = find_main_content(browser.contents).find(
+    ...         'table', attrs={'class': 'listing'}).tbody(
+    ...         'tr', id=re.compile('^tasksummary[0-9]+$'))
+    ...     for bugtask in bugtasks:
+    ...         cells = bugtask('td', recursive=False)
+    ...         if len(cells) != 6:
+    ...             continue
+    ...         affects = extract_text(cells[1])
+    ...         assignee = extract_text(cells[-1])
+    ...         if assignee:
+    ...             assignee_link = cells[-1].a
+    ...             if assignee_link is None:
+    ...                 print '%s -->\n  %s' % (affects, assignee)
+    ...             else:
+    ...                 print '%s -->\n  %s\n  %s' % (
+    ...                     affects, assignee, assignee_link['href'])
+
     >>> print_remote_bug_watches_portlet(user_browser)
     auto-dark-master-o-bugs
       --> mailto:dark-master-o-bugs@mylittlepony.com
+
+    >>> print_assigned_bugtasks(user_browser)
+    GNOME Terminal -->
+      auto-dark-master-o-bugs
+      mailto:dark-master-o-bugs@mylittlepony.com
+
+    >>> user_browser.contents.count(
+    ...     'mailto:dark-master-o-bugs@mylittlepony.com')
+    3
 
 To evade harvesting, the email address above is obfuscated if you're
 not logged in.
@@ -186,3 +214,11 @@ not logged in.
     >>> print_remote_bug_watches_portlet(anon_browser)
     auto-dark-master-o-bugs
       --> None
+
+    >>> print_assigned_bugtasks(anon_browser)
+    GNOME Terminal -->
+      auto-dark-master-o-bugs
+
+    >>> anon_browser.contents.count(
+    ...     'mailto:dark-master-o-bugs@mylittlepony.com')
+    0

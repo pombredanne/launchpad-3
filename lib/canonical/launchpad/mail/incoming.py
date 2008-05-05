@@ -67,6 +67,7 @@ def authenticateEmail(mail):
 
     The mail is expected to be an ISignedMessage.
     """
+
     signature = mail.signature
     signed_content = mail.signedContent
 
@@ -78,7 +79,14 @@ def authenticateEmail(mail):
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
         return
-    elif signature is None:
+
+    person = IPerson(principal)
+
+    if person.account_status != AccountStatus.ACTIVE:
+        raise InactiveAccount(
+            "Mail from a user with an inactive account.")
+
+    if signature is None:
         # Mark the principal so that application code can check that the
         # user was weakly authenticated.
         directlyProvides(
@@ -86,11 +94,6 @@ def authenticateEmail(mail):
             IWeaklyAuthenticatedPrincipal)
         setupInteraction(principal, email_addr)
         return principal
-
-    person = IPerson(principal)
-
-    if person.account_status != AccountStatus.ACTIVE:
-        raise InactiveAccount("Mail from a user with an inactive account.")
 
     gpghandler = getUtility(IGPGHandler)
     try:

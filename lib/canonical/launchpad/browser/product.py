@@ -1422,6 +1422,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """How many branches are not shown."""
         return self.branch_count - len(self.initial_branches)
 
+    def hasAnyBranchesVisibleByUser(self):
+        """See `BranchListingView`."""
+        return self.branch_count > 0
+
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
