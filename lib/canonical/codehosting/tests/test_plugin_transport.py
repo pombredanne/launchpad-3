@@ -14,16 +14,21 @@ import tempfile
 import unittest
 
 from bzrlib import errors
-from bzrlib.transport import get_transport, _get_protocol_handlers
+from bzrlib.transport import (
+    get_transport, _get_protocol_handlers, register_transport, Server,
+    unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase
+from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.urlutils import local_path_to_url
 
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
+from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import LaunchpadServer, set_up_logging
+from canonical.codehosting.transport import (
+    LaunchpadServer, set_up_logging, VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -143,6 +148,49 @@ class TestLaunchpadServer(TestCase):
         transport, path = self.server.translateVirtualPath(
             '~testuser/firefox/baz/.bzr')
         self.assertStartsWith(path, branch_id_to_path(1))
+
+
+class TestVirtualTransport(TestCaseInTempDir):
+
+    class VirtualServer(Server):
+
+        def __init__(self, backing_transport):
+            self._backing_transport = backing_transport
+
+        def _factory(self, url):
+            return VirtualTransport(self, url)
+
+        def get_url(self):
+            return self.scheme
+
+        def setUp(self):
+            self.scheme = 'virtual:///'
+            register_transport(self.scheme, self._factory)
+
+        def tearDown(self):
+            unregister_transport(self.scheme, self._factory)
+
+        def translateVirtualPath(self, virtual_path):
+            return (
+                self._backing_transport, 'prefix_' + virtual_path.lstrip('/'))
+
+    def setUp(self):
+        TestCaseInTempDir.setUp(self)
+        self.server = self.VirtualServer(
+            FatLocalTransport(local_path_to_url('.')))
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        self.transport = get_transport(self.server.get_url())
+
+    def test_writeChunk(self):
+        self.transport.writeChunk('foo', 0, 'content')
+        self.assertEqual('content', open('prefix_foo').read())
+
+    def test_realPath(self):
+        self.transport.mkdir('baz')
+        os.symlink('prefix_foo', 'prefix_baz/bar')
+        t = self.transport.clone('baz')
+        self.assertEqual('/baz/bar', t.local_realPath('bar'))
 
 
 class TestLaunchpadTransport(TestCase):

@@ -655,6 +655,16 @@ class VirtualTransport(Transport):
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)
 
+    def local_realPath(self, relpath):
+        # This method should return an absolute path (not URL) that points to
+        # `relpath` and dereferences any symlinks. The absolute path should be
+        # on this transport.
+        #
+        # Here, we assume that the underlying transport has no symlinks
+        # (Bazaar transports cannot create symlinks). This means that we can
+        # just return the absolute path.
+        return self._abspath(relpath)
+
     def rename(self, rel_from, rel_to):
         to_transport, to_path = self._getUnderylingTransportAndPath(rel_to)
         from_transport, from_path = self._getUnderylingTransportAndPath(
@@ -669,6 +679,9 @@ class VirtualTransport(Transport):
 
     def stat(self, relpath):
         return self._call('stat', relpath)
+
+    def writeChunk(self, relpath, offset, data):
+        return self._call('writeChunk', relpath, offset, data)
 
 
 class LaunchpadTransport(VirtualTransport):
