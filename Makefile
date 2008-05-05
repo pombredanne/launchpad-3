@@ -224,6 +224,8 @@ clean_codehosting:
 	rm -rf $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/push-branches
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
