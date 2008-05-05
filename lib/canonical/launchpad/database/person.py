@@ -2455,16 +2455,16 @@ class PersonSet:
         assert getUtility(IMailingListSet).get(from_person.name) is None, (
             "Can't merge teams which have mailing lists into other teams.")
 
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        flush_database_updates()
-
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
         if from_person.isTeam() and from_person.allmembers.count() > 0:
             raise AssertionError(
                 "Only teams without active members can be merged")
+
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        flush_database_updates()
 
         # Get a database cursor.
         cur = cursor()

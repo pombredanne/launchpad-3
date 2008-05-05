@@ -57,8 +57,7 @@ class HWSubmission(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                        storm_validator=validate_public_person)
     distroarchseries = ForeignKey(dbName='distroarchseries',
-                                  foreignKey='DistroArchSeries',
-                                  notNull=True)
+                                  foreignKey='DistroArchSeries')
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
                                 notNull=False, default=DEFAULT)

@@ -182,7 +182,7 @@ def validate_is_imported(self, attr, value):
             # We need to flush the old imported message before the
             # new one because the database constraints prevent two
             # imported messages.
-            Store.of(self).add_flush_order(current_translation_message,
+            Store.of(self).add_flush_order(imported_translation_message,
                                            self)
 
     return value

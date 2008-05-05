@@ -69,6 +69,7 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
+from storm.expr import SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -1488,9 +1489,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = """
-        %s AND Person.name = %s
-        """ % (self._filter, quote(token))
+        clause = AND(self._filter, Person.name == token)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1509,9 +1508,9 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = """
-            %s AND (Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))
-        """ % (self._filter, quote(query), quote(query))
+        clause = AND(self._filter,
+                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                         % (quote(query), quote(query))))
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
