@@ -36,8 +36,8 @@ published across all ubuntu PPAs.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
     Statistics
-    3 registered
-    2 active
+    3 registered PPAs
+    2 active PPAs
     4 published sources
     4 published binaries
 
