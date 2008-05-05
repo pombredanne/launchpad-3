@@ -20,20 +20,23 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
     >>> def make_branch(owner, product, name, factory, date_generator):
     ...     factory.makeBranch(name=name, product=product,
-    ...         displayname=name, date_created=date_generator.next())
-    >>> owner1 = factory.makePerson(name='mike', displayname='Mike Murphy')
-    >>> owner2 = factory.makePerson(name='mary', displayname='Mary Murphy')
+    ...         owner=owner, date_created=date_generator.next())
+    >>> mike = factory.makePerson(name='mike', displayname='Mike Murphy')
+    >>> mary = factory.makePerson(name='mary', displayname='Mary Murphy')
     >>> project = factory.makeProject(name='oh-man', displayname='Oh Man')
     >>> product1 = factory.makeProduct(
     ...     name='fooix', project=project, displayname="Fooix")
     >>> product2 = factory.makeProduct(
     ...     name='fooey', project=project, displayname="Fooey")
-    >>> make_branch(owner1, product1, 'first', factory, date_generator)
-    >>> make_branch(owner1, product2, 'second', factory, date_generator)
-    >>> make_branch(owner1, product1, 'third', factory, date_generator)
-    >>> make_branch(owner2, product2, 'fourth', factory, date_generator)
-    >>> make_branch(owner2, product1, 'fifth', factory, date_generator)
-    >>> make_branch(owner2, product2, 'sixth', factory, date_generator)
+    >>> make_branch(mike, product1, 'first', factory, date_generator)
+    >>> make_branch(mike, product2, 'second', factory, date_generator)
+    >>> make_branch(mike, product1, 'third', factory, date_generator)
+    >>> make_branch(mike, product2, 'fourth', factory, date_generator)
+    >>> make_branch(mary, product1, 'fifth', factory, date_generator)
+    >>> make_branch(mary, product2, 'sixth', factory, date_generator)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> logout()
 
 
 == Feed for a person's branches ==
