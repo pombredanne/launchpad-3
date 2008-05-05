@@ -68,7 +68,7 @@ the branch using Bazaar.""")
 The To: header value used.  The value may be any string parseable by
 email.utils.parseaddr().  The address portion of the string will be used as
 an envelope recipient (i.e. the RCPT TO).  If not given, the recipient's
-address is calculated from the branch url.""")
+address is found by looking at the first pending merge in the branch.""")
     parser.add_option('-c', '--cc',
                       type='string', default=[], action='append',
                       dest='cc_recipients',
@@ -135,8 +135,7 @@ def main():
     parser, opts, args = parseargs()
     branch, user = get_branch_and_user(args[0])
     if branch is None:
-        print >> sys.stderr, 'No branch url was found in first 10 lines'
-        return 1
+        parser.error('No branch url was found in first 10 lines')
 
     # Load the branch we're within.
     this_tree = get_this_tree()
@@ -157,6 +156,10 @@ def main():
 
     if opts.sender is None:
         sender = this_branch.get_config().username()
+        if sender is None:
+            parser.error(
+                'A sender address could not be determined. Have you set '
+                'your email address in locations.conf?')
     else:
         sender = opts.sender
 
