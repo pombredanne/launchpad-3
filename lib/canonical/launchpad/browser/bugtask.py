@@ -1162,9 +1162,6 @@ class BugTaskEditView(LaunchpadEditFormView):
             bugtask.transitionToStatus(new_status, self.user)
 
         if new_assignee is not missing and bugtask.assignee != new_assignee:
-            changed = True
-            bugtask.transitionToAssignee(new_assignee)
-
             if new_assignee is not None and new_assignee != self.user:
                 is_contributor = new_assignee.isBugContributorInTarget(
                     user=self.user, target=bugtask.pillar)
@@ -1186,6 +1183,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
                         canonical_url(bugtask))))
+            changed = True
+            bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
