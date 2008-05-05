@@ -56,7 +56,13 @@ class TestCodeImportDispatcherUnit(TestCase):
         self._machine = self.factory.makeCodeImportMachine(
             set_online=True, hostname='machine')
 
-    def switchDbUser(self):
+    def switchDbUserAndCreateDispatcher(self):
+        """Switch to the specific DB user and create the dispatcher.
+
+        This cannot called by setUp as various tests need more permissions
+        than we want to give to 'codeimportdispatcher' to set up the test
+        fixture.
+        """
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportdispatcher')
         self.dispatcher = CodeImportDispatcher(
@@ -64,6 +70,12 @@ class TestCodeImportDispatcherUnit(TestCase):
 
     @property
     def machine(self):
+        """The machine we created during test setup.
+
+        We implement this as a property that fetches the object from the
+        database afresh so that we can just say 'self.machine' and not have to
+        think about not re-using objects across transaction boundaries.
+        """
         return getUtility(ICodeImportMachineSet).getByHostname('machine')
 
     def pushConfig(self, **args):
@@ -82,14 +94,14 @@ class TestCodeImportDispatcherUnit(TestCase):
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.assertEqual(
             self.dispatcher.getHostname(),
             socket.gethostname())
 
     def test_getHostnameOverride(self):
         # getHostname can be overriden by the config for testing, however.
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.pushConfig(forced_hostname='test-value')
         self.assertEqual(
             self.dispatcher.getHostname(),
@@ -121,7 +133,7 @@ class TestCodeImportDispatcherUnit(TestCase):
 
         # We create a script that writes its command line arguments to
         # some a temporary file and examine that.
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         tmpdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmpdir)
         script_path = os.path.join(tmpdir, 'script.py')
@@ -147,7 +159,7 @@ class TestCodeImportDispatcherUnit(TestCase):
         # When the machine is offline, the dispatcher doesn't look for any
         # jobs.
         self.machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
 
     def test_shouldLookForJob_machineIsQuiescingNoJobsRunning(self):
@@ -155,7 +167,7 @@ class TestCodeImportDispatcherUnit(TestCase):
         # machine, the dispatcher doesn't look for any jobs and sets the
         # machine to be offline.
         self.machine.setQuiescing(self.factory.makePerson(), "reason")
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
         self.assertEqual(self.machine.state, CodeImportMachineState.OFFLINE)
 
@@ -164,7 +176,7 @@ class TestCodeImportDispatcherUnit(TestCase):
         # machine, the dispatcher doesn't look for any more jobs.
         self.createJobRunningOnMachine(self.machine)
         self.machine.setQuiescing(self.factory.makePerson(), "reason")
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
         self.assertEqual(self.machine.state, CodeImportMachineState.QUIESCING)
 
@@ -173,20 +185,20 @@ class TestCodeImportDispatcherUnit(TestCase):
         # dispatcher doesn't look for any more jobs.
         for i in range(config.codeimportdispatcher.max_jobs_per_machine):
             self.createJobRunningOnMachine(self.machine)
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.assertFalse(self.dispatcher.shouldLookForJob(self.machine))
 
     def test_shouldLookForJob_shouldLook(self):
         # If the machine is online and there are not already
         # max_jobs_per_machine jobs running, then we should look for a job.
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.assertTrue(self.dispatcher.shouldLookForJob(self.machine))
 
     def test_findAndDispatchJob_jobWaiting(self):
         # If there is a job to dispatch, then we call dispatchJob with its id.
         calls = []
         self.pushConfig(forced_hostname=self.machine.hostname)
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
         self.dispatcher.findAndDispatchJob(StubSchedulerClient(10))
         self.assertEqual(calls, [10])
@@ -195,7 +207,7 @@ class TestCodeImportDispatcherUnit(TestCase):
         # If there is no job to dispatch, then we just exit quietly.
         calls = []
         self.pushConfig(forced_hostname=self.machine.hostname)
-        self.switchDbUser()
+        self.switchDbUserAndCreateDispatcher()
         self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
         self.dispatcher.findAndDispatchJob(StubSchedulerClient(0))
         self.assertEqual(calls, [])
