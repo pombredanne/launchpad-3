@@ -609,11 +609,8 @@ class Branch(SQLBase):
         if break_references:
             self._breakReferences()
         if self.canBeDeleted():
-            # Delete any branch revisions.
-            branch_ancestry = BranchRevision.selectBy(branch=self)
-            for branch_revision in branch_ancestry:
-                BranchRevision.delete(branch_revision.id)
-            # Now delete the branch itself.
+            # BranchRevisions are taken care of a cascading delete
+            # in the database.
             SQLBase.destroySelf(self)
         else:
             raise CannotDeleteBranch(
@@ -663,8 +660,8 @@ LISTING_SORT_TO_COLUMN = {
     BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
-    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-last_scanned',
-    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'last_scanned',
+    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',
+    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'date_last_modified',
     BranchListingSort.NEWEST_FIRST: '-date_created',
     BranchListingSort.OLDEST_FIRST: 'date_created',
     }
@@ -927,10 +924,10 @@ class BranchSet:
                 params['context'] = owner.name
             else:
                 params['maybe_junk'] = ''
-                params['context'] = product.name
+                params['context'] = "%s in %s" % (owner.name, product.name)
             raise BranchCreationException(
                 'A %(maybe_junk)sbranch with the name "%(name)s" already '
-                'exists for "%(context)s".' % params)
+                'exists for %(context)s.' % params)
 
         branch = Branch(
             registrant=registrant,
@@ -1362,6 +1359,15 @@ class BranchSet:
 
         return [branches[id] for id in branch_ids]
 
+    def getByProductAndName(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.selectBy(name=name, product=product.id)
+
+    def getByProductAndNameStartsWith(self, product, name):
+        """See `IBranchSet`."""
+        return Branch.select(
+            'product = %s AND name LIKE %s' % sqlvalues(product, name + '%%'))
+
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(
@@ -1381,10 +1387,5 @@ class BranchSet:
 
     def isBranchNameAvailable(self, owner, product, branch_name):
         """See `IBranchSet`."""
-        if product is None:
-            results = Branch.selectBy(
-                owner=owner, product=None, name=branch_name)
-        else:
-            results = Branch.selectBy(product=product, name=branch_name)
-
-        return results.count() == 0
+        branch = self.getBranch(owner, product, branch_name)
+        return branch is None

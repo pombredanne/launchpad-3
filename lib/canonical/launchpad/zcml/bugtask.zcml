@@ -39,7 +39,8 @@
                         title related_tasks other_affected_pillars
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
-                        conjoined_master conjoined_slave subscribe" />
+                        conjoined_master conjoined_slave subscribe
+                        getConjoinedMaster" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
@@ -84,6 +85,20 @@
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       for="canonical.launchpad.interfaces.IBugTask"
       factory="canonical.launchpad.browser.BugTaskSOP"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.lazr.interfaces.IObjectPrivacy"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskPrivacyAdapter"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskBadges"
       permission="zope.Public"
       />
 

@@ -25,8 +25,10 @@ from zope.testing import doctest
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing import PageTestLayer
 
 
@@ -387,6 +389,17 @@ def print_action_links(content):
             print entry.strong.string
 
 
+def print_navigation_links(content):
+    """Print navigation menu urls."""
+    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    if navigation_links is None:
+        print "No navigation links"
+        return
+    entries = navigation_links.findAll('a')
+    for entry in entries:
+        print '%s: %s' % (entry.string, entry['href'])
+
+
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
 
@@ -455,6 +468,31 @@ def print_ppa_packages(contents):
         print extract_text(empty_section)
 
 
+def print_navigation(contents):
+    """Print the location, tabs, and page title of the page."""
+    doc = find_tag_by_id(contents, 'document')
+    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
+    print "Location: %s" % " > ".join(
+        extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
+        if tag.get('id') != 'homebreadcrumb')
+    print "Structural title: %s" % extract_text(
+        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
+    print 'Tabs:'
+    for tab in doc.find(id='applicationchooser').findAll('li'):
+        if tab.a:
+            link = tab.a['href']
+        else:
+            link = 'Not active'
+        print "* %s (%s)" % (extract_text(tab), link)
+    main_heading = doc.h1
+    if main_heading:
+        main_heading = extract_text(main_heading).encode(
+            'us-ascii', 'replace')
+    else:
+        main_heading = '(No main heading)'
+    print "Main heading: %s" % main_heading
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -471,6 +509,11 @@ def setupBrowser(auth=None):
     return browser
 
 
+def safe_canonical_url(*args, **kwargs):
+    """Generate a bytestring URL for an object"""
+    return str(canonical_url(*args, **kwargs))
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
@@ -484,6 +527,11 @@ def setUpGlobs(test):
     test.globs['admin_browser'] = setupBrowser(
         auth="Basic foo.bar@canonical.com:test")
 
+    test.globs['ANONYMOUS'] = ANONYMOUS
+    # If a unicode URL is opened by the test browswer, later navigation
+    # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
+    test.globs['canonical_url'] = safe_canonical_url
+    test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
@@ -492,9 +540,13 @@ def setUpGlobs(test):
     test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['login'] = login
+    test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation'] = print_navigation
+    test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
     test.globs['print_submit_buttons'] = print_submit_buttons

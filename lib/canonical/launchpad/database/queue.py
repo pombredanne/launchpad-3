@@ -332,7 +332,9 @@ class PackageUpload(SQLBase):
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
-        return ",".join(names)
+        # Make sure the list items have a whitespace separator so
+        # that they can be wrapped in table cells in the UI.
+        return ", ".join(names)
 
     @cachedproperty
     def displayarchs(self):
@@ -910,7 +912,9 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
-            if binary.component not in distroseries.upload_components:
+            if (not self.packageupload.archive.is_ppa and
+                binary.component not in distroseries.upload_components):
+                # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
@@ -1050,7 +1054,9 @@ class PackageUploadSource(SQLBase):
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if component not in distroseries.upload_components:
+        if (not self.packageupload.archive.is_ppa and
+            component not in distroseries.upload_components):
+            # Only complain about non-PPA uploads.
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))

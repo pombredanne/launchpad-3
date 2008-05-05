@@ -10,7 +10,7 @@ import re
 from BeautifulSoup import BeautifulSoup
 
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId,
+    BugNotFound, ExternalBugTracker, InvalidBugId, PrivateRemoteBug,
     UnknownRemoteStatusError, UnparseableBugData,)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -42,19 +42,31 @@ class SourceForge(ExternalBugTracker):
             soup = BeautifulSoup(page_data)
             status_tag = soup.find(text=re.compile('Status:'))
 
-            # If we can't find a status line in the output from
-            # SourceForge there's little point in continuing.
-            if not status_tag:
-                raise UnparseableBugData(
-                    'Remote bug %s does not define a status.' % bug_id)
+            status = None
+            private = False
+            if status_tag:
+                # We can extract the status by finding the grandparent tag.
+                # Happily, BeautifulSoup will turn the contents of this tag
+                # into a newline-delimited list from which we can then
+                # extract the requisite data.
+                status_row = status_tag.findParent().findParent()
+                status = status_row.contents[-1]
+                status = status.strip()
+            else:
+                error_message = self._extractErrorMessage(page_data)
 
-            # We can extract the status by finding the grandparent tag.
-            # Happily, BeautifulSoup will turn the contents of this tag
-            # into a newline-delimited list from which we can then
-            # extract the requisite data.
-            status_row = status_tag.findParent().findParent()
-            status = status_row.contents[-1]
-            status = status.strip()
+                # If the error message suggests that the bug is private,
+                # set the bug's private field to True.
+                # XXX 2008-05-01 gmb:
+                #     We should know more about possible errors and deal
+                #     with them accordingly (bug 225354).
+                if error_message and 'private' in error_message.lower():
+                    private = True
+                else:
+                    # If we can't find a status line in the output from
+                    # SourceForge there's little point in continuing.
+                    raise UnparseableBugData(
+                        'Remote bug %s does not define a status.' % bug_id)
 
             # We need to do the same for Resolution, though if we can't
             # find it it's not critical.
@@ -68,8 +80,30 @@ class SourceForge(ExternalBugTracker):
 
             self.bugs[int(bug_id)] = {
                 'id': int(bug_id),
+                'private': private,
                 'status': status,
-                'resolution': resolution}
+                'resolution': resolution,
+                }
+
+    def _extractErrorMessage(self, page_data):
+        """Extract an error message from a SourceForge page and return it."""
+        soup = BeautifulSoup(page_data)
+        error_frame = soup.find(attrs={'class': 'error'})
+
+        if not error_frame:
+            return None
+
+        # We find the error message by going via the somewhat shakey
+        # method of looking for the only paragraph inside the
+        # error_frame div.
+        error_message = error_frame.find(name='p')
+        if error_message:
+            # Strip out any leading or trailing whitespace and return the
+            # error message.
+            return error_message.string.strip()
+        else:
+            # We know there was an error, but we can't tell what it was.
+            return 'Unspecified error.'
 
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
@@ -92,6 +126,11 @@ class SourceForge(ExternalBugTracker):
             remote_bug = self.bugs[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
+
+        # If the remote bug is private, raise a PrivateRemoteBug error.
+        if remote_bug['private']:
+            raise PrivateRemoteBug(
+                "Bug %i on %s is private." % (bug_id, self.baseurl))
 
         try:
             return '%(status)s:%(resolution)s' % remote_bug

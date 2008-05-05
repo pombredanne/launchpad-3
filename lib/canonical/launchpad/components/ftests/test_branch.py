@@ -51,8 +51,7 @@ class TestBranchMergeProposalDelta(TestCase):
         delta = BranchMergeProposalDelta.construct(
             old_merge_proposal, merge_proposal)
         assert delta is not None
-        self.assertEqual({'old': None, 'new': 'Change foo into bar.'},
-            delta.commit_message)
+        self.assertEqual('Change foo into bar.', delta.commit_message)
         self.assertEqual(
             {'old': BranchMergeProposalStatus.WORK_IN_PROGRESS,
             'new': BranchMergeProposalStatus.MERGED},

@@ -13,28 +13,7 @@ link on the PPA owner page.
 While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
-    >>> def print_structural_info(contents):
-    ...     doc = find_tag_by_id(contents, 'document')
-    ...     breadcrumbs = doc.findAll(attrs='breadcrumb')
-    ...     print "Location: %s" % " > ".join(
-    ...         extract_text(tag) for tag in breadcrumbs)
-    ...     print "Structural title: %s" % extract_text(
-    ...         doc.find(id='structuralobject'))
-    ...     print 'Tabs:'
-    ...     for tab in doc.find(id='applicationchooser').findAll('li'):
-    ...         if tab.a:
-    ...             link = tab.a['href']
-    ...         else:
-    ...             link = 'Not active'
-    ...         print "* %s (%s)" % (extract_text(tab), link)
-    ...     title = doc.h1
-    ...     if title:
-    ...         title = extract_text(title)
-    ...     else:
-    ...         title = '(No page title)'
-    ...     print "Page title: %s" % title
-
-    >>> print_structural_info(anon_browser.contents)
+    >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
     Structural title: Celso Providelo
     Tabs:
@@ -44,7 +23,7 @@ While navigating around the PPA the "structural location" remains the
     * Blueprints (http://blueprints.launchpad.dev/~cprov/)
     * Translations (http://translations.launchpad.dev/~cprov/)
     * Answers (http://answers.launchpad.dev/~cprov/)
-    Page title: PPA for Celso Providelo
+    Main heading: PPA for Celso Providelo
 
 You can see the build details of the packages in the archive by using
 the 'View build records' link.
@@ -69,7 +48,7 @@ The user can navigate to an individual build details:
     >>> anon_browser.title
     'Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
-    >>> print_structural_info(anon_browser.contents)
+    >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
     Structural title: Celso Providelo
     Tabs:
@@ -79,7 +58,7 @@ The user can navigate to an individual build details:
     * Blueprints (http://blueprints.launchpad.dev/~cprov/)
     * Translations (http://translations.launchpad.dev/~cprov/)
     * Answers (http://answers.launchpad.dev/~cprov/)
-    Page title:
+    Main heading:
     Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
 From that page the user could return either to the build records listing

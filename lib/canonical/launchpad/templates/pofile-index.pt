@@ -6,7 +6,9 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="python: (modules['canonical.config'].config.devmode and
+                            path('view/macro:page/defaultnomenu')) or
+                           path('context/@@main_template/master')"
   i18n:domain="rosetta"
 >
 

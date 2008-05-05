@@ -67,7 +67,6 @@ from bzrlib.transport import (
     )
 
 from twisted.web.xmlrpc import Fault
-from twisted.python import log as tplog
 
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
@@ -77,8 +76,7 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.twistedsupport.loggingsupport import OOPSLoggingObserver
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 def get_path_segments(path, maximum_segments=-1):
@@ -129,16 +127,16 @@ def set_up_logging(configure_oops_reporting=False):
                 '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
         handler.setLevel(logging.DEBUG)
         log.addHandler(handler)
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.CRITICAL)
 
     # Don't log 'codehosting' messages to stderr.
     if getattr(trace, '_stderr_handler', None) is not None:
         trace._stderr_handler.addFilter(_NotFilter('codehosting'))
 
-    log.setLevel(logging.DEBUG)
-
     if configure_oops_reporting:
-        errorlog.globalErrorUtility.configure('codehosting')
-        tplog.addObserver(OOPSLoggingObserver('codehosting').emit)
+        set_up_oops_reporting('codehosting')
 
     return log
 

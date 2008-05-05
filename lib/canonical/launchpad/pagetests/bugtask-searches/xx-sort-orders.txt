@@ -42,10 +42,10 @@ Default view:
     2 Blackhole Trash folder
     mozilla-firefox Low Confirmed
 
-By recently changed:
+By most recently changed:
 
     >>> anon_browser.getControl(name="orderby").displayValue = [
-    ...     "recently changed"]
+    ...     'most recently changed']
     >>> anon_browser.getControl("Search").click()
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
@@ -54,6 +54,19 @@ By recently changed:
     mozilla-firefox Low Confirmed
     1 Firefox does not support SVG
     mozilla-firefox Low Confirmed
+
+By least recently changed:
+
+    >>> anon_browser.getControl(name="orderby").displayValue = [
+    ...     "least recently changed"]
+    >>> anon_browser.getControl("Search").click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    mozilla-firefox Low Confirmed
+    2 Blackhole Trash folder
+    mozilla-firefox Low Confirmed
+    3 Bug Title Test
+    mozilla-firefox Unknown New
 
 By status:
 
