@@ -6,8 +6,7 @@ defining a model for managing recipes, and then publishing the model
 objects as resources through a web service.
 
 # XXX leonardr 2008-04-23 bug=221037: This test should be moved to
-# launchpad/doc and made to run without layers. It registers resource
-# classes that pollute generated WADL documents in the pagetests.
+# launchpad/doc and made to run without layers.
 
 == Example model objects ==
 
@@ -793,6 +792,39 @@ service root also.
     True
     >>> canonical_url(app)
     u'http://api.launchpad.dev/beta/'
+
+
+=== WADL documents ===
+
+Every resource can serve a WADL representation of itself. The main
+WADL document is the WADL representation of the server root. It
+describes the capabilities of the web service as a whole.
+
+    >>> wadl_headers = {'HTTP_ACCEPT' : 'application/vd.sun.wadl+xml'}
+    >>> wadl_request = create_web_service_request(
+    ...     '/beta/', environ=wadl_headers)
+    >>> wadl_resource = wadl_request.traverse(app)
+    >>> #response = wadl_resource(wadl_request)
+    >>> #response
+    <?xml version="1.0"?>
+    <application ...>
+    ...
+    </application>
+
+If the resources are improperly configured, the WADL can't be
+generated. Here's an example, where DishCollection is registered as an
+adapter twice. Earlier it was registered as the adapter for IDishSet;
+here's it's also registered as the adapter for IAuthorSet. The WADL
+generation doesn't know whether to describe DishCollection using the
+named operations defined against IAuthorSet or the named operations
+defined against IDishSet, so there's an AssertionError.
+
+    >>> provideAdapter(DishCollection, [IAuthorSet], ICollection)
+    >>> print wadl_resource(wadl_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There must be one (and only one) adapter
+    from DishCollection to ICollection.
 
 
 == Collection resources ==

@@ -139,11 +139,6 @@ class WadlResourceAdapterAPI(WadlAPI):
         "Initialize with an adapter class."
         self.adapter = adapter
         self.adapter_interface = adapter_interface
-        if not (adapter_interface.implementedBy(adapter)
-                or (IInterface.providedBy(adapter)
-                    and adapter.isOrExtends(adapter_interface))):
-            raise AssertionError("%s does not implement or extend %s" % (
-                    self.adapter.__name__, self.adapter_interface.__name__))
 
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
@@ -166,6 +161,10 @@ class WadlResourceAdapterAPI(WadlAPI):
             if (IInterface.providedBy(reg.provided)
                 and reg.provided.isOrExtends(self.adapter_interface)
                 and reg.value == self.adapter)]
+        # If there's more than one model class (because the 'adapter' was
+        # registered to adapt more than one model class to ICollection or
+        # IEntry), we don't know which model class to search for named
+        # operations. Treat this as an error.
         if len(registrations) != 1:
             raise AssertionError(
                 "There must be one (and only one) adapter from %s to %s." % (
