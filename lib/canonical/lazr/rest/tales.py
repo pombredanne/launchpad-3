@@ -156,23 +156,24 @@ class WadlResourceAdapterAPI(WadlAPI):
             name of the operation and 'op' is the ResourceOperation
             object.
         """
-        # First, find the class used to register the named operations for
-        # this resource type.
+        # Our 'adapter' is the resource adapter class, generated with
+        # reference to some underlying model class. Named operations
+        # are registered in ZCML under the model class. To find them,
+        # we need to locate the model class that our 'adapter' is
+        # adapting.
         registrations = [
             reg for reg in getGlobalSiteManager().registrations()
             if (IInterface.providedBy(reg.provided)
                 and reg.provided.isOrExtends(self.adapter_interface)
-                and reg.value==self.adapter)]
+                and reg.value == self.adapter)]
         if len(registrations) != 1:
-            raise AssertionError("There must be one (and only one) "
-                                 "adapter from %s to %s." % (
+            raise AssertionError(
+                "There must be one (and only one) adapter from %s to %s." % (
                     self.adapter.__name__,
                     self.adapter_interface.__name__))
-        context = registrations[0].required
-
+        model_class = registrations[0].required[0]
         operations = getGlobalSiteManager().adapters.lookupAll(
-            (context[0], IHTTPApplicationRequest),
-            IResourceOperation)
+            (model_class, IHTTPApplicationRequest), IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
 

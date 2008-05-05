@@ -396,7 +396,7 @@ def generate_entry_adapter(content_interface, webservice_interface):
     return factory
 
 
-class CollectionEntrySchema(object):
+class CollectionEntrySchema:
     """A descriptor for converting a model schema into an entry schema.
 
     The entry schema class for a resource may not have been defined at

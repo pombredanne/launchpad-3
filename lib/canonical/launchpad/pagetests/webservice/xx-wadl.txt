@@ -294,12 +294,12 @@ i.e. not top-level collections. Those tags get stored in
     >>> for index in range(0, len(other_children), 2):
     ...     if other_children[index].attrib['id'] == 'scoped-collection':
     ...         scoped_collection_type = other_children[index]
-    ...         scoped_collection_representation = other_children[index+1]
-    ...         first_entry_type_index = index+2
+    ...         scoped_collection_representation = other_children[index + 1]
+    ...         first_entry_type_index = index + 2
     ...         break
     ...     else:
     ...         collection_resource_descriptions.append(
-    ...             tuple(other_children[index:index+2]))
+    ...             tuple(other_children[index:index + 2]))
 
 
 After that <representation> tag there's a group of three tags for
@@ -317,8 +317,8 @@ splits the tags into 3-tuples and stores the tuples in
     >>> entry_resource_types = other_children[first_entry_type_index:]
     >>> for index in range(0, len(entry_resource_types), 3):
     ...     resource_type = entry_resource_types[index]
-    ...     full_repr = entry_resource_types[index+1]
-    ...     diff_repr = entry_resource_types[index+2]
+    ...     full_repr = entry_resource_types[index + 1]
+    ...     diff_repr = entry_resource_types[index + 2]
     ...     entry_resource_descriptions.append(
     ...         (resource_type, full_repr, diff_repr))
 
@@ -579,9 +579,9 @@ valid values.
 Let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
-    >>> collection_resource_types = [type_and_repr[0]
-    ...                              for type_and_repr in
-    ...                              collection_resource_descriptions]
+    >>> collection_resource_types = [
+    ...     type_and_repr[0]
+    ...     for type_and_repr in collection_resource_descriptions]
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
     ['BugCollection', 'PersonSetCollectionAdapter']
 
@@ -589,10 +589,10 @@ There's one <resource_type> tag for every top-level collection on the
 site. We'll be taking a close look at the resource type for the
 site's collection of people.
 
-    >>> resource_type, representation = [
+    >>> person_set_resource_descriptions = [
     ...     type_repr for type_repr in collection_resource_descriptions
-    ...     if (type_repr[0].attrib['id']
-    ...                 == 'PersonSetCollectionAdapter')][0]
+    ...     if type_repr[0].attrib['id'] == 'PersonSetCollectionAdapter']
+    >>> resource_type, representation = person_set_resource_descriptions[0]
     >>> resource_type.tag
     '...resource_type'
 
