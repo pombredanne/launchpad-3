@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
     'ITeamMembershipSet',
@@ -253,3 +254,6 @@ class ITeamParticipation(Interface):
     team = Int(title=_("The team"), required=True, readonly=False)
     person = Int(title=_("The member"), required=True, readonly=False)
 
+
+class CyclicalTeamMembershipError(Exception):
+    """Someone attempt to make two teams members of each other."""

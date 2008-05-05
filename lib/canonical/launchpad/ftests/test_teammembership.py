@@ -16,7 +16,9 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
-    IPersonSet, ITeamMembershipSet, TeamMembershipStatus)
+    CyclicalTeamMembershipError, IPersonSet, ITeamMembershipSet,
+    TeamMembershipStatus)
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -318,6 +320,47 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         tm.datejoined = one_minute_ago
         tm.setStatus(TeamMembershipStatus.APPROVED, self.foobar)
         self.failUnless(tm.datejoined <= one_minute_ago)
+
+    def test_no_cyclical_membership_allowed(self):
+        """No status change can create cyclical memberships."""
+        # Create a bunch of arbitrary people and teams to use in the test.
+        factory = LaunchpadObjectFactory()
+        person = factory.makePerson()
+        team1 = factory.makeTeam(person)
+        team2 = factory.makeTeam(person)
+
+        # Invite team2 as member of team1 and team1 as member of team2. This
+        # is not a problem because that won't make any team an active member
+        # of the other.
+        team1.addMember(team2, person)
+        team2.addMember(team1, person)
+        team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            team1, team2)
+        team2_on_team1 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            team2, team1)
+        self.failUnlessEqual(
+            team1_on_team2.status, TeamMembershipStatus.INVITED)
+        self.failUnlessEqual(
+            team2_on_team1.status, TeamMembershipStatus.INVITED)
+
+        # Now make team1 an active member of team2.  From this point onwards,
+        # team2 cannot be made an active member of team1.
+        team1_on_team2.setStatus(TeamMembershipStatus.APPROVED, person)
+        flush_database_updates()
+        self.failUnlessEqual(
+            team1_on_team2.status, TeamMembershipStatus.APPROVED)
+        self.assertRaises(
+            CyclicalTeamMembershipError, team2_on_team1.setStatus,
+            TeamMembershipStatus.APPROVED, person)
+        self.failUnlessEqual(
+            team2_on_team1.status, TeamMembershipStatus.INVITED)
+
+        # It is possible to change the state of team2's membership on team1
+        # to another inactive state, though.
+        team2_on_team1.setStatus(
+            TeamMembershipStatus.INVITATION_DECLINED, person)
+        self.failUnlessEqual(
+            team2_on_team1.status, TeamMembershipStatus.INVITATION_DECLINED)
 
 
 class TestCheckTeamParticipationScript(unittest.TestCase):
