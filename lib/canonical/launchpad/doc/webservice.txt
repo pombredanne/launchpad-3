@@ -804,8 +804,7 @@ describes the capabilities of the web service as a whole.
     >>> wadl_request = create_web_service_request(
     ...     '/beta/', environ=wadl_headers)
     >>> wadl_resource = wadl_request.traverse(app)
-    >>> #response = wadl_resource(wadl_request)
-    >>> #response
+    >>> print wadl_resource(wadl_request)
     <?xml version="1.0"?>
     <application ...>
     ...
