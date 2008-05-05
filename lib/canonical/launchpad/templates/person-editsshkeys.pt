@@ -58,7 +58,7 @@
         <div class="formHelp">
           Insert the contents of your public key (usually
           <code>~/.ssh/id_dsa.pub</code> or <code>~/.ssh/id_rsa.pub</code>).
-          Only SSH v2 keys are supported.  Want to learn more?
+          Only SSH v2 keys are supported.
           <a href="https://help.launchpad.net/YourAccount/CreatingAnSSHKeyPair">
             How do I get a public key?
           </a>
