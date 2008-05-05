@@ -63,9 +63,8 @@
     <tal:navigation replace="structure faqs/@@+navigation-links-lower" />
   </tal:results>
 
-  <p condition="context/required:launchpad.Moderate">
-    <a href="+createfaq">Create a new FAQ</a> to answer a question not listed
-    among this project's FAQs.
+  <p tal:condition="context/required:launchpad.Moderate">
+    <a href="+createfaq">Create a new FAQ</a>.
   </p>
 </div>
 

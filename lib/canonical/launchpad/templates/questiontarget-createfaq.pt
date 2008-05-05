@@ -25,16 +25,16 @@
   <p>This will add a new FAQ document to this project that will be used
     to answer the question.
   </p>
-  <p>The FAQ <b>Title</b> describes what this document is about. Using a
-    question as title is often a good idea.
+  <p>The FAQ <strong>Title</strong> describes what this document is about.
+    Using a question as title is often a good idea.
   </p>
-  <p>You can enter additional <b>keywords</b> that apply to this document. It
-    is not necessary to use words already appearing in the title.
+  <p>You can enter additional <strong>keywords</strong> that apply to this
+    document. It is not necessary to use words already appearing in the title.
   </p>
-  <p>In the <b>content</b> field, enter a complete explanation on how to solve
-    the question or problem. If the answer already exists on an external page
-    (like a wiki), you can enter a short description of the document's content
-    and provide a link to it.
+  <p>In the <strong>content</strong> field, enter a complete explanation on
+    how to solve the question or problem. If the answer already exists on an
+    external page (like a wiki), you can enter a short description of the
+    document's content and provide a link to it.
   </p>
 </metal:help>
 

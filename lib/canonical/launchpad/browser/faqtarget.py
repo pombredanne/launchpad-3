@@ -9,12 +9,12 @@ __all__ = [
     'FAQCreateView',
     ]
 
-
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, stepthrough)
+    action, canonical_url, custom_widget, LaunchpadFormView, stepthrough)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.widgets import TokensTextWidget
 
 
 class FAQTargetNavigationMixin:
@@ -36,6 +36,8 @@ class FAQCreateView(LaunchpadFormView):
     schema = IFAQ
     label = _('Create a new FAQ')
     field_names = ['title', 'keywords', 'content']
+
+    custom_widget('keywords', TokensTextWidget)
 
     @action(_('Create'), name='create')
     def create__action(self, action, data):

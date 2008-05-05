@@ -2,6 +2,7 @@
 
 import datetime
 import pytz
+import re
 
 from zope.app.datetimeutils import parse, DateTimeError
 from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
@@ -28,6 +29,16 @@ class LowerCaseTextWidget(StrippedTextWidget):
 
     def _toFieldValue(self, input):
         return StrippedTextWidget._toFieldValue(self, input.lower())
+
+
+class TokensTextWidget(StrippedTextWidget):
+    """A widget that normalises the space between words.
+
+    Punctuation is removed, and extra whitespace is stripped.
+    """
+    def _toFieldValue(self, input):
+        normalised_text = re.sub(r'[^\w-]+', ' ', input)
+        return super(TokensTextWidget, self)._toFieldValue(normalised_text)
 
 
 class LocalDateTimeWidget(TextWidget):

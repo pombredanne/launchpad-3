@@ -58,7 +58,7 @@ content field. He then submits the form using the 'Create' button.
     ''
 
     >>> owner_browser.getControl('Title').value = 'How do I use read RSS?'
-    >>> owner_browser.getControl('Keywords').value = 'RSS bookmark'
+    >>> owner_browser.getControl('Keywords').value = 'RSS, bookmark'
     >>> owner_browser.getControl('Content').value = 'Use the bookmark bar.'
     >>> owner_browser.getControl('Create').click()
 
