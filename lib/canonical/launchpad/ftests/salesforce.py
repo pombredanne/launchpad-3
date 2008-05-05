@@ -20,6 +20,8 @@ import xmlrpclib
 STATUSES = ['UNREDEEMED',
             'REDEEMED']
 
+PRODUCT_TERM_MAP = dict(LPCS12=12,
+                        LPCS06=6)
 
 class Voucher:
     def __init__(self, voucher_id, owner):
@@ -80,19 +82,24 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         if (voucher is None or
             voucher.status != 'UNREDEEMED' or
             voucher.owner != lp_openid):
-            return [False]
+            return [False, 0]
         voucher.status = 'REDEEMED'
         voucher.project_id = lp_project_id
         voucher.project_name = lp_project_name
-        return [True]
+        product = voucher.id.split('-')[0]
+        term = PRODUCT_TERM_MAP.get(product)
+        if term is None:
+            return [False, 0]
+        else:
+            return [True, term]
 
     def updateProjectName(self, lp_project_id, lp_project_name):
-        updated = False
+        num_updated = 0
         for voucher in self.vouchers:
             if voucher.project_id == lp_project_id:
                 voucher.project_name = lp_project_name
-                updated = True
-        return updated
+                num_updated += 1
+        return [num_updated]
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
