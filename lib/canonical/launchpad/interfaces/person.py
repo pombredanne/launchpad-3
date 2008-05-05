@@ -48,7 +48,7 @@ from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.rest.declarations import (
-   collection_default_content, export_collection)
+   collection_default_content, export_as_webservice_collection)
 
 from canonical.launchpad import _
 
@@ -811,15 +811,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
-    def getBugContactPackages():
-        """Return a list of packages for which this person is a bug contact.
+    def getBugSubscriberPackages():
+        """Return the packages for which this person is a bug subscriber.
 
         Returns a list of IDistributionSourcePackage's, ordered alphabetically
         (A to Z) by name.
         """
 
-    def getBugContactOpenBugCounts(user):
-        """Return open bug counts for this bug contact's packages.
+    def getBugSubscriberOpenBugCounts(user):
+        """Return open bug counts for this bug subscriber's packages.
 
             :user: The user doing the search. Private bugs that this
                    user doesn't have access to won't be included in the
@@ -1341,7 +1341,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_collection()
+    export_as_webservice_collection()
 
     title = Attribute('Title')
 
@@ -1476,7 +1476,7 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    @collection_default_content
+    @collection_default_content()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -1565,6 +1565,41 @@ class IPersonSet(Interface):
 
         Return None if there is no translator.
         """
+
+    def getValidPersons(self, persons):
+        """Get all the Persons that are valid.
+
+        This method is more effective than looking at
+        Person.is_valid_person_or_team, since it avoids issuing one DB
+        query per person. It queries the ValidPersonOrTeamCache table,
+        issuing one query for all the person records. This makes the
+        method useful for filling the ORM cache, so that checks to
+        .is_valid_person won't issue any DB queries.
+
+        XXX: This method exists mainly to fill the ORM cache for
+             ValidPersonOrTeamCache. It would be better to add a column
+             to the Person table. If we do that, this method can go
+             away. Bug 221901. -- Bjorn Tillenius, 2008-04-25
+        """
+
+    def getPeopleWithBranches(product=None):
+        """Return the people who have branches.
+
+        :param product: If supplied, only people who have branches in the
+            specified product are returned.
+        """
+
+    def getSubscribersForTargets(targets, recipients=None):
+        """Return the set of subscribers for `targets`.
+
+        :param targets: The sequence of targets for which to get the
+                        subscribers.
+        :param recipients: An optional instance of
+                           `BugNotificationRecipients`.
+                           If present, all found subscribers will be
+                           added to it.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""

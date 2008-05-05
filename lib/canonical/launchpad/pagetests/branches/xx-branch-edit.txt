@@ -1,8 +1,8 @@
 = Editing Branches =
 
-We are not happy with the title of the branch for Klingon support in GNOME
-Terminal, and want to associate it to its true author, which recently created
-an account on Launchpad.
+Once a branch has been created in Launchpad, most of the details are able
+to be edited by the owner of the branch.  The registrant and date_created
+are not editable for obvious reasons.
 
 
 == Editing branch details ==
@@ -149,6 +149,12 @@ canonical URL
     >>> browser.url
     'http://code.launchpad.dev/~name12/tomcat/junk.dev'
 
+A notification is also shown as moving a branch between projects is a big deal.
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    The project for this branch has been changed to Tomcat (tomcat)
+
 In the same way, the edit form allows changing the name of a branch, and must
 correctly redirect to the new branch page.
 
@@ -180,6 +186,12 @@ branch was moved back to its original location.
     >>> browser.url
     'http://code.launchpad.dev/~name12/+junk/junk.dev'
 
+A message is also shown when the branch has the project association removed.
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    This branch is no longer associated with a project.
+
 However, we cannot detach a team-owned branch from a product, for the
 reasons given in xx-branch-reassign.txt.
 
@@ -197,17 +209,16 @@ reasons given in xx-branch-reassign.txt.
 
 == Name conflicts ==
 
-The product and branch name contributes to the unique name of a branch. So
-changing those can lead to integrity errors. Let's make sure the form correctly
-validate the input and give a useful error message.
+The product and branch name contributes to the unique name of a branch.
+The name of a branch has to be unique over all the branches of that
+product for the given branch owner.
 
 There is an existing main branch in Firefox that is owned by Sample Person.
 
     >>> browser.open('http://launchpad.dev/~name12/firefox/main')
 
 If we try to move the main branch of GNOME Terminal there, that would cause a
-name conflict, because both branches would have the same owner, product and
-name.
+name conflict, because both branches would have the same name.
 
 Okay, trying to move a branch from GNOME Terminal to Firefox is a silly idea,
 but that is just for the needs of the demonstration.
@@ -224,7 +235,7 @@ This should have displayed an error message next to the name field.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    There is already a branch for firefox called main.
+    You already have a branch for firefox called main.
 
 Since we are clearly in a substance-induced state of altered consciousness, we
 will now try to rename this branch in a way that conflicts with an existing
@@ -258,7 +269,7 @@ combinations of changing name and product that can cause an error.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    There is already a branch for gnome-terminal called 2.6.
+    You already have a branch for gnome-terminal called 2.6.
 
 If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't
@@ -354,3 +365,67 @@ that someone else has modified the details of the branch.
     <BLANKLINE>
     You are getting this email as you are the owner of the branch and someone h=
     as edited the details.
+
+
+== Changing the branch owner ==
+
+The user is able to change the owner of the branch using the edit details
+page.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Owner').displayValue = ['Landscape Developers']
+    >>> browser.getControl('Change Branch').click()
+
+When the owner is changed a notification is shown.
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    The branch owner has been changed to Landscape Developers (landscape-developers)
+
+If both the project and owner are changed, both notification messages are
+shown.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Owner').displayValue = ['Sample Person']
+    >>> browser.getControl('Project').value = ''
+    >>> browser.getControl('Change Branch').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    The branch owner has been changed to Sample Person (name12)
+    This branch is no longer associated with a project.
+
+
+== Preventing the assignment of a +junk branch to a team ==
+
++junk branches are a facility to host small snippets of code that do
+not call for collaboration features.  Once a team is needed to
+collaborate on a branch, we consider they also really want a project
+to support their collaboration.
+
+One of two potential ways of creating a +junk team branch is to assign
+a +junk branch from yourself to a team.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Owner').displayValue = ['Landscape Developers']
+    >>> browser.getControl('Change Branch').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    Team-owned branches must be associated with a project.
+
+(The other is changing the product of a team owned branch to the +junk
+pseudo project, which is tested above).
+
+
+=== Assignment to anyone ===
+
+Bazaar Experts and Launchpad administrators are able to reassign a branch
+to any valid person or team.
+
+    >>> admin_browser.open('http://launchpad.dev/~name12/firefox/main')
+    >>> admin_browser.getLink('Change branch details').click()
+    >>> admin_browser.getControl('Owner').value = 'sabdfl'
+    >>> admin_browser.getControl('Change Branch').click()
+    >>> print admin_browser.url
+    http://code.launchpad.dev/~sabdfl/firefox/main

@@ -12,7 +12,7 @@ branches that have been created in error.
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> browser.title
-    '...~name12/firefox/to-delete... branch by Sample Person in Launchpad'
+    '...~name12/firefox/to-delete... branch in Launchpad'
 
 The newly created branch has an action 'Delete branch'.
 

@@ -77,6 +77,13 @@ class BugWatchErrorType(DBEnumeratedType):
         does not currently support.
         """)
 
+    PRIVATE_REMOTE_BUG = DBItem(8, """
+        Private Remote Bug
+
+        The bug is marked as private on the remote bug tracker.
+        Launchpad cannot import the status of private remote bugs.
+        """)
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""

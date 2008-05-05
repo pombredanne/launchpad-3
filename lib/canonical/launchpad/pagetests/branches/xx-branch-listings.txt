@@ -367,30 +367,45 @@ development focus branch.
     >>> admin_browser.getControl('Update Details').click()
 
 Now when we look at the branches for gnome-terminal, the main branch
-now shows as the "Current development focus".
+now shows as the "Current development focus".  This is indicated by
+both the series link in the first column with the branch unique name,
+but also with a star with the badges.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> # The development focus is always first.
+    >>> row = table.tbody.fetch('tr')[0]
+    >>> cols = row.fetch('td')
+    >>> print extract_text(cols[0])
+    ~name12/gnome-terminal/main  Series: trunk
+    >>> print cols[1].renderContents()
+    <img src="/@@/favourite-yes" title="Current development focus" />
+
+If a branch is associated with more than one series, then the links
+are comma separated and in alphabetical order.
+
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
+    >>> admin_browser.getLink('Register a series').click()
+    >>> admin_browser.getControl('Name').value = 'pre-1.0'
+    >>> admin_browser.getControl('Summary').value = 'summary'
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> admin_browser.getControl('Register Series').click()
+
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
+    >>> admin_browser.getLink('Register a series').click()
+    >>> admin_browser.getControl('Name').value = 'alpha'
+    >>> admin_browser.getControl('Summary').value = 'summary'
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> admin_browser.getControl('Register Series').click()
+
+The current development focus is shown first though.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> # The main branch is the second in the listing.
-    >>> row = table.tbody.fetch('tr')[1]
-    >>> print row['class']
-    highlighted
-    >>> print extract_text(row)
-    ~name12/gnome-terminal/main  Current development focus   Development ...
-
-The branch is not shown as development focus when listed from
-the person context.
-
-    >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
-    ...     print extract_text(row)
-    ~name12/firefox/main                 New          ...
-    ~name12/gnome-terminal/2.6           Mature       ...
-    ~name12/gnome-terminal/main          Development  ...
-    ~name12/gnome-terminal/klingon       Experimental ...
-    ~launchpad/gnome-terminal/launchpad  New          ...
-    ~name12/gnome-terminal/mirrored      New          ...
+    >>> print extract_text(table.tbody.fetch('tr')[1])
+    ~name12/gnome-terminal/main  Series: trunk, alpha, pre-1.0  ...
 
 
 == Hidden dormant branches ==
@@ -409,7 +424,7 @@ they are not shown by default.
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
     ~name12/gnome-terminal/2.6                             Mature       ...
-    ~name12/gnome-terminal/main Current development focus  Development  ...
+    ~name12/gnome-terminal/main ...                        Development  ...
     ~name12/gnome-terminal/klingon                         Experimental ...
     ~launchpad/gnome-terminal/launchpad                    New          ...
     ~vcs-imports/gnome-terminal/import                     New          ...
@@ -429,7 +444,7 @@ The default listing now doesn't show these two branches.
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
     ~name12/gnome-terminal/2.6                            Mature      ...
-    ~name12/gnome-terminal/main Current development focus Development ...
+    ~name12/gnome-terminal/main ...                       Development ...
     ~launchpad/gnome-terminal/launchpad                   New         ...
     ~vcs-imports/gnome-terminal/import                    New         ...
     ~name12/gnome-terminal/pushed                         New         ...
@@ -444,7 +459,7 @@ are shown.
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
     ~name12/gnome-terminal/2.6                             Mature       ...
-    ~name12/gnome-terminal/main Current development focus  Development  ...
+    ~name12/gnome-terminal/main ...                        Development  ...
     ~name12/gnome-terminal/klingon                         Experimental ...
     ~launchpad/gnome-terminal/launchpad                    New          ...
     ~vcs-imports/gnome-terminal/import                     New          ...

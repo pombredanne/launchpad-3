@@ -16,6 +16,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
+from canonical.config import config
+from canonical.launchpad.database import Component
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
@@ -54,7 +56,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             purpose=ArchivePurpose.PPA)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
-        self.breezy['i386'].ppa_supported = True
+        self.breezy['i386'].supports_virtualized = True
         self.layer.txn.commit()
 
         # Set up the uploadprocessor with appropriate options and logger
@@ -93,7 +95,9 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
-            self.assertTrue(recipient in clean_recipients)
+            self.assertTrue(
+                recipient in clean_recipients,
+                "%s not in %s" % (recipient, clean_recipients))
         self.assertEqual(
             len(recipients), len(clean_recipients),
             "Email recipients do not match exactly. Expected %s, got %s" %
@@ -113,6 +117,29 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             self.assertEqual(
                 msg['X-Launchpad-PPA'], ppa_header,
                 "Mismatching PPA header: %s" % msg['X-Launchpad-PPA'])
+
+    def checkFilesRestrictedInLibrarian(self, queue_item, condition):
+        """Check the libraryfilealias restricted flag.
+
+        For the files associated with the queue_item, check that the
+        libraryfilealiases' restricted flags are the same as 'condition'.
+        """
+        self.assertEqual(queue_item.changesfile.restricted, condition)
+
+        for source in queue_item.sources:
+            for source_file in source.sourcepackagerelease.files:
+                self.assertEqual(
+                    source_file.libraryfile.restricted, condition)
+
+        for build in queue_item.builds:
+            for binarypackage in build.build.binarypackages:
+                for binary_file in binarypackage.files:
+                    self.assertEqual(
+                        binary_file.libraryfile.restricted, condition)
+
+        for custom in queue_item.customfiles:
+            custom_file = custom.libraryfilealias
+            self.assertEqual(custom_file.restricted, condition)
 
 
 class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
@@ -151,6 +178,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(queue_item.archive, self.name16.archive)
         self.assertEqual(
             queue_item.pocket, PackagePublishingPocket.RELEASE)
+
+        # The changes file and the source's files must all be in the non-
+        # restricted librarian as this is not a private PPA.
+        self.checkFilesRestrictedInLibrarian(queue_item, False)
 
         pending_ppas = self.breezy.distribution.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 1)
@@ -306,6 +337,11 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
+
+        # All the files associated with this binary upload must be in the
+        # non-restricted librarian as the PPA is not private.
+        [queue_item] = queue_items
+        self.checkFilesRestrictedInLibrarian(queue_item, False)
 
     def testPPACopiedSources(self):
         """Check PPA binary uploads for copied sources."""
@@ -700,6 +736,130 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "-----END PGP SIGNATURE-----" not in body,
             "Unexpected end of PGP signature found")
 
+    def doCustomUploadToPPA(self):
+        """Helper method to do a custom upload to a PPA.
+
+        :return: The queue items that were uploaded.
+        """
+        test_files_dir = os.path.join(config.root,
+            "lib/canonical/archiveuploader/tests/data/")
+        upload_dir = self.queueUpload(
+            "debian-installer", "~name16/ubuntu/breezy",
+            test_files_dir=test_files_dir)
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_items = self.breezy.getQueueItems(
+            name="debian-installer",
+            status=PackagePublishingStatus.PUBLISHED,
+            archive=self.name16.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+        [queue_item] = queue_items
+        return queue_item
+
+    def testCustomUploadToPPA(self):
+        """Test a custom upload to a PPA.
+
+        For now, we just test that the right librarian is used as all
+        of the existing custom upload tests use doc/distroseriesqueue-*.
+        """
+        queue_item = self.doCustomUploadToPPA()
+        self.checkFilesRestrictedInLibrarian(queue_item, False)
+
+    def testCustomUploadToPrivatePPA(self):
+        """Test a custom upload to a private PPA.
+
+        Make sure that the files are placed in the restricted librarian.
+        """
+        self.name16.archive.private = True
+        self.name16.archive.buildd_secret = "secret"
+        queue_item = self.doCustomUploadToPPA()
+        self.checkFilesRestrictedInLibrarian(queue_item, True)
+
+    def testUploadToPrivatePPA(self):
+        """Test a source and binary upload to a private PPA.
+
+        Make sure that the files are placed in the restricted librarian.
+        """
+        self.name16.archive.private = True
+        self.name16.archive.buildd_secret = "secret"
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.DONE, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+        [queue_item] = queue_items
+        self.checkFilesRestrictedInLibrarian(queue_item, True)
+
+        # Now that we have source uploaded, we can upload a build.
+        builds = self.name16.archive.getBuildRecords(name='bar')
+        [build] = builds
+        self.options.context = 'buildd'
+        self.options.buildid = build.id
+        upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The binary upload was accepted and it's waiting in the queue.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+        # All the files associated with this binary upload must be in the
+        # restricted librarian as the PPA is private.
+        [queue_item] = queue_items
+        self.checkFilesRestrictedInLibrarian(queue_item, True)
+
+    def testPPAInvalidComponentUpload(self):
+        """Upload source and binary packages with invalid components.
+
+        Components invalid in the distroseries should be ignored since
+        PPAs are always published in "main".
+        """
+        # The component contrib does not exist in the sample data, so
+        # add it here.
+        Component(name='contrib')
+
+        # Upload a source package first.
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_contrib_component", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.DONE, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+
+        # The upload was accepted despite the fact that it does
+        # not have a valid component:
+        self.assertEqual(queue_items.count(), 1)
+        [queue_item] = queue_items
+        self.assertTrue(
+            queue_item.sourcepackagerelease.component not in
+            self.breezy.upload_components)
+
+        # Binary uploads should exhibit the same behaviour:
+        [build] = self.name16.archive.getBuildRecords(name="bar")
+        self.options.context = 'buildd'
+        self.options.buildid = build.id
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_contrib_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+
+        # The binary is accepted despite the fact that it does not have
+        # a valid component:
+        self.assertEqual(queue_items.count(), 1)
+        [queue_item] = queue_items
+        [build] = queue_item.builds
+        for binary in build.build.binarypackages:
+            self.assertTrue(
+                binary.component not in self.breezy.upload_components)
+
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
     """Functional test for uploadprocessor.py file-lookups in PPA."""
@@ -986,10 +1146,6 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The binary size for an archive should only take into account one
         occurrence of arch-independent files published in multiple locations.
         """
-        # Make all breezy architectures PPA-supported.
-        for distroarchseries in self.breezy.architectures:
-            distroarchseries.ppa_supported = True
-
         # We need to publish an architecture-independent package
         # for a couple of distroseries in a PPA.
         publisher = SoyuzTestPublisher()
@@ -1000,8 +1156,13 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             archive=self.name16.archive, distroseries=self.breezy,
             status=PackagePublishingStatus.PUBLISHED)
 
-        # Publish To Warty:
+        # Create chroot for warty/i386, allowing binaries to build and
+        # thus be published in this architecture.
         warty = self.ubuntu['warty']
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        warty['i386'].addOrUpdateChroot(fake_chroot)
+
+        # Publish To Warty:
         pub_bin2 = publisher.getPubBinaries(
             archive=self.name16.archive, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)

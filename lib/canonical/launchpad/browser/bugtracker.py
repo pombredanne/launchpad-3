@@ -43,8 +43,6 @@ from canonical.widgets import DelimitedListWidget
 # tracker.
 SINGLE_INSTANCE_TRACKERS = (
     BugTrackerType.DEBBUGS,
-    BugTrackerType.SAVANNAH,
-    BugTrackerType.SOURCEFORGE,
     )
 
 # A set of bug tracker types that we should not allow direct creation

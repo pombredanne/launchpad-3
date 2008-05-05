@@ -189,7 +189,7 @@
     name="+export"
     facet="translations"
     layer="canonical.launchpad.layers.TranslationsLayer"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.ExpensiveRequest"
     template="../templates/sourcepackage-export.pt"
     class="canonical.launchpad.browser.SourcePackageTranslationsExportView"
     />

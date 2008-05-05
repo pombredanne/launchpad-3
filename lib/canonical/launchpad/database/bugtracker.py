@@ -24,7 +24,7 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, sqlvalues)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
@@ -87,6 +87,7 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
+
 def make_bugtracker_name(uri):
     """Return a name string for a bug tracker based on a URI.
 
@@ -98,12 +99,31 @@ def make_bugtracker_name(uri):
         if valid_email(base_uri.path):
             base_name = base_uri.path.split('@', 1)[0]
         else:
-            raise ValueError(
+            raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
     else:
         base_name = base_uri.host
 
     return 'auto-%s' % base_name
+
+
+def make_bugtracker_title(uri):
+    """Return a title string for a bug tracker based on a URI.
+
+    :param uri: The base URI to be used to identify the bug tracker,
+        e.g. http://bugs.example.com or mailto:bugs@example.com
+    """
+    base_uri = URI(uri)
+    if base_uri.scheme == 'mailto':
+        if valid_email(base_uri.path):
+            local_part, domain = base_uri.path.split('@', 1)
+            domain_parts = domain.split('.')
+            return 'Email to %s@%s' % (local_part, domain_parts[0])
+        else:
+            raise AssertionError(
+                'Not a valid email address: %s' % base_uri.path)
+    else:
+        return base_uri.host + base_uri.path
 
 
 class BugTracker(SQLBase):
@@ -312,7 +332,7 @@ class BugTrackerSet:
                 name_increment += 1
 
         if title is None:
-            title = quote('Bug tracker at %s' % baseurl)
+            title = make_bugtracker_title(baseurl)
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,

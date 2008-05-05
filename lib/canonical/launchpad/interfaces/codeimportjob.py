@@ -128,6 +128,7 @@ class ICodeImportJobSet(Interface):
         :return: A `CodeImportJob` or None if this database id is not found.
         """
 
+
 class ICodeImportJobSetPublic(Interface):
     """Parts of the CodeImportJobSet interface that need to be public.
 

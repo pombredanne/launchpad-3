@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
     IBranchBatchNavigator,
     IBranchListingFilter,
     IBugBranchSet,
+    IProductSeriesSet,
     IRevisionSet,
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
@@ -51,26 +52,28 @@ class BranchListingItem(BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    decorates(IBranch, 'branch')
+    decorates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, is_dev_focus):
+                 show_blueprint_badge, is_dev_focus,
+                 associated_product_series):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self._now = now
         self.is_development_focus = is_dev_focus
+        self.associated_product_series = associated_product_series
 
     @property
     def since_updated(self):
         """How long since the branch was last updated."""
-        return self._now - self.branch.date_last_modified
+        return self._now - self.context.date_last_modified
 
     @property
     def since_created(self):
         """How long since the branch was created."""
-        return self._now - self.branch.date_created
+        return self._now - self.context.date_created
 
     def isBugBadgeVisible(self):
         return self.show_bug_badge
@@ -84,7 +87,7 @@ class BranchListingItem(BranchBadges):
 
     @property
     def revision_number(self):
-        return self.branch.revision_count
+        return self.context.revision_count
 
     @property
     def revision_log(self):
@@ -98,8 +101,8 @@ class BranchListingItem(BranchBadges):
     def revision_codebrowse_link(self):
         return "%(codebrowse_root)s%(branch)s/revision/%(rev_no)s" % {
             'codebrowse_root': config.codehosting.codebrowse_root,
-            'branch': self.branch.unique_name,
-            'rev_no': self.branch.revision_count}
+            'branch': self.context.unique_name,
+            'rev_no': self.context.revision_count}
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -155,10 +158,37 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return dict((branch.id, revision_map.get(branch.last_scanned_id))
                      for branch in self._branches_for_current_batch)
 
+    @cachedproperty
+    def product_series_map(self):
+        """Return a map of branch id to a list of product series."""
+        series_resultset = getUtility(IProductSeriesSet).getSeriesForBranches(
+            self._branches_for_current_batch)
+        result = {}
+        for series in series_resultset:
+            result.setdefault(series.series_branch.id, []).append(series)
+        return result
+
+    def getProductSeries(self, branch):
+        """Get the associated product series for the branch.
+
+        If the branch has more than one associated product series
+        they are listed in alphabetical order, unless one of them is
+        the current development focus, in which case that comes first.
+        """
+        series = self.product_series_map.get(branch.id, [])
+        if len(series) > 1:
+            # Check for development focus.
+            dev_focus = branch.product.development_focus
+            if dev_focus is not None and dev_focus in series:
+                series.remove(dev_focus)
+                series.insert(0, dev_focus)
+        return series
+
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
+        associated_product_series = self.getProductSeries(branch)
         # XXX thumper 2007-11-14
         # We can't do equality checks here due to BranchWithSortKeys
         # being constructed from the BranchSet queries, and the development
@@ -170,7 +200,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
                 branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus)
+            show_blueprint_badge, is_dev_focus, associated_product_series)
 
     def branches(self):
         """Return a list of BranchListingItems."""

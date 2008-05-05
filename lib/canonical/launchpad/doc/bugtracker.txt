@@ -57,19 +57,32 @@ can be used to generate a bug tracker name when a bugtracker is
 automatically created. make_bugtracker_name() accepts a single
 parameter, uri, which is used as the basis for the auto-generated name.
 
-Passing a URL in the URI parameter will produce a name based on the host
-name of that URL.
+Passing in a URI will produce a name based on the host name part of
+that URL.
 
     >>> from canonical.launchpad.database.bugtracker import (
     ...     make_bugtracker_name)
     >>> make_bugtracker_name('http://bugs.example.com/shrubbery')
     'auto-bugs.example.com'
 
-Passing a mailto:URI will produce a name based on the local part of the
-email address.
+Passing in a mailto: URI will produce a name based on the local part
+of the email address.
 
     >>> make_bugtracker_name('mailto:foo.bar@canonical.com')
     'auto-foo.bar'
+
+Similarly, there is also make_bugtracker_title(), which does something
+similar, but for the title.
+
+    >>> from canonical.launchpad.database.bugtracker import (
+    ...     make_bugtracker_title)
+    >>> make_bugtracker_title('http://bugs.example.com/shrubbery')
+    'bugs.example.com/shrubbery'
+
+For email addresses, it uses the first part of the domain too.
+
+    >>> make_bugtracker_title('mailto:foo.bar@canonical.com')
+    'Email to foo.bar@canonical'
 
 The IBugTrackerSet interface provides a method, ensureBugTracker(),
 which will retrieve or create a bug tracker for the parameters passed to

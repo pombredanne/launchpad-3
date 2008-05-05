@@ -14,14 +14,22 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="authorized_size buildd_secret distribution enabled private purpose"
+      set_attributes="authorized_size buildd_secret distribution enabled
+                      private purpose require_virtualized"
       />
   </content>
 
   <adapter
       for="canonical.launchpad.interfaces.IArchive"
       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-      factory="canonical.launchpad.browser.archive_to_structualheading"
+      factory="canonical.launchpad.browser.archive_to_structuralheading"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.ArchiveBadges"
+      permission="zope.Public"
       />
 
   <browser:menus
@@ -51,14 +59,6 @@
    permission="zope.Public"
    template="../templates/archive-form-macros.pt"
    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IArchive"
-    permission="zope.Public"
-    facet="overview"
-    template="../templates/archive-privacy-icon.pt"
-    name="+privacy-icon"
-    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"

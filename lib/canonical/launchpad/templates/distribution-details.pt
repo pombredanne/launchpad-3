@@ -6,9 +6,9 @@
   <tbody>
     <tr>
       <th>Bug supervisor:</th>
-      <td tal:condition="not:context/bugcontact">None</td>
-      <td tal:condition="context/bugcontact">
-        <a tal:replace="structure context/bugcontact/fmt:link" />
+      <td tal:condition="not:context/bug_supervisor">None</td>
+      <td tal:condition="context/bug_supervisor">
+        <a tal:replace="structure context/bug_supervisor/fmt:link" />
       </td>
     </tr>
     <tr>
