@@ -22,7 +22,9 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
 
 from canonical.buildd.utils import notes
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
+from canonical.config import config
 
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
@@ -211,13 +213,41 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
+        registered_arch_ids = set(
+            arch_series.id for arch_series in self._archserieses.keys())
+        arch_series_ids = set(
+            arch_series.id for arch_series in distroseries_architectures)
+        legal_arch_ids = arch_series_ids.intersection(registered_arch_ids)
+        legal_archs = [
+            arch_series for arch_series in distroseries_architectures
+            if arch_series.id in legal_arch_ids]
+
+        if not legal_archs:
+            self._logger.debug(
+                "Chroots missing for %s, skipping" % distroseries.name)
+            return
+
+        self._logger.info("Supported architectures: %s" %
+                          " ".join(a.architecturetag for a in legal_archs))
+
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, distroseries)
+
         sources_published = distroseries.getSourcesPublishedForAllArchives()
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            builds = pubrec.createMissingBuilds(logger=self._logger)
-            if len(builds) > 0:
+            build_archs = determineArchitecturesToBuild(
+                pubrec, legal_archs, distroseries, pas_verify)
+            for arch in build_archs:
+                build = pubrec.createMissingBuildForArchitecture(arch)
+                if build is None:
+                    continue
+                self._logger.debug(
+                    "Created %s [%d] in %s (%d)" % (
+                        build.title, build.id, build.archive.title,
+                        build.buildqueue_record.lastscore))
                 self.commit()
 
     def addMissingBuildQueueEntries(self):
