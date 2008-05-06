@@ -147,7 +147,7 @@ class ProjectBranchFeed(BranchListingFeed):
     def _getRawItems(self):
         """See `BranchFeedBase._getRawItems`.
 
-        Return the branches for this product sorted by date_created in
+        Return the branches for this project sorted by date_created in
         descending order.
         """
         branch_query = getUtility(IBranchSet).getBranchesForProject(
