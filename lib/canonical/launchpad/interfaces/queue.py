@@ -248,6 +248,22 @@ class IPackageUploadBuild(Interface):
             title=_("The related build"), required=True, readonly=False,
             )
 
+    def verifyBeforeAccept():
+        """Perform overall checks before accepting a binary upload.
+
+        It check if each uploaded binary file can be published in the targeted
+        archive.
+
+        If any of them is already published a QueueInconsistentStateError
+        is raised containing all filenames that cannot be published.
+
+        This check is very similar to the one we do for source upload and
+        was designed to prevent the creating of binary publication that will
+        never reach the archive.
+
+        See bug #227184 for further details.
+        """
+
     def publish(logger=None):
         """Publish this queued source in the distroseries referred to by
         the parent queue item.
