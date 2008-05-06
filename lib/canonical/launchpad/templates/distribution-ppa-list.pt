@@ -26,15 +26,41 @@
       PPA.</p>
 
     <form name="ppa_search" action="" method="GET">
-      <label for="name">PPAs containing:</label>
-      <input id="name" title="Filter" size="20"
-             type="text" name="name_filter"
-             tal:attributes="value view/name_filter"/>
-      <label for="inactive">Include inactive PPAs</label>
-      <input id="inactive" title="Include inactive PPAs"
-             type="checkbox" name="show_inactive"
-             tal:attributes="checked view/show_inactive"/>
-      <input type="submit" value="Search" />
+
+        <table>
+          <tbody>
+            <tr>
+              <th>
+                <label for="name">Show PPAs matching:</label>
+              </th>
+              <td>
+                <input
+                  id="name"
+                  type="text"
+                  name="name_filter"
+                  style="width: 100%;"
+                  tal:attributes="value view/name_filter"
+                />
+              </td>
+              <td><input type="submit" value="Search" /></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <input id="inactive"
+                  type="checkbox"
+                  name="show_inactive"
+                  tal:attributes="checked view/show_inactive"
+                />
+                <label for="inactive">
+                  Including descriptions of empty PPAs
+                </label>
+              </td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
     </form>
 
     <tal:batch define="batch view/search_results">
@@ -77,10 +103,10 @@
               <ul>
                 <li><tal:ppa_registered
                       replace="view/number_of_registered_ppas"
-                  >10</tal:ppa_registered> registered</li>
+                  >10</tal:ppa_registered> registered PPAs</li>
                 <li><tal:ppa_active
                       replace="view/number_of_active_ppas"
-                  >4</tal:ppa_active> active</li>
+                  >4</tal:ppa_active> active PPAs</li>
                 <li><tal:ppa_sources
                       replace="view/number_of_ppa_sources"
                   >20</tal:ppa_sources> published sources</li>
@@ -93,15 +119,15 @@
             <div class="section" id="ppa_most_active">
               <h2>Most active</h2>
 
-              <p>PPA with the highest number of uploads during  the
+              <p>PPAs with the highest number of uploads in the
                  last 7 days.</p>
 
               <table>
                 <tr tal:repeat="most_active view/most_active_ppas">
                   <td>
                     <a tal:attributes="href most_active/archive/fmt:url"
-                       tal:content="most_active/archive/title">
-                      PPA for Celso Providelo
+                       tal:content="most_active/archive/owner/displayname">
+                      Celso Providelo
                     </a>
                   </td>
                   <td align="right">

@@ -36,8 +36,8 @@ published across all ubuntu PPAs.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
     Statistics
-    3 registered
-    2 active
+    3 registered PPAs
+    2 active PPAs
     4 published sources
     4 published binaries
 
@@ -59,7 +59,7 @@ we only have 3 PPAs in sampledata they are all presented.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPA with the highest number of uploads during the last 7 days.
+    PPAs with the highest number of uploads in the last 7 days.
 
 
 Nothing suitable in the sampledata, check the end of this document for
@@ -127,10 +127,12 @@ request.
 Back to the search form again anonymous users can click on a checkbox
 to allow inactive PPA results.
 
-    >>> anon_browser.getControl(name="show_inactive").value = True
+    >>> anon_browser.getControl(
+    ...     "Including descriptions of empty PPAs").selected = True
     >>> anon_browser.getControl("Search").click()
 
-    >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_batch_row'):
+    >>> for ppa_row in find_tags_by_class(anon_browser.contents,
+    ...                                   'ppa_batch_row'):
     ...    print extract_text(ppa_row)
     Celso Providelo
     packages to help my friends.
@@ -147,12 +149,13 @@ to allow inactive PPA results.
 
 This checkbox value is propagated to subsequent searches:
 
-    >>> anon_browser.getControl(name="show_inactive").value
+    >>> anon_browser.getControl(
+    ...     "Including descriptions of empty PPAs").selected
     True
 
 No data matches the non-existent search string "bustmybuffers".
 
-    >>> field = anon_browser.getControl("PPAs containing:")
+    >>> field = anon_browser.getControl("Show PPAs matching:")
     >>> field.value = 'bustmybuffers'
     >>> anon_browser.getControl("Search").click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
@@ -175,7 +178,7 @@ them properly, see doc/package-archive.txt.
 
 In the three sample data PPAs, only one matches the search string "Celso".
 
-    >>> field = anon_browser.getControl("PPAs containing:")
+    >>> field = anon_browser.getControl("Show PPAs matching:")
     >>> field.value = 'Celso'
     >>> anon_browser.getControl("Search").click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
@@ -693,16 +696,16 @@ the 'Most active' section.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     Most active
-    PPA with the highest number of uploads during the last 7 days.
-    PPA for Celso Providelo        4 uploads
-    PPA for Mark Shuttleworth      2 uploads
-    PPA for Ubuntu Team            2 uploads
-    PPA for No Privileges Person   1 uploads
+    PPAs with the highest number of uploads in the last 7 days.
+    Celso Providelo        4 uploads
+    Mark Shuttleworth      2 uploads
+    Ubuntu Team            2 uploads
+    No Privileges Person   1 uploads
 
 The user can also in any PPA title listed in that section to visit the
 PPA itself.
 
-    >>> anon_browser.getLink('PPA for Celso Providelo').click()
+    >>> anon_browser.getLink('Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
 

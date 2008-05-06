@@ -123,7 +123,11 @@ be aborted appropriately.
     Fault: <Fault 8002: 'Could not abort'>
 
 'ensurePresent()' slave method always return True, it theoretically
-means the slave has the requested file in cache.
+means the slave has the requested file in cache.  In our MockBuilder
+we simply display the URL of the file we're asked to get from the
+librarian.  Typically the first file is always the chroot, which in
+the case of this doctest is a dummy alias pointing at netapplet (!) so
+it is not shown in each case below.
 
 The mock slaves will also print, when necessary, whether it has been
 passed an 'archives' property in the args dictionary.
@@ -841,8 +845,9 @@ builder.  It is True for private archives and False otherwise.
     True
     >>> candidate = a_build.createBuildQueueEntry()
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -867,8 +872,9 @@ API/UI method to request the dispatch in advance.
     True
     >>> candidate = a_build.createBuildQueueEntry()
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -917,8 +923,9 @@ So, at moment, partner archive is still not relevant for builds in
 hoary/i386. It's not passed to the builder.
 
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -949,8 +956,9 @@ binary in hoary/i386, the partner archive gets included in the builder
 sources_list.
 
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -988,8 +996,9 @@ dispatching.
     ...    cprov_archive, hoary, PackagePublishingStatus.PUBLISHED)
 
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1012,6 +1021,8 @@ password for the archive):
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.private = True
     >>> cprov_archive.buildd_secret = "secret"
+    >>> for build_file in candidate.files:
+    ...     removeSecurityProxy(build_file).libraryfile.restricted = True
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> login(ANONYMOUS)
@@ -1023,9 +1034,15 @@ to accommodate the security build private PPA which must not depend
 on the updates pocket.  This will be replaced in the future by a
 proper solution that allows configurable pocket dependencies.
 
+Also note that when ensurepresent() is called, it receives a URL that
+points to the restricted librarian for the private firefox file (it
+differs from the normal librarian on the port, 58005 versus 58000
+respectively).
+
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58005/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://buildd:secret@private.ppa.launchpad.dev/cprov/ubuntu hoary main
@@ -1045,6 +1062,8 @@ Mark's PPA:
     >>> login('foo.bar@canonical.com')
 
     >>> cprov_archive.private = False
+    >>> for build_file in candidate.files:
+    ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
     >>> unused_dep = cprov_archive.addArchiveDependency(sabdfl_archive)
 
@@ -1065,8 +1084,9 @@ published in hoary/i386, which is not the case.
     >>> last_stub_mail_count = len(stub.test_emails)
 
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1092,8 +1112,9 @@ We will create the required publication in Mark's PPA and try again.
     ...    sabdfl_archive, hoary, PackagePublishingStatus.PUBLISHED)
 
     >>> a_builder.dispatchBuildCandidate(candidate)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1180,8 +1201,9 @@ A build in the updates pocket:
     >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -1199,8 +1221,9 @@ A build in the proposed pocket:
     >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -1219,8 +1242,9 @@ A build in the backports pocket:
     >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
-    ensurepresent called
-    ensurepresent called
+    ensurepresent called, url=...
+    ensurepresent called,
+        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse

@@ -5,15 +5,15 @@ permission on the product.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-    >>> browser.open("http://localhost:9000/firefox/+bugcontact")
-    >>> browser.getControl(name="field.bugcontact").value = (
+    >>> browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> browser.getControl(name="field.bug_supervisor").value = (
     ...     "robertc@robertcollins.net")
     >>> browser.getControl("Change").click()
 
 Another example, this time with a team that has no "preferred email" set.
 
-    >>> browser.open("http://localhost:9000/firefox/+bugcontact")
-    >>> browser.getControl(name="field.bugcontact").value = "guadamen"
+    >>> browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> browser.getControl(name="field.bug_supervisor").value = "guadamen"
     >>> browser.getControl("Change").click()
 
 
@@ -31,7 +31,7 @@ separate browser instance to avoid breaking the other page tests.
     >>> sample_browser.getControl('Title:').value = (
     ...     'A product for testing things')
     >>> sample_browser.getControl('Summary:').value = (
-    ...     'Testing team bug contacts')
+    ...     'Testing team bug supervisors')
     >>> sample_browser.getControl('Description:').value = 'See bug 109652'
     >>> sample_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> sample_browser.getControl(name='field.license_info').value = 'foo'
@@ -46,7 +46,7 @@ an admin of that team.
     >>> sample_browser.getLink('Bugs').click()
     >>> sample_browser.getLink('Change bug supervisor').click()
     >>> sample_browser.url
-    'http://bugs.launchpad.dev/testy/+bugcontact'
+    'http://bugs.launchpad.dev/testy/+bugsupervisor'
 
     >>> sample_browser.getControl('Bug Supervisor').value = 'name20'
     >>> sample_browser.getControl('Change').click()

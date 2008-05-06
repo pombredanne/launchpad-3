@@ -363,34 +363,6 @@ But on the restricted server, this will work:
      '.../yet-another-private.txt']
 
 
-== Buildd mechanism ==
-
-    >>> temp_url = config.librarian.buildd_download_url
-    >>> config.librarian.buildd_download_url = "http://NOT.VALID.COM/"
-
-The build daemon machines operate in a restricted network. Because of
-this they require a different download URL to that which gets
-presented to the outside world. We thus need to check that when we
-pass is_buildd=True to the URL retrieval part of the librarian, we get
-back that which is configured as a buildd download url. We do this as
-a separate configuration option because the buildd master sometimes
-downloads files itself and that would require the standard
-download_url.
-
-    >>> url = client.getURLForAlias(aid, is_buildd=True)
-    >>> re.search(r'^http://NOT\.VALID\.COM/\d+/text.txt$', url) is not None
-    True
-
-We also confirm that when not asking for a buildd URL, the configured
-buildd_download_url does not interfere with the normal URL generation.
-
-    >>> url = client.getURLForAlias(aid)
-    >>> re.search(r'^http://NOT\.VALID\.COM/\d+/text.txt$', url) is not None
-    False
-
-    >>> config.librarian.buildd_download_url = temp_url
-
-
 == Odds and Sods ==
 
 An UploadFailed will be raised if you try to create a file with no content
