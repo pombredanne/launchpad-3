@@ -18,7 +18,8 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> factory = LaunchpadObjectFactory()
     >>> date_generator = time_counter(
     ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
-    >>> def make_branch(owner, product, name, factory, date_generator):
+    >>> def make_branch(owner, product, name):
+    ...     global factory, date_generator
     ...     factory.makeBranch(name=name, product=product,
     ...         owner=owner, date_created=date_generator.next())
     >>> mike = factory.makePerson(name='mike', displayname='Mike Murphy')
@@ -28,12 +29,12 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     name='fooix', project=project, displayname="Fooix")
     >>> product2 = factory.makeProduct(
     ...     name='fooey', project=project, displayname="Fooey")
-    >>> make_branch(mike, product1, 'first', factory, date_generator)
-    >>> make_branch(mike, product2, 'second', factory, date_generator)
-    >>> make_branch(mike, product1, 'third', factory, date_generator)
-    >>> make_branch(mike, product2, 'fourth', factory, date_generator)
-    >>> make_branch(mary, product1, 'fifth', factory, date_generator)
-    >>> make_branch(mary, product2, 'sixth', factory, date_generator)
+    >>> make_branch(mike, product1, 'first')
+    >>> make_branch(mike, product2, 'second')
+    >>> make_branch(mike, product1, 'third')
+    >>> make_branch(mike, product2, 'fourth')
+    >>> make_branch(mary, product1, 'fifth')
+    >>> make_branch(mary, product2, 'sixth')
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
