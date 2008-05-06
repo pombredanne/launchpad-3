@@ -16,6 +16,7 @@ import os
 
 from canonical.codehosting import branch_id_to_path
 
+from twisted.internet import defer
 from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import NotFoundError, PermissionError
 
@@ -315,11 +316,16 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         If the rename is actually Bazaar unlocking the branch, then request
         that this branch be mirrored.
         """
+        def rename_on_disk(result):
+            self.logger.info('Renaming %r to %r', self, newName)
+            osfs.OSDirectory.rename(self, newName)
+            return result
         if is_lock_directory(self.getAbsolutePath()):
-            self.avatar._launchpad.requestMirror(
+            deferred = self.avatar._launchpad.requestMirror(
                 self.avatar.lpid, self.getBranchID())
-        self.logger.info('Renaming %r to %r', self, newName)
-        osfs.OSDirectory.rename(self, newName)
+        else:
+            deferred = defer.succeed(None)
+        return deferred.addCallback(rename_on_disk)
 
 
 class LoggingFile(osfs.OSFile, LoggingMixin):
