@@ -119,9 +119,12 @@ class MozillaZipFile:
         self.messages = []
         self.last_translator = None
         self.manifest = manifest
-
         self.archive = ZipFile(StringIO(content), 'r')
 
+        # Process zipped files.  Sort by path to keep ordering deterministic.
+        # Ordering matters in sequence numbering (which in turn shows up in
+        # the UI), but also for consistency in duplicates resolution and for
+        # automated testing.
         for entry in sorted(self.archive.namelist()):
             self._processEntry(entry, xpi_path)
 
@@ -138,38 +141,14 @@ class MozillaZipFile:
         for index in reversed(deletions):
             del self.messages[index]
 
-    def _parseFile(self, entry, subpath, chrome_path):
-        """Read file "`entry`" from zip file "`archive`", and parse it.
-
-        :param entry: name (including path) of file within `archive`.
-        :param subpath: file's path inside overall XPI file.  Used to figure
-            out paths inside jar files.
-        :param chrome_path: file's chrome path within the XPI file.
-        """
-        data = self.archive.read(entry)
-
-        suffix = get_file_suffix(entry)
-        if suffix == '.jar':
-            parsed_file = MozillaZipFile(filename=entry, xpi_path=subpath,
-            content=data, manifest=self.manifest)
-        elif suffix == '.dtd':
-            parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
-                content=data)
-        elif suffix == '.properties':
-            parsed_file = PropertyFile(filename=entry,
-                chrome_path=chrome_path, content=data)
-        else:
-            raise AssertionError(
-                "Unexpected filename suffix: %s." % suffix)
-
-        return parsed_file
-
     def _processEntry(self, entry, xpi_path):
-        """Parse given entry in zip file, if it's relevant."""
-        # We're only interested in this file if its name ends with one of
-        # these dot suffixes.
+        """Parse given entry in zip file, if it's relevant.
+
+        To be relevant, `entry` must have a filename suffix of .jar,
+        .dtd., or .properties.
+        """
         suffix = get_file_suffix(entry)
-        if suffix not in ['.jar', '.dtd', '.properties']:
+        if suffix not in ('.jar', '.dtd', '.properties'):
             return
 
         if suffix == '.jar':
@@ -177,8 +156,9 @@ class MozillaZipFile:
         else:
             subpath = "%s/%s" % (xpi_path, entry)
 
-        # If we have a manifest, we skip anything that it doesn't list as
-        # having something useful for us.
+        # If we have a manifest, we only read files listed there as having
+        # something useful for us and skip the rest.  If we don't have a
+        # manifest, we just read the whole archive.
         if self.manifest is None:
             chrome_path = None
         else:
@@ -198,6 +178,36 @@ class MozillaZipFile:
         parsed_file = self._parseFile(entry, subpath, chrome_path)
         self.extend(parsed_file.messages)
 
+    def _parseFile(self, entry, subpath, chrome_path):
+        """Read file `entry` from zip file `archive`, and parse it.
+
+        :param entry: name of file within our zip archive, including
+            full path relative to the archive's root directory.
+        :param subpath: file's path inside overall XPI file.  Used to figure
+            out paths inside jar files.
+        :param chrome_path: file's chrome path within the XPI file.
+
+        :return: object representing a parsed DTD, properties, or jar
+            file.  It will have a "messages" attribute containing a list
+            of `TranslationMessageData` objects read from the file.
+        """
+        data = self.archive.read(entry)
+        suffix = get_file_suffix(entry)
+
+        if suffix == '.jar':
+            parsed_file = MozillaZipFile(filename=entry, xpi_path=subpath,
+                content=data, manifest=self.manifest)
+        elif suffix == '.dtd':
+            parsed_file = DtdFile(
+                filename=entry, chrome_path=chrome_path, content=data)
+        elif suffix == '.properties':
+            parsed_file = PropertyFile(
+                filename=entry, chrome_path=chrome_path, content=data)
+        else:
+            raise AssertionError(
+                "Unexpected filename suffix: %s." % suffix)
+
+        return parsed_file
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""
