@@ -229,6 +229,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
+    show_series_links = False
     hide_dormant_initial_value = False
     extra_columns = []
     heading_template = 'Bazaar branches for %(displayname)s'

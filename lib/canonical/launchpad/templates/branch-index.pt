@@ -93,7 +93,7 @@
               <!-- The user is logged in but cannot upload to the branch -->
             </tal:comment>
             <tr>
-              <th>Push to this branch:</th>
+              <th>Update this branch:</th>
               <td id="upload-directions" tal:condition="not:context/owner/isTeam">
                 You cannot upload to this branch. Only
                 <a tal:attributes="href context/owner/fmt:url"
@@ -115,7 +115,7 @@
             </tal:comment>
 
             <tr>
-              <th>Push to this branch:</th>
+              <th>Update this branch:</th>
               <td id="upload-directions">
                 bzr push <tal:url replace="view/bzr_user_upload_url"/>
                 <tal:comment condition="nothing">

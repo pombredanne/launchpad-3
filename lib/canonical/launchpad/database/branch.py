@@ -236,16 +236,22 @@ class Branch(SQLBase):
         # when generating values for listings.
         use_series = None
         lp_prefix = config.codehosting.bzr_lp_prefix
-        for series in self.associatedProductSeries():
-            # If the branch is associated with the development focus
-            # then we'll use that, otherwise use the series with the
-            # latest date_created.
-            if series == self.product.development_focus:
-                return lp_prefix + self.product.name
-            else:
-                if (use_series is None or
-                    series.date_created > use_series.date_created):
-                    use_series = series
+        # XXX thumper 2008-05-06
+        # Since at this stage the launchpad name resolution is not
+        # authenticated, we can't resolve series branches that end
+        # up pointing to private branches, so don't show short names
+        # for the branch if it is private.
+        if not self.private:
+            for series in self.associatedProductSeries():
+                # If the branch is associated with the development focus
+                # then we'll use that, otherwise use the series with the
+                # latest date_created.
+                if series == self.product.development_focus:
+                    return lp_prefix + self.product.name
+                else:
+                    if (use_series is None or
+                        series.datecreated > use_series.datecreated):
+                        use_series = series
         # If there is no series, use the prefix with the unique name.
         if use_series is None:
             return lp_prefix + self.unique_name
@@ -258,20 +264,18 @@ class Branch(SQLBase):
     def getBzrUploadURL(self, person=None):
         """See `IBranch`."""
         if self.private:
-            root = config.codehosting.smartserver_root % (
-                self._getNameDict(person))
+            return config.codehosting.smartserver_root % (
+                self._getNameDict(person)) + self.unique_name
         else:
-            root = config.codehosting.bzr_lp_prefix
-        return root + self.unique_name
+            return self.bzr_identity
 
     def getBzrDownloadURL(self, person=None):
         """See `IBranch`."""
         if self.private:
-            root = config.codehosting.smartserver_root % (
-                self._getNameDict(person))
+            return config.codehosting.smartserver_root % (
+                self._getNameDict(person)) + self.unique_name
         else:
-            root = config.codehosting.bzr_lp_prefix
-        return root + self.unique_name
+            return self.bzr_identity
 
     @property
     def related_bugs(self):

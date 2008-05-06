@@ -1260,6 +1260,7 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
+    show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @property
