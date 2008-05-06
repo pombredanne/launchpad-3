@@ -249,6 +249,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: foo
     render: <bound method FacetLink.render ...>
     selected: False
@@ -264,6 +265,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: bar
     render: <bound method FacetLink.render ...>
     selected: False
@@ -711,6 +713,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
     render: <bound method MenuLink.render ...>
     site: None
@@ -775,6 +778,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
     render: <bound method MenuLink.render ...>
     site: None
@@ -837,8 +841,9 @@ are as we expect, what we defined in MyNavigationMenu class.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
-    render: <bound method MenuLink.render...
+    render: <bound method FacetLink.render...
     site: None
     sort_key: 0
     summary: None

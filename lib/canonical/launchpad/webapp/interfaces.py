@@ -155,6 +155,9 @@ class ILinkData(Interface):
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
 
+    menu = Attribute(
+        "The `INavigationMenu` associated with the page this link points to.")
+
     # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
     # action menu is not used anymore and we move to use inline navigation.
     sort_key = Attribute(
