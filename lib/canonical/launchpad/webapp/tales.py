@@ -1063,6 +1063,17 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                }
 
 
+class MilestoneFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(title)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'title': self._context.title}
+
+
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
