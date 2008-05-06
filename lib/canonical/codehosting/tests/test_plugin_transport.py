@@ -459,7 +459,13 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
     def _ensureDeferred(self, function, *args, **kwargs):
         # XXX: JonathanLange 2008-05-07: This should assert that function does
         # *not* return a Deferred.
-        return defer.maybeDeferred(function, *args, **kwargs)
+        def call_function_and_check_not_deferred():
+            ret = function(*args, **kwargs)
+            self.assertFalse(
+                isinstance(ret, defer.Deferred),
+                "%r returned a Deferred." % (function,))
+            return ret
+        return defer.maybeDeferred(call_function_and_check_not_deferred)
 
     def setUp(self):
         TrialTestCase.setUp(self)
@@ -467,6 +473,10 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
     def getTransport(self):
         return get_transport(self.server.get_url())
+
+    def test_ensureDeferredFailsWhenDeferredReturned(self):
+        return self.assertFailure(
+            self._ensureDeferred(defer.succeed, None), AssertionError)
 
 
 class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
