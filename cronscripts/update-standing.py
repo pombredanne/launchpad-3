@@ -10,9 +10,12 @@ __all__ = []
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from canonical.config import config
 from canonical.launchpad.scripts.standing import UpdatePersonalStanding
 
 
 if __name__ == '__main__':
-    script = UpdatePersonalStanding('update-personal-standing')
+    script = UpdatePersonalStanding(
+        'update-personal-standing',
+        dbuser=config.standingupdater.dbuser)
     script.lock_and_run()
