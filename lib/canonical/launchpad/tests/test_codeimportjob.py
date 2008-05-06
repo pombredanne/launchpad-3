@@ -85,8 +85,6 @@ class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
         for job in CodeImportJob.select():
             job.destroySelf()
         self.factory = LaunchpadObjectFactory()
-        self.machine = self.factory.makeCodeImportMachine()
-        self.machine.setOnline()
 
     def makeJob(self, state, date_due_delta, requesting_user=None):
         """Create a CodeImportJob object from a spec."""
@@ -105,7 +103,7 @@ class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
         """Assert that the expected job is chosen by getJobForMachine."""
         flush_database_updates()
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine)
+            'machine')
         self.assert_(observed_job is not None, "No job was selected.")
         self.assertEqual(desired_job, observed_job,
                          "Expected job not selected.")
@@ -114,7 +112,7 @@ class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
         """Assert that no job is selected."""
         flush_database_updates()
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine)
+            'machine')
         self.assert_(observed_job is None, "Job unexpectedly selected.")
 
     def test_nothingSelectedIfNothingCreated(self):

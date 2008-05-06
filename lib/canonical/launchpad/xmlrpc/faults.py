@@ -20,7 +20,6 @@ __all__ = [
     'NoSuchBranch',
     'NoBranchForSeries',
     'NoSuchBug',
-    'NoSuchCodeImportMachine',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -274,16 +273,6 @@ class NoSuchPersonWithUsername(LaunchpadFault):
 
     def __init__(self, username):
         LaunchpadFault.__init__(self, username=username)
-
-
-class NoSuchCodeImportMachine(LaunchpadFault):
-    """There is no CodeImportMachine known with the specified hostname."""
-
-    error_code = 210
-    msg_template = 'No such code import machine: %(hostname)s'
-
-    def __init__(self, hostname):
-        LaunchpadFault.__init__(self, hostname=hostname)
 
 
 class BranchNameInUse(LaunchpadFault):

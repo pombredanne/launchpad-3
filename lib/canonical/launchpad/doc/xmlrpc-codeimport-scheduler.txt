@@ -36,14 +36,11 @@ import slave should next run.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-If you pass a bogus hostname, you get a NoSuchCodeImportMachine Fault.
+The method just calls the 'getJobForMachine' method from the
+ICodeImportJobSet interface, and tests all the details of what it does
+can be found in the tests for ICodeImportJobSet.
 
-    >>> codeimportscheduler_api.getJobForMachine('does-not-exist')
-    Traceback (most recent call last):
-      ...
-    NoSuchCodeImportMachine: ...
-
-Of course, the point of all this is for it to be accessed over XMLRPC.
+The point of all this is for it to be accessed over XMLRPC.
 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport

@@ -12,6 +12,8 @@ is, currently capable of performing imports).
     >>> verifyObject(ICodeImportMachineSet, machine_set)
     True
 
+There are additional unit tests for CodeImportMachine in
+canonical.launchpad.database.tests.test_codeimportmachine.
 
 == Retrieving CodeImportMachines ==
 
