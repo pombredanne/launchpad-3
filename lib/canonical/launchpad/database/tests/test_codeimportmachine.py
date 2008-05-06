@@ -10,10 +10,13 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import logout
 from canonical.launchpad.interfaces import (
     CodeImportMachineOfflineReason, CodeImportMachineState,
     ICodeImportJobWorkflow)
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.tests.test_codeimportjob import (
+    login_for_code_imports)
 from canonical.testing import LaunchpadFunctionalLayer
 
 class TestCodeImportMachineShouldLookForJob(unittest.TestCase):
@@ -22,8 +25,12 @@ class TestCodeImportMachineShouldLookForJob(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        login_for_code_imports()
         self.factory = LaunchpadObjectFactory()
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
+
+    def tearDown(self):
+        logout()
 
     def createJobRunningOnMachine(self, machine):
         """Create a job in the database and mark it as running on `machine`.
