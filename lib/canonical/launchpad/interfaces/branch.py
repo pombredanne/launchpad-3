@@ -1103,7 +1103,7 @@ class BranchListingSort(EnumeratedType):
     DEFAULT = Item("""
         by default ordering
 
-        Sort branches by the default ordering for the view
+        Sort branches by the default ordering for the view.
         """)
 
     PRODUCT = Item("""

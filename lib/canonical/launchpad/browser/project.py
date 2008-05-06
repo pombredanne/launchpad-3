@@ -42,8 +42,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
-    NotFoundError, BranchListingSort)
+    BranchListingSort, IBranchSet, IProductSet, IProject, IProjectSeries, 
+    IProjectSet, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
