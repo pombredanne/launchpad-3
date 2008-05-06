@@ -214,7 +214,7 @@ class BuilddMaster:
             return
 
         architectures_available = [
-            arch for arch in distroseries.architectures
+            arch for arch in distroseries_architectures
             if arch.getPocketChroot() is not None]
 
         if not architectures_available:
