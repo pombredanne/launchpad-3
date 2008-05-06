@@ -51,7 +51,9 @@ class XpiHeaderTestCase(unittest.TestCase):
             for person in contributors]
 
         insertions = {'contributors': '\n'.join(contributor_xml)}
-        return XpiHeader(rdf_content % insertions)
+
+        content = (rdf_content % insertions).encode('utf-8')
+        return XpiHeader(content)
 
     def test_ParseRdf(self):
         # Parse basic RDF file, verify its information.
@@ -105,6 +107,12 @@ class XpiHeaderTestCase(unittest.TestCase):
         self.assertEqual(header.getLastTranslator(),
             ('Second Translator', 'translator2@example.com'))
 
+    def test_NonAsciiContributor(self):
+        # Contributor names don't have to be in ASCII.
+        header = self._produceHeader([
+            u"\u0e40\u0e2d\u0e4b <eai@example.com>"])
+        self.assertEqual(header.getLastTranslator(),
+            (u"\u0e40\u0e2d\u0e4b", 'eai@example.com'))
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
