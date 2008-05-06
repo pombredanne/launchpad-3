@@ -36,7 +36,13 @@ class TokensTextWidget(StrippedTextWidget):
 
     Punctuation is removed, and extra whitespace is stripped.
     """
+
     def _toFieldValue(self, input):
+        """See `SimpleInputWidget`.
+
+        Accept only alphanumeric characters and '-'.  Everything
+        else is replaced with a single space.
+        """
         normalised_text = re.sub(r'[^\w-]+', ' ', input)
         return super(TokensTextWidget, self)._toFieldValue(normalised_text)
 

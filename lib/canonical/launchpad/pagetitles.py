@@ -1143,7 +1143,7 @@ question_change_status = ContextId('Change status of question #%s')
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
 def question_createfaq(context, view):
-    """Return the page title to create an FAQ for a question."""
+    """Return the page title to create a FAQ for a question."""
     return "Create a FAQ for %s" % view.faq_target.displayname
 
 question_edit = ContextId('Edit question #%s details')
@@ -1176,7 +1176,7 @@ question_unlinkbugs = ContextId('Remove bug links from question #%s')
 questions_index = 'Launchpad Answers'
 
 def questiontarget_createfaq(context, view):
-    """Return the page title to create an FAQ for a questiontarget."""
+    """Return the page title to create a FAQ for a questiontarget."""
     return "Create a FAQ for %s" % context.displayname
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
