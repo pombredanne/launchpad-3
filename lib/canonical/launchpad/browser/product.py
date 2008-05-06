@@ -1303,7 +1303,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
+            'sort_by': BranchListingSort.DEFAULT,
             'hide_dormant': False,
             }
 
@@ -1465,6 +1465,16 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
 class ProductBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
+
+    def initialize(self):
+        """Conditionally redirect to the default view.
+        
+        If the branch listing requests the default listing, redirect to the
+        default view for the product.
+        """
+        ProductBranchListingView.initialize(self)
+        if self.sort_by == BranchListingSort.DEFAULT:
+            self.request.response.redirect(canonical_url(self.context))
 
     @cachedproperty
     def hide_dormant_initial_value(self):

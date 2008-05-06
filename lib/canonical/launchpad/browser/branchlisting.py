@@ -406,6 +406,7 @@ class NoContextBranchListingView(BranchListingView):
     """A branch listing that has no associated product or person."""
 
     field_names = ['lifecycle']
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
     # Dormant branches are shown in these listings.
     hide_dormant_branches = False
