@@ -108,8 +108,7 @@ by referencing another WADL document.
 == Scoped collection resources ==
 
 The WADL representation of a scoped collection is pretty similar to
-the representation of a non-scoped collection. The difference is that
-all scoped collections are of the same type: "ScopedCollection".
+the representation of a top-level collection.
 
     >>> wadl = webservice.get('/beta/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
@@ -128,7 +127,7 @@ all scoped collections are of the same type: "ScopedCollection".
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#ScopedCollection'
+    'http://api.launchpad.dev/beta/#PersonEntry-scoped-collection'
 
 
 == The service root ==

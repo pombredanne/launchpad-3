@@ -35,6 +35,11 @@ class WadlAPI:
         request = get_current_browser_request()
         return canonical_url(request.publication.getApplication(request))
 
+    def _entry_adapter_for_schema(self, model_schema):
+        entry_class = getGlobalSiteManager().adapters.lookup(
+            (model_schema,), IEntry)
+        return WadlEntryAdapterAPI(entry_class)
+
     def docstringToXHTML(self, doc):
         """Convert an epydoc docstring to XHTML."""
         if doc is None:
@@ -97,8 +102,14 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
 
     def type_link(self):
         "The URL to the resource type for the object."
-        return "%s#%s" % (self._service_root_url(),
-                          self.resource.collection.__class__.__name__)
+        if IScopedCollection.providedBy(self.resource.collection):
+            adapter = self._entry_adapter_for_schema(
+                self.context.relationship.value_type.schema)
+            return adapter.scoped_collection_type_link()
+        else:
+            collection_class = self.resource.collection.__class__
+            adapter = WadlCollectionAdapterAPI(collection_class)
+            return adapter.type_link()
 
 
 class WadlServiceRootResourceAPI(WadlAPI):
@@ -294,15 +305,12 @@ class WadlFieldAPI(WadlAPI):
     def type_link(self):
         """The URL of the description of the type this field is a link to."""
         if ICollectionField.providedBy(self.field):
-            model_schema = self.field.value_type.schema
+            schema = self.field.value_type.schema
         elif IObject.providedBy(self.field):
-            model_schema = self.field.schema
+            schema = self.field.schema
         else:
             raise AssertionError("Field is not a link to another resource.")
-
-        entry_class = getGlobalSiteManager().adapters.lookup(
-            (model_schema,), IEntry)
-        adapter = WadlEntryAdapterAPI(entry_class)
+        adapter = self._entry_adapter_for_schema(schema)
 
         if ICollectionField.providedBy(self.field):
             return adapter.scoped_collection_type_link()
