@@ -457,8 +457,6 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
         self.assertIn(msg, str(exception))
 
     def _ensureDeferred(self, function, *args, **kwargs):
-        # XXX: JonathanLange 2008-05-07: This should assert that function does
-        # *not* return a Deferred.
         def call_function_and_check_not_deferred():
             ret = function(*args, **kwargs)
             self.assertFalse(
