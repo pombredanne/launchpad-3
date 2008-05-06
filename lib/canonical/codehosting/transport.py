@@ -620,17 +620,6 @@ class VirtualTransport(Transport):
         self.server = server
         Transport.__init__(self, url)
 
-    def _extractResult(self, deferred):
-        failures = []
-        successes = []
-        deferred.addCallbacks(successes.append, failures.append)
-        if len(failures) == 1:
-            failures[0].raiseException()
-        elif len(successes) == 1:
-            return successes[0]
-        else:
-            raise AssertionError("%r has not fired yet." % (deferred,))
-
     def external_url(self):
         # There's no real external URL to this transport. It's heavily
         # dependent on the process.
@@ -660,7 +649,7 @@ class VirtualTransport(Transport):
 
         deferred = self._getUnderylingTransportAndPath(relpath)
         deferred.addCallback(call_method)
-        return self._extractResult(deferred)
+        return deferred
 
     # Transport methods
     def abspath(self, relpath):
@@ -754,7 +743,7 @@ class VirtualTransport(Transport):
         return self._call('writeChunk', relpath, offset, data)
 
 
-class LaunchpadTransport(VirtualTransport):
+class AsyncLaunchpadTransport(VirtualTransport):
     """Virtual transport to implement the Launchpad VFS for branches.
 
     This implements a few hooks to translate filesystem operations (such as
@@ -764,6 +753,13 @@ class LaunchpadTransport(VirtualTransport):
     It also converts the Launchpad-specific translation errors (such as 'not a
     valid branch path') into Bazaar errors (such as 'no such file').
     """
+
+    def _call(self, method_name, *args, **kwargs):
+        return self._extractResult(
+            VirtualTransport._call(self, method_name, *args, **kwargs))
+
+    def _extractResult(self, deferred):
+        return deferred
 
     def _getUnderylingTransportAndPath(self, relpath):
         try:
@@ -819,7 +815,16 @@ class LaunchpadTransport(VirtualTransport):
         return VirtualTransport.rmdir(self, relpath)
 
 
-class AsyncLaunchpadTransport(LaunchpadTransport):
+class LaunchpadTransport(AsyncLaunchpadTransport):
 
     def _extractResult(self, deferred):
-        return deferred
+        failures = []
+        successes = []
+        deferred.addCallbacks(successes.append, failures.append)
+        if len(failures) == 1:
+            failures[0].raiseException()
+        elif len(successes) == 1:
+            return successes[0]
+        else:
+            raise AssertionError("%r has not fired yet." % (deferred,))
+
