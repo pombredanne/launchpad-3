@@ -362,6 +362,29 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.failUnlessEqual(
             team2_on_team1.status, TeamMembershipStatus.INVITATION_DECLINED)
 
+    def test_no_cyclical_participation_allowed(self):
+        """No status change can create cyclical participation."""
+        # Create a bunch of arbitrary people and teams to use in the test.
+        factory = LaunchpadObjectFactory()
+        person = factory.makePerson()
+        team1 = factory.makeTeam(person)
+        team2 = factory.makeTeam(person)
+        team3 = factory.makeTeam(person)
+
+        # Invite team1 as a member of team3 and forcibly add team2 as member
+        # of team1 and team3 as member of team2.
+        team3.addMember(team1, person)
+        team1.addMember(team2, person, force_team_add=True)
+        team2.addMember(team3, person, force_team_add=True)
+
+        # Since team2 is a member of team1 and team3 is a member of team2, we
+        # can't make team1 a member of team3.
+        team1_on_team3 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            team1, team3)
+        self.assertRaises(
+            CyclicalTeamMembershipError, team1_on_team3.setStatus,
+            TeamMembershipStatus.APPROVED, person)
+
 
 class TestCheckTeamParticipationScript(unittest.TestCase):
     layer = LaunchpadFunctionalLayer

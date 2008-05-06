@@ -288,7 +288,7 @@ class TeamMembership(SQLBase):
             % (self.status.name, status.name))
 
         active_states = [approved, admin]
-        if status in active_states and self.team in self.person.activemembers:
+        if status in active_states and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
                 "Cannot make %(person)s a member of %(team)s because "
                 "%(team)s is a member of %(person)s."
