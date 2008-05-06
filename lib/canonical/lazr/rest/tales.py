@@ -206,6 +206,17 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         return "%s#%s-diff" % (
             self._service_root_url(), self.singular_type())
 
+    def entry_page_representation_link(self):
+        return "%s#%s" % (
+            self._service_root_url(),
+            self.entry_page_representation_id())
+
+    def scoped_collection_type(self):
+        return "%s-scoped-collection" % self.singular_type()
+
+    def entry_page_representation_id(self):
+        return "%s-page" % self.singular_type()
+
     def all_fields(self):
         "Return all schema fields for the object."
         return getFields(self.adapter.schema).values()
@@ -234,13 +245,6 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         "The URL to the resource type for the object."
         return "%s#%s" % (self._service_root_url(),
                           self.collection_type())
-
-    def collection_representation_id(self):
-        return "%s-page" % self.collection_type()
-
-    def collection_representation_link(self):
-        return "%s#%s" % (
-            self._service_root_url(), self.collection_representation_id())
 
     def entry_schema(self):
         return self.adapter.entry_schema
