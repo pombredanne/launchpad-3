@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from canonical.launchpad.scripts.standing import UpdatePersonalStanding
