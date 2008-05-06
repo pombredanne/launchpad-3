@@ -6,6 +6,8 @@ __metaclass__ = type
 
 import unittest
 
+from cgi import escape
+
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
 
 
@@ -46,8 +48,7 @@ class XpiHeaderTestCase(unittest.TestCase):
         if contributors is None:
             contributors = []
         contributor_xml = [
-            "<em:contributor>%s</em:contributor>" % (
-                person.replace('<', "&lt;").replace('>', "&gt;"))
+            "<em:contributor>%s</em:contributor>" % escape(person)
             for person in contributors]
 
         insertions = {'contributors': '\n'.join(contributor_xml)}
