@@ -114,7 +114,6 @@ class TestCodeImportDispatcherUnit(TestCase):
     def test_findAndDispatchJob_jobWaiting(self):
         # If there is a job to dispatch, then we call dispatchJob with its id.
         calls = []
-        self.pushConfig(forced_hostname=self.machine.hostname)
         self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
         self.dispatcher.findAndDispatchJob(StubSchedulerClient(10))
         self.assertEqual(calls, [10])
@@ -122,7 +121,6 @@ class TestCodeImportDispatcherUnit(TestCase):
     def test_findAndDispatchJob_noJobWaiting(self):
         # If there is no job to dispatch, then we just exit quietly.
         calls = []
-        self.pushConfig(forced_hostname=self.machine.hostname)
         self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
         self.dispatcher.findAndDispatchJob(StubSchedulerClient(0))
         self.assertEqual(calls, [])
