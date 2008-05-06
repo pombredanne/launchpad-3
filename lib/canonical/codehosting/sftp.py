@@ -9,6 +9,8 @@ import os.path
 
 from bzrlib import osutils
 from bzrlib.transport.local import LocalTransport
+from twisted.conch.interfaces import ISFTPServer
+from zope.interface import implements
 
 
 class FatLocalTransport(LocalTransport):
@@ -48,6 +50,8 @@ class SFTPServerFile:
 
 
 class TransportSFTPServer:
+
+    implements(ISFTPServer)
 
     def __init__(self, transport):
         self.transport = transport
