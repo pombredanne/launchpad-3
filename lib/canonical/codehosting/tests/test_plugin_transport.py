@@ -21,6 +21,9 @@ from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase, TestCaseInTempDir
 from bzrlib.urlutils import local_path_to_url
 
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
+
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting import branch_id_to_path
@@ -50,7 +53,7 @@ class TestLaunchpadServer(TestCase):
             self.authserver, self.user_id, self.backing_transport,
             self.mirror_transport)
 
-    def test_base_path_translation(self):
+    def test_base_path_translation_1(self):
         # Branches are stored on the filesystem by branch ID. This allows
         # users to rename and re-assign branches without causing unnecessary
         # disk churn. The ID is converted to four-byte hexadecimal and split
@@ -62,40 +65,58 @@ class TestLaunchpadServer(TestCase):
         # name to the branch's path on the filesystem.
 
         # We can map a branch owned by the user to its path.
-        self.assertEqual(
-            (self.server._backing_transport, '00/00/00/01/'),
-            self.server.translateVirtualPath('/~testuser/firefox/baz'))
+        deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._backing_transport, '00/00/00/01/'))
+        return deferred
 
+    def test_base_path_translation_2(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
-        self.assertEqual(
-            (self.server._backing_transport, '00/00/00/03/'),
-            self.server.translateVirtualPath('/~testuser/+junk/random'))
+        deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._backing_transport, '00/00/00/03/'))
+        return deferred
 
+    def test_base_path_translation_3(self):
         # We can map a branch owned by a team that the user is in to its path.
-        self.assertEqual(
-            (self.server._backing_transport, '00/00/00/04/'),
-            self.server.translateVirtualPath('/~testteam/firefox/qux'))
+        deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._backing_transport, '00/00/00/04/'))
+        return deferred
 
+    def test_base_path_translation_4(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
-        self.assertEqual(
-            (self.server._mirror_transport, '00/00/00/05/'),
-            self.server.translateVirtualPath('/~name12/+junk/junk.dev'))
+        deferred = self.server.translateVirtualPath('/~name12/+junk/junk.dev')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._mirror_transport, '00/00/00/05/'))
+        return deferred
 
-    def test_extend_path_translation(self):
+    def test_extend_path_translation_on_backing(self):
         # More than just the branch name needs to be translated: transports
         # will ask for files beneath the branch. The server translates the
         # unique name of the branch (i.e. the ~user/product/branch-name part)
         # to the four-byte hexadecimal split ID described in
         # test_base_path_translation and appends the remainder of the path.
-        self.assertEqual(
-            (self.server._backing_transport, '00/00/00/01/.bzr'),
-            self.server.translateVirtualPath('/~testuser/firefox/baz/.bzr'))
-        self.assertEqual(
-            (self.server._mirror_transport, '00/00/00/05/.bzr'),
-            self.server.translateVirtualPath(
-                '/~name12/+junk/junk.dev/.bzr'))
+        deferred = self.server.translateVirtualPath(
+            '/~testuser/firefox/baz/.bzr')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._backing_transport, '00/00/00/01/.bzr'))
+        return deferred
+
+    def test_extend_path_translation_on_mirror(self):
+        deferred = self.server.translateVirtualPath(
+            '/~name12/+junk/junk.dev/.bzr')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._mirror_transport, '00/00/00/05/.bzr'))
+        return deferred
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -133,21 +154,28 @@ class TestLaunchpadServer(TestCase):
         self.addCleanup(self.server.tearDown)
 
         # ~testuser/firefox/baz is branch 1.
-        transport, path = self.server.translateVirtualPath(
+        deferred = self.server.translateVirtualPath(
             '~testuser/firefox/baz/.bzr')
-        self.assertStartsWith(path, branch_id_to_path(1))
 
-        # Futz with the fake authserver.
-        del self.authserver._branch_set[1]
-        branch_info = self.authserver.getBranchInformation(
-            1, 'testuser', 'firefox', 'baz')
-        # The authserver says there is no ~testuser/firefox/baz branch.
-        self.assertEqual(('', ''), branch_info)
+        def assert_path_starts_with(branch_info, expected_path):
+            transport, path = branch_info
+            self.assertStartsWith(path, expected_path)
 
-        # But we can still translate ~testuser/firefox/baz in the transport.
-        transport, path = self.server.translateVirtualPath(
-            '~testuser/firefox/baz/.bzr')
-        self.assertStartsWith(path, branch_id_to_path(1))
+        def futz_with_authserver(ignored):
+            # Futz with the fake authserver.
+            del self.authserver._branch_set[1]
+            branch_info = self.authserver.getBranchInformation(
+                1, 'testuser', 'firefox', 'baz')
+            # The authserver says there is no ~testuser/firefox/baz branch.
+            self.assertEqual(('', ''), branch_info)
+
+        deferred.addCallback(assert_path_starts_with, branch_id_to_path(1))
+        deferred.addCallback(futz_with_authserver)
+        deferred.addCallback(
+            lambda ignored: self.server.translateVirtualPath(
+                    '~testuser/firefox/baz/.bzr'))
+        deferred.addCallback(assert_path_starts_with, branch_id_to_path(1))
+        return deferred
 
 
 class TestVirtualTransport(TestCaseInTempDir):
@@ -171,8 +199,9 @@ class TestVirtualTransport(TestCaseInTempDir):
             unregister_transport(self.scheme, self._factory)
 
         def translateVirtualPath(self, virtual_path):
-            return (
-                self._backing_transport, 'prefix_' + virtual_path.lstrip('/'))
+            return defer.succeed(
+                (self._backing_transport,
+                 'prefix_' + virtual_path.lstrip('/')))
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -407,7 +436,7 @@ class TestLaunchpadTransport(TestCase):
             [(self.user_id, 1)], self.authserver._request_mirror_log)
 
 
-class TestLaunchpadTransportReadOnly(TestCase):
+class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
@@ -429,15 +458,17 @@ class TestLaunchpadTransportReadOnly(TestCase):
         self.file_on_both_transports = '/~name12/+junk/junk.dev/.bzr/README'
         self.file_on_mirror_only = '/~name12/+junk/junk.dev/.bzr/MIRROR-ONLY'
 
-        self._makeFilesInBranches(
+        d1 = self._makeFilesInBranches(
             backing_transport,
             [(self.writable_file, 'Hello World!'),
              (self.file_on_both_transports, 'Hello World!')])
 
-        self._makeFilesInBranches(
+        d2 = self._makeFilesInBranches(
             mirror_transport,
             [(self.file_on_both_transports, 'Goodbye World!'),
              (self.file_on_mirror_only, 'ignored')])
+
+        return defer.gatherResults([d1, d2])
 
     def _setUpMemoryServer(self):
         memory_server = MemoryServer()
@@ -464,11 +495,18 @@ class TestLaunchpadTransportReadOnly(TestCase):
             The path in the filename is translated as if it were a virtual
             path.
         """
-        for filename, contents in file_spec:
-            path_to_file = self.lp_server.translateVirtualPath(filename)[1]
-            directory = os.path.dirname(path_to_file)
-            ensure_base(transport.clone(directory))
-            transport.put_bytes(path_to_file, contents)
+
+        def make_file(filename, contents):
+            deferred = self.lp_server.translateVirtualPath(filename)
+            def write_to_file(branch_info):
+                path_to_file = branch_info[1]
+                directory = os.path.dirname(path_to_file)
+                ensure_base(transport.clone(directory))
+                transport.put_bytes(path_to_file, contents)
+            return deferred.addCallback(write_to_file)
+        return defer.gatherResults(
+            [make_file(filename, contents)
+             for filename, contents in file_spec])
 
     def test_mkdir_readonly(self):
         # If we only have READ_ONLY access to a branch then we should not be
