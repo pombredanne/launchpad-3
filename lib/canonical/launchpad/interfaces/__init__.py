@@ -103,6 +103,7 @@ from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.mailinglist import *
+from canonical.launchpad.interfaces.mailinglistsubscription import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *

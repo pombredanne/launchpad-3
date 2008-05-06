@@ -110,6 +110,44 @@
     </table>
   </form>
 
+  <form action=""
+        method="post" enctype="multipart/form-data"
+        accept-charset="UTF-8">
+
+    <h2>Automatic subscription to mailing lists</h2>
+
+    <tal:widget
+       define="widget nocall:view/widgets/mailing_list_auto_subscribe_policy">
+      <table class="form">
+
+        <thead>
+          <tr>
+            <th style="white-space:nowrap; text-align:left;">
+              <div style="margin-bottom: 1em;">
+                <label tal:attributes="for widget/name"
+		       tal:content="structure widget/label" />
+              </div>
+            </th>
+            <td></td>
+          </tr>
+        </thead>
+
+        <tbody>
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          <tr>
+            <td>
+              <input
+		 tal:replace="structure
+			      view/action_update_autosubscribe_policy/render" />
+            </td>
+            <td></td>
+          </tr>
+        </tbody>
+
+      </table>
+    </tal:widget>
+  </form>
+
 </div>
 
 <div metal:fill-slot="help">
