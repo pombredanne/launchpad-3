@@ -31,6 +31,7 @@ class UpdatePersonalStanding(LaunchpadCronScript):
     def main(self):
         """Main script entry point."""
         self.logger.info('Updating personal standings')
+        self.txn.begin()
         getUtility(IPersonSet).updatePersonalStandings()
         self.txn.commit()
         self.logger.info('Done.')

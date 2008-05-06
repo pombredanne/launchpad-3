@@ -15,7 +15,8 @@ are not a member of, their message gets held for moderator approval.
     ...     IPersonSet, PersonalStanding)
     >>> from canonical.launchpad.ftests import sync, syncUpdate
 
-    >>> lifeless = getUtility(IPersonSet).getByName('lifeless')
+    >>> person_set = getUtility(IPersonSet)
+    >>> lifeless = person_set.getByName('lifeless')
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> lifeless.personal_standing_reason = ''
     >>> syncUpdate(lifeless)
@@ -78,7 +79,7 @@ are not a member of, their message gets held for moderator approval.
 
 After one approval, Robert's standing does not change.
 
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> foobar = person_set.getByName('name16')
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
@@ -137,13 +138,17 @@ Neither do approved messages from someone else.
 
     >>> message = post_message('carlos@canonical.com', 'test-two')
     >>> message.approve(foobar)
-    
+
     >>> message = post_message('carlos@canonical.com', 'test-three')
     >>> message.approve(foobar)
 
     >>> script.main()
     >>> sync(lifeless)
     >>> lifeless.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+
+    >>> carlos = person_set.getByName('carlos')
+    >>> carlos.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
 Robert's next message goes to a third mailing list, and this gets
@@ -155,6 +160,36 @@ approved.  As a result, his personal standing gets updated.
     >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
+
+
+== Multiple senders ==
+
+Along comes Mark who also sends three messages to three different lists.  His
+personal standing gets updated to Good also.
+
+    >>> message = post_message('mark@hbd.com', 'test-one')
+    >>> message.approve(foobar)
+    >>> script.main()
+    >>> mark = person_set.getByName('sabdfl')
+    >>> mark.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+
+    >>> message = post_message('mark@hbd.com', 'test-two')
+    >>> message.approve(foobar)
+    >>> script.main()
+    >>> sync(mark)
+    >>> mark.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+
+    >>> message = post_message('mark@hbd.com', 'test-three')
+    >>> message.approve(foobar)
+    >>> script.main()
+    >>> sync(mark)
+    >>> mark.personal_standing
+    <DBItem PersonalStanding.GOOD...>
+
+
+== Only transition Unknown standings ==
 
 However, Robert's standing will only be updated if it was previously
 Unknown.  A standing of Poor, Good or Excellent will not be changed by
@@ -193,4 +228,74 @@ messages will count toward his good standing again.
 
 == Cron script ==
 
-XXX Run (some of) this is a cron script.
+Really, standing is updated via the update-standing.py cron script.  This
+script is essentially a wrapper around the above script class, but its
+operation is completely identical.
+
+For example, it will correctly update Robert's standing, but leave Carlos's
+standing untouched.
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+
+    >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
+    >>> mark.personal_standing = PersonalStanding.UNKNOWN
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> sync(lifeless)
+    >>> sync(mark)
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+    >>> mark.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/update-standing.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> print stdout
+    <BLANKLINE>
+    >>> print stderr
+    INFO    creating lockfile
+    INFO    Updating personal standings
+    INFO    Done.
+    <BLANKLINE>
+
+    >>> flush_database_caches()
+    >>> sync(lifeless)
+    >>> sync(carlos)
+    >>> sync(mark)
+
+    >>> lifeless.personal_standing
+    <DBItem PersonalStanding.GOOD...>
+    >>> carlos.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+    >>> mark.personal_standing
+    <DBItem PersonalStanding.GOOD...>
+
+Carlos sends one more message, which also gets approved.  Now the
+update-standing script bumps his standing to Good too.
+
+    >>> message = post_message('carlos@canonical.com', 'test-one')
+    >>> message.approve(foobar)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> mailinglists_helper.mailman.act()
+    >>> LaunchpadZopelessLayer.txn.commit()
+
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/update-standing.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> print stdout
+    <BLANKLINE>
+    >>> print stderr
+    INFO    creating lockfile
+    INFO    Updating personal standings
+    INFO    Done.
+    <BLANKLINE>
+
+    >>> flush_database_caches()
+    >>> sync(carlos)
+    >>> carlos.personal_standing
+    <DBItem PersonalStanding.GOOD...>
