@@ -213,22 +213,19 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
-        registered_arch_ids = set(
-            arch_series.id for arch_series in self._archserieses.keys())
-        arch_series_ids = set(
-            arch_series.id for arch_series in distroseries_architectures)
-        legal_arch_ids = arch_series_ids.intersection(registered_arch_ids)
-        legal_archs = [
-            arch_series for arch_series in distroseries_architectures
-            if arch_series.id in legal_arch_ids]
+        architectures_available = [
+            arch for arch in distroseries.architectures
+            if arch.getPocketChroot() is not None]
 
-        if not legal_archs:
+        if not architectures_available:
             self._logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)
             return
 
-        self._logger.info("Supported architectures: %s" %
-                          " ".join(a.architecturetag for a in legal_archs))
+        self._logger.info(
+            "Supported architectures: %s" %
+            " ".join(arch_series.architecturetag
+                     for arch_series in architectures_available))
 
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, distroseries)
@@ -239,7 +236,7 @@ class BuilddMaster:
 
         for pubrec in sources_published:
             build_archs = determineArchitecturesToBuild(
-                pubrec, legal_archs, distroseries, pas_verify)
+                pubrec, architectures_available, distroseries, pas_verify)
             for arch in build_archs:
                 build = pubrec.createMissingBuildForArchitecture(arch)
                 if build is None:
