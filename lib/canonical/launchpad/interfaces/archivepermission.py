@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """ArchivePermission interface."""
 
@@ -94,6 +95,7 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check.
         :param sourcepackagename: An `ISourcePackageName` or a string
             package name.
+        :raises NotFoundError: if the string package name does not exist.
 
         Return `ArchivePermission` records for all the uploaders who are
             authorised to upload the named source package.

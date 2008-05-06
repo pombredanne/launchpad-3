@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -77,7 +78,7 @@ class ArchivePermissionSet:
         "See `IArchivePermissionSet`."""
         if isinstance(sourcepackagename, basestring):
             sourcepackagename = getUtility(
-                ISourcePackageNameSet).queryByName(sourcepackagename)
+                ISourcePackageNameSet)[sourcepackagename]
         return ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.UPLOAD,
             sourcepackagename=sourcepackagename)

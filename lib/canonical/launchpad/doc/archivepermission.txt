@@ -114,6 +114,13 @@ or team has permission to upload to the supplied source package name:
     >>> uploaders.count()
     0
 
+You can also pass a string package name instead of an ISourcePackageName:
+
+    >>> uploaders = permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, "alsa-utils")
+    >>> uploaders.count()
+    0
+
 queueAdminsForComponent() returns the ArchivePermission records where a
 person or team has permission to administrate an archive's package
 queues in that component.
