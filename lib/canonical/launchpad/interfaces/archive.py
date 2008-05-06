@@ -259,13 +259,13 @@ class IArchive(IHasOwner):
         'component' is not supplied, all components are considered.
         """
 
-    def canAdministrateQueue(user, component):
-        """Check to see if user is allowed to administrate queue items.
+    def canAdministerQueue(user, component):
+        """Check to see if user is allowed to administer queue items.
 
         :param user: An `IPerson` whom should be checked for authenticate.
         :param component: The context `IComponent` for the check.
 
-        Return True if 'user' is allowed to administrate the package upload
+        :return True: if 'user' is allowed to administer the package upload
         queue for items with 'component'.
         """
 

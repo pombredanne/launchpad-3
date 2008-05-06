@@ -66,7 +66,7 @@ has a number of useful properties that can be checked:
 The checkAuthenticated() call is also able to check someone's
 permission on a SourcePackageName, which gives a smaller radius of
 permission than allowing access to the whole component.  Just pass
-a SourcePacakgeName as the "item" paramter:
+a SourcePacakgeName as the "item" parameter:
 
     >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
@@ -84,14 +84,11 @@ component, but this demonstrates package-level permissioning):
 checkAuthenticated() does not know about any other item types, and
 passing a type that it does not know about results in a TypeError:
 
-    >>> try:
-    ...     permission_set.checkAuthenticated(
-    ...         ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
-    ...         ubuntu)
-    ... except TypeError, info:
-    ...     print "TypeError: %s" % info
-    ... else:
-    ...     print "checkAuthenticted() did not fail as expected."
+    >>> permission_set.checkAuthenticated(
+    ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
+    ...     ubuntu)
+    Traceback (most recent call last):
+    ...
     TypeError: 'item' is not an IComponent or an ISourcePackageName
 
 IArchivePermissionSet also has some helpers to make it very easy to
@@ -121,8 +118,18 @@ You can also pass a string package name instead of an ISourcePackageName:
     >>> uploaders.count()
     0
 
+Passing a non-existent package name will cause a NotFoundError
+to be thrown.
+
+    >>> uploaders = permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, "fakepackage")
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'fakepackage'
+
+
 queueAdminsForComponent() returns the ArchivePermission records where a
-person or team has permission to administrate an archive's package
+person or team has permission to administer an archive's package
 queues in that component.
 
     >>> archive_admins = permission_set.queueAdminsForComponent(

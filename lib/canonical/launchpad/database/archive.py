@@ -615,7 +615,7 @@ class Archive(SQLBase):
         return self._authenticate(
             user, component, ArchivePermissionType.UPLOAD)
 
-    def canAdministrateQueue(self, user, component):
+    def canAdministerQueue(self, user, component):
         """See `IArchive`."""
         return self._authenticate(
             user, component, ArchivePermissionType.QUEUE_ADMIN)

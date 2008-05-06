@@ -12,14 +12,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice
+from zope.schema import Choice, Datetime
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class ArchivePermissionType(DBEnumeratedType):
-    """Archive Permission Type
+    """Archive Permission Type.
 
     The permission being granted, such as upload rights, or queue
     manipulation rights.
@@ -44,7 +44,9 @@ class IArchivePermission(Interface):
 
     id = Attribute("The archive permission ID.")
 
-    date_created = Attribute("The timestamp when the permission was created.")
+    date_created = Datetime(
+        title=_('Date Created'), required=False, readonly=False,
+        description=_("The timestamp when the permission was created."))
 
     archive = Attribute("The archive that this permission is for.")
 
@@ -52,7 +54,10 @@ class IArchivePermission(Interface):
         title=_("The permission type being granted."),
         values=ArchivePermissionType, readonly=False, required=True)
 
-    person = Attribute("The person or team being granted the permission.")
+    person = Choice(
+        title=_("Person"),
+        description=_("The person or team being granted the permission."),
+        required=True, vocabulary="ValidPersonOrTeam")
 
     component = Attribute("The component that this permission is related to.")
 
@@ -72,7 +77,7 @@ class IArchivePermissionSet(Interface):
         :param item: The context `IComponent` or `ISourcePackageName` for the
             permission check.
 
-        Return all the `ArchivePermission` records that match the parameters
+        :return: all the `ArchivePermission` records that match the parameters
         supplied.  If none are returned, it means the user is not
         authenticated in that context.
         """
@@ -85,7 +90,7 @@ class IArchivePermissionSet(Interface):
             return records for uploaders to that component, otherwise
             all components are considered.
 
-        Return `ArchivePermission` records for all the uploaders who
+        :return: `ArchivePermission` records for all the uploaders who
             are authorised for the supplied component.
         """
 
@@ -97,7 +102,7 @@ class IArchivePermissionSet(Interface):
             package name.
         :raises NotFoundError: if the string package name does not exist.
 
-        Return `ArchivePermission` records for all the uploaders who are
+        :return: `ArchivePermission` records for all the uploaders who are
             authorised to upload the named source package.
         """
 
@@ -107,7 +112,7 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check.
         :param component: The context `IComponent` for the permission check.
 
-        Return `ArchivePermission` records for all the users who are allowed
-        to administrate the distroseries upload queue.
+        :return: `ArchivePermission` records for all the users who are allowed
+        to administer the distroseries upload queue.
         """
 

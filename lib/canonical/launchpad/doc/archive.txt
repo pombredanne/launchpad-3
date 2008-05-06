@@ -1288,16 +1288,24 @@ Celso's PPA.
 
 == Archive Permission Checking ==
 
-IArchive has two public methods, canUpload() and canAdministrateQueue()
-that check a user's permission to upload and/or administrate a
+IArchive has two public methods, canUpload() and canAdministerQueue()
+that check a user's permission to upload and/or administer a
 distroseries upload queue respectively.  See archivepermission.txt
 for more details.
 
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
 
     >>> ubuntu.main_archive.canUpload(cprov, main_component)
     False
 
-    >>> ubuntu.main_archive.canAdministrateQueue(cprov, main_component)
+    >>> ubuntu.main_archive.canAdministerQueue(cprov, main_component)
     False
+
+    >>> ubuntu.main_archive.canUpload(ubuntu_team, main_component)
+    True
+
+    >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
+    True
+
