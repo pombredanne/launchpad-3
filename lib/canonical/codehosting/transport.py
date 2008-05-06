@@ -644,9 +644,7 @@ class VirtualTransport(Transport):
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
         virtual_path = self._abspath(relpath)
-        transport, path = self._extractResult(
-            self.server.translateVirtualPath(virtual_path))
-        return transport, path
+        return self.server.translateVirtualPath(virtual_path)
 
     def _call(self, method_name, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
@@ -656,9 +654,13 @@ class VirtualTransport(Transport):
         then the method will be called on the backing transport decorated with
         'readonly+'.
         """
-        transport, path = self._getUnderylingTransportAndPath(relpath)
-        method = getattr(transport, method_name)
-        return method(path, *args, **kwargs)
+        def call_method((transport, path)):
+            method = getattr(transport, method_name)
+            return method(path, *args, **kwargs)
+
+        deferred = self._getUnderylingTransportAndPath(relpath)
+        deferred.addCallback(call_method)
+        return self._extractResult(deferred)
 
     # Transport methods
     def abspath(self, relpath):
@@ -683,16 +685,25 @@ class VirtualTransport(Transport):
     def get(self, relpath):
         return self._call('get', relpath)
 
+    def get_bytes(self, relpath):
+        return self._call('get_bytes', relpath)
+
     def has(self, relpath):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
-        transport, path = self._getUnderylingTransportAndPath('.')
-        return transport.clone(path).iter_files_recursive()
+        deferred = self._getUnderylingTransportAndPath('.')
+        def iter_files((transport, path)):
+            return transport.clone(path).iter_files_recursive()
+        deferred.addCallback(iter_files)
+        return self._extractResult(deferred)
 
     def listable(self):
-        transport, path = self._getUnderylingTransportAndPath('.')
-        return transport.listable()
+        deferred = self._getUnderylingTransportAndPath('.')
+        def listable((transport, path)):
+            return transport.listable()
+        deferred.addCallback(listable)
+        return self._extractResult(deferred)
 
     def list_dir(self, relpath):
         return self._call('list_dir', relpath)
@@ -720,13 +731,18 @@ class VirtualTransport(Transport):
         return self._abspath(relpath)
 
     def rename(self, rel_from, rel_to):
-        to_transport, to_path = self._getUnderylingTransportAndPath(rel_to)
-        from_transport, from_path = self._getUnderylingTransportAndPath(
-            rel_from)
-        if to_transport is not from_transport:
-            raise TransportNotPossible(
-                'cannot move between underlying transports')
-        return getattr(from_transport, 'rename')(from_path, to_path)
+        to_deferred = self._getUnderylingTransportAndPath(rel_to)
+        from_deferred = self._getUnderylingTransportAndPath(rel_from)
+        deferred = defer.gatherResults([to_deferred, from_deferred])
+
+        def do_rename(((to_transport, to_path), (from_transport, from_path))):
+            if to_transport is not from_transport:
+                raise TransportNotPossible(
+                    'cannot move between underlying transports')
+            return getattr(from_transport, 'rename')(from_path, to_path)
+
+        deferred.addCallback(do_rename)
+        return self._extractResult(deferred)
 
     def rmdir(self, relpath):
         return self._call('rmdir', relpath)
@@ -757,7 +773,7 @@ class LaunchpadTransport(VirtualTransport):
             # If a virtual path doesn't point to a branch, then we cannot
             # translate it to an underlying transport. For almost all
             # purposes, this is as good as not existing at all.
-            raise NoSuchFile(e.virtual_path, e.reason)
+            return defer.fail(NoSuchFile(e.virtual_path, e.reason))
 
     def mkdir(self, relpath, mode=None):
         # We hook into mkdir so that we can request the creation of a branch
@@ -765,21 +781,25 @@ class LaunchpadTransport(VirtualTransport):
         # the user tries to make a directory like "~foo/bar". That is, a
         # directory that has too little information to be translated into a
         # Launchpad branch.
-        try:
-            # We want different error handling for the NotABranchPath case, so
-            # we'll call the base translation method.
-            transport, path = VirtualTransport._getUnderylingTransportAndPath(
-                self, relpath)
-        except BranchNotFound:
+        deferred = VirtualTransport._getUnderylingTransportAndPath(
+            self, relpath)
+        def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
-            return self._extractResult(
-                self.server.createBranch(self._abspath(relpath)))
-        except NotABranchPath, e:
+            failure.trap(BranchNotFound)
+            return self.server.createBranch(self._abspath(relpath))
+        def check_permission_denied(failure):
             # You can't ever create a directory that's not even a valid branch
             # name. That's strictly forbidden.
-            raise PermissionDenied(e.virtual_path, e.reason)
-        else:
+            failure.trap(NotABranchPath)
+            exc_object = failure.value
+            raise PermissionDenied(exc_object.virtual_path, exc_object.reason)
+        def mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
+
+        deferred.addCallback(mkdir)
+        deferred.addErrback(maybe_make_branch_in_db)
+        deferred.addErrback(check_permission_denied)
+        return self._extractResult(deferred)
 
     def rename(self, rel_from, rel_to):
         # We hook into rename to catch the "unlock branch" event, so that we
@@ -797,3 +817,9 @@ class LaunchpadTransport(VirtualTransport):
         if len(path_segments) <= 3:
             raise PermissionDenied(virtual_path)
         return VirtualTransport.rmdir(self, relpath)
+
+
+class AsyncLaunchpadTransport(LaunchpadTransport):
+
+    def _extractResult(self, deferred):
+        return deferred

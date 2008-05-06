@@ -31,12 +31,13 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    LaunchpadServer, set_up_logging, VirtualTransport)
+    AsyncLaunchpadTransport, LaunchpadServer, set_up_logging,
+    VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class TestLaunchpadServer(TestCase):
+class LaunchpadServerTests:
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -222,18 +223,17 @@ class TestVirtualTransport(TestCaseInTempDir):
         self.assertEqual('/baz/bar', t.local_realPath('bar'))
 
 
-class TestLaunchpadTransport(TestCase):
+class LaunchpadTransportTests:
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
 
     def setUp(self):
-        TestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
         self.mirror_transport = MemoryTransport()
-        self.server = LaunchpadServer(
+        self.server = self.getServer(
             self.authserver, self.user_id, self.backing_transport,
             self.mirror_transport)
         self.server.setUp()
@@ -244,25 +244,33 @@ class TestLaunchpadTransport(TestCase):
         self.backing_transport.put_bytes(
             '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
+    def getServer(self, authserver, user_id, backing_transport,
+                  mirror_transport):
+        return LaunchpadServer(
+            authserver, user_id, backing_transport, mirror_transport)
+
+    def getTransport(self):
+        raise NotImplementedError()
+
     def test_get_transport(self):
         # When the server is set up, getting a transport for the server URL
         # returns a LaunchpadTransport pointing at that URL. That is, the
         # transport is registered once the server is set up.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         self.assertEqual(self.server.get_url(), transport.base)
 
     def test_get_mapped_file(self):
         # Getting a file from a public branch URL gets the file as stored on
         # the base transport.
-        transport = get_transport(self.server.get_url())
-        self.assertEqual(
-            'Hello World!',
-            transport.get_bytes('~testuser/firefox/baz/.bzr/hello.txt'))
+        transport = self.getTransport()
+        deferred = self._ensureDeferred(
+            transport.get_bytes, '~testuser/firefox/baz/.bzr/hello.txt')
+        return deferred.addCallback(self.assertEqual, 'Hello World!')
 
     def test_put_mapped_file(self):
         # Putting a file from a public branch URL stores the file in the
         # mapped URL on the base transport.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         transport.put_bytes(
             '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
         self.assertEqual(
@@ -276,7 +284,7 @@ class TestLaunchpadTransport(TestCase):
         # information from the transport being cloned. It's necessary because
         # the transport needs to have the '~user/product/branch-name' in order
         # to translate paths.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         self.assertEqual(self.server.get_url(), transport.base)
         transport = transport.clone('~testuser')
         self.assertEqual(self.server.get_url() + '~testuser', transport.base)
@@ -284,7 +292,7 @@ class TestLaunchpadTransport(TestCase):
     def test_abspath_without_schema(self):
         # _abspath returns the absolute path for a given relative path, but
         # without the schema part of the URL that is included by abspath.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         self.assertEqual(
             '/~testuser/firefox/baz',
             transport._abspath('~testuser/firefox/baz'))
@@ -295,15 +303,16 @@ class TestLaunchpadTransport(TestCase):
     def test_cloning_preserves_path_mapping(self):
         # The public branch URL -> filesystem mapping uses the base URL to do
         # its mapping, thus ensuring that clones map correctly.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         transport = transport.clone('~testuser')
-        self.assertEqual(
-            'Hello World!', transport.get_bytes('firefox/baz/.bzr/hello.txt'))
+        deferred = self._ensureDeferred(
+            transport.get_bytes, 'firefox/baz/.bzr/hello.txt')
+        return deferred.addCallback(self.assertEqual, 'Hello World!')
 
     def test_abspath(self):
         # abspath for a relative path is the same as the base URL for a clone
         # for that relative path.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         self.assertEqual(
             transport.clone('~testuser').base, transport.abspath('~testuser'))
 
@@ -311,52 +320,66 @@ class TestLaunchpadTransport(TestCase):
         # For a branch URL to be complete, it needs to have a person, product
         # and branch. Trying to perform operations on an incomplete URL raises
         # an error. Which kind of error is not particularly important.
-        transport = get_transport(self.server.get_url())
-        self.assertRaises(
-            errors.NoSuchFile, transport.get, '~testuser')
+        transport = self.getTransport()
+        return self.assertRaises(
+            (errors.NoSuchFile,), transport.get, '~testuser')
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
         # the branch itself. If the branch doesn't exist, any files it asks
         # for are not found. i.e. we raise NoSuchFile
-        transport = get_transport(self.server.get_url())
-        self.assertRaises(
-            errors.NoSuchFile,
+        transport = self.getTransport()
+        return self.assertRaises(
+            (errors.NoSuchFile,),
             transport.get, '~testuser/firefox/new-branch/.bzr/branch-format')
 
     def test_rename(self):
         # We can use the transport to rename files where both the source and
         # target are virtual paths.
-        transport = get_transport(self.server.get_url())
-        dir_contents = set(transport.list_dir('~testuser/firefox/baz/.bzr'))
-        transport.rename(
-            '~testuser/firefox/baz/.bzr/hello.txt',
-            '~testuser/firefox/baz/.bzr/goodbye.txt')
-        dir_contents.remove('hello.txt')
-        dir_contents.add('goodbye.txt')
-        self.assertEqual(
-            set(transport.list_dir('~testuser/firefox/baz/.bzr')),
-            dir_contents)
-        self.assertEqual(
-            set(self.backing_transport.list_dir('00/00/00/01/.bzr')),
-            dir_contents)
+        transport = self.getTransport()
+        deferred = self._ensureDeferred(
+            transport.list_dir, '~testuser/firefox/baz/.bzr')
+        deferred.addCallback(set)
+
+        def do_rename(dir_contents):
+            transport.rename(
+                '~testuser/firefox/baz/.bzr/hello.txt',
+                '~testuser/firefox/baz/.bzr/goodbye.txt')
+            dir_contents.remove('hello.txt')
+            dir_contents.add('goodbye.txt')
+            deferred = self._ensureDeferred(
+                transport.list_dir, '~testuser/firefox/baz/.bzr')
+            deferred.addCallback(set)
+            deferred.addCallback(self.assertEqual, dir_contents)
+            deferred.addCallback(
+                lambda ignored:
+                self.assertEqual(
+                    set(self.backing_transport.list_dir('00/00/00/01/.bzr')),
+                    dir_contents))
+            return deferred
+        return deferred.addCallback(do_rename)
 
     def test_iter_files_recursive(self):
         # iter_files_recursive doesn't take a relative path but still needs to
         # do a path-based operation on the backing transport, so the
         # implementation can't just be a shim to the backing transport.
-        transport = get_transport(self.server.get_url())
-        files = list(
-            transport.clone('~testuser/firefox/baz').iter_files_recursive())
+        transport = self.getTransport().clone('~testuser/firefox/baz')
         backing_transport = self.backing_transport.clone('00/00/00/01')
-        self.assertEqual(
-            list(backing_transport.iter_files_recursive()), files)
+        deferred = self._ensureDeferred(transport.iter_files_recursive)
+
+        def check_iter_result(iter_files, expected_files):
+            self.assertEqual(expected_files, list(iter_files))
+
+        deferred.addCallback(
+            check_iter_result,
+            list(backing_transport.iter_files_recursive()))
+        return deferred
 
     def test_make_two_directories(self):
         # Bazaar doesn't have a makedirs() facility for transports, so we need
         # to make sure that we can make a directory on the backing transport
         # if its parents exist and if they don't exist.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         transport.mkdir('~testuser/thunderbird/banana')
         transport.mkdir('~testuser/thunderbird/orange')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
@@ -373,30 +396,17 @@ class TestLaunchpadTransport(TestCase):
         self.authserver.failing_branch_code = code
         self.authserver.failing_branch_string = message
 
-    def assertRaisesWithSubstring(self, exc_type, msg, callable, *args, **kw):
-        """Assert that calling callable(*args, **kw) fails in a certain way.
-
-        This method is like assertRaises() but in addition checks that 'msg'
-        is a substring of the str() of the raise exception."""
-        try:
-            callable(*args, **kw)
-        except exc_type, error:
-            if msg not in str(error):
-                self.fail("%r not found in %r" % (msg, str(error)))
-        else:
-            self.fail("%s(*%r, **%r) did not raise!" % (callable, args, kw))
-
     def test_createBranch_not_found_error(self):
         # When createBranch raises an exception with faultCode
         # NOT_FOUND_FAULT_CODE, the transport should translate this to
         # a TransportNotPossible exception (see the comment in
         # transport.py for why we translate to TransportNotPossible
         # and not NoSuchFile).
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         message = "Branch exploding, as requested."
         self.setFailingBranchDetails(
             'explode!', NOT_FOUND_FAULT_CODE, message)
-        self.assertRaisesWithSubstring(
+        return self.assertRaisesWithSubstring(
             errors.TransportNotPossible, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
@@ -404,11 +414,11 @@ class TestLaunchpadTransport(TestCase):
         # When createBranch raises an exception with faultCode
         # PERMISSION_DENIED_FAULT_CODE, the transport should translate
         # this to a PermissionDenied exception.
-        transport = get_transport(self.server.get_url())
+        transport = self.getTransport()
         message = "Branch exploding, as requested."
         self.setFailingBranchDetails(
             'explode!', PERMISSION_DENIED_FAULT_CODE, message)
-        self.assertRaisesWithSubstring(
+        return self.assertRaisesWithSubstring(
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
@@ -434,6 +444,59 @@ class TestLaunchpadTransport(TestCase):
         self.unlockBranch('~testuser/firefox/baz')
         self.assertEqual(
             [(self.user_id, 1)], self.authserver._request_mirror_log)
+
+
+class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
+
+    def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
+        """Assert that calling function(*args, **kw) fails in a certain way.
+
+        This method is like assertRaises() but in addition checks that 'msg'
+        is a substring of the str() of the raise exception."""
+        exception = self.assertRaises(exc_type, function, *args, **kw)
+        self.assertIn(msg, str(exception))
+
+    def _ensureDeferred(self, function, *args, **kwargs):
+        # XXX: JonathanLange 2008-05-07: This should assert that function does
+        # *not* return a Deferred.
+        return defer.maybeDeferred(function, *args, **kwargs)
+
+    def setUp(self):
+        TrialTestCase.setUp(self)
+        LaunchpadTransportTests.setUp(self)
+
+    def getTransport(self):
+        return get_transport(self.server.get_url())
+
+
+class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
+
+    def assertRaises(self, exceptions, function, *args, **kwargs):
+        deferred = function(*args, **kwargs)
+        return self.assertFailure(deferred, *exceptions)
+
+    def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
+        """Assert that calling function(*args, **kw) fails in a certain way.
+
+        This method is like assertRaises() but in addition checks that 'msg'
+        is a substring of the str() of the raise exception."""
+        deferred = self.assertFailure(function(*args, **kw), exc_type)
+        deferred.addCallback(
+            lambda exception: self.assertIn(msg, str(exception)))
+        return deferred
+
+    def _ensureDeferred(self, function, *args, **kwargs):
+        deferred = function(*args, **kwargs)
+        self.assertIsInstance(deferred, defer.Deferred)
+        return deferred
+
+    def setUp(self):
+        TrialTestCase.setUp(self)
+        LaunchpadTransportTests.setUp(self)
+
+    def getTransport(self):
+        url = self.server.get_url()
+        return AsyncLaunchpadTransport(self.server, url)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
