@@ -214,6 +214,10 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     def scoped_collection_type(self):
         return "%s-scoped-collection" % self.singular_type()
 
+    def scoped_collection_type_link(self):
+        return "%s#%s" % (
+            self._service_root_url(), self.scoped_collection_type())
+
     def entry_page_representation_id(self):
         return "%s-page" % self.singular_type()
 
@@ -290,14 +294,21 @@ class WadlFieldAPI(WadlAPI):
     def type_link(self):
         """The URL of the description of the type this field is a link to."""
         if ICollectionField.providedBy(self.field):
-            return "%s#ScopedCollection" % self._service_root_url()
+            model_schema = self.field.value_type.schema
         elif IObject.providedBy(self.field):
-            entry_class = getGlobalSiteManager().adapters.lookup(
-                (self.field.schema,), IEntry)
-            return "%s#%s" % (self._service_root_url(),
-                              entry_class.__name__)
+            model_schema = self.field.schema
         else:
             raise AssertionError("Field is not a link to another resource.")
+
+        entry_class = getGlobalSiteManager().adapters.lookup(
+            (model_schema,), IEntry)
+        adapter = WadlEntryAdapterAPI(entry_class)
+
+        if ICollectionField.providedBy(self.field):
+            return adapter.scoped_collection_type_link()
+        else:
+            return adapter.type_link()
+
 
     def options(self):
         """An enumeration of acceptable values for this field.

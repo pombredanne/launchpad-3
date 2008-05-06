@@ -324,8 +324,8 @@ This code splits the tags into 5-tuples and stores the tuples in
     ...     entry_resource_descriptions.append(
     ...         (tuple(entry_resource_types[index:index + 5])))
 
-Before looking at the descriptions of entry resources, we'll take care
-of the collection resource types.
+Before looking at the descriptions of entry resources, we'll examine
+the collection resource types.
 
 
 == A collection resource type ==
@@ -497,8 +497,10 @@ the resource at the other end of the link.
     >>> assignee_link.attrib['type']
     'http://api.launchpad.dev/beta/#PersonEntry'
 
-If the link is a link to collection, the 'type' will always be
-'ScopedCollection' (at least for now). XXX NEEDS FIXING BEFORE SUBMIT
+If the link is a link to a collection, the 'type' will be a reference
+to the appropriate scoped collection resource type (defined
+below). For example, the list of a bug task's related tasks is a
+collection of bug tasks.
 
     >>> related_tasks, = [
     ...     param for param in full_params
@@ -507,7 +509,7 @@ If the link is a link to collection, the 'type' will always be
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['type']
-    'http://api.launchpad.dev/beta/#ScopedCollection'
+    'http://api.launchpad.dev/beta/#BugTaskEntry-scoped-collection'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
