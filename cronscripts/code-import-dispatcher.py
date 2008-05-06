@@ -16,7 +16,8 @@ from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 class CodeImportDispatcherScript(LaunchpadScript):
 
-    def run(self):
+    def run(self, use_web_security=False, implicit_begin=True,
+            isolation=None):
         """See `LaunchpadScript.run`.
 
         We override to avoid all of the setting up all of the component
