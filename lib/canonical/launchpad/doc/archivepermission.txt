@@ -120,6 +120,6 @@ queues in that component.
 
     >>> archive_admins = permission_set.queueAdminsForComponent(
     ...     ubuntu.main_archive, main_component)
-    >>> for archive_admin in archive_admins:
+    >>> for archive_admin in sorted(archive_admins):
     ...     print archive_admin.person.name
     ubuntu-team

@@ -1261,8 +1261,8 @@ We will create some activity.
     >>> create_activity(no_priv.archive, 4)
     >>> create_activity(lp_buildd_team.archive, 8)
 
-So, note that Celso's PPA still private, so, despite of having the
-highest number of uploads, it's not listed.
+Celso's PPA is still private, so despite having the highest number of
+uploads it's not listed.
 
     >>> print_most_active_ppas()
     PPA for Foo Bar 10
@@ -1271,9 +1271,9 @@ highest number of uploads, it's not listed.
     PPA for Sample Person 4
     PPA for Mark Shuttleworth 2
 
-When we make Celso's PPA public, the result gets limited in 5 items.
-The previous last item (Marks' PPA) will be excluded to give place to
-Celso's PPAs.
+When we make Celso's PPA public the result gets limited to 5 items.
+The previous last item (Mark's PPA) will now be excluded in place of
+Celso's PPA.
 
     >>> naked_cprov_archive.private = False
     >>> naked_cprov_archive.syncUpdate()
@@ -1284,3 +1284,20 @@ Celso's PPAs.
     PPA for Launchpad Buildd Admins 8
     PPA for No Privileges Person 4
     PPA for Sample Person 4
+
+
+== Archive Permission Checking ==
+
+IArchive has two public methods, canUpload() and canAdministrateQueue()
+that check a user's permission to upload and/or administrate a
+distroseries upload queue respectively.  See archivepermission.txt
+for more details.
+
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> main_component = getUtility(IComponentSet)['main']
+
+    >>> ubuntu.main_archive.canUpload(cprov, main_component)
+    False
+
+    >>> ubuntu.main_archive.canAdministrateQueue(cprov, main_component)
+    False
