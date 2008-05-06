@@ -350,20 +350,6 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         :return: a list of `Builds` created for this source publication.
         """
 
-    def createMissingBuildForArchitecture(arch, logger=None):
-        """Create a build for a given architecture if it doesn't exist yet.
-
-        `createMissingBuilds` uses this method internally and deals with
-        P-a-s and calculates the active architectures in a proper way.
-
-        This method was encapsulated and made public only to be used in
-        queue-builder due to performance issues. All the other callsites
-        should use `createMissingBuilds` because simpler and safer.
-
-        Return the just-created `IBuild` record already scored or None
-        if a suitable build is already present.
-        """
-
     def getSourceAndBinaryLibraryFiles():
         """Return LibraryFileAlias records for all source and binaries.
 
