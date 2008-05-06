@@ -256,4 +256,10 @@ class ITeamParticipation(Interface):
 
 
 class CyclicalTeamMembershipError(Exception):
-    """Someone attempt to make two teams members of each other."""
+    """A change resulting in a team membership cycle was attempted.
+
+    Two teams cannot be members of each other and there cannot be
+    any cyclical relationships.  So if A is a member of B and B is
+    a member of C then attempting to make C a member of A will
+    result in this error being raised.
+    """    

@@ -5,7 +5,8 @@ __metaclass__ = type
 __all__ = [
     'TeamMembership',
     'TeamMembershipSet',
-    'TeamParticipation']
+    'TeamParticipation',
+    ]
 
 from datetime import datetime, timedelta
 import itertools
