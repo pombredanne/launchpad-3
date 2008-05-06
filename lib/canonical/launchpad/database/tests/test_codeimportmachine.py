@@ -19,6 +19,7 @@ from canonical.launchpad.tests.test_codeimportjob import (
     login_for_code_imports)
 from canonical.testing import LaunchpadFunctionalLayer
 
+
 class TestCodeImportMachineShouldLookForJob(unittest.TestCase):
     """Tests for  `CodeImportMachine.shouldLookForJob`."""
 
