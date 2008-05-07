@@ -1,13 +1,14 @@
 = Menus =
 
 Launchpad uses menus associated with content object views and facets
-(a layer associate with a vhost). The NavigationMenu class is the
-base class for constructing menus to browse a content object's views.
+(a layer associate with a vhost). The FacetMenu and NavigationMenu
+are the base classes for constructing menus to browse a content
+object and its views.
 
 
 == Menu prerequisite objects and configuration ==
 
-We require a considerable amount of setup to construct navigation menus
+We require a considerable amount of setup to construct menus
 and observe their behaviour. At a minimum, we need interfaces,
 content objects, and views to be registered before implementing menus.
 
@@ -105,10 +106,10 @@ Content objects are not suitable for presentation by themselves; they
 require a view class to adapt them to the required format. An object
 may have many views, each delegated to one aspect of the object.
 
-Menus are used to connect the views into pseudo-hierarchy from the
-last traversed content object. Some views implement a marker
-interface to associate themselves with a specific sub menu below
-a content object's menu.
+Navigation menus are used to connect the views into pseudo-hierarchy
+from the last traversed content object. Some views implement a marker
+interface to associate themselves with a specific sub menu below a
+content object's menu.
 
     >>> from canonical.launchpad.webapp import LaunchpadView
 
@@ -119,23 +120,27 @@ a content object's menu.
     ...     """A marker interface of the RecipeJournalMenu."""
 
     >>> class RecipeIndexView(LaunchpadView):
-    ...     """View for summary of a recipe."""
+    ...     """View for summary of a recipe on the cookery facet."""
     ...     __used_for__ = IRecipe
 
     >>> class RecipeEditInstructionsView(LaunchpadView):
-    ...     """View for editing recipe instructions."""
+    ...     """View for editing recipe instructions on the cookery facet."""
     ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeEditIngredientsView(LaunchpadView):
-    ...     """View for editing recipe ingedients."""
+    ...     """View for editing recipe ingedients on the cookery facet."""
     ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeReadJournalView(LaunchpadView):
-    ...     """View for reading a recipe's journal."""
+    ...     """View for reading a recipe's journal on the cookery facet."""
     ...     __used_for__ = IRecipe
     ...     implements(IRecipeJournalMenuMarker)
+
+    >>> class RecipeVariationIndexView(LaunchpadView):
+    ...     """View for index of a recipe on the variation facet."""
+    ...     __used_for__ = IRecipe
 
     # Monkey patch the interfaces and views into the cookingexample module.
     >>> cookingexample.IRecipeEditMenuMarker = IRecipeEditMenuMarker
@@ -144,6 +149,7 @@ a content object's menu.
     >>> cookingexample.RecipeEditInstructionsView = RecipeEditInstructionsView
     >>> cookingexample.RecipeEditIngredientsView = RecipeEditIngredientsView
     >>> cookingexample.RecipeReadJournalView = RecipeReadJournalView
+    >>> cookingexample.RecipeVariationIndexView = RecipeVariationIndexView
 
 The views for IRecipe are registered using ZCML. Each page requires a:
     * name: To get the view by name (the page)
@@ -170,27 +176,28 @@ they are assigned to the same facet.
     ...   <browser:page
     ...     name="+index"
     ...     for="canonical.lazr.cookingexample.IRecipe"
-    ...     facet="summary"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeIndexView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+edit-instructions"
     ...     for="canonical.lazr.cookingexample.IRecipe"
-    ...     facet="summary"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeEditInstructionsView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+edit-ingredients"
     ...     for="canonical.lazr.cookingexample.IRecipe"
-    ...     facet="summary"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeEditIngredientsView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+read-journal"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeReadJournalView"
     ...     permission="zope.Public"
     ...     />
@@ -218,7 +225,7 @@ IFacetMenu classes.  An error is raise if it is directly called.
     ...
     AssertionError: Subclasses of FacetMenu must provide self.links
 
-Here are two FacetMenus for the cookery stie. The FacetMenu
+Here is the common FacetMenu for the cookery site. The FacetMenu
 class has four attributes: usedfor, links, defaultlink, and enable_only.
 The 'usedfor' attribute assoicates the menu with a specific interface.
 The requireed 'links' attribute is a list of the method names that
@@ -253,28 +260,11 @@ are appropriate for a context object.
     ...         summary = 'recipe variations for %s' % self.context.name
     ...         return Link(target, text, summary)
 
-The CookeryFacetMenu defines all the facets for the cookery site for
-all content interfaces. The 'variations' link is not enabled because
-it only applies to recipes. The RecipeFacetMenu subclass defined below
-only applies to IRecipe content object and it has all facets enabled.
-
-    >>> class RecipeFacetMenu(CookeryFacetMenu):
-    ...
-    ...     usedfor = IRecipe
-    ...     enable_only = ['summary', 'questions', 'variations']
-
-    # Monkey patch the menus into the cookingexample module.
     >>> cookingexample.CookeryFacetMenu = CookeryFacetMenu
-    >>> cookingexample.RecipeFacetMenu = RecipeFacetMenu
 
-Now, we can make an instance of this Facets class, with a contextobject to
-show that its methods can access `self.context`.
-
-    >>> cookery_facet_menu = CookeryFacetMenu(cookbook)
-    >>> recipe_facet_menu = RecipeFacetMenu(recipe)
-
-We can go through each attribute of each of the links, checking that they
-are as we expect.
+An instance of a FacetMenu is usually retrieve through adaption, but
+we can directly create one with a context object to show that its
+methods can access `self.context`.
 
     >>> from zope.component import provideAdapter
     >>> from canonical.launchpad.webapp.interfaces import (
@@ -424,7 +414,71 @@ is defined in by the RecipeMenu class and the view of recipe.
         selected: False
         linked: True
 
-navigation menus.iterlinks() requires a `IHTTPApplicationRequest`
+
+== Enabled and disabled links ==
+
+Facet menus are often constructed by subclassing a common menu. The
+common menu defines all the facet links, and the enabled link that are
+common to most content objects. The CookeryFacetMenu defines all the
+facets for the cookery site for all content interfaces, three links:
+summary, questions, and variations. But it only defined two enabled
+links: summary and questions.  The variations link is not enabled
+because it only applies to recipes. (See the last example.)
+
+An error is raised if a class enables a link that is not in the
+list of links:
+
+    >>> class BogusFacetMenu(CookeryFacetMenu):
+    ...
+    ...     usedfor = IRecipe
+    ...     enable_only = ['summary', 'non_link']
+
+    >>> summarise_links(
+    ...     BogusFacetMenu(recipe),
+    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     facet=None)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Links in 'enable_only' not found in 'links': non_link
+
+The RecipeFacetMenu subclass defined below only applies to IRecipe
+content object and it has all facet links enabled.
+
+    >>> class RecipeFacetMenu(CookeryFacetMenu):
+    ...
+    ...     usedfor = IRecipe
+    ...     enable_only = ['summary', 'questions', 'variations']
+
+    # Monkey patch the menus into the cookingexample module.
+    >>> cookingexample.RecipeFacetMenu = RecipeFacetMenu
+
+    >>> summarise_links(
+    ...     RecipeFacetMenu(recipe),
+    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     facet=None)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: None
+        selected: True
+        linked: False
+    link questions
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+questions
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+    link variations
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+variations
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+
+
+== Menus require a partcipation ==
+
+The iterlinks() method of menus requires a `IHTTPApplicationRequest`
 (a request object) present in the `Interaction` to determine the
 state of its links. Without a request, an error is raised.
 
@@ -483,7 +537,7 @@ view +edit-ingredients.
     <RecipeEditMenu ...>
 
 
-=== NavigationMenu linked and selected links ===
+== Menu linked and selected links ==
 
 A link is not linked (the anchor is not rendered) when its URL matches
 the request URI; the user should not navigate to a page he is already
