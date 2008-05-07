@@ -98,6 +98,9 @@ class ICodeImportMachine(Interface):
     current_jobs = Attribute(
         'The current jobs that the machine is processing.')
 
+    events = Attribute(
+        'The events associated with this machine.')
+
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
@@ -106,21 +109,25 @@ class ICodeImportMachine(Interface):
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
-    def setOnline():
+    def setOnline(user=None, message=None):
         """Record that the machine is online, marking it ready to accept jobs.
 
         Set state to ONLINE, and record the corresponding event.
+        :param user: `Person` that requested going online if done by a user.
+        :param message: User-provided message.
         """
 
-    def setOffline(reason):
+    def setOffline(reason, user=None, message=None):
         """Record that the machine is offline.
 
         Set state to OFFLINE, and record the corresponding event.
 
         :param reason: `CodeImportMachineOfflineReason` enum value.
+        :param user: `Person` that requested going online if done by a user.
+        :param message: User-provided message.
         """
 
-    def setQuiescing(user, message):
+    def setQuiescing(user, message=None):
         """Initiate an orderly shut down without interrupting running jobs.
 
         Set state to QUIESCING, and record the corresponding event.
@@ -132,6 +139,9 @@ class ICodeImportMachine(Interface):
 
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""
+
+    def __getitem__(hostname):
+        """Retrieve a code import machine by hostname."""
 
     def getAll():
         """Return an iterable of all code machines."""

@@ -25,6 +25,11 @@
       appropriate. -->
   </content>
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CodeImportSetNavigation"
+      />
+
   <subscriber
       for="canonical.launchpad.interfaces.ICodeImport
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"

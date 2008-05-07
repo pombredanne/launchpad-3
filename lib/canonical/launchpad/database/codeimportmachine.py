@@ -41,16 +41,20 @@ class CodeImportMachine(SQLBase):
     current_jobs = SQLMultipleJoin(
         'CodeImportJob', joinColumn='machine', orderBy='date_started')
 
-    def setOnline(self):
+    events = SQLMultipleJoin(
+        'CodeImportEvent', joinColumn='machine',
+        orderBy=['-date_created', 'id'])
+
+    def setOnline(self, user=None, message=None):
         """See `ICodeImportMachine`."""
         if self.state != CodeImportMachineState.OFFLINE:
             raise AssertionError(
                 "State of machine %s was %s."
                 % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.ONLINE
-        getUtility(ICodeImportEventSet).newOnline(self)
+        getUtility(ICodeImportEventSet).newOnline(self, user, message)
 
-    def setOffline(self, reason):
+    def setOffline(self, reason, user=None, message=None):
         """See `ICodeImportMachine`."""
         if self.state not in (CodeImportMachineState.ONLINE,
                               CodeImportMachineState.QUIESCING):
@@ -58,9 +62,10 @@ class CodeImportMachine(SQLBase):
                 "State of machine %s was %s."
                 % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.OFFLINE
-        getUtility(ICodeImportEventSet).newOffline(self, reason)
+        getUtility(ICodeImportEventSet).newOffline(
+            self, reason, user, message)
 
-    def setQuiescing(self, user, message):
+    def setQuiescing(self, user, message=None):
         """See `ICodeImportMachine`."""
         if self.state != CodeImportMachineState.ONLINE:
             raise AssertionError(
@@ -74,6 +79,10 @@ class CodeImportMachineSet(object):
     """See `ICodeImportMachineSet`."""
 
     implements(ICodeImportMachineSet)
+
+    def __getitem__(self, hostname):
+        """See `ICodeImportMachineSet`."""
+        return self.getByHostname(hostname)
 
     def getAll(self):
         """See `ICodeImportMachineSet`."""

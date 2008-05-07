@@ -10,7 +10,7 @@
   <content class="canonical.launchpad.database.CodeImportMachine">
     <implements interface="canonical.launchpad.interfaces.ICodeImportMachine" />
     <allow
-        attributes="id state hostname current_jobs date_created heartbeat" />
+        attributes="id state hostname current_jobs date_created heartbeat events" />
     <require
         permission="launchpad.Edit"
         attributes="setOnline setOffline setQuiescing" />
@@ -46,6 +46,11 @@
   <!-- CodeImportMachineSet -->
 
   <facet facet="branches">
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="CodeImportMachineSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ICodeImportMachineSet"
