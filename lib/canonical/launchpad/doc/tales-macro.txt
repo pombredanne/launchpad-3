@@ -1,0 +1,78 @@
+= The macro: TALES namespace =
+
+Launchpad has a 'macro:' TALES namespace that offers controls over the
+layout of the page.
+
+    >>> class FakeView(object):
+    ...     pass
+
+Templates will start by specifying the kind of layout they use. That's
+done by using the 'macro:page' traversal. That expression returns the
+master macro from the main_template.pt and sets on the view the layout
+it's using. It will be usually be used with following METAL fragment:
+
+    <html metal:use-macro="view/macro:page/default" />
+
+
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> view = FakeView()
+
+    # Return value is the compiled macro expression.
+    >>> test_tales('view/macro:page/default', view=view)
+    [('version', ...]
+
+The pagetype is registered in the __pagetype__ attribute.
+
+    >>> view.__pagetype__
+    'default'
+
+If the pagetype isn't defined, a TraversalError is raised.
+
+    >>> test_tales('view/macro:page/not-defined', view=FakeView())
+    Traceback (most recent call last):
+      ...
+    TraversalError: 'unknown pagetype: not-defined'
+
+The 'macro:pagehas' can then be used to test for features that should be
+rendered in the layout.
+
+    >>> test_tales('view/macro:pagehas/applicationtabs', view=view)
+    True
+
+    >>> test_tales('view/macro:pagehas/portlets', view=view)
+    True
+
+    >>> test_tales('view/macro:pagehas/heading', view=view)
+    False
+
+For the transition to the new 2.0 inline navigation, there is also a
+macro:uses_inline_navigation expression that determines if the inline
+navigation layout should be used. That expression only returns True when
+there running in development mode and the pagetype has 'navigationtabs'.
+
+    >>> from canonical.config import config
+    >>> config.devmode
+    True
+
+    >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
+    False
+
+    >>> test_tales('view/macro:uses_inline_navigation', view=view)
+    False
+
+The 'default2.0' pagetype will have uses_inline_navigation True when
+running in devmode.
+
+    >>> macro = test_tales('view/macro:page/default2.0', view=view)
+    >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
+    True
+
+    >>> test_tales('view/macro:uses_inline_navigation', view=view)
+    True
+
+    >>> config.devmode = False
+    >>> test_tales('view/macro:uses_inline_navigation', view=view)
+    False
+
+    >>> config.devmode = True
+
