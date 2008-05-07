@@ -517,12 +517,32 @@ address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
+    >>> stub.test_emails = []
     >>> browser.getControl('Another e-mail address').selected = True
     >>> browser.getControl(
-    ...     name='field.contact_address').value = 'foo@example.com'
+    ...     name='field.contact_address').value = 'bar@example.com'
     >>> browser.getControl('Change').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    A confirmation message has been sent to...
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> stub.test_emails
+    []
+
+    # Follow the token link, to confirm the new email address.
+    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> browser.open(token_url)
+    >>> browser.title
+    'Confirm e-mail address'
+    >>> browser.getControl('Continue').click()
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Email address successfully confirmed.
+
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Another e-mail address']
