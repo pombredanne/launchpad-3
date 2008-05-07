@@ -34,7 +34,7 @@ class CodeImportWorker(LaunchpadScript):
         set_up_oops_reporting(name)
 
     def main(self):
-        # XXX: SteveAlexander 2008-05-07 bug=227586: Setting up the component
+        # XXX: MichaelHudson 2008-05-07 bug=227586: Setting up the component
         # architecture overrides $GNUPGHOME to something stupid.
         os.environ['GNUPGHOME'] = ''
         reactor.callWhenRunning(self._run_reactor)

@@ -28,8 +28,6 @@ class CodeImportDispatcherScript(LaunchpadScript):
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        self.logger.debug("endpoint: %s", config.codeimportdispatcher.codeimportscheduler_url)
-
         CodeImportDispatcher(self.logger).findAndDispatchJob(
             ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
