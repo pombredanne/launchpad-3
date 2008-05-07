@@ -98,8 +98,8 @@ class CodeImportJobSet(object):
         """See `ICodeImportJobSet`."""
         machine = getUtility(ICodeImportMachineSet).getByHostname(hostname)
         if machine is None:
-            machine = getUtility(ICodeImportMachineSet).new(hostname)
-            machine.setOnline()
+            machine = getUtility(ICodeImportMachineSet).new(
+                hostname, CodeImportMachineState.ONLINE)
         elif not machine.shouldLookForJob():
             return None
         job = CodeImportJob.selectOne(

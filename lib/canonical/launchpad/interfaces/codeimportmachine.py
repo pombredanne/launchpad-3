@@ -156,10 +156,11 @@ class ICodeImportMachineSet(Interface):
     def getAll():
         """Return an iterable of all code machines."""
 
-    def new(hostname):
+    def new(hostname, state=CodeImportMachineState.OFFLINE):
         """Create a new CodeImportMachine.
 
-        The machine will initially be in the 'OFFLINE' state.
+        The machine will initially be in the given 'state', which defaults to
+        OFFLINE.
         """
 
     def getByHostname(hostname):

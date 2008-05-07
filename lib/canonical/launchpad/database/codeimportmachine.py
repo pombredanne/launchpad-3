@@ -103,6 +103,7 @@ class CodeImportMachineSet(object):
         """See `ICodeImportMachineSet`."""
         return CodeImportMachine.selectOneBy(hostname=hostname)
 
-    def new(self, hostname):
+    def new(self, hostname, state=CodeImportMachineState.OFFLINE):
         """See `ICodeImportMachineSet`."""
-        return CodeImportMachine(hostname=hostname, heartbeat=None)
+        return CodeImportMachine(
+            hostname=hostname, heartbeat=None, state=state)

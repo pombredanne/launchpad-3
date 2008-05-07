@@ -49,3 +49,20 @@ The point of all this is for it to be accessed over XMLRPC.
     ...     transport=XMLRPCTestTransport())
     >>> codeimportscheduler.getJobForMachine('bazaar-importer')
     0
+
+This includes the behaviour of auto-creating machine rows for
+previously unseen hostnames.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportMachineSet)
+    >>> print getUtility(ICodeImportMachineSet).getByHostname(
+    ...     'doesnt-exist-yet')
+    None
+    >>> codeimportscheduler.getJobForMachine('doesnt-exist-yet')
+    0
+    >>> new_machine = getUtility(ICodeImportMachineSet).getByHostname(
+    ...     'doesnt-exist-yet')
+    >>> new_machine.hostname
+    u'doesnt-exist-yet'
+    >>> new_machine.state.name
+    'ONLINE'
