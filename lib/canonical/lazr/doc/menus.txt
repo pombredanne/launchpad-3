@@ -224,7 +224,7 @@ menu though one of its links.
     ...     usedfor = IRecipeEditMenuMarker
     ...     facet = 'cookery'
     ...
-    ...     links = ['edit_instructions', 'edit_ingredients']
+    ...     links = ('edit_instructions', 'edit_ingredients')
     ...
     ...     def edit_instructions(self):
     ...         target = '+edit-instructions'
@@ -240,7 +240,7 @@ menu though one of its links.
     ...     usedfor = IRecipeJournalMenuMarker
     ...     facet = 'cookery'
     ...
-    ...     links = ['read_journal', 'write_entry']
+    ...     links = ('read_journal', 'write_entry')
     ...
     ...     def read_journal(self):
     ...         target = '+read-journal'
@@ -256,7 +256,7 @@ menu though one of its links.
     ...     usedfor = IRecipe
     ...     facet = 'cookery'
     ...
-    ...     links = ['summary', 'journal']
+    ...     links = ('summary', 'journal')
     ...
     ...     def summary(self):
     ...         target = '+index'
@@ -314,7 +314,37 @@ is defined in by the RecipeMenu class and the view of recipe.
         selected: False
         linked: True
 
-navigation menus.iterlinks() requires a `IHTTPApplicationRequest`
+
+== Menu requirements  ==
+
+All menus descend from MenuBase which impose a number of requirements
+upon its descendants.
+
+
+A menu must define a tuple of links that it manages.
+
+    >>> class BogusMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+
+    >>> list_links(
+    ...     BogusMenu(recipe),
+    ...     url='http://launchpad.dev/')
+    Traceback (most recent call last):
+     ...
+    AssertionError: Subclasses of NavigationMenu must provide self.links
+
+    >>> class BogusMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+    ...     links = 'not a tuple'
+
+    >>> list_links(
+    ...     BogusMenu(recipe),
+    ...     url='http://launchpad.dev/')
+    Traceback (most recent call last):
+     ...
+    AssertionError: self.links must be a tuple or list.
+
+The iterlinks() method of menus requires a `IHTTPApplicationRequest`
 (a request object) present in the `Interaction` to determine the
 state of its links. Without a request, an error is raised.
 
@@ -446,7 +476,7 @@ link is selected too.
         selected: True
         linked: False
 
-The link states changes when a url that corresponding with a link in
+The link state changes when a url that corresponding with a link in
 another submenu is viewed. Viewing the +read_journal view in the Journal
 submenu of the RecipeMenu will change the state of both menus.
 

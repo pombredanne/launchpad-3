@@ -25,7 +25,8 @@ import types
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
 from zope.component import getMultiAdapter, queryAdapter
-from zope.security.proxy import isinstance as isinstance_, removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.lazr import decorates
 
@@ -246,9 +247,10 @@ class MenuBase(UserAttributeCache):
             self._initialized = True
         assert self.links is not None, (
             'Subclasses of %s must provide self.links' % self._baseclassname)
-        assert isinstance(self.links, list), "self.links must be a list"
-        linksset = set(self.links)
-        assert not linksset.intersection(self._forbiddenlinknames), (
+        assert isinstance(self.links, (tuple, list)), (
+            "self.links must be a tuple or list.")
+        links_set = set(self.links)
+        assert not links_set.intersection(self._forbiddenlinknames), (
             "The following names may not be links: %s" %
             ', '.join(self._forbiddenlinknames))
 
@@ -263,16 +265,17 @@ class MenuBase(UserAttributeCache):
         contexturlobj = URI(canonical_url(context))
 
         if self.enable_only is ALL_LINKS:
-            enable_only = set(self.links)
+            enable_only_set = links_set
         else:
-            enable_only = set(self.enable_only)
+            enable_only_set = set(self.enable_only)
 
-        if enable_only - set(self.links):
+        unknown_links = enable_only_set - links_set
+        if len(unknown_links) > 0:
             # There are links named in enable_only that do not exist in
             # self.links.
             raise AssertionError(
                 "Links in 'enable_only' not found in 'links': %s" %
-                (', '.join([name for name in enable_only - set(self.links)])))
+                (', '.join([name for name in unknown_links])))
 
         for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)
@@ -280,7 +283,7 @@ class MenuBase(UserAttributeCache):
 
             # Set the .enabled attribute of the link to False if it is not
             # in enable_only.
-            if linkname not in enable_only:
+            if linkname not in enable_only_set:
                 link.enabled = False
 
             # Set the .url attribute of the link, using the menu's context.
@@ -389,20 +392,30 @@ class NavigationMenu(MenuBase):
     def _get_current_menu(self, request):
         """Return the menu associated with the current view, or None.
 
-        Menus associated with views are often submenus that belong to
+        :param request: The request provides the current view, usually
+            it is the last traversed object.
+
+        Menus associated with views are often sub menus that belong to
         links in the menu associated with the content object. A link
         in a top-level menu is considered to be selected if the view's
         menu is an instance of the link's menu
         """
         view = request.traversed_objects[-1]
         # Note: The last traversed object may be a view's instance method.
-        if isinstance_(view, types.MethodType):
+        if zope_isinstance(view, types.MethodType):
             bare = removeSecurityProxy(view)
             view = bare.im_self
         return queryAdapter(view, INavigationMenu)
 
     def _is_link_menu(self, link, menu):
         """Return True if menu is an instance of link's menu, otherwise False.
+
+        :param link: An `ILink` in the menu. It has a menu attribute that may
+            have an `INavigationMenu` assigned.
+        :menu: The `INavigationMenu` being tested.
+
+        A link is considered to be selected when the menu for the current
+        view is an instance of a link's menu.
         """
         return (menu is not None and isinstance(menu, link.menu.__class__))
 
