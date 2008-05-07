@@ -140,6 +140,15 @@ class ICodeImportMachinePublic(Interface):
     current_jobs = Attribute(
         'The current jobs that the machine is processing.')
 
+    def shouldLookForJob():
+        """Should we look for a job to run on this machine?
+
+        There are three reasons we might not look for a job:
+
+        a) The machine is OFFLINE
+        b) The machine is QUIESCING (in which case we might go OFFLINE)
+        c) There are already enough jobs running on this machine.
+        """
 
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""
@@ -147,10 +156,11 @@ class ICodeImportMachineSet(Interface):
     def getAll():
         """Return an iterable of all code machines."""
 
-    def new(hostname):
+    def new(hostname, state=CodeImportMachineState.OFFLINE):
         """Create a new CodeImportMachine.
 
-        The machine will initially be in the 'OFFLINE' state.
+        The machine will initially be in the given 'state', which defaults to
+        OFFLINE.
         """
 
     def getByHostname(hostname):
