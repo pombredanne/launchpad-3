@@ -422,11 +422,13 @@ is defined in by the RecipeMenu class and the view of recipe.
 
 Menus are often constructed by subclassing a common menu. The
 common menu defines all the facet links, and the enabled link that are
-common to most content objects. The CookeryFacetMenu defines all the
-facets for the cookery site for all content interfaces, three links:
-summary, questions, and variations. But it only defined two enabled
-links: summary and questions.  The variations link is not enabled
-because it only applies to recipes. (See the last example.)
+common to most content objects.
+
+The CookeryFacetMenu defines all the facets for the cookery site for all
+content interfaces, three links: summary, questions, and variations. But
+it only defined two enabled links: summary and questions.  The
+variations link is not enabled because it only applies to recipes. (See
+`The FacetMenu class`.)
 
 The RecipeFacetMenu subclass defined below only applies to IRecipe
 content object and it has all facet links enabled.
@@ -566,13 +568,12 @@ view +edit-ingredients.
 
 A link is not linked (the anchor is not rendered) when its URL matches
 the request URI; the user should not navigate to a page he is already
-seeing. The matched URI comes from the view's request or from
-request url keyword arguments for iterlinks().
-
-Under these same circumstances, a link is also selected. Selected means
-that the page is in the path of traversed objects.
+seeing. The matched URI comes from the view's request...
 
     >>> recipe_navigationmenu = queryAdapter(recipe, INavigationMenu)
+    >>> request.getURL()
+    'http://launchpad.dev/joy-of-cooking/fried-spam/+index'
+
     >>> summarise_links(recipe_navigationmenu)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
@@ -587,11 +588,70 @@ that the page is in the path of traversed objects.
         selected: False
         linked: True
 
+...or from the request_url keyword argument for iterlinks() that
+is passed by the helper function.
+
+    >>> summarise_links(
+    ...     recipe_navigationmenu,
+    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+journal')
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: False
+        linked: True
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: True
+        linked: False
+
+A link that is unlinked is implcitly selected too. But there are
+additional rules for the different kinds of menus that may set a
+link to the selected state.
+
+
+=== FacetMenu selected links ===
+
+Facet links are selected when their name matches the selectedfacetname.
+The question link can be selected by passing 'question' as the
+selectedfacetname. The selection is independant of wheather the link
+is linked, as can be seen when the url is not explicitly passed.
+
+    >>> request.getURL()
+    'http://launchpad.dev/joy-of-cooking/fried-spam/+index'
+
+    >>> summarise_links(
+    ...     CookeryFacetMenu(cookbook),
+    ...     facet='questions')
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/+index
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+    link questions
+        url: http://launchpad.dev/joy-of-cooking/+questions
+        enabled: True
+        menu: None
+        selected: True
+        linked: True
+    link variations
+        url: http://launchpad.dev/joy-of-cooking/+variations
+        enabled: False
+        menu: None
+        selected: False
+        linked: True
+
+
+=== NavigationMenu selected links ===
+
 When navigational menus are associated with a content object and one
 of its views, they provide a menu and sub menu. The view's sub menu
 belongs to one of the content object's menu's links.
 
-A link will be selected and linked if request url matches one of the
+A link will be selected and linked if request's url matches one of the
 links in the link's menu. A link's menu contains child links in the
 navigational hierarchy; when a child link is selected, the parent
 link is selected too.
@@ -676,7 +736,7 @@ submenu of the RecipeMenu will change the state of both menus.
         linked: True
 
 
-=== The current view's menu ===
+==== The current view's menu ====
 
 The selected state of a link may be determined from the menu adapted
 from the current view. The object responsible for rendering the page is
