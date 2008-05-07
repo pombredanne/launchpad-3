@@ -36,6 +36,11 @@ class WadlAPI:
         return canonical_url(request.publication.getApplication(request))
 
     def _entry_adapter_for_schema(self, model_schema):
+        """Retrieve an entry adapter for a model interface.
+
+        This method locates the IEntry subclass corresponding to the
+        model interface, and creates a WadlEntryAdapterAPI for it.
+        """
         entry_class = getGlobalSiteManager().adapters.lookup(
             (model_schema,), IEntry)
         return WadlEntryAdapterAPI(entry_class)
@@ -217,20 +222,24 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         return "%s#%s-diff" % (
             self._service_root_url(), self.singular_type())
 
-    def entry_page_representation_link(self):
-        return "%s#%s" % (
-            self._service_root_url(),
-            self.entry_page_representation_id())
-
     def scoped_collection_type(self):
+        """The definition of a collection of this kind of object."""
         return "%s-scoped-collection" % self.singular_type()
 
     def scoped_collection_type_link(self):
+        "The URL to the definition of a collection of this kind of object."
         return "%s#%s" % (
             self._service_root_url(), self.scoped_collection_type())
 
     def entry_page_representation_id(self):
+        "The name of the description of a colleciton of this kind of object."
         return "%s-page" % self.singular_type()
+
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(),
+            self.entry_page_representation_id())
 
     def all_fields(self):
         "Return all schema fields for the object."
@@ -262,6 +271,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
                           self.collection_type())
 
     def entry_schema(self):
+        """The schema interface for the kind of entry in this collection."""
         return self.adapter.entry_schema
 
 
@@ -347,4 +357,5 @@ class WadlOperationAPI(WadlAPI):
             raise AssertionError("Named operations must use GET or POST.")
 
     def doc(self):
+        """Human-readable documentation for this operation."""
         return self.docstringToXHTML(self.operation.__doc__)
