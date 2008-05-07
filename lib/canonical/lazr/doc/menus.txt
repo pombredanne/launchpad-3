@@ -137,11 +137,9 @@ a content object's menu.
     >>> cookingexample.RecipeEditIngredientsView = RecipeEditIngredientsView
 
 The views for IRecipe are registered using ZCML. Each pages requires
-a name, for, class, and permission. The facet directive is optional,
-though it is requires for FacetMenus.
-
-# XXX sinzui 2008-04-28: Why, oh Why, do I get an unknown directive
-# for facet? It is registered in meta.zcml which is loaded.
+a name, for, class, and permission. The optional facet directive assigns
+the page to a facet. FacetMenus, and NavigationNenus associated to a
+facet can be accessed from assigned to the same facet.
 
     >>> from zope.configuration import xmlconfig
 
@@ -150,7 +148,8 @@ though it is requires for FacetMenus.
     ...            xmlns:zope="http://namespaces.zope.org/zope"
     ...            xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include package="zope.app" file="meta.zcml" />
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <includeOverrides
+    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
     ...   <browser:defaultView
     ...     for="canonical.lazr.cookingexample.IRecipe"
     ...     name="+index"
@@ -158,23 +157,148 @@ though it is requires for FacetMenus.
     ...   <browser:page
     ...     name="+index"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="summary"
     ...     class="canonical.lazr.cookingexample.RecipeIndexView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+edit-instructions"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="summary"
     ...     class="canonical.lazr.cookingexample.RecipeEditInstructionsView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+edit-ingredients"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="summary"
     ...     class="canonical.lazr.cookingexample.RecipeEditIngredientsView"
     ...     permission="zope.Public"
     ...     />
     ... </configure>
     ... """)
+
+
+== The FacetMenu class ==
+
+A FacetMenu is a menu that defines all the factets for a site. A facet
+may be consider an application or focus. A There may be many ways in
+which a site's content object may be used. For example: one aspect of
+a content object is its definition and publication, another might
+be questions and answers about the content object.
+
+FacetMenus are meant to be used as a base-class for writing your own
+IFacetMenu classes.  An error is raise if it is directly called.
+
+    >>> from canonical.launchpad.webapp import FacetMenu
+
+    >>> bad_idea_menu = FacetMenu(object())
+    >>> for link in bad_idea_menu.iterlinks():
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of FacetMenu must provide self.links
+
+Here are two FacetMenus for the cookery stie. The FacetMenu
+class has four attributes: usedfor, links, defaultlink, and enable_only.
+The 'usedfor' attribute assoicates the menu with a specific interface.
+The requireed 'links' attribute is a list of the method names that
+return links. The 'defaultlink' attribute defines the selected link when
+the factet is not known for the context being viewed. The enable_links
+attribute is a list of links that are enabled; a subset of links that
+are appropriate for a context object.
+
+    >>> from canonical.launchpad.webapp import Link
+
+    >>> class CookeryFacetMenu(FacetMenu):
+    ...
+    ...     links = ['summary', 'questions', 'variations']
+    ...     defaultlink = 'summary'
+    ...     enable_only = ['summary', 'questions']
+    ...
+    ...     def summary(self):
+    ...         target = '+index'
+    ...         text = 'Summary'
+    ...         summary = 'Summary of %s in Cookery' % self.context.name
+    ...         return Link(target, text, summary)
+    ...
+    ...     def questions(self):
+    ...         target = '+questions'
+    ...         text = 'Questions'
+    ...         summary = 'Questions and answers about %s' % self.context.name
+    ...         return Link(target, text, summary)
+    ...
+    ...     def variations(self):
+    ...         target = '+variations'
+    ...         text = 'Variations'
+    ...         summary = 'recipe variations for %s' % self.context.name
+    ...         return Link(target, text, summary)
+
+The CookeryFacetMenu defines all the facets for the cookery site for
+all content interfaces. The 'variations' link is not enabled because
+it only applies to recipes. The RecipeFacetMenu subclass defined below
+only applies to IRecipe content object and it has all facets enabled.
+
+    >>> class RecipeFacetMenu(CookeryFacetMenu):
+    ...
+    ...     usedfor = IRecipe
+    ...     enable_only = ['summary', 'questions', 'variations']
+
+    # Monkey patch the menus into the cookingexample module.
+    >>> cookingexample.CookeryFacetMenu = CookeryFacetMenu
+    >>> cookingexample.RecipeFacetMenu = RecipeFacetMenu
+
+Now, we can make an instance of this Facets class, with a contextobject to
+show that its methods can access `self.context`.
+
+    >>> cookery_facet_menu = CookeryFacetMenu(cookbook)
+    >>> recipe_facet_menu = RecipeFacetMenu(recipe)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> from zope.component import provideAdapter
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IFacetLink, ILink, ILinkData)
+    >>> from canonical.launchpad.webapp.menu import (
+    ...     FacetLink, MenuLink)
+    >>> from canonical.launchpad.webapp.uri import URI
+
+    # The adapters for the link types used by menus are registered in ZCML.
+    # That is not the focus of this test so they are manually registered.
+    >>> provideAdapter(MenuLink, [ILinkData], ILink)
+    >>> provideAdapter(FacetLink, [ILinkData], IFacetLink)
+
+    >>> def list_links(menu, uri=None, facet=None):
+    ...     """List the links and their attributes."""
+    ...     for link in menu.iterlinks(uri, selectedfacetname=facet):
+    ...         print 'link %s' % link.name
+    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
+    ...         for attrname in attributes:
+    ...             print '    %s: %s' % (attrname, getattr(link, attrname))
+
+    >>> list_links(
+    ...     CookeryFacetMenu(cookbook),
+    ...     uri=URI('http://launchpad.dev/joy-of-cooking/+index'),
+    ...     facet=None)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/+index
+        enabled: True
+        menu: None
+        selected: True
+        linked: False
+    link questions
+        url: http://launchpad.dev/joy-of-cooking/+questions
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+    link variations
+        url: http://launchpad.dev/joy-of-cooking/+variations
+        enabled: False
+        menu: None
+        selected: False
+        linked: True
 
 
 == The NavigationMenu class ==
@@ -202,9 +326,6 @@ associated with content objects. Each menu defines a 'usedfor'
 attribute, which tells the registration machinery how to render this
 menu as an adapter. The sub menu is indirectly associated to the main
 menu though one of its links.
-
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
-    >>> from canonical.launchpad.webapp import Link
 
     >>> class RecipeEditMenu(NavigationMenu):
     ...     usedfor = IRecipeEditMenuMarker
@@ -242,24 +363,6 @@ Menus are normally created through adaption, but we can make an instance
 of this RecipeMenu class to review each attribute of each of the links.
 (NavigationMenu will work with an object or its view) Each link's state
 is defined in by the RecipeMenu class and the view of recipe.
-
-    >>> from zope.component import provideAdapter
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IFacetLink, ILink, ILinkData)
-    >>> from canonical.launchpad.webapp.menu import (
-    ...     FacetLink, MenuLink)
-
-    # The adapters for the link types used by menus are registered in ZCML.
-    # That is not the focus of this test so they are manually registered.
-    >>> provideAdapter(MenuLink, [ILinkData], ILink)
-    >>> provideAdapter(FacetLink, [ILinkData], IFacetLink)
-
-    >>> def list_links(menu, uri=None):
-    ...     """List the links and their attributes."""
-    ...     for link in menu.iterlinks(uri):
-    ...         print 'link %s' % link.name
-    ...         for attrname in sorted(IFacetLink.names(all=True)):
-    ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
     >>> list_links(
     ...     RecipeMenu(recipe),
@@ -306,6 +409,7 @@ This is normally performed in ZCML; without the ZCML registration,
 the cookery objects cannot be adapted to menus.
 
     >>> from zope.component import getMultiAdapter, queryAdapter
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
