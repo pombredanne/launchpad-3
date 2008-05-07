@@ -2361,8 +2361,8 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
-        elif name == 'uses_inline_navigation':
-            return self.uses_inline_navigation()
+        elif name == 'show_actions_menu':
+            return self.show_actions_menu()
         else:
             raise TraversalError(name)
 
@@ -2381,14 +2381,18 @@ class PageMacroDispatcher:
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
 
-    def uses_inline_navigation(self):
-        """Does this page supports inline navigagtion?
+    def show_actions_menu(self):
+        """Should the actions menu be rendered.
 
-        Inline navigation is available only when running in development
-        mode (tests and launchpad.dev) and when the template has
-        navigationtabs.
+        It should be rendered unless the layout turns it off, or if we are
+        running in development mode and the layout has navigation tabs.
         """
-        return config.devmode and self.haspage('navigationtabs')
+        if not self.haspage('actionsmenu'):
+            return False
+        elif config.devmode:
+            return not self.haspage('navigationtabs')
+        else:
+            return True
 
     class LayoutElements:
 

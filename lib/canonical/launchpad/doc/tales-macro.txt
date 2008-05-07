@@ -42,37 +42,62 @@ rendered in the layout.
     >>> test_tales('view/macro:pagehas/portlets', view=view)
     True
 
+    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
+    True
+
     >>> test_tales('view/macro:pagehas/heading', view=view)
     False
 
 For the transition to the new 2.0 inline navigation, there is also a
-macro:uses_inline_navigation expression that determines if the inline
-navigation layout should be used. That expression only returns True when
-there running in development mode and the pagetype has 'navigationtabs'.
+macro:show_actions_menu expression that determines if the actions
+portlet navigation layout should be used. That expression is True when
+running in development mode and the pagetype has 'navigationtabs'.
+
+So for the 'default' page type, the actions portlet will always be
+shown:
 
     >>> from canonical.config import config
     >>> config.devmode
     True
 
+    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
+    True
+
     >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
     False
 
-    >>> test_tales('view/macro:uses_inline_navigation', view=view)
-    False
+    >>> test_tales('view/macro:show_actions_menu', view=view)
+    True
 
-The 'default2.0' pagetype will have uses_inline_navigation True when
-running in devmode.
+The 'default2.0' pagetype will show the actions menu only when not in
+development mode:
 
     >>> macro = test_tales('view/macro:page/default2.0', view=view)
+
+    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
+    True
     >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
     True
 
-    >>> test_tales('view/macro:uses_inline_navigation', view=view)
-    True
-
-    >>> config.devmode = False
-    >>> test_tales('view/macro:uses_inline_navigation', view=view)
+    >>> test_tales('view/macro:show_actions_menu', view=view)
     False
 
+    >>> config.devmode = False
+    >>> test_tales('view/macro:show_actions_menu', view=view)
+    True
+
     >>> config.devmode = True
+
+But if the layout doesn't require the actions menu, that expression will
+be False.
+
+    >>> macro = test_tales('view/macro:page/defaultnomenu', view=view)
+
+    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
+    False
+    >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
+    False
+
+    >>> test_tales('view/macro:show_actions_menu', view=view)
+    False
 
