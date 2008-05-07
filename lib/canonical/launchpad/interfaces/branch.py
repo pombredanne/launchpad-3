@@ -1101,7 +1101,7 @@ class BranchListingSort(EnumeratedType):
     # that are not visible in the listing!
 
     DEFAULT = Item("""
-        by default ordering
+        by most interesting
 
         Sort branches by the default ordering for the view.
         """)
