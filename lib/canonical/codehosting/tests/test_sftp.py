@@ -98,12 +98,31 @@ class TestSFTPServer(TestCaseInTempDir):
         self.assertEqual(set(['baz', 'bar']), set(directory))
         directory.close()
 
-    def test_translateError(self):
+    def test_translatePermissionDenied(self):
         exception = bzr_errors.PermissionDenied('foo')
+        self.do_translation_test(exception, filetransfer.FX_PERMISSION_DENIED)
+
+    def test_translateNoSuchFile(self):
+        exception = bzr_errors.NoSuchFile('foo')
+        self.do_translation_test(exception, filetransfer.FX_NO_SUCH_FILE)
+
+    def test_translateFileExists(self):
+        exception = bzr_errors.FileExists('foo')
+        self.do_translation_test(
+            exception, filetransfer.FX_FILE_ALREADY_EXISTS)
+
+    def test_translateRandomError(self):
+        exception = KeyboardInterrupt()
+        result = self.assertRaises(KeyboardInterrupt,
+            self.sftp_server.translateError,
+            failure.Failure(exception))
+        self.assertIs(result, exception)
+
+    def do_translation_test(self, exception, sftp_code):
         result = self.assertRaises(filetransfer.SFTPError,
             self.sftp_server.translateError,
             failure.Failure(exception))
-        self.assertEqual(filetransfer.FX_PERMISSION_DENIED, result.code)
+        self.assertEqual(sftp_code, result.code)
         self.assertEqual(str(exception), result.message)
 
 

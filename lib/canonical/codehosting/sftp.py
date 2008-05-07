@@ -7,6 +7,7 @@ __metaclass__ = type
 import os
 import os.path
 
+from bzrlib import errors as bzr_errors
 from bzrlib import osutils
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
@@ -109,5 +110,13 @@ class TransportSFTPServer:
         self.transport.rename(oldpath, newpath)
 
     def translateError(self, failure):
-        raise filetransfer.SFTPError(filetransfer.FX_PERMISSION_DENIED,
-                                     failure.getErrorMessage())
+        types_to_codes = {
+            bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
+            bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
+            bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
+            }
+        try:
+            sftp_code = types_to_codes[failure.type]
+        except KeyError:
+            failure.raiseException()
+        raise filetransfer.SFTPError(sftp_code, failure.getErrorMessage())
