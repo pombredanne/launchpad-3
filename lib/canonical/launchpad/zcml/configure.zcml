@@ -154,6 +154,7 @@
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
+    <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
 
