@@ -8,8 +8,6 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
-import re
-
 from itertools import chain
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
@@ -24,7 +22,7 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, sqlvalues)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
@@ -40,8 +38,7 @@ from canonical.launchpad.webapp.uri import URI
 
 def normalise_leading_slashes(rest):
     """Ensure that the 'rest' segment of a URL starts with //."""
-    slashre = re.compile('^/*(.*)')
-    return '//' + slashre.match(rest).group(1)
+    return '//' + rest.lstrip('/')
 
 
 def normalise_base_url(base_url):
@@ -87,6 +84,7 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
+
 def make_bugtracker_name(uri):
     """Return a name string for a bug tracker based on a URI.
 
@@ -98,12 +96,31 @@ def make_bugtracker_name(uri):
         if valid_email(base_uri.path):
             base_name = base_uri.path.split('@', 1)[0]
         else:
-            raise ValueError(
+            raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
     else:
         base_name = base_uri.host
 
     return 'auto-%s' % base_name
+
+
+def make_bugtracker_title(uri):
+    """Return a title string for a bug tracker based on a URI.
+
+    :param uri: The base URI to be used to identify the bug tracker,
+        e.g. http://bugs.example.com or mailto:bugs@example.com
+    """
+    base_uri = URI(uri)
+    if base_uri.scheme == 'mailto':
+        if valid_email(base_uri.path):
+            local_part, domain = base_uri.path.split('@', 1)
+            domain_parts = domain.split('.')
+            return 'Email to %s@%s' % (local_part, domain_parts[0])
+        else:
+            raise AssertionError(
+                'Not a valid email address: %s' % base_uri.path)
+    else:
+        return base_uri.host + base_uri.path
 
 
 class BugTracker(SQLBase):
@@ -253,11 +270,12 @@ class BugTrackerSet:
 
     def queryByBaseURL(self, baseurl):
         """See `IBugTrackerSet`."""
+        # All permutations we'll search for.
         permutations = base_url_permutations(baseurl)
-        # All the important parts in the next expression are lazily
-        # evaluated. SQLObject queries do not execute any SQL until
-        # results are pulled, so the first query to return a match
-        # will be the last query executed.
+        # Construct the search. All the important parts in the next
+        # expression are lazily evaluated. SQLObject queries do not
+        # execute any SQL until results are pulled, so the first query
+        # to return a match will be the last query executed.
         matching_bugtrackers = chain(
             # Search for any permutation in BugTracker.
             BugTracker.select(
@@ -267,16 +285,7 @@ class BugTrackerSet:
             (alias.bugtracker for alias in
              BugTrackerAlias.select(
                     OR(*(BugTrackerAlias.q.base_url == url
-                         for url in permutations)))),
-            # Search for a substring match in BugTracker.
-            BugTracker.select(
-                BugTracker.q.baseurl.contains(baseurl),
-                limit=1),
-            # Search for a substring match in BugTrackerAlias.
-            (alias.bugtracker for alias in
-             BugTrackerAlias.select(
-                    BugTrackerAlias.q.base_url.contains(baseurl),
-                    limit=1)))
+                         for url in permutations)))))
         # Return the first match.
         for bugtracker in matching_bugtrackers:
             return bugtracker
@@ -289,20 +298,13 @@ class BugTrackerSet:
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         """See `IBugTrackerSet`."""
-        # first try and find one without normalisation
+        # Try to find an existing bug tracker that matches.
         bugtracker = self.queryByBaseURL(baseurl)
         if bugtracker is not None:
             return bugtracker
-        # now try and normalise it
-        baseurl = normalise_base_url(baseurl)
-        bugtracker = self.queryByBaseURL(baseurl)
-        if bugtracker is not None:
-            return bugtracker
-        # create the bugtracker, we don't know about it. we'll use the
-        # normalised base url
+        # Create the bugtracker; we don't know about it.
         if name is None:
             base_name = make_bugtracker_name(baseurl)
-
             # If we detect that this name exists already we mutate it
             # until it doesn't.
             name = base_name
@@ -310,11 +312,10 @@ class BugTrackerSet:
             while self.getByName(name) is not None:
                 name = "%s-%d" % (base_name, name_increment)
                 name_increment += 1
-
         if title is None:
-            title = quote('Bug tracker at %s' % baseurl)
-        bugtracker = BugTracker(name=name,
-            bugtrackertype=bugtrackertype,
+            title = make_bugtracker_title(baseurl)
+        bugtracker = BugTracker(
+            name=name, bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,
             contactdetails=contactdetails, owner=owner)
         flush_database_updates()

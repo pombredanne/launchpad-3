@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces import (
     IShippingRequestSet,
     ISpecificationSet,
     IStandardShipItRequestSet,
+    ITranslationGroupSet,
     License,
     PersonCreationRationale,
     RevisionControlSystems,
@@ -166,27 +167,44 @@ class LaunchpadObjectFactory:
         team_member.join(team, team)
         return team
 
-    def makeProduct(self, name=None, project=None):
+    def makeTranslationGroup(
+        self, owner, name=None, title=None, summary=None):
+        """Create a new, arbitrary `TranslationGroup`."""
+        if name is None:
+            name = self.getUniqueString("translationgroup")
+        if title is None:
+            title = self.getUniqueString("title")
+        if summary is None:
+            summary = self.getUniqueString("summary")
+        return getUtility(ITranslationGroupSet).new(
+            name, title, summary, owner)
+
+    def makeProduct(self, name=None, project=None, displayname=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProductSet).createProduct(
-            owner, name,
-            self.getUniqueString('displayname'),
+            owner,
+            name,
+            displayname,
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GPL], project=project)
+            licenses=[License.GNU_GPL_V2], project=project)
 
-    def makeProject(self, name=None):
+    def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('project-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProjectSet).new(
             name,
-            self.getUniqueString('displayname'),
+            displayname,
             self.getUniqueString('title'),
             None,
             self.getUniqueString('summary'),

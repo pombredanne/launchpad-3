@@ -21,10 +21,12 @@ CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 MINS_TO_SHUTDOWN=15
 
+CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-schema: build
+schema: build clean_codehosting
 	$(MAKE) -C database/schema
 	$(PYTHON) ./utilities/make-dummy-hosted-branches
 	rm -rf /var/tmp/fatsam
@@ -133,12 +135,14 @@ ftest_inplace: inplace
 run: inplace stop bzr_version_info
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian -C $(CONFFILE)
 
 run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -149,8 +153,8 @@ pull_branches: bzr_version_info
 rewritemap:
 	# Build rewrite map that maps friendly branch names to IDs. Necessary
 	# for http access to branches and for the branch scanner.
-	mkdir -p /var/tmp/sm-ng/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	$(PYTHON) cronscripts/supermirror_rewritemap.py $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 scan_branches: rewritemap
 	# Scan branches from the filesystem into the database.
@@ -210,10 +214,18 @@ clean:
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 	rm -rf lib/mailman
+	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean
 	rm -f TAGS tags
 	$(PYTHON) setup.py clean -a
+
+clean_codehosting:
+	rm -rf $(CODEHOSTING_ROOT)
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	mkdir -p $(CODEHOSTING_ROOT)/push-branches
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \

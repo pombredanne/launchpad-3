@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 from unittest import TestCase, TestLoader
-import zope.event
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -13,7 +12,8 @@ from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus)
-from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
+from canonical.launchpad.testing import (
+     capture_events, LaunchpadObjectFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -323,23 +323,15 @@ class TestMergeProposalNotification(TestCase):
         :return: (result, event), where result was the return value of the
             callable, and event is the event emitted by the callable.
         """
-        events = []
-        def on_notify(event):
-            events.append(event)
-        old_subscribers = zope.event.subscribers[:]
-        try:
-            zope.event.subscribers[:] = [on_notify]
-            result = callable_obj(*args, **kwargs)
-            if len(events) == 0:
-                raise AssertionError('No notification was performed.')
-            elif len(events) > 1:
-                raise AssertionError('Too many (%d) notifications performed.'
-                    % len(events))
-            elif not isinstance(events[0], event_type):
-                raise AssertionError('Wrong event type: %r (expected %r).' %
-                    (events[0], event_type))
-        finally:
-            zope.event.subscribers[:] = old_subscribers
+        result, events = capture_events(callable_obj, *args, **kwargs)
+        if len(events) == 0:
+            raise AssertionError('No notification was performed.')
+        elif len(events) > 1:
+            raise AssertionError('Too many (%d) notifications performed.'
+                % len(events))
+        elif not isinstance(events[0], event_type):
+            raise AssertionError('Wrong event type: %r (expected %r).' %
+                (events[0], event_type))
         return result, events[0]
 
     def test_notifyOnCreate(self):

@@ -5,9 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'archive_to_structualheading',
+    'archive_to_structuralheading',
     'ArchiveAdminView',
     'ArchiveActivateView',
+    'ArchiveBadges',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -43,11 +44,20 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
+from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+class ArchiveBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `IArchive`."""
+
+    def getPrivateBadgeTitle(self):
+        """Return private badge info useful for a tooltip."""
+        return "This archive is private."
 
 
 class ArchiveNavigation(Navigation):
@@ -110,12 +120,6 @@ class ArchiveContextMenu(ContextMenu):
 
 class ArchiveViewBase:
     """Common features for Archive view classes."""
-
-    def isPrivate(self):
-        """Return whether the archive is private or not."""
-        # This is used by the main container template to decide whether
-        # to render the privacy graphics or not.
-        return self.context.private
 
     @property
     def is_active(self):
@@ -941,7 +945,7 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'Do not specify for non-private archives')
 
 
-def archive_to_structualheading(archive):
+def archive_to_structuralheading(archive):
     """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
     if archive.owner is not None:
         return IStructuralHeaderPresentation(archive.owner)
