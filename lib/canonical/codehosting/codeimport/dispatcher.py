@@ -16,13 +16,8 @@ import os
 import socket
 import subprocess
 
-from zope.component import getUtility
-
 from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    CodeImportMachineOfflineReason, CodeImportMachineState,
-    ICodeImportMachineSet)
 
 
 class CodeImportDispatcher:
@@ -37,13 +32,11 @@ class CodeImportDispatcher:
     worker_script = os.path.join(
         get_rocketfuel_root(), 'scripts', 'code-import-worker-db.py')
 
-    def __init__(self, txn, logger):
+    def __init__(self, logger):
         """Initialize an instance.
 
-        :param txn: A transaction manager.
         :param logger: A `Logger` object.
         """
-        self.txn = txn
         self.logger = logger
 
     def getHostname(self):
@@ -67,62 +60,16 @@ class CodeImportDispatcher:
         return subprocess.Popen(
             [self.worker_script, str(job_id), '-vv', '--log-file', log_file])
 
-    def shouldLookForJob(self, machine):
-        """Should we look for a job to run on this machine?
-
-        There are three reasons we might not look for a job:
-
-        a) The machine is OFFLINE
-        b) The machine is QUIESCING (in which case we might go OFFLINE)
-        c) There are already enough jobs running on this machine.
-        """
-        # XXX 2008-05-01 MichaelHudson: if this code was part of the
-        # getJobForMachine call, this script wouldn't have to talk to the
-        # database or even call execute_zcml_for_scripts().
-        job_count = machine.current_jobs.count()
-
-        if machine.state == CodeImportMachineState.OFFLINE:
-            self.logger.info(
-                "Machine is in OFFLINE state, not looking for jobs.")
-            return False
-        elif machine.state == CodeImportMachineState.QUIESCING:
-            if job_count == 0:
-                self.logger.info(
-                    "Machine is in QUIESCING state and no jobs running, "
-                    "going OFFLINE.")
-                machine.setOffline(
-                    CodeImportMachineOfflineReason.QUIESCED)
-                # This is the only case where we modify the database.
-                self.txn.commit()
-                return False
-            self.logger.info(
-                "Machine is in QUIESCING state, not looking for jobs.")
-            return False
-        elif machine.state == CodeImportMachineState.ONLINE:
-            max_jobs = config.codeimportdispatcher.max_jobs_per_machine
-            return job_count < max_jobs
-        else:
-            raise AssertionError(
-                "Unknown machine state %r??" % machine.state)
 
     def findAndDispatchJob(self, scheduler_client):
         """Check for and dispatch a job if necessary."""
 
-        machine = getUtility(ICodeImportMachineSet).getByHostname(
-            self.getHostname())
-
-        if not self.shouldLookForJob(machine):
-            return
-
-        job_id = scheduler_client.getJobForMachine(machine.hostname)
+        job_id = scheduler_client.getJobForMachine(self.getHostname())
 
         if job_id == 0:
-            # There are no jobs that need to be run.
-            self.logger.info(
-                "No jobs pending.")
+            self.logger.info("No jobs pending.")
             return
 
         self.logger.info("Dispatching job %d." % job_id)
 
         self.dispatchJob(job_id)
-

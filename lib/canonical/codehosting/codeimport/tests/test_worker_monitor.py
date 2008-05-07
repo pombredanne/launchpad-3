@@ -393,7 +393,6 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
-        self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
@@ -431,7 +430,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
         getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        job = getUtility(ICodeImportJobSet).getJobForMachine(self.machine)
+        job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
         self.assertEqual(code_import, job.code_import)
         return job
 

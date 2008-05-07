@@ -167,7 +167,6 @@ them properly, see doc/package-archive.txt.
     >>> from zope.component import getUtility
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
     >>> login(ANONYMOUS)
