@@ -9,6 +9,7 @@ import threading
 import xmlrpclib
 from datetime import datetime
 
+from zope.app import zapi
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
@@ -36,9 +37,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
-    IScopedCollection)
-from canonical.lazr.rest.resource import CollectionResource, EntryResource
+    ICollection, ICollectionField, IEntry, IFeed, IHTTPResource)
+from canonical.lazr.rest.resource import (
+    CollectionResource, EntryResource, ScopedCollection)
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
@@ -903,18 +904,6 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- web service
 
-
-class CollectionEntryDummy:
-    """An empty object providing the interface of the items in the collection.
-
-    This is to work around the fact that getMultiAdapter() and other
-    zope.component lookup methods don't accept a bare interface and only
-    works with objects.
-    """
-    def __init__(self, collection_field):
-        directlyProvides(self, collection_field.value_type.schema)
-
-
 class WebServicePublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad web service requests."""
 
@@ -940,47 +929,34 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # traversal to entries in a scoped collection, they don't usually
         # handle traversing to the scoped collection itself.
         if len(request.getTraversalStack()) == 0:
-            result = self._traverseToScopedCollection(request, ob, name)
+            try_special_traversal = True
+            try:
+                entry = IEntry(ob)
+            except TypeError:
+                try_special_traversal = False
+            result = None
+            if try_special_traversal:
+                field = entry.schema.get(name)
+                if ICollectionField.providedBy(field):
+                    result = self._traverseToScopedCollection(
+                        request, ob, entry, field)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
             request, ob, name)
 
-    def _traverseToScopedCollection(self, request, ob, name):
-        """Try to traverse to a collection named name in ob.
-
-        If ob supports IEntry, we check if name refers to a collection
-        field and if it does, we return the IScopedCollection available
-        for this field.
+    def _traverseToScopedCollection(self, request, context, entry, field):
+        """Try to traverse to a collection named name in entry.
 
         This is done because we don't usually traverse to attributes
         representing a collection in our regular Navigation.
 
         This method returns None if a scoped collection cannot be found.
         """
-        try:
-            entry = IEntry(ob)
-        except TypeError:
-            return None
-
-        field = entry.schema.get(name)
-        if not ICollectionField.providedBy(field):
-            return None
-
-        collection = getattr(entry, name, None)
+        collection = getattr(entry, field.__name__, None)
         if collection is None:
             return None
-
-        # Create a dummy object that implements the field's interface.
-        # This is necessary because we can't pass the interface itself
-        # into getMultiAdapter.
-        example_entry = CollectionEntryDummy(field)
-        try:
-            scoped_collection = getMultiAdapter(
-                (ob, example_entry), IScopedCollection)
-        except ComponentLookupError:
-            return None
-
+        scoped_collection = ScopedCollection(context, entry)
         # Tell the IScopedCollection object what collection it's managing,
         # and what the collection's relationship is to the entry it's
         # scoped to.
