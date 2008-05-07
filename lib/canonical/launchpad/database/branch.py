@@ -232,11 +232,9 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # While this is technically correct, this may be slowish
-        # when generating values for listings.
         use_series = None
         lp_prefix = config.codehosting.bzr_lp_prefix
-        # XXX thumper 2008-05-06
+        # XXX: TimPenhey 2008-05-06 bug=227602
         # Since at this stage the launchpad name resolution is not
         # authenticated, we can't resolve series branches that end
         # up pointing to private branches, so don't show short names
@@ -260,22 +258,6 @@ class Branch(SQLBase):
                 'prefix': lp_prefix,
                 'product': self.product.name,
                 'series': use_series.name}
-
-    def getBzrUploadURL(self, person=None):
-        """See `IBranch`."""
-        if self.private:
-            return config.codehosting.smartserver_root % (
-                self._getNameDict(person)) + self.unique_name
-        else:
-            return self.bzr_identity
-
-    def getBzrDownloadURL(self, person=None):
-        """See `IBranch`."""
-        if self.private:
-            return config.codehosting.smartserver_root % (
-                self._getNameDict(person)) + self.unique_name
-        else:
-            return self.bzr_identity
 
     @property
     def related_bugs(self):

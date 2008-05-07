@@ -516,24 +516,11 @@ class IBranch(IHasOwner):
     code_import = Attribute("The associated CodeImport, if any.")
 
     bzr_identity = Attribute(
-        "The shortest lp spec URL for this branch.")
-
-    def getBzrUploadURL(person=None):
-        """Return the URL for this person to push to the branch.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
-
-    def getBzrDownloadURL(person=None):
-        """Return the URL for this person to branch the branch.
-
-        If the branch is public, the anonymous http location is used,
-        otherwise the url uses the smartserver.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
+        "The shortest lp spec URL for this branch. "
+        "If the branch is associated with a product as the primary "
+        "development focus, then the result should be lp:product.  If "
+        "the branch is related to a series, then lp:product/series. "
+        "Otherwise the result is lp:~user/product/branch-name.")
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.

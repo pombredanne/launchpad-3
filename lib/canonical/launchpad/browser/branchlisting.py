@@ -229,6 +229,9 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
+    # Showing the series links is only really useful on product listing
+    # pages.  Derived views can override this value to have the series links
+    # shown in the branch listings.
     show_series_links = False
     hide_dormant_initial_value = False
     extra_columns = []
