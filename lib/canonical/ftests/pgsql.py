@@ -9,7 +9,8 @@ import unittest
 import time
 
 import psycopg
-from canonical.database.postgresql import resetSequences
+from canonical.database.postgresql import (
+    prepare_resetSequences, resetSequences)
 
 
 class ConnectionWrapper(object):
@@ -138,7 +139,7 @@ class PgTestSetup(object):
     _reset_db = True
 
     def __init__(self, template=None, dbname=None, dbuser=None,
-            host=None, port=None):
+            host=None, port=None, reset_sequences_sql=None):
         '''Construct the PgTestSetup
 
         Note that dbuser is not used for setting up or tearing down
@@ -154,6 +155,7 @@ class PgTestSetup(object):
             self.host = host
         if port is not None:
             self.port = port
+        self.reset_sequences_sql = reset_sequences_sql
 
     def _connectionString(self, dbname, dbuser=None):
         connection_parameters = ['dbname=%s' % dbname]
@@ -164,6 +166,15 @@ class PgTestSetup(object):
         if self.port is not None:
             connection_parameters.append('port=%s' % self.host)
         return ' '.join(connection_parameters)
+
+    def prepareResetSequencesSQL(self):
+        """Return a SQL statement that resets all sequences. """
+        con = psycopg.connect(self._connectionString(self.dbname))
+        cur = con.cursor()
+        try:
+            return prepare_resetSequences(cur)
+        finally:
+            con.close()
 
     def setUp(self):
         '''Create a fresh database (dropping the old if necessary)
@@ -181,7 +192,10 @@ class PgTestSetup(object):
             # 'committed' flag, and we're done.
             con = psycopg.connect(self._connectionString(self.dbname))
             cur = con.cursor()
-            resetSequences(cur)
+            if self.reset_sequences_sql is None:
+                resetSequences(cur)
+            else:
+                cur.execute(self.reset_sequences_sql)
             con.commit()
             con.close()
             ConnectionWrapper.committed = False

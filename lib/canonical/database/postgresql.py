@@ -227,6 +227,44 @@ def listSequences(cur):
                 rv.append( (schema, sequence, None, None) )
     return rv
 
+def prepare_resetSequences(cur):
+    """Reset table sequences to match the data in them.
+
+    Goes through the database resetting the values of sequences to match
+    what is in their corresponding tables, where corresponding tables are
+    known.
+
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> int(cur.fetchone()[0])
+    1
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> resetSequences(cur)
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> int(cur.fetchone()[0])
+    1
+    """
+    stmt = []
+    for schema, sequence, table, column in listSequences(cur):
+        if table is None or column is None:
+            continue
+        sql = "SELECT max(%s) FROM %s" % (
+                quoteIdentifier(column), quoteIdentifier(table)
+                )
+        cur.execute(sql)
+        last_value = cur.fetchone()[0]
+        if last_value is None:
+            last_value = 1
+            flag = 'false'
+        else:
+            flag = 'true'
+        sql = "setval(%s, %d, %s)" % (
+                quote('%s.%s' % (schema, sequence)), int(last_value), flag
+                )
+        stmt.append(sql)
+    stmt = 'SELECT ' + ', '.join(stmt)
+    return stmt
+
 def resetSequences(cur):
     """Reset table sequences to match the data in them.
 
