@@ -6,9 +6,7 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
-import cElementTree
 import textwrap
-from email.Utils import parseaddr
 from os.path import splitext
 from StringIO import StringIO
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -17,11 +15,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, ITranslationHeaderData, TranslationConstants,
-    TranslationFileFormat, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    ITranslationFormatImporter, TranslationConstants, TranslationFileFormat,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
+from canonical.launchpad.translationformat.xpi_header import XpiHeader
 from canonical.launchpad.translationformat.xpi_manifest import (
     make_jarpath, XpiManifest)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -37,54 +35,6 @@ def get_file_suffix(path_in_zip):
     """
     root, ext = splitext(path_in_zip)
     return ext
-
-
-class MozillaHeader:
-    implements(ITranslationHeaderData)
-
-    def __init__(self, header_content):
-        self._raw_content = header_content
-        self.is_fuzzy = False
-        self.template_creation_date = None
-        self.translation_revision_date = None
-        self.language_team = None
-        self.has_plural_forms = False
-        self.number_plural_forms = 0
-        self.plural_form_expression = None
-        self.charset = 'UTF-8'
-        self.launchpad_export_date = None
-        self.comment = None
-
-    def getRawContent(self):
-        """See `ITranslationHeaderData`."""
-        return self._raw_content
-
-    def updateFromTemplateHeader(self, template_header):
-        """See `ITranslationHeaderData`."""
-        # Nothing to do for this format.
-        return
-
-    def getLastTranslator(self):
-        """See `ITranslationHeaderData`."""
-        name = None
-        email = None
-        parse = cElementTree.iterparse(StringIO(self._raw_content))
-        for event, elem in parse:
-            if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
-                # This file would have more than one contributor, but
-                # we are only getting latest one.
-                name, email = parseaddr(elem.text)
-
-        return name, email
-
-    def setLastTranslator(self, email, name=None):
-        """Set last translator information.
-
-        :param email: A string with the email address for last translator.
-        :param name: The name for the last translator or None.
-        """
-        # Nothing to do for this format.
-        return
 
 
 def add_source_comment(message, comment):
@@ -590,7 +540,7 @@ class MozillaXpiImporter:
     def _extract_install_rdf(self, archive, contained_files):
         if 'install.rdf' not in contained_files:
             raise TranslationFormatInvalidInputError("No install.rdf found")
-        return MozillaHeader(archive.read('install.rdf'))
+        return XpiHeader(archive.read('install.rdf'))
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
@@ -624,5 +574,5 @@ class MozillaXpiImporter:
 
     def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
-        return MozillaHeader(header_string)
+        return XpiHeader(header_string)
 
