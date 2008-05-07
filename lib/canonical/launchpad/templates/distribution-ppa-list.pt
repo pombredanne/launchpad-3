@@ -103,10 +103,10 @@
               <ul>
                 <li><tal:ppa_registered
                       replace="view/number_of_registered_ppas"
-                  >10</tal:ppa_registered> registered</li>
+                  >10</tal:ppa_registered> registered PPAs</li>
                 <li><tal:ppa_active
                       replace="view/number_of_active_ppas"
-                  >4</tal:ppa_active> active</li>
+                  >4</tal:ppa_active> active PPAs</li>
                 <li><tal:ppa_sources
                       replace="view/number_of_ppa_sources"
                   >20</tal:ppa_sources> published sources</li>

@@ -205,7 +205,7 @@ confirmation.
 
     >>> user_browser.contents.count(
     ...     'mailto:dark-master-o-bugs@mylittlepony.com')
-    4
+    3
 
 To evade harvesting, the email address above is obfuscated if you're
 not logged in.
