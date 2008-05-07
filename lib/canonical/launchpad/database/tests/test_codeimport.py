@@ -10,10 +10,10 @@ from zope.component import getUtility
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
 from canonical.launchpad.database.codeimportjob import (
-    CodeImportJob, CodeImportJobSet, CodeImportJobWorkflow)
+    CodeImportJob, CodeImportJobSet)
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
+    CodeImportJobState, CodeImportReviewStatus,
     IPersonSet, RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -203,8 +203,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
             CodeImportJobState.PENDING,
             self.code_import.import_job.state)
         # Have a machine claim the job.
-        machine = self.factory.makeCodeImportMachine(set_online=True)
-        job = CodeImportJobSet().getJobForMachine(machine)
+        job = CodeImportJobSet().getJobForMachine('machine')
         # Make sure we have the correct job.
         self.assertEqual(self.code_import.import_job, job)
         self.code_import.suspend({}, self.import_operator)
@@ -240,8 +239,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
             CodeImportJobState.PENDING,
             self.code_import.import_job.state)
         # Have a machine claim the job.
-        machine = self.factory.makeCodeImportMachine(set_online=True)
-        job = CodeImportJobSet().getJobForMachine(machine)
+        job = CodeImportJobSet().getJobForMachine('machine')
         # Make sure we have the correct job.
         self.assertEqual(self.code_import.import_job, job)
         self.code_import.invalidate({}, self.import_operator)
