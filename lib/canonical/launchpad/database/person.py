@@ -3150,18 +3150,17 @@ class PersonSet:
         SET personal_standing = %s
         WHERE personal_standing = %s
         AND id IN (
-            SELECT posted_by FROM (
-                SELECT posted_by,
-                       COUNT(DISTINCT mailing_list) as approved_count
-                FROM MessageApproval
-                WHERE status = %s
-                GROUP BY posted_by
-            ) AS ApprovedMessages
-            WHERE approved_count >= %s)
+            SELECT posted_by
+            FROM MessageApproval
+            WHERE status = %s
+            GROUP BY posted_by
+            HAVING COUNT(DISTINCT mailing_list) >= %s
+            )
         """ % sqlvalues(PersonalStanding.GOOD,
                         PersonalStanding.UNKNOWN,
                         PostedMessageStatus.APPROVED,
                         config.standingupdater.approvals_needed))
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'

@@ -73,7 +73,8 @@ are not a member of, their message gets held for moderator approval.
     ...         self.logger = MockLogger()
     ...         self.logger.setLevel(logging.CRITICAL)
     ...         results = super(TestableScript, self).main()
-    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...         LaunchpadZopelessLayer.switchDbUser(
+    ...             config.launchpad.dbuser)
     ...         return results
     >>> script = TestableScript('update-standing', test_args=[])
 
@@ -241,8 +242,11 @@ standing untouched.
     >>> mark.personal_standing = PersonalStanding.UNKNOWN
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> sync(lifeless)
+    >>> sync(carlos)
     >>> sync(mark)
     >>> lifeless.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...>
+    >>> carlos.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
