@@ -355,8 +355,7 @@ class XpiTestCase(unittest.TestCase):
 
         # access key is a special notation that is supposed to be
         # translated with a key shortcut.
-        self.assertEquals(
-            potmsgset.singular_text, u'M')
+        self.assertEquals(potmsgset.singular_text, u'M')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
