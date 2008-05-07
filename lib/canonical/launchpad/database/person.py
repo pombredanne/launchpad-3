@@ -1822,8 +1822,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         if email is None:
             if self.preferredemail is not None:
-                self.preferredemail.status = EmailAddressStatus.VALIDATED
-                self.preferredemail.syncUpdate()
+                email_address = self.preferredemail
+                email_address.status = EmailAddressStatus.VALIDATED
+                email_address.syncUpdate()
             self._preferredemail_cached = None
         else:
             self._setPreferredEmail(email)

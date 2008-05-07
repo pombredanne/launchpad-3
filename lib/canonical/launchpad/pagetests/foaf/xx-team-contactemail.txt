@@ -530,6 +530,12 @@ address.
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> stub.test_emails
     []
+    >>> import email
+    >>> msg = email.message_from_string(raw_msg)
+    >>> msg['From']
+    'Launchpad Email Validator <noreply@launchpad.net>'
+    >>> msg['Subject']
+    "Launchpad: Validate your team's contact email address"
 
     # Follow the token link, to confirm the new email address.
     >>> token_url = get_token_url_from_email(raw_msg)
