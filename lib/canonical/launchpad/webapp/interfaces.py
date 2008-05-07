@@ -84,10 +84,10 @@ class UnsafeFormGetSubmissionError(Exception):
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def iterlinks(requesturl=None):
+    def iterlinks(request_url=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
+        request_url, if it is not None, is a Url object that is used to
         decide whether a menu link points to the page being requested,
         in which case it will not be linked.
         """
@@ -104,10 +104,10 @@ class IMenuBase(IMenu):
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
-    def iterlinks(requesturl=None, selectedfacetname=None):
+    def iterlinks(request_url=None, selectedfacetname=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
+        request_url, if it is not None, is a Url object that is used to
         decide whether a menu link points to the page being requested,
         in which case it will not be linked.
 

@@ -20,12 +20,12 @@ __all__ = [
     ]
 
 import cgi
-from new import instancemethod
+import types
 
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
 from zope.component import getMultiAdapter, queryAdapter
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import isinstance as isinstance_, removeSecurityProxy
 
 from canonical.lazr import decorates
 
@@ -239,7 +239,7 @@ class MenuBase(UserAttributeCache):
         except KeyError:
             raise AssertionError('unknown site', site)
 
-    def iterlinks(self, requesturi=None):
+    def iterlinks(self, request_url=None):
         """See IMenu."""
         if not self._initialized:
             self.initialize()
@@ -299,8 +299,8 @@ class MenuBase(UserAttributeCache):
                         link.target)
 
             # Make the link unlinked if it is a link to the current page.
-            if requesturi is not None:
-                if requesturi.ensureSlash() == link.url.ensureSlash():
+            if request_url is not None:
+                if request_url.ensureSlash() == link.url.ensureSlash():
                     link.linked = False
 
             link.sort_key = idx
@@ -325,11 +325,11 @@ class FacetMenu(MenuBase):
         return IFacetLink(
             self._filterLink(name, MenuBase._get_link(self, name)))
 
-    def iterlinks(self, requesturi=None, selectedfacetname=None):
+    def iterlinks(self, request_url=None, selectedfacetname=None):
         """See IFacetMenu."""
         if selectedfacetname is None:
             selectedfacetname = self.defaultlink
-        for link in MenuBase.iterlinks(self, requesturi=requesturi):
+        for link in super(FacetMenu, self).iterlinks(request_url=request_url):
             if (selectedfacetname is not None and
                 selectedfacetname == link.name):
                 link.selected = True
@@ -363,47 +363,48 @@ class NavigationMenu(MenuBase):
         return IFacetLink(
             super(NavigationMenu, self)._get_link(name))
 
-    def iterlinks(self, requesturi=None, selectedfacetname=None):
+    def iterlinks(self, request_url=None, selectedfacetname=None):
         """See `INavigationMenu`.
 
         Menus may be associated with content objects and their views. The
-        state of a menu's links depends upon the requesturi (or the URL of
-        the request) and whether a menu associated with a link is available.
+        state of a menu's links depends upon the request_url (or the URL of
+        the request) and whether the current view's menu is the link's menu.
         """
         request = get_current_browser_request()
-        if requesturi is None:
-            requesturi = request.getURL()
+        submenu = self._get_current_menu(request)
+        if request_url is None:
+            request_url = request.getURL()
         else:
-            requesturi = str(requesturi)
+            request_url = str(request_url)
 
-        for link in MenuBase.iterlinks(self):
+        for link in super(NavigationMenu, self).iterlinks():
             link_url = str(link.url)
-            link.linked = not requesturi.startswith(link_url)
-            # A link is selected when the requestURI matches the link's URL
-            # or because the link's menu is available.
-            if (requesturi.startswith(link_url)
-                or self._is_submenu_available(link, request)):
-                link.selected = True
-            else:
-                link.selected = False
+            link.linked = not request_url.startswith(link_url)
+            # A link is selected when the request_url matches the link's URL
+            # or because the menu for the current view is the link's menu.
+            link.selected = (request_url.startswith(link_url)
+                             or self._is_link_menu(link, submenu))
             yield link
 
-    def _is_submenu_available(self, link, request):
-        """Return True if a link's menu is available, otherwise False.
+    def _get_current_menu(self, request):
+        """Return the menu associated with the current view, or None.
 
-        A link's menu is a submenu. The submenu is associates with a view.
-        A link is considered selected when the current view can be adapted
-        to the link's menu.
+        Menus associated with views are often submenus that belong to
+        links in the menu associated with the content object. A link
+        in a top-level menu is considered to be selected if the view's
+        menu is an instance of the link's menu
         """
         view = request.traversed_objects[-1]
         # Note: The last traversed object may be a view's instance method.
-        bare = removeSecurityProxy(view)
-        if isinstance(bare, instancemethod):
+        if isinstance_(view, types.MethodType):
+            bare = removeSecurityProxy(view)
             view = bare.im_self
-        submenu = queryAdapter(view, INavigationMenu)
-        if submenu is None:
-            return False
-        return isinstance(submenu, link.menu.__class__)
+        return queryAdapter(view, INavigationMenu)
+
+    def _is_link_menu(self, link, menu):
+        """Return True if menu is an instance of link's menu, otherwise False.
+        """
+        return (menu is not None and isinstance(menu, link.menu.__class__))
 
 
 class enabled_with_permission:

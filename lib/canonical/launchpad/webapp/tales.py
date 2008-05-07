@@ -92,6 +92,9 @@ class MenuAPI:
             # We get the context out of here, and use that for self.context.
             # We also want to see if the view has a __launchpad_facetname__
             # attribute.
+
+            # XXX sinzui 2008-05-06 bug=226952: Zope 3.4 will not adapt a
+            # dict to a view object. Templates must switch to 'view'.
             self._context = context['context']
             self.view = context['view']
             self._request = context['request']
@@ -133,7 +136,7 @@ class MenuAPI:
             return {}
 
         menu.request = self._request
-        links = list(menu.iterlinks(requesturi=self._requesturi()))
+        links = list(menu.iterlinks(request_url=self._request_url()))
         return dict((link.name, link) for link in links)
 
     def _nearest_menu(self, menutype):
@@ -142,20 +145,20 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
-    def _requesturi(self):
+    def _request_url(self):
         request = self._request
         if request is None:
             return None
-        requesturiobj = URI(request.getURL())
+        request_urlobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
-            requesturiobj = URI(request.getURL(1))
+        if request_urlobj.path.rstrip('/').endswith(defaultviewname):
+            request_urlobj = URI(request.getURL(1))
         query = request.get('QUERY_STRING')
         if query:
-            requesturiobj = requesturiobj.replace(query=query)
-        return requesturiobj
+            request_urlobj = request_urlobj.replace(query=query)
+        return request_urlobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -164,7 +167,7 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturi=self._requesturi(),
+                request_url=self._request_url(),
                 selectedfacetname=self._selectedfacetname))
 
     def selectedfacetname(self):
@@ -184,7 +187,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturi=self._requesturi()))
+            return list(menu.iterlinks(request_url=self._request_url()))
 
     @property
     def context(self):
@@ -193,21 +196,21 @@ class MenuAPI:
             return  {}
         else:
             menu.request = self._request
-            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(request_url=self._request_url()))
             return dict((link.name, link) for link in links)
 
     @property
     def navigation(self):
         """Navigation menu links list."""
-        # NavigationMenus may be associated with content object or their
-        # views. Views take precedence.
+        # NavigationMenus may be associated with a content object or one of
+        # its views. Views take precedence.
         context = self.view or self._context
         menu = INavigationMenu(context, None)
         if menu is None:
             return {}
         else:
             menu.request = self._request
-            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(request_url=self._request_url()))
             return dict((link.name, link) for link in links)
 
 
