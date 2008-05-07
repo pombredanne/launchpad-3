@@ -47,7 +47,7 @@ class TestSFTPServer(TestCaseInTempDir):
 
     def test_ServergetAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
-        self.assertEqual({}, self.sftp_server.getAttrs('foo'))
+        self.assertEqual({}, self.sftp_server.getAttrs('foo', False))
 
     def test_removeFile(self):
         self.build_tree_contents([('foo', 'bar')])

@@ -91,7 +91,7 @@ class TransportSFTPServer:
     def setAttrs(self, path, attrs):
         self.openFile(path, 0, {}).setAttrs(attrs)
 
-    def getAttrs(self, path):
+    def getAttrs(self, path, followLinks):
         return self.openFile(path, 0, {}).getAttrs()
 
     def gotVersion(self, otherVersion, extensionData):
