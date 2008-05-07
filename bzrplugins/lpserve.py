@@ -74,8 +74,10 @@ class cmd_launchpad_server(Command):
         from canonical.codehosting import transport
         hosted_transport = self._get_chrooted_transport(hosted_url)
         mirror_transport = self._get_chrooted_transport(mirror_url)
+        user_id = authserver.getUser(user_id)['id']
         lp_server = transport.LaunchpadServer(
-            authserver, user_id, hosted_transport, mirror_transport)
+            transport.BlockingProxy(authserver), user_id, hosted_transport,
+            mirror_transport)
         return lp_server
 
     def get_smart_server(self, transport, port, inet):

@@ -78,6 +78,7 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
+from canonical.twistedsupport import gatherResults
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
@@ -179,6 +180,15 @@ class InvalidOwnerDirectory(NotABranchPath):
             reason="Path must start with a user or team directory.")
 
 
+class BlockingProxy:
+
+    def __init__(self, proxy):
+        self._proxy = proxy
+
+    def callRemote(self, method_name, *args):
+        return getattr(self._proxy, method_name)(*args)
+
+
 class CachingAuthserverClient:
     """Wrapper for the authserver that caches responses for a particular user.
 
@@ -194,8 +204,7 @@ class CachingAuthserverClient:
     def __init__(self, authserver, user_id):
         """Construct a caching authserver.
 
-        :param authserver: A blocking XML-RPC proxy, usually an instance of
-            `xmlrpclib.ServerProxy`
+        :param authserver: An XML-RPC proxy that implements callRemote.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
         """
@@ -219,8 +228,8 @@ class CachingAuthserverClient:
         :return: The ID of the created branch.
         """
         deferred = defer.maybeDeferred(
-            self._authserver.createBranch, self._user_id, owner, product,
-            branch)
+            self._authserver.callRemote, 'createBranch', self._user_id,
+            owner, product, branch)
 
         def cb(branch_id):
             # Clear the cache for this branch. We *could* populate it with
@@ -260,8 +269,8 @@ class CachingAuthserverClient:
             deferred = defer.succeed(branch_info)
         else:
             deferred = defer.maybeDeferred(
-                self._authserver.getBranchInformation, self._user_id, owner,
-                product, branch)
+                self._authserver.callRemote, 'getBranchInformation',
+                self._user_id, owner, product, branch)
             def add_to_cache(branch_info):
                 self._branch_info_cache[
                     (owner, product, branch)] = branch_info
@@ -275,7 +284,8 @@ class CachingAuthserverClient:
         :param branch_id: The database ID of the branch.
         """
         return defer.maybeDeferred(
-            self._authserver.requestMirror, self._user_id, branch_id)
+            self._authserver.callRemote, 'requestMirror', self._user_id,
+            branch_id)
 
 
 class LaunchpadBranch:
@@ -473,9 +483,9 @@ class LaunchpadServer(Server):
                  mirror_transport):
         """Construct a LaunchpadServer.
 
-        :param authserver: An xmlrpclib.ServerProxy that points to the
-            authserver.
-        :param user_id: A login ID for the user who is accessing branches.
+        :param authserver: An XML-RPC client that implements callRemote.
+        :param user_id: The database ID for the user who is accessing
+            branches.
         :param hosting_transport: A Transport pointing to the root of where
             the branches are actually stored.
         :param mirror_transport: A Transport pointing to the root of where
@@ -484,7 +494,6 @@ class LaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
-        user_id = authserver.getUser(user_id)['id']
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._backing_transport = hosting_transport
         self._mirror_transport = get_transport(
@@ -545,7 +554,10 @@ class LaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        branch, path = self._getBranch(virtual_path)
+        try:
+            branch, path = self._getBranch(virtual_path)
+        except NotABranchPath:
+            return defer.fail(failure.Failure())
 
         deferred = branch.getRealPath(path)
 
@@ -722,7 +734,7 @@ class VirtualTransport(Transport):
     def rename(self, rel_from, rel_to):
         to_deferred = self._getUnderylingTransportAndPath(rel_to)
         from_deferred = self._getUnderylingTransportAndPath(rel_from)
-        deferred = defer.gatherResults([to_deferred, from_deferred])
+        deferred = gatherResults([to_deferred, from_deferred])
 
         def do_rename(((to_transport, to_path), (from_transport, from_path))):
             if to_transport is not from_transport:
@@ -762,14 +774,16 @@ class AsyncLaunchpadTransport(VirtualTransport):
         return deferred
 
     def _getUnderylingTransportAndPath(self, relpath):
-        try:
-            return VirtualTransport._getUnderylingTransportAndPath(
-                self, relpath)
-        except NotABranchPath, e:
+        deferred = VirtualTransport._getUnderylingTransportAndPath(
+            self, relpath)
+        def convert_failure(failure):
+            failure.trap(NotABranchPath)
             # If a virtual path doesn't point to a branch, then we cannot
             # translate it to an underlying transport. For almost all
             # purposes, this is as good as not existing at all.
-            return defer.fail(NoSuchFile(e.virtual_path, e.reason))
+            exception = failure.value
+            raise NoSuchFile(exception.virtual_path, exception.reason)
+        return deferred.addErrback(convert_failure)
 
     def mkdir(self, relpath, mode=None):
         # We hook into mkdir so that we can request the creation of a branch

@@ -31,7 +31,7 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, LaunchpadServer, set_up_logging,
+    AsyncLaunchpadTransport, BlockingProxy, LaunchpadServer, set_up_logging,
     VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
@@ -51,8 +51,8 @@ class LaunchpadServerTests:
         self.backing_transport = MemoryTransport()
         self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport,
-            self.mirror_transport)
+            BlockingProxy(self.authserver), self.user_id,
+            self.backing_transport, self.mirror_transport)
 
     def test_base_path_translation_1(self):
         # Branches are stored on the filesystem by branch ID. This allows
@@ -247,7 +247,8 @@ class LaunchpadTransportTests:
     def getServer(self, authserver, user_id, backing_transport,
                   mirror_transport):
         return LaunchpadServer(
-            authserver, user_id, backing_transport, mirror_transport)
+            BlockingProxy(authserver), user_id, backing_transport,
+            mirror_transport)
 
     def getTransport(self):
         raise NotImplementedError()
@@ -448,12 +449,17 @@ class LaunchpadTransportTests:
 
 class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
+    def assertRaises(self, exceptions, function, *args, **kwargs):
+        self.assertEqual(1, len(exceptions))
+        return TrialTestCase.assertRaises(self, exceptions[0], function, *args,
+                                          **kwargs)
+
     def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
         """Assert that calling function(*args, **kw) fails in a certain way.
 
         This method is like assertRaises() but in addition checks that 'msg'
         is a substring of the str() of the raise exception."""
-        exception = self.assertRaises(exc_type, function, *args, **kw)
+        exception = self.assertRaises((exc_type,), function, *args, **kw)
         self.assertIn(msg, str(exception))
 
     def _ensureDeferred(self, function, *args, **kwargs):
@@ -551,7 +557,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         server = LaunchpadServer(
-            self.authserver, self.user_id, backing_transport,
+            BlockingProxy(self.authserver), self.user_id, backing_transport,
             mirror_transport)
         server.setUp()
         self.addCleanup(server.tearDown)
