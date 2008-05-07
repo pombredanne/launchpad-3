@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'ICodeImportMachine',
-    'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
@@ -85,6 +84,20 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
 class ICodeImportMachine(Interface):
     """A machine that can perform imports."""
 
+    id = Int(readonly=True, required=True)
+
+    state = Choice(
+        title=_('State'), required=True, vocabulary=CodeImportMachineState,
+        default=CodeImportMachineState.OFFLINE,
+        description=_("The state of the controller daemon on this machine."))
+
+    hostname = TextLine(
+        title=_('Host name'), required=True,
+        description=_('The hostname of the machine.'))
+
+    current_jobs = Attribute(
+        'The current jobs that the machine is processing.')
+
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
@@ -115,30 +128,6 @@ class ICodeImportMachine(Interface):
         :param user: `Person` that requested the machine to quiesce.
         :param message: User-provided message.
         """
-
-
-class ICodeImportMachinePublic(Interface):
-    """Parts of the CodeImportMachine interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated."""
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
-
-    id = Int(readonly=True, required=True)
-
-    state = Choice(
-        title=_('State'), required=True, vocabulary=CodeImportMachineState,
-        default=CodeImportMachineState.OFFLINE,
-        description=_("The state of the controller daemon on this machine."))
-
-    hostname = TextLine(
-        title=_('Host name'), required=True,
-        description=_('The hostname of the machine.'))
-
-    current_jobs = Attribute(
-        'The current jobs that the machine is processing.')
 
 
 class ICodeImportMachineSet(Interface):

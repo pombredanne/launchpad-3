@@ -92,13 +92,6 @@
         permission="launchpad.AnyPerson"
         />
 
-    <browser:page
-        for="canonical.launchpad.interfaces.ICodeImportSet"
-        class="canonical.launchpad.browser.CodeImportMachineView"
-        name="+machines"
-        template="../templates/codeimport-machines.pt"
-        permission="launchpad.AnyPerson"
-        />
   </facet>
 
 </configure>

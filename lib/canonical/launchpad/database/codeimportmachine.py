@@ -21,7 +21,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportMachineState, ICodeImportEventSet, ICodeImportMachine,
-    ICodeImportMachinePublic, ICodeImportMachineSet)
+    ICodeImportMachineSet)
 
 
 class CodeImportMachine(SQLBase):
@@ -29,7 +29,7 @@ class CodeImportMachine(SQLBase):
 
     _defaultOrder = ['hostname']
 
-    implements(ICodeImportMachine, ICodeImportMachinePublic)
+    implements(ICodeImportMachine)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
