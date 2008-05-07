@@ -8,7 +8,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IArchive, IBazaarApplication, IBranch,
+    ArchivePurpose, IAnnouncement, IArchive, IBazaarApplication, IBranch,
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
@@ -1134,6 +1134,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
     def checkAuthenticated(self, user):
+        """Allow only BuilddAdmins and PPA owner."""
+        if self.obj.archive.purpose == ArchivePurpose.PPA:
+            return self._ppaCheckAuthenticated(user)
+
+        # This is the component of the build instance on hand.
+        required_component = self.obj.current_component.name
+
+        # This is the set of components to which the user in question
+        # is authorised to upload.
+        allowed_components = set(
+            acl.component.name for acl in
+            self.obj.distroarchseries.distroseries.distribution.uploaders
+            if user in acl)
+        return required_component in allowed_components
+
+    def _ppaCheckAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True

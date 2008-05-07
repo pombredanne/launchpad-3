@@ -119,6 +119,27 @@ Even if accessed with a manually typed URL it will result in a error.
     ...
     Unauthorized: ...
 
+Users who have upload permissions for the respective distribution/pocket
+(but are not a member of an admin team) are allowed to retry the build.
+
+    >>> uploader_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> uploader_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> uploader_browser.getLink("Retry build").click()
+
+An unprivileged user (not a member of any team) has no access to the
+rebuild link however.
+
+    >>> noteam_browser = setupBrowser(
+    ...     auth="Basic no-team-memberships@test.com:test")
+    >>> noteam_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> noteam_browser.getLink("Retry build")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 When the user has permission (buildd-admin, admin or the source
 uploader) the link to 'retry' the build is presented in the Action
 menu.
