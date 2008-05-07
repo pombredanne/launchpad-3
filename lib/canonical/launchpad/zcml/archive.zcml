@@ -14,14 +14,15 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="authorized_size buildd_secret distribution enabled private purpose"
+      set_attributes="authorized_size buildd_secret distribution enabled
+                      private purpose require_virtualized"
       />
   </content>
 
   <adapter
       for="canonical.launchpad.interfaces.IArchive"
       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-      factory="canonical.launchpad.browser.archive_to_structualheading"
+      factory="canonical.launchpad.browser.archive_to_structuralheading"
       />
 
   <adapter

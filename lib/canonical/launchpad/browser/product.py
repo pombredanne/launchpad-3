@@ -54,7 +54,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatusFilter, BranchListingSort,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
     ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -380,15 +380,15 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
+    def bugsupervisor(self):
         text = 'Change bug supervisor'
-        return Link('+bugcontact', text, icon='edit')
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
@@ -920,10 +920,10 @@ class ProductReviewView(ProductEditView):
                    "private_bugs", "reviewer_whiteboard"]
 
     def validate(self, data):
-        if data.get('private_bugs') and self.context.bugcontact is None:
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
             self.setFieldError('private_bugs',
                 structured(
-                    'Set a <a href="%s/+bugcontact">bug supervisor</a> '
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
@@ -1366,8 +1366,27 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # XXX: thumper 2008-04-22
         # When bug 181157 is fixed, only get branches for non-obsolete
         # series.
-        return [series.series_branch for series in self.sorted_series_list
-                if series.series_branch is not None]
+
+        # We want to show each series branch only once, always show the
+        # development focus branch, no matter what's it lifecycle status, and
+        # skip subsequent series where the lifecycle status is Merged or
+        # Abandoned
+        sorted_series = self.sorted_series_list
+        IGNORE_STATUS = (
+            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        # The series will always have at least one series, that of the
+        # development focus.
+        dev_focus_branch = sorted_series[0].series_branch
+        result = []
+        if dev_focus_branch is not None:
+            result.append(dev_focus_branch)
+        for series in sorted_series[1:]:
+            branch = series.series_branch
+            if (branch is not None and
+                branch not in result and
+                branch.lifecycle_status not in IGNORE_STATUS):
+                result.append(branch)
+        return result
 
     @cachedproperty
     def initial_branches(self):
@@ -1402,6 +1421,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def unseen_branch_count(self):
         """How many branches are not shown."""
         return self.branch_count - len(self.initial_branches)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """See `BranchListingView`."""
+        return self.branch_count > 0
 
     @property
     def has_development_focus_branch(self):

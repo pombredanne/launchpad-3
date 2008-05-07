@@ -179,11 +179,11 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create the document root to avoid Apache warnings
-mkdir -p /var/tmp/sm-ng/mirrors
+mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors
 
 # Create an empty rewritemap file so that Apache will start.
-mkdir -p /var/tmp/sm-ng/config
-touch /var/tmp/sm-ng/config/launchpad-lookup.txt
+mkdir -p /var/tmp/bazaar.launchpad.dev/config
+touch /var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
 
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then

@@ -249,15 +249,15 @@ Unassigned, and In Progress bug lists.
 A helper method is used to calculate the package bug search URL for the
 "My other packages" portlet:
 
-    >>> packagebugs_search_view.getBugContactPackageSearchURL(
+    >>> packagebugs_search_view.getBugSubscriberPackageSearchURL(
     ...     ubuntu_mozilla_firefox)
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
-There's also a getBugContactPackageAdvancedSearchURL method. If called
+There's also a getBugSubscriberPackageAdvancedSearchURL method. If called
 without a package argument, it defaults to the "current package", found
 by looking in the request.
 
-    >>> packagebugs_search_view.getBugContactPackageAdvancedSearchURL()
+    >>> packagebugs_search_view.getBugSubscriberPackageAdvancedSearchURL()
     u'.../~name12/+packagebugs-search?advanced=1&field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
 
 Finally, there is a helper method that returns a list of dicts used to

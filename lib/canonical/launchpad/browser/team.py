@@ -1,7 +1,6 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 __metaclass__ = type
-
 __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
@@ -11,9 +10,12 @@ __all__ = [
     'TeamContactAddressView',
     'TeamEditView',
     'TeamMailingListConfigurationView',
+    'TeamMailingListModerationView',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
+
+from urllib import quote
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -41,8 +43,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus,
-    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
+    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
+    PostedMessageStatus, TeamContactMethod, TeamMembershipStatus,
     TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -592,6 +594,76 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         return self.getListInState(MailingListStatus.INACTIVE) is not None
 
 
+class TeamMailingListModerationView(MailingListTeamBaseView):
+    """A view for moderating the held messages of a mailing list."""
+
+    schema = Interface
+    label = 'Mailing list moderation'
+
+    def __init__(self, context, request):
+        """Allow for review and moderation of held mailing list posts."""
+        super(TeamMailingListModerationView, self).__init__(context, request)
+        list_set = getUtility(IMailingListSet)
+        self.mailing_list = list_set.get(self.context.name)
+        assert(self.mailing_list is not None), (
+            'No mailing list: %s' % self.context.name)
+
+    @property
+    def hold_count(self):
+        """The number of message being held for moderator approval.
+
+        :return: Number of message being held for moderator approval.
+        """
+        return self.mailing_list.getReviewableMessages().count()
+
+    @property
+    def held_messages(self):
+        """All the messages being held for moderator approval.
+
+        :return: Sequence of held messages.
+        """
+        return self.mailing_list.getReviewableMessages()
+
+    @action('Moderate', name='moderate')
+    def moderate_action(self, action, data):
+        """Commits the moderation actions."""
+        # We're somewhat abusing LaunchpadFormView, so the interesting bits
+        # won't be in data.  Instead, get it out of the request.
+        reviewable = self.hold_count
+        disposed_count = 0
+        for message in self.held_messages:
+            action_name = self.request.form_ng.getOne(
+                'field.' + quote(message.message_id))
+            # This essentially acts like a switch statement or if/elifs.  It
+            # looks the action up in a map of allowed actions, watching out
+            # for bogus input.
+            try:
+                action, status = dict(
+                    approve=(message.approve, PostedMessageStatus.APPROVED),
+                    reject=(message.reject, PostedMessageStatus.REJECTED),
+                    discard=(message.discard, PostedMessageStatus.DISCARDED),
+                    # hold is a no-op.  Using None here avoids the bogus input
+                    # trigger.
+                    hold=(None, None),
+                    )[action_name]
+            except KeyError:
+                raise UnexpectedFormData(
+                    'Invalid moderation action for held message %s: %s' %
+                    (message.message_id, action_name))
+            if action is not None:
+                disposed_count += 1
+                action(self.user)
+                self.request.response.addInfoNotification(
+                    'Held message %s; Message-ID: %s' % (
+                        status.title.lower(), message.message_id))
+        still_held = reviewable - disposed_count
+        if still_held > 0:
+            self.request.response.addInfoNotification(
+                'Messages still held for review: %d of %d' %
+                (still_held, reviewable))
+        self.next_url = canonical_url(self.context)
+
+
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation
@@ -725,4 +797,3 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
-

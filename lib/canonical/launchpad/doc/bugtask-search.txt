@@ -20,16 +20,16 @@ method accepts a single parameter; an BugTaskSearchParams instance.
 
 == Searching by bug supervisor ==
 
-The 'bug_contact' parameter allows you to search bugtasks that a certain
+The 'bug_supervisor' parameter allows you to search bugtasks that a certain
 person is responsible for. A person can be a bug supervisor for a product,
 a distribution, or a distribution source package. No Privileges Person
 isn't a bug supervisor, so no bugs are found for him:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv_bug_contact = BugTaskSearchParams(
-    ...     user=None, bug_contact=no_priv)
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> no_priv_bug_supervisor = BugTaskSearchParams(
+    ...     user=None, bug_supervisor=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count()
     0
 
@@ -81,15 +81,15 @@ and also series-targeted bugs:
 
 === Product bug supervisor ===
 
-If No Privileges is specified as Firefox' bug contact, searching for his
+If No Privileges is specified as Firefox' bug supervisor, searching for his
 bugs return all of Firefox' bugs.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> firefox.setBugContact(no_priv, no_priv)
+    >>> firefox.setBugSupervisor(no_priv, no_priv)
     >>> syncUpdate(firefox)
 
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count()
     True
 
@@ -112,9 +112,9 @@ twice.
     >>> ubuntu_bugs.count() > 0
     True
 
-    >>> ubuntu.setBugContact(no_priv, no_priv)
+    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
     >>> syncUpdate(ubuntu)
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
 
