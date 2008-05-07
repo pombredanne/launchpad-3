@@ -12,8 +12,8 @@ __all__ = [
     'License',
     ]
 
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Datetime, Int, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -79,6 +79,8 @@ class License(DBEnumeratedType):
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
+# XXX: BradCrittenden 2008-05-07 bug=n/a: This interface should move to it's
+# own module.
 
 class ICommercialSubscription(Interface):
     """A Commercial Subscription for a Product.
@@ -88,21 +90,21 @@ class ICommercialSubscription(Interface):
     """
     product = Attribute("Product which has commercial subscription")
 
-    date_created = TextLine(
+    date_created = Datetime(
         title=_('Date Created'),
-        description=_("""The date the first subscription was applied."""))
+        description=_("The date the first subscription was applied."))
 
-    date_last_modified = TextLine(
+    date_last_modified = Datetime(
         title=_('Date Modified'),
-        description=_("""The date the subscription was modified."""))
+        description=_("The date the subscription was modified."))
 
-    date_starts = TextLine(
+    date_starts = Datetime(
         title=_('Beginning of Subscription'),
-        description=_("""The date the subscription starts."""))
+        description=_("The date the subscription starts."))
 
-    date_expires= TextLine(
+    date_expires= Datetime(
         title=_('Expiration Date'),
-        description=_("""The expiration date of the subscription."""))
+        description=_("The expiration date of the subscription."))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'),
@@ -118,7 +120,7 @@ class ICommercialSubscription(Interface):
 
     sales_system_id = TextLine(
         title=_('Voucher'),
-        description=_("""Code to redeem subscription."""))
+        description=_("Code to redeem subscription."))
 
     whiteboard = Text(
         title=_("Whiteboard"), required=False,
@@ -298,7 +300,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     reviewer_whiteboard = Text(
         title=_('Notes for the project reviewer'),
-        required=False, 
+        required=False,
         description=_(
             "Notes on the project, viewable only by reviewers "
             "(administrators and registry experts)."))
@@ -381,8 +383,18 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         code of a subscription.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
-                                  whiteboard=None):
-        """Verify a voucher and extend the subscription expiration date."""
+                                  subscription_months, whiteboard=None):
+        """Redeem a voucher and extend the subscription expiration date.
+
+        The voucher must have already been verified to be redeemable.
+        :param voucher: The voucher id as tracked in the external system.
+        :param registrant: Who is redeeming the voucher.
+        :param purchaser: Who purchased the voucher.  May not be known.
+        :param subscription_months: integer indicating the number of months
+            the voucher is for.
+        :param whiteboard: Notes for this activity.
+        :return: None
+        """
 
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
@@ -524,4 +536,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-

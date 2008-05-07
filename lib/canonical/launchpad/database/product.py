@@ -168,12 +168,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CommercialSubscription.selectOneBy(product=self)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
-                                  whiteboard=None):
+                                  subscription_months, whiteboard=None):
         """See `IProduct`."""
+
+        def add_months(start, num_months):
+            """Given a start date find the new date num_months' later."""
+            years, months = divmod(num_months, 12)
+            days = int((months / 12.0) * 365)
+
+            newdate = start.replace(year=start.year + years)
+            return newdate + datetime.timedelta(days)
+
+        now = datetime.datetime.now(pytz.timezone('UTC'))
         if self.commercial_subscription is None:
-            date_starts = UTC_NOW
-            # date_expires is 1 year after date_starts.
-            date_expires = date_starts + datetime.timedelta(366)
+            date_starts = now #UTC_NOW
+            date_expires = add_months(date_starts, subscription_months)
             subscription = CommercialSubscription(
                 product=self,
                 date_starts=date_starts,
@@ -184,17 +193,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 whiteboard=whiteboard)
             self._commercial_subscription_cached = subscription
         else:
-            now = datetime.datetime.now(pytz.timezone('UTC'))
             if (now <= self.commercial_subscription.date_expires):
                 # Extend current subscription.
                 self.commercial_subscription.date_expires = (
-                    self.commercial_subscription.date_expires
-                    + datetime.timedelta(366))
+                    add_months(self.commercial_subscription.date_expires,
+                               subscription_months))
             else:
-                self.commercial_subscription.date_starts = UTC_NOW
-                # date_expires is 1 year after date_starts.
+                self.commercial_subscription.date_starts = now
                 self.commercial_subscription.date_expires = (
-                    date_starts + datetime.timedelta(366))
+                    add_months(date_starts, subscription_months))
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
@@ -225,7 +232,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """Get the licenses as a tuple."""
         return tuple(
             product_license.license
-            for product_license 
+            for product_license
                 in ProductLicense.selectBy(product=self, orderBy='license'))
 
     def _setLicenses(self, licenses):
@@ -247,7 +254,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise AssertionError("%s is not a License" % license)
 
         for license in old_licenses.difference(licenses):
-            product_license = ProductLicense.selectOneBy(product=self, 
+            product_license = ProductLicense.selectOneBy(product=self,
                                                          license=license)
             product_license.destroySelf()
 

@@ -23,7 +23,7 @@ attribute is correct.
     >>> owner = bzr.owner
     >>> owner.isTeam()
     False
-    >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 'notes')
+    >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12, 'notes')
     >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)
     True
     >>> print bzr.commercial_subscription.product.name
@@ -36,11 +36,29 @@ Now extend the expiration date.
     >>> import datetime
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 'notes')
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12, 'notes')
     >>> print bzr.commercial_subscription.sales_system_id
     foo456
-    >>> bzr.commercial_subscription.date_starts == old_date_starts
-    True
-    >>> year = datetime.timedelta(366)
-    >>> bzr.commercial_subscription.date_expires == (old_date_expires + year)
-    True
+    >>> assert (bzr.commercial_subscription.date_starts ==
+    ...     old_date_starts), "Start date changed when it should not have."
+    >>> expiry_diff = (bzr.commercial_subscription.date_expires -
+    ...                old_date_expires)
+    >>> # Account for leap years.
+    >>> assert (expiry_diff == datetime.timedelta(365) or
+    ...         expiry_diff == datetime.timedelta(366)), (
+    ...         "Unexpected expiration.")
+
+A voucher can be redeemed for any number of months (as directed by the
+Salesforce proxy).
+
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> old_date_starts = bzr.commercial_subscription.date_starts
+    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 1, 'notes')
+    >>> print bzr.commercial_subscription.sales_system_id
+    foo457
+    >>> assert (bzr.commercial_subscription.date_starts ==
+    ...     old_date_starts), "Start date changed when it should not have."
+    >>> expiry_diff = (bzr.commercial_subscription.date_expires -
+    ...                old_date_expires)
+    >>> assert expiry_diff == datetime.timedelta(30), (
+    ...        "Unexpected expiration.")
