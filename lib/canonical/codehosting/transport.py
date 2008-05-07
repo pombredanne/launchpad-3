@@ -45,6 +45,7 @@ branch if appropriate.
 
 __metaclass__ = type
 __all__ = [
+    'AsyncLaunchpadTransport',
     'LaunchpadServer',
     'LaunchpadTransport',
     'set_up_logging',

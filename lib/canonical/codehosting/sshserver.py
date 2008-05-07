@@ -153,18 +153,6 @@ class LaunchpadAvatar(avatar.ConchUser):
         return FileSystem(SFTPServerRoot(self))
 
 
-# XXX Andrew Bennetts 2007-01-26: This is nasty.  We want a filesystem per
-# SFTP session, not per avatar, so we let the standard adapter grab a per
-# avatar object, and immediately override with the one we want it to use.
-class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
-    def __init__(self, avatar):
-        sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
-        self.filesystem = avatar.makeFileSystem()
-
-
-components.registerAdapter(AdaptFileSystemUserToISFTP, LaunchpadAvatar,
-                           filetransfer.ISFTPServer)
-
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
 
 
