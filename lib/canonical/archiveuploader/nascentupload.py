@@ -189,11 +189,8 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.getAutoAcceptedComponents()
-        if not self.is_new:
-            # check rights for OLD packages, the NEW ones goes
-            # straight to queue
-            self.verify_acl(signer_components)
+        # Check upload rights for the signer of the upload.
+        self.verify_acl()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -487,33 +484,33 @@ class NascentUpload:
 
         return possible_components
 
-    def is_person_in_keyring(self, person):
-        """Return whether or not the specified person is in the keyring."""
-        self.logger.debug("Attempting to decide if %s is in the keyring." % (
-            person.displayname))
-        in_keyring = len(self._components_valid_for(person)) > 0
-        self.logger.debug("Decision: %s" % in_keyring)
-        return in_keyring
+    def verify_acl(self):
+        """Check the signer's upload rights.
 
-    def getAutoAcceptedComponents(self):
-        """Check rights of the current upload submmiter.
-
-        Work out what components the signer is permitted to upload to and
-        verify that all files are either NEW or are targetted at those
-        components only for normal distribution uploads.
-
-        Ensure the signer is the onwer of the targeted archive for PPA
-        uploads.
+        The signer must have permission to upload to either the component
+        or the explicit source package, or in the case of a PPA must own
+        it or be in the owning team.
         """
-        # If we have no signer, there's no ACL we can apply
+        # If we have no signer, there's no ACL we can apply.
         if self.changes.signer is None:
             self.logger.debug("No signer, therefore ACL not processed")
             return
 
-        # verify PPA uploads
+        # Verify PPA uploads.
         if self.is_ppa:
+            self.logger.debug("Do verify signer ACL for PPA")
             if not self.changes.signer.inTeam(self.policy.archive.owner):
                 self.reject("Signer has no upload rights to this PPA")
+            return
+
+        # New packages go straight to the upload queue; we only check upload
+        # rights for old packages.
+        if not self.is_new:
+            return
+
+        if self.changes.signer is None:
+            self.logger.debug(
+                "No signer, therefore no point verifying signer against ACL")
             return
 
         possible_components = self._components_valid_for(self.changes.signer)
@@ -522,28 +519,13 @@ class NascentUpload:
             self.reject(
                 "Signer has no upload rights at all to this distribution.")
 
-        return possible_components
-
-    def verify_acl(self, signer_components):
-        """Verify that the uploaded files are okay for their named components
-        by the provided signer.
-        """
-        if self.is_ppa:
-            self.logger.debug("Do verify signer ACL for PPA")
-            return
-
-        if self.changes.signer is None:
-            self.logger.debug(
-                "No signer, therefore no point verifying signer against ACL")
-            return
-
         for uploaded_file in self.changes.files:
             if not isinstance(uploaded_file, (DSCFile, BaseBinaryUploadFile)):
                 # The only things that matter here are sources and
                 # binaries, because they are the only objects that get
                 # overridden and created in the database.
                 continue
-            if (uploaded_file.component_name not in signer_components and
+            if (uploaded_file.component_name not in possible_components and
                 uploaded_file.new == False):
                 self.reject(
                     "Signer is not permitted to upload to the component "
