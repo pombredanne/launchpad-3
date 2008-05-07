@@ -27,6 +27,18 @@ from canonical.launchpad.translationformat.xpi_manifest import (
 from canonical.librarian.interfaces import ILibrarianClient
 
 
+def get_file_suffix(path_in_zip):
+    """Given a full file path inside a zip archive, return filename suffix.
+
+    :param path_in_zip: Full file path inside a zip archive, e.g.
+        "foo/bar.dtd".
+    :return: Filename suffix, or empty string if none found.  For example,
+        "foo/bar.dtd" results in ".dtd".
+    """
+    root, ext = splitext(path_in_zip)
+    return ext
+
+
 class MozillaHeader:
     implements(ITranslationHeaderData)
 
@@ -106,55 +118,15 @@ class MozillaZipFile:
         self.header = None
         self.messages = []
         self.last_translator = None
+        self.manifest = manifest
+        self.archive = ZipFile(StringIO(content), 'r')
 
-        archive = ZipFile(StringIO(content), 'r')
-        for entry in sorted(archive.namelist()):
-
-            # We're only interested in this file if its name ends with one of
-            # these dot suffixes.
-            root, suffix = splitext(entry)
-            if suffix not in ['.jar', '.dtd', '.properties']:
-                continue
-
-            if suffix == '.jar':
-                subpath = make_jarpath(xpi_path, entry)
-            else:
-                subpath = "%s/%s" % (xpi_path, entry)
-
-            # If we have a manifest, we skip anything that it doesn't list as
-            # having something useful for us.
-            if manifest is None:
-                chrome_path = None
-            else:
-                if suffix == '.jar':
-                    if not manifest.containsLocales(subpath):
-                        # Jar file contains no directories with locale files.
-                        continue
-                else:
-                    chrome_path, locale = manifest.getChromePathAndLocale(
-                        subpath)
-                    if chrome_path is None:
-                        # File is not in a directory containing locale files.
-                        continue
-
-            # Go ahead, parse!
-            data = archive.read(entry)
-
-            if suffix == '.jar':
-                parsed_file = MozillaZipFile(filename=entry,
-                    xpi_path=subpath, content=data, manifest=manifest)
-            elif suffix == '.dtd':
-                parsed_file = DtdFile(filename=entry, chrome_path=chrome_path,
-                    content=data)
-            elif suffix == '.properties':
-                parsed_file = PropertyFile(filename=entry,
-                    chrome_path=chrome_path, content=data)
-            else:
-                raise AssertionError(
-                    "Unexpected filename suffix: %s." % suffix)
-
-            # Take messages from parsed file.
-            self.extend(parsed_file.messages)
+        # Process zipped files.  Sort by path to keep ordering deterministic.
+        # Ordering matters in sequence numbering (which in turn shows up in
+        # the UI), but also for consistency in duplicates resolution and for
+        # automated testing.
+        for entry in sorted(self.archive.namelist()):
+            self._processEntry(entry, xpi_path)
 
         # Eliminate duplicate messages.
         seen_messages = set()
@@ -168,6 +140,74 @@ class MozillaZipFile:
                 seen_messages.add(identifier)
         for index in reversed(deletions):
             del self.messages[index]
+
+    def _processEntry(self, entry, xpi_path):
+        """Parse given entry in zip file, if it's relevant.
+
+        To be relevant, `entry` must have a filename suffix of .jar,
+        .dtd., or .properties.
+        """
+        suffix = get_file_suffix(entry)
+        if suffix not in ('.jar', '.dtd', '.properties'):
+            return
+
+        if suffix == '.jar':
+            subpath = make_jarpath(xpi_path, entry)
+        else:
+            subpath = "%s/%s" % (xpi_path, entry)
+
+        # If we have a manifest, we only read files listed there as having
+        # something useful for us and skip the rest.  If we don't have a
+        # manifest, we just read the whole archive.
+        if self.manifest is None:
+            chrome_path = None
+        else:
+            if suffix == '.jar':
+                chrome_path = None
+                if not self.manifest.containsLocales(subpath):
+                    # Jar file contains no directories with locale files.
+                    return
+            else:
+                chrome_path, locale = self.manifest.getChromePathAndLocale(
+                    subpath)
+                if chrome_path is None:
+                    # File is not in a directory containing locale files.
+                    return
+
+        # Parse file, subsume its messages.
+        parsed_file = self._parseFile(entry, subpath, chrome_path)
+        self.extend(parsed_file.messages)
+
+    def _parseFile(self, entry, subpath, chrome_path):
+        """Read file `entry` from zip file `archive`, and parse it.
+
+        :param entry: name of file within our zip archive, including
+            full path relative to the archive's root directory.
+        :param subpath: file's path inside overall XPI file.  Used to figure
+            out paths inside jar files.
+        :param chrome_path: file's chrome path within the XPI file.
+
+        :return: object representing a parsed DTD, properties, or jar
+            file.  It will have a "messages" attribute containing a list
+            of `TranslationMessageData` objects read from the file.
+        """
+        data = self.archive.read(entry)
+        suffix = get_file_suffix(entry)
+
+        if suffix == '.jar':
+            parsed_file = MozillaZipFile(filename=entry, xpi_path=subpath,
+                content=data, manifest=self.manifest)
+        elif suffix == '.dtd':
+            parsed_file = DtdFile(
+                filename=entry, chrome_path=chrome_path, content=data)
+        elif suffix == '.properties':
+            parsed_file = PropertyFile(
+                filename=entry, chrome_path=chrome_path, content=data)
+        else:
+            raise AssertionError(
+                "Unexpected filename suffix: %s." % suffix)
+
+        return parsed_file
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""
