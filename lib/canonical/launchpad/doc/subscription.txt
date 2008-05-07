@@ -1,0 +1,46 @@
+= Commercial Subscriptions =
+
+The CommercialSubscription class is used to track whether a project,
+which does not qualify for free hosting, has an unexpired subscription.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICommercialSubscription, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> login(ANONYMOUS)
+
+Check that the subscription is None.
+
+    >>> product_set = getUtility(IProductSet)
+    >>> bzr = product_set.getByName('bzr')
+    >>> print bzr.commercial_subscription
+    None
+
+Now redeem a voucher, and check that the commercial_subscription
+attribute is correct.
+
+    >>> owner = bzr.owner
+    >>> owner.isTeam()
+    False
+    >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 'notes')
+    >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)
+    True
+    >>> print bzr.commercial_subscription.product.name
+    bzr
+    >>> print bzr.commercial_subscription.sales_system_id
+    asdf123
+
+Now extend the expiration date.
+
+    >>> import datetime
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> old_date_starts = bzr.commercial_subscription.date_starts
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 'notes')
+    >>> print bzr.commercial_subscription.sales_system_id
+    foo456
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
+    >>> year = datetime.timedelta(366)
+    >>> bzr.commercial_subscription.date_expires == (old_date_expires + year)
+    True

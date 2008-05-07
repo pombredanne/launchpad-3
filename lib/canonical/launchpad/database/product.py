@@ -8,6 +8,8 @@ __all__ = ['Product', 'ProductSet']
 
 
 import operator
+import datetime
+import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -26,6 +28,8 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.commercialsubscription import (
+    CommercialSubscription)
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -156,6 +160,66 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bug_reporting_guidelines = StringCol(default=None)
 
     license_info = StringCol(dbName='license_info', default=None)
+    license_approved = BoolCol(dbName='license_approved',
+                               notNull=True, default=False)
+
+    @cachedproperty('_commercial_subscription_cached')
+    def commercial_subscription(self):
+        return CommercialSubscription.selectOneBy(product=self)
+
+    def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
+                                  whiteboard=None):
+        """See `IProduct`."""
+        if self.commercial_subscription is None:
+            date_starts = UTC_NOW
+            # date_expires is 1 year after date_starts.
+            date_expires = date_starts + datetime.timedelta(366)
+            subscription = CommercialSubscription(
+                product=self,
+                date_starts=date_starts,
+                date_expires=date_expires,
+                registrant=registrant,
+                purchaser=purchaser,
+                sales_system_id=voucher,
+                whiteboard=whiteboard)
+            self._commercial_subscription_cached = subscription
+        else:
+            now = datetime.datetime.now(pytz.timezone('UTC'))
+            if (now <= self.commercial_subscription.date_expires):
+                # Extend current subscription.
+                self.commercial_subscription.date_expires = (
+                    self.commercial_subscription.date_expires
+                    + datetime.timedelta(366))
+            else:
+                self.commercial_subscription.date_starts = UTC_NOW
+                # date_expires is 1 year after date_starts.
+                self.commercial_subscription.date_expires = (
+                    date_starts + datetime.timedelta(366))
+            self.commercial_subscription.sales_system_id = voucher
+            self.commercial_subscription.registrant = registrant
+            self.commercial_subscription.purchaser = purchaser
+
+    @property
+    def requires_commercial_subscription(self):
+        other_licenses = (License.OTHER_COMMERCIAL, License.OTHER_OPEN_SOURCE)
+        if self.license_approved:
+            # The license was manually approved for free hosting.
+            return False
+        elif (len(self.licenses) > 0 and self.license_info == ''
+              and not self.licenses.intersection(other_licenses)):
+            # The project has a valid open source license.
+            return False
+        else:
+            return True
+
+    @property
+    def is_permitted(self):
+        if not self.requires_commercial_subscription:
+            # The project qualifies for free hosting.
+            return True
+        else:
+            # The project has an active commmercial subscription.
+            return getattr(self.commercial_subscription, 'is_active', False)
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ICommercialSubscription',
     'IProduct',
     'IProductSet',
     'License',
@@ -77,6 +78,51 @@ class License(DBEnumeratedType):
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
+
+
+class ICommercialSubscription(Interface):
+    """A Commercial Subscription for a Product.
+
+    If the product has a license which does not qualify for free
+    hosting, a subscription needs to be purchased.
+    """
+    product = Attribute("Product which has commercial subscription")
+
+    date_created = TextLine(
+        title=_('Date Created'),
+        description=_("""The date the first subscription was applied."""))
+
+    date_last_modified = TextLine(
+        title=_('Date Modified'),
+        description=_("""The date the subscription was modified."""))
+
+    date_starts = TextLine(
+        title=_('Beginning of Subscription'),
+        description=_("""The date the subscription starts."""))
+
+    date_expires= TextLine(
+        title=_('Expiration Date'),
+        description=_("""The expiration date of the subscription."""))
+
+    registrant = PublicPersonChoice(
+        title=_('Registrant'),
+        required=True,
+        vocabulary='ValidPerson',
+        description=_("Person who redeemed the voucher."))
+
+    purchaser = PublicPersonChoice(
+        title=_('Registrant'),
+        required=True,
+        vocabulary='ValidPerson',
+        description=_("Person who purchased the voucher."))
+
+    sales_system_id = TextLine(
+        title=_('Voucher'),
+        description=_("""Code to redeem subscription."""))
+
+    whiteboard = Text(
+        title=_("Whiteboard"), required=False,
+        description=_("Notes on this project subscription."))
 
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
@@ -329,6 +375,14 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     aggregatetranslationpermission = Attribute("The translation permission "
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
+
+    commercial_subscription = Attribute("""
+        An object which contains the timeframe and the voucher
+        code of a subscription.""")
+
+    def redeemSubscriptionVoucher(voucher, registrant, purchaser,
+                                  whiteboard=None):
+        """Verify a voucher and extend the subscription expiration date."""
 
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
