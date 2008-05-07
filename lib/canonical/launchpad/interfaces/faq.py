@@ -30,26 +30,24 @@ class IFAQ(IHasOwner):
 
     id = Int(
         title=_('FAQ Number'),
-        description=_('Unique number identifying the document in Launchpad.'),
+        description=_('The unique number identifying the FAQ in Launchpad.'),
         required=True, readonly=True)
 
     title = Title(
         title=_('Title'),
-        description=_('Title describing the document content.'),
+        description=_('The title describing the FAQ, often a question.'),
         required=True)
 
     keywords = TextLine(
         title=_('Keywords'),
-        description=_(
-            'White-space list of keywords related to this document.'),
+        description=_('One or more terms that relate to this FAQ.'),
         required=False)
 
     content = Text(
         title=_('Content'),
         description=_(
-            'The FAQ content. This is plain text format. If you want to link '
-            'to an external document, simply enter a short description and '
-            'the URL to the document.'),
+            'The answer to the question in plain text. You may choose to '
+            'include a URL to an external FAQ.'),
         required=True)
 
     date_created = Datetime(title=_('Created'), required=True, readonly=True)
