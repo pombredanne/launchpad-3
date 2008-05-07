@@ -9,6 +9,7 @@ import os.path
 
 from bzrlib import osutils
 from bzrlib.transport.local import LocalTransport
+from twisted.conch.ssh import filetransfer
 
 
 class FatLocalTransport(LocalTransport):
@@ -106,3 +107,7 @@ class TransportSFTPServer:
 
     def renameFile(self, oldpath, newpath):
         self.transport.rename(oldpath, newpath)
+
+    def translateError(self, failure):
+        raise filetransfer.SFTPError(filetransfer.FX_PERMISSION_DENIED,
+                                     failure.getErrorMessage())

@@ -4,11 +4,13 @@
 import os
 import unittest
 
-from bzrlib.transport import get_transport
 from bzrlib.tests import TestCaseInTempDir
+from bzrlib import errors as bzr_errors
 from bzrlib import urlutils
 
 from canonical.codehosting.sftp import FatLocalTransport, TransportSFTPServer
+from twisted.conch.ssh import filetransfer
+from twisted.python import failure
 
 
 class TestSFTPServer(TestCaseInTempDir):
@@ -95,6 +97,14 @@ class TestSFTPServer(TestCaseInTempDir):
         directory = self.sftp_server.openDirectory('foo')
         self.assertEqual(set(['baz', 'bar']), set(directory))
         directory.close()
+
+    def test_translateError(self):
+        exception = bzr_errors.PermissionDenied('foo')
+        result = self.assertRaises(filetransfer.SFTPError,
+            self.sftp_server.translateError,
+            failure.Failure(exception))
+        self.assertEqual(filetransfer.FX_PERMISSION_DENIED, result.code)
+        self.assertEqual(str(exception), result.message)
 
 
 def test_suite():
