@@ -339,7 +339,10 @@ There's one <resource_type> tag for every top-level collection on the
 site. We'll be taking a close look at the resource type for the
 site's collection of people.
 
-    >>> resource_type = collection_resource_types[0]
+    >>> resource_type = [type for type in collection_resource_types
+    ...                   if type.attrib['id'] ==
+    ...                   'PersonSetCollectionAdapter'][0]
+
     >>> resource_type.tag
     '...resource_type'
 
