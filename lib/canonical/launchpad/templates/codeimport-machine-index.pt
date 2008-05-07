@@ -20,15 +20,15 @@
       <tal:status content="context/state/title">online</tal:status>
     </h1>
 
-    <tal:edit-machine-status condition="context/required:launchpad.Edit">
+    <div id="update-status" tal:condition="context/required:launchpad.Edit">
       <h2>Update machine status</h2>
 
       <div metal:use-macro="context/@@launchpad_form/form">
       </div>
 
-    </tal:edit-machine-status>
+    </div>
 
-    <tal:jobs define="jobs context/current_jobs">
+    <div id="current-jobs" tal:define="jobs context/current_jobs">
 
       <h2>Current jobs</h2>
 
@@ -48,35 +48,35 @@
         </table>
       </tal:has-jobs>
 
-    </tal:jobs>
+    </div>
 
-    <h2>Related events</h2>
+    <div id="recent-events">
 
-    <dl>
-    <tal:events repeat="event view/latest_events">
-      <dt>
-        <tal:created replace="event/date_created/fmt:datetime"/>:
-        <tal:has-person condition="event/person">
-          <tal:user replace="structure event/person/fmt:link"/>
-          set
-        </tal:has-person>
-        <tal:event replace="event/event_type/title" />
-        <tal:code-import condition="event/code_import"
-                         replace="structure event/code_import/branch/fmt:link"/>
-      </dt>
+      <h2>Related events</h2>
 
-      <dd tal:condition="event/items">
-        <tal:items repeat="item event/items">
-          <tal:type replace="python: item[0].title"/>:
-          <tal:value replace="python: item[1]"/>
-          <br tal:condition="not:repeat/item/end"/>
-        </tal:items>
-      </dd>
+      <dl>
+        <tal:events repeat="event view/latest_events">
+          <dt>
+            <tal:created replace="event/date_created/fmt:datetime"/>:
+            <tal:has-person condition="event/person">
+              <tal:user replace="structure event/person/fmt:link"/>
+              set
+            </tal:has-person>
+            <tal:event replace="event/event_type/title" />
+            <tal:code-import condition="event/code_import"
+                             replace="structure event/code_import/branch/fmt:link"/>
+          </dt>
+          <dd tal:condition="event/items">
+            <tal:items repeat="item event/items">
+              <tal:type replace="python: item[0].title"/>:
+              <tal:value replace="python: item[1]"/>
+              <br tal:condition="not:repeat/item/end"/>
+            </tal:items>
+          </dd>
+        </tal:events>
+      </dl>
 
-    </tal:events>
-    </dl>
-
+    </div>
   </div>
-
-</body>
+  </body>
 </html>

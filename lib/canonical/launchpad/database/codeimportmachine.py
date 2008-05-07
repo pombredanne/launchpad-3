@@ -43,7 +43,7 @@ class CodeImportMachine(SQLBase):
 
     events = SQLMultipleJoin(
         'CodeImportEvent', joinColumn='machine',
-        orderBy=['-date_created', 'id'])
+        orderBy=['-date_created', '-id'])
 
     def setOnline(self, user=None, message=None):
         """See `ICodeImportMachine`."""
