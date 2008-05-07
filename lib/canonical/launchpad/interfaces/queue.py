@@ -251,15 +251,16 @@ class IPackageUploadBuild(Interface):
     def verifyBeforeAccept():
         """Perform overall checks before accepting a binary upload.
 
-        It check if each uploaded binary file can be published in the targeted
+        Ensure each uploaded binary file can be published in the targeted
         archive.
 
-        If any of them is already published a QueueInconsistentStateError
-        is raised containing all filenames that cannot be published.
+        If any of the uploaded binary files are already published a
+        QueueInconsistentStateError is raised containing all filenames
+        that cannot be published.
 
         This check is very similar to the one we do for source upload and
-        was designed to prevent the creating of binary publication that will
-        never reach the archive.
+        was designed to prevent the creation of binary publications that
+        will never reach the archive.
 
         See bug #227184 for further details.
         """

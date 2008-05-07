@@ -289,7 +289,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         The file returned will be one of those published in the distribution.
 
         If searching both source and binary, and the file is found in the
-        source packages it'll return that over a file for a binary package.
+        binary packages it'll return that over a file for a source package.
 
         If 'archive' is not passed the distribution.main_archive is assumed.
 

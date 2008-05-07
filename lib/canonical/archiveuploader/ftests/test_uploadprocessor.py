@@ -93,6 +93,23 @@ class TestUploadProcessorBase(unittest.TestCase):
                         "'%s' is not in logged output\n\n%s"
                         % (line, '\n'.join(self.log.lines)))
 
+    def assertRaisesSpecial(self, excClass, callableObj, *args, **kwargs):
+        """See `TestCase.assertRaises`.
+
+        Unlike `TestCase.assertRaised`, this method returns contents when an
+        exception is raised.  Callsites can then easily check the contents.
+        """
+        try:
+            callableObj(*args, **kwargs)
+        except excClass, error:
+            return str(error)
+        else:
+            if hasattr(excClass, '__name__'):
+                excName = excClass.__name__
+            else:
+                excName = str(excClass)
+            raise self.failureException, "%s not raised" % excName
+
     def setupBreezy(self):
         """Create a fresh distroseries in ubuntu.
 
@@ -410,8 +427,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status=PackageUploadStatus.NEW, name='bar',
             version='1.0-1', exact_match=True)
 
-        # The just uploaded binary cannot be accepted because there its
-        # filename 'bar_1.0-1_i386.deb' is already published in the archive.
+        # The just uploaded binary cannot be accepted because its
+        # filename 'bar_1.0-1_i386.deb' is already published in the
+        # archive.
         error_message = self.assertRaisesSpecial(
             QueueInconsistentStateError,
             duplicated_binary_upload.setAccepted)
@@ -419,23 +437,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             error_message,
             "The following files are already published in Primary "
             "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
-
-    def assertRaisesSpecial(self, excClass, callableObj, *args, **kwargs):
-        """See TestCase.assertRaised.
-
-        The only difference is that this method returns the exception
-        contents when it was raised. This way callsites can check it easily.
-        """
-        try:
-            callableObj(*args, **kwargs)
-        except excClass, error:
-            return str(error)
-        else:
-            if hasattr(excClass, '__name__'):
-                excName = excClass.__name__
-            else:
-                excName = str(excClass)
-            raise self.failureException, "%s not raised" % excName
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.

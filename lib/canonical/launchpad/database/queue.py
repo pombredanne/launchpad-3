@@ -942,7 +942,7 @@ class PackageUploadBuild(SQLBase):
 
                 known_filenames.append(binary_file.libraryfile.filename)
 
-        # If any of the uploaded files is already present we have a problem.
+        # If any of the uploaded files are already present we have a problem.
         if len(known_filenames) > 0:
             filename_list = "\n\t%s".join(
                 [filename for filename in known_filenames])
