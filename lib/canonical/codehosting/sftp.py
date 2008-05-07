@@ -34,7 +34,7 @@ class SFTPServerFile:
         self.transport = transport
 
     def writeChunk(self, offset, data):
-        self.transport.writeChunk(self.name, offset, data)
+        return self.transport.writeChunk(self.name, offset, data)
 
     def readChunk(self, offset, length):
         return self.transport.readv(self.name, [(offset, length)]).next()[1]
@@ -91,7 +91,7 @@ class TransportSFTPServer:
         return self.transport.local_realPath(relpath)
 
     def setAttrs(self, path, attrs):
-        self.openFile(path, 0, {}).setAttrs(attrs)
+        return self.openFile(path, 0, {}).setAttrs(attrs)
 
     def getAttrs(self, path):
         return self.openFile(path, 0, {}).getAttrs()
@@ -100,13 +100,13 @@ class TransportSFTPServer:
         return {}
 
     def makeDirectory(self, path, attrs):
-        self.transport.mkdir(path)
+        return self.transport.mkdir(path)
 
     def removeDirectory(self, path):
-        self.transport.rmdir(path)
+        return self.transport.rmdir(path)
 
     def removeFile(self, path):
-        self.transport.delete(path)
+        return self.transport.delete(path)
 
     def renameFile(self, oldpath, newpath):
-        self.transport.rename(oldpath, newpath)
+        return self.transport.rename(oldpath, newpath)
