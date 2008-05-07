@@ -651,6 +651,25 @@ So it's hidden initially, and then revealed if JavaScript is available.
   padding-top: 10px;
 }
 
+/*
+Inline help is different from the popout help panel. It is contained in
+a <div> and dynamically positioned by JavaScript.
+*/
+#inline-help-pane {
+  position: absolute;
+  border: 5px solid #ffc;
+  padding: 5px;
+  z-index: 3000;  /* This should appear above all other content. */
+  width: 35em;
+}
+#help-footer {
+  padding: 3px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+#inline-help-pane .invisible {display: none;}
+.inline-help-content {display: none;}
+
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
