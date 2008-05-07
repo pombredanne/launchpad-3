@@ -10,21 +10,29 @@ from xmlrpclib import ServerProxy
 
 from canonical.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
-class CodeImportDispatcherScript(LaunchpadCronScript):
+class CodeImportDispatcherScript(LaunchpadScript):
+
+    def run(self, use_web_security=False, implicit_begin=True,
+            isolation=None):
+        """See `LaunchpadScript.run`.
+
+        We override to avoid all of the setting up all of the component
+        architecture and connecting to the database.
+        """
+        self.main()
 
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        CodeImportDispatcher(self.txn, self.logger).findAndDispatchJob(
+        CodeImportDispatcher(self.logger).findAndDispatchJob(
             ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
 
 if __name__ == '__main__':
-    script = CodeImportDispatcherScript(
-        "codeimportdispatcher", dbuser=config.codeimportdispatcher.dbuser)
+    script = CodeImportDispatcherScript("codeimportdispatcher")
     script.lock_and_run()
 
