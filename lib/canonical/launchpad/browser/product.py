@@ -1476,6 +1476,14 @@ class ProductBranchesView(ProductBranchListingView):
         if self.sort_by == BranchListingSort.DEFAULT:
             self.request.response.redirect(canonical_url(self.context))
 
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.LIFECYCLE,
+            'hide_dormant': self.hide_dormant_initial_value,
+            }
+
     @cachedproperty
     def hide_dormant_initial_value(self):
         """If there is more than one page of branches, hide dormant ones."""
