@@ -107,12 +107,12 @@ class IFacetMenu(IMenuBase):
     def iterlinks(request_url=None, selectedfacetname=None):
         """Iterate over the links in this menu.
 
-        request_url, if it is not None, is a Url object that is used to
-        decide whether a menu link points to the page being requested,
-        in which case it will not be linked.
+        :param request_url: A `URI` or None. It is used to decide whether a
+            menu link points to the page being requested, in which case it
+            will not be linked.
 
-        If selectedfacetname is provided, the link with that name will be
-        marked as 'selected'.
+        :param selectedfacetname: A str. The link with that name will be
+            marked as 'selected'.
         """
 
     defaultlink = Attribute(

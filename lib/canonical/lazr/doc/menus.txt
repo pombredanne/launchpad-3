@@ -311,6 +311,9 @@ methods can access `self.context`.
         selected: False
         linked: True
 
+Note that the 'variations' link is not enabled. See the section
+`Enabled and disabled links` for how this is done.
+
 
 == The NavigationMenu class ==
 
@@ -342,7 +345,7 @@ menu though one of its links.
     ...     usedfor = IRecipeEditMenuMarker
     ...     facet = 'cookery'
     ...
-    ...     links = ['edit_instructions', 'edit_ingredients']
+    ...     links = ('edit_instructions', 'edit_ingredients')
     ...
     ...     def edit_instructions(self):
     ...         target = '+edit-instructions'
@@ -358,7 +361,7 @@ menu though one of its links.
     ...     usedfor = IRecipeJournalMenuMarker
     ...     facet = 'cookery'
     ...
-    ...     links = ['read_journal', 'write_entry']
+    ...     links = ('read_journal', 'write_entry')
     ...
     ...     def read_journal(self):
     ...         target = '+read-journal'
@@ -374,7 +377,7 @@ menu though one of its links.
     ...     usedfor = IRecipe
     ...     facet = 'cookery'
     ...
-    ...     links = ['summary', 'journal']
+    ...     links = ('summary', 'journal')
     ...
     ...     def summary(self):
     ...         target = '+index'
@@ -417,29 +420,13 @@ is defined in by the RecipeMenu class and the view of recipe.
 
 == Enabled and disabled links ==
 
-Facet menus are often constructed by subclassing a common menu. The
+Menus are often constructed by subclassing a common menu. The
 common menu defines all the facet links, and the enabled link that are
 common to most content objects. The CookeryFacetMenu defines all the
 facets for the cookery site for all content interfaces, three links:
 summary, questions, and variations. But it only defined two enabled
 links: summary and questions.  The variations link is not enabled
 because it only applies to recipes. (See the last example.)
-
-An error is raised if a class enables a link that is not in the
-list of links:
-
-    >>> class BogusFacetMenu(CookeryFacetMenu):
-    ...
-    ...     usedfor = IRecipe
-    ...     enable_only = ['summary', 'non_link']
-
-    >>> summarise_links(
-    ...     BogusFacetMenu(recipe),
-    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index',
-    ...     facet=None)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Links in 'enable_only' not found in 'links': non_link
 
 The RecipeFacetMenu subclass defined below only applies to IRecipe
 content object and it has all facet links enabled.
@@ -476,16 +463,54 @@ content object and it has all facet links enabled.
         linked: True
 
 
-== Menus require a partcipation ==
+== Menu requirements  ==
+
+All menus descend from MenuBase which impose a number of requirements
+upon its descendants.
+
+A menu must define a tuple of links that it manages. When links is
+not defined, or defined is not of the right type, an error is raised.
+
+    >>> class BogusMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+
+    >>> summarise_links(BogusMenu(recipe))
+    Traceback (most recent call last):
+     ...
+    AssertionError: Subclasses of NavigationMenu must provide self.links
+
+    >>> class BogusMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+    ...     links = 'not a tuple'
+
+    >>> summarise_links(BogusMenu(recipe))
+    Traceback (most recent call last):
+     ...
+    AssertionError: self.links must be a tuple or list.
+
+An error is raised if a class enables a link that is not in the
+list of links. CookeryFacetMenu did not include 'non_link' in its
+links, so an error is raised when BogusFacetMenu is used.
+
+    >>> class BogusFacetMenu(CookeryFacetMenu):
+    ...
+    ...     usedfor = IRecipe
+    ...     enable_only = ['summary', 'non_link']
+
+    >>> summarise_links(
+    ...     BogusFacetMenu(recipe),
+    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     facet=None)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Links in 'enable_only' not found in 'links': non_link
 
 The iterlinks() method of menus requires a `IHTTPApplicationRequest`
 (a request object) present in the `Interaction` to determine the
 state of its links. Without a request, an error is raised.
 
     >>> endInteraction()
-    >>> summarise_links(
-    ...     RecipeMenu(recipe),
-    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index')
+    >>> summarise_links(RecipeMenu(recipe))
     Traceback (most recent call last):
      ...
     AttributeError: 'NoneType' object has no attribute 'participations'
@@ -610,7 +635,7 @@ link is selected too.
         selected: True
         linked: False
 
-The link states changes when a url that corresponding with a link in
+The link state changes when a url that corresponding with a link in
 another submenu is viewed. Viewing the +read_journal view in the Journal
 submenu of the RecipeMenu will change the state of both menus.
 
