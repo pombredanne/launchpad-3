@@ -282,12 +282,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         This method is called from the `BranchListingBatchNavigator` to
         get the branches to show in the listing.
         """
-        return self._branches(
-            self.selected_lifecycle_status)
+        return self._branches(self.selected_lifecycle_status)
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self._branches(None, True).count() > 0
+        return self._branches(None).count() > 0
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.

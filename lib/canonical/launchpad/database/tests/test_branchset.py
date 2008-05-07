@@ -108,45 +108,6 @@ class TestBranchSet(TestCase):
             logout()
 
 
-class TestBranchSetDormancyClause(TestCase):
-    """Test that the dormancy clause correctly selects branches."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        login(ANONYMOUS)
-        factory = LaunchpadObjectFactory()
-        self.branch_owner = factory.makePerson()
-
-        dormant_days = config.launchpad.branch_dormant_days
-        dormant_cutoff = datetime.now(pytz.UTC) - timedelta(dormant_days)
-
-        # Make two new branches on either side of the cut off period.
-        for delta in [-10, -1, 1, 10]:
-            date_created = dormant_cutoff + timedelta(days=delta)
-            factory.makeBranch(
-                owner=self.branch_owner, date_created=date_created)
-
-    def tearDown(self):
-        logout()
-
-    def test_showDormantBranchClause(self):
-        """Four branches should be returned if showing dormant branches."""
-        branch_set = getUtility(IBranchSet)
-        branch_count = branch_set.getBranchesForPerson(
-            self.branch_owner, hide_dormant=False).count()
-        self.assertEqual(4, branch_count,
-                         "Expected 4 branches, got %d" % branch_count)
-
-    def test_hideDormantBranchClause(self):
-        """Two branches should be returned if showing dormant branches."""
-        branch_set = getUtility(IBranchSet)
-        branch_count = branch_set.getBranchesForPerson(
-            self.branch_owner, hide_dormant=True).count()
-        self.assertEqual(2, branch_count,
-                         "Expected 2 branches, got %d" % branch_count)
-
-
 class TestBranchSetNewNameValidation(TestCase):
     """Test of the validation of the branch name done by BranchSet.new()."""
 

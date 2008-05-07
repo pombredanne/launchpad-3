@@ -1219,7 +1219,7 @@ class BranchSet:
                                       visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = 'Branch.registrant = %s %s %s' % (
+        query = 'Branch.registrant = %s %s' % (
             person.id, lifecycle_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
@@ -1231,7 +1231,7 @@ class BranchSet:
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
             Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s %s %s
+            AND BranchSubscription.person = %s %s
             '''
             % (person.id, lifecycle_clause))
         return BranchWithSortKeys.select(
