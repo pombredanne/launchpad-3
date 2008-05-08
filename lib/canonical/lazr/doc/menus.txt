@@ -353,9 +353,7 @@ The iterlinks() method of menus requires a `IHTTPApplicationRequest`
 state of its links. Without a request, an error is raised.
 
     >>> endInteraction()
-    >>> summarise_links(
-    ...     RecipeMenu(recipe),
-    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index')
+    >>> summarise_links(RecipeMenu(recipe))
     Traceback (most recent call last):
      ...
     AttributeError: 'NoneType' object has no attribute 'participations'
@@ -436,7 +434,7 @@ When navigational menus are associated with a content object and one
 of its views, they provide a menu and sub menu. The view's sub menu
 belongs to one of the content object's menu's links.
 
-A link will be selected and linked if request url matches one of the
+A link will be selected and linked if request's url matches one of the
 links in the link's menu. A link's menu contains child links in the
 navigational hierarchy; when a child link is selected, the parent
 link is selected too.
@@ -449,10 +447,9 @@ link is selected too.
     ...     (recipe, request), name='+edit-ingredients')
     >>> request.traversed_objects.append(recipe_ingredients_view)
 
-    >>> recipe_overview_menu = queryAdapter(
-    ...     recipe_ingredients_view, INavigationMenu)
-
-    >>> summarise_links(RecipeMenu(recipe))
+    >>> recipe_summary_menu = queryAdapter(
+    ...     recipe, INavigationMenu)
+    >>> summarise_links(recipe_summary_menu)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
@@ -466,6 +463,8 @@ link is selected too.
         selected: False
         linked: True
 
+    >>> recipe_overview_menu = queryAdapter(
+    ...     recipe_ingredients_view, INavigationMenu)
     >>> summarise_links(recipe_overview_menu)
     link edit_instructions
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-instructions
@@ -492,7 +491,7 @@ menu of the RecipeMenu will change the state of both menus.
     ...     (recipe, request), name='+read-journal')
     >>> request.traversed_objects.append(recipe_journal_view)
 
-    >>> summarise_links(RecipeMenu(recipe))
+    >>> summarise_links(recipe_summary_menu)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
@@ -536,7 +535,7 @@ find the instancemethods object.
 
     >>> request.traversed_objects.append(recipe_ingredients_view.__call__)
 
-    >>> summarise_links(RecipeMenu(recipe))
+    >>> summarise_links(recipe_summary_menu)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
