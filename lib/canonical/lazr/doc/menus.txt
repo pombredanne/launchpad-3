@@ -289,7 +289,10 @@ methods can access `self.context`.
     ...     """List the links and their attributes."""
     ...     if url is not None:
     ...         url = URI(url)
-    ...     for link in menu.iterlinks(url, selectedfacetname=facet):
+    ...     extra_arguments = {}
+    ...     if facet is not None:
+    ...         extra_arguments['selectedfacetname'] = facet
+    ...     for link in menu.iterlinks(url, **extra_arguments):
     ...         print 'link %s' % link.name
     ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:

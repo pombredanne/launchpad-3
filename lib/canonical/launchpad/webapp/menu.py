@@ -386,7 +386,7 @@ class NavigationMenu(MenuBase):
         return IFacetLink(
             super(NavigationMenu, self)._get_link(name))
 
-    def iterlinks(self, request_url=None, selectedfacetname=None):
+    def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
 
         Menus may be associated with content objects and their views. The
