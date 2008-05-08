@@ -657,18 +657,29 @@ a <div> and dynamically positioned by JavaScript.
 */
 #inline-help-pane {
   position: absolute;
-  border: 5px solid #ffc;
-  padding: 5px;
+  border: 5px solid black;
+  padding: 10px;
   z-index: 3000;  /* This should appear above all other content. */
-  width: 35em;
+  background-color: #fff;
+  width: 300px;
+  height: 200px;
 }
+
+#help-body {height: 170px;}
 #help-footer {
   padding: 3px;
   border-top: 1px solid #ddd;
   text-align: right;
 }
-#inline-help-pane .invisible {display: none;}
+#help-footer button {
+  margin-bottom: 10px;
+  margin-top: 3px;
+}
+
+#inline-help-pane.invisible, #inline-help-pane .invisible {display: none;}
 .inline-help-content {display: none;}
+
+span.help-link {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
