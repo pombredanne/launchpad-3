@@ -69,9 +69,10 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     MailingListAutoSubscribePolicy, NameAlreadyTaken,
     PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
-    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    PersonalStanding, PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH,
+    SSHKeyType, ShipItConstants, ShippingRequestStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -3148,6 +3149,25 @@ class PersonSet:
                 recipients.addStructuralSubscriber(
                     subscription.subscriber, subscription.target)
         return subscribers
+
+    def updatePersonalStandings(self):
+        """See `IPersonSet`."""
+        cur = cursor()
+        cur.execute("""
+        UPDATE Person
+        SET personal_standing = %s
+        WHERE personal_standing = %s
+        AND id IN (
+            SELECT posted_by
+            FROM MessageApproval
+            WHERE status = %s
+            GROUP BY posted_by
+            HAVING COUNT(DISTINCT mailing_list) >= %s
+            )
+        """ % sqlvalues(PersonalStanding.GOOD,
+                        PersonalStanding.UNKNOWN,
+                        PostedMessageStatus.APPROVED,
+                        config.standingupdater.approvals_needed))
 
 
 class PersonLanguage(SQLBase):

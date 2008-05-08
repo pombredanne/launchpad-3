@@ -1661,6 +1661,17 @@ class IPersonSet(Interface):
                            added to it.
         """
 
+    def updatePersonalStandings():
+        """Update the personal standings of some people.
+
+        Personal standing controls whether a person can post to a mailing list
+        they are not a member of without moderation.  A person starts out with
+        Unknown standing.  Once they have at least one message approved for
+        three different lists, this method will bump their standing to Good.
+        If a person's standing is already Good, or Poor or Excellent, no
+        change to standing is made.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
