@@ -45,5 +45,5 @@ class CodeImportWorker(LaunchpadScript):
         return CodeImportWorkerMonitor(int(arg), self.logger).run()
 
 if __name__ == '__main__':
-    script = CodeImportWorker('codeimportworker')
+    script = CodeImportWorker('codeimportworker', dbuser='codeimportworker')
     script.run()

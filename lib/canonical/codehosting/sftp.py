@@ -6,8 +6,10 @@ __metaclass__ = type
 
 import os.path
 
+from bzrlib import errors as bzr_errors
 from bzrlib import osutils, urlutils
 from bzrlib.transport.local import LocalTransport
+from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPServer
 from zope.interface import implements
 
@@ -119,7 +121,7 @@ class TransportSFTPServer:
     def setAttrs(self, path, attrs):
         return self.openFile(path, 0, {}).setAttrs(attrs)
 
-    def getAttrs(self, path):
+    def getAttrs(self, path, followLinks):
         return self.openFile(path, 0, {}).getAttrs()
 
     def gotVersion(self, otherVersion, extensionData):
@@ -136,3 +138,15 @@ class TransportSFTPServer:
 
     def renameFile(self, oldpath, newpath):
         return self.transport.rename(oldpath, newpath)
+
+    def translateError(self, failure):
+        types_to_codes = {
+            bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
+            bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
+            bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
+            }
+        try:
+            sftp_code = types_to_codes[failure.type]
+        except KeyError:
+            failure.raiseException()
+        raise filetransfer.SFTPError(sftp_code, failure.getErrorMessage())

@@ -5,16 +5,19 @@ import os
 import unittest
 
 from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib import errors as bzr_errors
 from bzrlib import urlutils
+
+from twisted.conch.ssh import filetransfer
+from twisted.python import failure
+from twisted.conch.interfaces import ISFTPServer
+from twisted.internet import defer
+from twisted.python.util import mergeFunctionMetadata
 
 from canonical.codehosting.sftp import FatLocalTransport, TransportSFTPServer
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import BlockingProxy
-
-from twisted.conch.interfaces import ISFTPServer
-from twisted.internet import defer
-from twisted.python.util import mergeFunctionMetadata
 
 
 class AsyncTransport:
@@ -91,7 +94,7 @@ class TestSFTPServer(TestCaseInTempDir):
 
     def test_ServergetAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
-        self.assertEqual({}, self.sftp_server.getAttrs('foo'))
+        self.assertEqual({}, self.sftp_server.getAttrs('foo', False))
 
     def test_removeFile(self):
         self.build_tree_contents([('foo', 'bar')])
@@ -144,6 +147,33 @@ class TestSFTPServer(TestCaseInTempDir):
             directory.close()
         deferred.addCallback(check_open_directory)
         return deferred
+
+    def test_translatePermissionDenied(self):
+        exception = bzr_errors.PermissionDenied('foo')
+        self.do_translation_test(exception, filetransfer.FX_PERMISSION_DENIED)
+
+    def test_translateNoSuchFile(self):
+        exception = bzr_errors.NoSuchFile('foo')
+        self.do_translation_test(exception, filetransfer.FX_NO_SUCH_FILE)
+
+    def test_translateFileExists(self):
+        exception = bzr_errors.FileExists('foo')
+        self.do_translation_test(
+            exception, filetransfer.FX_FILE_ALREADY_EXISTS)
+
+    def test_translateRandomError(self):
+        exception = KeyboardInterrupt()
+        result = self.assertRaises(KeyboardInterrupt,
+            self.sftp_server.translateError,
+            failure.Failure(exception))
+        self.assertIs(result, exception)
+
+    def do_translation_test(self, exception, sftp_code):
+        result = self.assertRaises(filetransfer.SFTPError,
+            self.sftp_server.translateError,
+            failure.Failure(exception))
+        self.assertEqual(sftp_code, result.code)
+        self.assertEqual(str(exception), result.message)
 
 
 def test_suite():
