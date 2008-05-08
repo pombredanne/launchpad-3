@@ -3,6 +3,7 @@
 
 import os
 import unittest
+import shutil
 
 from bzrlib.tests import TestCase, TestCaseInTempDir
 from bzrlib import errors as bzr_errors
@@ -13,7 +14,9 @@ from twisted.python import failure
 from twisted.conch.interfaces import ISFTPServer
 from twisted.internet import defer
 from twisted.python.util import mergeFunctionMetadata
+from twisted.trial.unittest import TestCase as TrialTestCase
 
+from canonical.config import config
 from canonical.codehosting.sftp import FatLocalTransport, TransportSFTPServer
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -42,7 +45,7 @@ class AsyncTransport:
         return mergeFunctionMetadata(maybe_method, defer_it)
 
 
-class TestSFTPAdapter(TestCase):
+class TestSFTPAdapter(TrialTestCase):
 
     def makeLaunchpadAvatar(self):
         fake_launchpad = FakeLaunchpad()
@@ -55,6 +58,7 @@ class TestSFTPAdapter(TestCase):
         server = ISFTPServer(self.makeLaunchpadAvatar())
         self.assertIsInstance(server, TransportSFTPServer)
         deferred = server.makeDirectory('~testuser/firefox/baz/.bzr', 0777)
+        self.addCleanup(shutil.rmtree, config.codehosting.branches_root)
         return deferred
 
 
