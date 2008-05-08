@@ -37,6 +37,9 @@ def import_public_key(email_addr):
     pubkey = test_pubkey_from_email(email_addr)
     key = gpghandler.importPublicKey(pubkey)
 
+    # Strip out any '-passwordless' annotation from the email addresses.
+    email_addr = email_addr.replace('-passwordless', '')
+
     # Some of the keys shouldn't be inserted into the db.
     if email_addr.endswith('do-not-insert-into-db'):
         return
