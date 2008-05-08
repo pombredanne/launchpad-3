@@ -408,7 +408,7 @@ class LaunchpadTransportTests:
         self.setFailingBranchDetails(
             'explode!', NOT_FOUND_FAULT_CODE, message)
         return self.assertRaisesWithSubstring(
-            errors.TransportNotPossible, message,
+            errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
     def test_createBranch_permission_denied_error(self):
