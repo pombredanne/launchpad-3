@@ -297,7 +297,7 @@ options that can be selected.
     ItemNotFoundError: insufficient items with name 'by project name'
     >>> for option in sort_by_control.options:
     ...     print option
-    by most interested
+    by most interesting
     by lifecycle status
     by author name
     by branch name
