@@ -335,7 +335,7 @@ ICodeImportEventSet.newOnline method.
     <nothing>
 
 A new online event can optionally take a user and a reason.  This is the
-case when a user updates the event through the web UI.
+case when a user updates the state of the machine through the web UI.
 
     >>> factory = LaunchpadObjectFactory()
     >>> apollo = factory.makeCodeImportMachine(hostname="apollo")
@@ -384,7 +384,7 @@ check that it is a legal value.
     but was: ...
 
 A new offline event can optionally take a user and a reason.  This is the
-case when a user updates the event through the web UI.
+case when a user updates the state of the machine through the web UI.
 
     >>> offline_event = event_set.newOffline(
     ...     apollo, CodeImportMachineOfflineReason.STOPPED,
