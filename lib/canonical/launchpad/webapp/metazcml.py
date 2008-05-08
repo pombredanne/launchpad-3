@@ -5,34 +5,31 @@ __metaclass__ = type
 import os
 import inspect
 
-from zope.interface import Interface, implements
-from zope.component import getUtility
+import zope.app.form.browser.metaconfigure
+import zope.app.publisher.browser.metadirectives
 import zope.component.servicenames
-from zope.schema import TextLine
+from zope.app.component.contentdirective import ContentDirective
+from zope.app.component.fields import LayerField
+from zope.app.component.metaconfigure import (
+    handler, adapter, utility, view, PublicPermission)
+from zope.app.file.image import Image
+from zope.app.pagetemplate.engine import Engine
+from zope.app.publisher.browser.viewmeta import (
+    pages as original_pages, page as original_page)
+from zope.app.security.metadirectives import IDefinePermissionDirective
+from zope.app.security.permission import Permission
+from zope.component import getUtility
 from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
     MessageID, GlobalObject, PythonIdentifier, Path, Tokens)
-
+from zope.interface import Interface, implements
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.schema import TextLine
 from zope.security.checker import CheckerPublic, Checker, defineChecker
 from zope.security.interfaces import IPermission
 from zope.security.proxy import ProxyFactory
-from zope.publisher.interfaces.browser import (
-    IBrowserPublisher, IBrowserRequest)
-from zope.app.component.metaconfigure import (
-    handler, adapter, utility, view, PublicPermission)
-
-from zope.app.component.contentdirective import ContentDirective
-from zope.app.pagetemplate.engine import Engine
-from zope.app.component.fields import LayerField
-from zope.app.file.image import Image
-import zope.app.publisher.browser.metadirectives
-import zope.app.form.browser.metaconfigure
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.app.publisher.browser.viewmeta import (
-    pages as original_pages, page as original_page)
-from zope.app.security.permission import Permission
-from zope.app.security.metadirectives import IDefinePermissionDirective
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (
@@ -42,6 +39,7 @@ from canonical.launchpad.webapp.interfaces import (
     IContextMenu, INavigationMenu, IAuthorization, IBreadcrumbProvider)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
+
 
 class IAuthorizationsDirective(Interface):
     """Set up authorizations as given in a module."""
