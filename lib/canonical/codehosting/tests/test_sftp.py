@@ -9,8 +9,6 @@ from bzrlib.tests import TestCase, TestCaseInTempDir
 from bzrlib import errors as bzr_errors
 from bzrlib import urlutils
 
-from canonical.codehosting.sftp import (FatLocalTransport,
-    TransportSFTPServer, FileIsADirectory)
 from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPServer
 from twisted.internet import defer
@@ -19,7 +17,8 @@ from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.config import config
-from canonical.codehosting.sftp import FatLocalTransport, TransportSFTPServer
+from canonical.codehosting.sftp import (
+    FatLocalTransport, TransportSFTPServer, FileIsADirectory)
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import BlockingProxy
@@ -213,13 +212,13 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         exception = KeyboardInterrupt()
         result = self.assertRaises(KeyboardInterrupt,
             self.sftp_server.translateError,
-            failure.Failure(exception))
+            failure.Failure(exception), 'methodName')
         self.assertIs(result, exception)
 
-    def do_translation_test(self, exception, sftp_code):
+    def do_translation_test(self, exception, sftp_code, method_name=None):
         result = self.assertRaises(filetransfer.SFTPError,
             self.sftp_server.translateError,
-            failure.Failure(exception))
+            failure.Failure(exception), method_name)
         self.assertEqual(sftp_code, result.code)
         self.assertEqual(str(exception), result.message)
 

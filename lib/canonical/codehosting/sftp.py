@@ -46,7 +46,8 @@ class FatLocalTransport(LocalTransport):
 def with_sftp_error(func):
     def decorator(*args, **kwargs):
         deferred = func(*args, **kwargs)
-        return deferred.addErrback(TransportSFTPServer.translateError)
+        return deferred.addErrback(TransportSFTPServer.translateError,
+                                   func.__name__)
     return decorator
 
 
@@ -165,7 +166,7 @@ class TransportSFTPServer:
         return self.transport.rename(oldpath, newpath)
 
     @staticmethod
-    def translateError(failure):
+    def translateError(failure, func_name):
         types_to_codes = {
             bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
@@ -173,8 +174,12 @@ class TransportSFTPServer:
             bzr_errors.DirectoryNotEmpty: filetransfer.FX_FAILURE,
             FileIsADirectory: filetransfer.FX_FILE_IS_A_DIRECTORY,
             }
+        names_to_messages = {
+            'makeDirectory': 'mkdir failed',
+            }
         try:
             sftp_code = types_to_codes[failure.type]
         except KeyError:
             failure.raiseException()
-        raise filetransfer.SFTPError(sftp_code, failure.getErrorMessage())
+        message = names_to_messages.get(func_name, failure.getErrorMessage())
+        raise filetransfer.SFTPError(sftp_code, message)
