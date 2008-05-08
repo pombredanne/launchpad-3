@@ -181,12 +181,26 @@
 
             <tal:has-bugtracker condition="bugtracker">
               <br />
-              <li>Bugs in <abbr class="explain" 
-                                title="the original developer of the software">upstream</abbr>
-              <span tal:replace="product_or_distro/displayname">Alsa Utils</span>
-              should be reported in its official bug tracker, <a
-              tal:attributes="href bugtracker/baseurl"><span
-              tal:replace="bugtracker/title" /></a>.</li>
+              <li id="bugtarget-upstream-bugtracker-info">
+                Bugs in
+                <abbr title="the original developer of the software"
+                      class="explain">upstream</abbr>
+                <span tal:replace="product_or_distro/displayname">
+                  Alsa Utils
+                </span>
+                <tal:action
+                    define="via_email
+                            bugtracker/bugtrackertype/enumvalue:EMAILADDRESS">
+                  <tal:via-email condition="via_email">
+                    should be sent to
+                    <a tal:replace="structure bugtracker/fmt:external-link" />
+                  </tal:via-email>
+                  <tal:not-via-email condition="not:via_email">
+                    should be reported in its official bug tracker,
+                    <a tal:replace="structure bugtracker/fmt:external-title-link" />
+                  </tal:not-via-email>
+                </tal:action>
+              </li>
             </tal:has-bugtracker>
 
           </ul>

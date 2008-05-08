@@ -333,7 +333,7 @@ Check the result content:
 
     >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
     ...     status=BuildStatus.FULLYBUILT)]
-    [u'hppa build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
+    [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'hppa build
     of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
@@ -462,11 +462,11 @@ For a given distribution as well:
     ...     print l.datebuilt, l.id, l.buildstate.value
     2007-08-10 00:00:13+00:00 30 1
     2007-08-09 23:59:59+00:00 29 1
-    2005-03-25 00:00:01+00:00 19 1
-    2005-03-25 00:00:01+00:00 16 1
     2005-03-25 00:00:01+00:00 7 1
-    2004-09-27 11:57:13+00:00 18 1
+    2005-03-25 00:00:01+00:00 16 1
+    2005-03-25 00:00:01+00:00 19 1
     2004-09-27 11:57:13+00:00 2 1
+    2004-09-27 11:57:13+00:00 18 1
 
 Retrieve the current PENDING builds
 
@@ -495,7 +495,8 @@ Using the optional name argument to filter build results:
     >>> builds.count()
     4
     >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
-    [(u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+    [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary'),
+    (u'pmount', u'breezy-autotest')]
 
 or using optional pocket argument:
 
@@ -559,8 +560,8 @@ three additional private builds for cprov:
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -575,8 +576,8 @@ Cprov can also see his own builds of course:
 
     >>> bob_builds = bob.getBuildRecords(user=cprov)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -920,8 +921,8 @@ Accessing the cprov builds when logged in as admin will see the records:
 
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -931,8 +932,8 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -949,8 +950,8 @@ when accessing the builds:
     ...     print "Generated Unauthorized exception as expected"
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 == Estimated Build Duration ==
