@@ -107,7 +107,7 @@ Back home in Brazil, Joao gets the equivalent for Brazil, where the
 equivalent information is known.
 
     >>> browser = setupBrowser('Basic test@canonical.com:test')
-    >>> browser.addHeader('X-Forwarded-For', '201.68.7.102')
+    >>> browser.addHeader('X-Forwarded-For', '143.54.0.1')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
     >>> country_portlet = find_portlet(browser.contents,
