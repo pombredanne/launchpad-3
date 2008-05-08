@@ -23,9 +23,9 @@ from twisted.internet.protocol import connectionDone
 from twisted.python import components, failure
 
 from twisted.vfs.pathutils import FileSystem
-from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
+from canonical.codehosting import sftp
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.config import config
 
@@ -155,6 +155,9 @@ class LaunchpadAvatar(avatar.ConchUser):
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
 
+components.registerAdapter(
+    sftp.avatar_to_sftp_server, LaunchpadAvatar, filetransfer.ISFTPServer)
+
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
     """UnauthorizedLogin which should be reported to the user."""
@@ -189,7 +192,7 @@ class Realm:
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
             avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
-                                        self.authserver)
+                                        self.authserver.proxy)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 

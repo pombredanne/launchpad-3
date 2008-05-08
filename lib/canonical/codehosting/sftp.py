@@ -4,17 +4,13 @@ __all__ = ['AvatarToSFTPAdapter', 'TransportSFTPServer']
 __metaclass__ = type
 
 
-import os
 import os.path
 
 from bzrlib import osutils, urlutils
-from bzrlib.transport import chroot, get_transport
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.interfaces import ISFTPServer
-from twisted.python import components
 from zope.interface import implements
 
-from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.transport import (
     AsyncLaunchpadTransport, LaunchpadServer)
 from canonical.config import config
@@ -140,7 +136,3 @@ class TransportSFTPServer:
 
     def renameFile(self, oldpath, newpath):
         return self.transport.rename(oldpath, newpath)
-
-
-components.registerAdapter(
-    avatar_to_sftp_server, LaunchpadAvatar, ISFTPServer)

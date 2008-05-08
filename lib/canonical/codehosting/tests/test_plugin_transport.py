@@ -446,6 +446,12 @@ class LaunchpadTransportTests:
         self.assertEqual(
             [(self.user_id, 1)], self.authserver._request_mirror_log)
 
+    def test_rmdir(self):
+        transport = self.getTransport()
+        self.assertRaises(
+            (errors.PermissionDenied,),
+            transport.rmdir, '~testuser/firefox/baz')
+
 
 class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 

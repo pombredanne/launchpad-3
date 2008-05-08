@@ -826,7 +826,8 @@ class AsyncLaunchpadTransport(VirtualTransport):
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
-            raise PermissionDenied(virtual_path)
+            return self._extractResult(defer.fail(
+                failure.Failure(PermissionDenied(virtual_path))))
         return VirtualTransport.rmdir(self, relpath)
 
 
