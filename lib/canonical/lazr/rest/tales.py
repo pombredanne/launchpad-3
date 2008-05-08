@@ -11,7 +11,6 @@ from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.interface.interfaces import IInterface
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
@@ -23,11 +22,10 @@ from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, IEntry, IResourceGETOperation,
     IResourceOperation, IResourcePOSTOperation, IScopedCollection)
+from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import CollectionResource
 
-
 class WadlAPI:
-
     """Base class for WADL-related function namespaces."""
 
     def _service_root_url(self):
@@ -100,8 +98,16 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         figure it out for them here.
         """
         if IScopedCollection.providedBy(self.context):
+            # Check whether the field has been exported with a different name
+            # and use that if so.
+            webservice_tag = self.context.relationship.queryTaggedValue(
+                'lazr.webservice.exported')
+            if webservice_tag is not None:
+                relationship_name = webservice_tag['as']
+            else:
+                relationship_name = self.context.relationship.__name__
             return (canonical_url(self.context.context) + '/' +
-                    urllib.quote(self.context.relationship.__name__))
+                    urllib.quote(relationship_name))
         else:
             return super(WadlCollectionResourceAPI, self).url()
 
@@ -188,7 +194,7 @@ class WadlResourceAdapterAPI(WadlAPI):
                     self.adapter_interface.__name__))
         model_class = registrations[0].required[0]
         operations = getGlobalSiteManager().adapters.lookupAll(
-            (model_class, IHTTPApplicationRequest), IResourceOperation)
+            (model_class, WebServiceLayer), IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
 

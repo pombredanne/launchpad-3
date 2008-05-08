@@ -850,6 +850,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Set the given email address as this team's contact address.
 
         This method must be used only for teams.
+
+        If the team has a contact address its status will be changed to
+        VALIDATED.
+
+        If the given email is None the team is left without a contact address.
         """
 
     def setPreferredEmail(email):
@@ -1654,6 +1659,17 @@ class IPersonSet(Interface):
                            `BugNotificationRecipients`.
                            If present, all found subscribers will be
                            added to it.
+        """
+
+    def updatePersonalStandings():
+        """Update the personal standings of some people.
+
+        Personal standing controls whether a person can post to a mailing list
+        they are not a member of without moderation.  A person starts out with
+        Unknown standing.  Once they have at least one message approved for
+        three different lists, this method will bump their standing to Good.
+        If a person's standing is already Good, or Poor or Excellent, no
+        change to standing is made.
         """
 
 
