@@ -349,9 +349,7 @@ LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
             WHERE Person.id = $1
                 AND ValidPersonOrTeamCache.id IS NULL
                 AND merged IS NULL
-                AND (teamowner IS NOT NULL OR (
-                    password IS NOT NULL AND EmailAddress.id IS NOT NULL
-                    ))
+                AND (teamowner IS NOT NULL OR EmailAddress.id IS NOT NULL)
             """ % vars(), param_types)
 
     new = TD["new"]
@@ -373,16 +371,13 @@ LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
 
     # Short circuit if there are no relevant changes
     if (new["teamowner"] == old["teamowner"]
-        and new["password"] == old["password"]
         and new["merged"] == old["merged"]):
         return
 
     # This function is only dealing with updates to the Person table.
     # This means we do not have to worry about EmailAddress changes here
 
-    if (new["merged"] is not None
-        or (new["teamowner"] is None and new["password"] is None)
-        ):
+    if (new["merged"] is not None or new["teamowner"] is None):
         plpy.execute(SD["delete_plan"], query_params)
     else:
         plpy.execute(SD["maybe_insert_plan"], query_params)

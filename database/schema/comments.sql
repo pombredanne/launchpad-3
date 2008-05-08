@@ -1031,14 +1031,25 @@ COMMENT ON COLUMN Karma.product IS 'The Project to which this Product belongs.  
 COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
 COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
 
+
+-- Account
+COMMENT ON TABLE Account IS 'An account that may be used for authenticating to Canonical or other systems.';
+COMMENT ON COLUMN Account.status IS 'The status of the account.';
+COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the account.';
+COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a dbschema value.';
+COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
+COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
+COMMENT ON COLUMN Account.openid_identifier IS 'The key used to construct an OpenID identity URL for this account.';
+
+
+-- AccountPassword
+COMMENT ON TABLE AccountPassword IS 'A password used to authenticate an Account.';
+COMMENT ON COLUMN AccountPassword.password IS 'SSHA digest encrypted password.';
+
+
 -- Person
-COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
-COMMENT ON COLUMN Person.account_status IS 'The status of the account associated with this Person.';
-COMMENT ON COLUMN Person.account_status_comment IS 'The comment on the status of the account associated with this Person.';
-COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
-COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
+COMMENT ON TABLE Person IS 'A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
-COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
@@ -1050,6 +1061,8 @@ COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
+COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
+COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.personal_standing IS 'The standing of the person, which indicates (for now, just) whether the person can post to a mailing list without requiring first post moderation.  Values are documented in dbschema.PersonalStanding.';
 COMMENT ON COLUMN Person.personal_standing_reason IS 'The reason a person\'s standing has changed.';
 COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
