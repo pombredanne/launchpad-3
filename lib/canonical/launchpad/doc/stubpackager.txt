@@ -21,7 +21,7 @@ directory we call 'sandbox'. It's where the packages will get created.
     True
 
 Source 'name' and 'version' and 'gpg_key_id' are set according the
-give arguments passed in the initialization.
+give arguments passed in the initialisation.
 
     >>> print packager.name
     biscuit
@@ -127,7 +127,7 @@ The error was raised because no signing key was set.
     >>> print packager.gpg_key_id
     None
 
-A GPG key can only be set on initialiation so we will have to create a
+A GPG key can only be set on initialisation so we will have to create a
 new packager passing a filename available in our test_keys directory
 (see launchpad/ftests/keys_for_tests.py)
 
@@ -255,7 +255,7 @@ It raises an error if the version has not been generated.
     >>> upload = zeca_packager.uploadSourceVersion('6.6.6')
     Traceback (most recent call last):
     ...
-    AssertionError: Could not find a source upload for version 6.6.6
+    AssertionError: Could not find a source upload for version 6.6.6.
 
 If the version is available, the package is uploaded, NEW packages are
 automatically accepted, builds are created, the upload is published and
@@ -297,7 +297,7 @@ allow unsigned uploads.
     >>> print ubuntu.getSourcePackage('biscuit').currentrelease.version
     1.0-1
 
-Since we are using FooBar GPG key to sign packages, in order to test
+Since we are using Foo Bar's GPG key to sign packages, in order to test
 PPA uploads we will create a PPA for it.
 
     >>> from canonical.launchpad.interfaces import IPersonSet

@@ -140,7 +140,7 @@ since there is no suitable ancestry.
     0
 
 When 1.0-8 is uploaded and 1.0-1 is published, the upload-processor
-request a diff, since there is a suitable ancestry.
+requests a diff, since there is a suitable ancestry.
 
     >>> packager.buildVersion('1.0-8', changelog_text="cookies")
     >>> packager.buildSource(signed=False)

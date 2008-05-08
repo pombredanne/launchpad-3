@@ -77,7 +77,7 @@ binary: binary-arch
 class StubPackager:
     """Builds small and fully functional debian source packages
 
-    It uses a series of templated to build controllable sources to be
+    It uses a series of templates to build controllable sources to be
     used in Soyuz tests.
     """
 
@@ -154,7 +154,7 @@ class StubPackager:
         orig.add(self.upstream_directory)
         orig.close()
 
-    def _touch(self, path, content=''):
+    def _createFile(self, path, content=''):
         """Create a file in the given path with the given content.
 
         A new line is appended at the end of the file.
@@ -165,7 +165,7 @@ class StubPackager:
 
     def _populateChangelog(self):
         """Create an empty debian/changelog """
-        self._touch(self.changelog_path)
+        self._createFile(self.changelog_path)
 
     def _populateControl(self, section=None, arch=None):
         """Create the debian/control using 'control_file_template'."""
@@ -182,12 +182,12 @@ class StubPackager:
             'priority': 'optional',
             'arch': arch,
             }
-        self._touch(
+        self._createFile(
             self.control_path, control_file_template % replacements)
 
     def _populateCopyright(self):
         """Create a placeholder debian/copyright."""
-        self._touch(
+        self._createFile(
             self.copyright_path, 'No ones land ...')
 
     def _populateRules(self):
@@ -195,7 +195,7 @@ class StubPackager:
         replacements = {
             'name': self.name,
             }
-        self._touch(
+        self._createFile(
             self.rules_path, rules_file_template % replacements)
 
     def _populateDebian(self, section, arch):
@@ -266,7 +266,7 @@ class StubPackager:
         """
         changesfile_path = self._getChangefilePathForVersion(version, type)
         assert changesfile_path is not None, (
-            "Could not find a %s upload for version %s" % (type, version))
+            "Could not find a %s upload for version %s." % (type, version))
 
         if archive is not None:
             policy.archive = archive
