@@ -156,7 +156,7 @@ The views for IRecipe are registered using ZCML. Each page requires a:
     * class: The class the adapter returns (the view)
     * permission: The required permission the Principle must possess
     * facet: Assign the page to a facet.
-Views, FacetMenus, and NavigationNenus only interact with eachother if
+Views, FacetMenus, and NavigationMenus only interact with each other if
 they are assigned to the same facet.
 
     >>> from zope.configuration import xmlconfig
@@ -213,7 +213,7 @@ they are assigned to the same facet.
 
 == The FacetMenu class ==
 
-A FacetMenu is a menu that defines all the factets for a site. A facet
+A FacetMenu is a menu that defines all the facets for a site. A facet
 may be consider an application or focus. A There may be many ways in
 which a site's content object may be used. For example: one aspect of
 a content object is its definition and publication, another might
@@ -233,10 +233,10 @@ IFacetMenu classes.  An error is raise if it is directly called.
 
 Here is the common FacetMenu for the cookery site. The FacetMenu
 class has four attributes: usedfor, links, defaultlink, and enable_only.
-The 'usedfor' attribute assoicates the menu with a specific interface.
-The requireed 'links' attribute is a list of the method names that
+The 'usedfor' attribute associates the menu with a specific interface.
+The required 'links' attribute is a list of the method names that
 return links. The 'defaultlink' attribute defines the selected link when
-the factet is not known for the context being viewed. The enable_links
+the facet is not known for the context being viewed. The enable_links
 attribute is a list of links that are enabled; a subset of links that
 are appropriate for a context object.
 
@@ -444,7 +444,7 @@ is defined in by the RecipeMenu class and the view of recipe.
 
 == Enabled and disabled links ==
 
-Menus are often constructed by subclassing a common menu. The
+Menus are often constructed by sub classing a common menu. The
 common menu defines all the facet links, and the enabled link that are
 common to most content objects.
 
@@ -563,7 +563,7 @@ the cookery objects cannot be adapted to menus.
 
 Once registered, the objects can be adapted. The RecipeFacetMenu can be
 adapted from a Recipe. The RecipeMenu and RecipeQuestionsMenu
-INavigationMenus can also be adapted from a Recipe by incuding the
+INavigationMenus can also be adapted from a Recipe by including the
 facet name.
 
     >>> zcmlcontext = xmlconfig.string("""
@@ -648,7 +648,7 @@ is passed by the helper function.
         selected: True
         linked: False
 
-A link that is unlinked is implcitly selected too. But there are
+A link that is unlinked is implicitly selected too. But there are
 additional rules for the different kinds of menus that may set a
 link to the selected state.
 
@@ -657,7 +657,7 @@ link to the selected state.
 
 Facet links are selected when their name matches the selectedfacetname.
 The question link can be selected by passing 'question' as the
-selectedfacetname. The selection is independant of wheather the link
+selectedfacetname. The selection is independent of whether the link
 is linked, as can be seen when the url is not explicitly passed.
 
     >>> request.getURL()
