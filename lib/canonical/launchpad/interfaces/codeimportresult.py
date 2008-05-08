@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodeImportResultStatus', 'ICodeImportResult', 'ICodeImportResultSet']
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
@@ -139,12 +139,14 @@ class ICodeImportResult(Interface):
         readonly=True, required=True,
         description=_("When the job stopped running."))
 
+    job_duration = Attribute("How long did the job take to run.")
+
 
 class ICodeImportResultSet(Interface):
     """The set of all CodeImportResults."""
 
     def new(code_import, machine, requesting_user, log_excerpt, log_file,
-            status, date_job_started):
+            status, date_job_started, date_job_finished=None):
         """Create a CodeImportResult with the given details.
 
         The date the job finished is assumed to be now and so is not
@@ -159,6 +161,7 @@ class ICodeImportResultSet(Interface):
         :param log_file: A link to the log in the librarian.
         :param status: A status code from CodeImportResultStatus.
         :param date_job_started: The date the job started.
+        :param date_job_finished: The date the job finished, defaults to now.
         """
 
     def getResultsForImport(code_import):

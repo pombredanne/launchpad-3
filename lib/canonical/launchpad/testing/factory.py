@@ -12,9 +12,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from StringIO import StringIO
 import pytz
 
 from zope.component import getUtility
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -32,6 +34,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    ILibraryFileAliasSet,
     IPersonSet,
     IProductSet,
     IProjectSet,
@@ -434,17 +437,24 @@ class LaunchpadObjectFactory:
             machine.setOnline()
         return machine
 
-    def makeCodeImportResult(self):
+    def makeCodeImportResult(self, code_import=None, result_status=None,
+                             date_started=None, date_finished=None):
         """Create and return a new CodeImportResult."""
-        code_import = self.makeCodeImport()
+        if code_import is None:
+            code_import = self.makeCodeImport()
         machine = self.makeCodeImportMachine()
-        requesting_user = self.makePerson()
+        requesting_user = None
         log_excerpt = self.getUniqueString()
-        status = CodeImportResultStatus.FAILURE
-        started = time_counter().next()
-        return getUtility(ICodeImportResultSet).new(code_import, machine,
-            requesting_user, log_excerpt, log_file=None, status=status,
-            date_job_started=started)
+        if result_status is None:
+            result_status = CodeImportResultStatus.FAILURE
+        if date_finished is None:
+            date_finished = time_counter().next()
+        if date_started is None:
+            date_started = date_finished - timedelta(hours=4)
+        log_alias = self.makeLibraryFileAlias()
+        return getUtility(ICodeImportResultSet).new(
+            code_import, machine, requesting_user, log_excerpt, log_alias,
+            result_status, date_started, date_finished)
 
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):
@@ -490,3 +500,11 @@ class LaunchpadObjectFactory:
             flavour)[0]
         request.setQuantities({flavour: template.quantities})
         return request
+
+    def makeLibraryFileAlias(self):
+        """Make a library file, and return the alias."""
+        log_data = self.getUniqueString()
+        filename = self.getUniqueString('filename')
+        log_alias_id = getUtility(ILibrarianClient).addFile(
+            filename, len(log_data), StringIO(log_data), 'text/plain')
+        return getUtility(ILibraryFileAliasSet)[log_alias_id]

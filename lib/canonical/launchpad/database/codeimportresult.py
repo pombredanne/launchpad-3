@@ -49,6 +49,10 @@ class CodeImportResult(SQLBase):
         """See `ICodeImportResult`."""
         return self.date_created
 
+    @property
+    def job_duration(self):
+        return self.date_job_finished - self.date_job_started
+
 
 class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""
@@ -56,13 +60,15 @@ class CodeImportResultSet(object):
     implements(ICodeImportResultSet)
 
     def new(self, code_import, machine, requesting_user, log_excerpt,
-            log_file, status, date_job_started):
+            log_file, status, date_job_started, date_job_finished=None):
         """See `ICodeImportResultSet`."""
+        if date_job_finished is None:
+            date_job_finished = UTC_NOW
         return CodeImportResult(
             code_import=code_import, machine=machine,
             requesting_user=requesting_user, log_excerpt=log_excerpt,
             log_file=log_file, status=status,
-            date_job_started=date_job_started)
+            date_job_started=date_job_started, date_created=date_job_finished)
 
     def getResultsForImport(self, code_import):
         """See `ICodeImportResultSet`."""

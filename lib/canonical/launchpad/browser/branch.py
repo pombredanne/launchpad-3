@@ -376,6 +376,24 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
 
+    @cachedproperty
+    def latest_code_import_results(self):
+        """Return the last 10 CodeImportResults."""
+        code_import = self.context.code_import
+        if code_import:
+            return list(code_import.results[:10])
+        else:
+            return None
+
+    @property
+    def last_code_import_result(self):
+        """Return the last CodeImportResult."""
+        results = self.latest_code_import_results
+        if len(results) > 0:
+            return results[0]
+        else:
+            return None
+
 
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.
