@@ -67,7 +67,17 @@ class SFTPServerFile:
         pass
 
     def getAttrs(self):
-        return {}
+        deferred = self.transport.stat(self.name)
+        def translate_stat(stat_val):
+            return {
+                'size': stat_val.st_size,
+                'uid': stat_val.st_uid,
+                'gid': stat_val.st_gid,
+                'permissions': stat_val.st_mode,
+                'atime': stat_val.st_atime,
+                'mtime': stat_val.st_mtime,
+            }
+        return deferred.addCallback(translate_stat)
 
     def close(self):
         pass
