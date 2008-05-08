@@ -195,6 +195,8 @@ The views for IRecipe are registered using ZCML. Each page requires a:
     ... </configure>
     ... """)
 
+    >>> from canonical.launchpad.webapp import Link
+
     >>> from zope.component import provideAdapter
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IFacetLink, ILink, ILinkData)
@@ -243,9 +245,6 @@ associated with content objects. Each menu defines a 'usedfor'
 attribute, which tells the registration machinery how to render this
 menu as an adapter. The sub menu is indirectly associated to the main
 menu though one of its links.
-
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
-    >>> from canonical.launchpad.webapp import Link
 
     >>> class RecipeEditMenu(NavigationMenu):
     ...     usedfor = IRecipeEditMenuMarker
@@ -329,14 +328,13 @@ is defined in by the RecipeMenu class and the view of recipe.
 All menus descend from MenuBase which impose a number of requirements
 upon its descendants.
 
-A menu must define a tuple of links that it manages.
+A menu must define a tuple of links that it manages. When links is
+not defined, or defined is not of the right type, an error is raised.
 
     >>> class BogusMenu(NavigationMenu):
     ...     usedfor = IRecipe
 
-    >>> summarise_links(
-    ...     BogusMenu(recipe),
-    ...     url='http://launchpad.dev/')
+    >>> summarise_links(BogusMenu(recipe))
     Traceback (most recent call last):
      ...
     AssertionError: Subclasses of NavigationMenu must provide self.links
@@ -345,9 +343,7 @@ A menu must define a tuple of links that it manages.
     ...     usedfor = IRecipe
     ...     links = 'not a tuple'
 
-    >>> summarise_links(
-    ...     BogusMenu(recipe),
-    ...     url='http://launchpad.dev/')
+    >>> summarise_links(BogusMenu(recipe))
     Traceback (most recent call last):
      ...
     AssertionError: self.links must be a tuple or list.
@@ -373,6 +369,7 @@ This is normally performed in ZCML; without the ZCML registration,
 the cookery objects cannot be adapted to menus.
 
     >>> from zope.component import getMultiAdapter, queryAdapter
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
