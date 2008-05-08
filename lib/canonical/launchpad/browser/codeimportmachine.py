@@ -18,10 +18,11 @@ from zope.schema import TextLine
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    CodeImportEventDataType, CodeImportMachineOfflineReason,
-    CodeImportMachineState, ICodeImportEvent, ICodeImportMachineSet)
+    CodeImportMachineOfflineReason, CodeImportMachineState, ICodeImportEvent,
+    ICodeImportMachineSet)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, GetitemNavigation, LaunchpadFormView,
+    LaunchpadView)
 from canonical.lazr import decorates
 
 
@@ -53,7 +54,9 @@ class UpdateMachineStateForm(Interface):
         title=_('Reason'), required=False, description=_(
             "Why the machine state changing."))
 
+
 class DecoratedEvent:
+    """A CodeImportEvent with cached items."""
 
     decorates(ICodeImportEvent, 'event')
 
@@ -62,10 +65,12 @@ class DecoratedEvent:
 
     @cachedproperty
     def items(self):
+        """Avoid hitting the database multiple times by caching the result."""
         return self.event.items()
 
 
 class CodeImportMachineView(LaunchpadFormView):
+    """The view for looking at an individual code import machine."""
 
     schema = UpdateMachineStateForm
 
@@ -74,6 +79,7 @@ class CodeImportMachineView(LaunchpadFormView):
 
     @property
     def latest_events(self):
+        """The ten most recent events for the machine."""
         return [DecoratedEvent(event) for event in self.context.events[:10]]
 
     @property
@@ -81,7 +87,16 @@ class CodeImportMachineView(LaunchpadFormView):
         """See `LaunchpadFormView`"""
         return {UpdateMachineStateForm: self.context}
 
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`"""
+        return canonical_url(self.context)
+
     def _canChangeToState(self, action):
+        """Is it valid for the machine to move to the next_state.
+
+        The next_state is stored in the data dict of the action.
+        """
         next_state = action.data['next_state']
         if next_state == CodeImportMachineState.QUIESCING:
             return self.context.state == CodeImportMachineState.ONLINE
@@ -93,7 +108,6 @@ class CodeImportMachineView(LaunchpadFormView):
             condition=_canChangeToState)
     def set_online_action(self, action, data):
         self.context.setOnline(self.user, data['reason'])
-        self.next_url = canonical_url(self.context)
 
     @action('Set Offline', name='set_offline',
             data={'next_state': CodeImportMachineState.OFFLINE},
@@ -101,11 +115,9 @@ class CodeImportMachineView(LaunchpadFormView):
     def set_offline_action(self, action, data):
         self.context.setOffline(
             CodeImportMachineOfflineReason.STOPPED, self.user, data['reason'])
-        self.next_url = canonical_url(self.context)
 
     @action('Set Quiescing', name='set_quiescing',
             data={'next_state': CodeImportMachineState.QUIESCING},
             condition=_canChangeToState)
     def set_quiescing_action(self, action, data):
         self.context.setQuiescing(self.user, data['reason'])
-        self.next_url = canonical_url(self.context)
