@@ -382,6 +382,14 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         An object which contains the timeframe and the voucher
         code of a subscription.""")
 
+    requires_commercial_subscription = Attribute("""
+        Whether the project's licensing requires a commercial
+        subscription to use launchpad.""")
+
+    is_permitted = Attribute("""
+        Whether the project's licensing qualifies for free
+        hosting or the project has an up-to-date subscription.""")
+
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):
         """Redeem a voucher and extend the subscription expiration date.

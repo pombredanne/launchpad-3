@@ -208,12 +208,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def requires_commercial_subscription(self):
-        other_licenses = (License.OTHER_COMMERCIAL, License.OTHER_OPEN_SOURCE)
+        other_licenses = (License.OTHER_PROPRIETARY,
+                          License.OTHER_OPEN_SOURCE)
         if self.license_approved:
             # The license was manually approved for free hosting.
             return False
-        elif (len(self.licenses) > 0 and self.license_info == ''
-              and not self.licenses.intersection(other_licenses)):
+        elif (len(self.licenses) > 0
+              and self.license_info in ('', None)
+              and not set(self.licenses).intersection(other_licenses)):
             # The project has a valid open source license.
             return False
         else:

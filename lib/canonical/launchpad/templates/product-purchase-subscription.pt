@@ -18,17 +18,19 @@
 
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Admin">
-  <div tal:condition="not: context/requires_commercial_subscription">
+  <div class="error message"
+       tal:condition="not: context/requires_commercial_subscription">
     This project does not require a commercial subscription to be purchased.
   </div>
-  <div tal:condition="not: has_edit">
+  <div class="error message"
+       tal:condition="not: has_edit">
     You do not have permission to purchase a subscription for this project.
   </div>
   <div tal:condition="python: has_edit and context.requires_commercial_subscription">
     This project's licensing does not qualify for free hosting; therefore,
     a subscription needs to be purchased to continue using Launchpad.
-    <p>
-    Here are the steps to obtain a commercial subscription:
+    <div>
+      Here are the steps to obtain a commercial subscription:
       <ol>
         <li>Purchase a Launchpad subscription in the 
           <a href="https://shop.canonical.com/product_info.php?products_id=134">
@@ -39,8 +41,8 @@
             on your <a href="https://launchpad.net/people/+me/+subscriptions">
             subscription management page</a>.
         </li>
-      </li>
-    </p>
+      </ol>
+    </div>
   </div>
 </div>
 </body>
