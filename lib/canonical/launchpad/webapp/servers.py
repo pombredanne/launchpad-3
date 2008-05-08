@@ -670,6 +670,10 @@ class LaunchpadTestRequest(TestRequest):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
 
+    def setPrincipal(self, principal):
+        """See `IPublicationRequest`."""
+        self.principal = principal
+
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
     """Mock response for use in unit and functional tests.
