@@ -11,6 +11,7 @@ __all__ = [
     'log',
     'db_options',
     'FakeLogger',
+    'QuietFakeLogger',
     ]
 
 import atexit
@@ -31,8 +32,7 @@ from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log, FakeLogger
-        )
+        logger_options, logger, log, FakeLogger, QuietFakeLogger)
 
 # XXX StuartBishop 2005-06-02:
 # We should probably split out all the stuff in this directory that

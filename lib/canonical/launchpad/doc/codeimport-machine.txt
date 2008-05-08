@@ -12,6 +12,8 @@ is, currently capable of performing imports).
     >>> verifyObject(ICodeImportMachineSet, machine_set)
     True
 
+There are additional unit tests for CodeImportMachine in
+canonical.launchpad.database.tests.test_codeimportmachine.
 
 == Retrieving CodeImportMachines ==
 
@@ -43,11 +45,17 @@ there is no machine by that name in the database.
 == Creating CodeImportMachines ==
 
 CodeImportMachines can be created with the 'new' method of
-ICodeImportMachineSet.  New machines are created in the OFFLINE state.
+ICodeImportMachineSet.  New machines can be created in any state, but
+are in the OFFLINE state by default,
 
     >>> new_machine = machine_set.new('frobisher')
     >>> print new_machine.state.name
     OFFLINE
+
+    >>> new_machine2 = machine_set.new(
+    ...     'innocent', CodeImportMachineState.ONLINE)
+    >>> print new_machine2.state.name
+    ONLINE
 
 
 == Modifying CodeImportMachine ==

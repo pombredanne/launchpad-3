@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
     'ITeamMembershipSet',
@@ -253,3 +254,12 @@ class ITeamParticipation(Interface):
     team = Int(title=_("The team"), required=True, readonly=False)
     person = Int(title=_("The member"), required=True, readonly=False)
 
+
+class CyclicalTeamMembershipError(Exception):
+    """A change resulting in a team membership cycle was attempted.
+
+    Two teams cannot be members of each other and there cannot be
+    any cyclical relationships.  So if A is a member of B and B is
+    a member of C then attempting to make C a member of A will
+    result in this error being raised.
+    """    

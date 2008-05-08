@@ -37,7 +37,7 @@ NameVirtualHost 127.0.0.88:80
   # (6) Everything else is proxied to the local loggerhead instance.
 
   RewriteEngine On
-  RewriteMap branch-list txt:/var/tmp/sm-ng/config/launchpad-lookup.txt
+  RewriteMap branch-list txt:/var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
 
   # (1) / -> Launchpad frontpage
   RewriteRule ^/$ http://launchpad.dev [L]
@@ -57,8 +57,8 @@ NameVirtualHost 127.0.0.88:80
   # (6) Everything else is proxied to the local loggerhead instance.
   RewriteRule ^/(.*)$ http://localhost:8080/$1 [L,P]
 
-  DocumentRoot /var/tmp/sm-ng/mirrors
-  <Directory /var/tmp/sm-ng/mirrors/>
+  DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
+  <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
     Options SymLinksIfOwnerMatch
     AllowOverride None
     Options Indexes
