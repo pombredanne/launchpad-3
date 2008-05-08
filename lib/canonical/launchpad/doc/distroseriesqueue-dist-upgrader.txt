@@ -2,12 +2,11 @@
 
 This test will check the upload of dist-upgrade tarballs
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
+  >>> from canonical.launchpad.interfaces import IDistributionSet
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  ...    datadir, getPolicy, mock_logger)
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']

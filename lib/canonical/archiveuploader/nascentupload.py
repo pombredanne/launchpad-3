@@ -522,7 +522,7 @@ class NascentUpload:
         # because it is the only object that is overridden and created in
         # the database.
         if self.binaryful:
-                return
+            return
 
         component = self.changes.dsc.component
         if not self.policy.archive.canUpload(self.changes.signer, component):
