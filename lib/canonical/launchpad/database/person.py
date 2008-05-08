@@ -1828,7 +1828,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setContactAddress(self, email):
         """See `IPerson`."""
         assert self.isTeam(), "This method must be used only for teams."
-        self._setPreferredEmail(email)
+
+        if email is None:
+            if self.preferredemail is not None:
+                email_address = self.preferredemail
+                email_address.status = EmailAddressStatus.VALIDATED
+                email_address.syncUpdate()
+            self._preferredemail_cached = None
+        else:
+            self._setPreferredEmail(email)
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -1872,7 +1880,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
         # Now we update our cache of the preferredemail
-        setattr(self, '_preferredemail_cached', email)
+        self._preferredemail_cached = email
 
     @cachedproperty('_preferredemail_cached')
     def preferredemail(self):

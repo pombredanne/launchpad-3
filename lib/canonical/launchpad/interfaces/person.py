@@ -850,6 +850,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Set the given email address as this team's contact address.
 
         This method must be used only for teams.
+
+        If the team has a contact address its status will be changed to
+        VALIDATED.
+
+        If the given email is None the team is left without a contact address.
         """
 
     def setPreferredEmail(email):
