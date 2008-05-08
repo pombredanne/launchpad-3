@@ -612,8 +612,11 @@ class Archive(SQLBase):
 
     def canUpload(self, user, component=None):
         """See `IArchive`."""
-        return self._authenticate(
-            user, component, ArchivePermissionType.UPLOAD)
+        if self.is_ppa:
+            return user.inTeam(self.owner)
+        else:
+            return self._authenticate(
+                user, component, ArchivePermissionType.UPLOAD)
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""

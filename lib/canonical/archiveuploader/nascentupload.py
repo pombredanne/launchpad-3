@@ -495,7 +495,7 @@ class NascentUpload:
         # Verify PPA uploads.
         if self.is_ppa:
             self.logger.debug("Don't verify signer ACL for PPA")
-            if not self.changes.signer.inTeam(self.policy.archive.owner):
+            if not self.policy.archive.canUpload(self.changes.signer):
                 self.reject("Signer has no upload rights to this PPA")
             return
 
