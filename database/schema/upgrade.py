@@ -79,8 +79,13 @@ def apply_patch(con, major, minor, patch, patch_file):
     full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
     full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
 
-    for sql in re.split('(?xm); \s* $', full_sql):
-        if sql.strip():
+    statement_re = re.compile(
+            r"( (?: [^; \$] | \$ (?! \$) | \$\$.*? \$\$ | \s)+ )",
+            re.DOTALL | re.MULTILINE | re.VERBOSE
+            )
+    for sql in statement_re.split(full_sql):
+        sql = sql.strip()
+        if sql and sql != ';':
             cur.execute(sql) # Will die on a bad patch.
 
     # Ensure the patch updated LaunchpadDatabaseRevision. We could do this
