@@ -94,6 +94,17 @@ class IArchivePermissionSet(Interface):
             are authorised for the supplied component.
         """
 
+    def componentsForUploader(archive, user):
+        """The `ArchivePermission` records for the user's upload components.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to find out which
+            components he has access to.
+
+        :return: `ArchivePermission` records for all the components that
+            'user' is allowed to upload to.
+        """
+
     def uploadersForPackage(archive, sourcepackagename):
         """The `ArchivePermission` records for authorised package uploaders.
 

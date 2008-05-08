@@ -849,9 +849,15 @@ Both, DSC and changesfile were signed:
 Let's modify the current ACL rules for ubuntu, moving the upload
 rights to all components from 'ubuntu-team' to 'sabdfl':
 
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> from canonical.launchpad.database import ArchivePermission
   >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
-  >>> for distro_component in ubuntu.uploaders:
-  ...     distro_component.uploader = new_uploader
+  >>> for permission in ArchivePermission.select("1=1"):
+  ...     permission.person = new_uploader
+  ...     permission.syncUpdate()
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 This time the upload should fail because the ACLs don't let
 "name16", the key owner, upload a package.

@@ -80,11 +80,27 @@ class ArchivePermissionSet:
 
         return auth
 
+    def componentsForUploader(self, archive, user):
+        """See `IArchivePermissionSet`,"""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            %s IN (SELECT TeamParticipation.person
+                   FROM TeamParticipation
+                   WHERE TeamParticipation.person = %s AND
+                         TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD,
+                            user, user))
+
     def uploadersForComponent(self, archive, component=None):
         "See `IArchivePermissionSet`."""
-        return ArchivePermission.selectBy(
-            archive=archive, permission=ArchivePermissionType.UPLOAD,
-            component=component)
+        if component is not None:
+            return ArchivePermission.selectBy(
+                archive=archive, permission=ArchivePermissionType.UPLOAD,
+                component=component)
+        else:
+            return ArchivePermission.selectBy(
+                archive=archive, permission=ArchivePermissionType.UPLOAD)
 
     def uploadersForPackage(self, archive, sourcepackagename):
         "See `IArchivePermissionSet`."""

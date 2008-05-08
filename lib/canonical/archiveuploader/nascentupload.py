@@ -27,9 +27,9 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
-    ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
-    PackagePublishingPocket, QueueInconsistentStateError)
+    ArchivePurpose, IArchivePermissionSet, IBinaryPackageNameSet,
+    IDistributionSet, ILibraryFileAliasSet, ISourcePackageNameSet,
+    NotFoundError, PackagePublishingPocket, QueueInconsistentStateError)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -472,15 +472,11 @@ class NascentUpload:
 
     def _components_valid_for(self, person):
         """Return the set of components this person could upload to."""
-
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForUploader(
+            self.policy.archive, person)
         possible_components = set(
-            acl.component.name for acl in self.policy.distro.uploaders
-            if person in acl)
-
-        if possible_components:
-            self.logger.debug("%s (%d) is an uploader for %s." % (
-                person.displayname, person.id,
-                ', '.join(sorted(possible_components))))
+            permission.component for permission in permissions)
 
         return possible_components
 
@@ -498,39 +494,44 @@ class NascentUpload:
 
         # Verify PPA uploads.
         if self.is_ppa:
-            self.logger.debug("Do verify signer ACL for PPA")
+            self.logger.debug("Don't verify signer ACL for PPA")
             if not self.changes.signer.inTeam(self.policy.archive.owner):
                 self.reject("Signer has no upload rights to this PPA")
             return
 
-        # New packages go straight to the upload queue; we only check upload
-        # rights for old packages.
-        if not self.is_new:
-            return
-
-        if self.changes.signer is None:
-            self.logger.debug(
-                "No signer, therefore no point verifying signer against ACL")
-            return
-
+        # Sometimes an uploader may upload a new package to a component
+        # that he does not have rights to (but has rights to other components)
+        # but we let this through because an archive admin may wish to
+        # override it later.  Consequently, if an uploader has no rights
+        # at all to any component, we reject the upload right now even if it's
+        # NEW.
         possible_components = self._components_valid_for(self.changes.signer)
-
         if not possible_components:
             self.reject(
                 "Signer has no upload rights at all to this distribution.")
+            return
 
-        for uploaded_file in self.changes.files:
-            if not isinstance(uploaded_file, (DSCFile, BaseBinaryUploadFile)):
-                # The only things that matter here are sources and
-                # binaries, because they are the only objects that get
-                # overridden and created in the database.
-                continue
-            if (uploaded_file.component_name not in possible_components and
-                uploaded_file.new == False):
-                self.reject(
-                    "Signer is not permitted to upload to the component "
-                    "'%s' of file '%s'" % (
-                    uploaded_file.component.name, uploaded_file.filename))
+        # New packages go straight to the upload queue; we only check upload
+        # rights for old packages.
+        if self.is_new:
+            return
+
+        # Binary uploads are never signed (they come in via the security
+        # policy or from the buildds) so they don't need any ACL checks.
+        # The only uploaded file that matters is the DSC file for sources
+        # because it is the only object that is overridden and created in
+        # the database.
+        if self.binaryful:
+                return
+
+        component = self.changes.dsc.component
+        if not self.policy.archive.canUpload(self.changes.signer, component):
+            # The uploader has no rights to the component.
+            self.reject(
+                "Signer is not permitted to upload to the component "
+                "'%s' of file '%s'" % (component.name,
+                                       self.changes.dsc.filename))
+
 
     #
     # Handling checking of versions and overrides
