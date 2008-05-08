@@ -115,7 +115,8 @@ class TransportSFTPServer:
         class DirectoryListing:
 
             def __init__(self, files):
-                self.position = iter(files)
+                self.position = (
+                    (filename, filename, {}) for filename in files)
 
             def __iter__(self):
                 return self

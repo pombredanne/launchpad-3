@@ -177,7 +177,9 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.build_tree(['foo/', 'foo/bar/', 'foo/baz'])
         deferred = self.sftp_server.openDirectory('foo')
         def check_open_directory(directory):
-            self.assertEqual(set(['baz', 'bar']), set(directory))
+            self.assertEqual(
+                [('bar', 'bar', {}), ('baz', 'baz', {})],
+                list(sorted((directory))))
             directory.close()
         return deferred.addCallback(check_open_directory)
 
