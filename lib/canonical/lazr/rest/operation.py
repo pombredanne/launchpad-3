@@ -51,8 +51,12 @@ class ResourceOperation:
             deserializer = getMultiAdapter((field, self.request),
                                            IFieldDeserializer)
             field.bind(self.context)
+            value = self.request.get(name)
+            if value is None:
+                value = field.default
+            else:
+                value = deserializer.deserialize(value)
             try:
-                value = deserializer.deserialize(self.request.get(name))
                 field.validate(value)
             except RequiredMissing:
                 errors.append("%s: Required input is missing." % name)
