@@ -561,7 +561,7 @@ the cookery objects cannot be adapted to menus.
     None
 
 Once registered, the objects can be adapted. The RecipeMenu can be
-adapted from a Recipe. 
+adapted from a Recipe.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
