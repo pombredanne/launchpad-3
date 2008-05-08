@@ -550,7 +550,8 @@ This is normally performed in ZCML; without the ZCML registration,
 the cookery objects cannot be adapted to menus.
 
     >>> from zope.component import getMultiAdapter, queryAdapter
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IFacetMenu, INavigationMenu)
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
@@ -560,8 +561,10 @@ the cookery objects cannot be adapted to menus.
     >>> print queryAdapter(recipe_view, INavigationMenu)
     None
 
-Once registered, the objects can be adapted. The RecipeMenu can be
-adapted from a Recipe.
+Once registered, the objects can be adapted. The RecipeFacetMenu can be
+adapted from a Recipe. The RecipeMenu and RecipeQuestionsMenu
+INavigationMenus can also be adapted from a Recipe by incuding the
+facet name.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
@@ -575,10 +578,20 @@ adapted from a Recipe.
     ... </configure>
     ... """)
 
+    >>> recipe_facetmenu = queryAdapter(
+    ...     recipe, IFacetMenu)
+    >>> recipe_facetmenu
+    <RecipeFacetMenu ...>
+
     >>> recipe_navigationmenu = queryAdapter(
     ...     recipe, INavigationMenu, name='cookery')
     >>> recipe_navigationmenu
     <RecipeMenu ...>
+
+    >>> recipe_questions_navigationmenu = queryAdapter(
+    ...     recipe, INavigationMenu, name='questions')
+    >>> recipe_questions_navigationmenu
+    <RecipeQuestionsMenu ...>
 
 And the RecipeEditMenu can be retrieved by adapting the recipe's
 view +edit-ingredients.
@@ -814,10 +827,14 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
 
-    >>> def summarise_links_dict(links_dict):
-    ...     """List the links and their attributes in the dict."""
-    ...     for link_name in sorted(links_dict):
-    ...         link = removeSecurityProxy(links_dict[link_name])
+    >>> def summarise_tal_links(links):
+    ...     """List the links and their attributes in the dict or list."""
+    ...     is_dict = isinstance(removeSecurityProxy(links), dict)
+    ...     for link_name in sorted(links):
+    ...         if is_dict:
+    ...             link = removeSecurityProxy(links[link_name])
+    ...         else:
+    ...             link = removeSecurityProxy(link_name)
     ...         print 'link %s' % link.name
     ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
@@ -829,9 +846,31 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
     >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
 
+    >>> links_list = test_tales(
+    ...     'context/menu:facet', context=recipe, request=request)
+    >>> summarise_tal_links(links_list)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: None
+        selected: True
+        linked: True
+    link questions
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+questions
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+    link variations
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+variations
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+
     >>> links_dict = test_tales(
     ...     'context/menu:navigation', context=recipe, request=request)
-    >>> summarise_links_dict(links_dict)
+    >>> summarise_tal_links(links_dict)
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
@@ -848,7 +887,7 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> links_dict = test_tales(
     ...     'context/menu:navigation', context=recipe_journal_view,
     ...     request=request)
-    >>> summarise_links_dict(links_dict)
+    >>> summarise_tal_links(links_dict)
     link read_journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
         enabled: True
