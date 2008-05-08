@@ -10,14 +10,41 @@ from bzrlib import urlutils
 
 from canonical.codehosting.sftp import FatLocalTransport, TransportSFTPServer
 from twisted.conch.ssh import filetransfer
+from twisted.internet import defer
 from twisted.python import failure
+from twisted.python.util import mergeFunctionMetadata
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 
-class TestSFTPServer(TestCaseInTempDir):
+class AsyncTransport:
+    """Why are you even looking at this?
+
+    This wraps around a Bazaar transport and makes all of its methods return
+    Deferreds using maybeDeferred.
+
+    In addition to normal Bazaar transport methods, this also supports
+    writeChunk and local_realPath.
+    """
+
+    def __init__(self, transport):
+        self._transport = transport
+
+    def __getattr__(self, name):
+        maybe_method = getattr(self._transport, name)
+        if not callable(maybe_method):
+            return maybe_method
+        def defer_it(*args, **kwargs):
+            return defer.maybeDeferred(maybe_method, *args, **kwargs)
+        return mergeFunctionMetadata(maybe_method, defer_it)
+
+
+class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
 
     def setUp(self):
+        TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
-        transport = FatLocalTransport(urlutils.local_path_to_url('.'))
+        transport = AsyncTransport(
+            FatLocalTransport(urlutils.local_path_to_url('.')))
         self.sftp_server = TransportSFTPServer(transport)
 
     def test_writeChunk(self):
@@ -30,7 +57,13 @@ class TestSFTPServer(TestCaseInTempDir):
     def test_readChunk(self):
         self.build_tree_contents([('foo', 'bar')])
         handle = self.sftp_server.openFile('foo', 0, {})
-        self.assertEqual('ar', handle.readChunk(1, 2))
+        deferred = handle.readChunk(1, 2)
+        return deferred.addCallback(self.assertEqual, 'ar')
+
+    def test_readChunkError(self):
+        handle = self.sftp_server.openFile('foo', 0, {})
+        deferred = handle.readChunk(1, 2)
+        return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_setAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
@@ -81,8 +114,8 @@ class TestSFTPServer(TestCaseInTempDir):
 
     def test_realPath(self):
         os.symlink('foo', 'bar')
-        self.assertEqual(
-            os.path.abspath('foo'), self.sftp_server.realPath('bar'))
+        deferred = self.sftp_server.realPath('bar')
+        return deferred.addCallback(self.assertEqual, os.path.abspath('foo'))
 
     def test_makeLink(self):
         self.assertRaises(NotImplementedError, self.sftp_server.makeLink,
@@ -94,9 +127,11 @@ class TestSFTPServer(TestCaseInTempDir):
 
     def test_openDirectory(self):
         self.build_tree(['foo/', 'foo/bar/', 'foo/baz'])
-        directory = self.sftp_server.openDirectory('foo')
-        self.assertEqual(set(['baz', 'bar']), set(directory))
-        directory.close()
+        deferred = self.sftp_server.openDirectory('foo')
+        def assertAndStuff(directory):
+            self.assertEqual(set(['baz', 'bar']), set(directory))
+            directory.close()
+        deferred.addCallback(assertAndStuff)
 
     def test_translatePermissionDenied(self):
         exception = bzr_errors.PermissionDenied('foo')

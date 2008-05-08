@@ -37,7 +37,11 @@ class SFTPServerFile:
         self.transport.writeChunk(self.name, offset, data)
 
     def readChunk(self, offset, length):
-        return self.transport.readv(self.name, [(offset, length)]).next()[1]
+        deferred = self.transport.readv(self.name, [(offset, length)])
+        def get_first_chunk(read_things):
+            return read_things.next()[1]
+        deferred.addCallback(get_first_chunk)
+        return deferred.addErrback(TransportSFTPServer.translateError)
 
     def setAttrs(self, attrs):
         pass
@@ -77,7 +81,8 @@ class TransportSFTPServer:
                 # have this do-nothing method.
                 pass
 
-        return DirectoryListing(self.transport.list_dir(path))
+        deferred = self.transport.list_dir(path)
+        return deferred.addCallback(DirectoryListing)
 
     def openFile(self, path, flags, attrs):
         return SFTPServerFile(self.transport, path)
@@ -109,7 +114,8 @@ class TransportSFTPServer:
     def renameFile(self, oldpath, newpath):
         self.transport.rename(oldpath, newpath)
 
-    def translateError(self, failure):
+    @staticmethod
+    def translateError(failure):
         types_to_codes = {
             bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
