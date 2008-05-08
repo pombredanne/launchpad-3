@@ -2382,7 +2382,7 @@ class PageMacroDispatcher:
         return getattr(self.context, '__pagetype__', 'unset')
 
     def show_actions_menu(self):
-        """Should the actions menu be rendered.
+        """Should the actions menu be rendered?
 
         It should be rendered unless the layout turns it off, or if we are
         running in development mode and the layout has navigation tabs.

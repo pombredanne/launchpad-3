@@ -9,7 +9,8 @@ layout of the page.
 Templates will start by specifying the kind of layout they use. That's
 done by using the 'macro:page' traversal. That expression returns the
 master macro from the main_template.pt and sets on the view the layout
-it's using. It will be usually be used with following METAL fragment:
+it's using. It will be usually be used with following the METAL
+fragment:
 
     <html metal:use-macro="view/macro:page/default" />
 
@@ -50,8 +51,8 @@ rendered in the layout.
 
 For the transition to the new 2.0 inline navigation, there is also a
 macro:show_actions_menu expression that determines if the actions
-portlet navigation layout should be used. That expression is True when
-running in development mode and the pagetype has 'navigationtabs'.
+portlet layout should be used. That expression is True when running in
+development mode and the pagetype has 'navigationtabs'.
 
 So for the 'default' page type, the actions portlet will always be
 shown:

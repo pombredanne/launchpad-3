@@ -15,21 +15,27 @@ contributors.
     No Privileges Person (filter)
 
 
-From this page, we are able to navigate to the translate page...
 
-    >>> print anon_browser.getLink('Translate').url
+This page was converted to the 2.0 inline navigation. It has tabs
+to navigate to other pages.
+
+    >>> navigation_tabs = find_tag_by_id(
+    ...     anon_browser.contents, 'context-navigation-tabs')
+    >>> for link in navigation_tabs.findAll('a'):
+    ...     print "%s:\n%s" % (extract_text(link), link['href'])
+    Description:
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/
+    Translate:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
-
-... the download page...
-
-    >>> print anon_browser.getLink('Download').url
+    Upload a file:
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+    Download:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
 
-... and the upload page...
+And has no actions menu:
 
-    >>> print anon_browser.getLink('Upload a file').url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
-
+    >>> print find_tag_by_id(anon_browser.contents, 'actions')
+    None
 
 User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:
