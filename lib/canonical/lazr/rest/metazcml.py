@@ -17,10 +17,11 @@ from zope.interface.interfaces import IInterface
 from canonical.lazr.rest.declarations import (
     LAZR_WEBSERVICE_EXPORTED, OPERATION_TYPES, generate_collection_adapter,
     generate_entry_adapter, generate_entry_interface,
-    generate_operation_adapter)
+    generate_operation_adapter, WebServiceExceptionView)
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation,
     WebServiceLayer)
+
 
 class IRegisterDirective(Interface):
     """Directive to hook up webservice based on the declarations in a module.
@@ -32,9 +33,16 @@ class IRegisterDirective(Interface):
 def find_exported_interfaces(module):
     """Find all the interfaces in a module marked for export.
 
+    It also includes exceptions that represents errors on the webservice.
+
     :return: iterator of interfaces.
     """
-    for name, interface in inspect.getmembers(module):
+    for name, interface in inspect.getmembers(module, inspect.isclass):
+        if issubclass(interface, Exception):
+            if getattr(interface, '__lazr_webservice_error__', None) is None:
+                continue
+            yield interface
+
         if not IInterface.providedBy(interface):
             continue
         tag = interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
@@ -55,6 +63,10 @@ def register_webservice(context, module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
     for interface in find_exported_interfaces(module):
+        if issubclass(interface, Exception):
+            register_exception_view(context, interface)
+            continue
+
         tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag['type'] == 'entry':
             web_interface = generate_entry_interface(interface)
@@ -96,4 +108,18 @@ def register_webservice_operations(context, interface):
                   (interface, WebServiceLayer), provides, tag['as'], factory,
                   context.info),
             )
+
+
+def register_exception_view(context, exception):
+    """Register WebServiceExceptionView to handle exception on the webservice.
+    """
+    context.action(
+        discriminator=(
+            'view', exception, '+index', WebServiceLayer, WebServiceLayer),
+        callable=handler,
+        args=('provideAdapter',
+              (exception, WebServiceLayer), Interface, '+index',
+              WebServiceExceptionView, context.info),
+        )
+
 

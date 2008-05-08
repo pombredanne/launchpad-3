@@ -20,4 +20,4 @@ from canonical.widgets.popup import (
 from canonical.widgets.password import PasswordChangeWidget
 from canonical.widgets.textwidgets import (
     DelimitedListWidget, LocalDateTimeWidget, LowerCaseTextWidget,
-    StrippedTextWidget, URIWidget)
+    StrippedTextWidget, TokensTextWidget, URIWidget)

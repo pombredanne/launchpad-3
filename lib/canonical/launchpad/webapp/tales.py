@@ -1077,6 +1077,17 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                }
 
 
+class MilestoneFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(title)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'title': self._context.title}
+
+
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
@@ -1129,6 +1140,18 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
 
     implements(ITraversable)
 
+    def link(self):
+        """Return an HTML link to the bugtracker page.
+
+        If the user is not logged-in, the title of the bug tracker is
+        modified to obfuscate all email addresses.
+        """
+        url = self.url()
+        title = self._context.title
+        if getUtility(ILaunchBag).user is None:
+            title = FormattersAPI(title).obfuscate_email()
+        return u'<a href="%s">%s</a>' % (escape(url), escape(title))
+
     def external_link(self):
         """Return an HTML link to the external bugtracker.
 
@@ -1142,6 +1165,23 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         else:
             href = escape(url)
             return u'<a class="link-external" href="%s">%s</a>' % (href, href)
+
+    def external_title_link(self):
+        """Return an HTML link to the external bugtracker.
+
+        If the user is not logged-in, the title of the bug tracker is
+        modified to obfuscate all email addresses. Additonally, if the
+        URL is a mailto: address then no link is returned, just the
+        title text.
+        """
+        url = self._context.baseurl
+        title = self._context.title
+        if getUtility(ILaunchBag).user is None:
+            title = FormattersAPI(title).obfuscate_email()
+            if url.startswith('mailto:'):
+                return escape(title)
+        return u'<a class="link-external" href="%s">%s</a>' % (
+            escape(url), escape(title))
 
     def aliases(self):
         """Generate alias URLs, obfuscating where necessary.
@@ -1166,8 +1206,12 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         """
         if name == 'url':
             return self.url()
+        elif name == 'link':
+            return self.link()
         elif name == 'external-link':
             return self.external_link()
+        elif name == 'external-title-link':
+            return self.external_title_link()
         elif name == 'aliases':
             return self.aliases()
         else:

@@ -4,12 +4,14 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_bugwatcherrortype_for_error',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
     'InvalidBugId',
+    'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
     'UnparseableBugData',
@@ -105,8 +107,13 @@ class UnknownRemoteStatusError(BugWatchUpdateWarning):
     """Raised when a remote bug's status isn't mapped to a `BugTaskStatus`."""
 
 
+class PrivateRemoteBug(BugWatchUpdateWarning):
+    """Raised when a bug is marked private on the remote bugtracker."""
+
+
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
    (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
    (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
    (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),

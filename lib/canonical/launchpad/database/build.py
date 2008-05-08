@@ -724,8 +724,8 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # all orders fallback to -id if the primary order doesn't succeed
-        orderBy.append("-id")
+        # all orders fallback to id if the primary order doesn't succeed
+        orderBy.append("id")
 
 
         queries.append("builder=%s" % builder_id)
@@ -763,8 +763,8 @@ class BuildSet:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
-        # All orders fallback to -id if the primary order doesn't succeed
-        orderBy.append("-id")
+        # All orders fallback to id if the primary order doesn't succeed
+        orderBy.append("id")
 
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
@@ -824,8 +824,8 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # Fallback to ordering by -id as a tie-breaker.
-        orderBy.append("-id")
+        # Fallback to ordering by id as a tie-breaker.
+        orderBy.append("id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 

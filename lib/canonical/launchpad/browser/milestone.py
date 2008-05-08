@@ -5,9 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'milestone_to_structuralheading',
     'MilestoneSetNavigation',
     'MilestoneNavigation',
-    'MilestoneFacets',
     'MilestoneContextMenu',
     'MilestoneAddView',
     'MilestoneEditView',
@@ -19,12 +19,13 @@ from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
-    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
+    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone,
+    IStructuralHeaderPresentation)
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, StandardLaunchpadFacets,
-    ContextMenu, Link, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, enabled_with_permission, GetitemNavigation, Navigation)
+    action, canonical_url, custom_widget, ContextMenu, Link,
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    enabled_with_permission, GetitemNavigation, Navigation)
 
 from canonical.widgets import DateWidget
 
@@ -43,18 +44,9 @@ class MilestoneNavigation(Navigation):
     usedfor = IMilestone
 
 
-class MilestoneFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IMilestone."""
-
-    usedfor = IMilestone
-
-    enable_only = ['overview']
-
-    def overview(self):
-        target = ''
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
+def milestone_to_structuralheading(milestone):
+    """Adapts an `IMilestone` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(milestone.target)
 
 
 class MilestoneContextMenu(ContextMenu):
