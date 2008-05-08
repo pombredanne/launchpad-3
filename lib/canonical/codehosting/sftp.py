@@ -45,7 +45,8 @@ class SFTPServerFile:
         deferred = self.transport.readv(self.name, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        return deferred.addCallback(get_first_chunk)
+        deferred.addCallback(get_first_chunk)
+        return deferred.addErrback(TransportSFTPServer.translateError)
 
     def setAttrs(self, attrs):
         pass
@@ -139,7 +140,8 @@ class TransportSFTPServer:
     def renameFile(self, oldpath, newpath):
         return self.transport.rename(oldpath, newpath)
 
-    def translateError(self, failure):
+    @staticmethod
+    def translateError(failure):
         types_to_codes = {
             bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,

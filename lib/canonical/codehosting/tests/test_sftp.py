@@ -10,9 +10,9 @@ from bzrlib import errors as bzr_errors
 from bzrlib import urlutils
 
 from twisted.conch.ssh import filetransfer
-from twisted.python import failure
 from twisted.conch.interfaces import ISFTPServer
 from twisted.internet import defer
+from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -62,9 +62,10 @@ class TestSFTPAdapter(TrialTestCase):
         return deferred
 
 
-class TestSFTPServer(TestCaseInTempDir):
+class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
 
     def setUp(self):
+        TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
         transport = AsyncTransport(
             FatLocalTransport(urlutils.local_path_to_url('.')))
@@ -82,6 +83,11 @@ class TestSFTPServer(TestCaseInTempDir):
         handle = self.sftp_server.openFile('foo', 0, {})
         deferred = handle.readChunk(1, 2)
         return deferred.addCallback(self.assertEqual, 'ar')
+
+    def test_readChunkError(self):
+        handle = self.sftp_server.openFile('foo', 0, {})
+        deferred = handle.readChunk(1, 2)
+        return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_setAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
