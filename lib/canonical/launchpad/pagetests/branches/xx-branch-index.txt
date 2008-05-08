@@ -315,7 +315,7 @@ So we need to fake that here.
     ...     browser.contents, 'branch-details-table'))
     Project: The Landscape Project
     Get this branch:
-      bzr branch bzr+ssh://name12@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+      bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
 
 Public branches use the lp spec bzr lookup name.

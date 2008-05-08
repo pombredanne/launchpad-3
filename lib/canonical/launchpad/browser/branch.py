@@ -302,14 +302,14 @@ class BranchView(LaunchpadView, FeedsMixin):
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
         if self.user_can_download():
-            return self.context.bzr_identity()
+            return self.context.bzr_identity
         else:
             return None
 
     def bzr_upload_url(self):
         """Return the generic URL for uploading the branch."""
         if self.user_can_upload():
-            return self.context.bzr_identity()
+            return self.context.bzr_identity
         else:
             return None
 
