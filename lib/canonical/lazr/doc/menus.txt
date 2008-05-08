@@ -1,13 +1,14 @@
 = Menus =
 
 Launchpad uses menus associated with content object views and facets
-(a layer associate with a vhost). The NavigationMenu class is the
-base class for constructing menus to browse a content object's views.
+(a layer associate with a vhost). The FacetMenu and NavigationMenu
+are the base classes for constructing menus to browse a content
+object and its views.
 
 
 == Menu prerequisite objects and configuration ==
 
-We require a considerable amount of setup to construct navigation menus
+We require a considerable amount of setup to construct menus
 and observe their behaviour. At a minimum, we need interfaces,
 content objects, and views to be registered before implementing menus.
 
@@ -19,7 +20,7 @@ later, implementations having facets and menus will be defined.
 
     >>> from zope.interface import Interface
 
-    >>> class ICookBook(Interface):
+    >>> class ICookbook(Interface):
     ...     """An object with facets and menus."""
 
     >>> class IRecipe(Interface):
@@ -31,7 +32,7 @@ later, implementations having facets and menus will be defined.
     >>> cookingexample = new.module('cookingexample')
     >>> sys.modules['canonical.lazr.cookingexample'] = cookingexample
 
-    >>> cookingexample.ICookBook = ICookBook
+    >>> cookingexample.ICookbook = ICookbook
     >>> cookingexample.IRecipe = IRecipe
 
 And here are simple content objects that implement the two interfaces.
@@ -54,7 +55,7 @@ for traversable objects.
     ...     """The root of 'cookery', a vhost and facet."""
 
     >>> class Cookbook(BaseContent):
-    ...     implements(ICookBook)
+    ...     implements(ICookbook)
 
     >>> class Recipe(BaseContent):
     ...     implements(IRecipe)
@@ -66,9 +67,8 @@ The content object is discovered by traversing the URL hierarchy.
 Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam.
 Each object has a canonical url derived from its place in the hierarchy.
 
-    >>> from urlparse import urlsplit
     >>> from zope.security.management import endInteraction, newInteraction
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp import canonical_url, urlsplit
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     # Menu testing requires a request object that provides the traversed
@@ -105,10 +105,10 @@ Content objects are not suitable for presentation by themselves; they
 require a view class to adapt them to the required format. An object
 may have many views, each delegated to one aspect of the object.
 
-Menus are used to connect the views into pseudo-hierarchy from the
-last traversed content object. Some views implement a marker
-interface to associate themselves with a specific sub menu below
-a content object's menu.
+Navigation menus are used to connect the views into pseudo-hierarchy
+from the last traversed content object. Some views implement a marker
+interface to associate themselves with a specific sub menu below a
+content object's menu.
 
     >>> from canonical.launchpad.webapp import LaunchpadView
 
@@ -119,21 +119,21 @@ a content object's menu.
     ...     """A marker interface of the RecipeJournalMenu."""
 
     >>> class RecipeIndexView(LaunchpadView):
-    ...     """View for summary of a recipe."""
+    ...     """View for summary of a recipe on the cookery facet."""
     ...     __used_for__ = IRecipe
 
     >>> class RecipeEditInstructionsView(LaunchpadView):
-    ...     """View for editing recipe instructions."""
+    ...     """View for editing recipe instructions on the cookery facet."""
     ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeEditIngredientsView(LaunchpadView):
-    ...     """View for editing recipe ingedients."""
+    ...     """View for editing recipe ingedients on the cookery facet."""
     ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeReadJournalView(LaunchpadView):
-    ...     """View for reading a recipe's journal."""
+    ...     """View for reading a recipe's journal on the cookery facet."""
     ...     __used_for__ = IRecipe
     ...     implements(IRecipeJournalMenuMarker)
 
@@ -158,7 +158,8 @@ The views for IRecipe are registered using ZCML. Each page requires a:
     ...            xmlns:zope="http://namespaces.zope.org/zope"
     ...            xmlns:browser="http://namespaces.zope.org/browser">
     ...   <include package="zope.app" file="meta.zcml" />
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <includeOverrides
+    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
     ...   <browser:defaultView
     ...     for="canonical.lazr.cookingexample.IRecipe"
     ...     name="+index"
@@ -166,24 +167,28 @@ The views for IRecipe are registered using ZCML. Each page requires a:
     ...   <browser:page
     ...     name="+index"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeIndexView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+edit-instructions"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeEditInstructionsView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+edit-ingredients"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeEditIngredientsView"
     ...     permission="zope.Public"
     ...     />
     ...   <browser:page
     ...     name="+read-journal"
     ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
     ...     class="canonical.lazr.cookingexample.RecipeReadJournalView"
     ...     permission="zope.Public"
     ...     />
@@ -296,7 +301,7 @@ is defined in by the RecipeMenu class and the view of recipe.
     ...     """List the links and their attributes."""
     ...     for link in menu.iterlinks(URI(url)):
     ...         print 'link %s' % link.name
-    ...         attributes = ('url', 'menu', 'selected', 'linked')
+    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
@@ -305,11 +310,13 @@ is defined in by the RecipeMenu class and the view of recipe.
     ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index')
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
         menu: <RecipeEditMenu ...>
         selected: True
         linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
         menu: <RecipeJournalMenu ...>
         selected: False
         linked: True
@@ -414,7 +421,7 @@ that the page is in the path of traversed objects.
     >>> def summarise_links(menu):
     ...     for link in menu.iterlinks():
     ...         print 'link %s' % link.name
-    ...         attributes = ('url', 'menu', 'selected', 'linked')
+    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
@@ -422,11 +429,13 @@ that the page is in the path of traversed objects.
     >>> summarise_links(recipe_navigationmenu)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
         menu: <RecipeEditMenu ...>
         selected: True
         linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
         menu: <RecipeJournalMenu ...>
         selected: False
         linked: True
@@ -454,11 +463,13 @@ link is selected too.
     >>> summarise_links(RecipeMenu(recipe))
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
         menu: <RecipeEditMenu ...>
         selected: True
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
         menu: <RecipeJournalMenu ...>
         selected: False
         linked: True
@@ -466,11 +477,13 @@ link is selected too.
     >>> summarise_links(recipe_overview_menu)
     link edit_instructions
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-instructions
+        enabled: True
         menu: None
         selected: False
         linked: True
     link edit_ingredients
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-ingredients
+        enabled: True
         menu: None
         selected: True
         linked: False
@@ -490,11 +503,13 @@ menu of the RecipeMenu will change the state of both menus.
     >>> summarise_links(RecipeMenu(recipe))
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
         menu: <RecipeEditMenu ...>
         selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
         menu: <RecipeJournalMenu ...>
         selected: True
         linked: True
@@ -502,11 +517,13 @@ menu of the RecipeMenu will change the state of both menus.
     >>> summarise_links(queryAdapter(recipe_journal_view, INavigationMenu))
     link read_journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
+        enabled: True
         menu: None
         selected: True
         linked: False
     link write_entry
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
+        enabled: True
         menu: None
         selected: False
         linked: True
@@ -530,11 +547,13 @@ find the instancemethods object.
     >>> summarise_links(RecipeMenu(recipe))
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
         menu: <RecipeEditMenu ...>
         selected: True
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
         menu: <RecipeJournalMenu ...>
         selected: False
         linked: True
@@ -562,7 +581,7 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     ...     for link_name in sorted(links_dict):
     ...         link = removeSecurityProxy(links_dict[link_name])
     ...         print 'link %s' % link.name
-    ...         attributes = ('url', 'menu', 'selected', 'linked')
+    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
@@ -577,11 +596,13 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> summarise_links_dict(links_dict)
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
         menu: <RecipeJournalMenu ...>
         selected: True
         linked: True
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
         menu: <RecipeEditMenu ...>
         selected: False
         linked: True
@@ -592,11 +613,13 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> summarise_links_dict(links_dict)
     link read_journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
+        enabled: True
         menu: None
         selected: True
         linked: False
     link write_entry
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
+        enabled: True
         menu: None
         selected: False
         linked: True
