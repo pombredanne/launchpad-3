@@ -1,0 +1,91 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
+<head>
+  <title>Inline help macros</title>
+</head>
+<body>
+
+
+<div metal:fill-slot="inline-help-popup">
+  <div id="inline-help-pane" class="invisible">
+    <div id="help-body">
+      <div id="help-content-pane" class="invisible"></div>
+      <iframe id="offsite-help-content" class="invisible"></iframe>
+    </div>
+    <div id="help-footer">
+      <button id="help-close-btn" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<metal:macro define-macro="test">Foo</metal:macro>
+
+<metal:wiki-help
+   define-macro="fromwiki"
+   tal:define="wikiurl string:https://help.launchpad.net/
+	       fullurl string:${wikiurl}/${wikipage}">
+  <span class="help-link">
+    (<a
+	target="help"
+	class="inline-help"
+	tal:attributes="href string:${fullurl}">
+      <span metal:define-slot="label">What&rsquo;s&nbsp;this?</span></a>)
+  </span>
+
+  <metal:help-content fill-slot="inline-help-preloads">
+    <div
+       class="help-pane invisible"
+       tal:attributes="id string:help-for-${wikipage}">
+      <div class="help-body">
+	<iframe
+	   class="help-content invisible"
+	   tal:attributes="src string:${fullurl}"></iframe>
+      </div>
+      <div class="help-footer">
+        <button class="help-close-btn" type="button">OK</button>
+      </div>
+    </div>
+  </metal:help-content>
+</metal:wiki-help>
+
+<!-- We use a global counter to generate unique help element IDs. -->
+<tal:global define="global helpcounter python:0" />
+
+<metal:help-fragment
+   define-macro="fromhere"
+   tal:define="helpid python: helpcounter+=1 ">
+  <span class="help-link">
+    (<a
+	target="help"
+	class="inline-help"
+	href="#"
+	tal:attributes="id string:onpage-help-${helpid}">
+      <span metal:define-slot="label">What&rsquo;s&nbsp;this?</span></a>)
+  </span>
+
+  <metal:help-content fill-slot="inline-help-preloads">
+    <div
+       class="help-pane invisible"
+       tal:attributes="id string:help-for-${helpid}">
+      <div class="help-body">
+	<div
+	   metal:define-slot="content"
+	   class="help-content invisible" />
+      </div>
+      <div class="help-footer">
+        <button class="help-close-btn" type="button">OK</button>
+      </div>
+    </div>
+  </metal:help-content>
+</metal:help-fragment>
+
+</body>
+</html>

@@ -123,6 +123,20 @@
 		(<a href="https://help.launchpad.net/OpenID"
 		    class="inline-help" target="help"
 		    >What's&nbsp;this?</a>)</span>
+
+	      <metal:help
+		 use-macro="context/@@+inline-help/fromwiki"
+		 tal:define="wikipage string:OpenID" />
+
+	      <metal:help
+		 use-macro="context/@@+inline-help/fromhere">
+		<div metal:fill-slot="content">
+		  <p>
+		    Everything you ever wanted to know about OpenID.
+		  </p>
+		</div>
+	      </metal:help>
+
 	    </th>
             <td title="This URL is not disclosed to others.">
               <img src="/@@/private" alt="" />
