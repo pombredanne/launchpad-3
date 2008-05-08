@@ -320,7 +320,6 @@ is defined in by the RecipeMenu class and the view of recipe.
 All menus descend from MenuBase which impose a number of requirements
 upon its descendants.
 
-
 A menu must define a tuple of links that it manages.
 
     >>> class BogusMenu(NavigationMenu):
@@ -476,9 +475,9 @@ link is selected too.
         selected: True
         linked: False
 
-The link state changes when a url that corresponding with a link in
-another submenu is viewed. Viewing the +read_journal view in the Journal
-submenu of the RecipeMenu will change the state of both menus.
+The link state changes when a url corresponding with a link in another
+sub menu is viewed. Viewing the +read_journal view in the Journal sub
+menu of the RecipeMenu will change the state of both menus.
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev'
