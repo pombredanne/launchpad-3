@@ -109,3 +109,74 @@ The directive can only be used from within a class scope:
     TypeError: use_template() can only be used from within a class
     definition.
 
+
+== copy_attribute() ==
+
+use_template() uses the copy_attribute() function to copy attributes from
+the original interface. It can also be used on its own to make a copy of
+an interface attribute or schema field.
+
+    >>> from canonical.lazr.interface import copy_attribute
+
+    >>> illuminated = copy_attribute(Initiated['illuminated'])
+    >>> illuminated
+    <...Choice...>
+    >>> illuminated.__name__
+    'illuminated'
+    >>> illuminated.title
+    u'Has seen the fnords?'
+
+The interface attribute is cleared:
+
+    >>> print illuminated.interface
+    None
+
+It also supports the Field ordering (the copied field will have an
+higher order than its original.)
+
+    >>> Initiated['illuminated'].order < illuminated.order
+    True
+
+The parameter to the function must provide IAttribute:
+
+    >>> copy_attribute(MyModel)
+    Traceback (most recent call last):
+      ...
+    TypeError: <...MyModel...> doesn't provide IAttribute.
+
+
+== copy_field() ==
+
+There is also a copy_field() field function that can be used to copy a
+schema field and override some of the copy attributes at the same time.
+
+    >>> from canonical.lazr.interface import copy_field
+    >>> age = copy_field(
+    ...     MyModel['age'], title=u'The age.', required=False,
+    ...     arbitrary=1)
+    >>> age.__class__.__name__
+    'Int'
+    >>> age.title
+    u'The age.'
+    >>> age.arbitrary
+    1
+    >>> age.required
+    False
+    >>> MyModel['age'].required
+    True
+
+If the value for an overridden field is invalid, an exception will be
+raised:
+
+    >>> copy_field(MyModel['age'], title='This should be unicode')
+    Traceback (most recent call last):
+      ...
+    WrongType: ...
+
+That function can only be called on an IField:
+
+    >>> copy_field(Initiated['fancy_value'])
+    Traceback (most recent call last):
+      ...
+    TypeError: <...Attribute...> doesn't provide IField.
+

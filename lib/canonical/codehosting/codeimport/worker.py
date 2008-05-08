@@ -17,13 +17,13 @@ import shutil
 import tempfile
 
 from bzrlib.branch import Branch
-from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
 from bzrlib.urlutils import join as urljoin
 
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from canonical.codehosting.codeimport.tarball import (
@@ -35,18 +35,6 @@ from cscvs.cmds import totla
 import cscvs
 import CVS
 import SCM
-
-
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        create_prefix(transport)
 
 
 class BazaarBranchStore:
