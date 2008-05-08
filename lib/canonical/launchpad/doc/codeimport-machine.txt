@@ -12,6 +12,8 @@ is, currently capable of performing imports).
     >>> verifyObject(ICodeImportMachineSet, machine_set)
     True
 
+There are additional unit tests for CodeImportMachine in
+canonical.launchpad.database.tests.test_codeimportmachine.
 
 == Retrieving CodeImportMachines ==
 
@@ -40,14 +42,37 @@ there is no machine by that name in the database.
     None
 
 
+== Canonical URLs ==
+
+In order to be able to have views for the code import machines, they
+need to have a canonical URL.  The CodeImportMachineSet also has a
+canonical URL for set based views.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(machine_set)
+    http://code.launchpad.dev/+code-imports/+machines
+
+A single code import machine is identified by the hostname of the machine
+directly after the canonical URL of the code import machine set.
+
+    >>> print canonical_url(sample_machine)
+    http://code.launchpad.dev/+code-imports/+machines/bazaar-importer
+
+
 == Creating CodeImportMachines ==
 
 CodeImportMachines can be created with the 'new' method of
-ICodeImportMachineSet.  New machines are created in the OFFLINE state.
+ICodeImportMachineSet.  New machines can be created in any state, but
+are in the OFFLINE state by default,
 
     >>> new_machine = machine_set.new('frobisher')
     >>> print new_machine.state.name
     OFFLINE
+
+    >>> new_machine2 = machine_set.new(
+    ...     'innocent', CodeImportMachineState.ONLINE)
+    >>> print new_machine2.state.name
+    ONLINE
 
 
 == Modifying CodeImportMachine ==
