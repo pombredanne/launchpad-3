@@ -6,11 +6,11 @@ layout of the page.
     >>> class FakeView(object):
     ...     pass
 
-Templates will start by specifying the kind of layout they use. That's
-done by using the 'macro:page' traversal. That expression returns the
-master macro from the main_template.pt and sets on the view the layout
-it's using. It will be usually be used with following the METAL
-fragment:
+Templates should start by specifying the kind of pagetype they use.
+That's done by using the 'macro:page' traversal. That expression returns
+the master macro from the main_template.pt and sets on the view the
+layout it's using. The following METAL fragment illustrates the way it's
+usually done:
 
     <html metal:use-macro="view/macro:page/default" />
 

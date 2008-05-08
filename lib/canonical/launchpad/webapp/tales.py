@@ -2387,12 +2387,12 @@ class PageMacroDispatcher:
         It should be rendered unless the layout turns it off, or if we are
         running in development mode and the layout has navigation tabs.
         """
-        if not self.haspage('actionsmenu'):
-            return False
-        elif config.devmode:
+        has_actionsmenu = self.haspage('actionsmenu')
+        if has_actionsmenu and config.devmode:
+            # In devmode, actually hides the actions menu if
+            # the navigation tabs are used.
             return not self.haspage('navigationtabs')
-        else:
-            return True
+        return has_actionsmenu
 
     class LayoutElements:
 
