@@ -13,6 +13,7 @@ __all__ = [
     'BranchDeletionView',
     'BranchEditView',
     'BranchEditWhiteboardView',
+    'BranchRequestImportView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -53,6 +54,7 @@ from canonical.launchpad.interfaces import (
     IBugBranch,
     IBugSet,
     ICodeImportSet,
+    ICodeImportJobWorkflow,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
     IPersonSet,
@@ -1015,3 +1017,28 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'dependent_branch',
                     "The dependent branch must belong to the same project "
                     "as the source branch.")
+
+
+class BranchRequestImportView(LaunchpadFormView):
+
+    schema = IBranch
+    field_names = []
+
+    style = "display: inline"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Import Now', name='request')
+    def request_import_action(self, action, data):
+        getUtility(ICodeImportJobWorkflow).requestJob(
+            self.context.code_import.import_job, self.user)
+
+    @property
+    def prefix(self):
+        return "request%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/@@+request-import" % canonical_url(self.context)

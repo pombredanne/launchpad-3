@@ -182,7 +182,7 @@
 
         <tal:has-job define="job code_import/import_job"
                      condition="job">
-          <p>
+          <div>
           <tal:is-running condition="job/state/enumvalue:RUNNING">
             An import is currently running, and was started
             <tal:date-started replace="job/date_started/fmt:displaydate">
@@ -192,15 +192,24 @@
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
             The next import is scheduled to run
             <tal:overdue condition="job/isOverdue">
-              as soon as possible.
+              as soon as possible<tal:requested-by
+                condition="job/requesting_user">
+                (requested by
+                <tal:requested-by-user
+                   content="structure job/requesting_user/fmt:link">
+                  Some user.
+                </tal:requested-by-user>)</tal:requested-by>.
             </tal:overdue>
             <tal:not-overdue condition="not: job/isOverdue">
               <tal:date-started replace="job/date_due/fmt:displaydate">
                 in 2 hours
               </tal:date-started>.
+              <tal:button
+                 condition="view/user"
+                 replace="structure view/context/@@+request-import" />
             </tal:not-overdue>
           </tal:not-running>
-          </p>
+          </div>
         </tal:has-job>
 
         <tal:last-successful condition="code_import/date_last_successful">
