@@ -46,16 +46,17 @@ class ResourceOperation:
         # Take incoming string key-value pairs from the HTTP request.
         # Transform them into objects that will pass field validation,
         # and that will be useful when the operation is invoked.
+        missing = object()
         for field in self.params:
             name = field.__name__
-            deserializer = getMultiAdapter((field, self.request),
-                                           IFieldDeserializer)
-            field.bind(self.context)
-            value = self.request.get(name)
-            if value is None:
+            if (self.request.get(name, missing) is missing
+                and not field.required):
                 value = field.default
             else:
-                value = deserializer.deserialize(value)
+                deserializer = getMultiAdapter(
+                    (field, self.request), IFieldDeserializer)
+                value = deserializer.deserialize(self.request.get(name))
+            field.bind(self.context)
             try:
                 field.validate(value)
             except RequiredMissing:

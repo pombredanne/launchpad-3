@@ -295,27 +295,6 @@ decorator, which takes normal IField instances.
     ...     def new(author, base_price, title):
     ...         """Create a new book."""
 
-    >>> class IFoo(Interface):
-    ...     export_as_webservice_entry()
-    ...
-    ...     @export_operation_as('foo')
-    ...     @operation_parameters(text=copy_field(IBook['title']))
-    ...     @rename_parameters_as(text='title')
-    ...     @export_read_operation()
-    ...     def bar(text):
-    ...         """will fail."""
-
-    >>> class IFoo(Interface):
-    ...     export_as_webservice_entry()
-    ...
-    ...     @rename_parameters_as(text='title')
-    ...     @export_operation_as('foo')
-    ...     @operation_parameters(text=copy_field(IBook['title']))
-    ...     @export_read_operation()
-    ...     def bar(text):
-    ...         """this will not fail because rename_parameters is the first
-    ...         thing.."""
-
 In the above example, the exported new() method demonstrates two
 features to support having different names on the web service than in
 the internal API.  It is possible to export a method under a different
