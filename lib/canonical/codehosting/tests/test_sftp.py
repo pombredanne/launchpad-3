@@ -179,6 +179,11 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.do_translation_test(
             exception, filetransfer.FX_FILE_IS_A_DIRECTORY)
 
+    def test_translateDirectoryNotEmpty(self):
+        exception = bzr_errors.DirectoryNotEmpty('foo')
+        self.do_translation_test(
+            exception, filetransfer.FX_FAILURE)
+
     def test_translateRandomError(self):
         exception = KeyboardInterrupt()
         result = self.assertRaises(KeyboardInterrupt,
