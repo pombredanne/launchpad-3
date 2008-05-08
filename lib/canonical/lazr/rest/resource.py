@@ -388,6 +388,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
+        import pdb; pdb.set_trace()
         super(EntryResource, self).__init__(context, request)
         self.entry = IEntry(context)
 

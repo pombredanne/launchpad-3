@@ -9,7 +9,6 @@ import threading
 import xmlrpclib
 from datetime import datetime
 
-from zope.app import zapi
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
@@ -19,13 +18,13 @@ from zope.app.publication.requestpublicationregistry import (
     factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.component import getMultiAdapter, getUtility, queryAdapter
-from zope.component.interfaces import ComponentLookupError
-from zope.interface import directlyProvides, implements
+from zope.component import getUtility, queryAdapter, queryMultiAdapter
+from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+from zope.schema.interfaces import IBytes
 from zope.security.interfaces import Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
@@ -46,6 +45,7 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
     OAuthPermission, NonceAlreadyUsed)
+from canonical.launchpad.rest import ByteStorage
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -939,14 +939,26 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 field = entry.schema.get(name)
                 if ICollectionField.providedBy(field):
                     result = self._traverseToScopedCollection(
-                        request, ob, entry, field)
+                        request, entry, field)
+                elif IBytes.providedBy(field):
+                    result = self._traverseToByteStorage(
+                        request, entry, field)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
             request, ob, name)
 
-    def _traverseToScopedCollection(self, request, context, entry, field):
-        """Try to traverse to a collection named name in entry.
+    def _traverseToByteStorage(self, request, entry, field):
+        """Try to traverse to a byte storage resource in entry."""
+        library_file = getattr(entry, field.__name__, None)
+        # Even if the library file is None, we want to allow
+        # traversal, because the request might be a PUT request
+        # creating a file here.
+        byte_storage = ByteStorage(entry, library_file)
+        return byte_storage
+
+    def _traverseToScopedCollection(self, request, entry, field):
+        """Try to traverse to a collection in entry.
 
         This is done because we don't usually traverse to attributes
         representing a collection in our regular Navigation.
@@ -956,7 +968,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         collection = getattr(entry, field.__name__, None)
         if collection is None:
             return None
-        scoped_collection = ScopedCollection(context, entry)
+        scoped_collection = ScopedCollection(entry.context, entry)
         # Tell the IScopedCollection object what collection it's managing,
         # and what the collection's relationship is to the entry it's
         # scoped to.
@@ -990,6 +1002,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
               queryAdapter(ob, IEntry) is not None):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
+        elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
+            resource = queryMultiAdapter((ob, request), IHTTPResource)
         elif IHTTPResource.providedBy(ob):
             # A resource knows how to take care of itself.
             return ob

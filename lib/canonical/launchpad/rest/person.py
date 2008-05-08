@@ -31,8 +31,8 @@ from canonical.lazr import decorates
 
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
-    use_template(IPerson, include=["name", "displayname", "datecreated"])
-
+    use_template(IPerson, include=["name", "displayname", "datecreated",
+                                   "mugshot"])
     teamowner = PublicPersonChoice(
         title=u'Team owner', required=False, readonly=False,
         vocabulary='ValidTeamOwner')
