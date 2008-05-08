@@ -32,6 +32,7 @@ GLOBAL_NAMES = set([
     'login',
     'logout',
     'transaction',
+    'LaunchpadObjectFactory',
     # for page tests
     'admin_browser',
     'anon_browser',

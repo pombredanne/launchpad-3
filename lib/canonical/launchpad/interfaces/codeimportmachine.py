@@ -140,9 +140,6 @@ class ICodeImportMachine(Interface):
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""
 
-    def __getitem__(hostname):
-        """Retrieve a code import machine by hostname."""
-
     def getAll():
         """Return an iterable of all code machines."""
 

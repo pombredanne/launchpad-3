@@ -21,16 +21,21 @@ from canonical.launchpad.interfaces import (
     CodeImportMachineOfflineReason, CodeImportMachineState, ICodeImportEvent,
     ICodeImportMachineSet)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView,
+    action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)
 from canonical.lazr import decorates
 
 
-class CodeImportMachineSetNavigation(GetitemNavigation):
-    """Navigation methods for IBuilder."""
+class CodeImportMachineSetNavigation(Navigation):
+    """Navigation methods for ICodeImportMachineSet."""
     usedfor = ICodeImportMachineSet
 
+    def traverse(self, hostname):
+        """See `Navigation`."""
+        return self.context.getByHostname(hostname)
+
     def breadcrumb(self):
+        """See `Navigation`."""
         return u'Machines'
 
 

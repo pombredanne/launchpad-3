@@ -80,10 +80,6 @@ class CodeImportMachineSet(object):
 
     implements(ICodeImportMachineSet)
 
-    def __getitem__(self, hostname):
-        """See `ICodeImportMachineSet`."""
-        return self.getByHostname(hostname)
-
     def getAll(self):
         """See `ICodeImportMachineSet`."""
         return CodeImportMachine.select()
