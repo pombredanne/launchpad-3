@@ -1,13 +1,13 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""StubPackager utility.
+"""FakePackager utility.
 
 It builds small and fully functional packages to be used in launchpad test
 suite.
 """
 
 __metaclass__ = type
-__all__ = ['StubPackager']
+__all__ = ['FakePackager']
 
 import atexit
 import os
@@ -74,7 +74,7 @@ binary: binary-arch
 """
 
 
-class StubPackager:
+class FakePackager:
     """Builds small and fully functional debian source packages
 
     It uses a series of templates to build controllable sources to be
@@ -107,7 +107,7 @@ class StubPackager:
 
         Also register an atexit handler to remove it on normal termination.
         """
-        self.sandbox_path = tempfile.mkdtemp(prefix='stubpackager-')
+        self.sandbox_path = tempfile.mkdtemp(prefix='fakepackager-')
 
         def removeSandbox(sandbox):
             """Remove sandbox directory if it exists."""
@@ -262,7 +262,7 @@ class StubPackager:
         Build a upload policy with the given name and override it with
         archive, distribution_name and suite if passed.
 
-        Return a IPackageUpload object in DONE state.
+        Return a `IPackageUpload` object in DONE state.
         """
         changesfile_path = self._getChangefilePathForVersion(version, type)
         assert changesfile_path is not None, (
@@ -298,7 +298,7 @@ class StubPackager:
 
     def buildUpstream(self, suite='hoary', section=None, arch=None,
                       build_orig=True):
-        """Build a stub source upstream version.
+        """Build a fake source upstream version.
 
         This method should only be called once for a given upstream-{name,
         version}.
@@ -397,7 +397,12 @@ class StubPackager:
     def uploadSourceVersion(self, version, policy='insecure', archive=None,
                             distribution_name='ubuntu', suite=None,
                             logger=None, notify=False):
-        """See IStubPackager."""
+        """Upload and publish a source package from the sandbox directory.
+
+        See `_doUpload`.
+
+        Return the corresponding publishing record.
+        """
         policy = findPolicyByName(policy)
 
         if logger is None:

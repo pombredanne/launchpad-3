@@ -114,13 +114,13 @@ to be able to accept the NEW packages.
     >>> selection = ComponentSelection(
     ...     distroseries=hoary, component=universe)
 
-`StubPackager` (see stubpackager.txt) handles the packaging and upload
+`FakePackager` (see fakepackager.txt) handles the packaging and upload
 of a new source series for us. We can use this to avoid messing with
 sampledata to create valid packages.
 
-    >>> from canonical.launchpad.testing.stubpackager import StubPackager
+    >>> from canonical.launchpad.testing.fakepackager import FakePackager
     >>> login('foo.bar@canonical.com')
-    >>> packager = StubPackager(
+    >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
 
 And setup the test_keys in order to build and upload signed packages.
