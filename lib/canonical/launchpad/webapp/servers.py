@@ -950,11 +950,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     def _traverseToByteStorage(self, request, entry, field):
         """Try to traverse to a byte storage resource in entry."""
-        library_file = getattr(entry, field.__name__, None)
         # Even if the library file is None, we want to allow
         # traversal, because the request might be a PUT request
         # creating a file here.
-        byte_storage = ByteStorage(entry, library_file)
+        byte_storage = ByteStorage(entry, field.bind(entry))
         return byte_storage
 
     def _traverseToScopedCollection(self, request, entry, field):
@@ -1003,6 +1002,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
         elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
+            # Object can be adapted to a resource.
             resource = queryMultiAdapter((ob, request), IHTTPResource)
         elif IHTTPResource.providedBy(ob):
             # A resource knows how to take care of itself.

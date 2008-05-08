@@ -10,9 +10,18 @@ __all__ = [
     'IByteStorageResource'
 ]
 
+
+from cStringIO import StringIO
+
+from zope.component import getUtility
 from zope.interface import Attribute, Interface, implements
+from zope.publisher.interfaces import NotFound
+
 from canonical.lazr.interfaces import IHTTPResource
 from canonical.lazr.rest.resource import HTTPResource
+
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+
 
 class IByteStorage(Interface):
     """A sequence of bytes stored on the server."""
@@ -23,10 +32,14 @@ class IByteStorage(Interface):
 class ByteStorage:
     """See IByteStorage."""
     implements(IByteStorage)
-    def __init__(self, entry, library_file):
+    def __init__(self, entry, field):
         self.entry = entry
-        self.library_file = library_file
+        self.field = field
 
+    @property
+    def filename(self):
+        """Name of the file to be stored."""
+        return self.field.__name__
 
 class IByteStorageResource(IHTTPResource):
     """A resource that represents an individual object."""
@@ -74,15 +87,24 @@ class ByteStorageResource(HTTPResource):
         # If the bytestorage is just a dummy, return 404
         # Otherwise, look up the object in the library
         # Return its value
-        pass
+        file_alias = getattr(self.context.entry, self.context.filename)
+        if file_alias is None:
+            raise NotFound(self.context, '', self.request)
+        self.request.response.setStatus(303) # See Other
+        self.request.response.setHeader('Location', file_alias.getURL())
 
-    def do_PUT(self):
-        import pdb; pdb.set_trace()
+    def do_PUT(self, type, representation):
         # Look up the object in the library
         # Set its value
-        pass
+        file_alias = getattr(self.context.entry, self.context.filename)
+        if file_alias is None:
+            # Response code should be 201
+            pass
+        file_alias = getUtility(ILibraryFileAliasSet).create(
+            name=self.context.filename, size=len(representation),
+            file=StringIO(representation), contentType=type)
+        setattr(self.context.entry, self.context.filename, file_alias)
 
     def do_DELETE(self):
-        # Look up the object in the library
-        # Delete it
-        pass
+        setattr(self.context.entry, self.context.filename, None)
+
