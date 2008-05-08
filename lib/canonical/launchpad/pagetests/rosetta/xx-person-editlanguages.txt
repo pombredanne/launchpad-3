@@ -66,11 +66,11 @@ encoded string in the Accept-Language header, we won't consider that
 as a valid language code.
 
 We are also pretending that this request is coming from someone in
-Serbia (194.247.192.33), to test country detection.  Proxies add
+Monaco (80.94.96.1), to test country detection.  Proxies add
 'X-Forwarded-For' header, which is what the code is handling.
 
     >>> browser = setupBrowser('Basic test@canonical.com:test')
-    >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
+    >>> browser.addHeader('X-Forwarded-For', '80.94.96.1')
     >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
@@ -84,7 +84,7 @@ don't have data for languages spoken in Serbia, we get information
 about how to contact Rosetta Admins to update it.
 
     >>> country_portlet = find_portlet(browser.contents,
-    ...     'Languages in Serbia and Montenegro')
+    ...     'Languages in Monaco')
     >>> print country_portlet.find('li', 'languages')
     None
     >>> print country_portlet.first('a')['href']

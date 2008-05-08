@@ -15,12 +15,14 @@ from sqlobject import SQLMultipleJoin, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    CodeImportMachineState, ICodeImportEventSet, ICodeImportMachine,
+    CodeImportMachineOfflineReason, CodeImportMachineState,
+    ICodeImportEventSet, ICodeImportMachine,
     ICodeImportMachineSet)
 
 
@@ -44,6 +46,24 @@ class CodeImportMachine(SQLBase):
     events = SQLMultipleJoin(
         'CodeImportEvent', joinColumn='machine',
         orderBy=['-date_created', '-id'])
+
+    def shouldLookForJob(self):
+        """See `ICodeImportMachine`."""
+        job_count = self.current_jobs.count()
+
+        if self.state == CodeImportMachineState.OFFLINE:
+            return False
+        elif self.state == CodeImportMachineState.QUIESCING:
+            if job_count == 0:
+                self.setOffline(
+                    CodeImportMachineOfflineReason.QUIESCED)
+            return False
+        elif self.state == CodeImportMachineState.ONLINE:
+            max_jobs = config.codeimportdispatcher.max_jobs_per_machine
+            return job_count < max_jobs
+        else:
+            raise AssertionError(
+                "Unknown machine state %r??" % self.state)
 
     def setOnline(self, user=None, message=None):
         """See `ICodeImportMachine`."""
@@ -88,6 +108,7 @@ class CodeImportMachineSet(object):
         """See `ICodeImportMachineSet`."""
         return CodeImportMachine.selectOneBy(hostname=hostname)
 
-    def new(self, hostname):
+    def new(self, hostname, state=CodeImportMachineState.OFFLINE):
         """See `ICodeImportMachineSet`."""
-        return CodeImportMachine(hostname=hostname, heartbeat=None)
+        return CodeImportMachine(
+            hostname=hostname, heartbeat=None, state=state)

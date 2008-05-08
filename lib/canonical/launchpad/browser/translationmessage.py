@@ -49,6 +49,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
+
 #
 # Translation-related formatting functions
 #
@@ -1290,7 +1291,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
-        return self.context.potmsgset.sequence
+        return self.context.potmsgset.getSequence(
+            self.context.potmsgset.potemplate)
 
     @property
     def singular_text(self):

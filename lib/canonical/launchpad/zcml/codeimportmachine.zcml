@@ -10,7 +10,8 @@
   <content class="canonical.launchpad.database.CodeImportMachine">
     <implements interface="canonical.launchpad.interfaces.ICodeImportMachine" />
     <allow
-        attributes="id state hostname current_jobs date_created heartbeat events" />
+        attributes="id state hostname current_jobs date_created heartbeat
+                    events shouldLookForJob" />
     <require
         permission="launchpad.Edit"
         attributes="setOnline setOffline setQuiescing" />
