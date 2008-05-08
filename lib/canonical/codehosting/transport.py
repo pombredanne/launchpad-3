@@ -400,7 +400,7 @@ class LaunchpadBranch:
                 # does not exist.  You may supply --create-prefix to
                 # create all leading parent directories."  Which is just
                 # misleading.
-                raise TransportNotPossible(fault.faultString)
+                raise PermissionDenied(fault.faultString)
             elif fault.faultCode == PERMISSION_DENIED_FAULT_CODE:
                 raise PermissionDenied(fault.faultString)
             else:
