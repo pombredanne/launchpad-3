@@ -5,18 +5,13 @@ __metaclass__ = type
 
 
 import errno
+import os
 import os.path
 
 from bzrlib import errors as bzr_errors
-from bzrlib import osutils, urlutils
+from bzrlib import osutils
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
-from twisted.conch.interfaces import ISFTPServer
-from zope.interface import implements
-
-from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, LaunchpadServer)
-from canonical.config import config
 
 
 class FileIsADirectory(bzr_errors.PathError):
@@ -88,28 +83,7 @@ class SFTPServerFile:
         pass
 
 
-def _get_transport_for_dir(directory):
-    url = urlutils.local_path_to_url(directory)
-    return FatLocalTransport(url)
-
-
-def avatar_to_sftp_server(avatar):
-    user_id = avatar.lpid
-    authserver = avatar._launchpad
-    hosted_transport = _get_transport_for_dir(
-        config.codehosting.branches_root)
-    mirror_transport = _get_transport_for_dir(
-        config.supermirror.branchesdest)
-    server = LaunchpadServer(
-        authserver, user_id, hosted_transport, mirror_transport)
-    server.setUp()
-    transport = AsyncLaunchpadTransport(server, server.get_url())
-    return TransportSFTPServer(transport)
-
-
 class TransportSFTPServer:
-
-    implements(ISFTPServer)
 
     def __init__(self, transport):
         self.transport = transport
@@ -152,7 +126,7 @@ class TransportSFTPServer:
         return self.transport.local_realPath(relpath)
 
     def setAttrs(self, path, attrs):
-        return self.openFile(path, 0, {}).setAttrs(attrs)
+        self.openFile(path, 0, {}).setAttrs(attrs)
 
     def getAttrs(self, path, followLinks):
         return self.openFile(path, 0, {}).getAttrs()
