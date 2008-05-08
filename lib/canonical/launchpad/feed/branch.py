@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
@@ -20,7 +21,8 @@ from canonical.launchpad.browser import (
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
-    IBranch, IPerson, IProduct, IProject)
+    BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    IPerson, IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import (
@@ -118,35 +120,59 @@ class BranchListingFeed(BranchFeedBase):
         """See `IFeed`."""
         return "Branches for %s" % self.context.displayname
 
-    def _getRawItems(self):
-        """Get the raw set of items for the feed."""
-        delegate_view = self.delegate_view_class(self.context, self.request)
-        delegate_view.initialize()
-        branches_batch = delegate_view.branches()
-        batch = branches_batch.batch
-        branches = list(batch.list[:self.quantity])
-        return branches
-
 
 class ProductBranchFeed(BranchListingFeed):
     """Feed for all branches on a product."""
 
     usedfor = IProduct
-    delegate_view_class = ProductBranchesView
+
+    def _getRawItems(self):
+        """See `BranchFeedBase._getRawItems`.
+
+        Return the branches for this product sorted by date_created in
+        descending order.
+        """
+        branch_query = getUtility(IBranchSet).getBranchesForProduct(
+            product=self.context, visible_by_user=None,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        return list(branch_query[:self.quantity])
 
 
 class ProjectBranchFeed(BranchListingFeed):
     """Feed for all branches on a product."""
 
     usedfor = IProject
-    delegate_view_class = ProjectBranchesView
+
+    def _getRawItems(self):
+        """See `BranchFeedBase._getRawItems`.
+
+        Return the branches for this project sorted by date_created in
+        descending order.
+        """
+        branch_query = getUtility(IBranchSet).getBranchesForProject(
+            project=self.context, visible_by_user=None,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        return list(branch_query[:self.quantity])
 
 
 class PersonBranchFeed(BranchListingFeed):
     """Feed for a person's branches."""
 
     usedfor = IPerson
-    delegate_view_class = PersonBranchesView
+
+    def _getRawItems(self):
+        """See `BranchFeedBase._getRawItems`.
+        
+        Return the branchs for this person sorted by date_created in descending
+        order.
+        """
+        branch_query = getUtility(IBranchSet).getBranchesForPerson(
+            person=self.context, visible_by_user=None,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        return list(branch_query[:self.quantity])
 
 
 class RevisionPerson:

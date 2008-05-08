@@ -16,40 +16,17 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel,
-    BranchType,
-    CodeImportResultStatus,
-    CodeImportReviewStatus,
-    CodeReviewNotificationLevel,
-    CreateBugParams,
-    EmailAddressStatus,
-    IBranchSet,
-    IBugSet,
-    ICodeImportJobWorkflow,
-    ICodeImportMachineSet,
-    ICodeImportEventSet,
-    ICodeImportResultSet,
-    ICodeImportSet,
-    ICountrySet,
-    IEmailAddressSet,
-    IPersonSet,
-    IProductSet,
-    IProjectSet,
-    IRevisionSet,
-    IShippingRequestSet,
-    ISpecificationSet,
-    IStandardShipItRequestSet,
-    ITranslationGroupSet,
-    License,
-    PersonCreationRationale,
-    RevisionControlSystems,
-    ShipItFlavour,
-    ShippingRequestStatus,
-    SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
-    )
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, CreateBugParams, EmailAddressStatus,
+    IBranchSet, IBugSet, ICodeImportJobWorkflow, ICodeImportMachineSet,
+    ICodeImportEventSet, ICodeImportResultSet, ICodeImportSet, ICountrySet,
+    IEmailAddressSet, IPersonSet, IProductSet, IProjectSet, IRevisionSet,
+    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
+    ITranslationGroupSet, License, PersonCreationRationale,
+    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
+    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
+    UnknownBranchTypeError)
 from canonical.launchpad.ftests import syncUpdate
 
 
@@ -159,20 +136,25 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, team_member, email=None, password=None,
-                 displayname=None):
-        name = self.getUniqueString('person-name')
+    def makeTeam(self, owner, displayname=None, email=None):
+        """Create and return a new, arbitrary Team.
+
+        The subscription policy of this new team will be OPEN.
+
+        :param owner: The IPerson to use as the team's owner.
+        :param displayname: The team's display name.  If not given we'll use
+            the auto-generated name.
+        :param email: The email address to use as the team's contact address.
+        """
+        name = self.getUniqueString('team-name')
         if displayname is None:
-            displayname = self.getUniqueString('person-display-name')
+            displayname = name
         team = getUtility(IPersonSet).newTeam(
-            team_member, name, displayname=displayname,
+            owner, name, displayname,
             subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
-
-        if email is None:
-            email = "%s@example.com" % self.getUniqueString('email')
-        address = getUtility(IEmailAddressSet).new(email, team)
-        team.setContactAddress(address)
-
+        if email is not None:
+            team.setContactAddress(
+                getUtility(IEmailAddressSet).new(email, team))
         return team
 
     def makeTranslationGroup(
@@ -187,27 +169,32 @@ class LaunchpadObjectFactory:
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
 
-    def makeProduct(self, name=None, project=None):
+    def makeProduct(self, name=None, project=None, displayname=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProductSet).createProduct(
-            owner, name,
-            self.getUniqueString('displayname'),
+            owner,
+            name,
+            displayname,
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
             licenses=[License.GNU_GPL_V2], project=project)
 
-    def makeProject(self, name=None):
+    def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('project-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProjectSet).new(
             name,
-            self.getUniqueString('displayname'),
+            displayname,
             self.getUniqueString('title'),
             None,
             self.getUniqueString('summary'),

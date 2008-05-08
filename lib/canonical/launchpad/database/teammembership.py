@@ -2,7 +2,11 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
+__all__ = [
+    'TeamMembership',
+    'TeamMembershipSet',
+    'TeamParticipation',
+    ]
 
 from datetime import datetime, timedelta
 import itertools
@@ -27,9 +31,9 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ILaunchpadCelebrities, IPersonSet, ITeamMembership, ITeamMembershipSet,
+    ITeamParticipation, TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -284,10 +288,17 @@ class TeamMembership(SQLBase):
             "Bad state transition from %s to %s"
             % (self.status.name, status.name))
 
+        active_states = [approved, admin]
+        if status in active_states and self.team in self.person.allmembers:
+            raise CyclicalTeamMembershipError(
+                "Cannot make %(person)s a member of %(team)s because "
+                "%(team)s is a member of %(person)s."
+                % dict(person=self.person.name, team=self.team.name))
+
+
         old_status = self.status
         self.status = status
 
-        active_states = [approved, admin]
         now = datetime.now(pytz.timezone('UTC'))
         if status in [proposed, invited]:
             self.proposed_by = user
@@ -637,4 +648,3 @@ def _fillTeamParticipation(member, team):
         for t in itertools.chain(team.getSuperTeams(), [team]):
             if not m.hasParticipationEntryFor(t):
                 TeamParticipation(person=m, team=t)
-

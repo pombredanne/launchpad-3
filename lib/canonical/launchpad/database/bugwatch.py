@@ -178,7 +178,11 @@ class BugWatch(SQLBase):
                 "running on %(bugtracker)s.",
             BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
                 "doesn't support importing bugs from %(bugtrackertype)s"
-                " bug trackers."}
+                " bug trackers.",
+            BugWatchErrorType.PRIVATE_REMOTE_BUG: "The bug is marked as "
+                "private on the remote bug tracker. Launchpad cannot import "
+                "the status of private remote bugs.",
+            }
 
         if self.last_error_type in error_message_mapping:
             message = error_message_mapping[self.last_error_type]
