@@ -124,9 +124,9 @@
 		    class="inline-help" target="help"
 		    >What's&nbsp;this?</a>)</span>
 
-	      <metal:help
-		 use-macro="context/@@+inline-help/fromwiki"
-		 tal:define="wikipage string:OpenID" />
+	      <tal:help define="wikipage string:OpenID">
+		<metal:help use-macro="context/@@+inline-help/fromwiki"/>
+	      </tal:help>
 
 	      <metal:help
 		 use-macro="context/@@+inline-help/fromhere">

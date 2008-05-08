@@ -400,11 +400,14 @@
       </div>
     </div>
 
-    <div metal:define-slot="inline-help-popup">
-      <!-- An inline frame used for help popups. -->
-    </div>
-    <div metal:define-slot="inline-help-preloads">
-      <!-- Inline help contents pre-loaded for performance reasons. -->
+    <div id="inline-help-pane" class="invisible">
+      <div id="help-body">
+        <div id="help-content-pane" class="invisible"></div>
+        <iframe id="offsite-help-content" class="invisible">Loading...</iframe>
+      </div>
+      <div id="help-footer">
+        <button id="help-close-btn" type="button">OK</button>
+      </div>
     </div>
 
     <div id="menupreload" style="visibility:hidden"

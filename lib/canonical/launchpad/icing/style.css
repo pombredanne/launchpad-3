@@ -662,10 +662,8 @@ a <div> and dynamically positioned by JavaScript.
   z-index: 3000;  /* This should appear above all other content. */
   background-color: #fff;
   width: 300px;
-  height: 200px;
 }
 
-#help-body {height: 170px;}
 #help-footer {
   padding: 3px;
   border-top: 1px solid #ddd;
@@ -676,8 +674,7 @@ a <div> and dynamically positioned by JavaScript.
   margin-top: 3px;
 }
 
-#inline-help-pane.invisible, #inline-help-pane .invisible {display: none;}
-.inline-help-content {display: none;}
+.invisible {display: none;}
 
 span.help-link {font-weight: normal;}
 
