@@ -10,7 +10,7 @@
 
     <mail:queuedDelivery
         permission="zope.SendMail" mailer="smtp"
-        queuePath="/srv/edge.launchpad.net/edge/mail_queue" 
+        queuePath="/srv/edge.launchpad.net/edge/mail_queue"
         />
 
 </configure>
