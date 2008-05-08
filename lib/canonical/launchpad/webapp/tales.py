@@ -87,6 +87,7 @@ class MenuAPI:
     """
 
     def __init__(self, context):
+        self._tales_context = context
         if zope_isinstance(context, dict):
             # We have what is probably a CONTEXTS dict.
             # We get the context out of here, and use that for self.context.
@@ -203,8 +204,8 @@ class MenuAPI:
     def navigation(self):
         """Navigation menu links list."""
         # NavigationMenus may be associated with a content object or one of
-        # its views. Views take precedence.
-        context = self.view or self._context
+        # its views. The context we need is the one from the TAL expression.
+        context = self._tales_context
         menu = INavigationMenu(context, None)
         if menu is None:
             return {}
