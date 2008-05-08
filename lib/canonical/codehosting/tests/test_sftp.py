@@ -100,10 +100,19 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.build_tree_contents([('foo', 'bar')])
         self.sftp_server.openFile('foo', 0, {}).setAttrs({})
 
+    def checkAttrs(self, attrs, stat_value):
+        self.assertEqual(3, attrs['size'])
+        self.assertEqual(os.getuid(), attrs['uid'])
+        self.assertEqual(os.getgid(), attrs['gid'])
+        self.assertEqual(stat_value.st_mode, attrs['permissions'])
+        self.assertEqual(attrs['mtime'], int(stat_value.st_mtime))
+        self.assertEqual(attrs['atime'], int(stat_value.st_atime))
+
     def test_getAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
-        self.assertEqual({}, self.sftp_server.openFile('foo', 0,
-                         {}).getAttrs())
+        stat_value = os.stat('foo')
+        deferred = self.sftp_server.openFile('foo', 0, {}).getAttrs()
+        return deferred.addCallback(self.checkAttrs, stat_value)
 
     def test_ServersetAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
@@ -111,7 +120,9 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
 
     def test_ServergetAttrs(self):
         self.build_tree_contents([('foo', 'bar')])
-        self.assertEqual({}, self.sftp_server.getAttrs('foo', False))
+        stat_value = os.stat('foo')
+        deferred = self.sftp_server.getAttrs('foo', False)
+        return deferred.addCallback(self.checkAttrs, stat_value)
 
     def test_removeFile(self):
         self.build_tree_contents([('foo', 'bar')])
