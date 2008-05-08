@@ -227,7 +227,7 @@ def listSequences(cur):
                 rv.append( (schema, sequence, None, None) )
     return rv
 
-def prepare_resetSequences(cur):
+def generateResetSequencesSQL(cur):
     """Return SQL that will reset table sequences to match the data in them.
     """
     stmt = []
@@ -268,7 +268,7 @@ def resetSequences(cur):
     >>> int(cur.fetchone()[0])
     1
     """
-    cur.execute(prepare_resetSequences(cur))
+    cur.execute(generateResetSequencesSQL(cur))
 
 # Regular expression used to parse row count estimate from EXPLAIN output
 _rows_re = re.compile("rows=(\d+)\swidth=")

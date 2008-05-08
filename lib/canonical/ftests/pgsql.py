@@ -10,7 +10,7 @@ import time
 
 import psycopg
 from canonical.database.postgresql import (
-    prepare_resetSequences, resetSequences)
+    generateResetSequencesSQL, resetSequences)
 
 
 class ConnectionWrapper(object):
@@ -167,12 +167,12 @@ class PgTestSetup(object):
             connection_parameters.append('port=%s' % self.host)
         return ' '.join(connection_parameters)
 
-    def prepareResetSequencesSQL(self):
-        """Return a SQL statement that resets all sequences. """
+    def generateResetSequencesSQL(self):
+        """Return a SQL statement that resets all sequences."""
         con = psycopg.connect(self._connectionString(self.dbname))
         cur = con.cursor()
         try:
-            return prepare_resetSequences(cur)
+            return generateResetSequencesSQL(cur)
         finally:
             con.close()
 

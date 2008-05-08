@@ -449,7 +449,7 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
         DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
-            dbname='launchpad_ftest_template').prepareResetSequencesSQL()
+            dbname='launchpad_ftest_template').generateResetSequencesSQL()
 
     @classmethod
     @profiled
