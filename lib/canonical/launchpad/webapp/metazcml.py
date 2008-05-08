@@ -218,7 +218,7 @@ def menus(_context, module, classes):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
     menutypes = [IFacetMenu, IApplicationMenu, IContextMenu, INavigationMenu]
-    applicationmenutypes = [IApplicationMenu]
+    applicationmenutypes = [IApplicationMenu, INavigationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
         implemented = None

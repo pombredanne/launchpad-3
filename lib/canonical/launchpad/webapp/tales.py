@@ -56,6 +56,7 @@ import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -87,6 +88,7 @@ class MenuAPI:
     """
 
     def __init__(self, context):
+        self._tales_context = context
         if zope_isinstance(context, dict):
             # We have what is probably a CONTEXTS dict.
             # We get the context out of here, and use that for self.context.
@@ -203,9 +205,14 @@ class MenuAPI:
     def navigation(self):
         """Navigation menu links list."""
         # NavigationMenus may be associated with a content object or one of
-        # its views. Views take precedence.
-        context = self.view or self._context
-        menu = INavigationMenu(context, None)
+        # its views. The context we need is the one from the TAL expression.
+        context = self._tales_context
+        if self._selectedfacetname is not None:
+            selectedfacetname = self._selectedfacetname
+        else:
+            view =  get_current_view(self._request)
+            selectedfacetname = getattr(view, '__launchpad_facetname__', None)
+        menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
         if menu is None:
             return {}
         else:

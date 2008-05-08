@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'enabled_with_permission',
     'escape',
+    'get_current_view',
     'nearest_context_with_adapter',
     'nearest_adapter',
     'structured',
@@ -100,6 +101,25 @@ def nearest_adapter(obj, interface):
     context, adapter = nearest_context_with_adapter(obj, interface)
     # Will be None, None if not found.
     return adapter
+
+
+def get_current_view(request=None):
+    """Return the current view or None.
+
+    :param request: A `IHTTPApplicationRequest`. If request is None, the
+        current browser request is used.
+
+    Returns the view from requests that provide IHTTPApplicationRequest.
+    """
+    request = request or get_current_browser_request()
+    if request is None:
+        return
+    view = request.traversed_objects[-1]
+    # Note: The last traversed object may be a view's instance method.
+    if zope_isinstance(view, types.MethodType):
+        bare = removeSecurityProxy(view)
+        view = bare.im_self
+    return view
 
 
 class LinkData:
@@ -400,12 +420,9 @@ class NavigationMenu(MenuBase):
         in a top-level menu is considered to be selected if the view's
         menu is an instance of the link's menu
         """
-        view = request.traversed_objects[-1]
-        # Note: The last traversed object may be a view's instance method.
-        if zope_isinstance(view, types.MethodType):
-            bare = removeSecurityProxy(view)
-            view = bare.im_self
-        return queryAdapter(view, INavigationMenu)
+        view = get_current_view(request)
+        facet = getattr(view, '__launchpad_facetname__', None)
+        return queryAdapter(view, INavigationMenu, name=facet)
 
     def _is_link_menu(self, link, menu):
         """Return True if menu is an instance of link's menu, otherwise False.
