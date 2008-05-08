@@ -1,0 +1,139 @@
+= Archive Permissions =
+
+The ArchivePermission table gives us a way of looking up permissions for
+operations in the archive context.  The IArchivePermission utility adds
+an easy way of accessing the data through convenient helpers.
+
+Two main operations are supported: upload and queue administration.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePermissionType, IArchivePermission, IArchivePermissionSet)
+    >>> from canonical.launchpad.database import ArchivePermission
+
+    >>> permission_set = getUtility(IArchivePermissionSet)
+
+The ArchivePermission context class implements the IArchivePermission
+interface.
+
+    >>> random_permission = ArchivePermission.get(1)
+    >>> verifyObject(IArchivePermission, random_permission)
+    True
+
+It's possible to make a direct permission enquiry using the method
+'checkAuthenticated'.  The "Ubuntu Team" has a few permissions set in
+the sample data that we can check.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IComponentSet, IDistributionSet, IPersonSet)
+    >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> main_component = getUtility(IComponentSet)['main']
+
+We can now find out if "Ubuntu Team" has permission to upload to the
+main component.
+
+    >>> main_permissions = permission_set.checkAuthenticated(
+    ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
+    ...     main_component)
+    >>> main_permissions.count()
+    1
+
+    >>> [main_permission] = main_permissions
+
+The fact that an ArchivePermission object is returned means that the
+Ubuntu Team is indeed permissioned to upload to the main archive.  It
+has a number of useful properties that can be checked:
+
+    >>> print main_permission.date_created
+    2006-10-16...
+
+    >>> print main_permission.archive.title
+    Primary Archive for Ubuntu Linux
+
+    >>> main_permission.permission
+    <DBItem ArchivePermissionType.UPLOAD, (1) Archive Upload Rights>
+
+    >>> print main_permission.person.name
+    ubuntu-team
+
+    >>> print main_permission.component.name
+    main
+
+    >>> print main_permission.sourcepackagename
+    None
+
+The checkAuthenticated() call is also able to check someone's
+permission on a SourcePackageName, which gives a smaller radius of
+permission than allowing access to the whole component.  Just pass
+a SourcePacakgeName as the "item" parameter:
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
+    >>> alsa_permissions = permission_set.checkAuthenticated(
+    ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
+    ...     alsa_utils)
+
+Ubuntu Team does not have permission to upload to alsa-utils,
+specifically (which is moot anyway because they have access to the
+component, but this demonstrates package-level permissioning):
+
+    >>> alsa_permissions.count()
+    0
+
+checkAuthenticated() does not know about any other item types, and
+passing a type that it does not know about results in a TypeError:
+
+    >>> permission_set.checkAuthenticated(
+    ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
+    ...     ubuntu)
+    Traceback (most recent call last):
+    ...
+    TypeError: 'item' is not an IComponent or an ISourcePackageName
+
+IArchivePermissionSet also has some helpers to make it very easy to
+check permissions.
+
+uploadersForComponent() returns ArchivePermission records where a person
+or team has permission to upload to the supplied component:
+
+    >>> uploaders = permission_set.uploadersForComponent(
+    ...     ubuntu.main_archive, main_component)
+    >>> for uploader in sorted(uploaders):
+    ...     print uploader.person.name
+    ubuntu-team
+
+uploadersForPackage() returns the ArchivePermission records where a person
+or team has permission to upload to the supplied source package name:
+
+    >>> uploaders = permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, alsa_utils)
+    >>> uploaders.count()
+    0
+
+You can also pass a string package name instead of an ISourcePackageName:
+
+    >>> uploaders = permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, "alsa-utils")
+    >>> uploaders.count()
+    0
+
+Passing a non-existent package name will cause a NotFoundError
+to be thrown.
+
+    >>> uploaders = permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, "fakepackage")
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'fakepackage'
+
+
+queueAdminsForComponent() returns the ArchivePermission records where a
+person or team has permission to administer an archive's package
+queues in that component.
+
+    >>> archive_admins = permission_set.queueAdminsForComponent(
+    ...     ubuntu.main_archive, main_component)
+    >>> for archive_admin in sorted(archive_admins):
+    ...     print archive_admin.person.name
+    ubuntu-team

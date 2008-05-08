@@ -24,6 +24,8 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
+from canonical.launchpad.database.translationtemplateitem import (
+    TranslationTemplateItem)
 
 
 class POTMsgSet(SQLBase):
@@ -447,7 +449,10 @@ class POTMsgSet(SQLBase):
                 % TranslationConstants.MAX_PLURAL_FORMS)
             new_message = TranslationMessage(
                 potmsgset=self,
+                potemplate=pofile.potemplate,
                 pofile=pofile,
+                language=pofile.language,
+                variant=pofile.variant,
                 origin=origin,
                 submitter=submitter,
                 msgstr0=potranslations[0],
@@ -692,3 +697,35 @@ class POTMsgSet(SQLBase):
             except SQLObjectNotFound:
                 pomsgid = POMsgID(msgid=plural_form_text)
             self.msgid_plural = pomsgid
+
+    def setSequence(self, potemplate, sequence):
+        """See `IPOTMsgSet`."""
+        assert self.potemplate == potemplate, (
+            'Given potemplate is not correct"')
+        self.sequence = sequence
+        translation_template_item = TranslationTemplateItem.selectOneBy(
+            potmsgset=self, potemplate=potemplate)
+        if translation_template_item is not None:
+            # Update the sequence for the translation template item.
+            if sequence == 0:
+                translation_template_item.destroySelf()
+            else:
+                translation_template_item.sequence = sequence
+        elif sequence > 0:
+            # Introduce this new entry into the TranslationTemplateItem for
+            # later usage.
+            TranslationTemplateItem(
+                potemplate=potemplate,
+                sequence=sequence,
+                potmsgset=self)
+        else:
+            # There is no entry for this potmsgset in TranslationTemplateItem
+            # table, neither we need to create one, given that the sequence is
+            # zero.
+            pass
+
+    def getSequence(self, potemplate):
+        """See `IPOTMsgSet`."""
+        assert self.potemplate == potemplate, (
+            'Given potemplate is not correct"')
+        return self.sequence
