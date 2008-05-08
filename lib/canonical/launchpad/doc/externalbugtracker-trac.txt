@@ -187,16 +187,15 @@ test.
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
-However, when bad data is encountered in single ticket import mode,
-initializeRemoteBugDB() will fail silently. This is because
-failures in initializeRemoteBugDB() will halt the process of updating
-the bugtracker as a whole. However, the bad data may only be in one bug,
-so it is safer to fail silently here and allow the error to be picked up
-later.
+This is also true of the single bug export mode.
 
     >>> trac.supports_single_exports = True
     >>> trac.initializeRemoteBugDB([6])
-    CALLED urlopen(u'http://test.trac/ticket/6?format=csv')
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData: External bugtracker http://test.trac does not
+    define all the necessary fields for bug status imports (Defined
+    field names: ['<html>']).
 
 Trying to get the remote status of the bug will raise a BugNotFound
 error since the bug was never imported.
@@ -224,7 +223,7 @@ However, _fetchBugData() doesn't actually check the results it returns
 except for checking that they are valid Trac CSV exports. in this case,
 the IDs returned are nothing like the ones we asked for:
 
-    >>> bug_ids = sorted([int(bug['id']) for bug in remote_bugs])
+    >>> bug_ids = sorted(int(bug['id']) for bug in remote_bugs)
     >>> print bug_ids
     [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
 
