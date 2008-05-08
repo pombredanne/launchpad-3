@@ -7,7 +7,6 @@ __metaclass__ = type
 import urllib
 
 from zope.app.zapi import getGlobalSiteManager
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.schema import getFields
 from zope.schema.interfaces import IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
@@ -19,9 +18,9 @@ from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollectionField, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
+from canonical.lazr.interfaces.rest import WebServiceLayer
 
 class WadlAPI:
-
     """Base class for WADL-related function namespaces."""
 
     def _service_root_url(self):
@@ -69,8 +68,16 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         figure it out for them here.
         """
         if IScopedCollection.providedBy(self.context):
+            # Check whether the field has been exported with a different name
+            # and use that if so.
+            webservice_tag = self.context.relationship.queryTaggedValue(
+                'lazr.webservice.exported')
+            if webservice_tag is not None:
+                relationship_name = webservice_tag['as']
+            else:
+                relationship_name = self.context.relationship.__name__
             return (canonical_url(self.context.context) + '/' +
-                    urllib.quote(self.context.relationship.__name__))
+                    urllib.quote(relationship_name))
         else:
             return super(WadlCollectionResourceAPI, self).url()
 
@@ -95,8 +102,7 @@ class WadlResourceAdapterAPI(WadlAPI):
             object.
         """
         operations = getGlobalSiteManager().adapters.lookupAll(
-            (self.context[0], IHTTPApplicationRequest),
-            IResourceOperation)
+            (self.context[0], WebServiceLayer), IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
 
