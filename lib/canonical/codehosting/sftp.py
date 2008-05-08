@@ -4,6 +4,7 @@ __all__ = ['AvatarToSFTPAdapter', 'TransportSFTPServer']
 __metaclass__ = type
 
 
+import errno
 import os.path
 
 from bzrlib import errors as bzr_errors
@@ -18,12 +19,22 @@ from canonical.codehosting.transport import (
 from canonical.config import config
 
 
+class FileIsADirectory(bzr_errors.PathError):
+
+    _fmt = 'File is a directory: %(path)r%(extra)s'
+
+
 class FatLocalTransport(LocalTransport):
 
     def writeChunk(self, name, offset, data):
         abspath = self._abspath(name)
         osutils.check_legal_path(abspath)
-        chunk_file = open(abspath, 'w')
+        try:
+            chunk_file = open(abspath, 'w')
+        except IOError, e:
+            if e.errno != errno.EISDIR:
+                raise
+            raise FileIsADirectory(name)
         chunk_file.seek(offset)
         chunk_file.write(data)
 
@@ -32,21 +43,29 @@ class FatLocalTransport(LocalTransport):
         return os.path.realpath(abspath)
 
 
+def with_sftp_error(func):
+    def decorator(*args, **kwargs):
+        deferred = func(*args, **kwargs)
+        return deferred.addErrback(TransportSFTPServer.translateError)
+    return decorator
+
+
 class SFTPServerFile:
 
     def __init__(self, transport, name):
         self.name = name
         self.transport = transport
 
+    @with_sftp_error
     def writeChunk(self, offset, data):
         return self.transport.writeChunk(self.name, offset, data)
 
+    @with_sftp_error
     def readChunk(self, offset, length):
         deferred = self.transport.readv(self.name, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        deferred.addCallback(get_first_chunk)
-        return deferred.addErrback(TransportSFTPServer.translateError)
+        return deferred.addCallback(get_first_chunk)
 
     def setAttrs(self, attrs):
         pass
@@ -90,6 +109,7 @@ class TransportSFTPServer:
     def makeLink(self, src, dest):
         raise NotImplementedError()
 
+    @with_sftp_error
     def openDirectory(self, path):
         class DirectoryListing:
 
@@ -128,15 +148,19 @@ class TransportSFTPServer:
     def gotVersion(self, otherVersion, extensionData):
         return {}
 
+    @with_sftp_error
     def makeDirectory(self, path, attrs):
         return self.transport.mkdir(path)
 
+    @with_sftp_error
     def removeDirectory(self, path):
         return self.transport.rmdir(path)
 
+    @with_sftp_error
     def removeFile(self, path):
         return self.transport.delete(path)
 
+    @with_sftp_error
     def renameFile(self, oldpath, newpath):
         return self.transport.rename(oldpath, newpath)
 
@@ -146,6 +170,7 @@ class TransportSFTPServer:
             bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
             bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
+            FileIsADirectory: filetransfer.FX_FILE_IS_A_DIRECTORY,
             }
         try:
             sftp_code = types_to_codes[failure.type]

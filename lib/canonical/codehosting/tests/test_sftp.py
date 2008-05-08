@@ -9,6 +9,8 @@ from bzrlib.tests import TestCase, TestCaseInTempDir
 from bzrlib import errors as bzr_errors
 from bzrlib import urlutils
 
+from canonical.codehosting.sftp import (FatLocalTransport,
+    TransportSFTPServer, FileIsADirectory)
 from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPServer
 from twisted.internet import defer
@@ -78,6 +80,12 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.failUnlessExists('foo')
         self.assertFileEqual('bar', 'foo')
 
+    def test_writeChunkError(self):
+        os.mkdir('foo')
+        handle = self.sftp_server.openFile('foo', 0, {})
+        deferred = handle.writeChunk(0, 'bar')
+        return self.assertFailure(deferred, filetransfer.SFTPError)
+
     def test_readChunk(self):
         self.build_tree_contents([('foo', 'bar')])
         handle = self.sftp_server.openFile('foo', 0, {})
@@ -111,20 +119,37 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.sftp_server.removeFile('foo')
         self.failIfExists('foo')
 
+    def test_removeFileError(self):
+        deferred = self.sftp_server.removeFile('foo')
+        return self.assertFailure(deferred, filetransfer.SFTPError)
+
     def test_renameFile(self):
         self.build_tree_contents([('foo', 'bar')])
         self.sftp_server.renameFile('foo', 'baz')
         self.failIfExists('foo')
         self.failUnlessExists('baz')
 
+    def test_renameFileError(self):
+        deferred = self.sftp_server.renameFile('foo', 'baz')
+        return self.assertFailure(deferred, filetransfer.SFTPError)
+
     def test_makeDirectory(self):
         self.sftp_server.makeDirectory('foo', {'permissions': 0777})
         self.assertTrue(os.path.isdir('foo'), 'foo is not a directory')
+
+    def test_makeDirectoryError(self):
+        deferred = self.sftp_server.makeDirectory(
+            'foo/bar', {'permissions': 0777})
+        return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_removeDirectory(self):
         os.mkdir('foo')
         self.sftp_server.removeDirectory('foo')
         self.failIfExists('foo')
+
+    def test_removeDirectoryError(self):
+        deferred = self.sftp_server.removeDirectory('foo')
+        return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_gotVersion(self):
         extended = self.sftp_server.gotVersion('version', {})
@@ -155,8 +180,11 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         def check_open_directory(directory):
             self.assertEqual(set(['baz', 'bar']), set(directory))
             directory.close()
-        deferred.addCallback(check_open_directory)
-        return deferred
+        return deferred.addCallback(check_open_directory)
+
+    def test_openDirectoryError(self):
+        deferred = self.sftp_server.openDirectory('foo')
+        return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_translatePermissionDenied(self):
         exception = bzr_errors.PermissionDenied('foo')
@@ -170,6 +198,11 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         exception = bzr_errors.FileExists('foo')
         self.do_translation_test(
             exception, filetransfer.FX_FILE_ALREADY_EXISTS)
+
+    def test_translateFileIsADirectory(self):
+        exception = FileIsADirectory('foo')
+        self.do_translation_test(
+            exception, filetransfer.FX_FILE_IS_A_DIRECTORY)
 
     def test_translateRandomError(self):
         exception = KeyboardInterrupt()
