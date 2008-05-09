@@ -150,9 +150,9 @@ class BuildQueue(SQLBase):
             msg += "LPack => score zero"
         else:
             # Calculates the urgency-related part of the score.
-            urgency = self.urgency
-            score += score_urgency[urgency]
-            msg += "U+%d " % score_urgency[urgency]
+            urgency = score_urgency[urgency]
+            score += urgency
+            msg += "U+%d " % urgency
 
             # Calculates the component-related part of the score.
             curr_component_name = self.build.current_component.name
