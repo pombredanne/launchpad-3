@@ -17,6 +17,7 @@ import pytz
 import random
 from datetime import datetime
 
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -205,7 +206,7 @@ class Poll(SQLBase):
                  "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "
                  "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)"
                  % (self.id, self.id))
-        results = self._connection.queryAll(query)
+        results = Store.of(self).execute(query).get_all()
         if not results:
             return None
         return [PollOption.get(id) for (id,) in results]
@@ -238,7 +239,7 @@ class Poll(SQLBase):
                 if option1 == option2:
                     pairwise_row.append(None)
                 else:
-                    points = self._connection.queryOne(points_query)[0]
+                    points = Store.of(self).execute(points_query).get_one()[0]
                     pairwise_row.append(points)
             pairwise_matrix.append(pairwise_row)
         return pairwise_matrix
@@ -375,7 +376,7 @@ class Vote(SQLBase):
 
     option = ForeignKey(dbName='option', foreignKey='PollOption')
 
-    preference = IntCol(dbName='preference', notNull=True)
+    preference = IntCol(dbName='preference')
 
     token = StringCol(dbName='token', notNull=True, unique=True)
 
