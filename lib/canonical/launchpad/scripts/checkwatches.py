@@ -88,8 +88,7 @@ def report_warning(message, properties=None, info=None):
     """Create and report a warning as an OOPS.
 
     If no exception info is passed in this will create a generic
-    `BugWatchUpdateWarning` to record. The reason is that the stack
-    trace may be useful for later diagnosis.
+    `BugWatchUpdateWarning` to record.
 
     :param message: See `report_oops`.
     :param properties: See `report_oops`.
@@ -97,9 +96,9 @@ def report_warning(message, properties=None, info=None):
     """
     if info is None:
         # Raise and catch the exception so that sys.exc_info will
-        # return our warning and stack trace.
+        # return our warning.
         try:
-            raise BugWatchUpdateWarning
+            raise BugWatchUpdateWarning(message)
         except BugWatchUpdateWarning:
             return report_oops(message, properties)
     else:
