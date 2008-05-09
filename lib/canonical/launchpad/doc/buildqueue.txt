@@ -224,6 +224,39 @@ and restricted
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
     hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
 
+Let's make sure that language packs have score zero. Create a fake language
+pack build first.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import ISectionSet
+    >>> section_set = getUtility(ISectionSet)
+    >>> [transl_section] = [s for s in section_set
+    ...     if s.name == u'translations']
+    >>> na_hoary = hoary.getSourcePackage('netapplet')
+    >>> na_spr = removeSecurityProxy(
+    ...     na_hoary.currentrelease.sourcepackagerelease)
+    >>> na_spr.section = transl_section
+
+The build score for the fake language pack is zero.
+
+    >>> na_build = na_spr.createBuild(
+    ...     hoary['i386'], PackagePublishingPocket.RELEASE,
+    ...     hoary.main_archive)
+    >>> na_build.createBuildQueueEntry().lastscore
+    0
+
+Please note that the fake language pack ("netapplet 1.0-1") lands at the
+end of the queue due to score zero.
+
+    >>> for bq in bqset.calculateCandidates(archseries):
+    ...     build = bq.build
+    ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
+    hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
+    i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
+    hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
+    i386 build of netapplet 1.0-1 in ubuntu hoary RELEASE (0, 5)
+
+
 Restricting the domain to only hoary/hppa:
 
     >>> archseries = [hoary['hppa']]
