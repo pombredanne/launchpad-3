@@ -655,15 +655,24 @@ So it's hidden initially, and then revealed if JavaScript is available.
 Inline help is different from the popout help panel. It is contained in
 a <div> and dynamically positioned by JavaScript.
 */
-#inline-help-pane {
+#help-pane {
   position: absolute;
   border: 5px solid black;
   padding: 10px;
   z-index: 3000;  /* This should appear above all other content. */
   background-color: #fff;
-  width: 300px;
+  width: 25em;
 }
 
+#help-pane iframe, #help-wait {
+    width: 100%;
+    height: 18em;
+}
+#help-wait-spinner {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
 #help-footer {
   padding: 3px;
   border-top: 1px solid #ddd;

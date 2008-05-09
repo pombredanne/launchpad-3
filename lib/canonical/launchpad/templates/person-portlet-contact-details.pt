@@ -119,24 +119,10 @@
 	   condition="context/required:launchpad.Edit">
 	  <tr tal:condition="context/is_openid_enabled">
 	    <th>OpenID login:<br/>
-	      <span class="help-link">
+	      <span class="help">
 		(<a href="https://help.launchpad.net/OpenID"
-		    class="inline-help" target="help"
-		    >What's&nbsp;this?</a>)</span>
-
-	      <tal:help define="wikipage string:OpenID">
-		<metal:help use-macro="context/@@+inline-help/fromwiki"/>
-	      </tal:help>
-
-	      <metal:help
-		 use-macro="context/@@+inline-help/fromhere">
-		<div metal:fill-slot="content">
-		  <p>
-		    Everything you ever wanted to know about OpenID.
-		  </p>
-		</div>
-	      </metal:help>
-
+		    target="help"
+		    >What&rsquo;s&nbsp;this?</a>)</span>
 	    </th>
             <td title="This URL is not disclosed to others.">
               <img src="/@@/private" alt="" />

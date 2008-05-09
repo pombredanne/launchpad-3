@@ -119,13 +119,6 @@
       permission="zope.Public"
       />
 
-  <browser:page
-      for="*"
-      name="+inline-help"
-      template="../templates/inline-help.pt"
-      permission="zope.Public"
-      />
-
   <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
   shipit-forbidden.pt, initially. -->
   <browser:page
