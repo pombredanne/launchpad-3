@@ -531,7 +531,8 @@ class NascentUpload:
                 # The user doesn't have package-specific rights so
                 # kick him out entirely.
                 self.reject(
-                    "Signer has no upload rights at all to this distribution.")
+                    "Signer has no upload rights at all to this "
+                    "distribution.")
             return
 
         # New packages go straight to the upload queue; we only check upload
