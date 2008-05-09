@@ -72,6 +72,19 @@
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
+    <!--
+    XXX flacoste 2008/05/09 bug=185958:
+    Ideally, we would use webservice_error() to register the view,
+    but cyclic imports prevents us from doing so. This should be fixed once we
+    move webapp stuff into LAZR.
+    -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+        type="canonical.launchpad.layers.WebServiceLayer"
+        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        name="index.html"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.rest.IBugEntry"

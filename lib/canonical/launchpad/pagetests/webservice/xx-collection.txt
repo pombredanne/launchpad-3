@@ -54,6 +54,16 @@ You can also get a larger batch than the default:
   >>> bigger_batch.get('next_collection_link') is None
   True
 
+But requesting a batch size higher than the maximum configured value
+results in a 400 error.
+
+    >>> print webservice.get("/beta/people?ws_start=0&ws_size=1000")
+    HTTP/1.1 400 Bad Request
+    ...
+    Content-Type: text/plain...
+    <BLANKLINE>
+    Maximum for "ws_size" parameter is ...
+
 
 == Element lookup ==
 

@@ -39,6 +39,12 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 class InvalidBatchSizeError(AssertionError):
     """Received a batch parameter that exceed our configured max size."""
 
+    # XXX flacoste 2008/05/09 bug=185958:
+    # Ideally, we would use webservice_error, to set this up and
+    # register the view, but cyclic imports prevents us from doing
+    # so. This should be fixed once we move webapp stuff into LAZR.
+    __lazr_webservice_error__ = 400
+
 
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
