@@ -62,13 +62,13 @@ itself.
 What are the capabilities of this resource?
 
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#PersonEntry'
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
 Since all person resources work the same way, the capabilities of any
 particular person resource are described by reference to a separate
 WADL document. This document is located at the service root (/beta/),
 and the part of the document that describes a person resource has the
-XML id "PersonEntry". We'll look at this document later.
+XML id "PersonEntryAdapter". We'll look at this document later.
 
 To summarize: the WADL representation of an entry is a very short XML
 document that says "The resource at this URL is of type [foo]," where
@@ -152,7 +152,7 @@ is rooted at an <application> tag.
     '...application'
 
 But that <application> tag contains all the information referenced by
-all the other WADL documents in the system. #PersonEntry is here, as
+all the other WADL documents in the system. #PersonEntryAdapter is here, as
 is #PersonSetCollectionAdapter and #ScopedCollection and many other
 targets of a <resource> tag's 'type' attribute. Also located here are
 the descriptions of the JSON representations those resources serve.
@@ -284,7 +284,7 @@ The link's 'type' attribute tells the client about the capabilities of
 the resource at the other end of the link.
 
     >>> assignee_link.attrib['type']
-    'http://api.launchpad.dev/beta/#PersonEntry'
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
 If the link is a link to collection, the 'type' will always be
 'ScopedCollection' (at least for now).
@@ -488,7 +488,7 @@ site.
 
 Any collection resource supports one standard HTTP method (GET) in
 addition to any custom operations.  This particular type of resource
-exposes two custom operations, 'create_person' (POST) and 'people'
+exposes two custom operations, 'create_team' (POST) and 'people'
 (GET).
 
     >>> methods = list(resource_type)
@@ -498,10 +498,10 @@ exposes two custom operations, 'create_person' (POST) and 'people'
 
     >>> [method.attrib['id'] for method in methods]
     ['PersonSetCollectionAdapter-get',
-     'PersonSetCollectionAdapter-create_person',
+     'PersonSetCollectionAdapter-create_team',
      'PersonSetCollectionAdapter-people']
 
-    >>> (get, create_person, people) = methods
+    >>> (get, create_team, people) = methods
 
 The standard GET operation is a way of getting either the
 'collection-page' representation defined above, or else a short WADL
@@ -517,14 +517,15 @@ description of a particular collection, like the one shown earlier.
     >>> wadl_rep.attrib['id']
     'PersonSetCollectionAdapter-wadl'
 
-The 'create_person' custom operation takes a number of parameters.
+The 'create_team' custom operation takes a number of parameters.
 
-    >>> [param.attrib['name'] for param in list(create_person)]
-    ['ws_op', 'email_address', 'comment', 'name', 'display_name', 'password']
+    >>> sorted(param.attrib['name'] for param in list(create_team))
+    ['default_membership_period', 'default_renewal_period', 'display_name',
+     'name', 'subscription_policy', 'team_description', 'ws_op']
 
-    >>> ws_op = create_person[0]
+    >>> ws_op = create_team[0]
     >>> ws_op.attrib['fixed']
-    'create_person'
+    'create_team'
 
 So does the 'people' custom operation.
 
