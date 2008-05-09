@@ -1,0 +1,637 @@
+= Menus =
+
+Launchpad uses menus associated with content object views and facets
+(a layer associate with a vhost). The FacetMenu and NavigationMenu
+are the base classes for constructing menus to browse a content
+object and its views.
+
+
+== Menu prerequisite objects and configuration ==
+
+We require a considerable amount of setup to construct menus
+and observe their behaviour. At a minimum, we need interfaces,
+content objects, and views to be registered before implementing menus.
+
+
+=== Content objects that have menus ===
+
+Menus are retrieved through adaption.  Here are two example interfaces;
+later, implementations having facets and menus will be defined.
+
+    >>> from zope.interface import Interface
+
+    >>> class ICookbook(Interface):
+    ...     """An object with facets and menus."""
+
+    >>> class IRecipe(Interface):
+    ...     """An object with facets and menus."""
+
+    # Create a fake module that we'll patch our examples into.
+    >>> import new
+    >>> import sys
+    >>> cookingexample = new.module('cookingexample')
+    >>> sys.modules['canonical.lazr.cookingexample'] = cookingexample
+
+    >>> cookingexample.ICookbook = ICookbook
+    >>> cookingexample.IRecipe = IRecipe
+
+And here are simple content objects that implement the two interfaces.
+They are derived from a base class that provides the required behaviours
+for traversable objects.
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+    >>> class BaseContent:
+    ...     implements(ICanonicalUrlData)
+    ...
+    ...     def __init__(self, name, parent):
+    ...         self.name = name
+    ...         self.path = name
+    ...         self.inside = parent
+    ...         self.rootsite = None
+
+    >>> class Root(BaseContent):
+    ...     """The root of 'cookery', a vhost and facet."""
+
+    >>> class Cookbook(BaseContent):
+    ...     implements(ICookbook)
+
+    >>> class Recipe(BaseContent):
+    ...     implements(IRecipe)
+
+
+=== Content views associates with menus ===
+
+The content object is discovered by traversing the URL hierarchy.
+Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam.
+Each object has a canonical url derived from its place in the hierarchy.
+
+    >>> from zope.security.management import endInteraction, newInteraction
+    >>> from canonical.launchpad.webapp import canonical_url, urlsplit
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    # Menu testing requires a request object that provides the traversed
+    # objects. This function does most of the work, but views must be
+    # appended to the traversed_objects list after they are created.
+    >>> def make_fake_request(url, traversed_objects=None):
+    ...     """Return a fake request object for menu testing."""
+    ...     url_parts = urlsplit(url)
+    ...     server_url = '://'.join(url_parts[0:2])
+    ...     path_info = url_parts[2]
+    ...     request = LaunchpadTestRequest(
+    ...         SERVER_URL=server_url,
+    ...         PATH_INFO=path_info)
+    ...     request._traversed_names = path_info.split('/')[1:]
+    ...     request.traversed_objects = traversed_objects
+    ...     endInteraction()
+    ...     newInteraction(request)
+    ...     return request
+
+    >>> root = Root('', None)
+    >>> cookbook = Cookbook('joy-of-cooking', root)
+    >>> recipe = Recipe('fried-spam', cookbook)
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     traversed_objects=[cookbook, recipe, None])
+
+    >>> canonical_url(cookbook)
+    u'http://launchpad.dev/joy-of-cooking'
+    >>> canonical_url(recipe)
+    u'http://launchpad.dev/joy-of-cooking/fried-spam'
+
+Content objects are not suitable for presentation by themselves; they
+require a view class to adapt them to the required format. An object
+may have many views, each delegated to one aspect of the object.
+
+Navigation menus are used to connect the views into pseudo-hierarchy
+from the last traversed content object. Some views implement a marker
+interface to associate themselves with a specific sub menu below a
+content object's menu.
+
+    >>> from canonical.launchpad.webapp import LaunchpadView
+
+    >>> class IRecipeEditMenuMarker(Interface):
+    ...     """A marker interface of the RecipeEditMenu."""
+
+    >>> class IRecipeJournalMenuMarker(Interface):
+    ...     """A marker interface of the RecipeJournalMenu."""
+
+    >>> class RecipeIndexView(LaunchpadView):
+    ...     """View for summary of a recipe on the cookery facet."""
+    ...     __used_for__ = IRecipe
+
+    >>> class RecipeEditInstructionsView(LaunchpadView):
+    ...     """View for editing recipe instructions on the cookery facet."""
+    ...     __used_for__ = IRecipe
+    ...     implements(IRecipeEditMenuMarker)
+
+    >>> class RecipeEditIngredientsView(LaunchpadView):
+    ...     """View for editing recipe ingedients on the cookery facet."""
+    ...     __used_for__ = IRecipe
+    ...     implements(IRecipeEditMenuMarker)
+
+    >>> class RecipeReadJournalView(LaunchpadView):
+    ...     """View for reading a recipe's journal on the cookery facet."""
+    ...     __used_for__ = IRecipe
+    ...     implements(IRecipeJournalMenuMarker)
+
+    # Monkey patch the interfaces and views into the cookingexample module.
+    >>> cookingexample.IRecipeEditMenuMarker = IRecipeEditMenuMarker
+    >>> cookingexample.IRecipeJournalMenuMarker = IRecipeJournalMenuMarker
+    >>> cookingexample.RecipeIndexView = RecipeIndexView
+    >>> cookingexample.RecipeEditInstructionsView = RecipeEditInstructionsView
+    >>> cookingexample.RecipeEditIngredientsView = RecipeEditIngredientsView
+    >>> cookingexample.RecipeReadJournalView = RecipeReadJournalView
+
+The views for IRecipe are registered using ZCML. Each page requires a:
+    * name: To get the view by name (the page)
+    * for: The interface being adapted (IRecipe)
+    * class: The class the adapter returns (the view)
+    * permission: The required permission the Principle must possess
+
+    >>> from zope.configuration import xmlconfig
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope"
+    ...            xmlns:zope="http://namespaces.zope.org/zope"
+    ...            xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include package="zope.app" file="meta.zcml" />
+    ...   <includeOverrides
+    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
+    ...   <browser:defaultView
+    ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     name="+index"
+    ...     />
+    ...   <browser:page
+    ...     name="+index"
+    ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
+    ...     class="canonical.lazr.cookingexample.RecipeIndexView"
+    ...     permission="zope.Public"
+    ...     />
+    ...   <browser:page
+    ...     name="+edit-instructions"
+    ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
+    ...     class="canonical.lazr.cookingexample.RecipeEditInstructionsView"
+    ...     permission="zope.Public"
+    ...     />
+    ...   <browser:page
+    ...     name="+edit-ingredients"
+    ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
+    ...     class="canonical.lazr.cookingexample.RecipeEditIngredientsView"
+    ...     permission="zope.Public"
+    ...     />
+    ...   <browser:page
+    ...     name="+read-journal"
+    ...     for="canonical.lazr.cookingexample.IRecipe"
+    ...     facet="cookery"
+    ...     class="canonical.lazr.cookingexample.RecipeReadJournalView"
+    ...     permission="zope.Public"
+    ...     />
+    ... </configure>
+    ... """)
+
+    >>> from canonical.launchpad.webapp import Link
+
+    >>> from zope.component import provideAdapter
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IFacetLink, ILink, ILinkData)
+    >>> from canonical.launchpad.webapp.menu import (
+    ...     FacetLink, MenuLink)
+    >>> from canonical.launchpad.webapp.uri import URI
+
+    # The adapters for the link types used by menus are registered in ZCML.
+    # That is not the focus of this test so they are manually registered.
+    >>> provideAdapter(MenuLink, [ILinkData], ILink)
+    >>> provideAdapter(FacetLink, [ILinkData], IFacetLink)
+
+    >>> def summarise_links(menu, url=None):
+    ...     """List the links and their attributes."""
+    ...     if url is not None:
+    ...         url = URI(url)
+    ...     for link in menu.iterlinks(url):
+    ...         print 'link %s' % link.name
+    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
+    ...         for attrname in attributes:
+    ...             print '    %s: %s' % (attrname, getattr(link, attrname))
+
+
+== The NavigationMenu class ==
+
+Navigation menus are defined for content or view objects.  Each object
+has just one navigation menu, and it is available at all times. A page
+may display the content object's menu and the content object's view's
+menu. The view's menu may be considered to be a sub menu because is may
+be subordinate to the content object's menu.
+
+NavigationMenu is a base class for writing your own INavigationMenu
+implementations. It cannot be used directly.
+
+    >>> from canonical.launchpad.webapp import NavigationMenu
+
+    >>> bad_idea_menu = NavigationMenu(object())
+    >>> for link in bad_idea_menu.iterlinks():
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of NavigationMenu must provide self.links
+
+We will use three subclasses to demonstrate how navigation menus are
+associated with content objects. Each menu defines a 'usedfor'
+attribute, which tells the registration machinery how to render this
+menu as an adapter. The sub menu is indirectly associated to the main
+menu though one of its links.
+
+    >>> class RecipeEditMenu(NavigationMenu):
+    ...     usedfor = IRecipeEditMenuMarker
+    ...     facet = 'cookery'
+    ...
+    ...     links = ('edit_instructions', 'edit_ingredients')
+    ...
+    ...     def edit_instructions(self):
+    ...         target = '+edit-instructions'
+    ...         text = 'Edit instructions'
+    ...         return Link(target, text)
+    ...
+    ...     def edit_ingredients(self):
+    ...         target = '+edit-ingredients'
+    ...         text = 'Edit ingredients'
+    ...         return Link(target, text)
+
+    >>> class RecipeJournalMenu(NavigationMenu):
+    ...     usedfor = IRecipeJournalMenuMarker
+    ...     facet = 'cookery'
+    ...
+    ...     links = ('read_journal', 'write_entry')
+    ...
+    ...     def read_journal(self):
+    ...         target = '+read-journal'
+    ...         text = 'Read Journal entries'
+    ...         return Link(target, text)
+    ...
+    ...     def write_entry(self):
+    ...         target = '+write-entry'
+    ...         text = 'Write a journal entry'
+    ...         return Link(target, text)
+
+    >>> class RecipeMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+    ...     facet = 'cookery'
+    ...
+    ...     links = ('summary', 'journal')
+    ...
+    ...     def summary(self):
+    ...         target = '+index'
+    ...         text = 'Summary'
+    ...         summary_menu = RecipeEditMenu(recipe)
+    ...         return Link(target, text, menu=summary_menu)
+    ...
+    ...     def journal(self):
+    ...         target = '+journal'
+    ...         text = 'Journal'
+    ...         journal_menu = RecipeJournalMenu(recipe)
+    ...         return Link(target, text, menu=journal_menu)
+
+    # Monkey patch the menus into the cookingexample module.
+    >>> cookingexample.RecipeEditMenu = RecipeEditMenu
+    >>> cookingexample.RecipeJournalMenu = RecipeJournalMenu
+    >>> cookingexample.RecipeMenu = RecipeMenu
+
+Menus are normally created through adaption, but we can make an instance
+of the RecipeMenu class to see the menu-related attributes of the links.
+(NavigationMenu will work with an object or its view.) Each link's state
+is defined in by the RecipeMenu class and the view of recipe.
+
+    >>> summarise_links(
+    ...     RecipeMenu(recipe),
+    ...     url='http://launchpad.dev/joy-of-cooking/fried-spam/+index')
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: True
+        linked: False
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: False
+        linked: True
+
+
+== Menu requirements  ==
+
+All menus descend from MenuBase which impose a number of requirements
+upon its descendants.
+
+A menu must define a tuple of links that it manages. When links is
+not defined, or defined is not of the right type, an error is raised.
+
+    >>> class BogusMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+
+    >>> summarise_links(BogusMenu(recipe))
+    Traceback (most recent call last):
+     ...
+    AssertionError: Subclasses of NavigationMenu must provide self.links
+
+    >>> class BogusMenu(NavigationMenu):
+    ...     usedfor = IRecipe
+    ...     links = 'not a tuple'
+
+    >>> summarise_links(BogusMenu(recipe))
+    Traceback (most recent call last):
+     ...
+    AssertionError: self.links must be a tuple or list.
+
+The iterlinks() method of menus requires a `IHTTPApplicationRequest`
+(a request object) present in the `Interaction` to determine the
+state of its links. Without a request, an error is raised.
+
+    >>> endInteraction()
+    >>> summarise_links(RecipeMenu(recipe))
+    Traceback (most recent call last):
+     ...
+    AttributeError: 'NoneType' object has no attribute 'participations'
+
+
+== Registering menus as adapters for content objects and views ==
+
+The menus must be registered as an adapter for their respective
+classes. Menus can be associated with content objects and or views.
+This is normally performed in ZCML; without the ZCML registration,
+the cookery objects cannot be adapted to menus.
+
+    >>> from zope.component import getMultiAdapter, queryAdapter
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
+    ...     traversed_objects=[cookbook, recipe])
+    >>> recipe_view = getMultiAdapter((recipe, request), name='+index')
+    >>> request.traversed_objects.append(recipe_view)
+    >>> print queryAdapter(recipe_view, INavigationMenu)
+    None
+
+Once registered, the objects can be adapted. The RecipeMenu can be
+adapted from a Recipe.
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <browser:menus
+    ...     module="canonical.lazr.cookingexample"
+    ...     classes="RecipeMenu RecipeEditMenu RecipeJournalMenu"
+    ...     />
+    ... </configure>
+    ... """)
+
+    >>> recipe_navigationmenu = queryAdapter(recipe, INavigationMenu)
+    >>> recipe_navigationmenu
+    <RecipeMenu ...>
+
+And the RecipeEditMenu can be retrieved by adapting the recipe's
+view +edit-ingredients.
+
+    >>> recipe_ingredients_view = getMultiAdapter(
+    ...     (recipe, request), name='+edit-ingredients')
+    >>> recipe_overview_menu = queryAdapter(
+    ...     recipe_ingredients_view, INavigationMenu)
+    >>> recipe_overview_menu
+    <RecipeEditMenu ...>
+
+
+=== NavigationMenu linked and selected links ===
+
+A link is not linked (the anchor is not rendered) when its URL matches
+the request URI; the user should not navigate to a page he is already
+seeing. The matched URI comes from the view's request or from
+request url keyword arguments for iterlinks().
+
+Under these same circumstances, a link is also selected. Selected means
+that the page is in the path of traversed objects.
+
+    >>> recipe_navigationmenu = queryAdapter(recipe, INavigationMenu)
+    >>> summarise_links(recipe_navigationmenu)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: True
+        linked: False
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: False
+        linked: True
+
+When navigational menus are associated with a content object and one
+of its views, they provide a menu and sub menu. The view's sub menu
+belongs to one of the content object's menu's links.
+
+A link will be selected and linked if request's url matches one of the
+links in the link's menu. A link's menu contains child links in the
+navigational hierarchy; when a child link is selected, the parent
+link is selected too.
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev'
+    ...     '/joy-of-cooking/fried-spam/+edit-ingredients',
+    ...     traversed_objects=[cookbook, recipe])
+    >>> recipe_ingredients_view = getMultiAdapter(
+    ...     (recipe, request), name='+edit-ingredients')
+    >>> request.traversed_objects.append(recipe_ingredients_view)
+
+    >>> recipe_summary_menu = queryAdapter(
+    ...     recipe, INavigationMenu)
+    >>> summarise_links(recipe_summary_menu)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: True
+        linked: True
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: False
+        linked: True
+
+    >>> recipe_overview_menu = queryAdapter(
+    ...     recipe_ingredients_view, INavigationMenu)
+    >>> summarise_links(recipe_overview_menu)
+    link edit_instructions
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-instructions
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+    link edit_ingredients
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-ingredients
+        enabled: True
+        menu: None
+        selected: True
+        linked: False
+
+The link state changes when a url corresponding with a link in another
+sub menu is viewed. Viewing the +read_journal view in the Journal sub
+menu of the RecipeMenu will change the state of both menus.
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev'
+    ...     '/joy-of-cooking/fried-spam/+read-journal',
+    ...     traversed_objects=[cookbook, recipe])
+    >>> recipe_journal_view = getMultiAdapter(
+    ...     (recipe, request), name='+read-journal')
+    >>> request.traversed_objects.append(recipe_journal_view)
+
+    >>> summarise_links(recipe_summary_menu)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: False
+        linked: True
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: True
+        linked: True
+
+    >>> summarise_links(queryAdapter(recipe_journal_view, INavigationMenu))
+    link read_journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
+        enabled: True
+        menu: None
+        selected: True
+        linked: False
+    link write_entry
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+
+
+=== The current view's menu ===
+
+The selected state of a link may be determined from the menu adapted
+from the current view. The object responsible for rendering the page is
+the last object in the request.traversed_objects list, but that object
+is not always the view. It may be the view's instancemethod.
+
+In the example above recipe_ingredients_view was appended to the
+request.traversed_objects just as the publisher would do. If the
+publisher were to append the view's __call__ method, the RecipeMenu
+will still have the correct state because iterlinks() knows how to
+find the instancemethods object.
+
+    >>> request.traversed_objects.append(recipe_ingredients_view.__call__)
+
+    >>> summarise_links(recipe_summary_menu)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: True
+        linked: True
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: False
+        linked: True
+
+    # Restore the view to the last traversed object, though not necessary,
+    # the traversed objects in this test should be the objects we made.
+    >>> instance_method = request.traversed_objects.pop()
+
+
+== Accessing menus from TALES ==
+
+Most of the interaction with menus happens in page templates. The
+TAL namespace 'menu' is used to query the state of a menu and to iterate
+over the links. The TALES takes the form of 'view/menu:navigation'.
+
+    >>> from zope.interface import classImplements
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from zope.app.traversing.adapters import DefaultTraversable
+    >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> from canonical.launchpad.webapp.tales import MenuAPI
+
+    >>> def summarise_links_dict(links_dict):
+    ...     """List the links and their attributes in the dict."""
+    ...     for link_name in sorted(links_dict):
+    ...         link = removeSecurityProxy(links_dict[link_name])
+    ...         print 'link %s' % link.name
+    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
+    ...         for attrname in attributes:
+    ...             print '    %s: %s' % (attrname, getattr(link, attrname))
+
+    # MenuAPI is normally registered as an IPathAdapter in ZCML. This
+    # approximates what is done by the code:
+    >>> classImplements(MenuAPI, IPathAdapter)
+    >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
+    >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
+
+    >>> links_dict = test_tales(
+    ...     'context/menu:navigation', context=recipe, request=request)
+    >>> summarise_links_dict(links_dict)
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <RecipeJournalMenu ...>
+        selected: True
+        linked: True
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
+        enabled: True
+        menu: <RecipeEditMenu ...>
+        selected: False
+        linked: True
+
+    >>> links_dict = test_tales(
+    ...     'context/menu:navigation', context=recipe_journal_view,
+    ...     request=request)
+    >>> summarise_links_dict(links_dict)
+    link read_journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
+        enabled: True
+        menu: None
+        selected: True
+        linked: False
+    link write_entry
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
+        enabled: True
+        menu: None
+        selected: False
+        linked: True
+
+
+== tearDown ==
+
+Restore the modules module to its starting state. First remove the
+ZCML registrations. Then, in dict order, remove the cooking example by
+setting private names, then public names (except for __builtins__) to
+None. See `http://www.python.org/doc/essays/cleanup/` steps C1-3.
+
+    >>> from zope.testing.cleanup import cleanUp
+    >>> cleanUp()
+    >>> del cookingexample
+    >>> cooking_module = 'canonical.lazr.cookingexample'
+    >>> for key in sys.modules[cooking_module].__dict__:
+    ...     if key.startswith('_') and not key.startswith('__'):
+    ...         sys.modules[cooking_module].__dict__[key] = None
+    >>> for key in sys.modules[cooking_module].__dict__:
+    ...     if key != '__builtins__':
+    ...         sys.modules[cooking_module].__dict__[key] = None
+    >>> sys.modules[cooking_module] = None
+    >>> del sys.modules['canonical.lazr.cookingexample']
