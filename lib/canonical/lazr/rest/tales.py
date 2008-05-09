@@ -68,6 +68,7 @@ class WadlResourceAPI(WadlAPI):
         underlying_resource = removeSecurityProxy(resource)
         self.context = underlying_resource.context
 
+    @property
     def url(self):
         """Return the full URL to the resource."""
         return canonical_url(self.context)
@@ -82,6 +83,7 @@ class WadlEntryResourceAPI(WadlResourceAPI):
         self.entry = self.resource.entry
         self.schema = self.entry.schema
 
+    @property
     def type_link(self):
         "The URL to the resource type for the object."
         return "%s#%s" % (self._service_root_url(),
@@ -91,6 +93,7 @@ class WadlEntryResourceAPI(WadlResourceAPI):
 class WadlCollectionResourceAPI(WadlResourceAPI):
     "Namespace for WADL functions that operate on collection resources."
 
+    @property
     def url(self):
         """The full URL to the resource.
 
@@ -109,18 +112,19 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
             return (canonical_url(self.context.context) + '/' +
                     urllib.quote(relationship_name))
         else:
-            return super(WadlCollectionResourceAPI, self).url()
+            return super(WadlCollectionResourceAPI, self).url
 
+    @property
     def type_link(self):
         "The URL to the resource type for the object."
         if IScopedCollection.providedBy(self.resource.collection):
             adapter = self._entry_adapter_for_schema(
                 self.context.relationship.value_type.schema)
-            return adapter.scoped_collection_type_link()
+            return adapter.scoped_collection_type_link
         else:
             collection_class = self.resource.collection.__class__
             adapter = WadlCollectionAdapterAPI(collection_class)
-            return adapter.type_link()
+            return adapter.type_link
 
 
 class WadlServiceRootResourceAPI(WadlAPI):
@@ -137,10 +141,12 @@ class WadlServiceRootResourceAPI(WadlAPI):
         """Initialize the helper class with a resource."""
         self.resource = resource
 
+    @property
     def url(self):
         """Return the full URL to the resource."""
         return self._service_root_url()
 
+    @property
     def top_level_resources(self):
         """Return a list of dicts describing the top-level resources."""
         resource_dicts = []
@@ -162,10 +168,12 @@ class WadlResourceAdapterAPI(WadlAPI):
         self.adapter = adapter
         self.adapter_interface = adapter_interface
 
+    @property
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
         return self.docstringToXHTML(self.adapter.__doc__)
 
+    @property
     def named_operations(self):
         """Return all named operations registered on the resource.
 
@@ -209,54 +217,64 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     def __init__(self, adapter):
         super(WadlEntryAdapterAPI, self).__init__(adapter, IEntry)
 
+    @property
     def singular_type(self):
         """Return the singular name for this object type."""
         return self.adapter.__name__
 
+    @property
     def type_link(self):
         """The URL to the type definition for this kind of resource."""
         return "%s#%s" % (
-            self._service_root_url(), self.singular_type())
+            self._service_root_url(), self.singular_type)
 
+    @property
     def full_representation_link(self):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
-            self._service_root_url(), self.singular_type())
+            self._service_root_url(), self.singular_type)
 
+    @property
     def patch_representation_link(self):
         """The URL to the description of the object's patch representation."""
         return "%s#%s-diff" % (
-            self._service_root_url(), self.singular_type())
+            self._service_root_url(), self.singular_type)
 
+    @property
     def scoped_collection_type(self):
         """The definition of a collection of this kind of object."""
-        return "%s-scoped-collection" % self.singular_type()
+        return "%s-scoped-collection" % self.singular_type
 
+    @property
     def scoped_collection_type_link(self):
         "The URL to the definition of a collection of this kind of object."
         return "%s#%s" % (
-            self._service_root_url(), self.scoped_collection_type())
+            self._service_root_url(), self.scoped_collection_type)
 
+    @property
     def entry_page_representation_id(self):
         "The name of the description of a colleciton of this kind of object."
-        return "%s-page" % self.singular_type()
+        return "%s-page" % self.singular_type
 
+    @property
     def entry_page_representation_link(self):
         "The URL to the description of a collection of this kind of object."
         return "%s#%s" % (
             self._service_root_url(),
-            self.entry_page_representation_id())
+            self.entry_page_representation_id)
 
+    @property
     def all_fields(self):
         "Return all schema fields for the object."
         return getFields(self.adapter.schema).values()
 
+    @property
     def all_writable_fields(self):
         """Return all writable schema fields for the object.
 
         Read-only fields and collections are excluded.
         """
-        return [field for field in self.all_fields()
+        return [field for field in self.all_fields
                 if (not ICollectionField.providedBy(field)
                     or field.readonly)]
 
@@ -267,15 +285,18 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     def __init__(self, adapter):
         super(WadlCollectionAdapterAPI, self).__init__(adapter, ICollection)
 
+    @property
     def collection_type(self):
         """The name of this kind of resource."""
         return self.adapter.__name__
 
+    @property
     def type_link(self):
         "The URL to the resource type for the object."
         return "%s#%s" % (self._service_root_url(),
-                          self.collection_type())
+                          self.collection_type)
 
+    @property
     def entry_schema(self):
         """The schema interface for the kind of entry in this collection."""
         return self.adapter.entry_schema
@@ -288,6 +309,7 @@ class WadlFieldAPI(WadlAPI):
         """Initialize with a field."""
         self.field = field
 
+    @property
     def name(self):
         """The name of this field."""
         name = self.field.__name__
@@ -298,6 +320,7 @@ class WadlFieldAPI(WadlAPI):
         else:
             return name
 
+    @property
     def doc(self):
         """The docstring for this field."""
         title = self.field.title
@@ -309,15 +332,18 @@ class WadlFieldAPI(WadlAPI):
                 return title
         return self.field.description
 
+    @property
     def path(self):
         """The JSONPath path to this field within a JSON document."""
-        return "$['%s']" % self.name()
+        return "$['%s']" % self.name
 
+    @property
     def is_link(self):
         """Is this field a link to another resource?"""
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field))
 
+    @property
     def type_link(self):
         """The URL of the description of the type this field is a link to."""
         if ICollectionField.providedBy(self.field):
@@ -329,11 +355,11 @@ class WadlFieldAPI(WadlAPI):
         adapter = self._entry_adapter_for_schema(schema)
 
         if ICollectionField.providedBy(self.field):
-            return adapter.scoped_collection_type_link()
+            return adapter.scoped_collection_type_link
         else:
-            return adapter.type_link()
+            return adapter.type_link
 
-
+    @property
     def options(self):
         """An enumeration of acceptable values for this field.
 
@@ -353,6 +379,7 @@ class WadlOperationAPI(WadlAPI):
         """Initialize with an operation."""
         self.operation = operation
 
+    @property
     def http_method(self):
         """The HTTP method used to invoke this operation."""
         if IResourceGETOperation.implementedBy(self.operation):
@@ -362,6 +389,7 @@ class WadlOperationAPI(WadlAPI):
         else:
             raise AssertionError("Named operations must use GET or POST.")
 
+    @property
     def doc(self):
         """Human-readable documentation for this operation."""
         return self.docstringToXHTML(self.operation.__doc__)

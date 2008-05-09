@@ -279,10 +279,28 @@ document and then show some examples in detail.
 
 The first few tags are <resource_type> tags which describe the
 different possible kinds of top-level collections (person collections,
-bug collections, and so on). We'll look at those tags first. We know
-we've reached the end of this list when we see a <resource_type> tag
-that supports the PUT method. Collections never support PUT, so that
-must be an entry resource_type.
+bug collections, and so on). We'll look at those tags first. Each type
+of collection resource has one tag devoted to it in the WADL document:
+
+1. A <resource_type> tag describing the HTTP requests a client can
+   make to manipulate the collection resource. It might look like this:
+
+   <resource_type id="BugCollection">
+     <doc xmlns="http://www.w3.org/1999/xhtml/">
+       A collection of bugs, as exposed through the web service.
+     </doc>
+     <method name="GET" id="BugCollection-get">
+       <response>
+         <representation href="http://api.launchpad.dev/beta/#IBugEntry-page"/>
+         <representation mediaType="application/vd.sun.wadl+xml"
+                         id="BugCollection-wadl"/>
+       </response>
+     </method>
+   </resource_type>
+
+We know we've reached the end of the collection resources when we see
+a <resource_type> tag that supports the PUT method. Collections never
+support PUT, so that must be an entry resource_type.
 
     >>> collection_resource_types = []
     >>> for index, child in enumerate(other_children):
@@ -294,25 +312,72 @@ must be an entry resource_type.
     ...         break
     ...     collection_resource_types.append(child)
 
-The <resource_type> that supports PUT is the resource type description
-for one of the entry resources exposed through the web service. Each
-kind of entry has five tags here:
+When we find a <resource_type> that supports PUT, we know that we've
+come to the end of the collection resources and reached an entry
+resource, like a person or bug. Each kind of entry resource has five
+tags devoted to it in the WADL document:
 
-1. A <resource_type> tag describing the capabilities of the entry resource.
+1. A <resource_type> tag describing the HTTP requests a client can
+   make to manipulate the entry resource. It might look like this:
+
+   <resource_type id="MessageEntryAdapter">
+     <method name="GET" id="MessageEntryAdapter-get">
+       <response>
+         <representation
+          href="http://api.launchpad.dev/beta/#MessageEntryAdapter-full"/>
+         <representation mediaType="application/vd.sun.wadl+xml"
+                         id="MessageEntryAdapter-wadl"/>
+       </response>
+     </method>
+
+     <method name="PUT" id="MessageEntryAdapter-put">
+       <request>
+         <representation
+          href="http://api.launchpad.dev/beta/#MessageEntryAdapter-full"/>
+       </request>
+     </method>
+
+     <method name="PATCH" id="MessageEntryAdapter-patch">
+       <request>
+         <representation
+          href="http://api.launchpad.dev/beta/#MessageEntryAdapter-diff"/>
+       </request>
+    </method>
+   </resource_type>
+
 2. A <representation> tag describing the document sent to the client
    in response to a GET request for the entry, and expected from the
-   client along with a PUT request.
-3. A <representation> tag describing the document sent to the
-   client in response to PATCH requests.
+   client along with a PUT request. This would be the
+   "#MessageEntryAdapter-full" referenced in the above WADL example.
+
+3. A <representation> tag describing the document expected from the
+   server along with a PATCH request. This would be the
+   "#MessageEntryAdapter-diff" referenced in the above WADL example.
+
 4. A <resource_type> tag describing the capabilities of a scoped
    collection that contains this kind of entry. Some entry types may
    have both a top-level collection <resource_type> and a scoped
    collection <resource_type>. They need to be declared separately
    because top-level collections can have custom operations, and
-   scoped collections can't.
+   scoped collections can't. It might look like this:
+
+   <resource_type id="MessageEntryAdapter-scoped-collection">
+     <method name="GET"
+             id="MessageEntryAdapter-scoped-collection-get">
+       <response>
+         <representation href="#MessageEntryAdapter-page"/>
+         <representation mediaType="application/vd.sun.wadl+xml"
+                         id="MessageEntryAdapter-scoped-collection-wadl"/>
+       </response>
+     </method>
+   </resource_type>
+
 5. A <representation> tag describing the document sent to the client
    in response to a GET request for a collection. This includes
-   top-level collections as well as scoped collections.
+   top-level collections as well as scoped collections. This would be
+   the "#MessageEntryAdapter-page" referenced in the above WADL
+   example, and the "#IBugEntry-page" referenced in the very first
+   example.
 
 This code splits the tags into 5-tuples and stores the tuples in
 'entry_resource_descriptions'.
