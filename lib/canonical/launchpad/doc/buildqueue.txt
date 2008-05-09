@@ -224,8 +224,9 @@ and restricted
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
     hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
 
-Let's make sure that language packs have score zero. Create a fake language
-pack build first.
+Language packs will have a score of zero so they are processed
+after other packages in the queue. First we need to create a fake
+language pack build.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces import ISectionSet
@@ -245,8 +246,8 @@ The build score for the fake language pack is zero.
     >>> na_build.createBuildQueueEntry().lastscore
     0
 
-Please note that the fake language pack ("netapplet 1.0-1") lands at the
-end of the queue due to score zero.
+The fake language pack will be queued behind the other source packages
+as intended.
 
     >>> for bq in bqset.calculateCandidates(archseries):
     ...     build = bq.build

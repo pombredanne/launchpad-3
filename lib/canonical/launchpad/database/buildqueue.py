@@ -146,15 +146,18 @@ class BuildQueue(SQLBase):
         # Please note: the score for language packs is to be zero because
         # they unduly delay the building of packages in the main component
         # otherwise.
-        if self.build.sourcepackagerelease.section.name != 'translations':
+        if self.build.sourcepackagerelease.section.name == 'translations':
+            msg += "LPack => score zero"
+        else:
             # Calculates the urgency-related part of the score.
-            score += score_urgency[self.urgency]
-            msg += "U+%d " % score_urgency[self.urgency]
+            urgency = self.urgency
+            score += score_urgency[urgency]
+            msg += "U+%d " % score_urgency[urgency]
 
             # Calculates the component-related part of the score.
-            score += score_componentname[self.build.current_component.name]
-            msg += "C+%d " % score_componentname[
-                self.build.current_component.name]
+            curr_component_name = self.build.current_component.name
+            score += score_componentname[curr_component_name]
+            msg += "C+%d " % score_componentname[curr_component_name]
 
             # Calculates the build queue time component of the score.
             right_now = datetime.now(pytz.timezone('UTC'))
@@ -170,8 +173,6 @@ class BuildQueue(SQLBase):
             # Private builds get uber score.
             if self.build.archive.private:
                 score += 1000
-        else:
-            msg += "LPack => score zero"
 
         # Store current score value.
         self.lastscore = score
