@@ -341,6 +341,14 @@
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
+        name="fmt"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"

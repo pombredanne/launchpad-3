@@ -137,7 +137,7 @@ class BuilddMaster:
 
     def addDistroArchSeries(self, distroarchseries):
         """Setting up a workable DistroArchSeries for this session."""
-        self._logger.info("Adding DistroArchSeries %s/%s/%s"
+        self._logger.debug("Adding DistroArchSeries %s/%s/%s"
                           % (distroarchseries.distroseries.distribution.name,
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
@@ -195,7 +195,7 @@ class BuilddMaster:
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
-        self._logger.debug("Processing %s" % distroseries.name)
+        self._logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroserieses with no nominatedarchindep
         # they can't build architecture independent packages properly.
         if not distroseries.nominatedarchindep:

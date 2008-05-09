@@ -910,13 +910,12 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportJobWorkflow
 
 
-class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportMachine.
+class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
+    """Control who can edit the object view of a CodeImportMachine.
 
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
+    Access is restricted to members of ~vcs-imports and Launchpad admins.
     """
-    permission = 'launchpad.View'
+    permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
 
 
