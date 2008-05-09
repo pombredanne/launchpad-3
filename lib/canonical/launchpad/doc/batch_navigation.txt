@@ -253,7 +253,7 @@ that are batched.
 Since the batch size is exposed in the URL, it's possible for users to
 tweak the batch parameter to retrieve more results. Since that may
 potentially exhaust server resources, an upper limit is put on the batch
-size. If the requested batch parameter is higher than this, a
+size. If the requested batch parameter is higher than this, an
 InvalidBatchSizeError is raised.
 
     >>> from canonical.config import config

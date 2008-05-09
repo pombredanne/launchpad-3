@@ -44,9 +44,7 @@ class BatchNavigator:
     def __init__(self, results, request, start=0, size=None, callback=None):
         """Constructs a BatchNavigator instance.
 
-        :param results: is an iterable of results. request is the web
-            request being processed. size is a default batch size which
-            the callsite can choose to provide.
+        :param results: is an iterable of results.
 
         :param request: will be inspected for a start variable; if set,
             it indicates which point we are currently displaying at. It
@@ -54,7 +52,7 @@ class BatchNavigator:
             be used instead of the size supplied in the callsite.
 
         :param size: is the default batch size, to fall back to if the
-            request does not specify one.  If no size can be divined
+            request does not specify one.  If no size can be determined
             from arguments or request, the launchpad.default_batch_size
             config option is used.
 

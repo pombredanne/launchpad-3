@@ -205,10 +205,6 @@ class InvalidBatchSizeView(SystemErrorView):
         """We don't need to log these errors in the SiteLog."""
         return False
 
-    def __call_(self):
-        """Simply render the template here."""
-        return self.index()
-
     @property
     def max_batch_size(self):
         """Return the maximum configured batch size."""
