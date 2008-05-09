@@ -21,6 +21,7 @@ from warnings import warn
 
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
+from storm.store import Store
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -545,6 +546,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
         build_queue = build.createBuildQueueEntry()
         build_queue.score()
+        Store.of(build).flush()
 
         return build
 
