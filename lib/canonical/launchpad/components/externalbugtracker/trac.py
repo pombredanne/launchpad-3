@@ -19,7 +19,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId,
-    UnknownRemoteStatusError)
+    UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
     ISupportsCommentImport, ISupportsCommentPushing,
@@ -91,18 +91,58 @@ class Trac(ExternalBugTracker):
             # assume that CSV exports of single tickets aren't supported.
             return False
 
+    def _fetchBugData(self, query_url):
+        """Retrieve the CSV bug data from a URL and return it.
+
+        :param query_url: The URL from which to retrieve the CSV bug
+            data.
+        :return: A list of dicts, with each dict representing a single
+            row in the CSV data retrieved from `query_url`.
+        """
+        # We read the remote bugs into a list so that we can check that
+        # the data we're getting back from the remote server are valid.
+        csv_reader = csv.DictReader(self._fetchPage(query_url))
+        remote_bugs = [csv_reader.next()]
+
+        # We consider the data we're getting from the remote server to
+        # be valid if there is an ID field and a status field in the CSV
+        # header. If the fields don't exist we raise an
+        # UnparseableBugData error. If these fields are defined but not
+        # filled in for each row, that error will be handled in
+        # getRemoteBugStatus() (i.e.  with a BugNotFound or an
+        # UnknownRemoteStatusError).
+        if ('id' not in csv_reader.fieldnames or
+            'status' not in csv_reader.fieldnames):
+            raise UnparseableBugData(
+                "External bugtracker %s does not define all the necessary "
+                "fields for bug status imports (Defined field names: %r)."
+                % (self.baseurl, csv_reader.fieldnames))
+
+        remote_bugs = remote_bugs + list(csv_reader)
+        return remote_bugs
+
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
         query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
-        reader = csv.DictReader(self._fetchPage(query_url))
-        return (bug_id, reader.next())
+
+        bug_data = self._fetchBugData(query_url)
+        if len(bug_data) == 1:
+            return bug_id, bug_data[0]
+
+        # There should be only one bug returned for a getRemoteBug()
+        # call, so if we have more or less than one bug something went
+        # wrong.
+        raise UnparseableBugData(
+            "Remote bugtracker %s returned wrong amount of data for bug "
+            "%i (expected 1 bug, got %i bugs)." %
+            (self.baseurl, bug_id, len(bug_data)))
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
         id_string = '&'.join(['id=%s' % id for id in bug_ids])
         query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
-        remote_bugs = csv.DictReader(self._fetchPage(query_url))
+        remote_bugs = self._fetchBugData(query_url)
 
         bugs = {}
         for remote_bug in remote_bugs:
@@ -135,8 +175,6 @@ class Trac(ExternalBugTracker):
         if (len(bug_ids) < self.batch_query_threshold and
             self.supportsSingleExports(bug_ids)):
             for bug_id in bug_ids:
-                # If we can't get the remote bug for any reason a
-                # BugTrackerConnectError will be raised at this point.
                 remote_id, remote_bug = self.getRemoteBug(bug_id)
                 self.bugs[remote_id] = remote_bug
 
