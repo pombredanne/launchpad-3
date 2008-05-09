@@ -1,0 +1,49 @@
+Salgado starts out with a link to a mugshot, but no actual mugshot.
+
+    >>> salgado = webservice.get('/beta/~salgado').jsonBody()
+    >>> salgado['mugshot']
+    'http://api.launchpad.dev/beta/~salgado/mugshot'
+
+    >>> salgado_mugshot = '/beta/~salgado/mugshot'
+    >>> print webservice.get(salgado_mugshot)
+    HTTP/1.1 404 Not Found
+    ...
+
+We can upload a mugshot for salgado with PUT.
+
+    >>> print webservice.put(salgado_mugshot, 'image/gif', 'image #1')
+    HTTP/1.1 200 Ok
+    ...
+
+
+Once the mugshot has been uploaded, sending a GET to the web
+service's mugshot URL will result in a redirect to the mugshot on the
+public Internet.
+
+    >>> print webservice.get(salgado_mugshot)
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/90/mugshot
+
+
+PUT is also used to modify a mugshot.
+
+    >>> print webservice.put(salgado_mugshot, 'image/png', 'image #2')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(salgado_mugshot)
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/91/mugshot
+
+
+Deleting a mugshot (with DELETE) disables the redirect.
+
+    >>> print webservice.delete(salgado_mugshot)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(salgado_mugshot)
+    HTTP/1.1 404 Not Found
+    ...

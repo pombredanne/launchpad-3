@@ -6,6 +6,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'IByteStorage',
+    'IByteStorageResource',
     'ICollection',
     'ICollectionField',
     'ICollectionResource',
@@ -158,3 +160,39 @@ class IScopedCollection(ICollection):
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
+
+class IByteStorage(Interface):
+    """A sequence of bytes stored on the server.
+
+    The bytestream is expected to have a URL other than the one used
+    by the web service.
+    """
+
+    url = Attribute("The external URL to the byte stream.")
+    filename = Attribute("Filename for the byte stream.")
+
+    def create_stored(type, representation):
+        """Create a new stored bytestream."""
+
+
+class IByteStorageResource(IHTTPResource):
+    """A resource that represents an individual object."""
+
+    def do_GET():
+        """Retrieve the bytestream.
+
+        :return: A string representation. The outgoing
+        Content-Type header should be set appropriately.
+        """
+
+    def do_PUT(media_type, representation):
+        """Update the stored bytestream.
+
+        :param media_type: The media type of the proposed new bytesteram.
+        :param representation: The proposed new bytesteram.
+        :return: None or an error message describing validation errors. The
+            HTTP status code should be set appropriately.
+        """
+
+    def do_DELETE():
+        """Delete the stored bytestream."""

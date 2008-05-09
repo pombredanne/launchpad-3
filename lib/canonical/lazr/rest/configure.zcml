@@ -25,4 +25,16 @@
         factory="canonical.lazr.rest.JSONItem"
         />
 
+    <!-- Byte storage resources -->
+    <adapter
+        for="canonical.lazr.interfaces.IByteStorage
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IHTTPResource"
+        factory="canonical.lazr.rest.ByteStorageResource"
+        />
+
+    <class class="canonical.lazr.rest.ByteStorageResource">
+        <allow interface='canonical.lazr.interfaces.IByteStorageResource' />
+    </class>
+
 </configure>

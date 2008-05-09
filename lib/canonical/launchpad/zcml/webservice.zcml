@@ -14,19 +14,6 @@
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
-    <!-- Byte storage resources -->
-    <adapter
-        for="canonical.launchpad.rest.IByteStorage
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IHTTPResource"
-        factory="canonical.launchpad.rest.ByteStorageResource"
-        />
-
-    <class class="canonical.launchpad.rest.ByteStorageResource">
-        <allow interface='canonical.launchpad.rest.IByteStorageResource' />
-    </class>
-
-
     <!-- TALES namespaces for WADL generation -->
     <adapter
         for="canonical.lazr.interfaces.IHTTPResource"
