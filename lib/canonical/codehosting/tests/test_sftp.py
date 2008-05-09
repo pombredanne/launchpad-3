@@ -1,5 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
+"""Tests for the transport-backed SFTP server implementation."""
 
 import os
 import unittest
@@ -19,13 +20,11 @@ from canonical.codehosting.sftp import (
 
 
 class AsyncTransport:
-    """Why are you even looking at this?
+    """Make a transport that returns Deferreds.
 
-    This wraps around a Bazaar transport and makes all of its methods return
-    Deferreds using maybeDeferred.
-
-    In addition to normal Bazaar transport methods, this also supports
-    writeChunk and local_realPath.
+    While this could wrap any object and make its methods return Deferreds, we
+    expect this to be wrapping FatLocalTransport (and so making a Twisted
+    Transport, as defined in canonical.codehosting.sftp's docstring).
     """
 
     def __init__(self, transport):
@@ -41,6 +40,7 @@ class AsyncTransport:
 
 
 class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
+    """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
 
     def setUp(self):
         TrialTestCase.setUp(self)
@@ -50,6 +50,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.sftp_server = TransportSFTPServer(transport)
 
     def test_writeChunk(self):
+        # writeChunk writes data to the file.
         handle = self.sftp_server.openFile('foo', 0, {})
         handle.writeChunk(0, 'bar')
         handle.close()
@@ -57,88 +58,116 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         self.assertFileEqual('bar', 'foo')
 
     def test_writeChunkError(self):
+        # Errors in writeChunk are translated to SFTPErrors.
         os.mkdir('foo')
         handle = self.sftp_server.openFile('foo', 0, {})
         deferred = handle.writeChunk(0, 'bar')
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_readChunk(self):
+        # readChunk reads a chunk of data from the file.
         self.build_tree_contents([('foo', 'bar')])
         handle = self.sftp_server.openFile('foo', 0, {})
         deferred = handle.readChunk(1, 2)
         return deferred.addCallback(self.assertEqual, 'ar')
 
     def test_readChunkError(self):
+        # Errors in readChunk are translated to SFTPErrors.
         handle = self.sftp_server.openFile('foo', 0, {})
         deferred = handle.readChunk(1, 2)
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_setAttrs(self):
+        # setAttrs on TransportSFTPFile does nothing.
         self.build_tree_contents([('foo', 'bar')])
         self.sftp_server.openFile('foo', 0, {}).setAttrs({})
 
     def checkAttrs(self, attrs, stat_value):
-        self.assertEqual(3, attrs['size'])
+        """Check that an attrs dictionary matches a stat result."""
+        self.assertEqual(stat_value.st_size, attrs['size'])
         self.assertEqual(os.getuid(), attrs['uid'])
         self.assertEqual(os.getgid(), attrs['gid'])
         self.assertEqual(stat_value.st_mode, attrs['permissions'])
-        self.assertEqual(attrs['mtime'], int(stat_value.st_mtime))
-        self.assertEqual(attrs['atime'], int(stat_value.st_atime))
+        self.assertEqual(int(stat_value.st_mtime), attrs['mtime'])
+        self.assertEqual(int(stat_value.st_atime), attrs['atime'])
 
     def test_getAttrs(self):
+        # getAttrs on TransportSFTPFile returns a dictionary consistent
+        # with the results of os.stat.
         self.build_tree_contents([('foo', 'bar')])
         stat_value = os.stat('foo')
         deferred = self.sftp_server.openFile('foo', 0, {}).getAttrs()
         return deferred.addCallback(self.checkAttrs, stat_value)
 
-    def test_ServersetAttrs(self):
+    def test_serverSetAttrs(self):
+        # setAttrs on the TransportSFTPServer doesn't do anything either.
         self.build_tree_contents([('foo', 'bar')])
         self.sftp_server.setAttrs('foo', {})
 
-    def test_ServergetAttrs(self):
+    def test_serverGetAttrs(self):
+        # getAttrs on the TransportSFTPServer also returns a dictionary
+        # consistent with the results of os.stat.
         self.build_tree_contents([('foo', 'bar')])
         stat_value = os.stat('foo')
         deferred = self.sftp_server.getAttrs('foo', False)
         return deferred.addCallback(self.checkAttrs, stat_value)
 
     def test_removeFile(self):
+        # removeFile removes the file.
         self.build_tree_contents([('foo', 'bar')])
-        self.sftp_server.removeFile('foo')
-        self.failIfExists('foo')
+        deferred = self.sftp_server.removeFile('foo')
+        def assertFileRemoved(ignored):
+            self.failIfExists('foo')
+        return deferred.addCallback(assertFileRemoved)
 
     def test_removeFileError(self):
+        # Errors in removeFile are translated into SFTPErrors.
         deferred = self.sftp_server.removeFile('foo')
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_renameFile(self):
+        # renameFile renames the file.
         self.build_tree_contents([('foo', 'bar')])
-        self.sftp_server.renameFile('foo', 'baz')
-        self.failIfExists('foo')
-        self.failUnlessExists('baz')
+        deferred = self.sftp_server.renameFile('foo', 'baz')
+        def assertFileRenamed(ignored):
+            self.failIfExists('foo')
+            self.failUnlessExists('baz')
+        return deferred.addCallback(assertFileRenamed)
 
     def test_renameFileError(self):
+        # Errors in renameFile are translated into SFTPErrors.
         deferred = self.sftp_server.renameFile('foo', 'baz')
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_makeDirectory(self):
-        self.sftp_server.makeDirectory('foo', {'permissions': 0777})
-        self.assertTrue(os.path.isdir('foo'), 'foo is not a directory')
+        # makeDirectory makes the directory.
+        deferred = self.sftp_server.makeDirectory(
+            'foo', {'permissions': 0777})
+        def assertDirectoryExists(ignored):
+            self.assertTrue(os.path.isdir('foo'), 'foo is not a directory')
+        return deferred.addCallback(assertDirectoryExists)
 
     def test_makeDirectoryError(self):
+        # Errors in makeDirectory are translated into SFTPErrors.
         deferred = self.sftp_server.makeDirectory(
             'foo/bar', {'permissions': 0777})
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_removeDirectory(self):
+        # removeDirectory removes the directory.
         os.mkdir('foo')
-        self.sftp_server.removeDirectory('foo')
-        self.failIfExists('foo')
+        deferred = self.sftp_server.removeDirectory('foo')
+        def assertDirectoryRemoved(ignored):
+            self.failIfExists('foo')
+        return deferred.addCallback(assertDirectoryRemoved)
 
     def test_removeDirectoryError(self):
+        # Errors in removeDirectory are translated into SFTPErrors.
         deferred = self.sftp_server.removeDirectory('foo')
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_gotVersion(self):
+        # gotVersion returns an empty dictionary.
         extended = self.sftp_server.gotVersion('version', {})
         self.assertEqual({}, extended)
 
@@ -149,19 +178,24 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
             'foo', 'bar')
 
     def test_realPath(self):
+        # realPath returns the absolute path of the file.
         os.symlink('foo', 'bar')
         deferred = self.sftp_server.realPath('bar')
         return deferred.addCallback(self.assertEqual, os.path.abspath('foo'))
 
     def test_makeLink(self):
+        # makeLink is not supported.
         self.assertRaises(NotImplementedError, self.sftp_server.makeLink,
                           'foo', 'bar')
 
     def test_readLink(self):
+        # readLink is not supported.
         self.assertRaises(NotImplementedError, self.sftp_server.readLink,
                           'foo')
 
     def test_openDirectory(self):
+        # openDirectory returns an iterator that iterates over the contents of
+        # the directory.
         self.build_tree(['foo/', 'foo/bar/', 'foo/baz'])
         deferred = self.sftp_server.openDirectory('foo')
         def check_open_directory(directory):
@@ -172,8 +206,17 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         return deferred.addCallback(check_open_directory)
 
     def test_openDirectoryError(self):
+        # Errors in openDirectory are translated into SFTPErrors.
         deferred = self.sftp_server.openDirectory('foo')
         return self.assertFailure(deferred, filetransfer.SFTPError)
+
+    def do_translation_test(self, exception, sftp_code, method_name=None):
+        """Test that `exception` is translated into the correct SFTPError."""
+        result = self.assertRaises(filetransfer.SFTPError,
+            self.sftp_server.translateError,
+            failure.Failure(exception), method_name)
+        self.assertEqual(sftp_code, result.code)
+        self.assertEqual(str(exception), result.message)
 
     def test_translatePermissionDenied(self):
         exception = bzr_errors.PermissionDenied('foo')
@@ -199,18 +242,13 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
             exception, filetransfer.FX_FAILURE)
 
     def test_translateRandomError(self):
+        # translateError re-raises unrecognized errors.
         exception = KeyboardInterrupt()
         result = self.assertRaises(KeyboardInterrupt,
             self.sftp_server.translateError,
             failure.Failure(exception), 'methodName')
         self.assertIs(result, exception)
 
-    def do_translation_test(self, exception, sftp_code, method_name=None):
-        result = self.assertRaises(filetransfer.SFTPError,
-            self.sftp_server.translateError,
-            failure.Failure(exception), method_name)
-        self.assertEqual(sftp_code, result.code)
-        self.assertEqual(str(exception), result.message)
 
 
 def test_suite():
