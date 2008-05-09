@@ -108,17 +108,17 @@ def get_current_view(request=None):
 
     :param request: A `IHTTPApplicationRequest`. If request is None, the
         current browser request is used.
-
-    Returns the view from requests that provide IHTTPApplicationRequest.
+    :return: The view from requests that provide IHTTPApplicationRequest.
     """
     request = request or get_current_browser_request()
     if request is None:
         return
-    view = request.traversed_objects[-1]
+    # The view is not in the list of traversed_objects, though it is listed
+    # among the traversed_names. We need to get it from a private attribute.
+    view = removeSecurityProxy(request._last_obj_traversed)
     # Note: The last traversed object may be a view's instance method.
     if zope_isinstance(view, types.MethodType):
-        bare = removeSecurityProxy(view)
-        view = bare.im_self
+        return view.im_self
     return view
 
 
@@ -421,6 +421,8 @@ class NavigationMenu(MenuBase):
         menu is an instance of the link's menu
         """
         view = get_current_view(request)
+        # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the facet
+        # name from the layer implemented by the request.
         facet = getattr(view, '__launchpad_facetname__', None)
         return queryAdapter(view, INavigationMenu, name=facet)
 

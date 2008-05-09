@@ -210,7 +210,9 @@ class MenuAPI:
         if self._selectedfacetname is not None:
             selectedfacetname = self._selectedfacetname
         else:
-            view =  get_current_view(self._request)
+            # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
+            # facet name from the layer implemented by the request.
+            view = get_current_view(self._request)
             selectedfacetname = getattr(view, '__launchpad_facetname__', None)
         menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
         if menu is None:

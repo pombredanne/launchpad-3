@@ -73,7 +73,7 @@ Each object has a canonical url derived from its place in the hierarchy.
 
     # Menu testing requires a request object that provides the traversed
     # objects. This function does most of the work, but views must be
-    # appended to the traversed_objects list after they are created.
+    # assigned to the _last_obj_traversed attribute.
     >>> def make_fake_request(url, traversed_objects=None):
     ...     """Return a fake request object for menu testing."""
     ...     url_parts = urlsplit(url)
@@ -94,7 +94,7 @@ Each object has a canonical url derived from its place in the hierarchy.
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
-    ...     traversed_objects=[cookbook, recipe, None])
+    ...     traversed_objects=[cookbook, recipe])
 
     >>> canonical_url(cookbook)
     u'http://launchpad.dev/joy-of-cooking'
@@ -560,7 +560,7 @@ the cookery objects cannot be adapted to menus.
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+index',
     ...     traversed_objects=[cookbook, recipe])
     >>> recipe_view = getMultiAdapter((recipe, request), name='+index')
-    >>> request.traversed_objects.append(recipe_view)
+    >>> request._last_obj_traversed = recipe_view
     >>> print queryAdapter(recipe_view, INavigationMenu)
     None
 
@@ -706,7 +706,7 @@ link is selected too.
     ...     traversed_objects=[cookbook, recipe])
     >>> recipe_ingredients_view = getMultiAdapter(
     ...     (recipe, request), name='+edit-ingredients')
-    >>> request.traversed_objects.append(recipe_ingredients_view)
+    >>> request._last_obj_traversed = recipe_ingredients_view
 
     >>> recipe_summary_menu = queryAdapter(
     ...     recipe, INavigationMenu, name='cookery')
@@ -745,12 +745,11 @@ sub menu is viewed. Viewing the +read_journal view in the Journal sub
 menu of the RecipeMenu will change the state of both menus.
 
     >>> request = make_fake_request(
-    ...     'http://launchpad.dev'
-    ...     '/joy-of-cooking/fried-spam/+read-journal',
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal',
     ...     traversed_objects=[cookbook, recipe])
     >>> recipe_journal_view = getMultiAdapter(
     ...     (recipe, request), name='+read-journal')
-    >>> request.traversed_objects.append(recipe_journal_view)
+    >>> request._last_obj_traversed = recipe_journal_view
 
     >>> summarise_links(recipe_summary_menu)
     link summary
@@ -796,25 +795,25 @@ publisher were to append the view's __call__ method, the RecipeMenu
 will still have the correct state because iterlinks() knows how to
 find the instancemethods object.
 
-    >>> request.traversed_objects.append(recipe_ingredients_view.__call__)
+    >>> request._last_obj_traversed = recipe_journal_view.__call__
 
     >>> summarise_links(recipe_summary_menu)
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <RecipeEditMenu ...>
-        selected: True
+        selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <RecipeJournalMenu ...>
-        selected: False
+        selected: True
         linked: True
 
     # Restore the view to the last traversed object, though not necessary,
     # the traversed objects in this test should be the objects we made.
-    >>> instance_method = request.traversed_objects.pop()
+    >>> request._last_obj_traversed = recipe_journal_view
 
 
 == Accessing menus from TALES ==
