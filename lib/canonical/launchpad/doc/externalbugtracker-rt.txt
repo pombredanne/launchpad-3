@@ -98,7 +98,7 @@ result in an UnknownRemoteStatusError being raised.
     >>> rt.convertRemoteStatus('spam').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: spam
 
 
 == Initialisation ==

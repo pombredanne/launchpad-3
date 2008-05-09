@@ -50,7 +50,7 @@ understand an UnknownRemoteStatusError will be raised.
     >>> roundup.convertRemoteStatus('eggs').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: eggs
 
 
 == Initialization ==
@@ -59,7 +59,7 @@ Calling initializeRemoteBugDB() on our Roundup instance and passing it a set
 of remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
-We use a test-oriented implementation for the purposes of these tests, which 
+We use a test-oriented implementation for the purposes of these tests, which
 overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
 working network connection.
 

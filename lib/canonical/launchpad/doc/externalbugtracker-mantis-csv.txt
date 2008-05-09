@@ -38,7 +38,7 @@ If the status can't be converted an UnknownRemoteStatusError is raised.
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: foo: bar
 
 
 == Updating Bug Watches ==
