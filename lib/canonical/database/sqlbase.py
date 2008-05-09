@@ -119,7 +119,14 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def _get_store():
         return getUtility(IZStorm).get('main')
 
+    def __repr__(self):
+        # XXX jamesh 2008-05-09:
+        # This matches the repr() output for the sqlos.SQLOS class.
+        # A number of the doctests rely on this formatting.
+        return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
+
     def reset(self):
+        raise AssertionError("SQLBase.reset() not handled.")
         if not self._SO_createValues:
             return
         self._SO_writeLock.acquire()
