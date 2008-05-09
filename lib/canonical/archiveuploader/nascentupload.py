@@ -487,16 +487,28 @@ class NascentUpload:
         or the explicit source package, or in the case of a PPA must own
         it or be in the owning team.
         """
+        # Set up some convenient shortcut variables.
+        signer = self.changes.signer
+        archive = self.policy.archive
+
         # If we have no signer, there's no ACL we can apply.
-        if self.changes.signer is None:
+        if signer is None:
             self.logger.debug("No signer, therefore ACL not processed")
             return
 
         # Verify PPA uploads.
         if self.is_ppa:
             self.logger.debug("Don't verify signer ACL for PPA")
-            if not self.policy.archive.canUpload(self.changes.signer):
+            if not archive.canUpload(signer):
                 self.reject("Signer has no upload rights to this PPA")
+            return
+
+        # Binary uploads are never checked (they come in via the security
+        # policy or from the buildds) so they don't need any ACL checks.
+        # The only uploaded file that matters is the DSC file for sources
+        # because it is the only object that is overridden and created in
+        # the database.
+        if self.binaryful:
             return
 
         # Sometimes an uploader may upload a new package to a component
@@ -505,10 +517,21 @@ class NascentUpload:
         # override it later.  Consequently, if an uploader has no rights
         # at all to any component, we reject the upload right now even if it's
         # NEW.
-        possible_components = self._components_valid_for(self.changes.signer)
+        possible_components = self._components_valid_for(signer)
         if not possible_components:
-            self.reject(
-                "Signer has no upload rights at all to this distribution.")
+            # Check if the user has package-specific rights.
+            source_name = getUtility(
+                ISourcePackageNameSet).queryByName(self.changes.dsc.package)
+            # If source_name is None then the package must be new, but we
+            # kick it out anyway because it's impossible to look up
+            # any permissions for it.
+            if (source_name is None or
+                (source_name is not None and
+                 not archive.canUpload(signer, source_name))):
+                # The user doesn't have package-specific rights so
+                # kick him out entirely.
+                self.reject(
+                    "Signer has no upload rights at all to this distribution.")
             return
 
         # New packages go straight to the upload queue; we only check upload
@@ -516,16 +539,8 @@ class NascentUpload:
         if self.is_new:
             return
 
-        # Binary uploads are never signed (they come in via the security
-        # policy or from the buildds) so they don't need any ACL checks.
-        # The only uploaded file that matters is the DSC file for sources
-        # because it is the only object that is overridden and created in
-        # the database.
-        if self.binaryful:
-            return
-
         component = self.changes.dsc.component
-        if not self.policy.archive.canUpload(self.changes.signer, component):
+        if not archive.canUpload(signer, component):
             # The uploader has no rights to the component.
             self.reject(
                 "Signer is not permitted to upload to the component "

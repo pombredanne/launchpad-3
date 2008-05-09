@@ -85,6 +85,7 @@ class ArchivePermissionSet:
         return ArchivePermission.select("""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s AND
+            ArchivePermission.component IS NOT NULL AND
             %s IN (SELECT TeamParticipation.person
                    FROM TeamParticipation
                    WHERE TeamParticipation.person = %s AND

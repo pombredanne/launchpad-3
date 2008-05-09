@@ -1296,11 +1296,12 @@ for more details.
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> ubuntu.main_archive.canUpload(cprov, main_component)
+    >>> ubuntu.main_archive.canUpload(carlos, main_component)
     False
 
-    >>> ubuntu.main_archive.canAdministerQueue(cprov, main_component)
+    >>> ubuntu.main_archive.canAdministerQueue(carlos, main_component)
     False
 
     >>> ubuntu.main_archive.canUpload(ubuntu_team, main_component)
@@ -1309,3 +1310,12 @@ for more details.
     >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
     True
 
+canUpload() can also check someone's permission to upload a specific
+source package.  Carlos, who does not have permission to upload to any
+Ubuntu components, has permission to upload "mozilla-firefox".
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> mozilla = getUtility(
+    ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
+    >>> ubuntu.main_archive.canUpload(carlos, mozilla)
+    True

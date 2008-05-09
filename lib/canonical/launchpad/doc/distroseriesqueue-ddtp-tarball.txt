@@ -70,7 +70,6 @@ Now do a proper upload into the system.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Foo Bar (16) is an uploader for main, universe.
   DEBUG: Finished checking upload.
 
 It was not rejected.

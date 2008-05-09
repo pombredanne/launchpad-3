@@ -859,7 +859,7 @@ rights to all components from 'ubuntu-team' to 'sabdfl':
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
-This time the upload should fail because the ACLs don't let
+This time the upload will fail because the ACLs don't let
 "name16", the key owner, upload a package.
 
   >>> bar_failed = NascentUpload(
@@ -886,3 +886,29 @@ for further checks:
   >>> bar_failed.changes.signingkey.fingerprint == uploader_key.fingerprint
   True
 
+The ACL rules also enable us to specify that a user has a
+package-specific upload right.  In the test package data, bar_1.0-2 is
+signed by "Foo Bar" who is name16 in the sample data.  As shown above,
+he currently has no upload rights at all to Ubuntu.  However, we can add
+an ArchivePermission record to permit him to upload "bar" specifically.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePermissionType, ISourcePackageNameSet)
+    >>> bar_name = getUtility(ISourcePackageNameSet).getOrCreateByName("bar")
+    >>> discard = ArchivePermission(
+    ...     archive=ubuntu.main_archive, person=name16,
+    ...     permission=ArchivePermissionType.UPLOAD,
+    ...     sourcepackagename=bar_name, component=None)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('uploader')
+
+Now try the "bar" upload:
+
+    >>> bar2 = NascentUpload(
+    ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
+    ...     insecure_policy, mock_logger_quiet)
+    >>> bar2.process()
+    >>> bar2.is_rejected
+    False
