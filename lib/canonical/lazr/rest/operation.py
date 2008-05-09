@@ -55,13 +55,17 @@ class ResourceOperation:
             else:
                 deserializer = getMultiAdapter(
                     (field, self.request), IFieldDeserializer)
-                value = deserializer.deserialize(self.request.get(name))
+                try:
+                    value = deserializer.deserialize(self.request.get(name))
+                except ValueError, e:
+                    errors.append("%s: %s" % (name, e))
+                    continue
             field.bind(self.context)
             try:
                 field.validate(value)
             except RequiredMissing:
                 errors.append("%s: Required input is missing." % name)
-            except (ValueError, ValidationError), e:
+            except ValidationError, e:
                 errors.append("%s: %s" % (name, e))
             else:
                 validated_values[name] = value
