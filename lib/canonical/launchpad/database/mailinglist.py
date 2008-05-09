@@ -272,6 +272,8 @@ class MailingList(SQLBase):
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
+        if email == self.team.preferredemail:
+            self.team.setContactAddress(None)
         email.status = EmailAddressStatus.NEW
 
     def reactivate(self):

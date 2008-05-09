@@ -369,6 +369,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'Welcome to the test team mailing list.'}
+    landscape-developers --> unsynchronized updating
 
     >>> browser.reload()
     >>> print mailing_list_status_message(browser.contents)
@@ -402,6 +403,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
+    landscape-developers --> unsynchronized updating
     >>> browser.reload()
     >>> print mailing_list_status_message(browser.contents)
     A change to this team's mailing list is currently being applied.
@@ -476,6 +478,7 @@ An inactive mailing list can be reactivated.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> create
         {'welcome_message': u'This change will fail to propagate.'}
+    landscape-developers --> unsynchronized constructing
     >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
     >>> print_actions(mailinglist_api.getPendingActions())
