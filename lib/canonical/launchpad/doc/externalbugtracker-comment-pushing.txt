@@ -60,7 +60,6 @@ ISupportsCommentPushing interface.
     ...
     ...     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
     ...         remote_comment_id = str(self.next_comment_id)
-    ...         comment_body = message.text_contents
     ...         self.remote_comments[remote_comment_id] = comment_body
     ...
     ...         print "Comment added as remote comment %s" % (
