@@ -1,7 +1,7 @@
 = Invalid batch size =
 
 To prevent users from exhausting server resources, pages that uses
-batching have a maximum on the batch size. For example, request a 1000
+batching have a maximum on the batch size. For example, requesting 1000
 products will display a page telling the users that the batch is too
 large and what is the current maximum.
 
