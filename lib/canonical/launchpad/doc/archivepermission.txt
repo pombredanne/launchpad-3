@@ -81,6 +81,25 @@ component, but this demonstrates package-level permissioning):
     >>> alsa_permissions.count()
     0
 
+When passing a person to checkAuthenticated() who is a member of a team
+that has permission, the matching ArchivePermission record(s) for the
+team are returned.  This allows team-level permissions to be set.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> sabdfl.inTeam(ubuntu_team)
+    True
+
+    >>> all_main_permissions = permission_set.uploadersForComponent(
+    ...     ubuntu.main_archive, main_component)
+    >>> [permission.person.name for permission in all_main_permissions]
+    [u'ubuntu-team']
+
+    >>> sabdfl_permissions = permission_set.checkAuthenticated(
+    ...     sabdfl, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
+    ...     main_component)
+    >>> sabdfl_permissions.count()
+    1
+
 checkAuthenticated() does not know about any other item types, and
 passing a type that it does not know about results in a TypeError:
 
