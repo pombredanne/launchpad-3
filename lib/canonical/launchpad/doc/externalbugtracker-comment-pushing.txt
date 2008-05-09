@@ -220,6 +220,38 @@ comments being pushed because they have already been imported.
 
 == Formatting pushed comments ==
 
+The comments that have been pushed to the remote bugtracker have been
+formatted to include data about the comment in Launchpad.
+
+    >>> remote_comments = external_bugtracker.remote_comments
+    >>> for remote_comment_id in sorted(remote_comments.keys()):
+    ...     print remote_comments[remote_comment_id]
+    ...     print "--------------------"
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Pushing, for the purpose of.
+    <BLANKLINE>
+    --
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+    --------------------
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Body the second.
+    <BLANKLINE>
+    --
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+    --------------------
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Body the third.
+    <BLANKLINE>
+    --
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+    --------------------
+
 The BugWatchUpdater class has a method, _formatRemoteComment() which
 will take a Launchpad comment and format it ready for uploading to the
 remote server. This allows us to include salient information, such as
@@ -242,6 +274,7 @@ external bugtracker's comment_template attribute.
     >>> original_comment_template = external_bugtracker.comment_template
     >>> comment_template = '../ftests/testfiles/test_comment_template.txt'
     >>> external_bugtracker.comment_template = comment_template
+
     >>> formatted_message = bugwatch_updater._formatRemoteComment(
     ...     external_bugtracker, bug_watch, message)
     >>> print formatted_message

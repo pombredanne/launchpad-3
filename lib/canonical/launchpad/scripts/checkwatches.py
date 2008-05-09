@@ -627,9 +627,14 @@ class BugWatchUpdater(object):
             # the bug watch.
             if (bug_message.remote_comment_id is None and
                 bug_message.bugwatch == bug_watch):
+                # Format the comment so that it includes information
+                # about the Launchpad bug.
+                formatted_comment = self._formatRemoteComment(
+                    external_bugtracker, bug_watch, message)
+
                 bug_message.remote_comment_id = (
                     external_bugtracker.addRemoteComment(
-                        bug_watch.remotebug, message.text_contents,
+                        bug_watch.remotebug, formatted_comment,
                         message.rfc822msgid))
 
                 pushed_comments += 1
