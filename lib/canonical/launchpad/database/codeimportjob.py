@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
-    ICodeImportJobWorkflowPublic, ICodeImportResultSet)
+    ICodeImportResultSet)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -112,7 +112,7 @@ class CodeImportJobSet(object):
 class CodeImportJobWorkflow:
     """See `ICodeImportJobWorkflow`."""
 
-    implements(ICodeImportJobWorkflow, ICodeImportJobWorkflowPublic)
+    implements(ICodeImportJobWorkflow)
 
     def newJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""

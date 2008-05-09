@@ -28,10 +28,14 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
     ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
-from canonical.launchpad.ftests import login, sync
+from canonical.launchpad.ftests import login, logout, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing.codeimporthelpers import (
+    make_finished_import)
+from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
 
 def login_for_code_imports():
     """Login as a member of the vcs-imports team.
@@ -862,6 +866,27 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
                 self.assertTrue(
                     code_import.branch.next_mirror_time is None)
 
+
+class TestRequestJobUI(unittest.TestCase):
+
+    layer = PageTestLayer
+
+    def getUserBrowserAtPage(self, url):
+        """ XXX """
+        user_browser = setupBrowser(
+            auth="Basic no-priv@canonical.com:test")
+        user_browser.open(url)
+        return user_browser
+
+    def test_concurrentRequests(self):
+        login_for_code_imports()
+        code_import = make_finished_import()
+        branch_url = canonical_url(code_import.branch)
+        logout()
+        user_browser1 = self.getUserBrowserAtPage(branch_url)
+        user_browser2 = self.getUserBrowserAtPage(branch_url)
+        user_browser1.getControl('Import Now').click()
+        user_browser2.getControl('Import Now').click()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

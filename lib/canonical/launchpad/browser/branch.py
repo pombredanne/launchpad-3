@@ -28,7 +28,8 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.component import getUtility
+from zope.app.traversing.interfaces import IPathAdapter
+from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
@@ -47,6 +48,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
     BranchType,
     BranchVisibilityRule,
+    CodeImportJobState,
     IBranch,
     IBranchMergeProposal,
     IBranchSet,
@@ -1032,8 +1034,26 @@ class BranchRequestImportView(LaunchpadFormView):
 
     @action('Import Now', name='request')
     def request_import_action(self, action, data):
-        getUtility(ICodeImportJobWorkflow).requestJob(
-            self.context.code_import.import_job, self.user)
+        if self.context.code_import.import_job is None:
+            self.request.response.addNotification(
+                "The import job for this import has been deleted.")
+        elif self.context.code_import.import_job.state != \
+                 CodeImportJobState.PENDING:
+            assert self.context.code_import.import_job.state == \
+                   CodeImportJobState.RUNNING
+            self.request.response.addNotification(
+                "The import is already running.")
+        elif self.context.code_import.import_job.requesting_user is not None:
+            user = self.context.code_import.import_job.requesting_user
+            adapter = queryAdapter(user, IPathAdapter, 'fmt')
+            self.request.response.addNotification(
+                structured("The import has already been requested by %s" %
+                           adapter.link('')))
+        else:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.context.code_import.import_job, self.user)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
 
     @property
     def prefix(self):

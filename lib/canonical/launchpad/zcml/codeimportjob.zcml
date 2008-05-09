@@ -29,9 +29,16 @@
     provides="canonical.launchpad.interfaces.ICodeImportJobWorkflow" >
     <require
       permission="launchpad.Edit"
-      interface="canonical.launchpad.interfaces.ICodeImportJobWorkflow" />
+      attributes="newJob deletePendingJob" />
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="requestJob" />
+    <!-- XXX MichaelHudson 2008-02-28 bug=196345: startJob is called
+         by the getJobForMachine XML-RPC method, and calls to which
+         are unauthenticated.  When the above bug is fixed, we can
+         restrict the permissions for this attribute. -->
     <allow
-      interface="canonical.launchpad.interfaces.ICodeImportJobWorkflowPublic" />
+      attributes="startJob" />
   </securedutility>
 
 </configure>
