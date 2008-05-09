@@ -1,0 +1,23 @@
+= Invalid batch size =
+
+To prevent users from exhausting server resources, pages that uses
+batching have a maximum on the batch size. For example, request a 1000
+products will display a page telling the users that the batch is too
+large and what is the current maximum.
+
+    >>> anon_browser.handleErrors = True
+    >>> from urllib2 import HTTPError
+    >>> try:
+    ...     anon_browser.open(
+    ...         'http://launchpad.dev/projects/+all?start=0&batch=1000')
+    ... except HTTPError, response:
+    ...     pass
+
+    >>> response.code
+    400
+    >>> print extract_text(find_tag_by_id(response.read(), 'nonhelp'))
+    Invalid Batch Size
+    Your requested batch size exceeded the maximum batch size allowed which 
+    is ...
+
+
