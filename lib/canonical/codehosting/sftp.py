@@ -105,8 +105,8 @@ class TransportSFTPFile:
 
         The Transport interface does not allow setting any attributes.
         """
-        # XXX 2008-05-09 JonathanLange bug=???: This should at least raise an
-        # error, not do nothing silently.
+        # XXX 2008-05-09 JonathanLange: This should at least raise an error,
+        # not do nothing silently.
         pass
 
     def getAttrs(self):
