@@ -499,7 +499,7 @@ exposes two custom operations, 'create_team' (POST) and 'people'
     >>> [method.attrib['id'] for method in methods]
     ['PersonSetCollectionAdapter-get',
      'PersonSetCollectionAdapter-create_team',
-     'PersonSetCollectionAdapter-people']
+     'PersonSetCollectionAdapter-find']
 
     >>> (get, create_team, people) = methods
 
@@ -527,14 +527,14 @@ The 'create_team' custom operation takes a number of parameters.
     >>> ws_op.attrib['fixed']
     'create_team'
 
-So does the 'people' custom operation.
+So does the 'find' custom operation.
 
     >>> [param.attrib['name'] for param in list(people)]
     ['ws_op', 'text']
 
     >>> ws_op = people[0]
     >>> ws_op.attrib['fixed']
-    'people'
+    'find'
 
 
 == The scoped collection resource type ==

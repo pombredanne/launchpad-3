@@ -61,8 +61,8 @@ The elements of a collection can be looked up by unique identifier:
 
   >>> admins_team = webservice.get("/beta/~admins").jsonBody()
   >>> sorted(admins_team.items())
-  [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
-   (u'displayname', u'Launchpad Administrators'),
+  [(u'date_created', u'2005-06-06T08:59:51.571899+00:00'),
+   (u'display_name', u'Launchpad Administrators'),
    (u'member_memberships_collection_link',
     u'http://api.launchpad.dev/beta/~admins/member_memberships'),
    (u'members_collection_link',
@@ -100,7 +100,7 @@ people, called 'people'.
 
   >>> def search_people(text, start=0):
   ...     return webservice.get(
-  ...         "/beta/people?ws_op=people&text=%s&ws_start=%s" %
+  ...         "/beta/people?ws_op=find&text=%s&ws_start=%s" %
   ...             (text, start)).jsonBody()
 
 A custom operation that returns a list of objects is paginated, just
@@ -110,7 +110,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws_op=people&text=s&ws_start=5&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws_op=find&text=s&ws_start=5&ws_size=5'
   >>> [p['name'] for p in sorted(s_people['entries'])]
   [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
 
@@ -129,7 +129,7 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws_op=people&text=")
+  >>> print webservice.get("/beta/people?ws_op=find&text=")
   HTTP/1.1 400 Bad Request
   ...
   text: Required input is missing.

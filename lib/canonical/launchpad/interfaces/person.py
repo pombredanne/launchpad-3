@@ -424,7 +424,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             title=_('Display Name'), required=True, readonly=False,
             description=_(
                 "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")))
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = Int(
@@ -508,7 +509,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # this is not a date of birth, it is the date the person record was
     # created in this db
     datecreated = exported(
-        Datetime(title=_('Date Created'), required=True, readonly=True))
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
     creation_rationale = Choice(
         title=_("Rationale for this entry's creation"), required=False,
         readonly=False, values=PersonCreationRationale.items)
@@ -679,7 +681,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         required=False, default=True)
 
     defaultmembershipperiod = Int(
-        title=_('Subscription period'), default=None,
+        title=_('Subscription period'), required=False,
         description=_(
             "Number of days a new subscription lasts before expiring. "
             "You can customize the length of an individual subscription when "
@@ -687,7 +689,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "never expire."))
 
     defaultrenewalperiod = Int(
-        title=_('Renewal period'), default=None,
+        title=_('Renewal period'), required=False,
         description=_(
             "Number of days a subscription lasts after being renewed. "
             "You can customize the lengths of individual renewals, but this "
@@ -1241,7 +1243,7 @@ class IPersonViewRestricted(Interface):
          privilege by virtue of being a member of a team with admin rights.
         """
 
-    @export_operation_as('members_by_status')
+    @export_operation_as('getMembersByStatus')
     @operation_parameters(status=copy_field(ITeamMembership['status']))
     @export_read_operation()
     def getMembersByStatus(status, orderby=None):
@@ -1566,7 +1568,7 @@ class IPersonSet(Interface):
         """
 
     @collection_default_content()
-    @export_operation_as('people')
+    @export_operation_as('find')
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
