@@ -57,7 +57,8 @@ class PollNavigation(Navigation):
 
     @stepthrough('+option')
     def traverse_option(self, name):
-        return getUtility(IPollOptionSet).getByPollAndId(self.context, name)
+        return getUtility(IPollOptionSet).getByPollAndId(
+            self.context, int(name))
 
 
 class BasePollView:
@@ -262,7 +263,7 @@ class PollVoteView(BasePollView):
             newoption = None
         else:
             newoption = getUtility(IPollOptionSet).getByPollAndId(
-                context, newoption_id)
+                context, int(newoption_id))
 
         if self.userVoted():
             self.currentVote.option = newoption

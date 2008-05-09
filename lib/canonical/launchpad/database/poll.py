@@ -22,7 +22,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND, OR)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -266,23 +266,21 @@ class PollSet:
         if orderBy is None:
             orderBy = Poll.sortingColumns
 
-        teamfilter = Poll.q.teamID == team.id
-        results = Poll.select(teamfilter)
+
         status = set(status)
+        status_clauses = []
+        if PollStatus.OPEN in status:
+            status_clauses.append(AND(Poll.q.dateopens <= when,
+                                    Poll.q.datecloses > when))
+        if PollStatus.CLOSED in status:
+            status_clauses.append(Poll.q.datecloses <= when)
+        if PollStatus.NOT_YET_OPENED in status:
+            status_clauses.append(Poll.q.dateopens > when)
 
-        if PollStatus.OPEN not in status:
-            openpolls = Poll.select(
-                AND(teamfilter, Poll.q.dateopens<=when, Poll.q.datecloses>when))
-            results = results.except_(openpolls)
+        assert len(status_clauses) > 0, "No poll statuses were selected"
 
-        if PollStatus.CLOSED not in status:
-            closedpolls = Poll.select(AND(teamfilter, Poll.q.datecloses<=when))
-            results = results.except_(closedpolls)
-
-        if PollStatus.NOT_YET_OPENED not in status:
-            notyetopenedpolls = Poll.select(
-                AND(teamfilter, Poll.q.dateopens>when))
-            results = results.except_(notyetopenedpolls)
+        results = Poll.select(AND(Poll.q.teamID == team.id,
+                                  OR(*status_clauses)))
 
         return results.orderBy(orderBy)
 
