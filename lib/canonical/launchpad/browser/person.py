@@ -22,6 +22,7 @@ __all__ = [
     'PersonClaimView',
     'PersonCodeOfConductEditView',
     'PersonCommentedBugTaskSearchListingView',
+    'PersonCommercialSubscriptionsView',
     'PersonDeactivateAccountView',
     'PersonDynMenu',
     'PersonEditEmailsView',
@@ -1780,6 +1781,9 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+commentedbugs"
 
+
+class PersonCommercialSubscriptionsView(LaunchpadView):
+    pass
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""

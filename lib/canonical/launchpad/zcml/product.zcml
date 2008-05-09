@@ -11,7 +11,7 @@
       interface="canonical.launchpad.interfaces.ICommercialSubscription" />
     <require
       permission="launchpad.Edit"
-      set_attributes="date_expires date_starts purchaser registrant 
+      set_attributes="date_expires date_starts purchaser registrant
                       sales_system_id"
       />
   </content>
@@ -45,7 +45,7 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate private_bugs 
+      set_attributes="name active reviewed autoupdate private_bugs
                       reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad

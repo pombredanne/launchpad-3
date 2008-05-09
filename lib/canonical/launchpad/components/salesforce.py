@@ -3,20 +3,44 @@
 """Salesforce proxy wrapper."""
 
 __metaclass__ = type
-__all__ = ['SalesforceVouchers']
+__all__ = ['SalesforceVouchers',
+           'Voucher']
 
 
 import xmlrpclib
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.launchpad.ftests.salesforce import (
     SalesforceXMLRPCTestTransport,
     )
+from canonical.launchpad.interfaces import IProductSet
 
+class Voucher:
+    def __init__(self, values):
+        self.id = values.get('voucher')
+        self.status = values.get('status')
+        self.term = values.get('term')
+        project_id = values.get('project_id')
+        project = None
+        if project_id is not None:
+            project = getUtility(IProductSet).get(project_id)
+        self.project = project
 
-class SalesforceVouchers:
+    def __repr__(self):
+        if self.project is None:
+            project_name = "unassigned"
+        else:
+            project_name = self.project.displayname
+        return "%s %s %s %s" % (self.id,
+                                self.status,
+                                self.term,
+                                project_name)
+
+class SalesforceVoucherProxy:
     """Wrapper class for voucher processing with Salesforce.
 
-    These vouchers are used to allow commerical projects to subscribe to
+    These vouchers are used to allow commercial projects to subscribe to
     Launchpad.
     """
 
@@ -38,7 +62,13 @@ class SalesforceVouchers:
         """Get the unredeemed vouchers for the user."""
         server = self.server_proxy
         vouchers = server.getUnredeemedVouchers(user.openid_identifier)
-        return vouchers
+        return [Voucher(voucher) for voucher in vouchers]
+
+    def getAllVouchers(self, user):
+        """Get all of the vouchers for the user."""
+        server = self.server_proxy
+        vouchers = server.getAllVouchers(user.openid_identifier)
+        return [Voucher(voucher) for voucher in vouchers]
 
     def getServerStatus(self):
         """Get the server status."""
@@ -54,11 +84,12 @@ class SalesforceVouchers:
             integer representing the number of months the subscription
             allows.
         """
-        return self.server_proxy.redeemVoucher(
+        result = self.server_proxy.redeemVoucher(
             voucher_id,
             user.openid_identifier,
             project.id,
             project.displayname)
+        return result
 
     def updateProjectName(self, project):
         """Update the name of a project in Salesforce.

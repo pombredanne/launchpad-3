@@ -31,9 +31,17 @@ class Voucher:
         self.status = 'UNREDEEMED'
         self.project_id = None
         self.project_name = None
+        product = self.id.split('-')[0]
+        self.term = PRODUCT_TERM_MAP.get(product)
 
     def __repr__(self):
         return "%s %s" % (self.id, self.status)
+
+    def asDict(self):
+        return dict(voucher=self.id,
+                    status=self.status,
+                    term=self.term,
+                    project_id=self.project_id)
 
 
 class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
@@ -64,13 +72,19 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         The returned value is a list of dictionaries, each having a 'voucher'
         and 'status' keys.
         """
-
-        vouchers = [dict(voucher=voucher.id,
-                         status=voucher.status)
-                    for voucher in self.vouchers
+        vouchers = [voucher.asDict() for voucher in self.vouchers
                     if (voucher.owner == lp_openid and
-                        voucher.status == 'UNREDEEMED')
-                    ]
+                        voucher.status == 'UNREDEEMED')]
+        return vouchers
+
+    def getAllVouchers(self, lp_openid):
+        """Return the complete list of vouchers for a given id.
+
+        The returned value is a list of dictionaries, each having a 'voucher',
+        'status', and 'project_id' keys.
+        """
+        vouchers = [voucher.asDict() for voucher in self.vouchers
+                    if voucher.owner == lp_openid]
         return vouchers
 
     def transferVoucher(self, voucher_id, from_lp_openid, to_lp_openid):
