@@ -24,6 +24,7 @@ import itertools
 import random
 import re
 
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -552,6 +553,8 @@ class ShippingRequestSet:
             queries.append("ShippingRequest.status = %s" % sqlvalues(status))
 
         query = " AND ".join(queries)
+        if query == '':
+            query = None
         return ShippingRequest.select(
             query, orderBy=orderBy, prejoins=["recipient"])
 
@@ -1426,9 +1429,14 @@ class ShipmentSet:
     def new(self, request, shippingservice, shippingrun, trackingcode=None,
             dateshipped=None):
         """See IShipmentSet"""
+        # Flushing the database at this point leads to problems with
+        # the database constraints.
+        store = Store.of(shippingrun)
+        store.block_implicit_flushes()
         token = self._generateToken()
         while self.getByToken(token):
             token = self._generateToken()
+        store.unblock_implicit_flushes()
 
         shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,
