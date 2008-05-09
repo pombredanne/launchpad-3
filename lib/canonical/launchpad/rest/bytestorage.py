@@ -4,10 +4,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'ByteStorage',
     'ByteStorageResource',
     'IByteStorage',
-    'IByteStorageResource'
+    'IByteStorageResource',
+    'LibraryBackedByteStorage',
 ]
 
 
@@ -24,22 +24,18 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 class IByteStorage(Interface):
-    """A sequence of bytes stored on the server."""
+    """A sequence of bytes stored on the server.
 
-    bytes = Attribute("The byte sequence")
+    The bytestream is expected to have a URL other than the one used
+    by the web service.
+    """
 
+    url = Attribute("The external URL to the byte stream.")
+    filename = Attribute("Filename for the byte stream.")
 
-class ByteStorage:
-    """See IByteStorage."""
-    implements(IByteStorage)
-    def __init__(self, entry, field):
-        self.entry = entry
-        self.field = field
+    def create_stored(type, representation):
+        """Create a new stored bytestream."""
 
-    @property
-    def filename(self):
-        """Name of the file to be stored."""
-        return self.field.__name__
 
 class IByteStorageResource(IHTTPResource):
     """A resource that represents an individual object."""
@@ -79,32 +75,51 @@ class ByteStorageResource(HTTPResource):
         elif self.request.method == "DELETE":
             return self.do_DELETE()
         else:
+
             allow_string = "GET PUT DELETE"
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", allow_string)
 
     def do_GET(self):
-        # If the bytestorage is just a dummy, return 404
-        # Otherwise, look up the object in the library
-        # Return its value
-        file_alias = getattr(self.context.entry, self.context.filename)
-        if file_alias is None:
+        file_object = getattr(self.context.entry, self.context.filename)
+        if file_object is None:
+            # No stored document exists here yet.
             raise NotFound(self.context, '', self.request)
         self.request.response.setStatus(303) # See Other
-        self.request.response.setHeader('Location', file_alias.getURL())
+        self.request.response.setHeader('Location', file_object.getURL())
 
     def do_PUT(self, type, representation):
-        # Look up the object in the library
-        # Set its value
-        file_alias = getattr(self.context.entry, self.context.filename)
-        if file_alias is None:
-            # Response code should be 201
-            pass
-        file_alias = getUtility(ILibraryFileAliasSet).create(
-            name=self.context.filename, size=len(representation),
-            file=StringIO(representation), contentType=type)
-        setattr(self.context.entry, self.context.filename, file_alias)
+        file_object = self.context.create_stored(type, representation)
+        setattr(self.context.entry, self.context.filename, file_object)
 
     def do_DELETE(self):
         setattr(self.context.entry, self.context.filename, None)
 
+
+class LibraryBackedByteStorage:
+    """See IByteStorage."""
+    implements(IByteStorage)
+
+    def __init__(self, entry, field):
+        """See IByteStorage."""
+        self.entry = entry
+        self.field = field
+
+    @property
+    def url(self):
+        """See IByteStorage."""
+        return self.get_stored().getURL()
+
+    @property
+    def filename(self):
+        """See IByteStorage."""
+        return self.field.__name__
+
+    def create_stored(self, type, representation):
+        """See IByteStorage."""
+        return getUtility(ILibraryFileAliasSet).create(
+            name=self.filename, size=len(representation),
+            file=StringIO(representation), contentType=type)
+
+    def _getLibraryStorage(self):
+        return getattr(self.entry, self.context.filename)

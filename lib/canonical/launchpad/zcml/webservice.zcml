@@ -16,7 +16,7 @@
 
     <!-- Byte storage resources -->
     <adapter
-        for="canonical.launchpad.rest.ByteStorage
+        for="canonical.launchpad.rest.IByteStorage
              zope.publisher.interfaces.http.IHTTPApplicationRequest"
         provides="canonical.lazr.interfaces.IHTTPResource"
         factory="canonical.launchpad.rest.ByteStorageResource"

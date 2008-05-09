@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
     OAuthPermission, NonceAlreadyUsed)
-from canonical.launchpad.rest import ByteStorage
+from canonical.launchpad.rest import LibraryBackedByteStorage
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -953,7 +953,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # Even if the library file is None, we want to allow
         # traversal, because the request might be a PUT request
         # creating a file here.
-        byte_storage = ByteStorage(entry, field.bind(entry))
+        byte_storage = LibraryBackedByteStorage(entry, field.bind(entry))
         return byte_storage
 
     def _traverseToScopedCollection(self, request, entry, field):
