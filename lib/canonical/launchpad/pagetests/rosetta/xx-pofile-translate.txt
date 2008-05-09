@@ -14,22 +14,6 @@ xx-pofile-translate-message-filtering.txt
 xx-pofile-translate-newlines-check.txt
 xx-pofile-translate-performance.txt
 
-    >>> def find_messages(browser):
-    ...     """Find the part of +translate page that contains the messages."""
-    ...     return find_tag_by_id(browser.contents, 'messages_to_translate')
-
-    >>> def count_tags_by_class(browser, classname):
-    ...     """Count tags of given class."""
-    ...     return len(find_tags_by_class(browser.contents, classname))
-
-    >>> def count_translatable_messages(browser):
-    ...     """Count translatable messages shown on +translate page."""
-    ...     # Count all tags with class "translation" that don't also have
-    ...     # class "secondary"
-    ...     return (
-    ...         count_tags_by_class(browser, 'translation') -
-    ...         count_tags_by_class(browser, 'secondary translation'))
-
 
 == Anonymous access ==
 
@@ -42,7 +26,7 @@ the translation form.
 
 The page is rendered in read-only mode, without any textareas for input.
 
-    >>> main_content = find_messages(browser)
+    >>> main_content = find_tag_by_id(browser.contents, 'messages_to_translate')
     >>> for textarea in main_content.findAll('textarea'):
     ...     print 'Found textarea:\n%s' % textarea
 
@@ -66,34 +50,6 @@ submissions.
     HTTP/1.1 500 Internal Server Error
     ...
     ...UnexpectedFormData: Anonymous users cannot do POST submissions...
-
-
-== Batch sizes ==
-
-The user views a translations page and gets 10 messages.
-
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
-    ...     'evolution/+pots/evolution-2.2/es/+translate')
-    >>> count_translatable_messages(browser)
-    10
-
-Not content with ten messages, the user modifies the URL to get eleven.
-
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
-    ...     'evolution/+pots/evolution-2.2/es/+translate?batch=11')
-    >>> count_translatable_messages(browser)
-    11
-
-The system will not accept a batch size of one thousand, however.
-
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
-    ...     'evolution/+pots/evolution-2.2/es/+translate?batch=1000')
-    Traceback (most recent call last):
-    ...
-    InvalidBatchSizeError: Batch size 1000 is not in acceptable range.
 
 
 == Requesting English and its variant languages ==

@@ -339,8 +339,7 @@ class POFileTranslateView(BaseTranslationView):
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
         return BatchNavigator(self._getSelectedPOTMsgSets(),
-                              self.request, size=self.DEFAULT_SIZE,
-                              max_size=300)
+                              self.request, size=self.DEFAULT_SIZE)
 
     def _initializeTranslationMessageViews(self):
         """See BaseTranslationView._initializeTranslationMessageViews."""
