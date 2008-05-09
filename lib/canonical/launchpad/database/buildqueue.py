@@ -150,7 +150,7 @@ class BuildQueue(SQLBase):
             msg += "LPack => score zero"
         else:
             # Calculates the urgency-related part of the score.
-            urgency = score_urgency[urgency]
+            urgency = score_urgency[self.urgency]
             score += urgency
             msg += "U+%d " % urgency
 
