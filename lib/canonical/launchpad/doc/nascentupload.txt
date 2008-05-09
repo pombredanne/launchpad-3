@@ -853,7 +853,7 @@ rights to all components from 'ubuntu-team' to 'sabdfl':
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> from canonical.launchpad.database import ArchivePermission
   >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
-  >>> for permission in ArchivePermission.select("1=1"):
+  >>> for permission in ArchivePermission.select():
   ...     permission.person = new_uploader
   ...     permission.syncUpdate()
   >>> commit()

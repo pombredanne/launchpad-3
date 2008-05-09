@@ -500,7 +500,7 @@ class NascentUpload:
         if self.is_ppa:
             self.logger.debug("Don't verify signer ACL for PPA")
             if not archive.canUpload(signer):
-                self.reject("Signer has no upload rights to this PPA")
+                self.reject("Signer has no upload rights to this PPA.")
             return
 
         # Binary uploads are never checked (they come in via the security
@@ -545,8 +545,8 @@ class NascentUpload:
             # The uploader has no rights to the component.
             self.reject(
                 "Signer is not permitted to upload to the component "
-                "'%s' of file '%s'" % (component.name,
-                                       self.changes.dsc.filename))
+                "'%s' of file '%s'." % (component.name,
+                                        self.changes.dsc.filename))
 
 
     #

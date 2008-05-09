@@ -1319,3 +1319,8 @@ Ubuntu components, has permission to upload "mozilla-firefox".
     ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
     >>> ubuntu.main_archive.canUpload(carlos, mozilla)
     True
+
+Cprov does not have permission, however.
+
+    >>> ubuntu.main_archive.canUpload(cprov, mozilla)
+    False
