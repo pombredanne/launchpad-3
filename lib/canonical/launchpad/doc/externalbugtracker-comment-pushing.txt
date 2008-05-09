@@ -217,3 +217,21 @@ comments being pushed because they have already been imported.
 
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
 
+
+== Formatting pushed comments ==
+
+The BugWatchUpdater class has a method, _formatRemoteComment() which
+will take a Launchpad comment and format it ready for uploading to the
+remote server. This allows us to include salient information, such as
+the comment author, with the pushed comment.
+
+    >>> formatted_message = bugwatch_updater._formatRemoteComment(
+    ...     external_bugtracker, bug_watch, message)
+    >>> print formatted_message
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Pushing, for the purpose of.
+    <BLANKLINE>
+    -- 
+    http://launchpad.net/bugs/...
+    <BLANKLINE>

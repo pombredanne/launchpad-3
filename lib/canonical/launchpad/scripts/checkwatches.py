@@ -21,6 +21,7 @@ from canonical.launchpad.components.externalbugtracker import (
     get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownRemoteStatusError)
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
@@ -592,6 +593,17 @@ class BugWatchUpdater(object):
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
+
+    def _formatRemoteComment(self, external_bugtracker, bug_watch, message):
+        """Format a comment for a remote bugtracker and return it."""
+        comment_template = get_email_template(
+            external_bugtracker.comment_template)
+
+        return comment_template % {
+            'launchpad_bug': bug_watch.bug.id,
+            'comment_author': message.owner.displayname,
+            'comment_body': message.text_contents,
+            }
 
     def pushBugComments(self, external_bugtracker, bug_watch):
         """Push Launchpad comments to the remote bug.
