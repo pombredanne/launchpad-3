@@ -16,6 +16,7 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
+
 class TranslationUnavailable(Exception):
     """Translation objects are unavailable."""
 
@@ -33,6 +34,10 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
     One example would be a URL containing uppercase letters.
     """
+
+
+class InvalidBatchSizeError(AssertionError):
+    """Received a batch parameter that exceed our configured max size."""
 
 
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):

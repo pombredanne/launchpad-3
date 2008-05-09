@@ -10,7 +10,7 @@ from canonical.config import config
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.interfaces import (
-    IBatchNavigator, ITableBatchNavigator,
+    IBatchNavigator, ITableBatchNavigator, InvalidBatchSizeError
     )
 
 
@@ -32,10 +32,6 @@ class LowerBatchNavigationView(LaunchpadView):
             self.context.prevBatchURL())):
             return LaunchpadView.render(self)
         return u""
-
-
-class InvalidBatchSizeError(Exception):
-    """Error: request gives unacceptable batch size."""
 
 
 class BatchNavigator:
