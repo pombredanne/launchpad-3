@@ -155,9 +155,10 @@ class BuildQueue(SQLBase):
             msg += "U+%d " % urgency
 
             # Calculates the component-related part of the score.
-            curr_component_name = self.build.current_component.name
-            score += score_componentname[curr_component_name]
-            msg += "C+%d " % score_componentname[curr_component_name]
+            score_component = score_componentname[
+                self.build.current_component.name]
+            score += score_component
+            msg += "C+%d " % score_component
 
             # Calculates the build queue time component of the score.
             right_now = datetime.now(pytz.timezone('UTC'))
