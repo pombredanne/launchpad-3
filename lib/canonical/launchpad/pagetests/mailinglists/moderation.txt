@@ -12,7 +12,9 @@ member in good standing (as is the default).
     >>> admin_browser.getControl('Submit').click()
 
     >>> from canonical.launchpad.ftests import mailinglists_helper
+    >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()
+    >>> logout()
 
     # Ignore any notifications up to this point.
     >>> from canonical.launchpad.tests import mail_helpers
