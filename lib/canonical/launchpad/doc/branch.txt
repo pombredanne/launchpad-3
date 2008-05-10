@@ -735,33 +735,14 @@ Private branches are not browseable at all.
 URLs are shown for a branch to show a user where they can push to and
 pull or branch from.  These methods don't check any visibility constraints
 for the person passed into the methods, that job is left to the views.
+The branch location is shown using the lp: Bazaar lookup names.
 
     >>> print branch.unique_name
     ~landscape-developers/landscape/trunk
     >>> branch.private
     True
-    >>> print branch.getBzrUploadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrDownloadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrUploadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrDownloadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-
-Public branches use anonymous http for the bzr branch location.
-
-    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/main')
-    >>> print branch.private
-    False
-    >>> print branch.getBzrUploadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrDownloadURL()
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrUploadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrDownloadURL(ddaa)
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
 
 
 == Branch Scan List ==

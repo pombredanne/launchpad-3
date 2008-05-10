@@ -143,6 +143,7 @@ Uploading the same package again will result in a rejection email:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff from bar - 1.0-1 to bar - 1.0-1 requested
   DEBUG: Setting it to ACCEPTED
   ...
   DEBUG: Sending rejection email.
@@ -280,6 +281,7 @@ AUTO_APPROVED source uploads for 'translations' section:
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff from language-pack-pt - 1.0-2 to language-pack-pt - 1.0-1 requested
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
   DEBUG: Creating PENDING build for hppa.
@@ -314,6 +316,7 @@ UNAPPROVED source uploads for 'translations' section via insecure:
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff from language-pack-pt - 1.0-3 to language-pack-pt - 1.0-2 requested
   DEBUG: Setting it to UNAPPROVED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -366,6 +369,7 @@ saying they are waiting for approval:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff from bar - 1.0-3 to bar - 1.0-1 requested
   DEBUG: Setting it to UNAPPROVED
   ...
 
@@ -395,6 +399,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff from bar - 1.0-4 to bar - 1.0-1 requested
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
   DEBUG: Creating PENDING build for hppa.
@@ -453,6 +458,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff from bar - 1.0-2 to bar - 1.0-1 requested
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
   DEBUG: Creating PENDING build for hppa.
