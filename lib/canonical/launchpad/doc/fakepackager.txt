@@ -334,4 +334,4 @@ signed by Foo Bar can't be uploaded to Celso's PPA.
     Traceback (most recent call last):
     ...
     AssertionError: Upload was rejected: Signer has no upload rights
-    to this PPA
+    to this PPA.
