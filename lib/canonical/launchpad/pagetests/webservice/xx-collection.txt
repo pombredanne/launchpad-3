@@ -61,8 +61,8 @@ The elements of a collection can be looked up by unique identifier:
 
   >>> admins_team = webservice.get("/beta/~admins").jsonBody()
   >>> sorted(admins_team.items())
-  [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
-   (u'displayname', u'Launchpad Administrators'),
+  [(u'date_created', u'2005-06-06T08:59:51.571899+00:00'),
+   (u'display_name', u'Launchpad Administrators'),
    (u'member_memberships_collection_link',
     u'http://api.launchpad.dev/beta/~admins/member_memberships'),
    (u'members_collection_link',
@@ -84,10 +84,9 @@ A collection may be scoped to an element:
   >>> team_members[-1]['name']
   u'kinnison'
 
-But not every element may have that collection scoped to it:
-
-  >>> print webservice.get("/beta/~spiv/members").getStatus()
-  404
+  >>> result = webservice.get("/beta/~spiv/members")
+  >>> list(result.jsonBody()['entries'])
+  []
 
 
 == Custom operations ==
@@ -101,7 +100,7 @@ people, called 'people'.
 
   >>> def search_people(text, start=0):
   ...     return webservice.get(
-  ...         "/beta/people?ws_op=people&text=%s&ws_start=%s" %
+  ...         "/beta/people?ws_op=find&text=%s&ws_start=%s" %
   ...             (text, start)).jsonBody()
 
 A custom operation that returns a list of objects is paginated, just
@@ -111,7 +110,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws_op=people&text=s&ws_start=5&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws_op=find&text=s&ws_start=5&ws_size=5'
   >>> [p['name'] for p in sorted(s_people['entries'])]
   [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
 
@@ -130,66 +129,52 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws_op=people&text=")
+  >>> print webservice.get("/beta/people?ws_op=find&text=")
   HTTP/1.1 400 Bad Request
   ...
   text: Required input is missing.
 
 A collection may also expose named operations in response to POST
 requests. These operations are usually factories. Here's a helper
-method that creates a new person by invoking a factory operation on
+method that creates a new team by invoking a factory operation on
 the collection of people.
 
-  >>> def create_person(email_address, comment, name,
-  ...                   display_name, password):
+  >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "/beta/people", "create_person", {},
-  ...         email_address=email_address, comment=comment, name=name,
-  ...         display_name=display_name, password=password)
+  ...         "/beta/people", "create_team", {},
+  ...         name=name, display_name=display_name)
 
-  >>> print webservice.get('/beta/~serviceuser')
+  >>> print webservice.get('/beta/~serviceteam')
   HTTP/1.1 404 Not Found
   ...
 
-  >>> print create_person("serviceuser@example.com",
-  ...                     "Comment", "serviceuser", "Service User",
-  ...                     "password")
+  >>> print create_team("serviceteam", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceuser
+  Location: http://api.launchpad.dev/beta/~serviceteam
   <BLANKLINE>
 
-  >>> print webservice.get('/beta/~serviceuser')
+  >>> print webservice.get('/beta/~serviceteam')
   HTTP/1.1 200 Ok
   ...
 
-  >>> print create_person("serviceuser2@example.com",
-  ...                     "", "", "Your Name Here", "")
+  >>> print create_team("serviceteam2", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceuser2
+  Location: http://api.launchpad.dev/beta/~serviceteam2
   <BLANKLINE>
 
-  >>> print webservice.get('/beta/~serviceuser2')
+  >>> print webservice.get('/beta/~serviceteam2')
   HTTP/1.1 200 Ok
   ...
 
-Standard person-creation rules apply. For instance, you can't create a
-person with a name that's taken.
+Standard team-creation rules apply. For instance, you can't create a
+team with a name that's taken.
 
-  >>> print create_person("serviceuser3@example.com", "", "serviceuser",
-  ...                     "Name already taken", "password")
-  HTTP/1.1 409 Conflict
+  >>> print create_team("serviceteam", "Name already taken")
+  HTTP/1.1 400 Bad Request
   ...
-  The name 'serviceuser' is already taken.
-
-You also can't create a person with an email address that's taken.
-
-  >>> print create_person("serviceuser@example.com", "", "serviceuser3",
-  ...                     "Email address already taken", "password")
-  HTTP/1.1 409 Conflict
-  ...
-  The email address 'serviceuser@example.com' is already registered.
+  name: serviceteam is already in use by another person or team.
 
 A POST request has no meaning right now unless it specifies a custom
 operation.
