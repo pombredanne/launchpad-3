@@ -11,6 +11,7 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
 from datetime import datetime, timedelta, MINYEAR
 import pytz
 
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -466,9 +467,9 @@ class DistributionMirrorSet:
         if limit is not None:
             query += " LIMIT %d" % limit
 
-        conn = DistributionMirror._connection
+        store = getUtility(IZStorm).get('main')
         ids = ", ".join(str(id)
-                        for (id, date_created) in conn.queryAll(query))
+                        for (id, date_created) in store.execute(query))
         query = '1 = 2'
         if ids:
             query = 'id IN (%s)' % ids
