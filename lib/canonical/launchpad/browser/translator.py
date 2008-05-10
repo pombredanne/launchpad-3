@@ -63,12 +63,12 @@ class TranslatorRemoveView(LaunchpadFormView):
     @action("Remove")
     def remove(self, action, data):
         """Remove the ITranslator from the associated ITranslationGroup."""
+        message = 'Removed %s as the %s translator for %s.' % (
+            self.context.translator.displayname,
+            self.context.language.englishname,
+            self.context.translationgroup.title)
         self.context.translationgroup.remove_translator(self.context)
-        self.request.response.addInfoNotification(
-            'Removed %s as the %s translator for %s.' % (
-                self.context.translator.displayname,
-                self.context.language.englishname,
-                self.context.translationgroup.title))
+        self.request.response.addInfoNotification(message)
 
     @property
     def next_url(self):
