@@ -143,29 +143,37 @@ class BuildQueue(SQLBase):
         score = 0
         msg = "%s (%d) -> " % (self.build.title, self.lastscore)
 
-        # Calculates the urgency-related part of the score.
-        score += score_urgency[self.urgency]
-        msg += "U+%d " % score_urgency[self.urgency]
-
-        # Calculates the component-related part of the score.
-        score += score_componentname[self.build.current_component.name]
-        msg += "C+%d " % score_componentname[
-            self.build.current_component.name]
-
-        # Calculates the build queue time component of the score.
-        right_now = datetime.now(pytz.timezone('UTC'))
-        eta = right_now - self.created
-        for limit, dep_score in queue_time_scores:
-            if eta.seconds > limit:
-                score += dep_score
-                msg += "T+%d " % dep_score
-                break
+        # Please note: the score for language packs is to be zero because
+        # they unduly delay the building of packages in the main component
+        # otherwise.
+        if self.build.sourcepackagerelease.section.name == 'translations':
+            msg += "LPack => score zero"
         else:
-            msg += "T+0 "
+            # Calculates the urgency-related part of the score.
+            urgency = score_urgency[self.urgency]
+            score += urgency
+            msg += "U+%d " % urgency
 
-        # Private builds get uber score.
-        if self.build.archive.private:
-            score += 1000
+            # Calculates the component-related part of the score.
+            score_component = score_componentname[
+                self.build.current_component.name]
+            score += score_component
+            msg += "C+%d " % score_component
+
+            # Calculates the build queue time component of the score.
+            right_now = datetime.now(pytz.timezone('UTC'))
+            eta = right_now - self.created
+            for limit, dep_score in queue_time_scores:
+                if eta.seconds > limit:
+                    score += dep_score
+                    msg += "T+%d " % dep_score
+                    break
+            else:
+                msg += "T+0 "
+
+            # Private builds get uber score.
+            if self.build.archive.private:
+                score += 1000
 
         # Store current score value.
         self.lastscore = score

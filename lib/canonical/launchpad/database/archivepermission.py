@@ -16,7 +16,7 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import sqlvalues, SQLBase
 
 from canonical.launchpad.interfaces import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
@@ -54,17 +54,29 @@ class ArchivePermissionSet:
 
     def checkAuthenticated(self, user, archive, permission, item):
         """See `IArchivePermissionSet`."""
+        clauses = ["""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            %s IN (SELECT TeamParticipation.person
+                   FROM TeamParticipation
+                   WHERE TeamParticipation.person = %s AND
+                         TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, permission, user, user)
+            ]
+
         if IComponent.providedBy(item):
-            auth = ArchivePermission.selectBy(
-                archive=archive, permission=permission, person=user,
-                component=item)
+            clauses.append(
+                "ArchivePermission.component = %s" % sqlvalues(item))
         elif ISourcePackageName.providedBy(item):
-            auth = ArchivePermission.selectBy(
-                archive=archive, permission=permission, person=user,
-                sourcepackagename=item)
+            clauses.append(
+                "ArchivePermission.sourcepackagename = %s" % sqlvalues(item))
         else:
             raise TypeError(
                 "'item' is not an IComponent or an ISourcePackageName")
+
+        query = " AND ".join(clauses)
+        auth = ArchivePermission.select(
+            query, clauseTables=["TeamParticipation"], distinct=True)
 
         return auth
 

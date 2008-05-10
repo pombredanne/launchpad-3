@@ -837,14 +837,16 @@ record is a placeholder one, we used the second key):
 
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> uploader_key = name16.gpgkeys[1]
+  >>> print uploader_key.fingerprint
+  340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
-Both, DSC and changesfile were signed:
+Both, DSC and changesfile are signed with Name16's second key.
 
-  >>> bar_ok.changes.dsc.signingkey.fingerprint == uploader_key.fingerprint
-  True
+  >>> print bar_ok.changes.dsc.signingkey.fingerprint
+  340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
-  >>> bar_ok.changes.signingkey.fingerprint == uploader_key.fingerprint
-  True
+  >>> print bar_ok.changes.signingkey.fingerprint
+  340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
 Let's modify the current ACL rules for ubuntu, moving the upload
 rights to all components from 'ubuntu-team' to 'sabdfl':
@@ -875,8 +877,9 @@ for further checks:
   >>> verifyObject(IGPGKey, bar_failed.changes.signingkey)
   True
 
-  >>> bar_failed.changes.dsc.signingkey.fingerprint == uploader_key.fingerprint
-  True
-  >>> bar_failed.changes.signingkey.fingerprint == uploader_key.fingerprint
-  True
+  >>> print bar_failed.changes.dsc.signingkey.fingerprint
+  340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
+
+  >>> print bar_failed.changes.signingkey.fingerprint
+  340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
