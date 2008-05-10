@@ -277,11 +277,6 @@ Now we can compare the package diff outcome to the debdiff output
 (obtained manually on the shell) for the packages in question.
 
     >>> print get_diff_results(diff)
-    diff -u biscuit-1.0/contents biscuit-1.0/contents
-    --- biscuit-1.0/contents
-    +++ biscuit-1.0/contents
-    @@ -3 +2,0 @@
-    -1.0-8
     diff -u biscuit-1.0/debian/changelog biscuit-1.0/debian/changelog
     --- biscuit-1.0/debian/changelog
     +++ biscuit-1.0/debian/changelog
@@ -296,6 +291,11 @@ Now we can compare the package diff outcome to the debdiff output
     <BLANKLINE>
        * Initial Upstream package
     <BLANKLINE>
+    diff -u biscuit-1.0/contents biscuit-1.0/contents
+    --- biscuit-1.0/contents
+    +++ biscuit-1.0/contents
+    @@ -3 +2,0 @@
+    -1.0-8
 
 
 == Browsing Diffs ==
