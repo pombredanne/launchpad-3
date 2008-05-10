@@ -56,7 +56,7 @@ import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
-from canonical.launchpad.webapp.menu import get_current_view
+from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -213,7 +213,7 @@ class MenuAPI:
             # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
             # facet name from the layer implemented by the request.
             view = get_current_view(self._request)
-            selectedfacetname = getattr(view, '__launchpad_facetname__', None)
+            selectedfacetname = get_facet(view)
         menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
         if menu is None:
             return {}

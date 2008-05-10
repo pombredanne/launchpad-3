@@ -84,6 +84,7 @@ Each object has a canonical url derived from its place in the hierarchy.
     ...         PATH_INFO=path_info)
     ...     request._traversed_names = path_info.split('/')[1:]
     ...     request.traversed_objects = traversed_objects
+    ...     # After making the request, setup a new interaction.
     ...     endInteraction()
     ...     newInteraction(request)
     ...     return request
@@ -214,7 +215,7 @@ they are assigned to the same facet.
 == The FacetMenu class ==
 
 A FacetMenu is a menu that defines all the facets for a site. A facet
-may be consider an application or focus. A There may be many ways in
+may be considered an application or focus. There may be many ways in
 which a site's content object may be used. For example: one aspect of
 a content object is its definition and publication, another might
 be questions and answers about the content object.
@@ -269,7 +270,7 @@ are appropriate for a context object.
 
     >>> cookingexample.CookeryFacetMenu = CookeryFacetMenu
 
-An instance of a FacetMenu is usually retrieve through adaption, but
+An instance of a FacetMenu is usually retrieved through adaption, but
 we can directly create one with a context object to show that its
 methods can access `self.context`.
 
@@ -811,8 +812,8 @@ find the instancemethods object.
         selected: True
         linked: True
 
-    # Restore the view to the last traversed object, though not necessary,
-    # the traversed objects in this test should be the objects we made.
+    # Restore the _last_obj_traversed to the view that matches the
+    # request's URL.
     >>> request._last_obj_traversed = recipe_journal_view
 
 

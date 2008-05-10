@@ -92,7 +92,7 @@ from canonical.launchpad.webapp.interfaces import (
     POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import get_current_view
+from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -186,7 +186,7 @@ class NavigationMenuTabs(LaunchpadView):
 
     def initialize(self):
         requested_view = get_current_view(self.request)
-        facet = getattr(requested_view, '__launchpad_facetname__', None)
+        facet = get_facet(requested_view)
         menu = queryAdapter(self.context, INavigationMenu, name=facet)
         if menu is None:
             # There are no menu entries.
