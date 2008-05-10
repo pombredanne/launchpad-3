@@ -19,6 +19,8 @@ __all__ = [
     'ArchiveView',
     ]
 
+import apt_pkg
+
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
@@ -121,6 +123,22 @@ class ArchiveContextMenu(ContextMenu):
 class ArchiveViewBase:
     """Common features for Archive view classes."""
 
+    active_publishing_status = [
+        PackagePublishingStatus.PENDING,
+        PackagePublishingStatus.PUBLISHED,
+        ]
+
+    inactive_publishing_status = [
+        PackagePublishingStatus.SUPERSEDED,
+        PackagePublishingStatus.DELETED,
+        PackagePublishingStatus.OBSOLETE,
+        ]
+
+    incomplete_building_status = [
+        BuildStatus.NEEDSBUILD,
+        BuildStatus.BUILDING,
+        ]
+
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
@@ -178,15 +196,10 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
             def __init__(self, collection=None):
                 self.collection = collection
 
-        published_status = [PackagePublishingStatus.PENDING,
-                            PackagePublishingStatus.PUBLISHED]
-        superseded_status = [PackagePublishingStatus.SUPERSEDED,
-                             PackagePublishingStatus.DELETED]
-
         status_terms = [
-            SimpleTerm(StatusCollection(published_status),
+            SimpleTerm(StatusCollection(self.active_publishing_status),
                        'published', 'Published'),
-            SimpleTerm(StatusCollection(superseded_status),
+            SimpleTerm(StatusCollection(self.inactive_publishing_status),
                        'superseded', 'Superseded'),
             SimpleTerm(StatusCollection(), 'any', 'Any Status')
             ]
@@ -446,6 +459,10 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+class CannotCopy(Exception):
+    """Exception raised when a copy cannot be performed."""
+
+
 class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     """Archive package copying view class.
 
@@ -547,27 +564,113 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         """Simply re-issue the form with the new values."""
         pass
 
-    def _checkCopyDestination(self, source, series, pocket, archive):
-        """Whether or not the given destination is allowed for copy.
+    def _checkCopy(self, source, archive, series, pocket, include_binaries):
+        """Check if the source can be copied to the given location.
 
-        It is always ok to copy a DELETED publication.
+        First, since it's the easiest check, if binaries are included in
+        the copy, it checks if all builds have already quiesced, if not an
+        error is raised.
 
-        Return False if the given destination is the current location
-        package, True otherwise.
+        Then it checks if there is a source with the same name and version
+        published in the destination archive. If it exists, doesn't
+        matter in which series, and it has built or will build binaries,
+        the copy should not be performed without binaries, because the
+        copied  source will rebuilt binaries that will conflict with
+        the existent ones. Even when the binaries are included, they are
+        checked to not conflict with the existent ones.
+
+        Finally it uses apt_pkg to check if the version of the source being
+        copied is higher than any version of the same source present in the
+        destination suite (series + pocket).
+
+        :raise CannotCopy when a copy is not allowed to be performed
+            containing the reason of the error.
         """
-        if source.status == PackagePublishingStatus.DELETED:
-            return True
+        # Check if all builds have quiesced in the copied location if
+        # binaries are included in the copy.
+        if include_binaries:
+            copied_incomplete_builds = [
+                build for build in source.getBuilds()
+                if build.buildstate in self.incomplete_building_status]
 
-        if series is not None:
-            if (source.distroseries == series and
-                source.archive == archive and
-                source.pocket == pocket):
-                return False
-        else:
-            if source.archive == archive and source.pocket == pocket:
-                return False
+            if len(copied_incomplete_builds) > 0:
+                raise CannotCopy(
+                    "source not completely built while copying binaries")
 
-        return True
+        # Check if there is already a source with the same name and version
+        # published in the destination archive.
+        destination_archive_conflicts = archive.getPublishedSources(
+            name=source.sourcepackagerelease.name,
+            version=source.sourcepackagerelease.version,
+            status=self.active_publishing_status,
+            exact_match=True)
+
+        # Source name and version was never seen before, copy is allowed
+        # with or without binaries.
+        if destination_archive_conflicts.count() > 0:
+            # Cache the archive conflicts, it will be iterated more than once.
+            destination_archive_conflicts = list(
+                destination_archive_conflicts)
+
+            # Identify published binaries and incomplete builds from archive
+            # conflicts. Either will deny source-only copies, since a rebuild
+            # will result in binaries that cannot be published in the archive
+            # because they will conflict with the existent ones.
+            published_binaries = set()
+            for candidate in destination_archive_conflicts:
+                for pub_binary in candidate.getPublishedBinaries():
+                    published_binaries.add(pub_binary.binarypackagerelease)
+
+            has_incomplete_builds = False
+            for candidate in destination_archive_conflicts:
+                incomplete_builds = [
+                    build for build in candidate.getBuilds()
+                    if build.buildstate in self.incomplete_building_status]
+                if len(incomplete_builds) > 0:
+                    has_incomplete_builds = True
+                    break
+
+            # We rely on previous check that ensure copies including binaries
+            # can only be performed in packages with quiesced builds.
+            if not include_binaries:
+                if published_binaries or has_incomplete_builds:
+                    raise CannotCopy(
+                        "same version already built or building in "
+                        "destination archive")
+
+            # The copy includes binaries and if no binaries are published
+            # in the archive there is not chance to conflict. Copy is allowed.
+            # Since DEB files are compressed with ar (encoding the creation
+            # timestamp) and serially built by our infrastructure it's correct
+            # to assume that the set of BinaryPackageReleases being copied can
+            # only be a superset of the set of BinaryPackageReleases published
+            # in the destination archive.
+            if published_binaries:
+                copied_binaries = set(
+                    [pub.binarypackagerelease
+                     for pub in source.getBuiltBinaries()])
+                if (copied_binaries.intersection(published_binaries) !=
+                    published_binaries):
+                    raise CannotCopy(
+                        "binaries conflicting with the existing ones")
+
+        destination_series_ancestries = archive.getPublishedSources(
+            name=source.sourcepackagerelease.name, pocket=pocket,
+            distroseries=series, status=self.active_publishing_status)
+
+        if destination_series_ancestries.count() == 0:
+            return
+
+        ancestry = destination_series_ancestries[0]
+        ancestry_version = ancestry.sourcepackagerelease.version
+        copy_version = source.sourcepackagerelease.version
+
+        apt_pkg.InitSystem()
+        if apt_pkg.VersionCompare(copy_version, ancestry_version) <= 0:
+            raise CannotCopy(
+                "version older than the %s published in %s" %
+                (ancestry.displayname, ancestry.distroseries.name))
+
 
     def _doCopy(self, sources, series, pocket, archive,
                 include_binaries=False):
@@ -600,10 +703,17 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if not include_binaries:
                 source_copy.createMissingBuilds(ignore_pas=True)
                 continue
-            for binary in source.getPublishedBinaries():
-                binary_copy = binary.copyTo(
-                    destination_series, pocket, archive)
-                copies.append(binary_copy)
+            for binary in source.getBuiltBinaries():
+                try:
+                    binary_copy = binary.copyTo(
+                        destination_series, pocket, archive)
+                except NotFoundError:
+                    # Not exaclty a error if the destination series doesn't
+                    # support all the architectures originally built. We
+                    # should simply not copy the binary and life goes on.
+                    pass
+                else:
+                    copies.append(binary_copy)
         return copies
 
     def validate_copy(self, action, data):
@@ -614,11 +724,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
          * At least, one source selected;
          * The default series input is not given when copying to the
            context PPA;
-         * The selecte destination fits all selected sources.
+         * The select destination fits all selected sources.
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
         selected_sources = data.get('selected_sources', [])
+        include_binaries = data.get('include_binaries')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
         destination_pocket = self.default_pocket
@@ -629,24 +740,27 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         broken_copies = []
         for source in selected_sources:
-            if not self._checkCopyDestination(
-                source, destination_series, destination_pocket,
-                destination_archive):
-                broken_copies.append(source)
+            if destination_series is None:
+                destination_series = source.distroseries
+            try:
+                self._checkCopy(
+                    source, destination_archive, destination_series,
+                    destination_pocket, include_binaries)
+            except CannotCopy, reason:
+                broken_copies.append(
+                    "%s (%s)" % (source.displayname, reason))
 
         if len(broken_copies) == 0:
             return
 
         if len(broken_copies) == 1:
-            error_message = """
-                The following source cannot be copied because it
-                was targeted to the same location: %s
-            """ % broken_copies[0].displayname
+            error_message = (
+                "The following source cannot be copied: %s"
+                % broken_copies[0])
         else:
-            error_message = """
-                The following sources cannot be copied because they
-                were targeted to the same location: %s
-            """ % ", ".join([source.displayname for source in broken_copies])
+            error_message = (
+                "The following sources cannot be copied:\n%s" %
+                ",\n".join(broken_copies))
 
         self.setFieldError('selected_sources', error_message)
 
@@ -660,7 +774,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
         include_binaries = data.get('include_binaries')
-
         destination_pocket = self.default_pocket
 
         copies = self._doCopy(
