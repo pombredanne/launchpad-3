@@ -7,11 +7,6 @@ The branch listing page template and associated view provide batching
 of the branches, filtering of the lifecycle statuses, ordering of
 various kinds and badge decoration.
 
-Branch listing pages now hide dormant branches by default.  Dormant
-branches are branches that have not been updated or committed to for
-some time.  Since this is a time based change all the branches
-are reset here to be recently updated.
-
     >>> from canonical.launchpad.ftests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
@@ -406,64 +401,6 @@ The current development focus is shown first though.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> print extract_text(table.tbody.fetch('tr')[1])
     lp://dev/gnome-terminal  Series: trunk, alpha, pre-1.0  ...
-
-
-== Hidden dormant branches ==
-
-Dormant branches are thost that have not been edited or pushed
-to in a significant period of time.  If a product has more branches
-than would fit on one page, then the dormant branches are hidden
-initially, and the user can uncheck the checkbox to get all branches
-shown.
-
-Here we are going to make two of Sample Person's branches dormant so
-they are not shown by default.
-
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
-    >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
-    ...     print extract_text(row)
-    lp://dev/~name12/gnome-terminal/2.6              Mature       ...
-    lp://dev/gnome-terminal              ...         Development  ...
-    lp://dev/~name12/gnome-terminal/klingon          Experimental ...
-    lp://dev/~launchpad/gnome-terminal/launchpad     New          ...
-    lp://dev/~vcs-imports/gnome-terminal/import      New          ...
-    lp://dev/~name12/gnome-terminal/mirrored         New          ...
-
-    >>> from canonical.launchpad.ftests.branch_helper import (
-    ...     make_branch_dormant)
-    >>> make_branch_dormant('~name12/gnome-terminal/klingon')
-    >>> make_branch_dormant('~name12/gnome-terminal/mirrored')
-
-The default listing now doesn't show these two branches.
-
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
-    >>> browser.getControl(name='field.hide_dormant').value
-    True
-    >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
-    ...     print extract_text(row)
-    lp://dev/~name12/gnome-terminal/2.6             Mature      ...
-    lp://dev/gnome-terminal              ...        Development ...
-    lp://dev/~launchpad/gnome-terminal/launchpad    New         ...
-    lp://dev/~vcs-imports/gnome-terminal/import     New         ...
-    lp://dev/~name12/gnome-terminal/pushed          New         ...
-    lp://dev/~name12/gnome-terminal/scanned         New         ...
-
-If we specify that the listing should show dormant branches they
-are shown.
-
-    >>> browser.getControl(name='field.hide_dormant').value = False
-    >>> browser.getControl('Filter').click()
-    >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
-    ...     print extract_text(row)
-    lp://dev/~name12/gnome-terminal/2.6             Mature       ...
-    lp://dev/gnome-terminal              ...        Development  ...
-    lp://dev/~name12/gnome-terminal/klingon         Experimental ...
-    lp://dev/~launchpad/gnome-terminal/launchpad    New          ...
-    lp://dev/~vcs-imports/gnome-terminal/import     New          ...
-    lp://dev/~name12/gnome-terminal/mirrored        New          ...
 
 
 == The last commit ==

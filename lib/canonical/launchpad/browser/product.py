@@ -1305,7 +1305,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
-            'hide_dormant': False,
             }
 
     @cachedproperty
@@ -1413,7 +1412,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         series_branches.extend(branches)
         return series_branches
 
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         """Return the series branches, followed by most recently changed."""
         # The params are ignored, and only used by the listing view.
         return self.initial_branches
@@ -1467,14 +1466,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 class ProductBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
 
-    @cachedproperty
-    def hide_dormant_initial_value(self):
-        """If there is more than one page of branches, hide dormant ones."""
-        page_size = config.launchpad.branchlisting_batch_size
-        return self.context.branches.count() > page_size
-
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+            self.context, lifecycle_status, self.user, self.sort_by)
 

@@ -130,7 +130,7 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ['description', 'translate', 'upload', 'download']
+    links = ('description', 'translate', 'upload', 'download')
 
 
 class POFileView(LaunchpadView):
@@ -482,7 +482,8 @@ class POFileTranslateView(BaseTranslationView):
         if self.show == 'all':
             if self.search_text is not None:
                 if len(self.search_text) > 1:
-                    ret = pofile.findPOTMsgSetsContaining(text=self.search_text)
+                    ret = pofile.findPOTMsgSetsContaining(
+                        text=self.search_text)
                 else:
                     self.request.response.addWarningNotification(
                         "Please try searching for a longer string.")
