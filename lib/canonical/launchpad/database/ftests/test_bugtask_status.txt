@@ -7,7 +7,7 @@
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> nopriv_user = getUtility(IPersonSet).getByName('no-priv')
     >>> login('foo.bar@canonical.com')
-    >>> firefox.setBugContact(nopriv_user, nopriv_user)
+    >>> firefox.setBugSupervisor(nopriv_user, nopriv_user)
     >>> login('no-priv@canonical.com')
     >>> bug_params = CreateBugParams(
     ...     nopriv_user, 'Test bug', 'Something')
@@ -35,7 +35,7 @@ statuses too.
     >>> print firefox_bugtask.status.title
     Confirmed
 
-    >>> firefox.owner.inTeam(firefox.bugcontact)
+    >>> firefox.owner.inTeam(firefox.bug_supervisor)
     False
 
     >>> firefox_bugtask.transitionToStatus(
@@ -54,7 +54,7 @@ exposed in the UI, but we also enforce this rule at the database level
 to ensure that all call sites adhere to this.
 
     >>> login('foo.bar@canonical.com')
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
 
     >>> login('no-priv@canonical.com')
 

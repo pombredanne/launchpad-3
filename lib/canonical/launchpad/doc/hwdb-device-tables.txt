@@ -637,26 +637,26 @@ example a Ghostscript driver of a printer or a Sane scanner backend.
     >>> driver_set = getUtility(IHWDriverSet)
     >>> usb_driver = driver_set.create(package_name='linux-image-generic',
     ...                                name='usb',
-    ...                                license=License.GPL)
+    ...                                license=License.GNU_GPL_V2)
     >>> print usb_driver.name
     usb
     >>> print usb_driver.package_name
     linux-image-generic
     >>> print usb_driver.license.title
-    GPL
+    GNU GPL v2
 
 The submitted data does not need to contain package information for all
 drivers, hence the field package_name may be None.
 
     >>> driver2 = driver_set.create(package_name=None,
     ...                             name='whatever',
-    ...                             license=License.GPL)
+    ...                             license=License.GNU_GPL_V2)
     >>> print driver2.name
     whatever
     >>> print driver2.package_name
     None
     >>> print driver2.license.title
-    GPL
+    GNU GPL v2
 
 Since we also do not always know the license of a driver, the license
 may too be None.
@@ -676,7 +676,7 @@ The tuple (driver name, package name) must be unique.
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> driver = driver_set.create(package_name='linux-image-generic',
     ...                            name='usb',
-    ...                            license=License.GPL)
+    ...                            license=License.GNU_GPL_V2)
     Traceback (most recent call last):
     ...
     IntegrityError: ERROR:  duplicate key violates unique
@@ -686,7 +686,7 @@ The tuple (driver name, package name) must be unique.
 
     >>> driver = driver_set.create(package_name=None,
     ...                            name='whatever',
-    ...                            license=License.GPL)
+    ...                            license=License.GNU_GPL_V2)
     Traceback (most recent call last):
     ...
     IntegrityError: ERROR:  duplicate key violates unique
@@ -713,7 +713,7 @@ driver.
 
     >>> ehci_hcd_driver = driver_set.create(
     ...     package_name='linux-image-generic', name='ehci_hcd',
-    ...     license=License.GPL)
+    ...     license=License.GNU_GPL_V2)
     >>> usb_controller_ehci_hcd_link = device_driver_link_set.create(
     ...     device=usb_controller, driver=ehci_hcd_driver)
     >>> print usb_controller_ehci_hcd_link.device.name
@@ -733,7 +733,7 @@ and to its Sane backend.
 
     >>> sane_plustek_driver = driver_set.create(package_name='libsane',
     ...                                         name='plustek',
-    ...                                         license=License.GPL)
+    ...                                         license=License.GNU_GPL_V2)
     >>> scanner_sane_plustek_link = device_driver_link_set.create(
     ...     device=optic_pro_ut12, driver=sane_plustek_driver)
     >>> print scanner_sane_plustek_link.device.name

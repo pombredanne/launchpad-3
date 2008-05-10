@@ -15,6 +15,9 @@ from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *
+from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
@@ -32,13 +35,13 @@ from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
-from canonical.launchpad.interfaces.bugcontact import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugnomination import *
 from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
+from canonical.launchpad.interfaces.bugsupervisor import *
 from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.bugtarget import *
 from canonical.launchpad.interfaces.bugtracker import *
@@ -100,6 +103,7 @@ from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.mailinglist import *
+from canonical.launchpad.interfaces.mailinglistsubscription import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
@@ -157,6 +161,7 @@ from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.translationsoverview import *
+from canonical.launchpad.interfaces.translationtemplateitem import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
@@ -174,6 +179,4 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
-from canonical.launchpad.interfaces.archive import *
-from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.packagediff import *

@@ -98,6 +98,38 @@ resolution, to demonstrate this:
       ...
     UnparseableBugData: Remote bug 0 does not define a status.
 
+Some SourceForge bugs are marked private. Although we can't import a
+status from them, we don't raise an error when trying to initialize the
+remote bug database. Sample bug 99 is private.
+
+    >>> sourceforge.initializeRemoteBugDB([99])
+    >>> sorted(sourceforge.bugs.keys())
+    [99]
+
+If we look at the bug, however, we can see that its private field has
+been set to True:
+
+    >>> sourceforge.bugs[99]['private']
+    True
+
+The SourceForge ExternalBugTracker class has an _extractErrorMessage()
+method which can be used to find error messages.
+
+    >>> page_data = open(
+    ...     'lib/canonical/launchpad/ftests/testfiles/'
+    ...     'sourceforge-sample-bug-99.html')
+    >>> print sourceforge._extractErrorMessage(page_data)
+    Artifact: This Artifact Has Been Made Private. Only Group Members
+    Can View Private ArtifactTypes.
+
+Trying to access the remote status of a private bug, however, will raise
+a PrivateRemoteBug error.
+
+    >>> sourceforge.getRemoteStatus(99)
+    Traceback (most recent call last):
+     ...
+    PrivateRemoteBug: Bug 99 on http://example.com is private.
+
 
 == Updating Bug Watches ==
 
@@ -139,7 +171,7 @@ remote status for, the bug watch that we have created.
 We now add some more watches against remote bugs in the example.com bug
 tracker with a variety of statuses.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     sourceforge.convertRemoteStatus)
     Remote bug 1722250: New

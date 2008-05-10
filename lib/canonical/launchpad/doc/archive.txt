@@ -505,16 +505,16 @@ As mentioned before the package counters do not include non-PUBLISHED
 packages, to verify this we will mark some package as SUPERSEDED and
 see if the counter decreases.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-
 Superseding a source package and verifying that the source counter
 decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> unused = cprov_archive.getPublishedSources(
+    >>> superseded = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
-    >>> flush_database_updates()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(superseded)
+
     >>> cprov_archive.number_of_sources
     2
 
@@ -523,9 +523,10 @@ decreases.
 
     >>> cprov_archive.number_of_binaries
     3
-    >>> unused = cprov_archive.getAllPublishedBinaries(
+    >>> superseded = cprov_archive.getAllPublishedBinaries(
     ...     name='mozilla-firefox')[0].supersede()
-    >>> flush_database_updates()
+    >>> syncUpdate(superseded)
+
     >>> cprov_archive.number_of_binaries
     2
 
@@ -556,8 +557,8 @@ it continues to be considered 'available for deletion'.
     >>> removal_candidate.getPublishedBinaries().count()
     1
 
-    >>> unused = removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> flush_database_updates()
+    >>> deleted = removal_candidate.requestDeletion(cprov, 'go away !')
+    >>> syncUpdate(deleted)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -566,11 +567,17 @@ The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
-    ...     unused = bin.requestDeletion(cprov, 'go away !')
-    >>> flush_database_updates()
+    ...     deleted = bin.requestDeletion(cprov, 'go away !')
+    ...     syncUpdate(deleted)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
+
+Flush the database caches to invalidate old caches from the
+corresponding publishing Postgres views.
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
 
 
 == Build Lookup ==
@@ -709,7 +716,7 @@ again.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> naked_cprov_archive.distribution = ubuntu
-    >>> flush_database_updates()
+    >>> naked_cprov_archive.syncUpdate()
 
 
 == Archive dependencies ==
@@ -978,6 +985,8 @@ are published to a secure location.
     u'http://ppa.launchpad.dev/cprov/ubuntu'
 
     >>> naked_cprov_archive.private = True
+    >>> naked_cprov_archive.syncUpdate()
+
     >>> naked_cprov_archive.archive_url
     u'http://private.ppa.launchpad.dev/cprov/ubuntu'
 
@@ -1049,9 +1058,6 @@ Those counters explicity exclude packages in private PPAs.
 The current counters says we only have 1 source and 1 binary published
 in public PPAs.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
     >>> archive_set.number_of_ppa_sources
     1
     >>> archive_set.number_of_ppa_binaries
@@ -1066,10 +1072,10 @@ As mentioned caches for private PPAs are not considered.
     3
     >>> cprov.archive.binaries_cached
     3
-    >>> naked_cprov_archive = removeSecurityProxy(cprov.archive)
+
     >>> naked_cprov_archive.sources_cached = 1000
     >>> naked_cprov_archive.binaries_cached = 2000
-    >>> flush_database_updates()
+    >>> naked_cprov_archive.syncUpdate()
 
     >>> archive_set.number_of_ppa_sources
     1
@@ -1089,7 +1095,7 @@ considered.
     >>> naked_no_priv_archive = removeSecurityProxy(no_priv.archive)
     >>> naked_no_priv_archive.sources_cached = 10
     >>> naked_no_priv_archive.binaries_cached = 2
-    >>> flush_database_updates()
+    >>> naked_no_priv_archive.syncUpdate()
 
     >>> archive_set.number_of_ppa_sources
     11
@@ -1139,4 +1145,168 @@ method returns a empty SelectResults.
 
     >>> jblack_ppas.count()
     0
+
+For the next test we will make Celso's PPA public again, so it can
+appear in public lists. We do that because that PPA contains relevant
+contents for testing.
+
+    >>> naked_cprov_archive.private = False
+    >>> naked_cprov_archive.syncUpdate()
+
+'getLatestPPASourcePublicationsForDistribution' returns up to 5
+lastest source publications available for a given distribution ordered
+by descending 'datecreated'.
+
+    >>> latest_uploads = (
+    ...     archive_set.getLatestPPASourcePublicationsForDistribution(ubuntu))
+    >>> latest_uploads.count()
+    4
+
+It doesn't filter by status, so pending (copied), deleted and
+superseded publications continue to be presented.
+
+    >>> def print_latest_uploads():
+    ...     latest_uploads = (
+    ...         archive_set.getLatestPPASourcePublicationsForDistribution(
+    ...         ubuntu))
+    ...     for pub in latest_uploads:
+    ...         print pub.displayname, pub.status.name, pub.archive.owner.name
+
+    >>> print_latest_uploads()
+    cdrkit 1.0 in breezy-autotest SUPERSEDED cprov
+    iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
+    pmount 0.1-1 in warty PUBLISHED cprov
+    iceweasel 1.0 in warty DELETED cprov
+
+When we copy a source from Celso's PPA to Mark's PPA, it will be
+presented as a new record in the results.
+
+    >>> cprov_iceweasel = latest_uploads[1]
+    >>> copy = cprov_iceweasel.copyTo(
+    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE, sabdfl.archive)
+
+    >>> print_latest_uploads()
+    iceweasel 1.0 in hoary PENDING sabdfl
+    cdrkit 1.0 in breezy-autotest SUPERSEDED cprov
+    iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
+    pmount 0.1-1 in warty PUBLISHED cprov
+    iceweasel 1.0 in warty DELETED cprov
+
+When we do another copy the result will be limited, so the previous
+last publication (Celso's deleted iceweasel) will be excluded.
+
+    >>> cprov_cdrkit = latest_uploads[1]
+    >>> copy = cprov_cdrkit.copyTo(
+    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE, sabdfl.archive)
+
+    >>> print_latest_uploads()
+    cdrkit 1.0 in hoary PENDING sabdfl
+    iceweasel 1.0 in hoary PENDING sabdfl
+    cdrkit 1.0 in breezy-autotest SUPERSEDED cprov
+    iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
+    pmount 0.1-1 in warty PUBLISHED cprov
+
+Private source publications are excluded from this list, the fact that
+they exist should never leak. If we make Celso's PPA private, its
+contents will not be listed anymore. The same happens for uploaded
+sources, since they are essentially another source publication in this
+context.
+
+    >>> naked_cprov_archive.private = True
+    >>> naked_cprov_archive.syncUpdate()
+
+    >>> print_latest_uploads()
+    cdrkit 1.0 in hoary PENDING sabdfl
+    iceweasel 1.0 in hoary PENDING sabdfl
+    iceweasel 1.0 in breezy-autotest PUBLISHED sabdfl
+
+'getMostActivePPAsForDistribution' returns a list of dictionaries
+containing up to 5 PPAs with the highest number of publications in the
+last 7 days. Each dictionary contains the following keys:
+
+ * 'archive': The `IArchive` object;
+ * 'uploads': the number of sources uploaded in the last 7 days.
+
+The list is ordered by descending number of uploads and then database
+record ID.
+
+    >>> most_active_ppas = (
+    ...     archive_set.getMostActivePPAsForDistribution(ubuntu))
+    >>> len(most_active_ppas)
+    1
+
+As expected only Mark's PPA had activity, all the sampledata records
+are old.
+
+    >>> def print_most_active_ppas():
+    ...     most_active_ppas = (
+    ...         archive_set.getMostActivePPAsForDistribution(ubuntu))
+    ...     for most_active in most_active_ppas:
+    ...         print most_active['archive'].title, most_active['uploads']
+
+    >>> print_most_active_ppas()
+    PPA for Mark Shuttleworth 2
+
+We will create some activity.
+
+    >>> a_pub = cprov_archive.getPublishedSources()[0]
+    >>> def create_activity(where, how_many):
+    ...     for i in range(how_many):
+    ...         a_pub.copyTo(
+    ...             ubuntu['hoary'], PackagePublishingPocket.RELEASE, where)
+
+    >>> create_activity(cprov_archive, 20)
+    >>> create_activity(sandbox_archive, 10)
+    >>> create_activity(name12.archive, 4)
+    >>> create_activity(no_priv.archive, 4)
+    >>> create_activity(lp_buildd_team.archive, 8)
+
+Celso's PPA is still private, so despite having the highest number of
+uploads it's not listed.
+
+    >>> print_most_active_ppas()
+    PPA for Foo Bar 10
+    PPA for Launchpad Buildd Admins 8
+    PPA for No Privileges Person 4
+    PPA for Sample Person 4
+    PPA for Mark Shuttleworth 2
+
+When we make Celso's PPA public the result gets limited to 5 items.
+The previous last item (Mark's PPA) will now be excluded in place of
+Celso's PPA.
+
+    >>> naked_cprov_archive.private = False
+    >>> naked_cprov_archive.syncUpdate()
+
+    >>> print_most_active_ppas()
+    PPA for Celso Providelo 20
+    PPA for Foo Bar 10
+    PPA for Launchpad Buildd Admins 8
+    PPA for No Privileges Person 4
+    PPA for Sample Person 4
+
+
+== Archive Permission Checking ==
+
+IArchive has two public methods, canUpload() and canAdministerQueue()
+that check a user's permission to upload and/or administer a
+distroseries upload queue respectively.  See archivepermission.txt
+for more details.
+
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> main_component = getUtility(IComponentSet)['main']
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+
+    >>> ubuntu.main_archive.canUpload(carlos, main_component)
+    False
+
+    >>> ubuntu.main_archive.canAdministerQueue(carlos, main_component)
+    False
+
+    >>> ubuntu.main_archive.canUpload(ubuntu_team, main_component)
+    True
+
+    >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
+    True
 

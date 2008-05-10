@@ -55,9 +55,9 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['managebugcontacts', 'publishinghistory']
+    links = ['subscribe', 'publishinghistory']
 
-    def managebugcontacts(self):
+    def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
@@ -69,7 +69,7 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['managebugcontacts']
+    links = ['subscribe']
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,

@@ -21,10 +21,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
 
-from canonical.config import config
-
 from canonical.buildd.utils import notes
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
 
 
@@ -50,7 +47,7 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     known-failures build attempts and thus saving build-farm time.
 
     For PPA publications we only consider architectures supported by PPA
-    subsystem (`DistroArchSeries`.ppa_supported flag) and P-a-s is turned
+    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is turned
     off to give the users the chance to test their fixes for upstream
     problems.
 
@@ -74,7 +71,14 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     # The 'PPA supported' flag only applies to virtualized archives
     if pubrec.archive.require_virtualized:
         legal_archserieses = [
-            arch for arch in legal_archserieses if arch.ppa_supported]
+            arch for arch in legal_archserieses if arch.supports_virtualized]
+        # Cope with no virtualization support at all. It usually happens when
+        # a distroseries is created and initialized, by default no
+        # architecture supports its. Distro-team might take some time to
+        # decide which architecture will be allowed for PPAs and queue-builder
+        # will continue to work meanwhile.
+        if not legal_archserieses:
+            return []
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
@@ -133,7 +137,7 @@ class BuilddMaster:
 
     def addDistroArchSeries(self, distroarchseries):
         """Setting up a workable DistroArchSeries for this session."""
-        self._logger.info("Adding DistroArchSeries %s/%s/%s"
+        self._logger.debug("Adding DistroArchSeries %s/%s/%s"
                           % (distroarchseries.distroseries.distribution.name,
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
@@ -191,7 +195,7 @@ class BuilddMaster:
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
-        self._logger.debug("Processing %s" % distroseries.name)
+        self._logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroserieses with no nominatedarchindep
         # they can't build architecture independent packages properly.
         if not distroseries.nominatedarchindep:
@@ -207,74 +211,14 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
-        registered_arch_ids = set(dar.id for dar in self._archserieses.keys())
-        series_arch_ids = set(dar.id for dar in distroseries_architectures)
-        legal_arch_ids = series_arch_ids.intersection(registered_arch_ids)
-        legal_archs = [dar for dar in distroseries_architectures
-                       if dar.id in legal_arch_ids]
-        if not legal_archs:
-            self._logger.debug(
-                "Chroots missing for %s, skipping" % distroseries.name)
-            return
-
-        self._logger.info("Supported architectures: %s" %
-                          " ".join(a.architecturetag for a in legal_archs))
-
-        pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, distroseries)
-
         sources_published = distroseries.getSourcesPublishedForAllArchives()
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            build_archs = determineArchitecturesToBuild(
-                pubrec, legal_archs, distroseries, pas_verify)
-
-            self._createMissingBuildsForPublication(pubrec, build_archs)
-
-        self.commit()
-
-    def _createMissingBuildsForPublication(self, pubrec, build_archs):
-        """Create new Build record for the requested archseries.
-
-        It verifies if the requested build is already inserted before
-        creating a new one.
-        The Build record is created for the archseries 'default_processor'.
-        """
-        for archseries in build_archs:
-            # Dismiss if there is no processor available for the
-            # archseries in question.
-            if not archseries.processors:
-                self._logger.debug(
-                    "No processors defined for %s: skipping %s"
-                    % (archseries.title, pubrec.displayname))
-                continue
-
-            build_candidate = pubrec.sourcepackagerelease.getBuildByArch(
-                archseries, pubrec.archive)
-
-            # Dismiss if build is already present for this specific
-            # distroarchseries or if it was already FULLYBUILT in any
-            # architecture.
-            if (build_candidate is not None and
-                (build_candidate.distroarchseries == archseries or
-                 build_candidate.buildstate == BuildStatus.FULLYBUILT)):
-                continue
-
-            # Create new Build record, its corresponding BuildQueue and
-            # score it, so it will be ready for dispatching.
-            build = pubrec.sourcepackagerelease.createBuild(
-                distroarchseries=archseries,
-                pocket=pubrec.pocket,
-                processor=archseries.default_processor,
-                archive=pubrec.archive)
-            build_queue = build.createBuildQueueEntry()
-            build_queue.score()
-            self._logger.debug(
-                "Created %s [%d] in %s (%d)" % (
-                    build.title, build.id, build.archive.title,
-                    build_queue.lastscore))
+            builds = pubrec.createMissingBuilds(logger=self._logger)
+            if len(builds) > 0:
+                self.commit()
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

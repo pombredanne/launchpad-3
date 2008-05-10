@@ -54,7 +54,7 @@ Tracker:
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1550, sample_person)
+    ...     example_bug_tracker, '1550', sample_person)
 
 
 We use a specially hacked Mantis instance that doesn't do network

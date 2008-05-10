@@ -11,9 +11,11 @@ from canonical.lazr.interfaces import (
 
 __metaclass__ = type
 __all__ = [
+    'ResourceOperation',
     'ResourceGETOperation',
     'ResourcePOSTOperation'
 ]
+
 
 class ResourceOperation:
     """A one-off operation associated with a resource."""
@@ -44,17 +46,26 @@ class ResourceOperation:
         # Take incoming string key-value pairs from the HTTP request.
         # Transform them into objects that will pass field validation,
         # and that will be useful when the operation is invoked.
+        missing = object()
         for field in self.params:
             name = field.__name__
-            deserializer = getMultiAdapter((field, self.request),
-                                           IFieldDeserializer)
+            if (self.request.get(name, missing) is missing
+                and not field.required):
+                value = field.default
+            else:
+                deserializer = getMultiAdapter(
+                    (field, self.request), IFieldDeserializer)
+                try:
+                    value = deserializer.deserialize(self.request.get(name))
+                except ValueError, e:
+                    errors.append("%s: %s" % (name, e))
+                    continue
             field.bind(self.context)
             try:
-                value = deserializer.deserialize(self.request.get(name))
                 field.validate(value)
             except RequiredMissing:
                 errors.append("%s: Required input is missing." % name)
-            except (ValueError, ValidationError), e:
+            except ValidationError, e:
                 errors.append("%s: %s" % (name, e))
             else:
                 validated_values[name] = value

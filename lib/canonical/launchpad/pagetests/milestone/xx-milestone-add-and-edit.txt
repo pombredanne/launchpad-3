@@ -94,11 +94,18 @@ Now let's try to create another one named milestone1.
 
 Edit now...
 
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
+
+There's a link back to the milestone page, in case you change your mind.
+
+    >>> back_link = test_browser.getLink('Milestone milestone2 for Ubuntu')
+    >>> back_link.url
+    'http://launchpad.dev/ubuntu/+milestone/milestone2'
+
 First we try to change the name of milestone2 to milestone1, which is
 already in use.
 
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Date Targeted').value = "2030-01-01"
     >>> test_browser.getControl('Update').click()
@@ -248,4 +255,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for Milestone 1.0 for Mozilla Firefox due 2056-10-16
+    Bug subscriptions for Milestone 1.0 for Mozilla Firefox

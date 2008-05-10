@@ -23,7 +23,6 @@
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
-    <include file="bugcontact.zcml" />
     <include file="bugcve.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
@@ -32,6 +31,7 @@
     <include file="bugnotification.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
+    <include file="bugsupervisor.zcml" />
     <include file="bugtask.zcml" />
     <include file="bugtarget.zcml" />
     <include file="bugtracker.zcml" />
@@ -92,7 +92,7 @@
     <include file="milestone.zcml" />
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
-    <include file="packagebugcontact.zcml" />
+    <include file="packagebugsupervisor.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
@@ -146,6 +146,7 @@
     <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
+    <include file="translationtemplateitem.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
@@ -154,6 +155,7 @@
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
+    <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
 

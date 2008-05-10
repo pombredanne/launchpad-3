@@ -249,6 +249,25 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
+    def canUpload(user, component=None):
+        """Check to see if user is allowed to upload to component.
+
+        :param user: An `IPerson` whom should be checked for authentication.
+        :param component: An optional context `IComponent` for the check.
+
+        Return True if 'user' is allowed to upload to 'component'.  If
+        'component' is not supplied, all components are considered.
+        """
+
+    def canAdministerQueue(user, component):
+        """Check to see if user is allowed to administer queue items.
+
+        :param user: An `IPerson` whom should be checked for authenticate.
+        :param component: The context `IComponent` for the check.
+
+        :return True: if 'user' is allowed to administer the package upload
+        queue for items with 'component'.
+        """
 
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
@@ -334,6 +353,24 @@ class IArchiveSet(Interface):
         """Return all PPAs the given user can participate.
 
         The result is ordered by PPA owner's displayname.
+        """
+
+    def getLatestPPASourcePublicationsForDistribution(distribution):
+        """The latest 5 PPA source publications for a given distribution.
+
+        Private PPAs are excluded from the result.
+        """
+
+    def getMostActivePPAsForDistribution(distribution):
+        """Return the 5 most active PPAs.
+
+        The activity is currently measured by number of uploaded (published)
+        sources for each PPA during the last 7 days.
+
+        Private PPAs are excluded from the result.
+
+        :return A list with up to 5 dictionaries containing the ppa 'title'
+            and the number of 'uploads' keys and corresponding values.
         """
 
 

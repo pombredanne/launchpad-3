@@ -591,12 +591,13 @@ class BugTextView(LaunchpadView):
         text.append('date-created: %s' %
             format_rfc2822_date(task.datecreated))
 
-        for status in ["confirmed", "assigned", "inprogress",
-                       "closed", "incomplete"]:
+        for status in ["left_new", "confirmed", "triaged", "assigned",
+                       "inprogress", "closed", "incomplete",
+                       "fix_committed", "fix_released"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (
-                    status, format_rfc2822_date(date)))
+                    status.replace('_', '-'), format_rfc2822_date(date)))
 
         text.append('reporter: %s' % task.owner.unique_displayname)
 
