@@ -1133,22 +1133,6 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def checkAuthenticated(self, user):
-        """Allow only BuilddAdmins and PPA owner."""
-        if self.obj.archive.purpose == ArchivePurpose.PPA:
-            return self._ppaCheckAuthenticated(user)
-
-        # This is the component of the build instance on hand.
-        required_component = self.obj.current_component.name
-
-        # This is the set of components to which the user in question
-        # is authorised to upload.
-        allowed_components = set(
-            acl.component.name for acl in
-            self.obj.distroarchseries.distroseries.distribution.uploaders
-            if user in acl)
-        return required_component in allowed_components
-
     def _ppaCheckAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
@@ -1158,6 +1142,24 @@ class EditBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
+    def checkAuthenticated(self, user):
+        """Check write access for user and different kinds of archives.
+
+        Allow
+        
+            * BuilddAdmins and PPA owner for PPAs
+            * users with upload permissions (for the respective
+              distribution/pocket) otherwise.
+        """
+        # Is this a PPA? Call the respective method if so.
+        if self.obj.archive.purpose == ArchivePurpose.PPA:
+            return self._ppaCheckAuthenticated(user)
+
+        # Primary or partner section here: is the user in question allowed
+        # to upload to the respective component? Allow user to retry build
+        # if so.
+        return self.obj.archive.canUpload(user, self.obj.current_component)
 
 
 class ViewBuildRecord(EditBuildRecord):
