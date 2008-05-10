@@ -155,8 +155,8 @@ class SoyuzTestPublisher:
         builds = pub_source.createMissingBuilds(ignore_pas=True)
         published_binaries = []
         for build in builds:
-            pub_binaries = self._buildAndPublishBinaryForSource(
-                archive, build, status, pocket, scheduleddeletiondate,
+            pub_binaries = self.buildAndPublishBinaryForSource(
+                build, archive, status, pocket, scheduleddeletiondate,
                 dateremoved, filecontent, binaryname, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks)
@@ -165,11 +165,14 @@ class SoyuzTestPublisher:
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
-    def _buildAndPublishBinaryForSource(
-        self, archive, build, status, pocket, scheduleddeletiondate,
-        dateremoved, filecontent, binaryname, summary, description,
-        shlibdep, depends, recommends, suggests, conflicts, replaces,
-        provides, pre_depends, enhances, breaks):
+    def buildAndPublishBinaryForSource(
+        self, build, archive=None, status=PackagePublishingStatus.PENDING,
+        pocket=PackagePublishingPocket.RELEASE, scheduleddeletiondate=None,
+        dateremoved=None, filecontent="anything", binaryname="foo-bin",
+        summary="summary", description="description", shlibdep=None,
+        depends=None, recommends=None, suggests=None, conflicts=None,
+        replaces=None, provides=None, pre_depends=None, enhances=None,
+        breaks=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
         sourcepackagerelease = build.sourcepackagerelease
         distroarchseries = build.distroarchseries
