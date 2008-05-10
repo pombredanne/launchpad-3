@@ -878,7 +878,7 @@ class BuildSet:
                 continue
             build.updateDependencies()
             if build.dependencies:
-                logger.info(
+                logger.debug(
                     "Skipping %s: %s" % (build.title, build.dependencies))
                 continue
             logger.info("Retrying %s" % build.title)

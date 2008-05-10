@@ -59,3 +59,66 @@ running jobs in the table.
         ~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
     saturn           Offline
+
+
+== Individual machine views ==
+
+Each of the machine names is a hyperlink to a detailed machine page.
+
+    >>> browser.getLink('apollo').click()
+
+The heading of the page shows the import machine name, and the machine's
+current status.
+
+    >>> def print_heading(browser):
+    ...     print find_main_content(browser.contents).h1.renderContents()
+    >>> print_heading(browser)
+    apollo: Online
+
+The page also shows the current running jobs for that machine.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'current-jobs'))
+    Current jobs
+    ~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
+    ~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
+
+And also shows the most recent ten events for the machine, with the most
+recent event first.
+
+    >>> def print_events(browser):
+    ...     recent_events = find_tag_by_id(browser.contents, 'recent-events')
+    ...     print extract_text(recent_events)
+    >>> print_events(browser)
+    Related events
+    ...: Job Started ~vcs-imports/.../...
+    ...: Job Started ~vcs-imports/.../...
+    ...: Machine Online
+
+
+=== Changing the machine's status ===
+
+If the user is an admin or member of VCS Imports, they are able to change
+the status of the machine.
+
+    >>> print find_tag_by_id(browser.contents, 'update-status')
+    None
+
+    >>> import_browser = setupBrowser(
+    ...     auth="Basic david.allouche@canonical.com:test")
+    >>> import_browser.open(browser.url)
+
+    >>> print find_tag_by_id(import_browser.contents,
+    ...     'update-status').h2.renderContents()
+    Update machine status
+
+    >>> import_browser.getControl('Reason').value = (
+    ...     "Testing quiescing.")
+    >>> import_browser.getControl('Set Quiescing').click()
+    >>> print_heading(import_browser)
+    apollo: Quiescing
+
+    >>> print_events(import_browser)
+    Related events
+    ...: David Allouche set Quiescing Requested
+      Message: Testing quiescing.
+    ...

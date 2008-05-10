@@ -1296,11 +1296,12 @@ for more details.
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> ubuntu.main_archive.canUpload(cprov, main_component)
+    >>> ubuntu.main_archive.canUpload(carlos, main_component)
     False
 
-    >>> ubuntu.main_archive.canAdministerQueue(cprov, main_component)
+    >>> ubuntu.main_archive.canAdministerQueue(carlos, main_component)
     False
 
     >>> ubuntu.main_archive.canUpload(ubuntu_team, main_component)

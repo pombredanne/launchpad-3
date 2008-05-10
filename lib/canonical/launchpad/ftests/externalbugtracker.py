@@ -403,6 +403,7 @@ class TestTrac(Trac):
     # that we can test batching and not batching correctly.
     batch_size = None
     batch_query_threshold = 10
+    csv_export_file = None
     supports_single_exports = True
     trace_calls = False
 
@@ -419,7 +420,14 @@ class TestTrac(Trac):
         if self.trace_calls:
             print "CALLED urlopen(%r)" % (url,)
 
-        return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+        if self.csv_export_file is not None:
+            csv_export_file = self.csv_export_file
+        elif re.match('.*/ticket/[0-9]+\?format=csv$', url):
+            csv_export_file = 'trac_example_single_ticket_export.csv'
+        else:
+            csv_export_file = 'trac_example_ticket_export.csv'
+
+        return open(file_path + '/' + csv_export_file, 'r')
 
 
 class MockTracRemoteBug:
