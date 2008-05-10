@@ -1108,6 +1108,14 @@ class BranchSet:
 
         return clause
 
+    def _lifecycleClause(self, lifecycle_statuses):
+        lifecycle_clause = ''
+        if lifecycle_statuses:
+            lifecycle_clause = (
+                ' AND Branch.lifecycle_status in %s' %
+                quote(lifecycle_statuses))
+        return lifecycle_clause
+
     @staticmethod
     def _listingSortToOrderBy(sort_by):
         """Compute a value to pass as orderBy to Branch.select().
@@ -1130,8 +1138,9 @@ class BranchSet:
             order_by.insert(0, column)
             return order_by
 
-    def _selectBranches(self, query, visible_by_user, sort_by,
-                        clauseTables=None):
+    def _selectBranches(self, query, lifecycle_statuses, visible_by_user,
+                        sort_by, clauseTables=None):
+        query += self._lifecycleClause(lifecycle_statuses)
         clause = self._generateBranchClause(query, visible_by_user)
         if clauseTables is None:
             clauseTables = []
@@ -1146,20 +1155,11 @@ class BranchSet:
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
 
-    def _lifecycleClause(self, lifecycle_statuses):
-        lifecycle_clause = ''
-        if lifecycle_statuses:
-            lifecycle_clause = (
-                ' AND Branch.lifecycle_status in %s' %
-                quote(lifecycle_statuses))
-        return lifecycle_clause
-
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         query_params = {
             'person': person.id,
-            'lifecycle_clause': self._lifecycleClause(lifecycle_statuses),
             }
         query = ('''
             Branch.id in (
@@ -1177,64 +1177,59 @@ class BranchSet:
                     Branch.owner = %(person)s
                 OR Branch.registrant = %(person)s
                 )
-            %(lifecycle_clause)s
             '''
             % query_params)
 
-        return self._selectBranches(query, visible_by_user, sort_by)
+        return self._selectBranches(query, lifecycle_statuses,
+                                    visible_by_user, sort_by)
 
     def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
                                  visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = 'Branch.owner = %s %s' % (
-            person.id, lifecycle_clause)
-        return self._selectBranches(query, visible_by_user, sort_by)
+        query = 'Branch.owner = %s' % (person.id,)
+        return self._selectBranches(query, lifecycle_statuses,
+                                    visible_by_user, sort_by)
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = 'Branch.registrant = %s %s' % (
-            person.id, lifecycle_clause)
-        return self._selectBranches(query, visible_by_user, sort_by)
+        query = 'Branch.registrant = %s' % (person.id,)
+        return self._selectBranches(query, lifecycle_statuses,
+                                    visible_by_user, sort_by)
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
             Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s %s
+            AND BranchSubscription.person = %s
             '''
-            % (person.id, lifecycle_clause))
-        return self._selectBranches(query, visible_by_user, sort_by,
+            % (person.id,))
+        return self._selectBranches(query, lifecycle_statuses,
+                                    visible_by_user, sort_by,
                                     clauseTables=['BranchSubscription'])
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        query = 'Branch.product = %s' % (product.id,)
 
-        query = 'Branch.product = %s %s' % (
-            product.id, lifecycle_clause)
-
-        return self._selectBranches(query, visible_by_user, sort_by)
+        return self._selectBranches(query, lifecycle_statuses,
+                                    visible_by_user, sort_by)
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert project is not None, "Must have a valid project."
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-
         query = ('''
             Branch.product = Product.id AND
-            Product.project = %s %s
+            Product.project = %s
             '''
-            % (project.id, lifecycle_clause))
+            % (project.id,))
 
-        return self._selectBranches(query, visible_by_user, sort_by,
+        return self._selectBranches(query, lifecycle_statuses,
+                                    visible_by_user, sort_by,
                                     clauseTables=['Product'])
 
     def getHostedBranchesForPerson(self, person):
