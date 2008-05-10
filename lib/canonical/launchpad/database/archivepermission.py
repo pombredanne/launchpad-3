@@ -57,11 +57,11 @@ class ArchivePermissionSet:
         clauses = ["""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s AND
-            %s IN (SELECT TeamParticipation.person
-                   FROM TeamParticipation
-                   WHERE TeamParticipation.person = %s AND
-                         TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, permission, user, user)
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                          TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, permission, user)
             ]
 
         if IComponent.providedBy(item):
@@ -80,11 +80,34 @@ class ArchivePermissionSet:
 
         return auth
 
+    def componentsForUploader(self, archive, user):
+        """See `IArchivePermissionSet`,"""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            ArchivePermission.component IS NOT NULL AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                          TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD, user))
+
     def uploadersForComponent(self, archive, component=None):
         "See `IArchivePermissionSet`."""
-        return ArchivePermission.selectBy(
-            archive=archive, permission=ArchivePermissionType.UPLOAD,
-            component=component)
+        clauses = ["""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)
+            ]
+
+        if component is not None:
+            clauses.append(
+                "ArchivePermission.component = %s" % sqlvalues(component))
+        else:
+            clauses.append("ArchivePermission.component IS NOT NULL")
+
+        query = " AND ".join(clauses)
+        return ArchivePermission.select(query)
 
     def uploadersForPackage(self, archive, sourcepackagename):
         "See `IArchivePermissionSet`."""

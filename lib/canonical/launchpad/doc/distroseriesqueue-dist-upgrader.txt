@@ -2,12 +2,11 @@
 
 This test will check the upload of dist-upgrade tarballs
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
+  >>> from canonical.launchpad.interfaces import IDistributionSet
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  ...    datadir, getPolicy, mock_logger)
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
@@ -46,7 +45,6 @@ Now do a proper upload into the system.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Foo Bar (16) is an uploader for main, universe.
   DEBUG: Finished checking upload.
 
 It was not rejected.
@@ -224,7 +222,6 @@ manual intervention.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Foo Bar (16) is an uploader for main, universe.
   DEBUG: Finished checking upload.
 
   >>> success = upload.do_accept()
@@ -297,7 +294,7 @@ files in the respective PPA location.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Do verify signer ACL for PPA
+  DEBUG: Don't verify signer ACL for PPA
   DEBUG: Finished checking upload.
 
   >>> success = ppa_upload.do_accept()
