@@ -3751,10 +3751,9 @@ class PersonBranchesView(BranchListingView):
 
     heading_template = 'Bazaar branches related to %(displayname)s'
 
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3768,10 +3767,9 @@ class PersonRegisteredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonOwnedBranchesView(BranchListingView):
@@ -3780,10 +3778,9 @@ class PersonOwnedBranchesView(BranchListingView):
     heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3791,10 +3788,9 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):

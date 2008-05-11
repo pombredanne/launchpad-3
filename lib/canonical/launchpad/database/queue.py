@@ -994,6 +994,26 @@ class PackageUploadSource(SQLBase):
         foreignKey='SourcePackageRelease'
         )
 
+    def getSourceAncestry(self):
+        """See `IPackageUploadSource`."""
+        primary_archive = self.packageupload.distroseries.main_archive
+        release_pocket = PackagePublishingPocket.RELEASE
+        ancestry_locations = [
+            (self.packageupload.archive, self.packageupload.pocket),
+            (primary_archive, release_pocket),
+            ]
+
+        ancestry = None
+        for archive, pocket in ancestry_locations:
+            ancestries = archive.getPublishedSources(
+                name=self.sourcepackagerelease.name, pocket=pocket,
+                exact_match=True)
+            if ancestries.count() == 0:
+                continue
+            ancestry = ancestries[0]
+            break
+        return ancestry
+
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.

@@ -67,7 +67,7 @@ URL for the branch.
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
-    bzr push bzr+ssh://name12@bazaar.launchpad.dev/~name12/gnome-terminal/pushed
+    bzr push lp://dev/~name12/gnome-terminal/pushed
 
 
 == SSH key directions ==
@@ -172,7 +172,7 @@ owning team's name.
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
-    bzr push bzr+ssh://name12@bazaar.launchpad.dev/~landscape-developers/gnome-terminal/pushed
+    bzr push lp://dev/~landscape-developers/gnome-terminal/pushed
 
 
 == Import branch ==

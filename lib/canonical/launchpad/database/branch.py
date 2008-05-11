@@ -9,7 +9,7 @@ __all__ = [
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import os
 
@@ -229,19 +229,35 @@ class Branch(SQLBase):
             name = "<name>"
         return {'user': name}
 
-    def getBzrUploadURL(self, person=None):
+    @property
+    def bzr_identity(self):
         """See `IBranch`."""
-        root = config.codehosting.smartserver_root % self._getNameDict(person)
-        return root + self.unique_name
-
-    def getBzrDownloadURL(self, person=None):
-        """See `IBranch`."""
-        if self.private:
-            root = config.codehosting.smartserver_root
+        use_series = None
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        # XXX: TimPenhey 2008-05-06 bug=227602
+        # Since at this stage the launchpad name resolution is not
+        # authenticated, we can't resolve series branches that end
+        # up pointing to private branches, so don't show short names
+        # for the branch if it is private.
+        if not self.private:
+            for series in self.associatedProductSeries():
+                # If the branch is associated with the development focus
+                # then we'll use that, otherwise use the series with the
+                # latest date_created.
+                if series == self.product.development_focus:
+                    return lp_prefix + self.product.name
+                else:
+                    if (use_series is None or
+                        series.datecreated > use_series.datecreated):
+                        use_series = series
+        # If there is no series, use the prefix with the unique name.
+        if use_series is None:
+            return lp_prefix + self.unique_name
         else:
-            root = config.codehosting.supermirror_root
-        root = root % self._getNameDict(person)
-        return root + self.unique_name
+            return "%(prefix)s%(product)s/%(series)s" % {
+                'prefix': lp_prefix,
+                'product': self.product.name,
+                'series': use_series.name}
 
     @property
     def related_bugs(self):
@@ -1152,17 +1168,6 @@ class BranchSet:
                 quote(lifecycle_statuses))
         return lifecycle_clause
 
-    def _dormantClause(self, hide_dormant):
-        dormant_clause = ''
-        if hide_dormant:
-            dormant_days = timedelta(
-                days=config.launchpad.branch_dormant_days)
-            last_date = datetime.utcnow() - dormant_days
-            dormant_clause = (
-                ' AND Branch.date_last_modified > %s' %
-                quote(last_date))
-        return dormant_clause
-
     @staticmethod
     def _listingSortToOrderBy(sort_by):
         """Compute a value to pass as orderBy to BranchWithSortKeys.select().
@@ -1186,13 +1191,11 @@ class BranchSet:
             return order_by
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
-                             visible_by_user=None, sort_by=None,
-                             hide_dormant=False):
+                             visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         query_params = {
             'person': person.id,
             'lifecycle_clause': self._lifecycleClause(lifecycle_statuses),
-            'dormant_clause': self._dormantClause(hide_dormant)
             }
         query = ('''
             Branch.id in (
@@ -1211,7 +1214,6 @@ class BranchSet:
                 OR Branch.registrant = %(person)s
                 )
             %(lifecycle_clause)s
-            %(dormant_clause)s
             '''
             % query_params)
 
@@ -1220,73 +1222,63 @@ class BranchSet:
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
-                                 visible_by_user=None, sort_by=None,
-                                 hide_dormant=False):
+                                 visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(hide_dormant)
         query = 'Branch.owner = %s %s %s' % (
-            person.id, lifecycle_clause, dormant_clause)
+            person.id, lifecycle_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None, sort_by=None,
-                                      hide_dormant=False):
+                                      visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(hide_dormant)
-        query = 'Branch.registrant = %s %s %s' % (
-            person.id, lifecycle_clause, dormant_clause)
+        query = 'Branch.registrant = %s %s' % (
+            person.id, lifecycle_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None, sort_by=None,
-                                      hide_dormant=False):
+                                      visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(hide_dormant)
         query = ('''
             Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s %s %s
+            AND BranchSubscription.person = %s %s
             '''
-            % (person.id, lifecycle_clause, dormant_clause))
+            % (person.id, lifecycle_clause))
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             clauseTables=['BranchSubscription'],
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
-                              visible_by_user=None, sort_by=None,
-                              hide_dormant=False):
+                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(hide_dormant)
 
-        query = 'Branch.product = %s %s %s' % (
-            product.id, lifecycle_clause, dormant_clause)
+        query = 'Branch.product = %s %s' % (
+            product.id, lifecycle_clause)
 
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
-                              visible_by_user=None, sort_by=None,
-                              hide_dormant=False):
+                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert project is not None, "Must have a valid project."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(hide_dormant)
 
         query = ('''
             Branch.product = Product.id AND
-            Product.project = %s %s %s
+            Product.project = %s %s
             '''
-            % (project.id, lifecycle_clause, dormant_clause))
+            % (project.id, lifecycle_clause))
 
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),

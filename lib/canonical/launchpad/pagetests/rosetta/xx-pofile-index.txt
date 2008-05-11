@@ -23,8 +23,6 @@ to navigate to other pages.
     ...     anon_browser.contents, 'context-navigation-tabs')
     >>> for link in navigation_tabs.findAll('a'):
     ...     print "%s:\n%s" % (extract_text(link), link['href'])
-    Description:
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/
     Translate:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
     Upload a file:
