@@ -248,8 +248,11 @@ def generateResetSequencesSQL(cur):
                 quote('%s.%s' % (schema, sequence)), int(last_value), flag
                 )
         stmt.append(sql)
-    stmt = 'SELECT ' + ', '.join(stmt)
-    return stmt
+    if stmt:
+        stmt = 'SELECT ' + ', '.join(stmt)
+        return stmt
+    else:
+        return ''
 
 def resetSequences(cur):
     """Reset table sequences to match the data in them.
@@ -268,7 +271,9 @@ def resetSequences(cur):
     >>> int(cur.fetchone()[0])
     1
     """
-    cur.execute(generateResetSequencesSQL(cur))
+    sql = generateResetSequencesSQL(cur)
+    if sql:
+        cur.execute(sql)
 
 # Regular expression used to parse row count estimate from EXPLAIN output
 _rows_re = re.compile("rows=(\d+)\swidth=")
