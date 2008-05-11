@@ -28,6 +28,7 @@ class TestCronscriptBase(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
+        super(TestCronscriptBase, self).setUp()
         # All of these tests commit to the launchpad_ftest database in
         # subprocesses, so we need to tell the layer to fully tear down and
         # restore the database.
