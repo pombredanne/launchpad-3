@@ -28,6 +28,9 @@ class TestCronscriptBase(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
+        # All of these tests commit to the launchpad_ftest database in
+        # subprocesses, so we need to tell the layer to fully tear down and
+        # restore the database.
         DatabaseLayer.force_dirty_database()
 
     def runCronscript(self, name, extra_args):
