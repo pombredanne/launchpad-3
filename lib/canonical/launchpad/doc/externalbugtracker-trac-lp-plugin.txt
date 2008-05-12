@@ -459,7 +459,8 @@ instance. We'll expire our auth cookie to demonstrate this.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
 
-    >>> remote_comment_id = trac.addRemoteComment('3', message)
+    >>> remote_comment_id = trac.addRemoteComment(
+    ...     '3', message.text_contents, message.rfc822msgid)
     Using XML-RPC to generate token.
     Successfully validated the token.
 

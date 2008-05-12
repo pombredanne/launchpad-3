@@ -132,6 +132,45 @@ Let's reset it to the way it was before.
     Uses Answers
 
 
+== Tracking bugs by email ==
+
+Instead if using a web-based bug tracker, projects can specify an
+email address where bug reports should be sent.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.getControl(
+    ...     'By emailing an upstream bug contact').selected = True
+    >>> registrant_browser.getControl(
+    ...     name='field.bugtracker.upstream_email_address').value = (
+    ...         'puff@magicdragon.example.com')
+    >>> registrant_browser.getControl('Change').click()
+
+An Email Address bug tracker is automatically created.
+
+    >>> registrant_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> registrant_browser.getLink(
+    ...     "Email to puff@magicdragon").click()
+    >>> print extract_text(
+    ...     find_tag_by_id(registrant_browser.contents, 'bugtracker-urls'))
+    mailto:puff@magicdragon.example.com
+
+An error message is shown if the email address is not filled in.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.getControl(
+    ...     'By emailing an upstream bug contact').selected = True
+    >>> registrant_browser.getControl(
+    ...     name='field.bugtracker.upstream_email_address').value = ''
+    >>> registrant_browser.getControl('Change').click()
+    >>> registrant_browser.url
+    'http://launchpad.dev/firefox/+edit'
+    >>> for message in find_tags_by_class(
+    ...     registrant_browser.contents, 'message'):
+    ...     print extract_text(message)
+    There is 1 error.
+    Please enter an email address.
+
+
 == enable_bug_expiration and JavaScript ==
 
 JavaScript is used to constrain enable_bug_expiration to projects that

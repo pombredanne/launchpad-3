@@ -49,7 +49,7 @@
         </thead>
 
         <tbody>
-          <tr tal:repeat="membership context/getActiveMemberships">
+          <tr tal:repeat="membership context/member_memberships">
             <tal:block define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"

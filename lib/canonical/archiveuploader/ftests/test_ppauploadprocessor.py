@@ -541,7 +541,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Signer has no upload rights to this PPA"]
+            "Signer has no upload rights to this PPA."]
         self.assertEmail(contents, ppa_header=None)
 
     def testPPAPartnerUploadFails(self):

@@ -34,7 +34,9 @@ contact address.
     >>> admin_browser.getControl('Submit').click()
 
     >>> from canonical.launchpad.ftests import mailinglists_helper
+    >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()
+    >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
     >>> admin_browser.getLink('Change contact address').click()

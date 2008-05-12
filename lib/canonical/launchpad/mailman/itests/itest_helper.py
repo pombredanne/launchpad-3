@@ -143,13 +143,19 @@ class SMTPServer:
         """Tell the child process to reset its mbox file."""
         self._command('RSET')
 
-    def getMessages(self):
-        """Return a list of all the messages currently in the mbox file."""
+    def getMessages(self, reset=True):
+        """Return a list of all the messages currently in the mbox file.
+
+        Automatically resets the mailbox unless `reset` is False.
+        """
         # We have to use Python 2.4's icky mailbox module until Launchpad
         # upgrades Zope to a Python 2.5 compatible version.
         mbox = mailbox.UnixMailbox(
             open(self._mbox_filename), message_from_file)
-        return list(mbox)
+        messages = list(mbox)
+        if reset:
+            self.reset()
+        return messages
 
     def getMailboxSize(self):
         """Return the size in bytes of the mailbox."""
@@ -378,6 +384,7 @@ def prepare_for_sync():
     from canonical.launchpad.ftests import login, logout
     from canonical.launchpad.interfaces import IEmailAddressSet
     from zope.component import getUtility
+    # pylint: disable-msg=F0401
     from Mailman import mm_cfg
     from Mailman.MailList import MailList
     from Mailman.Utils import list_names

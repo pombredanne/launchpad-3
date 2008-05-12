@@ -756,6 +756,11 @@ special = {
             setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
             layer=LaunchpadZopelessLayer,
             ),
+    'standing.txt': LayeredDocFileSuite(
+            '../doc/standing.txt',
+            layer=LaunchpadZopelessLayer,
+            setUp=setUp, tearDown=tearDown,
+            ),
     }
 
 
@@ -783,12 +788,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
-    ]
+        ]
 
     doctests_with_logging = [
         'incomingmail.txt',
         'spec-mail-exploder.txt'
-    ]
+        ]
 
     @classmethod
     def addTestsToSpecial(cls):
@@ -840,9 +845,7 @@ def test_suite():
     suite = unittest.TestSuite()
 
     # Add special needs tests
-    keys = special.keys()
-    keys.sort()
-    for key in keys:
+    for key in sorted(special):
         special_suite = special[key]
         suite.addTest(special_suite)
 
