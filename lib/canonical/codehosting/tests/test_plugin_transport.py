@@ -229,6 +229,15 @@ class TestVirtualTransport(TestCaseInTempDir):
 
 
 class LaunchpadTransportTests:
+    """Tests for a Launchpad transport.
+
+    These tests are expected to run against two kinds of transport.
+      1. An asynchronous one that returns Deferreds.
+      2. A synchronous one that returns actual values.
+
+    To support that, subclasses must implement `getTransport` and
+    `_ensureDeferred`. See these methods for more information.
+    """
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
@@ -249,6 +258,10 @@ class LaunchpadTransportTests:
         self.backing_transport.put_bytes(
             '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
+    def _ensureDeferred(self, function, *args, **kwargs):
+        """Call `function` and return an appropriate Deferred."""
+        raise NotImplementedError
+
     def getServer(self, authserver, user_id, backing_transport,
                   mirror_transport):
         return LaunchpadServer(
@@ -256,6 +269,7 @@ class LaunchpadTransportTests:
             mirror_transport)
 
     def getTransport(self):
+        """Return the transport to be tested."""
         raise NotImplementedError()
 
     def test_get_transport(self):
@@ -277,11 +291,15 @@ class LaunchpadTransportTests:
         # Putting a file from a public branch URL stores the file in the
         # mapped URL on the base transport.
         transport = self.getTransport()
-        transport.put_bytes(
+        deferred = self._ensureDeferred(
+            transport.put_bytes,
             '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
-        self.assertEqual(
-            "Goodbye",
-            self.backing_transport.get_bytes('00/00/00/01/.bzr/goodbye.txt'))
+        def check_bytes_written(ignored):
+            self.assertEqual(
+                "Goodbye",
+                self.backing_transport.get_bytes(
+                    '00/00/00/01/.bzr/goodbye.txt'))
+        return deferred.addCallback(check_bytes_written)
 
     def test_cloning_updates_base(self):
         # A transport can be constructed using a path relative to another
