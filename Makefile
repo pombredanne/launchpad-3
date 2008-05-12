@@ -94,7 +94,9 @@ check_storm: build
 	# Run tests that should be clean on the Storm branch.  This will
 	# be ramped up to the entire test suite as we go.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) -t /pagetests/
+	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
+	  --module canonical.launchpad.pagetests \
+          --test '!pagetests/ppa/xx-delete-packages|pagetests/soyuz'
 
 lint:
 	@bash ./utilities/lint.sh
