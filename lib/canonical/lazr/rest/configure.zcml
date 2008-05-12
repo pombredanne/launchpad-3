@@ -53,10 +53,17 @@
         />
 
     <adapter
-        for="zope.schema.interfaces.Int
+        for="zope.schema.interfaces.IInt
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.IntFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IBytes
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.ByteStorageDeserializer"
         />
 
     <adapter

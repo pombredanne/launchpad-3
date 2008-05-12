@@ -1,8 +1,8 @@
 Salgado starts out with a link to a mugshot, but no actual mugshot.
 
     >>> salgado = webservice.get('/beta/~salgado').jsonBody()
-    >>> salgado['mugshot']
-    'http://api.launchpad.dev/beta/~salgado/mugshot'
+    >>> salgado['mugshot_link']
+    u'http://api.launchpad.dev/beta/~salgado/mugshot'
 
     >>> salgado_mugshot = '/beta/~salgado/mugshot'
     >>> print webservice.get(salgado_mugshot)

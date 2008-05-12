@@ -22,7 +22,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface, Attribute
-    >>> from zope.schema import Int, Text, TextLine, Object
+    >>> from zope.schema import Bytes, Int, Text, TextLine, Object
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
@@ -39,6 +39,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     author = Object(schema=IAuthor)
     ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
     ...     recipes = Attribute("List of recipes published in this cookbook.")
+    ...     cover = Bytes("An image of the cookbook's cover.")
 
     >>> class IDish(Interface):
     ...     name = TextLine(title=u"Name", required=True)

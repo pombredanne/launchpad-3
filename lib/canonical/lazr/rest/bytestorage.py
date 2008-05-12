@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ByteStorageDeserializer',
     'ByteStorageResource',
 ]
 
@@ -11,8 +12,11 @@ __all__ = [
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 
+from canonical.launchpad.webapp import canonical_url
+
 from canonical.lazr.interfaces import IByteStorageResource
 from canonical.lazr.rest.resource import HTTPResource
+from canonical.lazr.rest.schema import SimpleFieldDeserializer
 
 
 class ByteStorageResource(HTTPResource):
@@ -49,3 +53,11 @@ class ByteStorageResource(HTTPResource):
 
     def do_DELETE(self):
         setattr(self.context.entry, self.context.filename, None)
+
+
+class ByteStorageDeserializer(SimpleFieldDeserializer):
+
+    def serialize(self, name, entry, bytestorage):
+        """Serialize as a link to the byte storage resource."""
+        return (name + '_link', "%s/%s" % (canonical_url(entry), name))
+

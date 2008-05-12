@@ -416,7 +416,17 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     data[key] = canonical_url(value)
             else:
                 # It's a data field; display it as part of the
-                # representation.
+                # representation, possibly serializing a non-string
+                # value to a string.
+                serializer = None
+                try:
+                    serializer = getMultiAdapter((field, self.request),
+                                                 IFieldDeserializer)
+                except TypeError:
+                    pass
+                if serializer is not None:
+                    name, value = serializer.serialize(name, self.context,
+                                                       value)
                 data[name] = value
         return data
 

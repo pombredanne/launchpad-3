@@ -114,6 +114,9 @@ class SimpleFieldDeserializer:
         self.field = field
         self.request = request
 
+    def serialize(self, name, entry, value):
+        return (name, value)
+
     def deserialize(self, value):
         "Make sure the value is a string and then call _deserialize()."
         if value is None:
