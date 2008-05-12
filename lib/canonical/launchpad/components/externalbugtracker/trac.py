@@ -221,7 +221,7 @@ class Trac(ExternalBugTracker):
             except KeyError:
                 # Some Trac instances don't include the bug status in their
                 # CSV exports. In those cases we raise a error.
-                raise UnknownRemoteStatusError()
+                raise UnknownRemoteStatusError('Status not exported.')
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.

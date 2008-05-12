@@ -349,7 +349,7 @@ BugTaskStatus or will raise an UnknownRemoteStatusError.
     ...         if remote_status == 'new':
     ...             return BugTaskStatus.NEW
     ...         else:
-    ...             raise UnknownRemoteStatusError()
+    ...             raise UnknownRemoteStatusError(remote_status)
 
 BugWatchUpdater._convertRemoteStatus() will handle these errors and will
 return BugTaskStatus.UNKNOWN when they occur. It will also log a

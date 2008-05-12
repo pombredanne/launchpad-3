@@ -89,6 +89,9 @@ class BugWatchUpdateWarning(Exception):
 
     This is a flag exception for the benefit of the OOPS machinery.
     """
+    def __init__(self, message, *args):
+        # Require a message.
+        Exception.__init__(self, message, *args)
 
 
 class InvalidBugId(BugWatchUpdateWarning):
