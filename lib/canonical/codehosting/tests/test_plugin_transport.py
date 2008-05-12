@@ -277,8 +277,9 @@ class LaunchpadTransportTests:
                                         *args, **kw):
         """Assert that calling function(*args, **kw) fails in a certain way.
 
-        This method is like assertRaises() but in addition checks that 'msg'
-        is a substring of the str() of the raise exception."""
+        This method is like assertFiresFailure() but in addition checks that
+        'msg' is a substring of the str() of the raised exception.
+        """
         deferred = self.assertFiresFailure(exc_type, function, *args, **kw)
         return deferred.addCallback(
             lambda exception: self.assertIn(msg, str(exception)))
