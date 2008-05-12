@@ -1310,3 +1310,17 @@ for more details.
     >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
     True
 
+canUpload() can also check someone's permission to upload a specific
+source package.  Carlos, who does not have permission to upload to any
+Ubuntu components, has permission to upload "mozilla-firefox".
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> mozilla = getUtility(
+    ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
+    >>> ubuntu.main_archive.canUpload(carlos, mozilla)
+    True
+
+Cprov does not have permission, however.
+
+    >>> ubuntu.main_archive.canUpload(cprov, mozilla)
+    False
