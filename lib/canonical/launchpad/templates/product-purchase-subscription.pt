@@ -1,0 +1,49 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:heading fill-slot="pageheading">
+   <h1>Purchase Project Subscription</h1>
+</metal:heading>
+
+<div metal:fill-slot="main"
+     tal:define="has_edit context/required:launchpad.Admin">
+  <div class="error message"
+       tal:condition="not: context/requires_commercial_subscription">
+    This project does not require a commercial subscription to be purchased.
+  </div>
+  <div class="error message"
+       tal:condition="not: has_edit">
+    You do not have permission to purchase a subscription for this project.
+  </div>
+  <div tal:condition="python: has_edit and context.requires_commercial_subscription">
+    This project's licensing does not qualify for free hosting; therefore,
+    a subscription needs to be purchased to continue using Launchpad.
+    <div>
+      Here are the steps to obtain a commercial subscription:
+      <ol>
+        <li>Purchase a Launchpad subscription in the 
+          <a href="https://shop.canonical.com/product_info.php?products_id=134">
+          Canonical Shop</a>.
+        </li>
+        <li>You will receive an email that your order has been processed.</li>
+        <li>You can then apply the purchased subscription to this project
+            on your <a href="https://launchpad.net/people/+me/+subscriptions">
+            subscription management page</a>.
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
+</body>
+</html>

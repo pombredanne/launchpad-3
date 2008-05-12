@@ -292,7 +292,7 @@ class ProductOverviewMenu(ApplicationMenu):
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf', 'subscribe']
+        'branch_visibility', 'rdf', 'subscribe', 'purchase_subscription']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -314,6 +314,12 @@ class ProductOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def purchase_subscription(self):
+        text = 'Purchase Subscription'
+        summary = 'Purchase a commercial subscription'
+        return Link('+purchase-subscription', text, summary, icon='edit')
 
     def top_contributors(self):
         text = 'List top contributors'

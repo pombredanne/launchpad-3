@@ -1026,6 +1026,9 @@ product_new = 'Register a project in Launchpad'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_purchase_subscription = ContextDisplayName(
+    'Purchase Subscription for %s')
+
 product_files = ContextDisplayName('%s project files')
 
 product_series = ContextDisplayName('%s timeline')

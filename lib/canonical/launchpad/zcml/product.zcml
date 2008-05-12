@@ -330,6 +330,10 @@
       name="+portlet-productfiles"
       template="../templates/product-portlet-latestfiles.pt"
       />
+    <browser:page
+      name="+purchase-subscription"
+      template="../templates/product-purchase-subscription.pt"
+      />
   </browser:pages>
 
   <browser:page
