@@ -39,7 +39,7 @@ SELECT id, id, datecreated, COALESCE(creation_rationale, 0),
 --
 CREATE TABLE AccountPassword (
     id serial PRIMARY KEY,
-    account integer NOT NULL UNIQUE REFERENCES Account,
+    account integer NOT NULL UNIQUE REFERENCES Account ON DELETE CASCADE,
     password text NOT NULL
     );
 
