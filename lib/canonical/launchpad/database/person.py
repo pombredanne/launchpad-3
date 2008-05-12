@@ -1299,7 +1299,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert self.isTeam(), "This method is only available for teams."
         assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
             "Only Launchpad admins can deactivate all members of a team")
-        for membership in self.getActiveMemberships():
+        for membership in self.member_memberships:
             membership.setStatus(
                 TeamMembershipStatus.DEACTIVATED, reviewer, comment)
 
@@ -1465,9 +1465,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=self._sortingColumnsForSetOperations)
 
     # XXX: kiko 2005-10-07:
-    # myactivememberships and getActiveMemberships are rather
-    # confusingly named, and I just fixed bug 2871 as a consequence of
-    # this. Is there a way to improve it?
+    # myactivememberships should be renamed to team_memberships and be
+    # described as the set of memberships for the object's teams.
     @property
     def myactivememberships(self):
         """See `IPerson`."""
@@ -1669,7 +1668,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return ('This team cannot be made private since it is referenced'
                     ' by %s.' % message)
 
-    def getActiveMemberships(self):
+    @property
+    def member_memberships(self):
         """See `IPerson`."""
         return self._getMembershipsByStatuses(
             [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
@@ -1688,7 +1688,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self._getMembershipsByStatuses([TeamMembershipStatus.PROPOSED])
 
     def _getMembershipsByStatuses(self, statuses):
-        assert self.isTeam(), 'This method is only available for teams.'
+        """All `ITeamMembership`s in any given status for this team's members.
+
+        :param statuses: A list of `TeamMembershipStatus` items.
+
+        If called on an person rather than a team, this will obviously return
+        no memberships at all.
+        """
         statuses = ",".join(quote(status) for status in statuses)
         # We don't want to escape 'statuses' so we can't easily use
         # sqlvalues() on the query below.
@@ -2151,6 +2157,9 @@ class PersonSet:
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See `IPersonSet`."""
         assert teamowner
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
                 teamdescription=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,

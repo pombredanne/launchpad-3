@@ -419,14 +419,14 @@ class TracLPPlugin(Trac):
         return message
 
     @needs_authentication
-    def addRemoteComment(self, remote_bug, message):
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """See `ISupportsCommentPushing`."""
         endpoint = urlappend(self.baseurl, 'xmlrpc')
         server = xmlrpclib.ServerProxy(
             endpoint, transport=self.xmlrpc_transport)
 
         timestamp, comment_id = server.launchpad.add_comment(
-            remote_bug, message.text_contents)
+            remote_bug, comment_body)
 
         return comment_id
 

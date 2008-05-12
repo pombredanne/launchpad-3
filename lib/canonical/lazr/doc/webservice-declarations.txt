@@ -1163,13 +1163,13 @@ are also available for IBookSetOnSteroids and IBookOnSteroids.
     ...     'checkout')
     <class '...POST_IBookOnSteroids_checkout'>
 
-There is also a +index view on the WebServiceLayer registered for the
+There is also a 'index.html' view on the WebServiceLayer registered for the
 InvalidEmail exception.
 
     >>> from zope.interface import implementedBy
     >>> adapter_registry.lookup(
     ...     (implementedBy(InvalidEmail), WebServiceLayer), Interface,
-    ...         '+index')
+    ...         'index.html')
     <class '...WebServiceExceptionView'>
 
 (Clean-up.)
