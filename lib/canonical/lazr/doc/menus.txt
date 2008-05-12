@@ -838,7 +838,11 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> def summarise_tal_links(links):
     ...     """List the links and their attributes in the dict or list."""
     ...     is_dict = zope_isinstance(links, dict)
-    ...     for link_name in sorted(links):
+    ...     if is_dict:
+    ...         keys = sorted(links)
+    ...     else:
+    ...         keys = links
+    ...     for link_name in keys:
     ...         if is_dict:
     ...             link = links[link_name]
     ...         else:
