@@ -302,28 +302,14 @@ class BranchView(LaunchpadView, FeedsMixin):
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
         if self.user_can_download():
-            return self.context.getBzrDownloadURL()
-        else:
-            return None
-
-    def bzr_user_download_url(self):
-        """Return the specific URL for the user to download the branch."""
-        if self.user_can_download():
-            return self.context.getBzrDownloadURL(self.user)
+            return self.context.bzr_identity
         else:
             return None
 
     def bzr_upload_url(self):
         """Return the generic URL for uploading the branch."""
         if self.user_can_upload():
-            return self.context.getBzrUploadURL()
-        else:
-            return None
-
-    def bzr_user_upload_url(self):
-        """Return the specific URL for the user to upload to the branch."""
-        if self.user_can_upload():
-            return self.context.getBzrUploadURL(self.user)
+            return self.context.bzr_identity
         else:
             return None
 
@@ -439,14 +425,19 @@ class BranchNameValidationMixin:
         if not getUtility(IBranchSet).isBranchNameAvailable(
             owner, product, branch_name):
             # There is a branch that has the branch_name specified already.
+            if owner == self.user:
+                prefix = "You already have"
+            else:
+                prefix = "%s already has" % cgi.escape(owner.displayname)
+
             if product is None:
                 message = (
-                    "You already have a junk branch called <em>%s</em>."
-                    % branch_name)
+                    "%s a junk branch called <em>%s</em>."
+                    % (prefix, branch_name))
             else:
                 message = (
-                    "There is already a branch for <em>%s</em> called "
-                    "<em>%s</em>." % (product.name, branch_name))
+                    "%s a branch for <em>%s</em> called "
+                    "<em>%s</em>." % (prefix, product.name, branch_name))
             self.setFieldError('name', structured(message))
 
 
@@ -714,10 +705,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
             # Only validate if the name has changed, or the product has
-            # changed.
+            # changed, or the owner has changed.
             if ((data['product'] != self.context.product) or
-                (data['name'] != self.context.name)):
-                self.validate_branch_name(self.context.owner,
+                (data['name'] != self.context.name) or
+                (owner != self.context.owner)):
+                self.validate_branch_name(owner,
                                           data['product'],
                                           data['name'])
 
@@ -796,11 +788,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             product.displayname)
 
     def validate(self, data):
+        owner = data['owner']
         if 'name' in data:
             self.validate_branch_name(
-                self.user, data.get('product'), data['name'])
+                owner, data.get('product'), data['name'])
 
-        owner = data['owner']
         if not self.user.inTeam(owner):
             self.setFieldError(
                 'owner',

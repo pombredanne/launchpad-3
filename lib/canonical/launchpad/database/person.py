@@ -66,11 +66,13 @@ from canonical.launchpad.interfaces import (
     IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
     IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, NameAlreadyTaken,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    MailingListAutoSubscribePolicy, NameAlreadyTaken,
     PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
-    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    PersonalStanding, PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH,
+    SSHKeyType, ShipItConstants, ShippingRequestStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -194,6 +196,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
+    mailing_list_auto_subscribe_policy = EnumCol(
+        enum=MailingListAutoSubscribePolicy,
+        default=MailingListAutoSubscribePolicy.ON_REGISTRATION)
 
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
@@ -1125,7 +1130,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
-    def join(self, team, requester=None):
+    def join(self, team, requester=None, may_subscribe_to_list=True):
         """See `IPerson`."""
         if self in team.activemembers:
             return
@@ -1158,7 +1163,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # has the right permission to add the specified person to the team.
         naked_team = removeSecurityProxy(team)
         naked_team.addMember(
-            self, reviewer=requester, status=status, force_team_add=True)
+            self, reviewer=requester, status=status,
+            force_team_add=True,
+            may_subscribe_to_list=may_subscribe_to_list)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -1195,7 +1202,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,
-                  status=TeamMembershipStatus.APPROVED):
+                  status=TeamMembershipStatus.APPROVED,
+                  may_subscribe_to_list=True):
         """See `IPerson`."""
         assert self.isTeam(), "You cannot add members to a person."
         assert status in [TeamMembershipStatus.APPROVED,
@@ -1217,11 +1225,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 status = TeamMembershipStatus.INVITED
                 event = TeamInvitationEvent
 
-        old_status = None
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
         if tm is not None:
-            old_status = tm.status
             # We can't use tm.setExpirationDate() here because the reviewer
             # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
@@ -1231,6 +1237,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 person, self, status, reviewer, dateexpires=expires,
                 comment=comment)
             notify(event(person, self))
+
+        if not person.isTeam() and may_subscribe_to_list:
+            person.autoSubscribeToMailingList(self.mailing_list,
+                                              requester=reviewer)
 
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
@@ -1289,7 +1299,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert self.isTeam(), "This method is only available for teams."
         assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
             "Only Launchpad admins can deactivate all members of a team")
-        for membership in self.getActiveMemberships():
+        for membership in self.member_memberships:
             membership.setStatus(
                 TeamMembershipStatus.DEACTIVATED, reviewer, comment)
 
@@ -1455,9 +1465,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=self._sortingColumnsForSetOperations)
 
     # XXX: kiko 2005-10-07:
-    # myactivememberships and getActiveMemberships are rather
-    # confusingly named, and I just fixed bug 2871 as a consequence of
-    # this. Is there a way to improve it?
+    # myactivememberships should be renamed to team_memberships and be
+    # described as the set of memberships for the object's teams.
     @property
     def myactivememberships(self):
         """See `IPerson`."""
@@ -1659,7 +1668,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return ('This team cannot be made private since it is referenced'
                     ' by %s.' % message)
 
-    def getActiveMemberships(self):
+    @property
+    def member_memberships(self):
         """See `IPerson`."""
         return self._getMembershipsByStatuses(
             [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
@@ -1678,7 +1688,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self._getMembershipsByStatuses([TeamMembershipStatus.PROPOSED])
 
     def _getMembershipsByStatuses(self, statuses):
-        assert self.isTeam(), 'This method is only available for teams.'
+        """All `ITeamMembership`s in any given status for this team's members.
+
+        :param statuses: A list of `TeamMembershipStatus` items.
+
+        If called on an person rather than a team, this will obviously return
+        no memberships at all.
+        """
         statuses = ",".join(quote(status) for status in statuses)
         # We don't want to escape 'statuses' so we can't easily use
         # sqlvalues() on the query below.
@@ -1819,7 +1835,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setContactAddress(self, email):
         """See `IPerson`."""
         assert self.isTeam(), "This method must be used only for teams."
-        self._setPreferredEmail(email)
+
+        if email is None:
+            if self.preferredemail is not None:
+                email_address = self.preferredemail
+                email_address.status = EmailAddressStatus.VALIDATED
+                email_address.syncUpdate()
+            self._preferredemail_cached = None
+        else:
+            self._setPreferredEmail(email)
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -1863,7 +1887,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
         # Now we update our cache of the preferredemail
-        setattr(self, '_preferredemail_cached', email)
+        self._preferredemail_cached = email
 
     @cachedproperty('_preferredemail_cached')
     def preferredemail(self):
@@ -2075,6 +2099,36 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return StructuralSubscription.selectBy(
             subscriber=self, orderBy=['-date_created'])
 
+    def autoSubscribeToMailingList(self, mailinglist, requester=None):
+        """See `IPerson`."""
+        if mailinglist is None or not mailinglist.isUsable():
+            return False
+
+        if mailinglist.getSubscription(self):
+            # We are already subscribed to the list.
+            return False
+
+        if self.preferredemail is None:
+            return False
+
+        if requester is None:
+            # Assume the current user requested this action themselves.
+            requester = self
+
+        policy = self.mailing_list_auto_subscribe_policy
+
+        if policy == MailingListAutoSubscribePolicy.ALWAYS:
+            mailinglist.subscribe(self)
+            return True
+        elif (requester is self and
+              policy == MailingListAutoSubscribePolicy.ON_REGISTRATION):
+            # Assume that we requested to be joined.
+            mailinglist.subscribe(self)
+            return True
+        else:
+            # We don't want to subscribe to the list.
+            return False
+
 
 class PersonSet:
     """The set of persons."""
@@ -2103,6 +2157,9 @@ class PersonSet:
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See `IPersonSet`."""
         assert teamowner
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
                 teamdescription=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,
@@ -3101,6 +3158,25 @@ class PersonSet:
                 recipients.addStructuralSubscriber(
                     subscription.subscriber, subscription.target)
         return subscribers
+
+    def updatePersonalStandings(self):
+        """See `IPersonSet`."""
+        cur = cursor()
+        cur.execute("""
+        UPDATE Person
+        SET personal_standing = %s
+        WHERE personal_standing = %s
+        AND id IN (
+            SELECT posted_by
+            FROM MessageApproval
+            WHERE status = %s
+            GROUP BY posted_by
+            HAVING COUNT(DISTINCT mailing_list) >= %s
+            )
+        """ % sqlvalues(PersonalStanding.GOOD,
+                        PersonalStanding.UNKNOWN,
+                        PostedMessageStatus.APPROVED,
+                        config.standingupdater.approvals_needed))
 
 
 class PersonLanguage(SQLBase):

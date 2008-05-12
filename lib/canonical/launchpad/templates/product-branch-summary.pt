@@ -99,7 +99,7 @@
       You can <a tal:attributes="href string:${codebrowse_root}${dev_focus/unique_name}">browse the source code
       </a> for development focus branch,
       or get a copy of the branch using the command:<br/>
-      <tt style="padding-left:2em">bzr branch lp:<tal:project-name replace="context/name"/></tt>
+      <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
     </div>
 
     <tal:missing-dev-focus condition="not: view/has_development_focus_branch">

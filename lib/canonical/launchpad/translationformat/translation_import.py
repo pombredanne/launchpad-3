@@ -502,7 +502,7 @@ class TranslationImporter:
 
             if self.pofile is None:
                 # The import is a translation template file
-                potmsgset.sequence = count
+                potmsgset.setSequence(potmsgset.potemplate, count)
                 potmsgset.commenttext = message.comment
                 potmsgset.sourcecomment = message.source_comment
                 potmsgset.filereferences = message.file_references

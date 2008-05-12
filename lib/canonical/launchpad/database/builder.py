@@ -567,20 +567,15 @@ class Builder(SQLBase):
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
-        if not self.virtualized:
-            clauses.append("""
-                archive.purpose IN %s
-            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
-        else:
-            clauses.append("""
-                archive.purpose = %s
-            """ % sqlvalues(ArchivePurpose.PPA))
+        clauses.append("""
+            archive.require_virtualized = %s
+        """ % sqlvalues(self.virtualized))
 
         query = " AND ".join(clauses)
 
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
-            orderBy=['-buildqueue.lastscore'])
+            orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate
 
