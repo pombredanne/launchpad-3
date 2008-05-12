@@ -452,8 +452,9 @@ errors. We temporarily silence the logging from this function because
 we're not interested in it. Again, the watch's lastchecked field also be
 updated. Errors in getRemoteStatus() will produce OOPS reports.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
-    >>> oops_hook.install()
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     CheckWatchesErrorUtility)
+    >>> error_utility = CheckWatchesErrorUtility()
 
     >>> from canonical.launchpad.scripts import log
     >>> loglevel = log._log.level
@@ -466,15 +467,14 @@ updated. Errors in getRemoteStatus() will produce OOPS reports.
     ...         external_bugtracker.get_remote_status_error = error
     ...         bug_watch_updater.updateBugWatches(
     ...             external_bugtracker, [example_bugwatch])
+    ...         oops = error_utility.getLastOopsReport()
     ...         print "%s: %s (%s)" % (
     ...             example_bugwatch.last_error_type.title,
     ...             example_bugwatch.lastchecked is not None,
-    ...             oops_hook.oops_info.oopsid)
+    ...             oops.id)
     ... finally:
     ...     log._log.setLevel(loglevel)
     Bug Not Found: True (OOPS-...)
     Invalid Bug ID: True (OOPS-...)
     Unparsable Bug: True (OOPS-...)
     Unknown: True (OOPS-...)
-
-    >>> oops_hook.uninstall()

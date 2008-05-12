@@ -131,35 +131,6 @@ def set_bugwatch_error_type(bug_watch, error_type):
     logout()
 
 
-class OOPSHook:
-    def install(self):
-        self.reset()
-        self.original_report_oops = checkwatches.report_oops
-        checkwatches.report_oops = self.reportOOPS
-
-    def uninstall(self):
-        checkwatches.report_oops = self.original_report_oops
-        del self.original_report_oops
-
-    def reportOOPS(self, message=None, properties=None, info=None):
-        self.oops_info = self.original_report_oops(
-            message=message, properties=properties, info=info)
-        return self.oops_info
-
-    def reset(self):
-        if hasattr(self, 'oops_info'):
-            del self.oops_info
-
-    @property
-    def formatted_oops_info(self):
-        properties_string = '\n'.join(
-            '%s=%r' % (name, value) for name, value
-            in sorted(self.oops_info._data))
-        return '%s\n%s' % (self.oops_info.oopsid, properties_string)
-
-oops_hook = OOPSHook()
-
-
 class TestExternalBugTracker(ExternalBugTracker):
     """A test version of `ExternalBugTracker`.
 
