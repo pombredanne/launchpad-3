@@ -54,7 +54,7 @@ class LaunchpadServerTests(BzrTestCase):
             BlockingProxy(self.authserver), self.user_id,
             self.backing_transport, self.mirror_transport)
 
-    def test_base_path_translation_1(self):
+    def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows
         # users to rename and re-assign branches without causing unnecessary
         # disk churn. The ID is converted to four-byte hexadecimal and split
@@ -72,7 +72,7 @@ class LaunchpadServerTests(BzrTestCase):
             (self.server._backing_transport, '00/00/00/01/'))
         return deferred
 
-    def test_base_path_translation_2(self):
+    def test_base_path_translation_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
@@ -81,7 +81,7 @@ class LaunchpadServerTests(BzrTestCase):
             (self.server._backing_transport, '00/00/00/03/'))
         return deferred
 
-    def test_base_path_translation_3(self):
+    def test_base_path_translation_team_branch(self):
         # We can map a branch owned by a team that the user is in to its path.
         deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
         deferred.addCallback(
@@ -89,7 +89,7 @@ class LaunchpadServerTests(BzrTestCase):
             (self.server._backing_transport, '00/00/00/04/'))
         return deferred
 
-    def test_base_path_translation_4(self):
+    def test_base_path_translation_team_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         deferred = self.server.translateVirtualPath('/~name12/+junk/junk.dev')
