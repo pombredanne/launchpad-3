@@ -9,7 +9,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
