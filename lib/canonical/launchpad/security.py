@@ -1148,8 +1148,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         Allow
         
             * BuilddAdmins and PPA owner for PPAs
-            * users with upload permissions (for the respective
-              distribution/pocket) otherwise.
+            * users with upload permissions (for the respective distribution)
+              otherwise.
         """
         # Is this a PPA? Call the respective method if so.
         if self.obj.archive.purpose == ArchivePurpose.PPA:
@@ -1158,7 +1158,11 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component? Allow user to retry build
         # if so.
-        return self.obj.archive.canUpload(user, self.obj.current_component)
+        if self.obj.archive.canUpload(user, self.obj.current_component):
+            return True
+        else:
+            return self.obj.archive.canUpload(
+                user, self.obj.sourcepackagerelease.sourcepackagename)
 
 
 class ViewBuildRecord(EditBuildRecord):

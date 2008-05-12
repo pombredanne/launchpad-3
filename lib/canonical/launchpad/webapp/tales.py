@@ -2377,19 +2377,19 @@ class PageMacroDispatcher:
                 raise TraversalError("Max one path segment after macro:page")
 
             return self.page(pagetype)
-
-        if name == 'pagehas':
+        elif name == 'pagehas':
             if len(furtherPath) != 1:
                 raise TraversalError(
                     "Exactly one path segment after macro:haspage")
 
             layoutelement = furtherPath.pop()
             return self.haspage(layoutelement)
-
-        if name == 'pagetype':
+        elif name == 'pagetype':
             return self.pagetype()
-
-        raise TraversalError()
+        elif name == 'show_actions_menu':
+            return self.show_actions_menu()
+        else:
+            raise TraversalError(name)
 
     def page(self, pagetype):
         if pagetype not in self._pagetypes:
@@ -2406,6 +2406,19 @@ class PageMacroDispatcher:
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
 
+    def show_actions_menu(self):
+        """Should the actions menu be rendered?
+
+        It should be rendered unless the layout turns it off, or if we are
+        running in development mode and the layout has navigation tabs.
+        """
+        has_actionsmenu = self.haspage('actionsmenu')
+        if has_actionsmenu and config.devmode:
+            # In devmode, actually hides the actions menu if
+            # the navigation tabs are used.
+            return not self.haspage('navigationtabs')
+        return has_actionsmenu
+
     class LayoutElements:
 
         def __init__(self,
@@ -2418,7 +2431,8 @@ class PageMacroDispatcher:
             portlets=False,
             structuralheaderobject=False,
             pagetypewasset=True,
-            actionsmenu=True
+            actionsmenu=True,
+            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -2441,6 +2455,14 @@ class PageMacroDispatcher:
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True),
+        'default2.0':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
+                navigationtabs=True),
         'defaultnomenu':
             LayoutElements(
                 applicationborder=True,

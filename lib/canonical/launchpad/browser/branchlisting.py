@@ -229,6 +229,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
+    # Showing the series links is only really useful on product listing
+    # pages.  Derived views can override this value to have the series links
+    # shown in the branch listings.
+    show_series_links = False
     extra_columns = []
     heading_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
@@ -288,6 +292,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         """Does the context have any branches that are visible to the user?"""
         return self._branches(None).count() > 0
 
+    @property
+    def branch_search_context(self):
+        """The context used for the branch search."""
+        return self.context
+
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
 
@@ -296,7 +305,9 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
         :param lifecycle_status: A filter of the branch's lifecycle status.
         """
-        raise NotImplementedError("Derived classes must implement _branches.")
+        return getUtility(IBranchSet).getBranchesForContext(
+            self.branch_search_context, lifecycle_status, self.user,
+            self.sort_by)
 
     @property
     def no_branch_message(self):
