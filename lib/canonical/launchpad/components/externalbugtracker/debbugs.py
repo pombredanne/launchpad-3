@@ -26,7 +26,8 @@ from canonical.launchpad.components.externalbugtracker import (
     InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IMessageSet, ISupportsBugImport,
-    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE)
+    ISupportsCommentImport, ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.scripts import debbugs
 
 
@@ -42,7 +43,8 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsBugImport, ISupportsCommentImport)
+    implements(
+        ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
     # We don't support different versions of debbugs.
     version = None
@@ -251,3 +253,8 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Push a comment to the remote DebBugs instance.
+
+        See `ISupportsCommentPushing`.
+        """

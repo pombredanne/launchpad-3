@@ -384,6 +384,17 @@ owner, so we'll turn Teun Vink into a Person.
     Things happen.
 
 
+=== Pushing comments to DebBugs ===
+
+The DebBugs ExternalBugTracker implements the ISupportsCommentPushing
+interface, which allows checkwatches to use it to push Launchpad
+comments back to the remote DebBugs instance.
+
+    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> ISupportsCommentPushing.providedBy(external_debbugs)
+    True
+
+
 === Script for importing Debian bugs, linking them to Ubutu ===
 
 There's a script called `import-debian-bugs.py`, which accepts a list of
