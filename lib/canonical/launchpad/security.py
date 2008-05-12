@@ -8,22 +8,21 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IArchive, IBazaarApplication, IBranch,
-    IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
+    IAnnouncement, IArchive, IArchivePermissionSet, IBazaarApplication,
+    IBranch, IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportResult,
-    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
-    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
-    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISourcePackage, ISourcePackageRelease, ISpecification,
-    ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ICodeImportMachine, ICodeImportResult, ICodeImportResultSet,
+    ICodeImportSet, IDistribution, IDistributionMirror, IDistroSeries,
+    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
+    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
+    ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
+    IPOFile, IPOTemplate, IPOTemplateSubset, IPackageUpload,
+    IPackageUploadQueue, IPackaging, IPerson, IPoll, IPollOption, IPollSubset,
+    IProduct, IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
+    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
+    IShippingRequestSet, IShippingRun, ISourcePackage, ISourcePackageRelease,
+    ISpecification, ISpecificationBranch, ISpecificationSubscription, ISprint,
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
@@ -1027,15 +1026,12 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
         """Define who may download these translations.
 
         Admins and Translations admins have access, as do the owner of
-        the translation group (if applicable) and whoever is allowed to
-        upload new versions of the source package.
+        the translation group (if applicable).
         """
         translation_group = self.obj.distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            # User has upload rights to this package.
-            user.inTeam(self.obj.distribution.upload_admin) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
@@ -1088,13 +1084,23 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distroseries.distribution.upload_admin)
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.getArchive(), user)
+        return permissions.count() > 0
+
+    def getArchive(self):
+        """Return the archive for the context object."""
+        return self.obj.distroseries.main_archive
 
 
 class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
 
+    def getArchive(self):
+        """Return the archive for the context object."""
+        return self.obj.archive
 
 class AdminByBuilddAdmin(AuthorizationBase):
     permission = 'launchpad.Admin'

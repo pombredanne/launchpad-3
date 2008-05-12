@@ -127,3 +127,13 @@ class IArchivePermissionSet(Interface):
         to administer the distroseries upload queue.
         """
 
+    def componentsForQueueAdmin(archive, user):
+        """`ArchivePermission` records for the user's queue admin components.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to find out which
+            components he has access to.
+
+        :return: `ArchivePermission` records for all the components that
+            'user' is allowed to administer the queue for.
+        """
