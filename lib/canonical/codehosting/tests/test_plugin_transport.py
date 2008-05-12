@@ -390,10 +390,15 @@ class LaunchpadTransportTests:
             transport.list_dir, '~testuser/firefox/baz/.bzr')
         deferred.addCallback(set)
 
-        def do_rename(dir_contents):
-            transport.rename(
+        def rename_file(dir_contents):
+            deferred = self._ensureDeferred(
+                transport.rename,
                 '~testuser/firefox/baz/.bzr/hello.txt',
                 '~testuser/firefox/baz/.bzr/goodbye.txt')
+            deferred.addCallback(lambda ignored: dir_contents)
+            return deferred
+
+        def check_file_was_renamed(dir_contents):
             dir_contents.remove('hello.txt')
             dir_contents.add('goodbye.txt')
             deferred = self._ensureDeferred(
@@ -406,7 +411,8 @@ class LaunchpadTransportTests:
                     set(self.backing_transport.list_dir('00/00/00/01/.bzr')),
                     dir_contents))
             return deferred
-        return deferred.addCallback(do_rename)
+        deferred.addCallback(rename_file)
+        return deferred.addCallback(check_file_was_renamed)
 
     def test_iter_files_recursive(self):
         # iter_files_recursive doesn't take a relative path but still needs to
