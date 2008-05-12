@@ -261,6 +261,28 @@ class LaunchpadTransportTests:
         self.backing_transport.put_bytes(
             '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
+    def assertFiresFailure(self, exception, function, *args, **kwargs):
+        """Assert that calling `function` will cause `exception` to be fired.
+
+        In the synchronous tests, this means that `function` raises
+        `exception`. In the asynchronous tests, `function` returns a Deferred
+        that fires `exception` as a Failure.
+
+        :return: A `Deferred`. You must return this from your test.
+        """
+        return self.assertFailure(
+            self._ensureDeferred(function, *args, **kwargs), exception)
+
+    def assertFiresFailureWithSubstring(self, exc_type, msg, function,
+                                        *args, **kw):
+        """Assert that calling function(*args, **kw) fails in a certain way.
+
+        This method is like assertRaises() but in addition checks that 'msg'
+        is a substring of the str() of the raise exception."""
+        deferred = self.assertFiresFailure(exc_type, function, *args, **kw)
+        return deferred.addCallback(
+            lambda exception: self.assertIn(msg, str(exception)))
+
     def _ensureDeferred(self, function, *args, **kwargs):
         """Call `function` and return an appropriate Deferred."""
         raise NotImplementedError
@@ -348,16 +370,16 @@ class LaunchpadTransportTests:
         # and branch. Trying to perform operations on an incomplete URL raises
         # an error. Which kind of error is not particularly important.
         transport = self.getTransport()
-        return self.assertRaises(
-            (errors.NoSuchFile,), transport.get, '~testuser')
+        return self.assertFiresFailure(
+            errors.NoSuchFile, transport.get, '~testuser')
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
         # the branch itself. If the branch doesn't exist, any files it asks
         # for are not found. i.e. we raise NoSuchFile
         transport = self.getTransport()
-        return self.assertRaises(
-            (errors.NoSuchFile,),
+        return self.assertFiresFailure(
+            errors.NoSuchFile,
             transport.get, '~testuser/firefox/new-branch/.bzr/branch-format')
 
     def test_rename(self):
@@ -433,7 +455,7 @@ class LaunchpadTransportTests:
         message = "Branch exploding, as requested."
         self.setFailingBranchDetails(
             'explode!', NOT_FOUND_FAULT_CODE, message)
-        return self.assertRaisesWithSubstring(
+        return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
@@ -445,7 +467,7 @@ class LaunchpadTransportTests:
         message = "Branch exploding, as requested."
         self.setFailingBranchDetails(
             'explode!', PERMISSION_DENIED_FAULT_CODE, message)
-        return self.assertRaisesWithSubstring(
+        return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
@@ -474,25 +496,12 @@ class LaunchpadTransportTests:
 
     def test_rmdir(self):
         transport = self.getTransport()
-        self.assertRaises(
-            (errors.PermissionDenied,),
+        self.assertFiresFailure(
+            errors.PermissionDenied,
             transport.rmdir, '~testuser/firefox/baz')
 
 
 class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
-
-    def assertRaises(self, exceptions, function, *args, **kwargs):
-        self.assertEqual(1, len(exceptions))
-        return TrialTestCase.assertRaises(
-            self, exceptions[0], function, *args, **kwargs)
-
-    def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
-        """Assert that calling function(*args, **kw) fails in a certain way.
-
-        This method is like assertRaises() but in addition checks that 'msg'
-        is a substring of the str() of the raise exception."""
-        exception = self.assertRaises((exc_type,), function, *args, **kw)
-        self.assertIn(msg, str(exception))
 
     def _ensureDeferred(self, function, *args, **kwargs):
         def call_function_and_check_not_deferred():
@@ -516,20 +525,6 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
 
 class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
-
-    def assertRaises(self, exceptions, function, *args, **kwargs):
-        deferred = function(*args, **kwargs)
-        return self.assertFailure(deferred, *exceptions)
-
-    def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
-        """Assert that calling function(*args, **kw) fails in a certain way.
-
-        This method is like assertRaises() but in addition checks that 'msg'
-        is a substring of the str() of the raise exception."""
-        deferred = self.assertFailure(function(*args, **kw), exc_type)
-        deferred.addCallback(
-            lambda exception: self.assertIn(msg, str(exception)))
-        return deferred
 
     def _ensureDeferred(self, function, *args, **kwargs):
         deferred = function(*args, **kwargs)
