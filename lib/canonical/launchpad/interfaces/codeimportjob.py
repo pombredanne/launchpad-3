@@ -139,8 +139,11 @@ class ICodeImportJobSetPublic(Interface):
     # we implement endpoint specific authentication for the private xml-rpc
     # server.
 
-    def getJobForMachine(machine):
+    def getJobForMachine(hostname):
         """Select a job for the given machine to run and mark it as started.
+
+        If there is not already a CodeImportMachine with the given hostname,
+        one will be created in the the ONLINE state.
 
         This method selects a job that is due to be run for running on the
         given machine and calls ICodeImportJobWorkflowPublic.startJob() on it.

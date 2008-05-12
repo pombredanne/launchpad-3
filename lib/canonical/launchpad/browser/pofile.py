@@ -130,7 +130,7 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ['description', 'translate', 'upload', 'download']
+    links = ('description', 'translate', 'upload', 'download')
 
 
 class POFileView(LaunchpadView):
@@ -349,7 +349,10 @@ class POFileTranslateView(BaseTranslationView):
         """Build translation message views for all potmsgsets given."""
         last = None
         for potmsgset in for_potmsgsets:
-            assert last is None or potmsgset.sequence >= last.sequence, (
+            assert (last is None or
+                    potmsgset.getSequence(
+                        potmsgset.potemplate) >= last.getSequence(
+                            last.potemplate)), (
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 
@@ -382,11 +385,11 @@ class POFileTranslateView(BaseTranslationView):
                     "template." % id)
 
             error = self._storeTranslations(potmsgset)
-            if error and potmsgset.sequence != 0:
+            if error and potmsgset.getSequence(potmsgset.potemplate) != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #
-                # The check for potmsgset.sequence != 0 is meant to catch
+                # The check for potmsgset.getSequence() != 0 is meant to catch
                 # messages which are not current anymore. This only
                 # happens as part of a race condition, when someone gets
                 # a translation form, we get a new template for
@@ -479,7 +482,8 @@ class POFileTranslateView(BaseTranslationView):
         if self.show == 'all':
             if self.search_text is not None:
                 if len(self.search_text) > 1:
-                    ret = pofile.findPOTMsgSetsContaining(text=self.search_text)
+                    ret = pofile.findPOTMsgSetsContaining(
+                        text=self.search_text)
                 else:
                     self.request.response.addWarningNotification(
                         "Please try searching for a longer string.")

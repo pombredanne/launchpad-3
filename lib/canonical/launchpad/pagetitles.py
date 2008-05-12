@@ -430,6 +430,9 @@ codeimport_list = 'Code Imports'
 
 codeimport_machines = ViewLabel()
 
+def codeimport_machine_index(context, view):
+    return smartquote('Code Import machine "%s"' % context.hostname)
+
 codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
@@ -667,6 +670,8 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 # The general form is a fallback form; I'm not sure why it is
 # needed, nor why it needs a pagetitle, but I can't debug this today.
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
+
+launchpad_invalidbatchsize = "Invalid Batch Size"
 
 launchpad_legal = 'Launchpad legalese'
 
