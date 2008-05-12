@@ -226,7 +226,7 @@ class CachingAuthserverClient:
             is either '+junk' or the name of a Launchpad `IProduct`.
         :param branch: The name of the branch to create.
 
-        :return: The ID of the created branch.
+        :return: A `Deferred` that fires the ID of the created branch.
         """
         deferred = defer.maybeDeferred(
             self._authserver.callRemote, 'createBranch', self._user_id,
@@ -260,10 +260,11 @@ class CachingAuthserverClient:
             is either '+junk' or the name of a Launchpad `IProduct`.
         :param branch: The name of the branch that we are interested in.
 
-        :return: (branch_id, permissions), where 'permissions' is WRITABLE if
-            the current user can write to the branch, and READ_ONLY if
-            they cannot. If the branch doesn't exist, return ('', ''). The
-            "current user" is the user ID passed to the constructor.
+        :return: A Deferred that fires (branch_id, permissions), where
+            'permissions' is WRITABLE if the current user can write to the
+            branch, and READ_ONLY if they cannot. If the branch doesn't exist,
+            return ('', ''). The "current user" is the user ID passed to the
+            constructor.
         """
         branch_info = self._branch_info_cache.get((owner, product, branch))
         if branch_info is not None:
