@@ -232,7 +232,7 @@ class CachingAuthserverClient:
             self._authserver.callRemote, 'createBranch', self._user_id,
             owner, product, branch)
 
-        def cb(branch_id):
+        def clear_cache_and_maybe_transalte_error(branch_id):
             # Clear the cache for this branch. We *could* populate it with
             # (branch_id, 'w'), but then we'd be building in more assumptions
             # about the authserver.
@@ -249,7 +249,7 @@ class CachingAuthserverClient:
                     % (owner, product, branch))
             return branch_id
 
-        return deferred.addCallback(cb)
+        return deferred.addCallback(clear_cache_and_maybe_transalte_error)
 
     def getBranchInformation(self, owner, product, branch):
         """Get branch information from the authserver.
