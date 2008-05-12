@@ -112,6 +112,9 @@ def parse_iso8601_date(datestring):
     Performs no validation whatsoever. It just plucks up to the first
     7 numbers from the string and passes them to `datetime.datetime`,
     so would in fact parse any string containing reasonable numbers.
+
+    This function can be replaced with `datetime.datetime.strptime()`
+    once we move to Python 2.5.
     """
     return datetime.datetime(
         *(int(elem) for elem in re.findall('[0-9]+', datestring)[:7]))
