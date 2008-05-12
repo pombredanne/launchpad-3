@@ -649,7 +649,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
-            vocabulary='ValidTeamOwner'))
+            vocabulary='ValidTeamOwner'),
+        exported_as='team_owner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
@@ -1568,7 +1569,6 @@ class IPersonSet(Interface):
         """
 
     @collection_default_content()
-    @export_operation_as('find')
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
