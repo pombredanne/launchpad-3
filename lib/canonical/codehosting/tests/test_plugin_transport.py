@@ -18,7 +18,7 @@ from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
     unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.tests import TestCase as BzrTestCase, TestCaseInTempDir
 from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer
@@ -37,7 +37,7 @@ from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class LaunchpadServerTests:
+class LaunchpadServerTests(BzrTestCase):
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -45,7 +45,7 @@ class LaunchpadServerTests:
     layer = BaseLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        BzrTestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
@@ -462,8 +462,8 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
     def assertRaises(self, exceptions, function, *args, **kwargs):
         self.assertEqual(1, len(exceptions))
-        return TrialTestCase.assertRaises(self, exceptions[0], function, *args,
-                                          **kwargs)
+        return TrialTestCase.assertRaises(
+            self, exceptions[0], function, *args, **kwargs)
 
     def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
         """Assert that calling function(*args, **kw) fails in a certain way.
@@ -524,14 +524,14 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
         return AsyncLaunchpadTransport(self.server, url)
 
 
-class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
+class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        BzrTestCase.setUp(self)
 
         memory_server = self._setUpMemoryServer()
         memory_transport = get_transport(memory_server.get_url())
@@ -644,10 +644,10 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
         self.assertEqual('mirror', transport.listable())
 
 
-class TestLoggingSetup(TestCase):
+class TestLoggingSetup(BzrTestCase):
 
     def setUp(self):
-        TestCase.setUp(self)
+        BzrTestCase.setUp(self)
 
         # Configure the debug logfile
         self._real_debug_logfile = config.codehosting.debug_logfile
@@ -666,7 +666,7 @@ class TestLoggingSetup(TestCase):
     def tearDown(self):
         sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
-        TestCase.tearDown(self)
+        BzrTestCase.tearDown(self)
         # We don't use BaseLayer because we want to keep the amount of
         # pre-configured logging systems to an absolute minimum, in order to
         # make it easier to test this particular logging system.
