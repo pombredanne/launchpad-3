@@ -10,7 +10,6 @@ import warnings
 from zope.interface import Attribute, Interface, implements
 from zope.schema.interfaces import ITitledTokenizedTerm, IVocabularyTokenized
 from zope.security.proxy import isinstance as zope_isinstance
-from canonical.lazr.interfaces import IJSONPublishable
 
 __all__ = [
     'BaseItem',
