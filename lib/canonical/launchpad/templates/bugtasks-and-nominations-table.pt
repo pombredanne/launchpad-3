@@ -39,26 +39,42 @@
 
 </table>
 
-<div style="text-align: right; margin-bottom: 1em;"
-     tal:condition="view/displayAlsoAffectsLinks"
-     tal:define="current_bugtask view/currentBugTask">
+<table style="width: 100%; margin-bottom: 1em; margin-top: 0.33em;">
+  <tr>
+    <td style="text-align: left;">
+      <tal:activitylog
+          define="link context/menu:context/activitylog"
+          condition="link/enabled"
+          replace="structure link/render" />
+    </td>
+    <td>
+      <tal:nominate
+          define="link context/menu:context/nominate"
+          condition="link/enabled"
+          replace="structure link/render" />
+    </td>
+    <td style="text-align: right;">
+      <div style=""
+           tal:condition="view/displayAlsoAffectsLinks"
+           tal:define="current_bugtask view/currentBugTask">
+        Also affects:
+        <span style="white-space: nowrap">
+          <img src="/@@/add" alt="+" />
+          <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
+             title="Record this bug as occurring in another project">
+            Project&hellip;
+          </a>
+        </span>
 
-  Also affects:
-  <span style="white-space: nowrap">
-      <img src="/@@/add" alt="+" />
-      <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
-         title="Record this bug as occurring in another project">
-        Project&hellip;
-      </a>
-  </span>
-
-  <span style="white-space: nowrap">
-      <img src="/@@/add" alt="+" />
-      <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
-         title="Record this bug as occurring in another distribution and/or package">
-        Distribution/Package&hellip;
-      </a>
-  </span>
-
-</div>
+        <span style="white-space: nowrap">
+          <img src="/@@/add" alt="+" />
+          <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
+             title="Record this bug as occurring in another distribution and/or package">
+            Distribution/Package&hellip;
+          </a>
+        </span>
+      </div>
+    </td>
+  </tr>
+</table>
 </tal:root>
