@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.codereviewmessage import *
 from canonical.launchpad.interfaces.codereviewvote import *
+from canonical.launchpad.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.cve import *

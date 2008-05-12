@@ -1,15 +1,14 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Implementation classes for a CommercialSubscription"""
+"""Implementation classes for a CommercialSubscription."""
 
 __metaclass__ = type
 __all__ = ['CommercialSubscription']
 
-from zope.interface import implements, alsoProvides
-from zope.component import getUtility
+from zope.interface import implements
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol)
+    ForeignKey, StringCol)
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
