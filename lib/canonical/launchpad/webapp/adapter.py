@@ -265,7 +265,8 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         try:
             super(LaunchpadTimeoutTracer, self).connection_raw_execute(
                 connection, raw_cursor, statement, params)
-        except TimeoutError, exc:
+        except TimeoutError:
+            info = sys.exc_info()
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
             try:
@@ -273,7 +274,10 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             except psycopg2.DatabaseError:
                 pass
             OpStats.stats['timeouts'] += 1
-            raise
+            try:
+                raise info[0], info[1], info[2]
+            finally:
+                info = None
 
     def connection_raw_execute_error(self, connection, raw_cursor,
                                      statement, params, error):

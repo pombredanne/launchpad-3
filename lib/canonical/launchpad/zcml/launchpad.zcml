@@ -45,7 +45,7 @@
 
   <!-- RequestExpired -->
   <browser:page
-      for="canonical.database.interfaces.IRequestExpired"
+      for="storm.exceptions.TimeoutError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
