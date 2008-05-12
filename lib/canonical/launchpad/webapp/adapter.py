@@ -320,11 +320,23 @@ class LaunchpadStatementTracer:
             sys.stderr.write(statement + "\n")
             sys.stderr.write("-" * 70 + "\n")
 
-        # XXX jamesh 20080306:
-        # Storm doesn't have a post-execute trace point, so we are not
-        # currently logging the duration of the statement.
         now = time()
-        _log_statement(now, now, connection, statement)
+        connection._lp_statement_start_time = now
+
+    def connection_raw_execute_success(self, connection, raw_cursor,
+                                       statement, params):
+        if not isinstance(connection._database, LaunchpadDatabase):
+            return
+        end = time()
+        start = getattr(connection, '_lp_statement_start_time', end)
+        _log_statement(start, end, connection, statement)
+
+    def connection_raw_execute_error(self, connection, raw_cursor,
+                                     statement, params, error):
+        # Since we are just logging durations, we execute the same
+        # hook code for errors as successes.
+        self.connection_raw_execute_success(
+            connection, raw_cursor, statement, params)
 
 
 install_tracer(LaunchpadTimeoutTracer())
