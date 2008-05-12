@@ -68,14 +68,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBugSupervisor,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
-    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
-    PackagePublishingStatus, PackageUploadStatus, PackagingType,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchivePermissionSet,
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
+    ISourcePackageName, IStructuralSubscriptionTarget, MirrorContent,
+    MirrorStatus, NotFoundError, PackagePublishingStatus, PackageUploadStatus,
+    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
@@ -146,12 +147,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    uploaders = SQLMultipleJoin('DistroComponentUploader',
-        joinColumn='distribution', prejoins=["uploader", "component"])
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
+
+    @property
+    def uploaders(self):
+        """See `IDistribution`."""
+        return getUtility(
+            IArchivePermissionSet).uploadersForComponent(self.main_archive)
 
     @property
     def official_codehosting(self):
