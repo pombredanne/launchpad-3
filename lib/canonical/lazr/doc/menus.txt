@@ -275,6 +275,8 @@ we can directly create one with a context object to show that its
 methods can access `self.context`.
 
     >>> from zope.component import provideAdapter
+    >>> from zope.security.checker import (
+    ...     defineChecker, InterfaceChecker, NamesChecker)
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IFacetLink, ILink, ILinkData)
     >>> from canonical.launchpad.webapp.menu import (
@@ -285,6 +287,9 @@ methods can access `self.context`.
     # That is not the focus of this test so they are manually registered.
     >>> provideAdapter(MenuLink, [ILinkData], ILink)
     >>> provideAdapter(FacetLink, [ILinkData], IFacetLink)
+    >>> defineChecker(FacetLink, InterfaceChecker(IFacetLink))
+    >>> defineChecker(URI, NamesChecker(dir(URI)))
+
 
     >>> def summarise_links(menu, url=None, facet=None):
     ...     """List the links and their attributes."""
@@ -698,7 +703,7 @@ belongs to one of the content object's menu's links.
 
 A link will be selected and linked if request's url matches one of the
 links in the link's menu. A link's menu contains child links in the
-navigational hierarchy; when a child link is selected, the parent
+navigational hierarchy; when a child linzope_isinstancek is selected, the parent
 link is selected too.
 
     >>> request = make_fake_request(
@@ -824,7 +829,7 @@ TAL namespace 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> from zope.interface import classImplements
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from zope.security.proxy import isinstance as zope_isinstance
     >>> from zope.app.traversing.adapters import DefaultTraversable
     >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
@@ -832,16 +837,16 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> def summarise_tal_links(links):
     ...     """List the links and their attributes in the dict or list."""
-    ...     is_dict = isinstance(removeSecurityProxy(links), dict)
+    ...     is_dict = zope_isinstance(links, dict)
     ...     for link_name in sorted(links):
     ...         if is_dict:
-    ...             link = removeSecurityProxy(links[link_name])
+    ...             link = links[link_name]
     ...         else:
-    ...             link = removeSecurityProxy(link_name)
+    ...             link = link_name
     ...         print 'link %s' % link.name
     ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
-    ...             print '    %s: %s' % (attrname, getattr(link, attrname))
+    ...             print '    %s:' % attrname, getattr(link, attrname)
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
     # approximates what is done by the code:
@@ -877,13 +882,13 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...RecipeJournalMenu ...>
         selected: True
         linked: True
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...RecipeEditMenu ...>
         selected: False
         linked: True
 
