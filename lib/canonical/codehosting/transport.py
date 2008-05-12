@@ -268,17 +268,16 @@ class CachingAuthserverClient:
         """
         branch_info = self._branch_info_cache.get((owner, product, branch))
         if branch_info is not None:
-            deferred = defer.succeed(branch_info)
-        else:
-            deferred = defer.maybeDeferred(
-                self._authserver.callRemote, 'getBranchInformation',
-                self._user_id, owner, product, branch)
-            def add_to_cache(branch_info):
-                self._branch_info_cache[
-                    (owner, product, branch)] = branch_info
-                return branch_info
-            deferred.addCallback(add_to_cache)
-        return deferred
+            return defer.succeed(branch_info)
+
+        deferred = defer.maybeDeferred(
+            self._authserver.callRemote, 'getBranchInformation',
+            self._user_id, owner, product, branch)
+        def add_to_cache(branch_info):
+            self._branch_info_cache[
+                (owner, product, branch)] = branch_info
+            return branch_info
+        return deferred.addCallback(add_to_cache)
 
     def requestMirror(self, branch_id):
         """Mark a branch as needing to be mirrored.
@@ -309,7 +308,8 @@ class LaunchpadBranch:
 
         :param authserver: An XML-RPC client to the Launchpad authserver.
             This is used to get information about the branch and to perform
-            database operations on the branch.
+            database operations on the branch. This XML-RPC client should
+            implement 'callRemote'.
         :param virtual_path: A public path to a branch, or to a file or
             directory within a branch.
 
@@ -349,7 +349,8 @@ class LaunchpadBranch:
 
         :param authserver: An XML-RPC client to the Launchpad authserver.
             This is used to get information about the branch and to perform
-            database operations on the branch.
+            database operations on the branch. The client should implement
+            `callRemote`.
         :param owner: The owner of the branch. A string that is the name of a
             Launchpad `IPerson`.
         :param product: The project that the branch belongs to. A string that
@@ -561,7 +562,7 @@ class LaunchpadServer(Server):
         except NotABranchPath:
             return defer.fail(failure.Failure())
 
-        deferred = branch.getRealPath(path)
+        virtual_path_deferred = branch.getRealPath(path)
 
         def branch_not_found(failure):
             failure.trap(BranchNotFound)
@@ -573,10 +574,10 @@ class LaunchpadServer(Server):
                 # doesn't exist.
                 raise NoSuchFile(virtual_path)
 
-        deferred.addErrback(branch_not_found)
+        virtual_path_deferred.addErrback(branch_not_found)
 
         def get_transport(real_path):
-            deferred = branch.getPermissions()
+            permissions_deferred = branch.getPermissions()
             def got_permissions(permissions):
                 if permissions == READ_ONLY:
                     return self._mirror_transport
@@ -585,11 +586,12 @@ class LaunchpadServer(Server):
                     deferred = branch.ensureUnderlyingPath(transport)
                     deferred.addCallback(lambda ignored: transport)
                     return deferred
-            deferred.addCallback(got_permissions)
-            deferred.addCallback(lambda transport: (transport, real_path))
-            return deferred
+            permissions_deferred.addCallback(got_permissions)
+            permissions_deferred.addCallback(
+                lambda transport: (transport, real_path))
+            return permissions_deferred
 
-        return deferred.addCallback(get_transport)
+        return virtual_path_deferred.addCallback(get_transport)
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
@@ -628,6 +630,11 @@ class VirtualTransport(Transport):
     Assumes that it has a 'server' which implements 'translateVirtualPath'.
     This method is expected to take an absolute virtual path and translate it
     into a real transport and a path on that transport.
+
+    translateVirtualPath will return a Deferred. Subclasses should implement
+    `_extractResult`, a method which takes a Deferred and then returns either
+    the same Deferred (for asynchronous code) or the value of the Deferred
+    (for synchronous code).
     """
 
     def __init__(self, server, url):
@@ -738,13 +745,14 @@ class VirtualTransport(Transport):
         from_deferred = self._getUnderylingTransportAndPath(rel_from)
         deferred = gatherResults([to_deferred, from_deferred])
 
-        def do_rename(((to_transport, to_path), (from_transport, from_path))):
+        def check_transports_and_rename(
+            ((to_transport, to_path), (from_transport, from_path))):
             if to_transport is not from_transport:
                 raise TransportNotPossible(
                     'cannot move between underlying transports')
             return getattr(from_transport, 'rename')(from_path, to_path)
 
-        deferred.addCallback(do_rename)
+        deferred.addCallback(check_transports_and_rename)
         return self._extractResult(deferred)
 
     def rmdir(self, relpath):
