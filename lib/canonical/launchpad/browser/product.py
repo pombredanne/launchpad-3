@@ -359,7 +359,7 @@ class ProductOverviewMenu(ApplicationMenu):
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
@@ -924,12 +924,6 @@ class ProductReviewView(ProductEditView):
                     'Set a <a href="%s/+bugcontact">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
-
-    def setUpFields(self):
-        super(ProductReviewView, self).setUpFields()
-        if not check_permission('launchpad.Commercial', self.context):
-            self.form_fields['reviewed'].for_display = True
-            self.form_fields['reviewer_whiteboard'].for_display = True
 
 
 class ProductAddSeriesView(LaunchpadFormView):

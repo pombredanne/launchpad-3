@@ -22,7 +22,7 @@
   </p>
 
   <p id="project-admin-whiteboard" class="whiteboard"
-   tal:condition="context/required:launchpad.Admin">
+   tal:condition="context/required:launchpad.Commercial">
     <span tal:content="context/reviewer_whiteboard" />
     (<a href="+review">edit reviewer whiteboard</a>)
   </p>

@@ -405,7 +405,7 @@
     for="canonical.launchpad.interfaces.IProduct"
     facet="overview"
     class="canonical.launchpad.browser.ProductReviewView"
-    permission="launchpad.Admin"
+    permission="launchpad.Commercial"
     template="../templates/product-admin.pt"
     />
 

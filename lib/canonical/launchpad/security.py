@@ -70,7 +70,8 @@ class AdminByCommercializationTeam(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         celebrities = getUtility(ILaunchpadCelebrities)
-        return user.inTeam(celebrities.commercialization_admin)
+        return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))
 
 
 class EditOAuthAccessToken(AuthorizationBase):
