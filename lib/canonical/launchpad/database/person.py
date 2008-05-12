@@ -143,9 +143,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
 
-    name = StringCol(dbName='name', alternateID=True, notNull=True)
-
-    def _set_name(self, value):
+    def _validate_name(self, attr, value):
         """Check that rename is allowed."""
         # Renaming a team is prohibited for any team that has a mailing list.
         # This is because renaming a mailing list is not trivial in Mailman
@@ -160,7 +158,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 getUtility(IMailingListSet).get(self.name) is None), (
             'Cannot rename teams with mailing lists')
         # Everything's okay, so let SQLObject do the normal thing.
-        self._SO_set_name(value)
+        return value
+
+    name = StringCol(dbName='name', alternateID=True, notNull=True,
+                     storm_validator=_validate_name)
 
     password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
