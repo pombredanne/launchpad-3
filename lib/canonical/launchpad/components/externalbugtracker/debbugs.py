@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IMessageSet, ISupportsBugImport,
     ISupportsCommentImport, ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.scripts import debbugs
 
 
@@ -252,6 +253,15 @@ class DebBugs(ExternalBugTracker):
 
                 commit()
                 return message
+
+    def _sendEmail(self, from_addr, to_addr, subject, body, rfc822msgid):
+        """Send an email to the remote DebBugs instance.
+
+        We implement this here for the purposes of testing. Really, it's
+        just a wrapper around simple_sendmail.
+        """
+        headers = {'Message-Id': rfc822msgid}
+        simple_sendmail(from_addr, [to_addr], subject, body, headers=headers)
 
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.

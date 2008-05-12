@@ -394,6 +394,46 @@ comments back to the remote DebBugs instance.
     >>> ISupportsCommentPushing.providedBy(external_debbugs)
     True
 
+Since DebBugs manages bugs through email interchanges, pushing a comment
+to a remote DebBugs instance is merely a case of sending an email to the
+correct bug thread. In order to do this, the DebBugs ExternalBugTracker
+has a method, _sendEmail(), which is used to send the mail upstream. We
+can override this for the purposes of testing.
+
+    >>> class MailSendingDebBugs(DebBugs):
+    ...
+    ...     def _sendEmail(self, from_addr, to_addr, subject, body,
+    ...         rfc822msgid):
+    ...         email = """\
+    ...             From: %(from_addr)s
+    ...             To: %(to_addr)s
+    ...             Subject: %(subject)s
+    ...             Message-Id: %(rfc822msgid)s
+    ...
+    ...             %(body)s
+    ...         """
+    ...
+    ...         print email % {
+    ...             'body': body,
+    ...             'from_addr': from_addr,
+    ...             'rfc822msgid': rfc822msgid,
+    ...             'subject': subject,
+    ...             'to_addr': to_addr,
+    ...             }
+
+The addRemoteCommentMethod() takes three parameters: The remote bug to
+which we want to push the comment, the body of the comment that we wish
+to push and the rfc822msgid of the comment that we're pushing. The
+method 
+
+    >>> debbugs = MailSendingDebBugs('http://debbugs.example.com')
+    >>> debbugs.addRemoteComment(
+    ...     1, 'Example comment', '<123456@launchpad.net>')
+    From: test@bugs.launchpad.net
+    To: 1@debbugs.example.com
+    Subject: 
+    Message-Id: 12345@launchpad.net
+
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 
