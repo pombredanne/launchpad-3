@@ -84,7 +84,7 @@ And have our special Mantis instance process them:
 
 Let's add a few more watches:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> expected_remote_statuses = dict(

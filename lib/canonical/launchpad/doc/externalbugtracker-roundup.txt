@@ -131,7 +131,7 @@ And have a Roundup instance process them:
 
 We'll add some more watches now.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     roundup.convertRemoteStatus)
     Remote bug 1: New

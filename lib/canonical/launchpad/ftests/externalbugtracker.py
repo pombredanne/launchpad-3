@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import checkwatches, debbugs
+from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
