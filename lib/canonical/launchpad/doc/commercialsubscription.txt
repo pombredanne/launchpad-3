@@ -6,7 +6,7 @@ which does not qualify for free hosting, has an unexpired subscription.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ICommercialSubscription, IPersonSet, IProductSet)
+    ...     ICommercialSubscription, IProductSet)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
 
@@ -33,7 +33,7 @@ attribute is correct.
 
 Now extend the expiration date.
 
-    >>> import datetime
+    >>> from datetime import timedelta
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
     >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12, 'notes')
@@ -44,11 +44,10 @@ Now extend the expiration date.
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
     >>> # Account for leap years.
-    >>> assert (expiry_diff == datetime.timedelta(365) or
-    ...         expiry_diff == datetime.timedelta(366)), (
-    ...         "Unexpected expiration.")
+    >>> assert expiry_diff in [timedelta(365), timedelta(366)], (
+    ...     "Unexpected expiration.")
 
-A voucher can be redeemed for any number of months (as directed by the
+A voucher can be redeemed for any number of months (as reported by the
 Salesforce proxy).
 
     >>> old_date_expires = bzr.commercial_subscription.date_expires
@@ -60,5 +59,5 @@ Salesforce proxy).
     ...     old_date_starts), "Start date changed when it should not have."
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
-    >>> assert expiry_diff == datetime.timedelta(30), (
+    >>> assert expiry_diff == timedelta(30), (
     ...        "Unexpected expiration.")
