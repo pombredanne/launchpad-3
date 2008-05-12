@@ -130,6 +130,7 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
+from canonical.launchpad.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *

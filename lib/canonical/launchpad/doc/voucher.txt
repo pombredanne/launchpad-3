@@ -17,17 +17,17 @@ Let's create a convenience function for displaying our voucher lists.
 
     >>> def print_vouchers(vouchers):
     ...     for voucher in vouchers:
-    ...         print voucher['voucher'], voucher['status']
+    ...         print "%s,%s" % (voucher['voucher'], voucher['status'])
 
 We can now see all of the sample data for the vouchers.
 
     >>> for voucher in test_transport.vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000004 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000005 UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000004,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000005,UNREDEEMED
 
 We can retrieve all unredeemed vouchers for a person.
 
@@ -37,9 +37,9 @@ We can retrieve all unredeemed vouchers for a person.
 
     >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
     >>> print_vouchers(vouchers)
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
 
 A single voucher can be redeemed, but must be associated with a project.
 
@@ -51,20 +51,15 @@ A single voucher can be redeemed, but must be associated with a project.
     [True, 12]
     >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
     >>> print_vouchers(vouchers)
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
 
 Let's test the Salesforce wrapper directly.
 
 First create a new voucher processor using our test transport.
 
-    >>> from canonical.launchpad.components.salesforce import (
-    ...     SalesforceVoucherProxy, Voucher)
-    >>> test_transport = SalesforceXMLRPCTestTransport()
-    >>> sfv = SalesforceVoucherProxy(baseurl="http://example.com",
-    ...                              xmlrpc_transport=test_transport)
-    >>> sfv.xmlrpc_transport == test_transport
-    True
+    >>> from canonical.launchpad.interfaces import ISalesforceVoucherProxy
+    >>> sfv = getUtility(ISalesforceVoucherProxy)
 
 Now we can exercise the interface.
 
@@ -74,9 +69,9 @@ Now we can exercise the interface.
     >>> vouchers = sfv.getUnredeemedVouchers(mark)
     >>> for voucher in vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 UNREDEEMED 12 unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED 12 unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED 12 unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
 
 Redeem the first voucher for firefox.
 
@@ -87,17 +82,17 @@ Redeem the first voucher for firefox.
     >>> vouchers = sfv.getUnredeemedVouchers(mark)
     >>> for voucher in vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED 12 unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED 12 unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
 
 If we get all of the vouchers the redeemed one is shown.
 
     >>> vouchers = sfv.getAllVouchers(mark)
     >>> for voucher in vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 REDEEMED 12 Mozilla Firefox
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002 UNREDEEMED 12 unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003 UNREDEEMED 12 unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,REDEEMED,12,Mozilla Firefox
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
 
 Attempting to redeem an already redeemed voucher is an error.
 

@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'SalesforceXMLRPCTestTransport',
+    'TestSalesforceVoucherProxy',
     ]
 
 
@@ -17,12 +18,19 @@ import re
 import time
 import urlparse
 import xmlrpclib
+from zope.interface import implements
+
+from canonical.launchpad.utilities import SalesforceVoucherProxy
+from canonical.launchpad.interfaces import ISalesforceVoucherProxy
+
 
 STATUSES = ['UNREDEEMED',
             'REDEEMED']
 
+
 PRODUCT_TERM_MAP = dict(LPCS12=12,
                         LPCS06=6)
+
 
 class Voucher:
     def __init__(self, voucher_id, owner):
@@ -34,14 +42,22 @@ class Voucher:
         product = self.id.split('-')[0]
         self.term = PRODUCT_TERM_MAP.get(product)
 
-    def __repr__(self):
-        return "%s %s" % (self.id, self.status)
+    def __str__(self):
+        return "%s,%s" % (self.id, self.status)
 
     def asDict(self):
         return dict(voucher=self.id,
                     status=self.status,
                     term=self.term,
                     project_id=self.project_id)
+
+
+class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
+
+    implements(ISalesforceVoucherProxy)
+
+    def __init__(self):
+        self.xmlrpc_transport = SalesforceXMLRPCTestTransport()
 
 
 class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
