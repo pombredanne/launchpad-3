@@ -1,5 +1,4 @@
-Batch Navigation
-================
+= Batch Navigation =
 
 Batch navigation provides a way to navigate batch results in a web
 page by providing URL links to the next, previous and numbered pages
@@ -119,8 +118,7 @@ We ensure that multiple size and batch arguments supplied in the URL
   >>> navigator.nextBatchURL()
   'http://www.example.com/foo?start=5&batch=5'
 
-Empty Batches
--------------
+== Empty Batches ==
 
 You can also create an empty batch that will not have any items:
 
@@ -152,8 +150,8 @@ TODO:
   - orphans
   - overlap
 
-Performance with SQLObject
---------------------------
+
+== Performance with SQLObject ==
 
 This section demonstrates that batching generates sensible SQL queries when used
 with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
@@ -194,8 +192,7 @@ COUNTs are issued:
   True
 
 
-Adding callback functions
--------------------------
+== Adding callback functions ==
 
 Sometimes it is useful to have a function called with the batched
 values once they have been determined.  This is the case when there
@@ -249,3 +246,27 @@ that are batched.
   ['Dasher', 'Dancer', 'Prancer']
   >>> print list(batch_navigator.currentBatch())
   ['Dasher', 'Dancer', 'Prancer']
+
+
+== Maximum batch size ==
+
+Since the batch size is exposed in the URL, it's possible for users to
+tweak the batch parameter to retrieve more results. Since that may
+potentially exhaust server resources, an upper limit is put on the batch
+size. If the requested batch parameter is higher than this, an
+InvalidBatchSizeError is raised.
+
+    >>> from canonical.config import config
+    >>> from textwrap import dedent
+    >>> config.push('max-batch-size', dedent("""\
+    ...     [launchpad]
+    ...     max_batch_size: 5
+    ...     """))
+    >>> request = build_request({"start": "0", "batch": "20"})
+    >>> BatchNavigator(reindeer, request=request )
+    Traceback (most recent call last):
+      ...
+    InvalidBatchSizeError: Maximum for "batch" parameter is 5.
+
+    >>> ignored = config.pop('max-batch-size')
+
