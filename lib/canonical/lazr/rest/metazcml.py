@@ -115,10 +115,11 @@ def register_exception_view(context, exception):
     """
     context.action(
         discriminator=(
-            'view', exception, '+index', WebServiceLayer, WebServiceLayer),
+            'view', exception, 'index.html', WebServiceLayer,
+            WebServiceLayer),
         callable=handler,
         args=('provideAdapter',
-              (exception, WebServiceLayer), Interface, '+index',
+              (exception, WebServiceLayer), Interface, 'index.html',
               WebServiceExceptionView, context.info),
         )
 

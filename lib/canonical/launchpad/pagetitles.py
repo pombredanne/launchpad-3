@@ -671,6 +671,8 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 # needed, nor why it needs a pagetitle, but I can't debug this today.
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
 
+launchpad_invalidbatchsize = "Invalid Batch Size"
+
 launchpad_legal = 'Launchpad legalese'
 
 launchpad_login = 'Log in or register with Launchpad'

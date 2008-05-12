@@ -1,27 +1,27 @@
-= Stub Packager Utility =
+= Fake Packager Utility =
 
-StubPackager allows us to easily create minimal debian packages to be
+FakePackager allows us to easily create minimal debian packages to be
 used in tests.
 
     >>> import os
-    >>> from canonical.launchpad.testing.stubpackager import StubPackager
+    >>> from canonical.launchpad.testing.fakepackager import FakePackager
 
 
 == Setup and reset ==
 
-When StubPackager is initialised it automatically creates a temporary
+When FakePackager is initialised it automatically creates a temporary
 directory we call 'sandbox'. It's where the packages will get created.
 
-    >>> packager = StubPackager('biscuit', '1.0')
+    >>> packager = FakePackager('biscuit', '1.0')
 
     >>> print packager.sandbox_path
-    /tmp/stubpackager-...
+    /tmp/fakepackager-...
 
     >>> os.path.exists(packager.sandbox_path)
     True
 
 Source 'name' and 'version' and 'gpg_key_id' are set according the
-give arguments passed in the initialization.
+give arguments passed in the initialisation.
 
     >>> print packager.name
     biscuit
@@ -35,7 +35,7 @@ give arguments passed in the initialization.
 The upstream directory is known but not yet created.
 
     >>> print packager.upstream_directory
-    /tmp/stubpackager-.../biscuit-1.0
+    /tmp/fakepackager-.../biscuit-1.0
 
     >>> os.path.exists(packager.upstream_directory)
     False
@@ -43,7 +43,7 @@ The upstream directory is known but not yet created.
 
 == Creating Packages ==
 
-Then we create it on disk based on the StubPackager templates.
+Then we create it on disk based on the FakePackager templates.
 
     >>> packager.buildUpstream(build_orig=False)
 
@@ -62,7 +62,7 @@ to the upstream version in the upstream_directory path.
 We will instantiate a new packager so we can generate a new upstream
 directory with a corresponding original tarball.
 
-    >>> packager = StubPackager('biscuit', '1.0')
+    >>> packager = FakePackager('biscuit', '1.0')
     >>> packager.buildUpstream()
 
     >>> print sorted(os.listdir(packager.sandbox_path))
@@ -77,7 +77,7 @@ Now we can build the source package using the generated tarball.
 
     >>> for changesfile in packager.listAvailableUploads():
     ...     print changesfile
-    /tmp/stubpackager-.../biscuit_1.0-1_source.changes
+    /tmp/fakepackager-.../biscuit_1.0-1_source.changes
 
     >>> changesfile_path = packager.listAvailableUploads()[0]
     >>> changesfile = open(changesfile_path)
@@ -127,11 +127,11 @@ The error was raised because no signing key was set.
     >>> print packager.gpg_key_id
     None
 
-A GPG key can only be set on initialiation so we will have to create a
+A GPG key can only be set on initialisation so we will have to create a
 new packager passing a filename available in our test_keys directory
 (see launchpad/ftests/keys_for_tests.py)
 
-    >>> packager = StubPackager(
+    >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
     >>> packager.buildUpstream()
     >>> packager.buildSource()
@@ -141,7 +141,7 @@ GPG key set, now we are able to build a signed version.
     >>> print packager.gpg_key_id
     0x5D147547
 
-StubPackager also allows us to include as many versions it needs
+FakePackager also allows us to include as many versions it needs
 before building the package. It helps when the content of the
 changelog matters in the test context.
 
@@ -175,7 +175,7 @@ for the same upstream source.
 
 Or, at any time, we can create another packager.
 
-    >>> zeca_packager = StubPackager(
+    >>> zeca_packager = FakePackager(
     ...     'zeca', '1.0', 'foo.bar@canonical.com-passwordless.sec')
     >>> zeca_packager.buildUpstream()
     >>> zeca_packager.buildSource()
@@ -193,20 +193,20 @@ corresponding sandbox directory.
 
     >>> for changesfile in packager.listAvailableUploads():
     ...     print changesfile
-    /tmp/stubpackager-.../biscuit_1.0-1_source.changes
-    /tmp/stubpackager-.../biscuit_1.0-3_source.changes
-    /tmp/stubpackager-.../biscuit_1.0-4_source.changes
-    /tmp/stubpackager-.../biscuit_1.0-5_source.changes
+    /tmp/fakepackager-.../biscuit_1.0-1_source.changes
+    /tmp/fakepackager-.../biscuit_1.0-3_source.changes
+    /tmp/fakepackager-.../biscuit_1.0-4_source.changes
+    /tmp/fakepackager-.../biscuit_1.0-5_source.changes
 
     >>> for changesfile in zeca_packager.listAvailableUploads():
     ...     print changesfile
-    /tmp/stubpackager-.../zeca_1.0-1_source.changes
-    /tmp/stubpackager-.../zeca_1.0-2_source.changes
+    /tmp/fakepackager-.../zeca_1.0-1_source.changes
+    /tmp/fakepackager-.../zeca_1.0-2_source.changes
 
 Finally, an error is raised if we try to build a source package before
 creating the upstream directory.
 
-    >>> canjica_packager = StubPackager('canjica', '1.0')
+    >>> canjica_packager = FakePackager('canjica', '1.0')
     >>> canjica_packager.buildSource()
     Traceback (most recent call last):
     ...
@@ -215,7 +215,7 @@ creating the upstream directory.
 
 == Uploading generated packages ==
 
-StubPackage also allow the user to upload available packages using a
+FakePackage also allow the user to upload available packages using a
 simplified upload-processor.
 
 In order to upload packages we have to be logged in as an administrator.
@@ -247,7 +247,7 @@ enable uploads for it.
     >>> unused = hoary['hppa'].addOrUpdateChroot(fake_chroot)
 
 Uploading a generated package is deadly simple: just call
-`StubPackager.uploadSourceVersion()` passing the desired upload
+`FakePackager.uploadSourceVersion()` passing the desired upload
 version.
 
 It raises an error if the version has not been generated.
@@ -255,7 +255,7 @@ It raises an error if the version has not been generated.
     >>> upload = zeca_packager.uploadSourceVersion('6.6.6')
     Traceback (most recent call last):
     ...
-    AssertionError: Could not find a source upload for version 6.6.6
+    AssertionError: Could not find a source upload for version 6.6.6.
 
 If the version is available, the package is uploaded, NEW packages are
 automatically accepted, builds are created, the upload is published and
@@ -297,7 +297,7 @@ allow unsigned uploads.
     >>> print ubuntu.getSourcePackage('biscuit').currentrelease.version
     1.0-1
 
-Since we are using FooBar GPG key to sign packages, in order to test
+Since we are using Foo Bar's GPG key to sign packages, in order to test
 PPA uploads we will create a PPA for it.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -334,4 +334,4 @@ signed by Foo Bar can't be uploaded to Celso's PPA.
     Traceback (most recent call last):
     ...
     AssertionError: Upload was rejected: Signer has no upload rights
-    to this PPA
+    to this PPA.
