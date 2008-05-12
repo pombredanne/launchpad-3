@@ -6,14 +6,17 @@
 
 __metaclass__ = type
 __all__ = [
-    'IFieldDeserializer',
+    'IFieldMarshaller',
     ]
 
 from zope.interface import Interface
 
 
-class IFieldDeserializer(Interface):
+class IFieldMarshaller(Interface):
     """A class capable of turning a value for a field into an object."""
 
-    def deserialize(value):
+    def marshall(value):
         """Transform the given value into an object."""
+
+    def unmarshall(context, field_name, value):
+        """Transform an object into a representation name and string value."""

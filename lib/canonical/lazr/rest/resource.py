@@ -41,7 +41,7 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldDeserializer, IHTTPResource, IJSONPublishable,
+    IEntryResource, IFieldMarshaller, IHTTPResource, IJSONPublishable,
     IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
     IServiceRootResource)
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
@@ -572,12 +572,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 continue
 
             # Around this point the specific value provided by the client
-            # becomes relevant, so we deserialize it.
+            # becomes relevant, so we marshall it.
             element = element.bind(self.context)
-            deserializer = getMultiAdapter((element, self.request),
-                                           IFieldDeserializer)
+            marshaller = getMultiAdapter((element, self.request),
+                                           IFieldMarshaller)
             try:
-                value = deserializer.deserialize(value)
+                value = marshaller.marshall(value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
@@ -586,7 +586,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 and not ICollectionField.providedBy(element)):
                 # TODO leonardr 2008-15-04
                 # blueprint=api-wadl-description: This should be moved
-                # into the ObjectLookupFieldDeserializer, once we make
+                # into the ObjectLookupFieldMarshaller, once we make
                 # it possible for Vocabulary fields to specify a
                 # schema class the way IObject fields can.
                 if not element.schema.providedBy(value):
