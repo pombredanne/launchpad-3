@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
     PackagePublishingStatus, PackagePublishingPocket)
+from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.mail import stub
 
@@ -859,6 +860,42 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         for binary in build.build.binarypackages:
             self.assertTrue(
                 binary.component not in self.breezy.upload_components)
+
+    def testPPAUploadResultingInNoBuilds(self):
+        """Source uploads resulting in no builds are rejected.
+
+        If a PPA source upload results in no builds, it will be rejected.
+
+        It usually happens for sources targeted to architectures not
+        supported in the PPA subsystem.
+
+        This way we don't create false expectations accepting sources that
+        won't be ever built.
+        """
+        # First upload gets in because breezy/i386 is supported in PPA.
+        packager = FakePackager(
+            'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+        packager.buildUpstream(suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        biscuit_pub = packager.uploadSourceVersion(
+            '1.0-1', archive=self.name16.archive)
+        self.assertEqual(biscuit_pub.status.name, 'PENDING')
+
+        # Remove breezy/i386 PPA support.
+        self.breezy['i386'].supports_virtualized = False
+        self.layer.commit()
+
+        # Next version can't be accepted because it can't be built.
+        packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        error = self.assertRaisesSpecial(
+            AssertionError,
+            packager.uploadSourceVersion, '1.0-2',
+            archive=self.name16.archive)
+        self.assertEqual(
+            str(error),
+            "Upload was rejected: "
+            "Cannot build any of the architectures requested: i386")
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):

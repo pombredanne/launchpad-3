@@ -34,11 +34,11 @@ from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
     IDistroSeriesSet, ILibraryFileAliasSet, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus)
-
+    PackagePublishingStatus, PackageUploadStatus,
+    QueueInconsistentStateError)
 from canonical.launchpad.mail import stub
+from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
-
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -92,6 +92,23 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.assertTrue(line in self.log.lines,
                         "'%s' is not in logged output\n\n%s"
                         % (line, '\n'.join(self.log.lines)))
+
+    def assertRaisesSpecial(self, excClass, callableObj, *args, **kwargs):
+        """See `TestCase.assertRaises`.
+
+        Unlike `TestCase.assertRaised`, this method returns contents when an
+        exception is raised.  Callsites can then easily check the contents.
+        """
+        try:
+            callableObj(*args, **kwargs)
+        except excClass, error:
+            return str(error)
+        else:
+            if hasattr(excClass, '__name__'):
+                excName = excClass.__name__
+            else:
+                excName = str(excClass)
+            raise self.failureException, "%s not raised" % excName
 
     def setupBreezy(self):
         """Create a fresh distroseries in ubuntu.
@@ -803,6 +820,63 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_items.count(), 1,
             "Expected one 'bar' item in the queue, actually got %d."
                 % queue_items.count())
+
+    def testUploadResultingInNoBuilds(self):
+        """Source uploads resulting in no builds are rejected.
+
+        If a new source upload results in no builds, it can't be accepted
+        from queue, so the archive-admin will be forced to rejected it.
+
+        If a auto-accepted source upload results in no builds, like a known
+        ubuntu or a PPA upload, it will be rejected yet in upload time,
+        resulting in an upload rejection message.
+
+        It usually happens for sources targeted to architectures not
+        supported in ubuntu.
+
+        This way we don't create false expectations accepting sources that
+        won't be ever built.
+        """
+        self.setupBreezy()
+
+        # New 'biscuit' source building in 'm68k' only can't be accepted.
+        # The archive-admin will be forced to reject it manually.
+        packager = FakePackager(
+            'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+        packager.buildUpstream(suite=self.breezy.name, arch="m68k")
+        packager.buildSource()
+        queue_record = packager.uploadSourceVersion(
+            '1.0-1', auto_accept=False)
+
+        # Let's commit because acceptFromQueue needs to access the
+        # just-uploaded changesfile from librarian.
+        self.layer.txn.commit()
+
+        error = self.assertRaisesSpecial(
+            QueueInconsistentStateError,
+            queue_record.acceptFromQueue, 'announce@ubuntu.com')
+        self.assertEqual(
+            str(error),
+            "Cannot build any of the architectures requested: m68k")
+
+        # 'biscuit_1.0-2' building on i386 get accepted and published.
+        packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        biscuit_pub = packager.uploadSourceVersion('1.0-2')
+        self.assertEqual(biscuit_pub.status.name, 'PENDING')
+
+        # A auto-accepted version building only in hppa, which also doesn't
+        # exist in breezy gets rejected yet in upload time (meaning, the
+        # uploader will receive a rejection email).
+        packager.buildVersion('1.0-3', suite=self.breezy.name, arch="m68k")
+        packager.buildSource()
+        error = self.assertRaisesSpecial(
+            AssertionError,
+            packager.uploadSourceVersion, '1.0-3')
+        self.assertEqual(
+            str(error),
+            "Upload was rejected: "
+            "Cannot build any of the architectures requested: m68k")
 
 
 def test_suite():

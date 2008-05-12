@@ -214,6 +214,19 @@ class PackageUpload(SQLBase):
             self, changesfile_object=changesfile_object)
         changesfile_object.close()
 
+    def _checkBuildsForSource(self, sourcepackagerelease, builds):
+        """Check if the sourcepackagerelease generates at least one build.
+
+        :raise QueueInconsistentStateError: when the uploaded source doesn't
+            result in any builds.
+        """
+        if len(builds) > 0:
+            return
+
+        raise QueueInconsistentStateError(
+            "Cannot build any of the architectures requested: %s" %
+            sourcepackagerelease.architecturehintlist)
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
         debug(logger, "Setting it to ACCEPTED")
@@ -228,7 +241,9 @@ class PackageUpload(SQLBase):
 
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-        pub_source.createMissingBuilds(logger=logger)
+        builds = pub_source.createMissingBuilds(logger=logger)
+        self._checkBuildsForSource(pub_source.sourcepackagerelease, builds)
+
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -244,7 +259,9 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createMissingBuilds(ignore_pas=True)
+            builds = pub_source.createMissingBuilds(ignore_pas=True)
+            self._checkBuildsForSource(
+                pub_source.sourcepackagerelease, builds)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
