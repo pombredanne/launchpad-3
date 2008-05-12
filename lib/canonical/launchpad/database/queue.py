@@ -61,6 +61,26 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
+class PassthroughStatusValue:
+    """A wrapper to allow setting PackageUpload.status."""
+
+    def __init__(self, value):
+        self.value = value
+
+
+def validate_status(self, attr, value):
+    # Is the status wrapped in the special passthrough class?
+    if isinstance(value, PassthroughStatusValue):
+        return value.value
+
+    if self._SO_creating:
+        return value
+    else:
+        raise QueueStateWriteProtectedError(
+            'Directly write on queue status is forbidden use the '
+            'provided methods to set it.')
+
+
 class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
@@ -82,7 +102,8 @@ class PackageUpload(SQLBase):
 
     status = EnumCol(dbName='status', unique=False, notNull=True,
                      default=PackageUploadStatus.NEW,
-                     schema=PackageUploadStatus)
+                     schema=PackageUploadStatus,
+                     storm_validator=validate_status)
 
     distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
@@ -115,41 +136,19 @@ class PackageUpload(SQLBase):
                                   joinColumn='packageupload')
 
 
-    # XXX jamesh 2008-05-02:
-    # This needs to be turned into a Storm validator, probably using
-    # the same technique as for conjoined bug task attributes.
-    def _set_status(self, value):
-        """Directly write on 'status' is forbidden.
-
-        Force user to use the provided machine-state methods.
-        Raises QueueStateWriteProtectedError.
-        """
-        # XXX: kiko 2006-01-25 bug=29663:
-        # This is a bit evil, but does the job. Andrew
-        # has suggested using immutable=True in the column definition.
-
-        # allow 'status' write only in creation process.
-        if self._SO_creating:
-            self._SO_set_status(value)
-            return
-        # been fascist
-        raise QueueStateWriteProtectedError(
-            'Directly write on queue status is forbidden use the '
-            'provided methods to set it.')
-
     def setNew(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
-        self._SO_set_status(PackageUploadStatus.NEW)
+        self.status = PassthroughStatusValue(PackageUploadStatus.NEW)
 
     def setUnapproved(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
-        self._SO_set_status(PackageUploadStatus.UNAPPROVED)
+        self.status = PassthroughStatusValue(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See `IPackageUpload`."""
@@ -183,21 +182,21 @@ class PackageUpload(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
-        self._SO_set_status(PackageUploadStatus.ACCEPTED)
+        self.status = PassthroughStatusValue(PackageUploadStatus.ACCEPTED)
 
     def setDone(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
-        self._SO_set_status(PackageUploadStatus.DONE)
+        self.status = PassthroughStatusValue(PackageUploadStatus.DONE)
 
     def setRejected(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
-        self._SO_set_status(PackageUploadStatus.REJECTED)
+        self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
     def _closeBugs(self, changesfile_path, logger=None):
         """Close bugs for a just-accepted source.
