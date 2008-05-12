@@ -151,6 +151,11 @@ class LaunchpadServerTests:
 
     def test_translationIsCached(self):
         # We don't go to the authserver for every path translation.
+        #
+        # To test this, we translate a branch and then delete that branch on
+        # the authserver. If the cache is operating, the next attempt to
+        # translate that branch should succeed with the same value as the
+        # first attempt.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
@@ -163,7 +168,7 @@ class LaunchpadServerTests:
             self.assertStartsWith(path, expected_path)
 
         def futz_with_authserver(ignored):
-            # Futz with the fake authserver.
+            # Delete the branch on the authserver.
             del self.authserver._branch_set[1]
             branch_info = self.authserver.getBranchInformation(
                 1, 'testuser', 'firefox', 'baz')
