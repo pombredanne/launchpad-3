@@ -348,9 +348,10 @@ instead anyone that can upload a package may approve a nomination.
     ...     foo_bar, 'main-uploaders', 'main uploaders',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
     >>> main = Component.byName('main')
-    >>> perm_set = getUtility(IArchivePermissionSet)
-    >>> [distro_main_uploader_record] = perm_set.uploadersForComponent(
+    >>> permission_set = getUtility(IArchivePermissionSet)
+    >>> uploaders = permission_set.uploadersForComponent(
     ...     ubuntu.main_archive, main)
+    >>> [distro_main_uploader_record] = uploaders
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(
     ...     distro_main_uploader_record).person = main_uploaders
@@ -391,8 +392,9 @@ approve 'main' nominations.
     ...     foo_bar, 'universe-uploaders', 'universe uploaders',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
     >>> universe = Component.byName('universe')
-    >>> [distro_universe_uploader_record] = perm_set.uploadersForComponent(
+    >>> uploaders = permission_set.uploadersForComponent(
     ...     ubuntu.main_archive, universe)
+    >>> [distro_universe_uploader_record] = uploaders
     >>> removeSecurityProxy(
     ...     distro_universe_uploader_record).person = universe_uploaders
 
