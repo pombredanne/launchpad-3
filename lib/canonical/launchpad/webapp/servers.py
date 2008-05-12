@@ -25,7 +25,7 @@ from zope.publisher.browser import (
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.schema.interfaces import IBytes
-from zope.security.interfaces import Unauthorized
+from zope.security.interfaces import IParticipation, Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -624,8 +624,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> request.needs_datepicker_iframe
     False
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest,
+    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
+    # These two attributes satisfy IParticipation.
+    principal = None
+    interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
@@ -667,6 +670,10 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    def setPrincipal(self, principal):
+        """See `IPublicationRequest`."""
+        self.principal = principal
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
@@ -939,16 +946,16 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 field = entry.schema.get(name)
                 if ICollectionField.providedBy(field):
                     result = self._traverseToScopedCollection(
-                        request, entry, field)
+                        request, entry, field, name)
                 elif IBytes.providedBy(field):
                     result = self._traverseToByteStorage(
-                        request, entry, field)
+                        request, entry, field, name)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
             request, ob, name)
 
-    def _traverseToByteStorage(self, request, entry, field):
+    def _traverseToByteStorage(self, request, entry, field, name):
         """Try to traverse to a byte storage resource in entry."""
         # Even if the library file is None, we want to allow
         # traversal, because the request might be a PUT request
@@ -956,7 +963,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         byte_storage = LibraryBackedByteStorage(entry, field.bind(entry))
         return byte_storage
 
-    def _traverseToScopedCollection(self, request, entry, field):
+    def _traverseToScopedCollection(self, request, entry, field, name):
         """Try to traverse to a collection in entry.
 
         This is done because we don't usually traverse to attributes
@@ -964,7 +971,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
         This method returns None if a scoped collection cannot be found.
         """
-        collection = getattr(entry, field.__name__, None)
+        collection = getattr(entry, name, None)
         if collection is None:
             return None
         scoped_collection = ScopedCollection(entry.context, entry)

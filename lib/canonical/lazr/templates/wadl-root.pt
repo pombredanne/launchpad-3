@@ -43,7 +43,7 @@
   <!--Begin resource_type definitions for collection resources.-->
   <tal:collection_classes tal:repeat="context collections">
     <resource_type tal:attributes="id context/wadl_collection:collection_type"
-      tal:define="entry_schema context/wadl_collection:entry_schema">
+      tal:define="entry_schema nocall:context/wadl_collection:entry_schema">
       <doc tal:content="context/wadl_collection:doc"
            tal:condition="context/wadl_collection:doc"
            xmlns="http://www.w3.org/1999/xhtml/">

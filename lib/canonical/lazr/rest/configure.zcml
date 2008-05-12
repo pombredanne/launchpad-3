@@ -37,4 +37,63 @@
         <allow interface='canonical.lazr.interfaces.IByteStorageResource' />
     </class>
 
+    <!-- IFieldDeserializer adapters -->
+    <adapter
+        for="zope.schema.interfaces.IField
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IDatetime
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.DateTimeFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.Int
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.IntFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.VocabularyLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.interfaces.rest.WebServiceLayer
+             canonical.lazr.enum.IEnumeratedType"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.interfaces.rest.WebServiceLayer
+             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IObject
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.ICollectionField
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        />
+
 </configure>

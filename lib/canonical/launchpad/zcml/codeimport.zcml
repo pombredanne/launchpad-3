@@ -25,6 +25,11 @@
       appropriate. -->
   </content>
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CodeImportSetNavigation"
+      />
+
   <subscriber
       for="canonical.launchpad.interfaces.ICodeImport
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
@@ -92,13 +97,6 @@
         permission="launchpad.AnyPerson"
         />
 
-    <browser:page
-        for="canonical.launchpad.interfaces.ICodeImportSet"
-        class="canonical.launchpad.browser.CodeImportMachineView"
-        name="+machines"
-        template="../templates/codeimport-machines.pt"
-        permission="launchpad.AnyPerson"
-        />
   </facet>
 
 </configure>

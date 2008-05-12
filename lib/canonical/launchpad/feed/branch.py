@@ -16,8 +16,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser import (
-    BranchView, PersonBranchesView, ProductBranchesView, ProjectBranchesView)
+from canonical.launchpad.browser import BranchView
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
@@ -120,23 +119,23 @@ class BranchListingFeed(BranchFeedBase):
         """See `IFeed`."""
         return "Branches for %s" % self.context.displayname
 
+    def _getRawItems(self):
+        """See `BranchFeedBase._getRawItems`.
+
+        Return the branches for this context sorted by date_created in
+        descending order.
+        """
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=None,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        return list(branch_query[:self.quantity])
+
 
 class ProductBranchFeed(BranchListingFeed):
     """Feed for all branches on a product."""
 
     usedfor = IProduct
-
-    def _getRawItems(self):
-        """See `BranchFeedBase._getRawItems`.
-
-        Return the branches for this product sorted by date_created in
-        descending order.
-        """
-        branch_query = getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=None,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
-        return list(branch_query[:self.quantity])
 
 
 class ProjectBranchFeed(BranchListingFeed):
@@ -144,35 +143,11 @@ class ProjectBranchFeed(BranchListingFeed):
 
     usedfor = IProject
 
-    def _getRawItems(self):
-        """See `BranchFeedBase._getRawItems`.
-
-        Return the branches for this project sorted by date_created in
-        descending order.
-        """
-        branch_query = getUtility(IBranchSet).getBranchesForProject(
-            project=self.context, visible_by_user=None,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
-        return list(branch_query[:self.quantity])
-
 
 class PersonBranchFeed(BranchListingFeed):
     """Feed for a person's branches."""
 
     usedfor = IPerson
-
-    def _getRawItems(self):
-        """See `BranchFeedBase._getRawItems`.
-        
-        Return the branchs for this person sorted by date_created in descending
-        order.
-        """
-        branch_query = getUtility(IBranchSet).getBranchesForPerson(
-            person=self.context, visible_by_user=None,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
-        return list(branch_query[:self.quantity])
 
 
 class RevisionPerson:

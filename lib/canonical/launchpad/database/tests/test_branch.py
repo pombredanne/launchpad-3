@@ -642,7 +642,7 @@ class BranchSorting(TestCase):
     def assertEqualByID(self, first, second):
         """Compare two lists of database objects by id."""
         # XXX: 2007-10-22 MichaelHudson bug=154016: This is only needed
-        # because getBranchesForPerson queries the BranchWithSortKeys table
+        # because getBranchesForContext queries the BranchWithSortKeys table
         # and we want to compare the results with objects from the Branch
         # table.  This method can be removed when we can get rid of
         # BranchWithSortKeys.
@@ -663,14 +663,14 @@ class BranchSorting(TestCase):
         syncUpdate(modified_in_2005)
         syncUpdate(modified_in_2006)
 
-        getBranchesForPerson = getUtility(IBranchSet).getBranchesForPerson
+        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person,
                 sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST),
             [modified_in_2006, modified_in_2005])
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person,
                 sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST),
             [modified_in_2005, modified_in_2006])
@@ -688,13 +688,13 @@ class BranchSorting(TestCase):
         syncUpdate(created_in_2005)
         syncUpdate(created_in_2006)
 
-        getBranchesForPerson = getUtility(IBranchSet).getBranchesForPerson
+        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person, sort_by=BranchListingSort.NEWEST_FIRST),
             [created_in_2006, created_in_2005])
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person, sort_by=BranchListingSort.OLDEST_FIRST),
             [created_in_2005, created_in_2006])
 

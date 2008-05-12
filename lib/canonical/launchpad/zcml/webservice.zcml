@@ -79,6 +79,19 @@
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
+    <!--
+    XXX flacoste 2008/05/09 bug=185958:
+    Ideally, we would use webservice_error() to register the view,
+    but cyclic imports prevents us from doing so. This should be fixed once we
+    move webapp stuff into LAZR.
+    -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+        type="canonical.launchpad.layers.WebServiceLayer"
+        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        name="index.html"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.rest.IBugEntry"
@@ -89,94 +102,6 @@
         for="canonical.launchpad.interfaces.IMaloneApplication"
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.BugCollection"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.rest.IPersonEntry"
-        factory="canonical.launchpad.rest.PersonEntry"
-        />
-
-    <adapter
-       for="canonical.launchpad.interfaces.IPerson
-            zope.publisher.interfaces.http.IHTTPApplicationRequest"
-       provides="canonical.lazr.interfaces.IResourceGETOperation"
-       factory="canonical.launchpad.rest.GetMembersByStatusOperation"
-       name="members_by_status"
-       />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IResourceGETOperation"
-        factory="canonical.launchpad.rest.GetPeopleOperation"
-        name="people"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IField
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IDatetime
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.DateTimeFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.Int
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.IntFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IChoice
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.VocabularyLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IChoice
-             zope.publisher.interfaces.http.IHTTPApplicationRequest
-             canonical.lazr.enum.IEnumeratedType"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IChoice
-             zope.publisher.interfaces.http.IHTTPApplicationRequest
-             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IObject
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="canonical.lazr.interfaces.ICollectionField
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
-        factory="canonical.launchpad.rest.PersonFactoryOperation"
-        name="create_person"
         />
 
     <adapter
@@ -199,7 +124,7 @@
 
      <adapter
        for="canonical.launchpad.interfaces.IBugTask
-            zope.publisher.interfaces.http.IHTTPApplicationRequest"
+            canonical.lazr.interfaces.rest.WebServiceLayer"
        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
        factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
        name="change_status"

@@ -60,35 +60,60 @@ displays his translatable languages.
     Catalan
     Welsh
 
-When a user doesn't have a preferred language set, we determine it
-from the user's browser headers. If his browser send us any non-utf8
-encoded string in the Accept-Language header, we won't consider that
-as a valid language code.
-
-We are also pretending that this request is coming from someone in
-Serbia (194.247.192.33), to test country detection.  Proxies add
-'X-Forwarded-For' header, which is what the code is handling.
+Joao, a Brazilian, travels to Liechtenstein for business and views the
+languages page from there.
 
     >>> browser = setupBrowser('Basic test@canonical.com:test')
-    >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
+    >>> # Fake request from a Liechtenstein IP address by setting
+    >>> # X-Forwarded-For in the http header, like a proxy would.
+    >>> browser.addHeader('X-Forwarded-For', '80.66.224.0')
     >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
+
+Since Joao doesn't have a preferred language set, Launchpad determines
+it from the browser headers.  His secondary language choice, Spanish, is
+misconfigured (the language name is not spelled in proper UTF-8) but the
+pt_br language code is recognized properly.
+
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-browser-languages')
     >>> print extract_text(portlet)
     Your browser languages
     Portuguese (Brazil)
 
-Now we are checking that the country is properly detected.  Since we
-don't have data for languages spoken in Serbia, we get information
-about how to contact Rosetta Admins to update it.
+Launchpad detects that the requesting IP address (80.66.224.0) is in a
+range assigned to Liechtenstein.
 
     >>> country_portlet = find_portlet(browser.contents,
-    ...     'Languages in Serbia and Montenegro')
-    >>> print country_portlet.find('li', 'languages')
-    None
+    ...     'Languages in Liechtenstein')
+    >>> country_portlet is None
+    False
+
+The system has no information about languages spoken in Liechtenstein,
+so instead Joao is shown how to provide the administrators with this
+information.
+
+    >>> def find_spoken_languages(spoken_in):
+    ...     """Screen-scrape list of "spoken-in" languages out of html."""
+    ...     list_items = spoken_in.findAll('li', 'language')
+    ...     return [li.contents for li in list_items]
+
+    >>> print find_spoken_languages(country_portlet)
+    []
     >>> print country_portlet.first('a')['href']
     https://answers.launchpad.net/rosetta/
+
+Back home in Brazil, Joao gets the equivalent for Brazil, where the
+equivalent information is known.
+
+    >>> browser = setupBrowser('Basic test@canonical.com:test')
+    >>> browser.addHeader('X-Forwarded-For', '143.54.0.1')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/~name12/+editlanguages')
+    >>> country_portlet = find_portlet(browser.contents,
+    ...     'Languages in Brazil')
+    >>> print find_spoken_languages(country_portlet)
+    [[u'Portuguese (Brazil)']]
 
 We also have a page under the launchpad root, called +editmylanguages,
 with launchpad.AnyPerson as permission. This is the page to which we

@@ -7,5 +7,4 @@ from canonical.launchpad.rest.bug import *
 from canonical.launchpad.rest.bugtask import *
 from canonical.launchpad.rest.bytestorage import *
 from canonical.launchpad.rest.messagetarget import *
-from canonical.launchpad.rest.person import *
 from canonical.launchpad.rest.teammembership import *

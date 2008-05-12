@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -254,4 +254,3 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
-
