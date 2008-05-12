@@ -359,8 +359,8 @@ Each data row is expandable to contain some sections containing:
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
 
-If the package was copied from a PPA the archive title will link back
-to the source PPA.
+The package was copied from a PPA. The archive title will hence link
+back to the source PPA.
 
     >>> admin_browser.getLink("PPA for Mark Shuttleworth").url
     'http://launchpad.dev/~sabdfl/+archive'
