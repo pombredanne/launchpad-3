@@ -22,10 +22,15 @@ def defer_to_thread(function):
 def gatherResults(deferredList):
     """Returns list with result of given Deferreds.
 
-    This builds on C{DeferredList} but is useful since you don't
-    need to parse the result for success/failure.
+    This differs from Twisted's `defer.gatherResults` in two ways.
 
-    @type deferredList:  C{list} of L{Deferred}s
+     1. It fires the actual first error that occurs, rather than wrapping
+        it in a `defer.FirstError`.
+     2. All errors apart from the first are consumed. (i.e. `consumeErrors`
+        is True.)
+
+    :type deferredList:  list of `defer.Deferred`s.
+    :return: `defer.Deferred`.
     """
     def convert_first_error_to_real(failure):
         failure.trap(defer.FirstError)

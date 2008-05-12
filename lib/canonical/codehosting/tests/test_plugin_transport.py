@@ -18,7 +18,7 @@ from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
     unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.tests import TestCase as BzrTestCase, TestCaseInTempDir
 from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer
@@ -37,7 +37,7 @@ from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class LaunchpadServerTests:
+class TestLaunchpadServer(BzrTestCase):
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -45,7 +45,7 @@ class LaunchpadServerTests:
     layer = BaseLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        BzrTestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
@@ -54,7 +54,7 @@ class LaunchpadServerTests:
             BlockingProxy(self.authserver), self.user_id,
             self.backing_transport, self.mirror_transport)
 
-    def test_base_path_translation_1(self):
+    def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows
         # users to rename and re-assign branches without causing unnecessary
         # disk churn. The ID is converted to four-byte hexadecimal and split
@@ -72,7 +72,7 @@ class LaunchpadServerTests:
             (self.server._backing_transport, '00/00/00/01/'))
         return deferred
 
-    def test_base_path_translation_2(self):
+    def test_base_path_translation_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
@@ -81,7 +81,7 @@ class LaunchpadServerTests:
             (self.server._backing_transport, '00/00/00/03/'))
         return deferred
 
-    def test_base_path_translation_3(self):
+    def test_base_path_translation_team_branch(self):
         # We can map a branch owned by a team that the user is in to its path.
         deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
         deferred.addCallback(
@@ -89,7 +89,7 @@ class LaunchpadServerTests:
             (self.server._backing_transport, '00/00/00/04/'))
         return deferred
 
-    def test_base_path_translation_4(self):
+    def test_base_path_translation_team_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         deferred = self.server.translateVirtualPath('/~name12/+junk/junk.dev')
@@ -151,6 +151,11 @@ class LaunchpadServerTests:
 
     def test_translationIsCached(self):
         # We don't go to the authserver for every path translation.
+        #
+        # To test this, we translate a branch and then delete that branch on
+        # the authserver. If the cache is operating, the next attempt to
+        # translate that branch should succeed with the same value as the
+        # first attempt.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
@@ -163,7 +168,7 @@ class LaunchpadServerTests:
             self.assertStartsWith(path, expected_path)
 
         def futz_with_authserver(ignored):
-            # Futz with the fake authserver.
+            # Delete the branch on the authserver.
             del self.authserver._branch_set[1]
             branch_info = self.authserver.getBranchInformation(
                 1, 'testuser', 'firefox', 'baz')
@@ -182,6 +187,7 @@ class LaunchpadServerTests:
 class TestVirtualTransport(TestCaseInTempDir):
 
     class VirtualServer(Server):
+        """Very simple server that provides a VirtualTransport."""
 
         def __init__(self, backing_transport):
             self._backing_transport = backing_transport
@@ -217,6 +223,8 @@ class TestVirtualTransport(TestCaseInTempDir):
         self.assertEqual('content', open('prefix_foo').read())
 
     def test_realPath(self):
+        # local_realPath returns the real, absolute path to a file, resolving
+        # any symlinks.
         self.transport.mkdir('baz')
         os.symlink('prefix_foo', 'prefix_baz/bar')
         t = self.transport.clone('baz')
@@ -224,6 +232,15 @@ class TestVirtualTransport(TestCaseInTempDir):
 
 
 class LaunchpadTransportTests:
+    """Tests for a Launchpad transport.
+
+    These tests are expected to run against two kinds of transport.
+      1. An asynchronous one that returns Deferreds.
+      2. A synchronous one that returns actual values.
+
+    To support that, subclasses must implement `getTransport` and
+    `_ensureDeferred`. See these methods for more information.
+    """
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
@@ -244,6 +261,33 @@ class LaunchpadTransportTests:
         self.backing_transport.put_bytes(
             '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
+    def assertFiresFailure(self, exception, function, *args, **kwargs):
+        """Assert that calling `function` will cause `exception` to be fired.
+
+        In the synchronous tests, this means that `function` raises
+        `exception`. In the asynchronous tests, `function` returns a Deferred
+        that fires `exception` as a Failure.
+
+        :return: A `Deferred`. You must return this from your test.
+        """
+        return self.assertFailure(
+            self._ensureDeferred(function, *args, **kwargs), exception)
+
+    def assertFiresFailureWithSubstring(self, exc_type, msg, function,
+                                        *args, **kw):
+        """Assert that calling function(*args, **kw) fails in a certain way.
+
+        This method is like assertFiresFailure() but in addition checks that
+        'msg' is a substring of the str() of the raised exception.
+        """
+        deferred = self.assertFiresFailure(exc_type, function, *args, **kw)
+        return deferred.addCallback(
+            lambda exception: self.assertIn(msg, str(exception)))
+
+    def _ensureDeferred(self, function, *args, **kwargs):
+        """Call `function` and return an appropriate Deferred."""
+        raise NotImplementedError
+
     def getServer(self, authserver, user_id, backing_transport,
                   mirror_transport):
         return LaunchpadServer(
@@ -251,6 +295,7 @@ class LaunchpadTransportTests:
             mirror_transport)
 
     def getTransport(self):
+        """Return the transport to be tested."""
         raise NotImplementedError()
 
     def test_get_transport(self):
@@ -272,11 +317,15 @@ class LaunchpadTransportTests:
         # Putting a file from a public branch URL stores the file in the
         # mapped URL on the base transport.
         transport = self.getTransport()
-        transport.put_bytes(
+        deferred = self._ensureDeferred(
+            transport.put_bytes,
             '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
-        self.assertEqual(
-            "Goodbye",
-            self.backing_transport.get_bytes('00/00/00/01/.bzr/goodbye.txt'))
+        def check_bytes_written(ignored):
+            self.assertEqual(
+                "Goodbye",
+                self.backing_transport.get_bytes(
+                    '00/00/00/01/.bzr/goodbye.txt'))
+        return deferred.addCallback(check_bytes_written)
 
     def test_cloning_updates_base(self):
         # A transport can be constructed using a path relative to another
@@ -322,16 +371,16 @@ class LaunchpadTransportTests:
         # and branch. Trying to perform operations on an incomplete URL raises
         # an error. Which kind of error is not particularly important.
         transport = self.getTransport()
-        return self.assertRaises(
-            (errors.NoSuchFile,), transport.get, '~testuser')
+        return self.assertFiresFailure(
+            errors.NoSuchFile, transport.get, '~testuser')
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
         # the branch itself. If the branch doesn't exist, any files it asks
         # for are not found. i.e. we raise NoSuchFile
         transport = self.getTransport()
-        return self.assertRaises(
-            (errors.NoSuchFile,),
+        return self.assertFiresFailure(
+            errors.NoSuchFile,
             transport.get, '~testuser/firefox/new-branch/.bzr/branch-format')
 
     def test_rename(self):
@@ -342,23 +391,34 @@ class LaunchpadTransportTests:
             transport.list_dir, '~testuser/firefox/baz/.bzr')
         deferred.addCallback(set)
 
-        def do_rename(dir_contents):
-            transport.rename(
+        def rename_file(dir_contents):
+            """Rename a file and return the original directory contents."""
+            deferred = self._ensureDeferred(
+                transport.rename,
                 '~testuser/firefox/baz/.bzr/hello.txt',
                 '~testuser/firefox/baz/.bzr/goodbye.txt')
+            deferred.addCallback(lambda ignored: dir_contents)
+            return deferred
+
+        def check_file_was_renamed(dir_contents):
+            """Check that the old name isn't there and the new name is."""
+            # Replace the old name with the new name.
             dir_contents.remove('hello.txt')
             dir_contents.add('goodbye.txt')
             deferred = self._ensureDeferred(
                 transport.list_dir, '~testuser/firefox/baz/.bzr')
             deferred.addCallback(set)
+            # Check against the virtual transport.
             deferred.addCallback(self.assertEqual, dir_contents)
+            # Check against the backing transport.
             deferred.addCallback(
                 lambda ignored:
                 self.assertEqual(
                     set(self.backing_transport.list_dir('00/00/00/01/.bzr')),
                     dir_contents))
             return deferred
-        return deferred.addCallback(do_rename)
+        deferred.addCallback(rename_file)
+        return deferred.addCallback(check_file_was_renamed)
 
     def test_iter_files_recursive(self):
         # iter_files_recursive doesn't take a relative path but still needs to
@@ -407,7 +467,7 @@ class LaunchpadTransportTests:
         message = "Branch exploding, as requested."
         self.setFailingBranchDetails(
             'explode!', NOT_FOUND_FAULT_CODE, message)
-        return self.assertRaisesWithSubstring(
+        return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
@@ -419,7 +479,7 @@ class LaunchpadTransportTests:
         message = "Branch exploding, as requested."
         self.setFailingBranchDetails(
             'explode!', PERMISSION_DENIED_FAULT_CODE, message)
-        return self.assertRaisesWithSubstring(
+        return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
@@ -448,25 +508,12 @@ class LaunchpadTransportTests:
 
     def test_rmdir(self):
         transport = self.getTransport()
-        self.assertRaises(
-            (errors.PermissionDenied,),
+        self.assertFiresFailure(
+            errors.PermissionDenied,
             transport.rmdir, '~testuser/firefox/baz')
 
 
 class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
-
-    def assertRaises(self, exceptions, function, *args, **kwargs):
-        self.assertEqual(1, len(exceptions))
-        return TrialTestCase.assertRaises(self, exceptions[0], function, *args,
-                                          **kwargs)
-
-    def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
-        """Assert that calling function(*args, **kw) fails in a certain way.
-
-        This method is like assertRaises() but in addition checks that 'msg'
-        is a substring of the str() of the raise exception."""
-        exception = self.assertRaises((exc_type,), function, *args, **kw)
-        self.assertIn(msg, str(exception))
 
     def _ensureDeferred(self, function, *args, **kwargs):
         def call_function_and_check_not_deferred():
@@ -491,20 +538,6 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
 class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
 
-    def assertRaises(self, exceptions, function, *args, **kwargs):
-        deferred = function(*args, **kwargs)
-        return self.assertFailure(deferred, *exceptions)
-
-    def assertRaisesWithSubstring(self, exc_type, msg, function, *args, **kw):
-        """Assert that calling function(*args, **kw) fails in a certain way.
-
-        This method is like assertRaises() but in addition checks that 'msg'
-        is a substring of the str() of the raise exception."""
-        deferred = self.assertFailure(function(*args, **kw), exc_type)
-        deferred.addCallback(
-            lambda exception: self.assertIn(msg, str(exception)))
-        return deferred
-
     def _ensureDeferred(self, function, *args, **kwargs):
         deferred = function(*args, **kwargs)
         self.assertIsInstance(deferred, defer.Deferred)
@@ -519,14 +552,14 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
         return AsyncLaunchpadTransport(self.server, url)
 
 
-class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
+class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        BzrTestCase.setUp(self)
 
         memory_server = self._setUpMemoryServer()
         memory_transport = get_transport(memory_server.get_url())
@@ -639,10 +672,10 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, TestCase):
         self.assertEqual('mirror', transport.listable())
 
 
-class TestLoggingSetup(TestCase):
+class TestLoggingSetup(BzrTestCase):
 
     def setUp(self):
-        TestCase.setUp(self)
+        BzrTestCase.setUp(self)
 
         # Configure the debug logfile
         self._real_debug_logfile = config.codehosting.debug_logfile
@@ -661,7 +694,7 @@ class TestLoggingSetup(TestCase):
     def tearDown(self):
         sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
-        TestCase.tearDown(self)
+        BzrTestCase.tearDown(self)
         # We don't use BaseLayer because we want to keep the amount of
         # pre-configured logging systems to an absolute minimum, in order to
         # make it easier to test this particular logging system.
