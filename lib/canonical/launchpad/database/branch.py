@@ -1396,13 +1396,13 @@ class BranchQueryBuilder:
             query = ' AND '.join(self._where_clauses)
         else:
             # More complex query needed.
-             query = ("""
-                 Branch.id IN (
-                     SELECT Branch.id
-                     FROM %(tables)s
-                     WHERE %(where_clause)s)
-                 """ % {'tables': ', '.join(self._tables),
-                        'where_clause': ' AND '.join(self._where_clauses)})
+            query = ("""
+                Branch.id IN (
+                    SELECT Branch.id
+                    FROM %(tables)s
+                    WHERE %(where_clause)s)
+                """ % {'tables': ', '.join(self._tables),
+                       'where_clause': ' AND '.join(self._where_clauses)})
         return query
 
 
