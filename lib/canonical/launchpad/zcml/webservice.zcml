@@ -1,6 +1,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -10,7 +11,58 @@
         <allow
             interface="canonical.launchpad.interfaces.IWebServiceApplication" />
         <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
+        <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
+
+    <!-- TALES namespaces for WADL generation -->
+    <adapter
+        for="canonical.lazr.interfaces.IHTTPResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.ICollectionResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.IEntryResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="tuple"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
+        name="wadl_entry"
+        />
+
+    <adapter
+        for="tuple"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
+        name="wadl_collection"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IField"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlFieldAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlOperationAPI"
+        name="wadl_operation"
+        />
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
@@ -18,6 +70,19 @@
         type="canonical.launchpad.layers.WebServiceLayer"
         factory="canonical.launchpad.browser.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <!--
+    XXX flacoste 2008/05/09 bug=185958:
+    Ideally, we would use webservice_error() to register the view,
+    but cyclic imports prevents us from doing so. This should be fixed once we
+    move webapp stuff into LAZR.
+    -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+        type="canonical.launchpad.layers.WebServiceLayer"
+        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        name="index.html"
         />
 
     <adapter
@@ -33,93 +98,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.rest.IPersonEntry"
-        factory="canonical.launchpad.rest.PersonEntry"
-        />
-
-    <adapter
-       for="canonical.launchpad.interfaces.IPerson
-            zope.publisher.interfaces.http.IHTTPApplicationRequest"
-       provides="canonical.lazr.interfaces.IResourceGETOperation"
-       factory="canonical.launchpad.rest.GetMembersByStatusOperation"
-       name="members_by_status"
-       />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.PersonCollection"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IResourceGETOperation"
-        factory="canonical.launchpad.rest.GetPeopleOperation"
-        name="people"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IField
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.Int
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.IntFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IChoice
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.VocabularyLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IChoice
-             canonical.lazr.enum.IEnumeratedType
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IChoice
-             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             zope.publisher.interfaces.http.IHTTPApplicationRequest"
-        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
-        factory="canonical.launchpad.rest.PersonFactoryOperation"
-        name="create_person"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.ITeamMembership"
         provides="canonical.launchpad.rest.ITeamMembershipEntry"
         factory="canonical.launchpad.rest.TeamMembershipEntry"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IMessage"
-        provides="canonical.launchpad.rest.IMessageEntry"
-        factory="canonical.launchpad.rest.MessageEntry"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.IBugComment"
-        provides="canonical.launchpad.rest.IMessageEntry"
+        provides="canonical.lazr.interfaces.rest.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"
         />
 
@@ -131,10 +117,12 @@
 
      <adapter
        for="canonical.launchpad.interfaces.IBugTask
-            zope.publisher.interfaces.http.IHTTPApplicationRequest"
+            canonical.lazr.interfaces.rest.WebServiceLayer"
        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
        factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
        name="change_status"
        />
+
+   <webservice:register module="canonical.launchpad.interfaces" />
 
 </configure>

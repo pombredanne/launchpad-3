@@ -1,4 +1,4 @@
- # Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -16,33 +16,17 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel,
-    BranchType,
-    CodeImportResultStatus,
-    CodeImportReviewStatus,
-    CodeReviewNotificationLevel,
-    CreateBugParams,
-    EmailAddressStatus,
-    IBranchSet,
-    IBugSet,
-    ICodeImportJobWorkflow,
-    ICodeImportMachineSet,
-    ICodeImportEventSet,
-    ICodeImportResultSet,
-    ICodeImportSet,
-    IPersonSet,
-    IProductSet,
-    IProjectSet,
-    IRevisionSet,
-    ISpecificationSet,
-    License,
-    PersonCreationRationale,
-    RevisionControlSystems,
-    SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
-    )
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, CreateBugParams, EmailAddressStatus,
+    IBranchSet, IBugSet, ICodeImportJobWorkflow, ICodeImportMachineSet,
+    ICodeImportEventSet, ICodeImportResultSet, ICodeImportSet, ICountrySet,
+    IEmailAddressSet, IPersonSet, IProductSet, IProjectSet, IRevisionSet,
+    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
+    ITranslationGroupSet, License, PersonCreationRationale,
+    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
+    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
+    UnknownBranchTypeError)
 from canonical.launchpad.ftests import syncUpdate
 
 
@@ -125,7 +109,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = self.getUniqueString('email')
+            email = "%s@example.com" % self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -152,36 +136,65 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, team_member, email=None, password=None,
-                 displayname=None):
-        team = self.makePerson(displayname=displayname, email=email,
-                               password=password)
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team, team)
+    def makeTeam(self, owner, displayname=None, email=None):
+        """Create and return a new, arbitrary Team.
+
+        The subscription policy of this new team will be OPEN.
+
+        :param owner: The IPerson to use as the team's owner.
+        :param displayname: The team's display name.  If not given we'll use
+            the auto-generated name.
+        :param email: The email address to use as the team's contact address.
+        """
+        name = self.getUniqueString('team-name')
+        if displayname is None:
+            displayname = name
+        team = getUtility(IPersonSet).newTeam(
+            owner, name, displayname,
+            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        if email is not None:
+            team.setContactAddress(
+                getUtility(IEmailAddressSet).new(email, team))
         return team
 
-    def makeProduct(self, name=None, project=None):
+    def makeTranslationGroup(
+        self, owner, name=None, title=None, summary=None):
+        """Create a new, arbitrary `TranslationGroup`."""
+        if name is None:
+            name = self.getUniqueString("translationgroup")
+        if title is None:
+            title = self.getUniqueString("title")
+        if summary is None:
+            summary = self.getUniqueString("summary")
+        return getUtility(ITranslationGroupSet).new(
+            name, title, summary, owner)
+
+    def makeProduct(self, name=None, project=None, displayname=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProductSet).createProduct(
-            owner, name,
-            self.getUniqueString('displayname'),
+            owner,
+            name,
+            displayname,
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GPL], project=project)
+            licenses=[License.GNU_GPL_V2], project=project)
 
-    def makeProject(self, name=None):
+    def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('project-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProjectSet).new(
             name,
-            self.getUniqueString('displayname'),
+            displayname,
             self.getUniqueString('title'),
             None,
             self.getUniqueString('summary'),
@@ -387,11 +400,13 @@ class LaunchpadObjectFactory:
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
 
-    def makeCodeImportJob(self, code_import):
+    def makeCodeImportJob(self, code_import=None):
         """Create and return a new code import job for the given import.
 
         This implies setting the import's review_status to REVIEWED.
         """
+        if code_import is None:
+            code_import = self.makeCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
@@ -442,3 +457,26 @@ class LaunchpadObjectFactory:
         series.import_branch = import_branch
         syncUpdate(series)
         return series
+
+    def makeShipItRequest(self, flavour=ShipItFlavour.UBUNTU):
+        """Create a `ShipItRequest` associated with a newly created person.
+
+        The request's status will be approved and it will contain an arbitrary
+        number of CDs of the given flavour.
+        """
+        brazil = getUtility(ICountrySet)['BR']
+        city = 'Sao Carlos'
+        addressline = 'Antonio Rodrigues Cajado 1506'
+        name = 'Guilherme Salgado'
+        phone = '+551635015218'
+        person = self.makePerson()
+        request = getUtility(IShippingRequestSet).new(
+            person, name, brazil, city, addressline, phone)
+        # We don't want to login() as the person used to create the request,
+        # so we remove the security proxy for changing the status.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
+        template = getUtility(IStandardShipItRequestSet).getByFlavour(
+            flavour)[0]
+        request.setQuantities({flavour: template.quantities})
+        return request

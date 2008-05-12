@@ -7,7 +7,6 @@ an existing team.  This is done through an IMailingListSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListSet)
-    >>> from canonical.launchpad.database import MailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> verifyObject(IMailingListSet, list_set)
     True
@@ -74,7 +73,9 @@ mailing list.
 You may not register a mailing list for a person.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
+    >>> login(ANONYMOUS)
     >>> list_set.new(anne, anne)
     Traceback (most recent call last):
     ...
@@ -92,8 +93,8 @@ However, if we make Anne a team administrator, she can then register the
 mailing list.
 
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
-    >>> bart = new_person('Bart')
     >>> login('foo.bar@canonical.com')
+    >>> bart = new_person('Bart')
     >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
     >>> login(ANONYMOUS)
     >>> flush_database_updates()
@@ -135,8 +136,8 @@ welcome message text.
 The mailing list's registrant does not change even if the team's owner
 changes.
 
-    >>> cris = new_person('Cris')
     >>> login('foo.bar@canonical.com')
+    >>> cris = new_person('Cris')
     >>> team_one.teamowner = cris
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
@@ -179,7 +180,9 @@ participate in the Mailing List Experts team.
     ...     ILaunchpadCelebrities, MailingListStatus)
     >>> mailing_list_experts = getUtility(
     ...     ILaunchpadCelebrities).mailing_list_experts
+    >>> login('foo.bar@canonical.com')
     >>> dirk = new_person('Dirk')
+    >>> login(ANONYMOUS)
     >>> dirk.hasParticipationEntryFor(mailing_list_experts)
     False
     >>> list_one.review(dirk, MailingListStatus.APPROVED)

@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
     IBranchBatchNavigator,
     IBranchListingFilter,
     IBugBranchSet,
+    IProductSeriesSet,
     IRevisionSet,
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
@@ -51,26 +52,28 @@ class BranchListingItem(BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    decorates(IBranch, 'branch')
+    decorates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, is_dev_focus):
+                 show_blueprint_badge, is_dev_focus,
+                 associated_product_series):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self._now = now
         self.is_development_focus = is_dev_focus
+        self.associated_product_series = associated_product_series
 
     @property
     def since_updated(self):
         """How long since the branch was last updated."""
-        return self._now - self.branch.date_last_modified
+        return self._now - self.context.date_last_modified
 
     @property
     def since_created(self):
         """How long since the branch was created."""
-        return self._now - self.branch.date_created
+        return self._now - self.context.date_created
 
     def isBugBadgeVisible(self):
         return self.show_bug_badge
@@ -84,7 +87,7 @@ class BranchListingItem(BranchBadges):
 
     @property
     def revision_number(self):
-        return self.branch.revision_count
+        return self.context.revision_count
 
     @property
     def revision_log(self):
@@ -98,8 +101,8 @@ class BranchListingItem(BranchBadges):
     def revision_codebrowse_link(self):
         return "%(codebrowse_root)s%(branch)s/revision/%(rev_no)s" % {
             'codebrowse_root': config.codehosting.codebrowse_root,
-            'branch': self.branch.unique_name,
-            'rev_no': self.branch.revision_count}
+            'branch': self.context.unique_name,
+            'rev_no': self.context.revision_count}
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -155,10 +158,37 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return dict((branch.id, revision_map.get(branch.last_scanned_id))
                      for branch in self._branches_for_current_batch)
 
+    @cachedproperty
+    def product_series_map(self):
+        """Return a map of branch id to a list of product series."""
+        series_resultset = getUtility(IProductSeriesSet).getSeriesForBranches(
+            self._branches_for_current_batch)
+        result = {}
+        for series in series_resultset:
+            result.setdefault(series.series_branch.id, []).append(series)
+        return result
+
+    def getProductSeries(self, branch):
+        """Get the associated product series for the branch.
+
+        If the branch has more than one associated product series
+        they are listed in alphabetical order, unless one of them is
+        the current development focus, in which case that comes first.
+        """
+        series = self.product_series_map.get(branch.id, [])
+        if len(series) > 1:
+            # Check for development focus.
+            dev_focus = branch.product.development_focus
+            if dev_focus is not None and dev_focus in series:
+                series.remove(dev_focus)
+                series.insert(0, dev_focus)
+        return series
+
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
+        associated_product_series = self.getProductSeries(branch)
         # XXX thumper 2007-11-14
         # We can't do equality checks here due to BranchWithSortKeys
         # being constructed from the BranchSet queries, and the development
@@ -170,7 +200,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
                 branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus)
+            show_blueprint_badge, is_dev_focus, associated_product_series)
 
     def branches(self):
         """Return a list of BranchListingItems."""
@@ -195,11 +225,14 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 class BranchListingView(LaunchpadFormView, FeedsMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
-    field_names = ['lifecycle', 'sort_by', 'hide_dormant']
+    field_names = ['lifecycle', 'sort_by']
     development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
-    hide_dormant_initial_value = False
+    # Showing the series links is only really useful on product listing
+    # pages.  Derived views can override this value to have the series links
+    # shown in the branch listings.
+    show_series_links = False
     extra_columns = []
     heading_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
@@ -222,11 +255,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
     @property
     def initial_values(self):
-        # The initial value of hiding dormant is based on the number
-        # of branches that there are
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'hide_dormant': self.hide_dormant_initial_value,
             }
 
     @cachedproperty
@@ -245,15 +275,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         else:
             return (BranchLifecycleStatus.items[lifecycle_filter.name], )
 
-    @property
-    def hide_dormant_branches(self):
-        """Only show dormant branches if explicitly told to by the user."""
-        widget = self.widgets['hide_dormant']
-        if widget.hasValidInput():
-            return widget.getInputValue()
-        else:
-            return self.initial_values['hide_dormant']
-
     def branches(self):
         """All branches related to this target, sorted for display."""
         # Separate the public property from the underlying virtual method.
@@ -265,26 +286,28 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         This method is called from the `BranchListingBatchNavigator` to
         get the branches to show in the listing.
         """
-        return self._branches(
-            self.selected_lifecycle_status, self.hide_dormant_branches)
+        return self._branches(self.selected_lifecycle_status)
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self._branches(None, True).count() > 0
+        return self._branches(None).count() > 0
 
-    def _branches(self, lifecycle_status, hide_dormant):
+    @property
+    def branch_search_context(self):
+        """The context used for the branch search."""
+        return self.context
+
+    def _branches(self, lifecycle_status):
         """Return a sequence of branches.
 
         This method is overridden in the derived classes to perform the
         specific query.
 
         :param lifecycle_status: A filter of the branch's lifecycle status.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in config.launchpad.branch_dormant_days.
         """
-        raise NotImplementedError("Derived classes must implement _branches.")
+        return getUtility(IBranchSet).getBranchesForContext(
+            self.branch_search_context, lifecycle_status, self.user,
+            self.sort_by)
 
     @property
     def no_branch_message(self):
@@ -377,8 +400,6 @@ class NoContextBranchListingView(BranchListingView):
 
     field_names = ['lifecycle']
 
-    # Dormant branches are shown in these listings.
-    hide_dormant_branches = False
     no_branch_message = (
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')
@@ -389,12 +410,8 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently registered branches'
 
-    def _branches(self, lifecycle_status, hide_dormant):
-        """Return the branches ordered by date created.
-
-        The `hide_dormant` parameter is ignored as the dormant
-        selector widget is not shown for this view.
-        """
+    def _branches(self, lifecycle_status):
+        """Return the branches ordered by date created."""
         return getUtility(IBranchSet).getRecentlyRegisteredBranches(
             lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
@@ -406,12 +423,8 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
 
-    def _branches(self, lifecycle_status, hide_dormant):
-        """Return imported branches ordered by last update.
-
-        The `hide_dormant` parameter is ignored as the dormant
-        selector widget is not shown for this view.
-        """
+    def _branches(self, lifecycle_status):
+        """Return imported branches ordered by last update."""
         return getUtility(IBranchSet).getRecentlyImportedBranches(
             lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
@@ -422,12 +435,8 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently changed branches'
 
-    def _branches(self, lifecycle_status, hide_dormant):
-        """Return non-imported branches orded by last commit.
-
-        The `hide_dormant` parameter is ignored as the dormant
-        selector widget is not shown for this view.
-        """
+    def _branches(self, lifecycle_status):
+        """Return non-imported branches orded by last commit."""
         return getUtility(IBranchSet).getRecentlyChangedBranches(
             lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)

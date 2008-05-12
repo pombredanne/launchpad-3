@@ -200,6 +200,36 @@ class IPackageUpload(Interface):
         :param logger: Specify a logger object if required.  Mainly for tests.
         """
 
+    def overrideSource(new_component, new_section):
+        """Override the source package contained in this queue item.
+
+        :param new_component: An IComponent to replace the existing one
+            in the upload's source.
+        :param new_section: An ISection to replace the existing one
+            in the upload's source.
+
+        The override values may be None, in which case they are not
+        changed.
+
+        :return: True if the source was overridden.
+        """
+
+    def overrideBinaries(new_component, new_section, new_priority):
+        """Override all the binaries in a binary queue item.
+
+        :param new_component: An IComponent to replace the existing one
+            in the upload's source.
+        :param new_section: An ISection to replace the existing one
+            in the upload's source.
+        :param new_priority: A valid PackagePublishingPriority to replace
+            the existing one in the upload's binaries.
+
+        The override values may be None, in which case they are not
+        changed.
+
+        :return: True if the binaries were overridden.
+        """
+
 
 class IPackageUploadBuild(Interface):
     """A Queue item's related builds (for Lucille)"""
@@ -254,6 +284,23 @@ class IPackageUploadSource(Interface):
             title=_("The related source package release"), required=True,
             readonly=False,
             )
+
+    def getSourceAncestry():
+        """Return a suitable ancestry publication for this context.
+
+        The possible ancestries locations for a give source upload, assuming
+        that only PRIMARY archive allows post-RELEASE pockets are:
+
+         1. original archive and pocket (old DEVELOPMENT/SRU/PPA uploads)
+         2. primary_archive and release (NEW SRU/PPA uploads fallback)
+
+        We lookup a source publication with the same name in those location
+        and in that order. If an ancestry is found it is returned, otherwise
+        it returns None.
+
+        :return: `SourcePackagePublishingHistory` for the corresponding
+             ancestry or None if it wasn't found.
+        """
 
     def verifyBeforeAccept():
         """Perform overall checks before promoting source to ACCEPTED queue.

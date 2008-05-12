@@ -25,7 +25,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
+    SQLBase, quote, flush_database_updates, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
@@ -33,6 +33,8 @@ from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.database.translationtemplateitem import (
+    TranslationTemplateItem)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOFileSet, IPOTemplate, IPOTemplateSet,
     IPOTemplateSubset, ITranslationExporter, ITranslationFileData,
@@ -296,24 +298,19 @@ class POTemplate(SQLBase, RosettaStats):
             POTMsgSet.sequence = %s
             """ % sqlvalues (self.id, sequence))
 
-    def getPOTMsgSets(self, current=True, slice=None):
+
+    def getPOTMsgSets(self, current=True):
         """See `IPOTemplate`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self)
+            ]
+
         if current:
             # Only count the number of POTMsgSet that are current.
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
-                    sqlvalues(self.id),
-                orderBy='sequence')
-        else:
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
-                orderBy='sequence')
+            clauses.append('POTMsgSet.sequence > 0')
 
-        if slice is not None:
-            # Want only a subset specified by slice
-            results = results[slice]
-
-        return results
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
@@ -481,7 +478,7 @@ class POTemplate(SQLBase, RosettaStats):
     def expireAllMessages(self):
         """See `IPOTemplate`."""
         for potmsgset in self:
-            potmsgset.sequence = 0
+            potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
         """Look up named `Language` object, or raise `LanguageNotFound`."""

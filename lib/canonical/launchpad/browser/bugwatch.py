@@ -86,6 +86,8 @@ class BugWatchEditView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView.`"""
+        if 'url' not in data:
+            return
         try:
             bugtracker, bug = getUtility(
                 IBugWatchSet).extractBugTrackerAndBug(data['url'])

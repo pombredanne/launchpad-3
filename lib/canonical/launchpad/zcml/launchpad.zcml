@@ -79,6 +79,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- InvalidBatchSizeError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-invalidbatchsize.pt"
+      class="canonical.launchpad.webapp.error.InvalidBatchSizeView"
+      />
+
   <!-- TranslationUnavailable -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.TranslationUnavailable"
@@ -255,6 +264,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="*"
+      name="+navigationmenutabs"
+      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+      template="../templates/launchpad-navigation-menutabs.pt"
+      permission="zope.Public"
+      />
+
   <browser:defaultView
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
@@ -321,7 +338,7 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
       class="canonical.launchpad.browser.BazaarProductView"
-      template="../templates/product-code-index.pt"
+      template="../templates/code-in-branches.pt"
       permission="zope.Public"
       />
   <browser:page
@@ -359,6 +376,13 @@
   provides="canonical.lazr.interfaces.IObjectPrivacy"
   for="zope.interface.Interface"
   factory="canonical.launchpad.components.privacy.ObjectPrivacy"
+  permission="zope.Public"
+  />
+
+<adapter
+  provides="canonical.launchpad.webapp.badge.IHasBadges"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.webapp.badge.HasBadgeBase"
   permission="zope.Public"
   />
 
@@ -400,6 +424,14 @@ these URLs in Apache.
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
   class="canonical.launchpad.browser.launchpad.IcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-ubuntu"
+  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
   attribute="__call__"
   permission="zope.Public"
   />

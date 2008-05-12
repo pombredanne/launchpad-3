@@ -4,12 +4,14 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_bugwatcherrortype_for_error',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
     'InvalidBugId',
+    'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
     'UnparseableBugData',
@@ -105,8 +107,13 @@ class UnknownRemoteStatusError(BugWatchUpdateWarning):
     """Raised when a remote bug's status isn't mapped to a `BugTaskStatus`."""
 
 
+class PrivateRemoteBug(BugWatchUpdateWarning):
+    """Raised when a bug is marked private on the remote bugtracker."""
+
+
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
    (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
    (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
    (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
@@ -130,12 +137,17 @@ class ExternalBugTracker:
     batch_size = 100
     batch_query_threshold = config.checkwatches.batch_query_threshold
     import_comments = config.checkwatches.import_comments
+    comment_template = 'default_remotecomment_template.txt'
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
+
+    def getExternalBugTrackerToUse(self):
+        """See `IExternalBugTracker`."""
+        return self
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""

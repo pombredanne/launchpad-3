@@ -27,9 +27,9 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
-    ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
-    PackagePublishingPocket, QueueInconsistentStateError)
+    ArchivePurpose, IArchivePermissionSet, IBinaryPackageNameSet,
+    IDistributionSet, ILibraryFileAliasSet, ISourcePackageNameSet,
+    NotFoundError, PackagePublishingPocket, QueueInconsistentStateError)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -189,11 +189,8 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.getAutoAcceptedComponents()
-        if not self.is_new:
-            # check rights for OLD packages, the NEW ones goes
-            # straight to queue
-            self.verify_acl(signer_components)
+        # Check upload rights for the signer of the upload.
+        self.verify_acl()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -475,80 +472,82 @@ class NascentUpload:
 
     def _components_valid_for(self, person):
         """Return the set of components this person could upload to."""
-
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForUploader(
+            self.policy.archive, person)
         possible_components = set(
-            acl.component.name for acl in self.policy.distro.uploaders
-            if person in acl)
-
-        if possible_components:
-            self.logger.debug("%s (%d) is an uploader for %s." % (
-                person.displayname, person.id,
-                ', '.join(sorted(possible_components))))
+            permission.component for permission in permissions)
 
         return possible_components
 
-    def is_person_in_keyring(self, person):
-        """Return whether or not the specified person is in the keyring."""
-        self.logger.debug("Attempting to decide if %s is in the keyring." % (
-            person.displayname))
-        in_keyring = len(self._components_valid_for(person)) > 0
-        self.logger.debug("Decision: %s" % in_keyring)
-        return in_keyring
+    def verify_acl(self):
+        """Check the signer's upload rights.
 
-    def getAutoAcceptedComponents(self):
-        """Check rights of the current upload submmiter.
-
-        Work out what components the signer is permitted to upload to and
-        verify that all files are either NEW or are targetted at those
-        components only for normal distribution uploads.
-
-        Ensure the signer is the onwer of the targeted archive for PPA
-        uploads.
+        The signer must have permission to upload to either the component
+        or the explicit source package, or in the case of a PPA must own
+        it or be in the owning team.
         """
-        # If we have no signer, there's no ACL we can apply
-        if self.changes.signer is None:
+        # Set up some convenient shortcut variables.
+        signer = self.changes.signer
+        archive = self.policy.archive
+
+        # If we have no signer, there's no ACL we can apply.
+        if signer is None:
             self.logger.debug("No signer, therefore ACL not processed")
             return
 
-        # verify PPA uploads
+        # Verify PPA uploads.
         if self.is_ppa:
-            if not self.changes.signer.inTeam(self.policy.archive.owner):
-                self.reject("Signer has no upload rights to this PPA")
+            self.logger.debug("Don't verify signer ACL for PPA")
+            if not archive.canUpload(signer):
+                self.reject("Signer has no upload rights to this PPA.")
             return
 
-        possible_components = self._components_valid_for(self.changes.signer)
+        # Binary uploads are never checked (they come in via the security
+        # policy or from the buildds) so they don't need any ACL checks.
+        # The only uploaded file that matters is the DSC file for sources
+        # because it is the only object that is overridden and created in
+        # the database.
+        if self.binaryful:
+            return
 
+        # Sometimes an uploader may upload a new package to a component
+        # that he does not have rights to (but has rights to other components)
+        # but we let this through because an archive admin may wish to
+        # override it later.  Consequently, if an uploader has no rights
+        # at all to any component, we reject the upload right now even if it's
+        # NEW.
+        possible_components = self._components_valid_for(signer)
         if not possible_components:
-            self.reject(
-                "Signer has no upload rights at all to this distribution.")
-
-        return possible_components
-
-    def verify_acl(self, signer_components):
-        """Verify that the uploaded files are okay for their named components
-        by the provided signer.
-        """
-        if self.is_ppa:
-            self.logger.debug("Do verify signer ACL for PPA")
-            return
-
-        if self.changes.signer is None:
-            self.logger.debug(
-                "No signer, therefore no point verifying signer against ACL")
-            return
-
-        for uploaded_file in self.changes.files:
-            if not isinstance(uploaded_file, (DSCFile, BaseBinaryUploadFile)):
-                # The only things that matter here are sources and
-                # binaries, because they are the only objects that get
-                # overridden and created in the database.
-                continue
-            if (uploaded_file.component_name not in signer_components and
-                uploaded_file.new == False):
+            # Check if the user has package-specific rights.
+            source_name = getUtility(
+                ISourcePackageNameSet).queryByName(self.changes.dsc.package)
+            # If source_name is None then the package must be new, but we
+            # kick it out anyway because it's impossible to look up
+            # any permissions for it.
+            if (source_name is None or
+                (source_name is not None and
+                 not archive.canUpload(signer, source_name))):
+                # The user doesn't have package-specific rights so
+                # kick him out entirely.
                 self.reject(
-                    "Signer is not permitted to upload to the component "
-                    "'%s' of file '%s'" % (
-                    uploaded_file.component.name, uploaded_file.filename))
+                    "Signer has no upload rights at all to this "
+                    "distribution.")
+            return
+
+        # New packages go straight to the upload queue; we only check upload
+        # rights for old packages.
+        if self.is_new:
+            return
+
+        component = self.changes.dsc.component
+        if not archive.canUpload(signer, component):
+            # The uploader has no rights to the component.
+            self.reject(
+                "Signer is not permitted to upload to the component "
+                "'%s' of file '%s'." % (component.name,
+                                        self.changes.dsc.filename))
+
 
     #
     # Handling checking of versions and overrides
@@ -740,13 +739,13 @@ class NascentUpload:
         This mainly relates to Debian syncs, where the default component
         is 'main' but should not be in main for Ubuntu.
 
-        In the case of a PPA, files are always overridden to 'main'.
+        In the case of a PPA, files are not touched.  They are always
+        overridden to 'main' at publishing time, though.
 
         All files are also marked as new unless it's a PPA file, which are
         never considered new as they are auto-accepted.
         """
         if self.is_ppa:
-            uploaded_file.component_name = 'main'
             return
 
         # All newly-uploaded, non-PPA files must be marked as new so that
@@ -944,14 +943,22 @@ class NascentUpload:
         self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.
-        # Mixed-mode uploads need special handling, and the spr here is
-        # short-circuited into the binary. See the docstring in
+        # Mixed-mode uploads need special handling, and the
+        # sourcepackagerelease here is short-circuited into the binary.
+        # See the docstring in
         # UBinaryUploadFile.verify_sourcepackagerelease() for details.
-        spr = None
+        sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            spr = self.changes.dsc.storeInDatabase()
-            self.queue_root.addSource(spr)
+            sourcepackagerelease = self.changes.dsc.storeInDatabase()
+            package_upload_source = self.queue_root.addSource(
+                sourcepackagerelease)
+            ancestry = package_upload_source.getSourceAncestry()
+            if ancestry is not None:
+                to_sourcepackagerelease = ancestry.sourcepackagerelease
+                diff = sourcepackagerelease.requestDiffTo(
+                    sourcepackagerelease.creator, to_sourcepackagerelease)
+                self.logger.debug('%s requested' % diff.title)
 
         if self.binaryful:
 
@@ -971,12 +978,15 @@ class NascentUpload:
                     # sourcepackagerelease to verify here!
                     assert self.policy.can_upload_mixed, (
                         "Current policy does not allow mixed uploads.")
-                    assert spr, "No sourcepackagerelease was found."
-                    binary_package_file.verifySourcePackageRelease(spr)
+                    assert sourcepackagerelease, (
+                        "No sourcepackagerelease was found.")
+                    binary_package_file.verifySourcePackageRelease(
+                        sourcepackagerelease)
                 else:
-                    spr = binary_package_file.findSourcePackageRelease()
+                    sourcepackagerelease = (
+                        binary_package_file.findSourcePackageRelease())
 
-                build = binary_package_file.findBuild(spr)
+                build = binary_package_file.findBuild(sourcepackagerelease)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)
@@ -989,7 +999,8 @@ class NascentUpload:
                                    for build in self.queue_root.builds]
                 if considered_build.id in attached_builds:
                     continue
-                assert (considered_build.sourcepackagerelease.id == spr.id), (
+                assert (considered_build.sourcepackagerelease.id ==
+                        sourcepackagerelease.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
@@ -1024,6 +1035,7 @@ class NascentUpload:
             # Reject partner uploads to PPAs.
             if self.is_ppa:
                 self.reject("PPA does not support partner uploads.")
+                return
 
             # All files in the upload must be partner if any one of them is.
             if len(components) != 1:

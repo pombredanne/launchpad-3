@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'CodeImportSourceDetails',
     'ForeignTreeStore',
     'ImportWorker',
     'get_default_bazaar_branch_store',
@@ -16,35 +17,24 @@ import shutil
 import tempfile
 
 from bzrlib.branch import Branch
-from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
 from bzrlib.urlutils import join as urljoin
 
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
+from canonical.launchpad.interfaces import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
 import CVS
 import SCM
-
-
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        create_prefix(transport)
 
 
 class BazaarBranchStore:
@@ -144,6 +134,24 @@ class CodeImportSourceDetails:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+
+    @classmethod
+    def fromCodeImport(cls, code_import):
+        """Convert a `CodeImport` to an instance."""
+        if code_import.rcs_type == RevisionControlSystems.SVN:
+            rcstype = 'svn'
+            svn_branch_url = str(code_import.svn_branch_url)
+            cvs_root = cvs_module = None
+        elif code_import.rcs_type == RevisionControlSystems.CVS:
+            rcstype = 'cvs'
+            svn_branch_url = None
+            cvs_root = str(code_import.cvs_root)
+            cvs_module = str(code_import.cvs_module)
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return cls(
+            code_import.branch.id, rcstype, svn_branch_url,
+            cvs_root, cvs_module)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.

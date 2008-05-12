@@ -58,6 +58,32 @@ Each listed binary links to the corresponding page.
     >>> anon_browser.getLink("mozilla-firefox 0.9").url
     'http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9'
 
+The user can see the estimated build start time field for each job
+still in the build queue.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/11")
+    >>> build_details = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
+    >>> print_text(build_details)
+    Changes file:
+    not available
+    Archive:
+    ubuntu archive
+    Component:
+    main
+    Status:
+    Needs building
+    Queued:
+    2006-02-14
+    Estimated build start:
+    not available
+    Build score:
+    10
+    Build log:
+    not available
+    Finished:
+    not available
 
 == Build Retrying ==
 
@@ -92,6 +118,55 @@ Even if accessed with a manually typed URL it will result in a error.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
+
+Users who have upload permissions for the respective distribution
+(but are not a member of an admin team) are allowed to retry the build.
+
+    >>> uploader_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> uploader_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> uploader_browser.getLink("Retry build").click()
+
+An unprivileged user (not a member of any team) has no access to the
+rebuild link however.
+
+    >>> noteam_browser = setupBrowser(
+    ...     auth="Basic no-team-memberships@test.com:test")
+    >>> noteam_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> noteam_browser.getLink("Retry build")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If we grant the unprivileged user upload permissions for the specific
+source package, however, the build retry link becomes avaialable.
+
+Let's grant the package specific upload permissions first.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePermissionType, IComponentSet, IPersonSet,
+    ...     ISourcePackageNameSet)
+    >>> from canonical.launchpad.database import ArchivePermission
+    >>> login('foo.bar@canonical.com')
+    >>> main_component = getUtility(IComponentSet)['main']
+    >>> noteam_person = getUtility(IPersonSet).getByEmail(
+    ...     'no-team-memberships@test.com')
+    >>> pmount_name = getUtility(ISourcePackageNameSet).findByName("pmount")
+    >>> discard = ArchivePermission(
+    ...     archive=ubuntu.main_archive, person=noteam_person,
+    ...     permission=ArchivePermissionType.UPLOAD,
+    ...     sourcepackagename=pmount_name, component=main_component)
+
+Now even the unprivileged user (not a member of any team) will have
+access to the rebuild link.
+
+    >>> from zope.security.management import endInteraction
+    >>> endInteraction()
+    >>> noteam_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> noteam_browser.getLink("Retry build").click()
 
 When the user has permission (buildd-admin, admin or the source
 uploader) the link to 'retry' the build is presented in the Action

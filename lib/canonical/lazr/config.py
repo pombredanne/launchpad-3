@@ -144,7 +144,7 @@ class ImplicitTypeSection(Section):
         (?P<true> ^true$) |
         (?P<none> ^none$) |
         (?P<int> ^[+-]?\d+$) |
-        (?P<str> ^.*$)
+        (?P<str> ^.*)
         ''', re.IGNORECASE | re.VERBOSE)
 
     def _convert(self, value):

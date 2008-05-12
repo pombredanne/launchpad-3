@@ -24,7 +24,7 @@ from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, ServerTestCase)
+    adapt_suite, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -33,7 +33,7 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedLaunchpadZopelessLayer
-
+from canonical.twistedsupport import defer_to_thread
 
 class SSHTestCase(ServerTestCase):
 
@@ -98,7 +98,7 @@ class SSHTestCase(ServerTestCase):
             push_command.run, remote_url, local_directory)
         return output.getvalue()
 
-    def push(self, local_directory, remote_url):
+    def push(self, local_directory, remote_url, **options):
         """Push the local branch to the given URL.
 
         This method is used to test the end-to-end behaviour of pushing Bazaar
@@ -112,9 +112,10 @@ class SSHTestCase(ServerTestCase):
         output = StringIO()
         push_command = cmd_push()
         push_command.outf = output
+        options['location'] = remote_url
         self.runInChdir(
             local_directory,
-            self.server.runAndWaitForDisconnect, push_command.run, remote_url)
+            self.server.runAndWaitForDisconnect, push_command.run, **options)
         return output.getvalue()
 
     def getLastRevision(self, remote_url):
@@ -189,7 +190,7 @@ class SmokeTest(SSHTestCase):
             relpath, self.repository_format)
         return b.bzrdir.create_workingtree()
 
-    @deferToThread
+    @defer_to_thread
     def test_smoke(self):
         # Make a new branch
         tree = self.make_branch_and_tree(self.first_tree)
@@ -265,7 +266,7 @@ class AcceptanceTests(SSHTestCase):
             summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
-    @deferToThread
+    @defer_to_thread
     def test_push_to_new_branch(self):
         """
         The bzr client should be able to read and write to the codehosting
@@ -280,7 +281,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_push_to_existing_branch(self):
         """Pushing to an existing branch must work."""
         # Initial push.
@@ -295,7 +296,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
@@ -326,7 +327,7 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL('~testuser/+junk/renamed-branch'))
 
 
-    @deferToThread
+    @defer_to_thread
     def test_rename_product(self):
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
@@ -346,7 +347,7 @@ class AcceptanceTests(SSHTestCase):
             self.local_branch_path,
             self.getTransportURL('~testuser/firefox/test-branch'))
 
-    @deferToThread
+    @defer_to_thread
     def test_rename_user(self):
         # Rename person in the database. Again, the URL changes (and so does
         # the username we have to connect as!).
@@ -369,13 +370,13 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL(
                 '~renamed-user/+junk/test-branch', 'renamed-user'))
 
-    @deferToThread
+    @defer_to_thread
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_push_new_branch_creates_branch_in_database(self):
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
@@ -390,7 +391,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
-    @deferToThread
+    @defer_to_thread
     def test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
         remote_url = self.getTransportURL(
@@ -421,7 +422,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertNotEqual(None, branch.next_mirror_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
-    @deferToThread
+    @defer_to_thread
     def test_cant_access_private_branch(self):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
@@ -447,7 +448,7 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the
         # filesystem, and is writable by the user, then the user is able to
@@ -456,10 +457,10 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.push(self.local_branch_path, remote_url)
+        self.push(self.local_branch_path, remote_url, use_existing_dir=True)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_cant_push_to_existing_mirrored_branch(self):
         # Users cannot push to mirrored branches.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -481,7 +482,7 @@ class AcceptanceTests(SSHTestCase):
         if flushLoggedErrors is not None:
             flushLoggedErrors()
 
-    @deferToThread
+    @defer_to_thread
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -492,7 +493,7 @@ class AcceptanceTests(SSHTestCase):
             (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_cant_push_to_existing_hosted_branch_with_revisions(self):
         # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
         # branches that have revisions in the database but not actual files:
@@ -510,7 +511,7 @@ class AcceptanceTests(SSHTestCase):
             (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
         tree = self.makeLoomBranchAndTree('loom')
@@ -538,7 +539,7 @@ class SmartserverTests(SSHTestCase):
         LaunchpadZopelessTestSetup().txn.commit()
         return ro_branch_url
 
-    @deferToThread
+    @defer_to_thread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
         ro_branch_url = self.createBazaarBranch(
@@ -548,7 +549,7 @@ class SmartserverTests(SSHTestCase):
             self.getTransportURL('~sabdfl/+junk/ro-branch'))
         self.assertEqual(revision, remote_revision)
 
-    @deferToThread
+    @defer_to_thread
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
         ro_branch_url = self.createBazaarBranch(
@@ -564,7 +565,7 @@ class SmartserverTests(SSHTestCase):
         self.assertRaises(
             LockFailed, self.push, self.local_branch_path, remote_url)
 
-    @deferToThread
+    @defer_to_thread
     def test_can_read_mirrored_branch(self):
         # Users should be able to read mirrored branches that they own.
         # Added to catch bug 126245.
@@ -575,7 +576,7 @@ class SmartserverTests(SSHTestCase):
             self.getTransportURL('~testuser/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
 
-    @deferToThread
+    @defer_to_thread
     def test_can_read_unowned_mirrored_branch(self):
         # Users should be able to read mirrored branches even if they don't
         # own those branches.
@@ -585,7 +586,7 @@ class SmartserverTests(SSHTestCase):
             self.getTransportURL('~sabdfl/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
 
-    @deferToThread
+    @defer_to_thread
     def test_authserver_error_propagation(self):
         # Errors raised by createBranch on the authserver should be displayed
         # sensibly by the client.  We test this by pushing to a product that
@@ -622,8 +623,10 @@ def make_smoke_tests(base_suite):
 def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
+
     suite.addTest(make_server_tests(
-            base_suite, [make_sftp_server, make_bzr_ssh_server]))
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))

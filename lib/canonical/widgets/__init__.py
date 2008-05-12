@@ -1,20 +1,23 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0401,W0403
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
 """Canonical widgets.
 
 These may be fed back into Zope3 at some point.
-
 """
-from date import DateWidget, DateTimeWidget, DatetimeDisplayWidget
-from image import GotchiTiedWithHeadingWidget, ImageChangeWidget
-from owner import IUserWidget, HiddenUserWidget
-from popup import (
+
+from canonical.widgets.announcementdate import (
+    IAnnouncementDateWidget, AnnouncementDateWidget)
+from canonical.widgets.context import IContextWidget, ContextWidget
+from canonical.widgets.date import (
+    DateWidget, DateTimeWidget, DatetimeDisplayWidget)
+from canonical.widgets.image import (
+    GotchiTiedWithHeadingWidget, ImageChangeWidget)
+from canonical.widgets.itemswidgets import *
+from canonical.widgets.owner import IUserWidget, HiddenUserWidget
+from canonical.widgets.popup import (
     ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget)
-from announcementdate import IAnnouncementDateWidget, AnnouncementDateWidget
-from context import IContextWidget, ContextWidget
-from itemswidgets import *
-from password import PasswordChangeWidget
-from textwidgets import (
+from canonical.widgets.password import PasswordChangeWidget
+from canonical.widgets.textwidgets import (
     DelimitedListWidget, LocalDateTimeWidget, LowerCaseTextWidget,
-    StrippedTextWidget, URIWidget)
+    StrippedTextWidget, TokensTextWidget, URIWidget)

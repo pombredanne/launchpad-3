@@ -163,9 +163,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See IProductSeries."""
-        return self.product.bugcontact
+        return self.product.bug_supervisor
 
     @property
     def security_contact(self):
@@ -660,3 +660,14 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
+
+    def getSeriesForBranches(self, branches):
+        """See `IProductSeriesSet`."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return []
+
+        return ProductSeries.select("""
+            ProductSeries.user_branch in %s OR
+            ProductSeries.import_branch in %s
+            """ % sqlvalues(branch_ids, branch_ids), orderBy=["name"])

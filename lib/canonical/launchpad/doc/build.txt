@@ -21,6 +21,7 @@ First up, can we get the builds out of the sample data?
 
     >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
     >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+    >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
 
 Let's check the complex properties of a build object.
 
@@ -45,6 +46,21 @@ Let's check the complex properties of a build object.
 
     >>> firefox_build.is_virtualized
     False
+
+The 'firefox_build' is already finished and requesting the estimated build
+start time makes no sense. Hence an exception is raised.
+
+    >>> firefox_build.getEstimatedBuildStartTime()
+    Traceback (most recent call last):
+    ...
+    AssertionError: The start time is only estimated for pending builds.
+
+The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
+hence ask for its estimated build start time. The latter will be
+undefined however because the corresponding build pool is empty.
+
+    >>> pending_build.getEstimatedBuildStartTime() is None
+    True
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -317,7 +333,7 @@ Check the result content:
 
     >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
     ...     status=BuildStatus.FULLYBUILT)]
-    [u'hppa build of pmount 0.1-1 in ubuntu hoary RELEASE', u'i386 build
+    [u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE', u'hppa build
     of pmount 0.1-1 in ubuntu hoary RELEASE']
 
 Using optional 'name' filter (matching with SQL LIKE %||filter||%)
@@ -446,11 +462,11 @@ For a given distribution as well:
     ...     print l.datebuilt, l.id, l.buildstate.value
     2007-08-10 00:00:13+00:00 30 1
     2007-08-09 23:59:59+00:00 29 1
-    2005-03-25 00:00:01+00:00 19 1
-    2005-03-25 00:00:01+00:00 16 1
     2005-03-25 00:00:01+00:00 7 1
-    2004-09-27 11:57:13+00:00 18 1
+    2005-03-25 00:00:01+00:00 16 1
+    2005-03-25 00:00:01+00:00 19 1
     2004-09-27 11:57:13+00:00 2 1
+    2004-09-27 11:57:13+00:00 18 1
 
 Retrieve the current PENDING builds
 
@@ -479,7 +495,8 @@ Using the optional name argument to filter build results:
     >>> builds.count()
     4
     >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
-    [(u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+    [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary'),
+    (u'pmount', u'breezy-autotest')]
 
 or using optional pocket argument:
 
@@ -543,8 +560,8 @@ three additional private builds for cprov:
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -559,8 +576,8 @@ Cprov can also see his own builds of course:
 
     >>> bob_builds = bob.getBuildRecords(user=cprov)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -710,6 +727,30 @@ A proper name for this "model" would be 'cross-component-dependency'.
     multiverse | main restricted universe multiverse
        partner | partner
 
+As reported in bug #198936, builds for the BACKPORTS pocket are
+allowed to use any component available, independently of the component they are
+currently published. This special-case is important because it
+avoids changes to accommodate the backported source in the already
+released series.
+
+    >>> release_pocket = build.pocket
+    >>> naked_build = removeSecurityProxy(build)
+    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
+    >>> syncUpdate(build)
+
+Ultimately, it means that a build targeted to the BACKPORTS pocket
+will behave as if it were published in the multiverse component,
+despite the component it is actually published in.
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main restricted universe multiverse
+    restricted | main restricted universe multiverse
+      universe | main restricted universe multiverse
+    multiverse | main restricted universe multiverse
+       partner | main restricted universe multiverse
+
 Restoring the original target component to the source used in this
 section, so there won't be any unexpected effects in subsequent
 tests.
@@ -717,6 +758,9 @@ tests.
     >>> main_component = getUtility(IComponentSet)['main']
     >>> source_pub.secure_record.component = main_component
     >>> syncUpdate(source_pub.secure_record)
+    >>> naked_build = removeSecurityProxy(build)
+    >>> naked_build.pocket = release_pocket
+    >>> syncUpdate(build)
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
@@ -877,8 +921,8 @@ Accessing the cprov builds when logged in as admin will see the records:
 
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -888,8 +932,8 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -906,8 +950,8 @@ when accessing the builds:
     ...     print "Generated Unauthorized exception as expected"
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 == Estimated Build Duration ==

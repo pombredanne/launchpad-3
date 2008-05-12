@@ -21,9 +21,11 @@ __all__ = [
     'ProductDownloadFilesView',
     'ProductAddView',
     'ProductAddViewBase',
+    'ProductBranchListingView',
     'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
+    'ProductCodeIndexView',
     'ProductReviewView',
     'ProductAddSeriesView',
     'ProductReassignmentView',
@@ -34,7 +36,6 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductSetView',
     'ProductBranchOverviewView',
-    'ProductBranchesView',
     'PillarSearchItem',
     ]
 
@@ -53,10 +54,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
+    ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
-    ITranslationImportQueue, License, NotFoundError,
+    IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
+    IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
@@ -377,15 +380,15 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
+    def bugsupervisor(self):
         text = 'Change bug supervisor'
-        return Link('+bugcontact', text, icon='edit')
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
@@ -917,10 +920,10 @@ class ProductReviewView(ProductEditView):
                    "private_bugs", "reviewed", "reviewer_whiteboard"]
 
     def validate(self, data):
-        if data.get('private_bugs') and self.context.bugcontact is None:
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
             self.setFieldError('private_bugs',
                 structured(
-                    'Set a <a href="%s/+bugcontact">bug supervisor</a> '
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
@@ -1254,26 +1257,21 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductBranchesView(BranchListingView):
-    """View for branch listing for a product."""
+class ProductBranchListingView(BranchListingView):
+    """A base class for product branch listings."""
 
-    extra_columns = ('author',)
+    show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @cachedproperty
-    def hide_dormant_initial_value(self):
-        """If there are more than one page of branches, hide dormant ones."""
-        page_size = config.launchpad.branchlisting_batch_size
-        return self.context.branches.count() > page_size
+    @property
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
 
     @property
     def no_branch_message(self):
@@ -1292,3 +1290,174 @@ class ProductBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
+
+
+class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
+                           ProductDownloadFileMixin):
+    """Initial view for products on the code virtual host."""
+
+    @property
+    def form_action(self):
+        return "+branches"
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
+            }
+
+    @cachedproperty
+    def _recent_revisions(self):
+        """Revisions for this project created in the last 30 days."""
+        # The actual number of revisions for any given project are likely
+        # to be small(ish).  We also need to be able to traverse over the
+        # actual revision authors in order to get an accurate count.
+        revisions = list(
+            getUtility(IRevisionSet).getRecentRevisionsForProduct(
+                product=self.context, days=30))
+        # XXX: thumper 2008-04-24
+        # How best to warn if the limit is getting too large?
+        # And how much is too much anyway.
+        return revisions
+
+    @property
+    def commit_count(self):
+        """The number of new revisions in the last 30 days."""
+        return len(self._recent_revisions)
+
+    @cachedproperty
+    def committer_count(self):
+        """The number of committers in the last 30 days."""
+        # Record a set of tuples where the first part is a launchpad
+        # person name if know, and the second part is the revision author
+        # text.  Only one part of the tuple will be set.
+        committers = set()
+        for revision in self._recent_revisions:
+            author = revision.revision_author
+            if author.person is None:
+                committers.add((None, author.name))
+            else:
+                committers.add((author.person.name, None))
+        return len(committers)
+
+    @cachedproperty
+    def _branch_owners(self):
+        """The owners of branches."""
+        # Listify the owners, there really shouldn't be that many for any
+        # one project.
+        return list(getUtility(IPersonSet).getPeopleWithBranches(
+                product=self.context))
+
+    @cachedproperty
+    def person_owner_count(self):
+        """The number of individual people who own branches."""
+        return len([person for person in self._branch_owners
+                    if not person.isTeam()])
+
+    @cachedproperty
+    def team_owner_count(self):
+        """The number of teams who own branches."""
+        return len([person for person in self._branch_owners
+                    if person.isTeam()])
+
+    def _getSeriesBranches(self):
+        """Get the series branches for the product, dev focus first."""
+        # XXX: thumper 2008-04-22
+        # When bug 181157 is fixed, only get branches for non-obsolete
+        # series.
+
+        # We want to show each series branch only once, always show the
+        # development focus branch, no matter what's it lifecycle status, and
+        # skip subsequent series where the lifecycle status is Merged or
+        # Abandoned
+        sorted_series = self.sorted_series_list
+        IGNORE_STATUS = (
+            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        # The series will always have at least one series, that of the
+        # development focus.
+        dev_focus_branch = sorted_series[0].series_branch
+        result = []
+        if dev_focus_branch is not None:
+            result.append(dev_focus_branch)
+        for series in sorted_series[1:]:
+            branch = series.series_branch
+            if (branch is not None and
+                branch not in result and
+                branch.lifecycle_status not in IGNORE_STATUS):
+                result.append(branch)
+        return result
+
+    @cachedproperty
+    def initial_branches(self):
+        """Return the series branches, followed by most recently changed."""
+        series_branches = self._getSeriesBranches()
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        # We don't want the initial branch listing to be batched, so only get
+        # the batch size - the number of series_branches.
+        batch_size = config.launchpad.branchlisting_batch_size
+        max_branches_from_query = batch_size - len(series_branches)
+        # Since series branches are actual branches, and the query
+        # returns the bastardised BranchWithSortColumns, we need to
+        # check branch ids in the following list comprehension.
+        series_branch_ids = set(branch.id for branch in series_branches)
+        # We want to make sure that the series branches do not appear
+        # in our branch list.
+        branches = [
+            branch for branch in branch_query[:max_branches_from_query]
+            if branch.id not in series_branch_ids]
+        series_branches.extend(branches)
+        return series_branches
+
+    def _branches(self, lifecycle_status):
+        """Return the series branches, followed by most recently changed."""
+        # The params are ignored, and only used by the listing view.
+        return self.initial_branches
+
+    @property
+    def unseen_branch_count(self):
+        """How many branches are not shown."""
+        return self.branch_count - len(self.initial_branches)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """See `BranchListingView`."""
+        return self.branch_count > 0
+
+    @property
+    def has_development_focus_branch(self):
+        """Is there a branch assigned as development focus?"""
+        return self.context.development_focus.series_branch is not None
+
+    def _getPluralText(self, count, singular, plural):
+        if count == 1:
+            return singular
+        else:
+            return plural
+
+    @property
+    def branch_text(self):
+        return self._getPluralText(
+            self.branch_count, _('branch'), _('branches'))
+
+    @property
+    def person_text(self):
+        return self._getPluralText(
+            self.person_owner_count, _('person'), _('people'))
+
+    @property
+    def team_text(self):
+        return self._getPluralText(
+            self.team_owner_count, _('team'), _('teams'))
+
+    @property
+    def commit_text(self):
+        return self._getPluralText(
+            self.commit_count, _('commit'), _('commits'))
+
+    @property
+    def committer_text(self):
+        return self._getPluralText(
+            self.committer_count, _('person'), _('people'))

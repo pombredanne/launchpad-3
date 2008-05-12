@@ -341,6 +341,20 @@
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IProductSeries"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -596,6 +610,16 @@
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.widgets.SinglePopupWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"
       />
 

@@ -127,6 +127,7 @@ class ExistingPOFileInDatabase:
             is_fuzzy,
             is_current,
             is_imported,
+            was_fuzzy_in_last_import,
             %s
           FROM TranslationMessage
             JOIN POFile ON
@@ -150,44 +151,50 @@ class ExistingPOFileInDatabase:
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
-             is_imported, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
+             is_imported, was_fuzzy_in_last_import,
+             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
              msgstr5) in rows:
-            if is_current:
-                look_at = self.messages
-            elif is_imported:
-                look_at = self.imported
-            else:
+
+            if not is_current and not is_imported:
                 # We don't care about non-current and non-imported messages
                 # yet.  To be part of super-fast-imports-phase2.
                 continue
 
-            if (msgid, context) in look_at:
-                message = look_at[(msgid, context)]
-            else:
-                message = TranslationMessageData()
-                look_at[(msgid, context)] = message
+            update_caches = []
+            if is_current:
+                update_caches.append(self.messages)
+            if is_imported:
+                update_caches.append(self.imported)
+                is_fuzzy = was_fuzzy_in_last_import
 
-                message.msgid_singular = msgid
-                message.context = context
-                message.msgid_plural = msgid_plural
+            for look_at in update_caches:
+                if (msgid, context) in look_at:
+                    message = look_at[(msgid, context)]
+                else:
+                    message = TranslationMessageData()
+                    look_at[(msgid, context)] = message
 
-            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-                "Change this code to support %d plural forms"
-                % TranslationConstants.MAX_PLURAL_FORMS)
-            if msgstr0 is not None:
-                message.addTranslation(0, msgstr0)
-            if msgstr1 is not None:
-                message.addTranslation(1, msgstr1)
-            if msgstr2 is not None:
-                message.addTranslation(2, msgstr2)
-            if msgstr3 is not None:
-                message.addTranslation(3, msgstr3)
-            if msgstr4 is not None:
-                message.addTranslation(4, msgstr4)
-            if msgstr5 is not None:
-                message.addTranslation(5, msgstr5)
+                    message.msgid_singular = msgid
+                    message.context = context
+                    message.msgid_plural = msgid_plural
 
-            message.fuzzy = is_fuzzy
+                assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
+                    "Change this code to support %d plural forms"
+                    % TranslationConstants.MAX_PLURAL_FORMS)
+                if msgstr0 is not None:
+                    message.addTranslation(0, msgstr0)
+                if msgstr1 is not None:
+                    message.addTranslation(1, msgstr1)
+                if msgstr2 is not None:
+                    message.addTranslation(2, msgstr2)
+                if msgstr3 is not None:
+                    message.addTranslation(3, msgstr3)
+                if msgstr4 is not None:
+                    message.addTranslation(4, msgstr4)
+                if msgstr5 is not None:
+                    message.addTranslation(5, msgstr5)
+
+                message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
@@ -495,7 +502,7 @@ class TranslationImporter:
 
             if self.pofile is None:
                 # The import is a translation template file
-                potmsgset.sequence = count
+                potmsgset.setSequence(potmsgset.potemplate, count)
                 potmsgset.commenttext = message.comment
                 potmsgset.sourcecomment = message.source_comment
                 potmsgset.filereferences = message.file_references

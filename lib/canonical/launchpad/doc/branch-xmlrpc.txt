@@ -2,7 +2,7 @@
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
-    >>> import pytz 
+    >>> import pytz
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
@@ -92,7 +92,7 @@ well:
     >>> print new_branch.product.displayname
     Evolution
 
-If we try to register a branch with a unique name that is already used:
+If we try to register a branch with a branch name that is already used:
 
     >>> yet_another_branch_url = 'http://foo.com/yet_another_branch'
     >>> branchset_api.register_branch(
@@ -100,7 +100,17 @@ If we try to register a branch with a unique name that is already used:
     ...      'branch description', 'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Unique name already in use: ~name16/evolution/branch_name'>
+    Fault: <Fault 220: 'Branch name already in use:
+      A branch with the name "branch_name" already exists
+      for name16 in evolution.'>
+
+However a branch can be registered with a name used by a different user.
+
+    >>> evo_main_url = 'http://foo.example.com/evo/main'
+    >>> branchset_api.register_branch(
+    ...      evo_main_url, 'main', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    'http://code.launchpad.dev/~name16/evolution/main'
 
 This check must also detect branch name conflict for +junk branches:
 
@@ -108,8 +118,8 @@ This check must also detect branch name conflict for +junk branches:
     ...      yet_another_branch_url, 'branch', '', '', '', '')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Unique name already in use: ~name16/+junk/branch'>
-
+    Fault: <Fault 220: 'Branch name already in use:
+      A junk branch with the name "branch" already exists for name16.'>
 
 If we give a product name that doesn't exist, we get an error:
 
@@ -408,7 +418,7 @@ sites. For these branches, resolve_lp_path returns only a single URL.
     >>> getUtility(IBranchSet).new(
     ...     BranchType.REMOTE, 'remote', arbitrary_person, arbitrary_person,
     ...     None, 'http://example.com/remote_branch')
-    <Branch u'~name12/+junk/remote' (80)>
+    <Branch u'~name12/+junk/remote' (...)>
     >>> results = branchset_api.resolve_lp_path('~name12/+junk/remote')
     >>> results['urls']
     ['http://example.com/remote_branch']

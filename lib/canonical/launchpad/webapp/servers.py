@@ -25,7 +25,7 @@ from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.interfaces import Unauthorized
+from zope.security.interfaces import IParticipation, Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -623,8 +623,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> request.needs_datepicker_iframe
     False
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest,
+    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
+    # These two attributes satisfy IParticipation.
+    principal = None
+    interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
@@ -666,6 +669,10 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    def setPrincipal(self, principal):
+        """See `IPublicationRequest`."""
+        self.principal = principal
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
@@ -920,6 +927,15 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     root_object_interface = IWebServiceApplication
 
+    def getApplication(self, request):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Always use the web service application to serve web service
+        resources, no matter what application is normally used to serve
+        the underlying objects.
+        """
+        return getUtility(IWebServiceApplication)
+
     def traverseName(self, request, ob, name):
         """See `zope.publisher.interfaces.IPublication`.
 
@@ -1065,6 +1081,17 @@ class WebServiceRequestTraversal:
         WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
+        stack = self.getTraversalStack()
+        # Only accept versioned URLs.
+        if len(stack) > 0:
+            last_component = stack.pop()
+        else:
+            last_component = ''
+        if last_component == 'beta':
+            self.setTraversalStack(stack)
+            self.setVirtualHostRoot(names=('beta', ))
+        else:
+            raise NotFound(self, '', self)
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 

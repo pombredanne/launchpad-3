@@ -1,24 +1,28 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 __metaclass__ = type
-
 __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
     'TeamAddView',
+    'TeamBadges',
     'TeamBrandingView',
     'TeamContactAddressView',
-    'TeamMailingListConfigurationView',
     'TeamEditView',
+    'TeamMailingListConfigurationView',
+    'TeamMailingListModerationView',
     'TeamMemberAddView',
+    'TeamPrivacyAdapter',
     ]
+
+from urllib import quote
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -33,15 +37,40 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus,
-    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingList,
+    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
+    PostedMessageStatus, TeamContactMethod, TeamMembershipStatus,
     TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.lazr.interfaces import IObjectPrivacy
+
+
+class TeamPrivacyAdapter:
+    """Provides `IObjectPrivacy` for `ITeam`."""
+
+    implements(IObjectPrivacy)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_private(self):
+        """Return True if the bug is private, otherwise False."""
+        return self.context.visibility != PersonVisibility.PUBLIC
+
+
+class TeamBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `ITeam`."""
+
+    def getPrivateBadgeTitle(self):
+        """Return private badge info useful for a tooltip."""
+        return "This is a %s team" % self.context.visibility.title.lower()
+
 
 class HasRenewalPolicyMixin:
     """Mixin to be used on forms which contain ITeam.renewal_policy.
@@ -301,19 +330,16 @@ class TeamContactAddressView(MailingListTeamBaseView):
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
         if contact_method == TeamContactMethod.NONE:
-            if context.preferredemail is not None:
-                # The user wants the mailing list to stop being the
-                # team's contact address, but not to be deactivated
-                # altogether. So we demote the list address from
-                # 'preferred' address to being just a regular address.
-                context.preferredemail.status = EmailAddressStatus.VALIDATED
+            context.setContactAddress(None)
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
             assert mailing_list is not None and mailing_list.isUsable(), (
                 "A team can only use a usable mailing list as its contact "
                 "address.")
-            context.setContactAddress(
-                email_set.getByEmail(mailing_list.address))
+            email = email_set.getByEmail(mailing_list.address)
+            assert email is not None, (
+                "Cannot find mailing list's posting address")
+            context.setContactAddress(email)
         elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
             contact_address = data['contact_address']
             email = email_set.getByEmail(contact_address)
@@ -565,6 +591,76 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         return self.getListInState(MailingListStatus.INACTIVE) is not None
 
 
+class TeamMailingListModerationView(MailingListTeamBaseView):
+    """A view for moderating the held messages of a mailing list."""
+
+    schema = Interface
+    label = 'Mailing list moderation'
+
+    def __init__(self, context, request):
+        """Allow for review and moderation of held mailing list posts."""
+        super(TeamMailingListModerationView, self).__init__(context, request)
+        list_set = getUtility(IMailingListSet)
+        self.mailing_list = list_set.get(self.context.name)
+        assert(self.mailing_list is not None), (
+            'No mailing list: %s' % self.context.name)
+
+    @property
+    def hold_count(self):
+        """The number of message being held for moderator approval.
+
+        :return: Number of message being held for moderator approval.
+        """
+        return self.mailing_list.getReviewableMessages().count()
+
+    @property
+    def held_messages(self):
+        """All the messages being held for moderator approval.
+
+        :return: Sequence of held messages.
+        """
+        return self.mailing_list.getReviewableMessages()
+
+    @action('Moderate', name='moderate')
+    def moderate_action(self, action, data):
+        """Commits the moderation actions."""
+        # We're somewhat abusing LaunchpadFormView, so the interesting bits
+        # won't be in data.  Instead, get it out of the request.
+        reviewable = self.hold_count
+        disposed_count = 0
+        for message in self.held_messages:
+            action_name = self.request.form_ng.getOne(
+                'field.' + quote(message.message_id))
+            # This essentially acts like a switch statement or if/elifs.  It
+            # looks the action up in a map of allowed actions, watching out
+            # for bogus input.
+            try:
+                action, status = dict(
+                    approve=(message.approve, PostedMessageStatus.APPROVED),
+                    reject=(message.reject, PostedMessageStatus.REJECTED),
+                    discard=(message.discard, PostedMessageStatus.DISCARDED),
+                    # hold is a no-op.  Using None here avoids the bogus input
+                    # trigger.
+                    hold=(None, None),
+                    )[action_name]
+            except KeyError:
+                raise UnexpectedFormData(
+                    'Invalid moderation action for held message %s: %s' %
+                    (message.message_id, action_name))
+            if action is not None:
+                disposed_count += 1
+                action(self.user)
+                self.request.response.addInfoNotification(
+                    'Held message %s; Message-ID: %s' % (
+                        status.title.lower(), message.message_id))
+        still_held = reviewable - disposed_count
+        if still_held > 0:
+            self.request.response.addInfoNotification(
+                'Messages still held for review: %d of %d' %
+                (still_held, reviewable))
+        self.next_url = canonical_url(self.context)
+
+
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation
@@ -698,4 +794,3 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
-

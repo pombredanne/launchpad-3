@@ -18,38 +18,20 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, InvalidBugId, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError)
+    get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
+    UnknownRemoteStatusError)
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugTrackerSet,
-    IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
-    ISupportsCommentImport, PersonCreationRationale,
-    UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
+    IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
+    IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-
-
-_exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (socket.timeout, BugWatchErrorType.TIMEOUT)]
-
-
-def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchErrorType` for a given error."""
-    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
-        if isinstance(error, exc_type):
-            return bugwatcherrortype
-    else:
-        return BugWatchErrorType.UNKNOWN
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -322,6 +304,7 @@ class BugWatchUpdater(object):
 
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
+        remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = remotesystem.baseurl
@@ -406,6 +389,7 @@ class BugWatchUpdater(object):
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.import_comments)
+        can_push_comments = ISupportsCommentPushing.providedBy(remotesystem)
         if can_import_comments and server_time is None:
             can_import_comments = False
             self.warning(
@@ -461,6 +445,16 @@ class BugWatchUpdater(object):
                             ('local_ids', local_ids)] +
                             self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
+                except PrivateRemoteBug:
+                    error = BugWatchErrorType.PRIVATE_REMOTE_BUG
+                    self.warning(
+                        "Remote bug %r on %s is private (local bugs: %s)." %
+                            (bug_id, remotesystem.baseurl, local_ids),
+                        properties=[
+                            ('bug_id', bug_id),
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
+                        info=sys.exc_info())
 
                 for bug_watch in bug_watches:
                     bug_watch.last_error_type = error
@@ -472,6 +466,8 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if can_import_comments:
                         self.importBugComments(remotesystem, bug_watch)
+                    if can_push_comments:
+                        self.pushBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -565,8 +561,17 @@ class BugWatchUpdater(object):
         :param bug_watch: The bug watch for which the comments should be
             imported.
         """
+        # Construct a list of the comment IDs we want to import; i.e.
+        # those which we haven't already imported.
+        all_comment_ids = external_bugtracker.getCommentIds(bug_watch)
+        comment_ids_to_import = [
+            comment_id for comment_id in all_comment_ids
+            if not bug_watch.hasComment(comment_id)]
+
+        external_bugtracker.fetchComments(bug_watch, comment_ids_to_import)
+
         imported_comments = 0
-        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+        for comment_id in comment_ids_to_import:
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
@@ -576,15 +581,69 @@ class BugWatchUpdater(object):
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)
-            if not bug_watch.hasComment(comment_id):
-                bug_watch.addComment(comment_id, comment_message)
-                imported_comments += 1
+
+            bug_watch.addComment(comment_id, comment_message)
+            imported_comments += 1
 
         if imported_comments > 0:
             self.log.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
                 {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
+    def _formatRemoteComment(self, external_bugtracker, bug_watch, message):
+        """Format a comment for a remote bugtracker and return it."""
+        comment_template = get_email_template(
+            external_bugtracker.comment_template)
+
+        return comment_template % {
+            'launchpad_bug': bug_watch.bug.id,
+            'comment_author': message.owner.displayname,
+            'comment_body': message.text_contents,
+            }
+
+    def pushBugComments(self, external_bugtracker, bug_watch):
+        """Push Launchpad comments to the remote bug.
+
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentPushing`.
+        :param bug_watch: The bug watch to which the comments should be
+            pushed.
+        """
+        pushed_comments = 0
+
+        # Loop over the local bug's messages. We ignore the first
+        # message since that's the bug's description and doesn't need to
+        # be pushed.
+        for message in bug_watch.bug.messages[1:]:
+            bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+                bug_watch.bug, message)
+
+            # We only push those comments that haven't been pushed
+            # already. We don't push any comments not associated with
+            # the bug watch.
+            if (bug_message.remote_comment_id is None and
+                bug_message.bugwatch == bug_watch):
+                # Format the comment so that it includes information
+                # about the Launchpad bug.
+                formatted_comment = self._formatRemoteComment(
+                    external_bugtracker, bug_watch, message)
+
+                bug_message.remote_comment_id = (
+                    external_bugtracker.addRemoteComment(
+                        bug_watch.remotebug, formatted_comment,
+                        message.rfc822msgid))
+
+                pushed_comments += 1
+
+        if pushed_comments > 0:
+            self.log.info("Pushed %(count)i comments to remote bug "
+                "%(remotebug)s on %(bugtracker_url)s from Launchpad bug "
+                "%(bug_id)s" %
+                {'count': pushed_comments,
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})

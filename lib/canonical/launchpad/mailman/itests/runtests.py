@@ -55,7 +55,7 @@ def integrationTestCleanUp(testobj):
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
-    'anne', 'bart', 'cris', 'dirk'
+    'anne', 'bart', 'cris', 'dirk', 'emma'
     );
 
     DELETE FROM AnswerContact
@@ -149,6 +149,11 @@ def integrationTestCleanUp(testobj):
     for filename in os.listdir(lock_dir):
         if not filename.startswith('master-qrunner'):
             os.remove(os.path.join(lock_dir, filename))
+    # Remove all held messages.
+    data_dir = os.path.join(VAR_PREFIX, 'data')
+    for filename in os.listdir(data_dir):
+        if filename.startswith('heldmsg'):
+            os.remove(os.path.join(data_dir, filename))
 
 
 def find_tests(match_regexps):

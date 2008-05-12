@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -11,18 +11,18 @@ __metaclass__ = type
 __all__ = [
     'ActiveMailingListVocabulary',
     'BountyVocabulary',
-    'BranchVocabulary',
     'BranchRestrictedOnProductVocabulary',
+    'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
-    'BugVocabulary',
     'BugTrackerVocabulary',
+    'BugVocabulary',
     'BugWatchVocabulary',
     'ComponentVocabulary',
     'CountryNameVocabulary',
-    'DistributionVocabulary',
-    'DistributionOrProductVocabulary',
     'DistributionOrProductOrProjectVocabulary',
+    'DistributionOrProductVocabulary',
     'DistributionUsingMaloneVocabulary',
+    'DistributionVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
     'FeaturedProjectVocabulary',
@@ -37,32 +37,33 @@ __all__ = [
     'LanguageVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
-    'PackageReleaseVocabulary',
     'PPAVocabulary',
+    'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
-    'PersonActiveMembershipVocabulary',
     'PersonActiveMembershipPlusSelfVocabulary',
-    'person_team_participations_vocabulary_factory',
-    'ProcessorVocabulary',
+    'PersonActiveMembershipVocabulary',
     'ProcessorFamilyVocabulary',
+    'ProcessorVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
-    'project_products_vocabulary_factory',
-    'project_products_using_malone_vocabulary_factory',
-    'SpecificationVocabulary',
-    'SpecificationDependenciesVocabulary',
     'SpecificationDepCandidatesVocabulary',
+    'SpecificationDependenciesVocabulary',
+    'SpecificationVocabulary',
     'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
-    'ValidTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
+    'ValidTeamVocabulary',
+    'WebBugTrackerVocabulary',
+    'person_team_participations_vocabulary_factory',
+    'project_products_using_malone_vocabulary_factory',
+    'project_products_vocabulary_factory',
     ]
 
 import cgi
@@ -86,17 +87,19 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch,
-    IBugTask, IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget,
-    ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
-    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus, PersonVisibility)
+    ArchivePurpose, BugTrackerType, DistroSeriesStatus, EmailAddressStatus,
+    IBranch, IBugTask, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
+    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
+
+from canonical.launchpad.webapp.tales import FormattersAPI
 
 
 class BasePersonVocabulary:
@@ -166,19 +169,18 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        branch_set = BranchSet()
-        branch = branch_set.getByUniqueName(token)
+        branch = self._getExactMatch(token)
         # fall back to interpreting the token as a branch URL
-        if branch is None:
-            url = token.rstrip('/')
-            branch = branch_set.getByUrl(url)
         if branch is None:
             raise LookupError(token)
         return self.toTerm(branch)
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        return BranchSet().getByUniqueName(query)
+        branch = BranchSet().getByUniqueName(query)
+        if branch is not None:
+            return branch
+        return BranchSet().getByUrl(query.rstrip('/'))
 
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
@@ -296,7 +298,6 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def __init__(self, context=None):
         BranchVocabularyBase.__init__(self, context)
-
         if IProduct.providedBy(self.context):
             self.product = self.context
         elif IProductSeries.providedBy(self.context):
@@ -309,7 +310,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        branch = BranchSet().getByUniqueName(query)
+        branch = super(
+            BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
         if branch is not None:
             if branch.product == self.product:
                 return branch
@@ -350,6 +352,12 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     _table = BugTracker
     _orderBy = 'title'
+
+
+class WebBugTrackerVocabulary(BugTrackerVocabulary):
+    """All web-based bug tracker types."""
+
+    _filter = BugTracker.q.bugtrackertype != BugTrackerType.EMAILADDRESS
 
 
 class FAQVocabulary:
@@ -1227,6 +1235,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
+        elif IProductSeriesBugTask.providedBy(milestone_context):
+            target = milestone_context.productseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1257,6 +1267,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                     (milestone for product in target.products
                      for milestone in product.all_milestones),
                     longest_expected=40)
+            elif IProductSeries.providedBy(target):
+                series_milestones = shortlist(target.all_milestones,
+                                              longest_expected=40)
+                product_milestones = shortlist(target.product.all_milestones,
+                                               longest_expected=40)
+                # Some milestones are associtaed with a product
+                # and a product series; these should appear only
+                # once.
+                milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
                     target.all_milestones, longest_expected=40)
@@ -1398,6 +1417,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         return obj in self._all_specs()
 
+
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
 
@@ -1414,10 +1434,33 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(watch)
 
     def toTerm(self, watch):
-        return SimpleTerm(
-            watch, watch.id, '%s <a href="%s">#%s</a>' % (
-                cgi.escape(watch.bugtracker.title), watch.url,
-                cgi.escape(watch.remotebug)))
+        def escape(string):
+            return cgi.escape(string, quote=True)
+
+        if watch.url.startswith('mailto:'):
+            user = getUtility(ILaunchBag).user
+            if user is None:
+                title = FormattersAPI(
+                    watch.bugtracker.title).obfuscate_email()
+                return SimpleTerm(
+                    watch, watch.id, escape(title))
+            else:
+                url = watch.url
+                title = escape(watch.bugtracker.title)
+                if url in title:
+                    title = title.replace(
+                        url, '<a href="%s">%s</a>' % (
+                            escape(url), escape(url)))
+                else:
+                    title = '%s &lt;<a href="%s">%s</a>&gt;' % (
+                        title, escape(url), escape(url[7:]))
+                return SimpleTerm(watch, watch.id, title)
+        else:
+            return SimpleTerm(
+                watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                    escape(watch.bugtracker.title),
+                    escape(watch.url),
+                    escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):

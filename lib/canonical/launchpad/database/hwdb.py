@@ -3,16 +3,33 @@
 
 """Hardware database related table classes."""
 
-__all__ = ['HWSubmission',
-           'HWSubmissionSet',
-           'HWSystemFingerprint',
-           'HWSystemFingerprintSet'
-          ]
+__all__ = [
+    'HWDevice',
+    'HWDeviceSet',
+    'HWDeviceDriverLink',
+    'HWDeviceDriverLinkSet',
+    'HWDeviceNameVariant',
+    'HWDeviceNameVariantSet',
+    'HWDriver',
+    'HWDriverSet',
+    'HWSubmission',
+    'HWSubmissionSet',
+    'HWSubmissionDevice',
+    'HWSubmissionDeviceSet',
+    'HWSystemFingerprint',
+    'HWSystemFingerprintSet',
+    'HWVendorID',
+    'HWVendorIDSet',
+    'HWVendorName',
+    'HWVendorNameSet',
+    ]
+
+import re
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, StringCol
+from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -20,17 +37,27 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWSubmission, IHWSubmissionSet,
-    IHWSystemFingerprint, IHWSystemFingerprintSet, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IPersonSet)
+    EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
+    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceDriverLink,
+    IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
+    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
+    IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
+from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import public_person_validator
+
+
+# The vendor name assigned to new, unknown vendor IDs. See
+# HWDeviceSet.create().
+UNKNOWN = 'Unknown'
 
 
 class HWSubmission(SQLBase):
     """See `IHWSubmission`."""
 
     implements(IHWSubmission)
+
     _table = 'HWSubmission'
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -189,6 +216,7 @@ class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""
 
     implements(IHWSystemFingerprint)
+
     _table = 'HWSystemFingerprint'
 
     fingerprint = StringCol(notNull=True)
@@ -206,3 +234,299 @@ class HWSystemFingerprintSet:
     def createFingerprint(self, fingerprint):
         """See `IHWSystemFingerprintSet`."""
         return HWSystemFingerprint(fingerprint=fingerprint)
+
+
+class HWVendorName(SQLBase):
+    """See `IHWVendorName`."""
+
+    implements(IHWVendorName)
+
+    _table = 'HWVendorName'
+
+    name = StringCol(notNull=True)
+
+
+class HWVendorNameSet:
+    """See `IHWVendorNameSet`."""
+
+    implements(IHWVendorNameSet)
+
+    def create(self, name):
+        """See `IHWVendorNameSet`."""
+        return HWVendorName(name=name)
+
+
+four_hex_digits = re.compile('^0x[0-9a-f]{4}$')
+six_hex_digits = re.compile('^0x[0-9a-f]{6}$')
+# The regular expressions for the SCSI vendor and product IDs are not as
+# "picky" as the specification requires. Considering the fact that for
+# example Microtek sold at least one scanner model that returns '        '
+# as the vendor ID, it seems reasonable to allows also somewhat broken
+# looking IDs.
+scsi_vendor = re.compile('^.{8}$')
+scsi_product = re.compile('^.{16}$')
+
+validVendorID = {
+    HWBus.PCI: four_hex_digits,
+    HWBus.USB: four_hex_digits,
+    HWBus.IEEE1394: six_hex_digits,
+    HWBus.SCSI: scsi_vendor,
+    }
+
+validProductID = {
+    HWBus.PCI: four_hex_digits,
+    HWBus.USB: four_hex_digits,
+    HWBus.SCSI: scsi_product,
+    }
+
+
+def isValidVendorID(bus, id):
+    """Check that the string id is a valid vendor ID for this bus.
+
+    :return: True, if id is valid, otherwise False
+    :param bus: A `HWBus` indicating the bus type of "id"
+    :param id: A string with the ID
+
+    Some busses have constraints for IDs, while some can use arbitrary
+    values, for example the "fake" busses HWBus.SYSTEM and HWBus.SERIAL.
+
+    We use a hexadecimal representation of integers like "0x123abc",
+    i.e., the numbers have the prefix "0x"; for the digits > 9 we
+    use the lower case characters a to f.
+
+    USB and PCI IDs have always four digits; IEEE1394 IDs have always
+    six digits.
+
+    SCSI vendor IDs consist of eight bytes of ASCII data (0x20..0x7e);
+    if a vendor name has less than eight characters, it is padded on the
+    right with spaces (See http://t10.org/ftp/t10/drafts/spc4/spc4r14.pdf,
+    page 45).
+    """
+    if bus not in validVendorID:
+        return True
+    return validVendorID[bus].search(id) is not None
+
+
+def isValidProductID(bus, id):
+    """Check that the string id is a valid product for this bus.
+
+    :return: True, if id is valid, otherwise False
+    :param bus: A `HWBus` indicating the bus type of "id"
+    :param id: A string with the ID
+
+    Some busses have constraints for IDs, while some can use arbitrary
+    values, for example the "fake" busses HWBus.SYSTEM and HWBus.SERIAL.
+
+    We use a hexadecimal representation of integers like "0x123abc",
+    i.e., the numbers have the prefix "0x"; for the digits > 9 we
+    use the lower case characters a to f.
+
+    USB and PCI IDs have always four digits.
+
+    Since IEEE1394 does not specify product IDs, there is no formal
+    check of them.
+
+    SCSI product IDs consist of 16 bytes of ASCII data (0x20..0x7e);
+    if a product name has less than 16 characters, it is padded on the
+    right with spaces.
+    """
+    if bus not in validProductID:
+        return True
+    return validProductID[bus].search(id) is not None
+
+
+class HWVendorID(SQLBase):
+    """See `IHWVendorID`."""
+
+    implements(IHWVendorID)
+
+    _table = 'HWVendorID'
+
+    bus = EnumCol(enum=HWBus, notNull=True)
+    vendor_id_for_bus = StringCol(notNull=True)
+    vendor_name = ForeignKey(dbName='vendor_name', foreignKey='HWVendorName',
+                             notNull=True)
+
+    def _create(self, id, **kw):
+        bus = kw.get('bus')
+        if bus is None:
+            raise TypeError('HWVendorID() did not get expected keyword '
+                            'argument bus')
+        vendor_id_for_bus = kw.get('vendor_id_for_bus')
+        if vendor_id_for_bus is None:
+            raise TypeError('HWVendorID() did not get expected keyword '
+                            'argument vendor_id_for_bus')
+        if not isValidVendorID(bus, vendor_id_for_bus):
+            raise ValueError('%s is not a valid vendor ID for %s'
+                             % (repr(vendor_id_for_bus),
+                                bus.title))
+        SQLBase._create(self, id, **kw)
+
+
+class HWVendorIDSet:
+    """See `IHWVendorIDSet`."""
+
+    implements(IHWVendorIDSet)
+
+    def create(self, bus, vendor_id, vendor_name):
+        """See `IHWVendorIDSet`."""
+        vendor_name = HWVendorName.selectOneBy(name=vendor_name.name)
+        return HWVendorID(bus=bus, vendor_id_for_bus=vendor_id,
+                          vendor_name=vendor_name)
+
+
+class HWDevice(SQLBase):
+    """See `IHWDevice.`"""
+
+    implements(IHWDevice)
+    _table = 'HWDevice'
+
+    # XXX Abel Deuring 2008-05-02: The columns bus_vendor and
+    # bus_product_id are supposed to be immutable. However, if they
+    # are defined as "immutable=True", the creation of a new HWDevice
+    # instance leads to an AttributeError in sqlobject/main.py, line 814.
+    bus_vendor = ForeignKey(dbName='bus_vendor_id', foreignKey='HWVendorID',
+                            notNull=True, immutable=False)
+    bus_product_id = StringCol(notNull=True, dbName='bus_product_id',
+                               immutable=False)
+    variant = StringCol(notNull=False)
+    name = StringCol(notNull=True)
+    submissions = IntCol(notNull=True)
+
+    def _create(self, id, **kw):
+        bus_vendor = kw.get('bus_vendor')
+        if bus_vendor is None:
+            raise TypeError('HWDevice() did not get expected keyword '
+                            'argument bus_vendor')
+        bus_product_id = kw.get('bus_product_id')
+        if bus_product_id is None:
+            raise TypeError('HWDevice() did not get expected keyword '
+                            'argument bus_product_id')
+        if not isValidProductID(bus_vendor.bus, bus_product_id):
+            raise ValueError('%s is not a valid product ID for %s'
+                             % (repr(bus_product_id), bus_vendor.bus.title))
+        SQLBase._create(self, id, **kw)
+
+
+class HWDeviceSet:
+    """See `IHWDeviceSet`."""
+
+    implements(IHWDeviceSet)
+
+    def create(self, bus, vendor_id, product_id, product_name, variant=None):
+        """See `IHWDeviceSet`."""
+        vendor_id_record = HWVendorID.selectOneBy(bus=bus,
+                                                  vendor_id_for_bus=vendor_id)
+        if vendor_id_record is None:
+            # The vendor ID may be unknown for two reasons:
+            #   - we do not have anything like a subscription to newly
+            #     assigned PCI or USB vendor IDs, so we may get submissions
+            #     with IDs we don't know about yet.
+            #   - we may get submissions with invalid IDs.
+            # In both cases, we create a new HWVendorID entry with the
+            # vendor name 'Unknown'.
+            unknown_vendor = HWVendorName.selectOneBy(name=UNKNOWN)
+            if unknown_vendor is None:
+                unknown_vendor = HWVendorName(name=UNKNOWN)
+            vendor_id_record = HWVendorID(bus=bus,
+                                          vendor_id_for_bus=vendor_id,
+                                          vendor_name=unknown_vendor)
+        return HWDevice(bus_vendor=vendor_id_record,
+                        bus_product_id=product_id, name=product_name,
+                        variant=variant, submissions=0)
+
+
+class HWDeviceNameVariant(SQLBase):
+    """See `IHWDeviceNameVariant`."""
+
+    implements(IHWDeviceNameVariant)
+    _table = 'HWDeviceNameVariant'
+
+    vendor_name = ForeignKey(dbName='vendor_name', foreignKey='HWVendorName',
+                             notNull=True)
+    product_name = StringCol(notNull=True)
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    submissions = IntCol(notNull=True)
+
+
+class HWDeviceNameVariantSet:
+    """See `IHWDeviceNameVariantSet`."""
+
+    implements(IHWDeviceNameVariantSet)
+
+    def create(self, device, vendor_name, product_name):
+        """See `IHWDeviceNameVariantSet`."""
+        vendor_name_record = HWVendorName.selectOneBy(name=vendor_name)
+        if vendor_name_record is None:
+            vendor_name_record = HWVendorName(name=vendor_name)
+        return HWDeviceNameVariant(device=device,
+                                   vendor_name=vendor_name_record,
+                                   product_name=product_name,
+                                   submissions=0)
+
+
+class HWDriver(SQLBase):
+    """See `IHWDriver`."""
+
+    implements(IHWDriver)
+    _table = 'HWDriver'
+
+    package_name = StringCol(notNull=False)
+    name = StringCol(notNull=True)
+    license = EnumCol(enum=License, notNull=False)
+
+
+class HWDriverSet:
+    """See `IHWDriver`."""
+
+    implements(IHWDriverSet)
+
+    def create(self, package_name, name, license):
+        """See `IHWDriverSet`."""
+        return HWDriver(package_name=package_name, name=name, license=license)
+
+
+class HWDeviceDriverLink(SQLBase):
+    """See `IHWDeviceDriverLinkSet`."""
+
+    implements(IHWDeviceDriverLink)
+    _table = 'HWDeviceDriverLink'
+
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    driver = ForeignKey(dbName='driver', foreignKey='HWDriver', notNull=False)
+
+
+class HWDeviceDriverLinkSet:
+    """The set of device driver links."""
+
+    implements(IHWDeviceDriverLinkSet)
+
+    def create(self, device, driver):
+        """See `IHWDeviceDriverLinkSet`."""
+        return HWDeviceDriverLink(device=device, driver=driver)
+
+
+class HWSubmissionDevice(SQLBase):
+    """See `IHWSubmissionDevice`."""
+
+    implements(IHWSubmissionDevice)
+    _table = 'HWSubmissionDevice'
+
+    device_driver_link = ForeignKey(dbName='device_driver_link',
+                                    foreignKey='HWDeviceDriverLink',
+                                    notNull=True)
+    submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
+                            notNull=True)
+    parent = ForeignKey(dbName='parent', foreignKey='HWSubmissionDevice',
+                        notNull=False)
+
+class HWSubmissionDeviceSet:
+    """See `IHWSubmissionDeviceSet`."""
+
+    implements(IHWSubmissionDeviceSet)
+
+    def create(self, device_driver_link, submission, parent):
+        """See `IHWSubmissionDeviceSet`."""
+        return HWSubmissionDevice(device_driver_link=device_driver_link,
+                                  submission=submission,
+                                  parent=parent)

@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
     <!-- HWDBApplication -->
-    <content class="canonical.launchpad.systemhomes.HWDBApplication">
+    <class class="canonical.launchpad.systemhomes.HWDBApplication">
         <allow interface="canonical.launchpad.interfaces.IHWDBApplication" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.systemhomes.HWDBApplication"
@@ -29,11 +29,12 @@
         template="../templates/hwdb-submit-hardware-data.pt"
         />
 
-    <content class="canonical.launchpad.database.HWSubmission">
-        <require 
-            permission="launchpad.View" 
-            interface="canonical.launchpad.interfaces.IHWSubmission" />
-    </content>
+    <class class="canonical.launchpad.database.HWSubmission">
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IHWSubmission"
+            attributes="id" />
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IHWSystemFingerprint"
@@ -64,15 +65,15 @@
         <allow interface="canonical.launchpad.interfaces.IHWSubmissionSet" />
     </securedutility>
 
-    <content class="canonical.launchpad.database.HWSystemFingerprint">
-        <allow 
+    <class class="canonical.launchpad.database.HWSystemFingerprint">
+        <allow
             interface="canonical.launchpad.interfaces.IHWSystemFingerprint" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.HWSystemFingerprintSet"
         provides="canonical.launchpad.interfaces.IHWSystemFingerprintSet">
-        <allow 
+        <allow
             interface="canonical.launchpad.interfaces.IHWSystemFingerprintSet" />
     </securedutility>
 
@@ -89,9 +90,94 @@
         classes="HWDBSubmissionSetNavigation"
         />
 
-    <content class="canonical.launchpad.browser.hwdb.HWDBFingerprintSetView">
+    <class class="canonical.launchpad.browser.hwdb.HWDBFingerprintSetView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
         <allow attributes="__call__" />
-    </content>
+    </class>
+
+    <class class="canonical.launchpad.database.HWVendorName">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorName" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWVendorNameSet"
+        provides="canonical.launchpad.interfaces.IHWVendorNameSet">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorNameSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWVendorID">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorID" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWVendorIDSet"
+        provides="canonical.launchpad.interfaces.IHWVendorIDSet">
+        <allow interface="canonical.launchpad.interfaces.IHWVendorIDSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWDevice">
+        <allow interface="canonical.launchpad.interfaces.IHWDevice" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDeviceSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceSet">
+        <allow interface="canonical.launchpad.interfaces.IHWDeviceSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWDeviceNameVariant">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDeviceNameVariant" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDeviceNameVariantSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceNameVariantSet">
+        <allow interface=
+            "canonical.launchpad.interfaces.IHWDeviceNameVariantSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWDriver">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDriver" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDriverSet"
+        provides="canonical.launchpad.interfaces.IHWDriverSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDriverSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWDeviceDriverLink">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceDriverLink" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWDeviceDriverLinkSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceDriverLinkSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceDriverLinkSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWSubmissionDevice">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionDevice" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSubmissionDeviceSet"
+        provides="canonical.launchpad.interfaces.IHWSubmissionDeviceSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionDeviceSet" />
+    </securedutility>
+
 </configure>

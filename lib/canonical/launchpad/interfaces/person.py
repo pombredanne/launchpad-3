@@ -13,6 +13,7 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
+    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonAdminWriteRestricted',
@@ -28,6 +29,7 @@ __all__ = [
     'ITeamCreation',
     'ITeamReassignment',
     'JoinNotAllowed',
+    'NameAlreadyTaken',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -38,13 +40,20 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.interface import copy_field
+from canonical.lazr.rest.declarations import (
+   call_with, collection_default_content, export_as_webservice_collection,
+   export_as_webservice_entry, export_factory_operation, export_operation_as,
+   export_read_operation, exported, operation_parameters,
+   rename_parameters_as, REQUEST_USER, webservice_error)
+from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
 
@@ -52,15 +61,18 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.mentoringoffer import (
-    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
+from canonical.launchpad.interfaces.teammembership import (
+    ITeamMembership, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -398,29 +410,27 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
     """Public attributes for a Person."""
 
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    name = PersonNameField(
+    id = Int(title=_('ID'), required=True, readonly=True)
+    name = exported(
+        PersonNameField(
             title=_('Name'), required=True, readonly=False,
             constraint=name_validator,
             description=_(
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")
-            )
-    displayname = StrippedTextLine(
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
-            description=_("Your name as you would like it displayed "
-            "throughout Launchpad. Most people use their full name "
-            "here.")
-            )
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = Int(
-            title=_('Karma'), readonly=False,
-            description=_('The cached total karma for this person.')
-            )
+        title=_('Karma'), readonly=False,
+        description=_('The cached total karma for this person.'))
     homepage_content = Text(
         title=_("Homepage Content"), required=False,
         description=_(
@@ -498,8 +508,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         required=False, default=False)
     # this is not a date of birth, it is the date the person record was
     # created in this db
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
+    datecreated = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
     creation_rationale = Choice(
         title=_("Rationale for this entry's creation"), required=False,
         readonly=False, values=PersonCreationRationale.items)
@@ -580,9 +591,21 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "author or an author different from this person.")
     subscribed_branches = Attribute(
         "Branches to which this person " "subscribes.")
-    myactivememberships = Attribute(
-        "List of TeamMembership objects for Teams this Person is an active "
-        "member of.")
+    myactivememberships = exported(
+        CollectionField(
+            title=_("All `ITeamMembership`s for Teams this Person is an "
+                    "active member of."),
+            value_type=Object(schema=ITeamMembership)),
+        exported_as='team_memberships')
+    member_memberships = exported(
+        CollectionField(
+            title=_("Active `ITeamMembership`s for this object's members."),
+            description=_(
+                "Active TeamMemberships are the ones with the ADMIN or "
+                "APPROVED status.  The results are ordered using "
+                "Person.sortingColumns."),
+            value_type=Object(schema=ITeamMembership)))
+
     open_membership_invitations = Attribute(
         "All TeamMemberships which represent an invitation (to join a team) "
         "sent to this person.")
@@ -623,9 +646,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
-    teamowner = PublicPersonChoice(
-        title=_('Team Owner'), required=False, readonly=False,
-        vocabulary='ValidTeamOwner')
+    teamowner = exported(
+        PublicPersonChoice(
+            title=_('Team Owner'), required=False, readonly=False,
+            vocabulary='ValidTeamOwner'))
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
@@ -665,8 +689,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "never expire."))
 
     defaultrenewalperiod = Int(
-        title=_('Renewal period'),
-        required=False,
+        title=_('Renewal period'), required=False,
         description=_(
             "Number of days a subscription lasts after being renewed. "
             "You can customize the lengths of individual renewals, but this "
@@ -681,9 +704,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "which a just-renewed membership will expire.")
 
     subscriptionpolicy = Choice(
-        title=_('Subscription Policy'),
-        required=True, vocabulary=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.MODERATED,
+        title=_('Subscription Policy'), vocabulary=TeamSubscriptionPolicy,
+        default=TeamSubscriptionPolicy.MODERATED, required=False,
         description=_(
             "'Moderated' means all subscriptions must be approved. 'Open' "
             "means any user can join without approval. 'Restricted' means "
@@ -695,6 +717,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "notify them and"),
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
+
+    mailing_list_auto_subscribe_policy = Choice(
+        title=_('Mailing List Auto-subscription Policy'),
+        required=True,
+        vocabulary=MailingListAutoSubscribePolicy,
+        default=MailingListAutoSubscribePolicy.ON_REGISTRATION,
+        description=_(
+            "This attribute determines whether a person is "
+            "automatically subscribed to a team's mailing list when the "
+            "person joins said team."))
 
     merged = Int(
         title=_('Merged Into'), required=False, readonly=True,
@@ -779,14 +811,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         not teams can be converted into teams.
         """
 
-    def getActiveMemberships():
-        """Return all active TeamMembership objects of this team.
-
-        Active TeamMemberships are the ones with the ADMIN or APPROVED status.
-
-        The results are ordered using Person.sortingColumns.
-        """
-
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 
@@ -807,15 +831,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
-    def getBugContactPackages():
-        """Return a list of packages for which this person is a bug contact.
+    def getBugSubscriberPackages():
+        """Return the packages for which this person is a bug subscriber.
 
         Returns a list of IDistributionSourcePackage's, ordered alphabetically
         (A to Z) by name.
         """
 
-    def getBugContactOpenBugCounts(user):
-        """Return open bug counts for this bug contact's packages.
+    def getBugSubscriberOpenBugCounts(user):
+        """Return open bug counts for this bug subscriber's packages.
 
             :user: The user doing the search. Private bugs that this
                    user doesn't have access to won't be included in the
@@ -834,6 +858,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Set the given email address as this team's contact address.
 
         This method must be used only for teams.
+
+        If the team has a contact address its status will be changed to
+        VALIDATED.
+
+        If the given email is None the team is left without a contact address.
         """
 
     def setPreferredEmail(email):
@@ -1141,13 +1170,47 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
+    def autoSubscribeToMailingList(mailinglist, requester=None):
+        """Subscribe this person to a mailing list.
+
+        This method takes the user's mailing list auto-subscription
+        setting into account, and it may or may not result in a list
+        subscription.  It will only subscribe the user to the mailing
+        list if all of the following conditions are met:
+
+          * The mailing list is not None.
+          * The mailing list is in an unusable state.
+          * The user is not already subscribed.
+          * The user has a preferred address set.
+          * The user's auto-subscribe preference is ALWAYS, or
+          * The user's auto-subscribe preference is ON_REGISTRATION,
+            and the requester is either themself or None.
+
+        This method will not raise exceptions if any of the above are
+        not true.  If you want these problems to raise exceptions
+        consider using `IMailinglist.subscribe()` directly.
+
+        :param mailinglist: The list to subscribe to.  No action is
+        	taken if the list is None, or in an unusable state.
+
+        :param requester: The person requesting the list subscription,
+        	if not the user himself.  The default assumes the user
+        	themself is making the request.
+
+        :return: True if the user was subscribed, false if they weren't.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
-    activemembers = Attribute("List of members with ADMIN or APPROVED status")
+    activemembers = exported(
+        CollectionField(
+            title=_("List of members with ADMIN or APPROVED status"),
+            value_type=Object(schema=Interface)),
+        exported_as='members')
     adminmembers = Attribute("List of members with ADMIN status")
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
@@ -1180,6 +1243,9 @@ class IPersonViewRestricted(Interface):
          privilege by virtue of being a member of a team with admin rights.
         """
 
+    @export_operation_as('getMembersByStatus')
+    @operation_parameters(status=copy_field(ITeamMembership['status']))
+    @export_read_operation()
     def getMembersByStatus(status, orderby=None):
         """Return the people whose membership on this team match :status:.
 
@@ -1190,7 +1256,7 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
-    def join(team, requester=None):
+    def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
@@ -1201,8 +1267,16 @@ class IPersonEditRestricted(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
-        :param requester: The person who requested the membership on behalf of
-        a team or None when a person requests the membership for himself.
+        If may_subscribe_to_list is True, then also attempt to
+        subscribe to the team's mailing list, depending on the list
+        status and the person's auto-subscribe settings.
+
+        :param requester: The person who requested the membership on
+            behalf of a team or None when a person requests the
+            membership for himself.
+
+        :param may_subscribe_to_list: If True, also try subscribing to
+            the team mailing list.
         """
 
     def leave(team):
@@ -1233,7 +1307,8 @@ class IPersonEditRestricted(Interface):
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
+                  comment=None, force_team_add=False,
+                  may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
@@ -1243,6 +1318,11 @@ class IPersonEditRestricted(Interface):
         If the person is actually a team and force_team_add is False, the
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
+
+        If the the person is not a team, and may_subscribe_to_list
+        is True, then the person may be subscribed to the team's
+        mailing list, depending on the list status and the person's
+        auto-subscribe settings.
 
         The given status must be either Approved, Proposed or Admin.
 
@@ -1293,6 +1373,10 @@ class IPersonAdminWriteRestricted(Interface):
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonAdminWriteRestricted, IHasStanding):
     """A Person."""
+    export_as_webservice_entry()
+
+
+IPersonViewRestricted['activemembers'].schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1337,6 +1421,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
+    export_as_webservice_collection()
 
     title = Attribute('Title')
 
@@ -1347,17 +1432,36 @@ class IPersonSet(Interface):
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
-        """Create a new Person and an EmailAddress with the given email.
+        """Create and return an `IPerson` and `IEmailAddress`.
 
-        The comment must be of the following form: "when %(action_details)s"
-        (e.g. "when the foo package was imported into Ubuntu Breezy").
+        The newly created EmailAddress will have a status of NEW and will be
+        linked to the newly created Person.
 
-        Return the newly created Person and EmailAddress if everything went
-        fine or a (None, None) tuple otherwise.
+        If the given name is None, we generate a unique nickname from the
+        email address given.
 
-        Generate a unique nickname from the email address provided, create a
-        Person with that nickname and then create an EmailAddress (with status
-        NEW) for the new Person.
+        :param email: The email address, as text.
+        :param rationale: An item of `PersonCreationRationale` to be used as
+            the person's creation_rationale.
+        :param comment: A comment explaining why the person record was
+            created (usually used by scripts which create them automatically).
+            Must be of the following form: "when %(action_details)s"
+            (e.g. "when the foo package was imported into Ubuntu Breezy").
+        :param name: The person's name.
+        :param displayname: The person's displayname.
+        :param password: The person's password.
+        :param passwordEncrypted: Whether or not the given password is
+            encrypted.
+        :param registrant: The user who created this person, if any.
+        :param hide_email_addresses: Whether or not Launchpad should hide the
+            person's email addresses from other users.
+        :raises InvalidName: When the given name is not valid.
+        :raises InvalidEmailAddress: When the given email is not valid.
+        :raises NameAlreadyTaken: When the given name is already in use.
+        :raises EmailAddressAlreadyTaken: When the given email is already in
+            use.
+        :raises NicknameGenerationError: When no name is provided and we can't
+            generate a nickname from the given email address.
         """
 
     def ensurePerson(email, displayname, rationale, comment=None,
@@ -1376,6 +1480,17 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    @export_operation_as('create_team')
+    @call_with(teamowner=REQUEST_USER)
+    @rename_parameters_as(
+        displayname='display_name', teamdescription='team_description',
+        subscriptionpolicy='subscription_policy',
+        defaultmembershipperiod='default_membership_period',
+        defaultrenewalperiod='default_renewal_period')
+    @export_factory_operation(
+        IPerson, ['name', 'displayname', 'teamdescription',
+                  'subscriptionpolicy', 'defaultmembershipperiod',
+                  'defaultrenewalperiod'])
     def newTeam(teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
@@ -1452,7 +1567,12 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    def find(text, orderBy=None):
+    @collection_default_content()
+    @export_operation_as('find')
+    @operation_parameters(
+        text=TextLine(title=_("Search text"), default=u""))
+    @export_read_operation()
+    def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
 
@@ -1540,6 +1660,52 @@ class IPersonSet(Interface):
 
         Return None if there is no translator.
         """
+
+    def getValidPersons(self, persons):
+        """Get all the Persons that are valid.
+
+        This method is more effective than looking at
+        Person.is_valid_person_or_team, since it avoids issuing one DB
+        query per person. It queries the ValidPersonOrTeamCache table,
+        issuing one query for all the person records. This makes the
+        method useful for filling the ORM cache, so that checks to
+        .is_valid_person won't issue any DB queries.
+
+        XXX: This method exists mainly to fill the ORM cache for
+             ValidPersonOrTeamCache. It would be better to add a column
+             to the Person table. If we do that, this method can go
+             away. Bug 221901. -- Bjorn Tillenius, 2008-04-25
+        """
+
+    def getPeopleWithBranches(product=None):
+        """Return the people who have branches.
+
+        :param product: If supplied, only people who have branches in the
+            specified product are returned.
+        """
+
+    def getSubscribersForTargets(targets, recipients=None):
+        """Return the set of subscribers for `targets`.
+
+        :param targets: The sequence of targets for which to get the
+                        subscribers.
+        :param recipients: An optional instance of
+                           `BugNotificationRecipients`.
+                           If present, all found subscribers will be
+                           added to it.
+        """
+
+    def updatePersonalStandings():
+        """Update the personal standings of some people.
+
+        Personal standing controls whether a person can post to a mailing list
+        they are not a member of without moderation.  A person starts out with
+        Unknown standing.  Once they have at least one message approved for
+        three different lists, this method will bump their standing to Good.
+        If a person's standing is already Good, or Poor or Excellent, no
+        change to standing is made.
+        """
+
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
@@ -1645,3 +1811,12 @@ class ITeamContactAddressForm(Interface):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+
+
+class InvalidName(Exception):
+    """The name given for a person is not valid."""
+
+
+class NameAlreadyTaken(Exception):
+    """The name given for a person is already in use by other person."""
+    webservice_error(409)

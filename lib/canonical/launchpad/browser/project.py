@@ -42,8 +42,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
-    NotFoundError)
+    IProductSet, IProject, IProjectSeries, IProjectSet, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -596,11 +595,6 @@ class ProjectBranchesView(BranchListingView):
     """View for branch listing for a project."""
 
     extra_columns = ('author', 'product')
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForProject(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
 
     @property
     def no_branch_message(self):

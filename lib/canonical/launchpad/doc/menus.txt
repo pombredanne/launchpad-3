@@ -7,9 +7,8 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     >>> from canonical.launchpad.webapp import (
     ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
-    ...     ILink, ILinkData, IFacetLink
-    ...     )
+    ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
+    ...     IFacetMenu, ILink, ILinkData)
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
@@ -250,6 +249,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: foo
     render: <bound method FacetLink.render ...>
     selected: False
@@ -265,6 +265,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: bar
     render: <bound method FacetLink.render ...>
     selected: False
@@ -411,10 +412,8 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <span class="action">
-        <img alt="" src="/@@/icon" />
-        <a class="menu-link-None" title="summary">text--&gt;</a>
-    </span>
+    <span class="action"><img alt="" class="inlineLinkIcon"
+                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -714,6 +713,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
     render: <bound method MenuLink.render ...>
     site: None
@@ -778,6 +778,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
     render: <bound method MenuLink.render ...>
     site: None
@@ -1087,10 +1088,8 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <span class="action">
-        <a href="http://127.0.0.1/sesamestreet/number73/+first"
-            class="menu-link-first">First menu</a>
-    </span>
+    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
+          class="menu-link-first">First menu</a></span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)

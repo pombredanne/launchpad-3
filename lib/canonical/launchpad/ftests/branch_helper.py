@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'make_branch_dormant',
     'reset_all_branch_last_modified',
     ]
 
@@ -27,15 +26,3 @@ def reset_all_branch_last_modified(last_modified=datetime.now(pytz.UTC)):
         branch.syncUpdate()
     logout()
 
-
-def make_branch_dormant(unique_name):
-    """Updates the branch's date_last_modified to make the branch dormant.
-
-    DO NOT use this in a non-pagetest.
-    """
-    login('foo.bar@canonical.com')
-    branch = BranchSet().getByUniqueName(unique_name)
-    days = config.launchpad.branch_dormant_days + 1
-    branch.date_last_modified = datetime.now(pytz.UTC) - timedelta(days=days)
-    branch.syncUpdate()
-    logout()

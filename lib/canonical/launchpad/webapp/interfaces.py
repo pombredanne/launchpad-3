@@ -16,6 +16,7 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
+
 class TranslationUnavailable(Exception):
     """Translation objects are unavailable."""
 
@@ -33,6 +34,16 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
     One example would be a URL containing uppercase letters.
     """
+
+
+class InvalidBatchSizeError(AssertionError):
+    """Received a batch parameter that exceed our configured max size."""
+
+    # XXX flacoste 2008/05/09 bug=185958:
+    # Ideally, we would use webservice_error, to set this up and
+    # register the view, but cyclic imports prevents us from doing
+    # so. This should be fixed once we move webapp stuff into LAZR.
+    __lazr_webservice_error__ = 400
 
 
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
@@ -84,10 +95,10 @@ class UnsafeFormGetSubmissionError(Exception):
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def iterlinks(requesturl=None):
+    def iterlinks(request_url=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
+        request_url, if it is not None, is a Url object that is used to
         decide whether a menu link points to the page being requested,
         in which case it will not be linked.
         """
@@ -104,15 +115,15 @@ class IMenuBase(IMenu):
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
-    def iterlinks(requesturl=None, selectedfacetname=None):
+    def iterlinks(request_url=None, selectedfacetname=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
-        decide whether a menu link points to the page being requested,
-        in which case it will not be linked.
+        :param request_url: A `URI` or None. It is used to decide whether a
+            menu link points to the page being requested, in which case it
+            will not be linked.
 
-        If selectedfacetname is provided, the link with that name will be
-        marked as 'selected'.
+        :param selectedfacetname: A str. The link with that name will be
+            marked as 'selected'.
         """
 
     defaultlink = Attribute(
@@ -127,6 +138,10 @@ class IApplicationMenu(IMenuBase):
 
 class IContextMenu(IMenuBase):
     """Context menu for an object."""
+
+
+class INavigationMenu(IMenuBase):
+    """Navigation menu for an object."""
 
 
 class ILinkData(Interface):
@@ -150,6 +165,9 @@ class ILinkData(Interface):
 
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
+
+    menu = Attribute(
+        "The `INavigationMenu` associated with the page this link points to.")
 
     # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
     # action menu is not used anymore and we move to use inline navigation.

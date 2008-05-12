@@ -1,55 +1,56 @@
+= Pofile menus =
+
 IPOFile objects have IProductSeries or ISourcePackage as its direct
 structural object.
 
 Taking an IPOFile for IProductSeries context:
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
-  ...     'evolution-2.2/es')
-  >>> print browser.url
-  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+    ...     'evolution-2.2/es')
+    >>> print browser.url
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es
 
 The Application tabs should point to IProductSeries URLs.
 
-  >>> print_tab_links(browser.contents)
-  Overview: http://launchpad.dev/evolution/trunk/
-  Code: http://code.launchpad.dev/evolution
-  Bugs: http://bugs.launchpad.dev/evolution/trunk/
-  Blueprints: http://blueprints.launchpad.dev/evolution/trunk/
-  Translations: http://translations.launchpad.dev/evolution/trunk/
-  Answers: Unavailable
+    >>> print_tab_links(browser.contents)
+    Overview: http://launchpad.dev/evolution/trunk/
+    Code: http://code.launchpad.dev/evolution
+    Bugs: http://bugs.launchpad.dev/evolution/trunk/
+    Blueprints: http://blueprints.launchpad.dev/evolution/trunk/
+    Translations: http://translations.launchpad.dev/evolution/trunk/
+    Answers: Unavailable
 
-But the actions should point to IPOFile urls.
+But the navigation links should point to IPOFile urls.
 
-  >>> print_action_links(browser.contents)
-  Overview
-  Translate: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
-  Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
-  Download: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
+    >>> print_navigation_links(browser.contents)
+    Description
+    Translate: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
+    Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+    Download: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
 
 Taking an IPOFile for ISourcePackage context:
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...     '+pots/evolution-2.2/es')
-  >>> print browser.url
-  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/es')
+    >>> print browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
 
 The Application tabs should point to ISourcePackage URLs.
 
-  >>> print_tab_links(browser.contents)
-  Overview: http://launchpad.dev/ubuntu/hoary/+source/evolution/
-  Code: Unavailable
-  Bugs: http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution/
-  Blueprints: Unavailable
-  Translations: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/
-  Answers: http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/
+    >>> print_tab_links(browser.contents)
+    Overview: http://launchpad.dev/ubuntu/hoary/+source/evolution/
+    Code: Unavailable
+    Bugs: http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution/
+    Blueprints: Unavailable
+    Translations: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/
+    Answers: http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/
 
+But the navigation links should point to IPOFile urls.
 
-But the actions should point to IPOFile urls.
-
-  >>> print_action_links(browser.contents)
-  Overview
-  Translate: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
-  Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
-  Download: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    >>> print_navigation_links(browser.contents)
+    Description
+    Translate: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
+    Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+    Download: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export

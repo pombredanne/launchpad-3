@@ -220,7 +220,7 @@ We can create new products with the createProduct() method:
     ...     title='Test Product',
     ...     summary='A test product',
     ...     description='A description of the test product',
-    ...     licenses=(License.GPL,))
+    ...     licenses=(License.GNU_GPL_V2,))
 
 When creating a product, a default product series is created for it:
 
@@ -236,10 +236,10 @@ may not have a license set, so an empty tuple is valid.
     >>> productset.getByName('jokosher').licenses == ()
     True
     >>> product.licenses
-    (<...License.GPL...>,)
-    >>> product.licenses = (License.GPL, License.LGPL)
+    (<...License.GNU_GPL_V2...>,)
+    >>> product.licenses = (License.GNU_GPL_V2, License.GNU_LGPL_V2_1)
     >>> product.licenses
-    (<...License.GPL...>, <...License.LGPL...>)
+    (<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>)
 
 This series is set as the development focus for the product:
 
@@ -364,11 +364,11 @@ no longer appear in the result set.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchLifecycleStatus, IBranchSet)
-    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
-    ...     product=productset.getByName('thunderbird'),
+    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
+    ...     context=productset.getByName('thunderbird'),
     ...     lifecycle_statuses=None)
     >>> for branch_view in thunderbird_branches:
-    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForProduct
+    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForContext
     ...     # returns objects from BranchWithSortKeys, which is a view and so
     ...     # can't be modified.  Get the branch with the same id.  This can
     ...     # go away when BranchWithSortKeys goes away, i.e. when we get
@@ -487,10 +487,10 @@ If we change the development_focus, primary_translatable changes as well.
 The series for a product are returned as a sorted list, with the
 exception that the current development focus is first.
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
-    >>> firefox_view = getView(firefox, "+index", request)
+    >>> firefox_view = getMultiAdapter((firefox, request), name="+index")
     >>> sorted_series = firefox_view.sorted_series_list
     >>> for series in sorted_series:
     ...     print series.name
