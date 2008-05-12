@@ -91,7 +91,7 @@ browse the code, and shown a simple command line to get the branch.
     3 branches ...
     You can browse the source code for development focus branch,
     or get a copy of the branch using the command:
-       bzr branch lp:evolution
+       bzr branch lp://dev/evolution
 
     >>> print summary.a['href']
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
@@ -118,9 +118,9 @@ once, but both series are shown in the listing.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    ~name12/firefox/main
-      Series: trunk, 1.0            New ...
-    ~sabdfl/firefox/release--0.9.1  New ...
+    lp://dev/firefox
+      Series: trunk, 1.0                     New ...
+    lp://dev/~sabdfl/firefox/release--0.9.1  New ...
 
 Firstly lets associate release--0.9.1 with the 1.0 series.
 
@@ -132,9 +132,9 @@ Firstly lets associate release--0.9.1 with the 1.0 series.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    ~name12/firefox/main
+    lp://dev/firefox
       Series: trunk                 New ...
-    ~sabdfl/firefox/release--0.9.1
+    lp://dev/firefox/1.0
       Series: 1.0                   New ...
 
 Now if both of these branches are marked as Abandoned, then the first will
@@ -154,9 +154,9 @@ be shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    ~name12/firefox/main
-      Series: trunk                 Abandoned ...
-    ~sabdfl/firefox/release-0.8     New ...
+    lp://dev/firefox
+      Series: trunk                          Abandoned ...
+    lp://dev/~sabdfl/firefox/release-0.8     New ...
 
 
 == Floating buttons ==

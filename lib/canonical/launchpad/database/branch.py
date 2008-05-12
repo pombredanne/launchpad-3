@@ -230,19 +230,35 @@ class Branch(SQLBase):
             name = "<name>"
         return {'user': name}
 
-    def getBzrUploadURL(self, person=None):
+    @property
+    def bzr_identity(self):
         """See `IBranch`."""
-        root = config.codehosting.smartserver_root % self._getNameDict(person)
-        return root + self.unique_name
-
-    def getBzrDownloadURL(self, person=None):
-        """See `IBranch`."""
-        if self.private:
-            root = config.codehosting.smartserver_root
+        use_series = None
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        # XXX: TimPenhey 2008-05-06 bug=227602
+        # Since at this stage the launchpad name resolution is not
+        # authenticated, we can't resolve series branches that end
+        # up pointing to private branches, so don't show short names
+        # for the branch if it is private.
+        if not self.private:
+            for series in self.associatedProductSeries():
+                # If the branch is associated with the development focus
+                # then we'll use that, otherwise use the series with the
+                # latest date_created.
+                if series == self.product.development_focus:
+                    return lp_prefix + self.product.name
+                else:
+                    if (use_series is None or
+                        series.datecreated > use_series.datecreated):
+                        use_series = series
+        # If there is no series, use the prefix with the unique name.
+        if use_series is None:
+            return lp_prefix + self.unique_name
         else:
-            root = config.codehosting.supermirror_root
-        root = root % self._getNameDict(person)
-        return root + self.unique_name
+            return "%(prefix)s%(product)s/%(series)s" % {
+                'prefix': lp_prefix,
+                'product': self.product.name,
+                'series': use_series.name}
 
     @property
     def related_bugs(self):
