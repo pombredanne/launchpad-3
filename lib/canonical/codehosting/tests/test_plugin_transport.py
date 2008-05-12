@@ -37,7 +37,7 @@ from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class LaunchpadServerTests(BzrTestCase):
+class TestLaunchpadServer(BzrTestCase):
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -187,6 +187,7 @@ class LaunchpadServerTests(BzrTestCase):
 class TestVirtualTransport(TestCaseInTempDir):
 
     class VirtualServer(Server):
+        """Very simple server that provides a VirtualTransport."""
 
         def __init__(self, backing_transport):
             self._backing_transport = backing_transport
@@ -222,6 +223,8 @@ class TestVirtualTransport(TestCaseInTempDir):
         self.assertEqual('content', open('prefix_foo').read())
 
     def test_realPath(self):
+        # local_realPath returns the real, absolute path to a file, resolving
+        # any symlinks.
         self.transport.mkdir('baz')
         os.symlink('prefix_foo', 'prefix_baz/bar')
         t = self.transport.clone('baz')
