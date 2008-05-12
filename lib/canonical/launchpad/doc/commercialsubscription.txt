@@ -10,14 +10,15 @@ which does not qualify for free hosting, has an unexpired subscription.
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
 
-Check that the subscription is None.
+An open source project should not have a commercial subscription,
+indicated by 'None'.
 
     >>> product_set = getUtility(IProductSet)
     >>> bzr = product_set.getByName('bzr')
     >>> print bzr.commercial_subscription
     None
 
-Now redeem a voucher, and check that the commercial_subscription
+Redeem a voucher and check that the commercial_subscription
 attribute is correct.
 
     >>> owner = bzr.owner
@@ -31,7 +32,8 @@ attribute is correct.
     >>> print bzr.commercial_subscription.sales_system_id
     asdf123
 
-Now extend the expiration date.
+The expiration date can be extended by redeeming another voucher.  In
+real life this would be done nearer to the expiration date.
 
     >>> from datetime import timedelta
     >>> old_date_expires = bzr.commercial_subscription.date_expires

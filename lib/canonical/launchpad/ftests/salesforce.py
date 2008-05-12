@@ -29,6 +29,7 @@ PRODUCT_TERM_MAP = dict(LPCS12=12,
 
 
 class Voucher:
+    """Test data for a single voucher."""
     def __init__(self, voucher_id, owner):
         self.id = voucher_id
         self.owner = owner
@@ -49,7 +50,7 @@ class Voucher:
 
 
 class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
-
+    """Test version of the SalesforceVoucherProxy using the test transport."""
     implements(ISalesforceVoucherProxy)
 
     def __init__(self):
@@ -57,7 +58,13 @@ class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
 
 
 class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
-    """An XML-RPC test transport for the Salesforce proxy."""
+    """An XML-RPC test transport for the Salesforce proxy.
+
+    This transport contains a small amount of sample data and intercepts
+    requests that would normally be sent via XML-RPC but instead directly
+    provides responses based on the sample data.  This transport does not
+    simulate network errors or timeouts.
+    """
 
     vouchers = [
         Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001', 'sabdfl_oid'),
@@ -100,31 +107,35 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
                     if voucher.owner == lp_openid]
         return vouchers
 
-    def transferVoucher(self, voucher_id, from_lp_openid, to_lp_openid):
-        voucher = self._findVoucher(voucher_id)
-        if voucher is not None:
-            return [False]
-        voucher.owner = to_lp_openid
-        return [True]
-
     def redeemVoucher(self, voucher_id, lp_openid,
                       lp_project_id, lp_project_name):
+        """Redeem the voucher.
+
+        :param voucher_id: string representing the unique voucher id.
+        :param lp_openid: string representing the Launchpad user's OpenID.
+        :param lp_project_id: integer representing the id for the project
+           being subscribed by the use of this voucher.
+        :param lp_project_name: string representing the name of the project in
+            Launchpad.
+        :return: Boolean representing the success or failure of the operation.
+        """
         voucher = self._findVoucher(voucher_id)
         if (voucher is None or
             voucher.status != 'UNREDEEMED' or
             voucher.owner != lp_openid):
-            return [False, 0]
+            return [False]
         voucher.status = 'REDEEMED'
         voucher.project_id = lp_project_id
         voucher.project_name = lp_project_name
         product = voucher.id.split('-')[0]
         term = PRODUCT_TERM_MAP.get(product)
         if term is None:
-            return [False, 0]
+            return [False]
         else:
-            return [True, term]
+            return [True]
 
     def updateProjectName(self, lp_project_id, lp_project_name):
+        """Set the project name for the given project id."""
         num_updated = 0
         for voucher in self.vouchers:
             if voucher.project_id == lp_project_id:

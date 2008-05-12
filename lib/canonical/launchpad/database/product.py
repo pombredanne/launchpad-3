@@ -172,7 +172,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
 
         def add_months(start, num_months):
-            """Given a start date find the new date num_months' later."""
+            """Given a start date find the new date 'num_months' later."""
             years, months = divmod(num_months, 12)
             days = int((months / 12.0) * 365)
 
@@ -181,7 +181,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         now = datetime.datetime.now(pytz.timezone('UTC'))
         if self.commercial_subscription is None:
-            date_starts = now #UTC_NOW
+            date_starts = now
             date_expires = add_months(date_starts, subscription_months)
             subscription = CommercialSubscription(
                 product=self,
