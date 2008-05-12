@@ -598,6 +598,10 @@ class ProjectBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
 
+    def _branches(self, lifecycle_status, show_dormant):
+        return getUtility(IBranchSet).getBranchesForProject(
+            self.context, lifecycle_status, self.user, self.sort_by)
+
     @property
     def no_branch_message(self):
         if (self.selected_lifecycle_status is not None
