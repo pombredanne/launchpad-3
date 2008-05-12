@@ -26,7 +26,7 @@ from optparse import OptionParser
 import re
 from textwrap import dedent
 
-from psycopg import ProgrammingError
+from psycopg2 import ProgrammingError
 
 from zope.interface import providedBy
 from zope.interface.exceptions import (

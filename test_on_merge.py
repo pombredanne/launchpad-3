@@ -7,7 +7,7 @@ import sys, re, time
 import os, os.path, errno
 import tabnanny
 from StringIO import StringIO
-import psycopg
+import psycopg2
 from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
@@ -44,7 +44,7 @@ def main():
 
     # Sanity check PostgreSQL version. No point in trying to create a test
     # database when PostgreSQL is too old.
-    con = psycopg.connect('dbname=template1')
+    con = psycopg2.connect('dbname=template1')
     cur = con.cursor()
     cur.execute('show server_version')
     server_version = cur.fetchone()[0]
@@ -62,12 +62,12 @@ def main():
 
     # Drop the template database if it exists - the Makefile does this
     # too, but we can explicity check for errors here
-    con = psycopg.connect('dbname=template1')
+    con = psycopg2.connect('dbname=template1')
     con.set_isolation_level(0)
     cur = con.cursor()
     try:
         cur.execute('drop database launchpad_ftest_template')
-    except psycopg.ProgrammingError, x:
+    except psycopg2.ProgrammingError, x:
         if 'does not exist' not in str(x):
             raise
     cur.execute("""
@@ -95,7 +95,7 @@ def main():
 
     # Sanity check the database. No point running tests if the
     # bedrock is crumbling.
-    con = psycopg.connect('dbname=launchpad_ftest_template')
+    con = psycopg2.connect('dbname=launchpad_ftest_template')
     cur = con.cursor()
     cur.execute('show search_path')
     search_path = cur.fetchone()[0]

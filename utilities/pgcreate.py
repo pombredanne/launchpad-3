@@ -10,7 +10,7 @@ __metaclass__ = type
 
 import sys
 import time
-import psycopg
+import psycopg2
 
 def main():
     if len(sys.argv) != 3:
@@ -20,7 +20,7 @@ def main():
     template, dbname = sys.argv[1:]
 
     for attempt in range(0, 10):
-        con = psycopg.connect('dbname=template1')
+        con = psycopg2.connect('dbname=template1')
         con.set_isolation_level(0)
         try:
             cur = con.cursor()
@@ -29,7 +29,7 @@ def main():
                         dbname, template
                         )
                     )
-        except psycopg.Error:
+        except psycopg2.Error:
             if attempt == 9:
                 raise
             con.close()
