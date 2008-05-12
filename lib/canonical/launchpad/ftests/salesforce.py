@@ -13,10 +13,6 @@ __all__ = [
 
 
 import copy
-import os
-import re
-import time
-import urlparse
 import xmlrpclib
 from zope.interface import implements
 
@@ -63,12 +59,13 @@ class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
 class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
     """An XML-RPC test transport for the Salesforce proxy."""
 
-    vouchers = [Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001', 'sabdfl_oid'),
-                Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002', 'sabdfl_oid'),
-                Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003', 'sabdfl_oid'),
-                Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004', 'cprov_oid'),
-                Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005', 'cprov_oid'),
-                ]
+    vouchers = [
+        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001', 'sabdfl_oid'),
+        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002', 'sabdfl_oid'),
+        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003', 'sabdfl_oid'),
+        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004', 'cprov_oid'),
+        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005', 'cprov_oid'),
+        ]
 
     def __init__(self):
         self.vouchers = copy.deepcopy(self.vouchers)
