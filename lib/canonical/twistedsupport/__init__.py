@@ -3,8 +3,11 @@
 """Useful tools for interacting with Twisted."""
 
 __metaclass__ = type
-__all__ = ['defer_to_thread', 'gatherResults']
+__all__ = ['defer_to_thread', 'gatherResults', 'suppress_stderr']
 
+
+import StringIO
+import sys
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
@@ -41,3 +44,19 @@ def gatherResults(deferredList):
     d.addErrback(convert_first_error_to_real)
     return d
 
+
+def suppress_stderr(function):
+    """Deferred friendly decorator that suppresses output from a function.
+    """
+    def set_stderr(result, stream):
+        sys.stderr = stream
+        return result
+
+    def wrapper(*arguments, **keyword_arguments):
+        saved_stderr = sys.stderr
+        ignored_stream = StringIO.StringIO()
+        sys.stderr = ignored_stream
+        d = defer.maybeDeferred(function, *arguments, **keyword_arguments)
+        return d.addBoth(set_stderr, saved_stderr)
+
+    return mergeFunctionMetadata(function, wrapper)
