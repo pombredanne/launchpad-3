@@ -391,6 +391,7 @@ class LaunchpadTransportTests:
         deferred.addCallback(set)
 
         def rename_file(dir_contents):
+            """Rename a file and return the original directory contents."""
             deferred = self._ensureDeferred(
                 transport.rename,
                 '~testuser/firefox/baz/.bzr/hello.txt',
@@ -399,12 +400,16 @@ class LaunchpadTransportTests:
             return deferred
 
         def check_file_was_renamed(dir_contents):
+            """Check that the old name isn't there and the new name is."""
+            # Replace the old name with the new name.
             dir_contents.remove('hello.txt')
             dir_contents.add('goodbye.txt')
             deferred = self._ensureDeferred(
                 transport.list_dir, '~testuser/firefox/baz/.bzr')
             deferred.addCallback(set)
+            # Check against the virtual transport.
             deferred.addCallback(self.assertEqual, dir_contents)
+            # Check against the backing transport.
             deferred.addCallback(
                 lambda ignored:
                 self.assertEqual(
