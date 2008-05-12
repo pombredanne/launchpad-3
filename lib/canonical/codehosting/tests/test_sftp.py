@@ -6,7 +6,7 @@ import os
 import unittest
 import shutil
 
-from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir
 from bzrlib import errors as bzr_errors
 from bzrlib import urlutils
 
