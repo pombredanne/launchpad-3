@@ -843,4 +843,3 @@ class LaunchpadTransport(AsyncLaunchpadTransport):
             return successes[0]
         else:
             raise AssertionError("%r has not fired yet." % (deferred,))
-
