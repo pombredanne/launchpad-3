@@ -84,7 +84,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission,
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
