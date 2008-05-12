@@ -96,7 +96,7 @@ check_storm: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
 	  --module canonical.launchpad.pagetests \
-          --test '!pagetests/ppa/xx-delete-packages|pagetests/soyuz'
+          --test '!pagetests/(ppa/xx-delete-packages|soyuz$|soyuz/xx-distroarchseries)'
 
 lint:
 	@bash ./utilities/lint.sh
