@@ -102,7 +102,17 @@ class TransportSFTPFile:
         deferred = self.transport.readv(self.name, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        return deferred.addCallback(get_first_chunk)
+        deferred.addCallback(get_first_chunk)
+        return deferred.addErrback(self._check_for_eof)
+
+    def _check_for_eof(self, failure):
+        failure.trap(bzr_errors.ShortReadvError)
+        # XXX: JonathanLange 2008-05-13: We return the empty string instead of
+        # the partially-returned data, since current versions of Bazaar don't
+        # actually use data from a short read (because this is always an
+        # error), so the only use of sending the partial data would be for
+        # better error reporting, which Bazaar doesn't even support.
+        return ''
 
     def setAttrs(self, attrs):
         """See `ISFTPFile`.

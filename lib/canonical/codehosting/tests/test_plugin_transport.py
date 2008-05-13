@@ -313,6 +313,18 @@ class LaunchpadTransportTests:
             transport.get_bytes, '~testuser/firefox/baz/.bzr/hello.txt')
         return deferred.addCallback(self.assertEqual, 'Hello World!')
 
+    def test_readv_mapped_file(self):
+        # Using readv on a public branch URL gets chunks of the file as stored
+        # on the base transport.
+        transport = self.getTransport()
+        deferred = self._ensureDeferred(
+            transport.readv, '~testuser/firefox/baz/.bzr/hello.txt',
+            [(3, 2)])
+        def get_chunk(generator):
+            return generator.next()[1]
+        deferred.addCallback(get_chunk)
+        return deferred.addCallback(self.assertEqual, 'lo')
+
     def test_put_mapped_file(self):
         # Putting a file from a public branch URL stores the file in the
         # mapped URL on the base transport.

@@ -94,6 +94,14 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         deferred = handle.readChunk(1, 2)
         return deferred.addCallback(self.assertEqual, 'ar')
 
+    def test_readChunkEOF(self):
+        # readChunk returns the empty string if it reads past the end-of-file.
+        # See comment in _check_for_eof for more details.
+        self.build_tree_contents([('foo', 'bar')])
+        handle = self.sftp_server.openFile('foo', 0, {})
+        deferred = handle.readChunk(2, 10)
+        return deferred.addCallback(self.assertEqual, '')
+
     def test_readChunkError(self):
         # Errors in readChunk are translated to SFTPErrors.
         handle = self.sftp_server.openFile('foo', 0, {})

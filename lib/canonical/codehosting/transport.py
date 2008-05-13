@@ -740,6 +740,11 @@ class VirtualTransport(Transport):
         # just return the absolute path.
         return self._abspath(relpath)
 
+    def readv(self, relpath, offsets, adjust_for_latency=False,
+              upper_limit=None):
+        return self._call(
+            'readv', relpath, offsets, adjust_for_latency, upper_limit)
+
     def rename(self, rel_from, rel_to):
         to_deferred = self._getUnderylingTransportAndPath(rel_to)
         from_deferred = self._getUnderylingTransportAndPath(rel_from)
