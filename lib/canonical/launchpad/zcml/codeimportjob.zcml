@@ -29,7 +29,7 @@
     provides="canonical.launchpad.interfaces.ICodeImportJobWorkflow" >
     <require
       permission="launchpad.Edit"
-      attributes="newJob deletePendingJob" />
+      attributes="newJob deletePendingJob updateHeartbeat finishJob" />
     <require
       permission="launchpad.AnyPerson"
       attributes="requestJob" />
