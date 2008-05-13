@@ -41,25 +41,37 @@ real life this would be done nearer to the expiration date.
     >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12, 'notes')
     >>> print bzr.commercial_subscription.sales_system_id
     foo456
-    >>> assert (bzr.commercial_subscription.date_starts ==
-    ...     old_date_starts), "Start date changed when it should not have."
+
+The start date should not have changed.
+
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
+
+The difference between the expiration dates should be one year, either
+365 days or 366 days during leap years.
+
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
-    >>> # Account for leap years.
-    >>> assert expiry_diff in [timedelta(365), timedelta(366)], (
-    ...     "Unexpected expiration.")
+    >>> expiry_diff in [timedelta(365), timedelta(366)]
+    True
 
 A voucher can be redeemed for any number of months (as reported by the
 Salesforce proxy).
 
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
-    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 1, 'notes')
+    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 6, 'notes')
     >>> print bzr.commercial_subscription.sales_system_id
     foo457
-    >>> assert (bzr.commercial_subscription.date_starts ==
-    ...     old_date_starts), "Start date changed when it should not have."
+
+The start date did not change.
+
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
-    >>> assert expiry_diff == timedelta(30), (
-    ...        "Unexpected expiration.")
+
+A six month extension is 182 days.
+
+    >>> expiry_diff == timedelta(182)
+    True
