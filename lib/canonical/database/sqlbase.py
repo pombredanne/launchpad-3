@@ -193,10 +193,11 @@ class ZopelessTransactionManager(object):
         This is required for connection setting changes to be made visible.
         """
         zstorm = getUtility(IZStorm)
-        store = zstorm.get('main')
-        zstorm.remove(store)
-        transaction.abort()
-        store.close()
+        if 'main' in zstorm._named:
+            store = zstorm.get('main')
+            zstorm.remove(store)
+            transaction.abort()
+            store.close()
         zstorm.get('main')
 
     @classmethod

@@ -9,6 +9,7 @@ canonical.testing
 __metaclass__ = type
 
 from storm.zope.interfaces import IZStorm
+import transaction
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.testing.functional import FunctionalTestSetup
 from zope.component import getUtility
@@ -33,11 +34,17 @@ __all__ = [
 
 def _disconnect_sqlos():
     zstorm = getUtility(IZStorm)
+    stores = []
     for store_name in ['main', 'session']:
         if store_name in zstorm._named:
             store = zstorm.get(store_name)
             zstorm.remove(store)
-            #store.close()
+            stores.append(store)
+    # If we have any stores, abort the transaction and close them.
+    if stores:
+        transaction.abort()
+        for store in stores:
+            store.close()
 
 
 def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
