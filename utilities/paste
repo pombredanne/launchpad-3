@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.4
 
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
@@ -12,6 +12,13 @@ import webbrowser
 
 from optparse import OptionParser
 from urlparse import urljoin
+
+import _pythonpath
+
+from ClientCookie import Cookie, CookieJar
+
+from zope.testbrowser.browser import Browser
+
 
 # Should we be able to override any of these?
 AUTH_FILE = '~/.canonical_paste_auth'
@@ -43,32 +50,38 @@ def parse_arguments():
     return parser
 
 
-def read_auth_file(path):
+def get_lp_auth_cookie(path):
+    """Read the authentication file, and return a Cookie object."""
     path = os.path.expanduser(path)
     f = open(path)
     try:
-        username = f.readline().strip()
-        password = f.readline().strip()
+        cookie_value = f.readline().strip()
     finally:
         f.close()
-    return username, password
+    return Cookie(
+        version=0, name='lp', value=cookie_value,
+        port=None, port_specified=False,
+        domain='login.launchpad.net', domain_specified=True,
+        domain_initial_dot=False, path='', path_specified=None,
+        secure=True, expires=None, discard=True,
+        comment=None, comment_url=None, rest=None, rfc2109=False)
 
 
-def make_basic_auth_header(username, password):
-    auth = '%s:%s' % (username, password)
-    return 'Basic %s' % base64.encodestring(auth).strip()
+def authenticate(browser):
+    """Go through the OpenID process and authenticate."""
+    # First click on the page where it says we have to log in.
+    browser.getControl('Continue').click()
+    # Then click on the page with nothing but a submit button.
+    browser.getControl('Continue').click()
 
-
-def https_post_form_with_auth(host, path, form, auth):
-    form_data = urllib.urlencode(form).strip()
-    connection = httplib.HTTPSConnection(host)
-    connection.request('POST', path, form_data, {
-        'Host': host,
-        'Authorization': auth,
-        'Content-type': 'application/x-www-form-urlencoded',
-        'Content-length': str(len(form_data)),
-        })
-    return connection.getresponse()
+    # Now we're at the LP login. since we have sent the auth cookie, we
+    # can sign in without specifying a user and password.
+    try:
+        browser.getControl('Sign In').click()
+    except LookupError:
+        return False
+    else:
+        return True
 
 
 def main():
@@ -94,24 +107,30 @@ def main():
 
     form = (
         ('poster', poster),
-        ('title', title),
-        ('syntax', parser.options.syntax),
+        ('syntax', [parser.options.syntax]),
         ('content', content),
         )
 
     # Figure out the authentication.
-    username, password = read_auth_file(AUTH_FILE)
-    auth = make_basic_auth_header(username, password)
+    lp_cookie = get_lp_auth_cookie(AUTH_FILE)
+    cookiejar = CookieJar()
+    cookiejar.set_cookie(lp_cookie)
+    browser = Browser()
+    browser.mech_browser.set_cookiejar(cookiejar)
 
-    response = https_post_form_with_auth(PASTE_HOST, PASTE_PATH, form, auth)
-    location = response.getheader('Location')
-    if location:
-        url = urljoin('https://' + PASTE_HOST, location)
-        print url
-        if parser.options.browser:
-            webbrowser.open(url)
-    else:
-        print 'Unexpected response:\n%s' % response.getheaders()
+    browser.open(urljoin('https://' + PASTE_HOST, PASTE_PATH))
+    # We need to authenticate before pasting.
+    if browser.getForm(name='oid_form') is not None:
+        authenticated = authenticate(browser)
+        if not authenticated:
+            print "Your LP cookie is invalid. Please update %s" % AUTH_FILE
+            return
+    for name, value in form:
+        browser.getControl(name=name).value = value
+    browser.getControl('Paste!').click()
+    print browser.url
+    if parser.options.browser:
+        webbrowser.open(browser.url)
 
 
 if __name__ == '__main__':
