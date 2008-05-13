@@ -1008,6 +1008,12 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
 
 class BranchRequestImportView(LaunchpadFormView):
+    """The view to provide an 'Import now' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is being actively imported and where there is a import scheduled at
+    some point in the future.
+    """
 
     schema = IBranch
     field_names = []
