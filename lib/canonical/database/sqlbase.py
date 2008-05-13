@@ -2,9 +2,7 @@
 
 __metaclass__ = type
 
-import thread
 import warnings
-import time
 from datetime import datetime
 
 import psycopg2
@@ -16,6 +14,7 @@ from storm.databases.postgres import compile as postgres_compile
 import storm.sqlobject
 from storm.zope.interfaces import IZStorm
 from sqlobject.sqlbuilder import sqlrepr
+import transaction
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -495,88 +494,3 @@ def cursor():
     directly rather than using the SQLObject interface
     '''
     return getUtility(IZStorm).get('main')._connection.build_raw_cursor()
-
-
-class FakeZopelessTransactionManager:
-    # XXX Andrew Bennetts 2005-07-12:
-    # There really should be a formal interface that both this and
-    # ZopelessTransactionManager implement.
-
-    def __init__(self, implicitBegin=False,
-                 isolation=ISOLATION_LEVEL_DEFAULT):
-        assert ZopelessTransactionManager._installed is None
-        ZopelessTransactionManager._installed = self
-        self.desc = FakeZopelessConnectionDescriptor.install(None)
-        self.implicitBegin = implicitBegin
-        if self.implicitBegin:
-            self.begin()
-
-    @classmethod
-    def install(cls):
-        fztm = cls()
-        ZopelessTransactionManager._installed = fztm
-        FakeZopelessConnectionDescriptor.install(None)
-        return fztm
-
-    def uninstall(self):
-        assert ZopelessTransactionManager._installed is self
-        FakeZopelessConnectionDescriptor.uninstall()
-        ZopelessTransactionManager._installed = None
-
-    # XXX Andrew Bennetts 2005-07-12:
-    #      Ideally I'd be able to re-use some of the
-    #      ZopelessTransactionManager implementation of begin, commit
-    #      and abort.
-    def begin(self):
-        if not self.implicitBegin:
-            self.desc._activate()
-        self.desc.begin()
-
-    def commit(self, sub=False):
-        self.desc.commit()
-        self.desc._deactivate()
-        if self.implicitBegin:
-            self.begin()
-
-    def abort(self, sub=False):
-        self.desc.rollback()
-        self.desc._deactivate()
-        if self.implicitBegin:
-            self.begin()
-
-
-class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
-    """A helper class for testing.
-
-    Use this if you want to know if commit or rollback was called.
-    """
-    _obsolete = True
-    activated = False
-    begun = False
-    rolledback = False
-    committed = False
-
-    def __get__(self, inst, cls=None):
-        return self
-
-    def _activate(self):
-        assert not self.activated
-        self.activated = True
-
-    def _deactivate(self):
-        assert self.activated
-        self.activated = False
-
-    def begin(self):
-        assert self.activated
-        self.begun = True
-
-    def rollback(self):
-        assert self.activated
-        self.rolledback = True
-
-    def commit(self):
-        assert self.activated
-        self.committed = True
-
-
