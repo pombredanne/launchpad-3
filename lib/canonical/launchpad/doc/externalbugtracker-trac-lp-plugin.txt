@@ -122,13 +122,14 @@ instance returns another time zone.
     ...     'http://example.com/', xmlrpc_transport=test_transport,
     ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
 
-    >>> import time
     >>> from datetime import datetime
-    >>> trac_time = datetime(2008, 4, 9, 3, 2, 1)
-    >>> test_transport.seconds_since_epoch = int(time.mktime(
-    ...     trac_time.timetuple()))
+    >>> datetime.utcfromtimestamp(1207706521)
+    datetime.datetime(2008, 4, 9, 2, 2, 1)
+
+    >>> HOUR = 60*60
+    >>> test_transport.seconds_since_epoch = 1207706521 + HOUR
     >>> test_transport.local_timezone = 'CET'
-    >>> test_transport.utc_offset = 60*60
+    >>> test_transport.utc_offset = HOUR
     >>> trac.getCurrentDBTime()
     Using XML-RPC to generate token.
     Successfully validated the token.
