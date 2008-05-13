@@ -13,7 +13,6 @@ __all__ = [
     'ICodeImportJobSet',
     'ICodeImportJobSetPublic',
     'ICodeImportJobWorkflow',
-    'ICodeImportJobWorkflowPublic',
     ]
 
 from zope.interface import Interface
@@ -227,17 +226,6 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A `CodeImportResult` was created.
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
-
-
-class ICodeImportJobWorkflowPublic(Interface):
-    """Parts of the CodeImportJobWorkflow interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated.
-    """
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
 
     def startJob(import_job, machine):
         """Record that `machine` is about to start work on `import_job`.
