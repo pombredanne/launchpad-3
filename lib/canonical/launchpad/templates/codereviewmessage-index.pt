@@ -18,10 +18,15 @@
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>
-  <tt id="comment-from">From
+  <div><tt id="comment-from">From
       <span tal:replace="structure context/message/owner/fmt:link"/>
-  <tt id="comment-subject" tal:content="context/message/subject" />
-  <tt id="comment-body" tal:content="context/message/text_contents" />
+  </tt></div>
+  <div>
+    <tt id="comment-subject" tal:content="context/message/subject" />
+  </div>
+  <div>
+    <tt id="comment-body" tal:content="context/message/text_contents" />
+  </div>
 </div>
 
 </body>
