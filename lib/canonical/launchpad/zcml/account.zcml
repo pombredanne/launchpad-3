@@ -1,0 +1,17 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <content class="canonical.launchpad.database.Account">
+        <allow interface="canonical.launchpad.interfaces.IAccount" />
+        <require
+            permission="launchpad.AnyPerson"
+            set_schema="canonical.launchpad.interfaces.IAccount" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.AccountSet"
+        provides="canonical.launchpad.interfaces.IAccountSet">
+        <allow interface="canonical.launchpad.interfaces.IAccountSet" />
+    </securedutility>
+
+</configure>
+

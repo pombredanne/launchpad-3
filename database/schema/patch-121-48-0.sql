@@ -83,6 +83,8 @@ DROP TRIGGER temp_t_set_openid_identifier ON Person;
 ALTER TABLE EmailAddress
     ALTER COLUMN person DROP NOT NULL,
     ADD COLUMN account integer;
+UPDATE EmailAddress SET account=Account.id
+FROM Account WHERE EmailAddress.person = Account.person;
 ALTER TABLE EmailAddress
     ADD CONSTRAINT emailaddress__account__fk
         FOREIGN KEY (account) REFERENCES Account,

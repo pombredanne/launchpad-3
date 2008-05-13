@@ -11,11 +11,12 @@ __all__ = [
     'IEmailAddressSet',
     'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IAccount
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class InvalidEmailAddress(Exception):
@@ -80,6 +81,7 @@ class IEmailAddress(Interface):
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
+    account = Object(title=_('Account'), schema=IAccount, required=False)
     person = Int(title=_('Person'), required=True, readonly=False)
     personID = Int(title=_('PersonID'), required=True, readonly=True)
     statusname = Attribute("StatusName")

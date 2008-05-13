@@ -13,8 +13,10 @@ from canonical.launchpad.interfaces.validation import *
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
+from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.account import *
 from canonical.launchpad.interfaces.archive import *
 from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
@@ -113,7 +115,6 @@ from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
-from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *

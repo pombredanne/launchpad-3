@@ -34,7 +34,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, IAccountSet)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -153,7 +153,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Everything's okay, so let SQLObject do the normal thing.
         self._SO_set_name(value)
 
-    password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -163,13 +162,26 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-    openid_identifier = StringCol(
-            dbName='openid_identifier', alternateID=True, notNull=True,
-            default=DEFAULT)
+   
+    # XXX: The openid_identifier and password properties should go
+    # -- StuartBishop 20080513
+    @property
+    def openid_identifier(self):
+        account = getUtility(IAccountSet).getByPerson(self)
+        if account is not None:
+            return account.openid_identifier
 
-    account_status = EnumCol(
-        enum=AccountStatus, default=AccountStatus.NOACCOUNT)
-    account_status_comment = StringCol(default=None)
+    def _get_password(self):
+        account = getUtility(IAccountSet).getByPerson(self)
+        if account is not None:
+            return account.password
+
+    def _set_password(self, value):
+        account = getUtility(IAccountSet).getByPerson(self)
+        assert account is not None
+        account.password = value
+
+    password = property(_get_password, _set_password)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)

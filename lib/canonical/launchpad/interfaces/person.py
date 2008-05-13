@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
     'InvalidName',
@@ -75,40 +73,6 @@ from canonical.launchpad.interfaces.teammembership import (
     ITeamMembership, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
-
-
-class AccountStatus(DBEnumeratedType):
-    """The status of a Launchpad account."""
-
-    NOACCOUNT = DBItem(10, """
-        No Launchpad account
-
-        There's no Launchpad account for this Person record.
-        """)
-
-    ACTIVE = DBItem(20, """
-        Active Launchpad account
-
-        There's an active Launchpad account associated with this Person.
-        """)
-
-    DEACTIVATED = DBItem(30, """
-        Deactivated Launchpad account
-
-        The account associated with this Person has been deactivated by the
-        Person himself.
-        """)
-
-    SUSPENDED = DBItem(40, """
-        Suspended Launchpad account
-
-        The account associated with this Person has been suspended by a
-        Launchpad admin.
-        """)
-
-
-INACTIVE_ACCOUNT_STATUSES = [
-    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -426,8 +390,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
     karma = Int(
         title=_('Karma'), readonly=False,
         description=_('The cached total karma for this person.'))
@@ -544,19 +506,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         title=_('Timezone'), required=True, readonly=False,
         description=_('The timezone of where you live.'),
         vocabulary='TimezoneName')
-
-    openid_identifier = TextLine(
-            title=_("Key used to generate opaque OpenID identities."),
-            readonly=True, required=False,
-            )
-
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=False, vocabulary=AccountStatus)
-
-    account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
-        readonly=False)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(

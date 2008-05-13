@@ -1,0 +1,79 @@
+= Account =
+
+An Account is used by someone to Authenticate with the Launchpad login
+service.
+
+>>> login('test@canonical.com')
+>>> from canonical.launchpad.interfaces import (
+...     IAccount, IAccountSet, AccountStatus, AccountCreationRationale)
+
+Accounts are generally looked up by email address
+
+>>> account_set = getUtility(IAccountSet)
+>>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
+>>> IAccount.providedBy(stub_account)
+True
+>>> print account_set.getByEmail('invalid@whatever')
+None
+
+
+An Account may be linked to a Person record
+
+>>> from canonical.launchpad.interfaces import IPerson
+>>> IPerson.providedBy(stub_account.person)
+True
+>>> stub_account.person.name
+u'stub'
+
+
+An Account has an encrypted password and an OpenID identifier used to generate
+the OpenID identity URL
+
+>>> stub_account.password
+u'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx'
+>>> stub_account.openid_identifier
+u'stub_oid'
+
+
+And other account metadata
+
+>>> stub_account.date_created
+datetime.datetime(...)
+>>> stub_account.creation_rationale == (
+...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD)
+True
+>>> stub_account.status == AccountStatus.ACTIVE
+True
+>>> stub_account.date_status_set >= stub_account.date_created
+True
+>>> print stub_account.status_comment
+None
+>>> stub_account.displayname
+u'Stuart Bishop'
+
+
+When the status is changed, the date_status_set is updated
+
+>>> original_date_status_set = stub_account.date_status_set
+>>> stub_account.status = AccountStatus.SUSPENDED
+>>> stub_account.date_status_set > original_date_status_set
+True
+>>> stub_account.status = AccountStatus.ACTIVE
+
+
+The Account's displayname is synced to the Person's displayname if there is
+one. If the Person.displayname is changed, the Account.displayname is changed
+too.
+
+>>> stub_account.person.displayname = 'Something New'
+>>> stub_account.displayname
+'Something New'
+
+However, the reverse is not true. If we change the Account.displayname,
+the linked Person.displayname (if there is one) is not updated immediately.
+Instead, a cron job will sync this information later. This allows displayname
+changes to happen even when the Person table is unavailable.
+
+>>> stub_account.displayname = 'Stuart Bishop'
+>>> stub_account.person.displayname
+'Something New'

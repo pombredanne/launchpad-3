@@ -420,7 +420,7 @@ RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
                 AND ValidPersonOrTeamCache.id IS NULL
                 AND status = %(PREF)d
                 AND merged IS NULL
-                AND password IS NOT NULL
+                -- AND password IS NOT NULL
             """ % vars(), param_types)
 
     def is_team(person_id):

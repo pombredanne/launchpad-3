@@ -123,8 +123,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     schema="canonical.launchpad.interfaces.IPerson"
     label="Review person"
-    fields="name displayname password
-            personal_standing personal_standing_reason"
+    fields="name displayname personal_standing personal_standing_reason"
     permission="launchpad.Admin"
     template="../templates/person-review.pt"
     >
