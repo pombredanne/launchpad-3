@@ -223,7 +223,7 @@ class Roundup(ExternalBugTracker):
             try:
                 return self.status_map[int(remote_status)]
             except (KeyError, ValueError):
-                raise UnknownRemoteStatusError()
+                raise UnknownRemoteStatusError(remote_status)
 
     def _convertPythonRemoteStatus(self, remote_status):
         """Convert a Python bug status into a BugTaskStatus.
@@ -246,7 +246,7 @@ class Roundup(ExternalBugTracker):
             # If we can't find the status in our status map we can give
             # up now.
             if not self.status_map.has_key(status):
-                raise UnknownRemoteStatusError()
+                raise UnknownRemoteStatusError(remote_status)
         except ValueError:
             raise AssertionError("The remote status must be an integer.")
 
@@ -266,6 +266,6 @@ class Roundup(ExternalBugTracker):
         elif self.status_map[1].has_key(resolution):
             return self.status_map[1][resolution]
         else:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
 
 
