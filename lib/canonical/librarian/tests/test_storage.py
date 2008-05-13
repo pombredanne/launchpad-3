@@ -13,23 +13,43 @@ import sha
 import shutil
 import tempfile
 
+from storm.store import Store
+from storm.zope.interfaces import IZStorm
+from zope.component import getUtility
+
 from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
-from canonical.database.sqlbase import SQLBase
-from canonical.database.sqlbase import FakeZopelessTransactionManager
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class LibrarianStorageTestCase(unittest.TestCase):
     """Librarian test cases that don't involve the database"""
+    layer = LaunchpadZopelessLayer
+
     def setUp(self):
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
-        self.fztm = FakeZopelessTransactionManager()
+
+        # Hook the commit and rollback methods of the store.
+        self.store = getUtility(IZStorm).get('main')
+        self.committed = self.rolledback = False
+        self.orig_commit = self.store.commit
+        self.orig_rollback = self.store.rollback
+        def commit():
+            self.committed = True
+            self.orig_commit()
+        self.store.commit = commit
+        def rollback():
+            self.rolledback = True
+            self.orig_rollback()
+        self.store.rollback = rollback
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        self.fztm.uninstall()
+        del self.store.commit
+        del self.store.rollback
+        self.orig_commit = self.orig_rollback = None
 
     def test_hasFile_missing(self):
         # Make sure hasFile returns False when a file is missing
@@ -97,13 +117,13 @@ class LibrarianStorageTestCase(unittest.TestCase):
         newfile.append(data)
 
         # The transaction shouldn't be committed yet...
-        self.failIf(SQLBase._connection.committed)
+        self.failIf(self.committed)
 
         # Now try to store the file
         fileid, aliasid = newfile.store()
 
         # ...but it should be committed now.
-        self.failUnless(SQLBase._connection.committed)
+        self.failUnless(self.committed)
 
         # And the file should now be in its final location on disk, too..
         self.failUnless(self.storage.hasFile(fileid))
@@ -124,13 +144,13 @@ class LibrarianStorageTestCase(unittest.TestCase):
         newfile._move = lambda x: 1/0
 
         # The transaction shouldn't have aborted yet...
-        self.failIf(SQLBase._connection.rolledback)
+        self.failIf(self.rolledback)
 
         # Now try to store the file, and catch the exception
         self.assertRaises(ZeroDivisionError, newfile.store)
 
         # ...and the transaction should have aborted.
-        self.failUnless(SQLBase._connection.rolledback)
+        self.failUnless(self.rolledback)
 
         # And the file should have been removed from its temporary location
         self.failIf(os.path.exists(newfile.tmpfilepath))
@@ -164,10 +184,6 @@ class LibrarianStorageTestCase(unittest.TestCase):
 
 class StubLibrary:
     # Used by test_transactionCommit/Abort
-
-    def __init__(self):
-        self.committed = False
-        self.rolledback = False
 
     def lookupBySHA1(self, digest):
         return []

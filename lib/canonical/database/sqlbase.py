@@ -195,13 +195,13 @@ class ZopelessTransactionManager(object):
         zstorm = getUtility(IZStorm)
         store = zstorm.get('main')
         zstorm.remove(store)
-        store.close()
+        #store.close()
 
     @classmethod
     def uninstall(cls):
         """Uninstall the ZopelessTransactionManager.
 
-        This entails removing the config overlay and 
+        This entails removing the config overlay and resetting the store.
         """
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
