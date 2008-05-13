@@ -16,6 +16,7 @@ __all__ = [
     'URLDereferencingMixin',
     ]
 
+import copy
 from datetime import datetime
 import simplejson
 
@@ -519,94 +520,77 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         :param changeset: A dictionary. Should come from an incoming
         representation.
         """
+        changeset = copy.copy(changeset)
         validated_changeset = {}
         errors = []
-        for repr_name, value in changeset.items():
-            if repr_name == 'self_link':
-                # The self link isn't part of the schema, so it's
-                # handled separately.
-                if value != canonical_url(self.context):
-                    errors.append("self_link: You tried to modify "
-                                  "a read-only attribute.")
+
+        # The self link isn't part of the schema, so it's
+        # handled separately.
+        if changeset.has_key('self_link'):
+            if changeset['self_link'] != canonical_url(self.context):
+                errors.append("self_link: You tried to modify "
+                              "a read-only attribute.")
+            del(changeset['self_link'])
+
+        # For every field in the schema, see if there's a corresponding
+        # field in the changeset.
+        for name, field in getFields(self.entry.schema).items():
+            if name.startswith('_'):
+                # This field is not part of the web service interface.
                 continue
-
-            change_this_field = True
-
-            # We chop off the end of the string rather than use .replace()
-            # because there's a chance the name of the field might already
-            # have "_link" or (very unlikely) "_collection_link" in it.
-            if repr_name.endswith('_collection_link'):
-                name = repr_name[:-16]
-            elif repr_name.endswith('_link'):
-                name = repr_name[:-5]
-            else:
-                name = repr_name
-            element = self.entry.schema.get(name)
-
-            if (name.startswith('_') or element is None
-                or ((ICollection.providedBy(element)
-                     or IObject.providedBy(element)) and repr_name == name)):
-                # That last clause needs some explaining. It's the
-                # situation where we have a collection represented as
-                # 'foo_collection_link' or an object represented as
-                # 'bar_link', and the user sent in a PATCH request
-                # that tried to change 'foo' or 'bar'. This code tells
-                # the user: you can't change 'foo' or 'bar' directly;
-                # you have to use 'foo_collection_link' or 'bar_link'.
-                # (Of course, you also can't change
-                # 'foo_collection_link', but that's taken care of
-                # below.)
-                errors.append("%s: You tried to modify a nonexistent "
-                              "attribute." % repr_name)
-                continue
-            # Around this point the specific value provided by the client
-            # becomes relevant, so we marshall it.
-            element = element.bind(self.context)
-            marshaller = getMultiAdapter((element, self.request),
+            field = field.bind(self.context)
+            marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
+            repr_name = marshaller.representation_name(name)
+            if not changeset.has_key(repr_name):
+                # The client didn't try to set a value for this field.
+                continue
+
+            # The client tried to set a value for this field. Marshall
+            # it, validate it, and move it from the client changeset
+            # to the validated changeset.
+            original_value = changeset[repr_name]
+            del(changeset[repr_name])
             try:
-                value = marshaller.marshall(value)
+                value = marshaller.marshall(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
 
-            if (IObject.providedBy(element)
-                and not ICollectionField.providedBy(element)):
+            # If the new value is the URL to an object, make sure it points
+            # to the right kind of object.
+            if (IObject.providedBy(field)
+                and not ICollectionField.providedBy(field)):
                 # TODO leonardr 2008-15-04
                 # blueprint=api-wadl-description: This should be moved
                 # into the ObjectLookupFieldMarshaller, once we make
                 # it possible for Vocabulary fields to specify a
                 # schema class the way IObject fields can.
-                if not element.schema.providedBy(value):
+                if not field.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue
 
-            # The current value of the attribute also becomes
-            # relevant, so we obtain that. If the attribute designates
-            # a collection, the 'current value' is considered to be
-            # the URL to that entry or collection.
-            if ICollectionField.providedBy(element):
-                current_value = "%s/%s" % (
-                    canonical_url(self.context), name)
-            elif IObject.providedBy(element):
-                current_value = canonical_url(getattr(self.entry, name))
-            else:
-                current_value = getattr(self.entry, name)
+            # Obtain the current value of the field, as it would be
+            # shown in an outgoing representation. This gives us an easy
+            # way to see if the client changed the value.
+            current_value = marshaller.unmarshall(
+                self.entry, name, getattr(self.entry, name))
 
+            change_this_field = True
             # Read-only attributes and collection links can't be
             # modified. It's okay to specify a value for an attribute
             # that can't be modified, but the new value must be the
             # same as the current value.  This makes it possible to
             # GET a document, modify one field, and send it back.
-            if ICollectionField.providedBy(element):
+            if ICollectionField.providedBy(field):
                 change_this_field = False
                 if value != current_value:
                     errors.append("%s: You tried to modify a collection "
                                   "attribute." % repr_name)
                     continue
 
-            if element.readonly:
+            if field.readonly:
                 change_this_field = False
                 if value != current_value:
                     errors.append("%s: You tried to modify a read-only "
@@ -614,10 +598,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     continue
 
             if change_this_field is True and value != current_value:
-                if not IObject.providedBy(element):
+                if not IObject.providedBy(field):
                     try:
                         # Do any field-specific validation.
-                        element.validate(value)
+                        field.validate(value)
                     except ConstraintNotSatisfied, e:
                         # Try to get a string error message out of
                         # the exception; otherwise use a generic message
@@ -637,6 +621,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                         errors.append("%s: %s" % (repr_name, error))
                         continue
                 validated_changeset[name] = value
+        # If there are any fields left in the changeset, they're
+        # fields that don't correspond to some field in the
+        # schema. They're all errors.
+        for invalid_field in changeset.keys():
+            errors.append("%s: You tried to modify a nonexistent "
+                          "attribute." % invalid_field)
 
         # If there were errors, display them and send a status of 400.
         if len(errors) > 0:
