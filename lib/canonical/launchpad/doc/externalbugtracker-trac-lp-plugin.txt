@@ -123,6 +123,8 @@ instance returns another time zone.
     ...     internal_xmlrpc_transport=TestTracInternalXMLRPCTransport())
 
     >>> from datetime import datetime
+    >>> # There doesn't seem to be a way to generate a UTC time stamp,
+    >>> # without mocking around with the TZ environment variable.
     >>> datetime.utcfromtimestamp(1207706521)
     datetime.datetime(2008, 4, 9, 2, 2, 1)
 
