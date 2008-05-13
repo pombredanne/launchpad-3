@@ -13,7 +13,7 @@ from zope.interface import Interface
 
 
 class IFieldMarshaller(Interface):
-    "A class that maps between schema fields and representation. fields"
+    """A mapper between schema fields and representation fields"""
 
     def representationName(field_name):
         """Transform a field name into a name used in a representation.
