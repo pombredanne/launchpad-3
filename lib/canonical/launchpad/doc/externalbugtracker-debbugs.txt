@@ -400,39 +400,33 @@ correct bug thread. In order to do this, the DebBugs ExternalBugTracker
 has a method, _sendEmail(), which is used to send the mail upstream. We
 can override this for the purposes of testing.
 
-    >>> class MailSendingDebBugs(DebBugs):
+    >>> class MailSendingDebBugs(TestDebBugs):
     ...
     ...     def _sendEmail(self, from_addr, to_addr, subject, body,
     ...         rfc822msgid):
-    ...         email = """\
-    ...             From: %(from_addr)s
-    ...             To: %(to_addr)s
-    ...             Subject: %(subject)s
-    ...             Message-Id: %(rfc822msgid)s
-    ...
-    ...             %(body)s
-    ...         """
-    ...
-    ...         print email % {
-    ...             'body': body,
-    ...             'from_addr': from_addr,
-    ...             'rfc822msgid': rfc822msgid,
-    ...             'subject': subject,
-    ...             'to_addr': to_addr,
-    ...             }
+    ...         print "From: %s" % from_addr
+    ...         print "To: %s" % to_addr
+    ...         print "Subject: %s" % subject
+    ...         print "Message-Id: %s\n" % rfc822msgid
+    ...         print body
 
 The addRemoteCommentMethod() takes three parameters: The remote bug to
 which we want to push the comment, the body of the comment that we wish
 to push and the rfc822msgid of the comment that we're pushing. The
 method 
 
-    >>> debbugs = MailSendingDebBugs('http://debbugs.example.com')
-    >>> debbugs.addRemoteComment(
-    ...     1, 'Example comment', '<123456@launchpad.net>')
-    From: test@bugs.launchpad.net
-    To: 1@debbugs.example.com
-    Subject: 
-    Message-Id: 12345@launchpad.net
+    >>> test_debian_bug = TestDebianBug(
+    ...     summary="Example bug 1234", package='evolution', id=1234,)
+    >>> external_debbugs = MailSendingDebBugs(
+    ...     'http://example.com/', {'1234': test_debian_bug})
+    >>> external_debbugs.addRemoteComment(
+    ...     '1234', 'Example comment.', '<123456@launchpad.net>')
+    From: debbugs@bugs.launchpad.net
+    To: 1234@example.com
+    Subject: Re: Example bug 1234
+    Message-Id: <123456@launchpad.net>
+    <BLANKLINE>
+    Example comment.
 
 
 === Script for importing Debian bugs, linking them to Ubutu ===

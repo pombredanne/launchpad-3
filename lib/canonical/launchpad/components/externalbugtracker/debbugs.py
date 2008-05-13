@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.webapp import urlsplit
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -268,3 +269,14 @@ class DebBugs(ExternalBugTracker):
 
         See `ISupportsCommentPushing`.
         """
+        debian_bug = self._findBug(remote_bug)
+
+        # We set the subject to "Re: <bug subject>" in the same way that
+        # a mail client would.
+        subject = "Re: %s" % debian_bug.subject
+        host_name = urlsplit(self.baseurl)[1]
+        to_addr = "%s@%s" % (remote_bug, host_name)
+
+        self._sendEmail(
+            'debbugs@bugs.launchpad.net', to_addr, subject, comment_body,
+            rfc822msgid)
