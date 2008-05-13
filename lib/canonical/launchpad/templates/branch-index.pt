@@ -54,12 +54,10 @@
       </tal:remote-branch>
       <tal:show-download-url condition="view/bzr_download_url">
         <tr>
-          <th>Download URL:</th>
-          <td tal:content="view/bzr_download_url"/>
-        </tr>
-        <tr class="lesser">
-          <th>Example:</th>
-          <td>bzr branch <tal:url replace="view/bzr_user_download_url"/></td>
+          <th>Get this branch:</th>
+          <td>
+            <tt>bzr branch <tal:url replace="view/bzr_download_url"/></tt>
+          </td>
         </tr>
       </tal:show-download-url>
 
@@ -97,7 +95,7 @@
               <!-- The user is logged in but cannot upload to the branch -->
             </tal:comment>
             <tr>
-              <th>Upload URL:</th>
+              <th>Update this branch:</th>
               <td id="upload-directions" tal:condition="not:context/owner/isTeam">
                 You cannot upload to this branch. Only
                 <a tal:attributes="href context/owner/fmt:url"
@@ -119,9 +117,9 @@
             </tal:comment>
 
             <tr>
-              <th>Upload URL:</th>
-              <td>
-                <tal:url replace="view/bzr_upload_url"/>
+              <th>Update this branch:</th>
+              <td id="upload-directions">
+                <tt>bzr push <tal:url replace="view/bzr_upload_url"/></tt>
                 <tal:comment condition="nothing">
                   <!-- Directions to set the SSH key -->
                 </tal:comment>
@@ -130,12 +128,6 @@
                   to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
                   register a SSH key </a>.
                 </p>
-              </td>
-            </tr>
-            <tr class="lesser">
-              <th>Example:</th>
-              <td id="upload-directions">
-                bzr push <tal:url replace="view/bzr_user_upload_url"/>
               </td>
             </tr>
             </tal:can-upload>

@@ -743,6 +743,17 @@ ALTER TABLE archivedependency ENABLE TRIGGER ALL;
 
 ALTER TABLE archivepermission DISABLE TRIGGER ALL;
 
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (1, '2006-10-16 18:31:43.464753', 17, 1, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (2, '2006-10-16 18:31:43.46438', 17, 1, 1, 2, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (3, '2006-10-16 18:31:43.463125', 17, 1, 1, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (4, '2006-10-16 18:31:43.464753', 17, 1, 8, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (5, '2006-10-16 18:31:43.465111', 17, 1, 8, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (6, '2006-10-16 18:31:43.465111', 17, 2, 1, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (7, '2006-10-16 18:31:43.465111', 17, 2, 1, 2, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (8, '2006-10-16 18:31:43.465111', 17, 2, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (9, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (10, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (11, '2006-10-16 18:31:43.465111', 13, 1, 1, NULL, 1);
 
 
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;

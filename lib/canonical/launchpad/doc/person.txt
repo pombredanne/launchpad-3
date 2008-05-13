@@ -108,6 +108,15 @@ can be used only for people and the former only for teams)
     >>> shipit_admins.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
+Unlike people, teams don't need a contact address, so we can pass None
+to setContactAddress() to leave a team without a contact address.
+
+    >>> shipit_admins.setContactAddress(None)
+    >>> email.status
+    <DBItem EmailAddressStatus.VALIDATED...
+    >>> print shipit_admins.preferredemail
+    None
+
 When a new sourcepackage is imported and a Person entry has to be created
 because we don't know about the maintainer of that package, the code to create
 the person should look like this:
@@ -271,6 +280,26 @@ account_status will always be NOACCOUNT.
     <DBItem AccountStatus.NOACCOUNT...
 
 
+=== Creating teams ===
+
+Teams are created by the IPersonSet.newTeam() method, which takes the team
+owner and some of the team's details, returning the newly created team.
+
+    >>> new_team = personset.newTeam(ddaa, 'new-team', 'Just a new team')
+    >>> new_team.name
+    u'new-team'
+    >>> new_team.teamowner.name
+    u'ddaa'
+
+If the given name is already in use by another team/person, an exception is
+raised.
+
+    >>> personset.newTeam(ddaa, 'ddaa', 'Just a new team')
+    Traceback (most recent call last):
+    ...
+    NameAlreadyTaken:...
+
+
 === Turning people into teams ===
 
 Launchpad may create Person entries automatically and it always assumes
@@ -390,7 +419,7 @@ We can also iterate over the TeamMemberships themselves, which is useful
 when we want to display details about them rather than just the member.
 
     >>> [(membership.person.displayname, membership.status.name)
-    ...  for membership in landscape_devs.getActiveMemberships()]
+    ...  for membership in landscape_devs.member_memberships]
     [(u'Guilherme Salgado', 'APPROVED'), (u'Sample Person', 'ADMIN')]
     >>> [(membership.person.displayname, membership.status.name)
     ...  for membership in landscape_devs.getInvitedMemberships()]

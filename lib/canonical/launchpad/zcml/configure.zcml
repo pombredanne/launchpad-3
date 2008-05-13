@@ -58,7 +58,6 @@
     <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
-    <include file="distrocomponentuploader.zcml" />
     <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
     <include file="distroseriespackagecache.zcml" />
@@ -146,6 +145,7 @@
     <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
+    <include file="translationtemplateitem.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
@@ -154,6 +154,7 @@
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
+    <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
 

@@ -16,39 +16,17 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel,
-    BranchType,
-    CodeImportResultStatus,
-    CodeImportReviewStatus,
-    CodeReviewNotificationLevel,
-    CreateBugParams,
-    EmailAddressStatus,
-    IBranchSet,
-    IBugSet,
-    ICodeImportJobWorkflow,
-    ICodeImportMachineSet,
-    ICodeImportEventSet,
-    ICodeImportResultSet,
-    ICodeImportSet,
-    ICountrySet,
-    IPersonSet,
-    IProductSet,
-    IProjectSet,
-    IRevisionSet,
-    IShippingRequestSet,
-    ISpecificationSet,
-    IStandardShipItRequestSet,
-    ITranslationGroupSet,
-    License,
-    PersonCreationRationale,
-    RevisionControlSystems,
-    ShipItFlavour,
-    ShippingRequestStatus,
-    SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
-    )
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, CreateBugParams, EmailAddressStatus,
+    IBranchSet, IBugSet, ICodeImportJobWorkflow, ICodeImportMachineSet,
+    ICodeImportEventSet, ICodeImportResultSet, ICodeImportSet, ICountrySet,
+    IEmailAddressSet, IPersonSet, IProductSet, IProjectSet, IRevisionSet,
+    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
+    ITranslationGroupSet, License, PersonCreationRationale,
+    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
+    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
+    UnknownBranchTypeError)
 from canonical.launchpad.ftests import syncUpdate
 
 
@@ -158,13 +136,25 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, team_member, email=None, password=None,
-                 displayname=None):
-        team = self.makePerson(displayname=displayname, email=email,
-                               password=password)
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team, team)
+    def makeTeam(self, owner, displayname=None, email=None):
+        """Create and return a new, arbitrary Team.
+
+        The subscription policy of this new team will be OPEN.
+
+        :param owner: The IPerson to use as the team's owner.
+        :param displayname: The team's display name.  If not given we'll use
+            the auto-generated name.
+        :param email: The email address to use as the team's contact address.
+        """
+        name = self.getUniqueString('team-name')
+        if displayname is None:
+            displayname = name
+        team = getUtility(IPersonSet).newTeam(
+            owner, name, displayname,
+            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        if email is not None:
+            team.setContactAddress(
+                getUtility(IEmailAddressSet).new(email, team))
         return team
 
     def makeTranslationGroup(
