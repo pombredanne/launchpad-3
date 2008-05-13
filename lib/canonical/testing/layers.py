@@ -70,14 +70,11 @@ from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
-from canonical.launchpad.mailman.runmailman import stop_mailman
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts.runlaunchpad import start_launchpad
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.pidfile import get_pid, remove_pidfile
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 
