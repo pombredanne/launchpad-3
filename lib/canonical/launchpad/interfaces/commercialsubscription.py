@@ -36,7 +36,7 @@ class ICommercialSubscription(Interface):
         title=_('Beginning of Subscription'),
         description=_("The date the subscription starts."))
 
-    date_expires= Datetime(
+    date_expires = Datetime(
         title=_('Expiration Date'),
         description=_("The expiration date of the subscription."))
 
