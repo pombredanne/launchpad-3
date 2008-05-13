@@ -31,7 +31,7 @@ INSERT INTO Account(
     status_comment, openid_identifier, displayname)
 SELECT id, id, datecreated, COALESCE(creation_rationale, 0),
     account_status, account_status_comment, openid_identifier, displayname
-    FROM Person;
+    FROM Person WHERE account_status <> 10; -- Not 'No account'
 
 
 --
@@ -44,7 +44,8 @@ CREATE TABLE AccountPassword (
     );
 
 INSERT INTO AccountPassword(id, account, password)
-SELECT id, id, password FROM Person WHERE password IS NOT NULL;
+SELECT id, id, password FROM Person
+WHERE password IS NOT NULL AND account_status <> 10; -- Not 'No account'
 
 
 -- We just inserted a load of records without using the primary key
