@@ -7,6 +7,7 @@ __all__ = [
         'copy_attribute',
         'copy_field',
         'use_template'
+        'within_classdef',
         ]
 
 import sys

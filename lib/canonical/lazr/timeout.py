@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 
+import sys
 from threading import Thread
 
 
@@ -46,6 +47,14 @@ class with_timeout:
             be called if the timeout is exceeded.
         :param timeout: The number of seconds to wait for. Defaults is 5.
         """
+        if isinstance(cleanup, basestring):
+            frame = sys._getframe(1)
+            f_locals = frame.f_locals
+
+            # Try to make sure we were called from a class def.
+            if f_locals is frame.f_globals or '__module__' not in f_locals:
+                raise TypeError(
+                    "when not wrapping a method, cleanup must be a callable.")
         self.cleanup = cleanup
         self.timeout = timeout
 
@@ -56,6 +65,12 @@ class with_timeout:
             t.start()
             t.join(self.timeout)
             if t.isAlive():
+                if self.cleanup is not None:
+                    if isinstance(self.cleanup, basestring):
+                        # 'self' will be first positional argument.
+                        getattr(args[0], self.cleanup)()
+                    else:
+                        self.cleanup()
                 raise TimeoutError("timeout exceeded.")
             return t.result
 

@@ -30,17 +30,80 @@ is raised.
     ...
     TimeoutError: timeout exceeded.
 
+
+== Cleaning up timed out operation ==
+
+Since we want to time out operation involving an external resource
+(subprocess, remote site), we need a way to clean-up these resources
+once they time out. To this end, the with_timeout decorator takes a
+cleanup parameter taking a callable that will be invoked if the
+operation times out.
+
+    >>> import socket
+
+    # Make sure that errors in this test doesn't hang forever.
+    >>> old_timeout = socket.getdefaulttimeout()
+    >>> socket.setdefaulttimeout(5)
+
+    >>> sockets = socket.socketpair()
+    >>> closed = False
+    >>> def close_socket():
+    ...     global closed
+    ...     closed = True
+    ...     sockets[0].shutdown(socket.SHUT_RDWR)
+
+    >>> @with_timeout(cleanup=close_socket, timeout=0.5)
+    ... def block():
+    ...     """This will block indefinitely."""
+    ...     sockets[0].recv(1024)
+
+    >>> block()
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+    >>> print closed
+    True
+
+The cleanup parameter can also be a string in which case it will be
+interpreted as the name of an instance method.
+
+    >>> class expirable_socket(object):
+    ...     def __init__(self):
+    ...         self.closed = False
+    ...         self.sockets = socket.socketpair()
+    ...
+    ...     @with_timeout(cleanup="shutdown", timeout=0.5)
+    ...     def block(self):
+    ...         self.sockets[0].recv(1024)
+    ...
+    ...     def shutdown(self):
+    ...         self.closed = True
+    ...         self.sockets[0].shutdown(socket.SHUT_RDWR)
+
+    >>> a_socket = expirable_socket()
+    >>> a_socket.block()
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+    >>> a_socket.closed
+    True
+
+It's an error to use a string cleanup when the function isn't a method.
+
+    >>> @with_timeout(cleanup='not_a_method', timeout=0.5)
+    ... def a_function(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: when not wrapping a method, cleanup must be a callable.
+
+
 == Cleanup ==
 
-There should be at most one thread alive at the end of this test (the
-select() that timed out.)
-
+    # Reap threads that may still hang about (select call for example).
     >>> import threading
-    >>> count = 0
     >>> for thread in threading.enumerate():
-    ...     if not thread.isAlive() or thread is threading.currentThread():
-    ...         continue
-    ...     thread.join()
-    ...     count += 1
-    >>> count
-    1
+    ...     if thread is not threading.currentThread():
+    ...         thread.join()
+
+    # Reset default socket timeout.
+    >>> socket.setdefaulttimeout(old_timeout)
