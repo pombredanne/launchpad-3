@@ -1116,8 +1116,6 @@ class AppServerLayer(LaunchpadZopelessLayer):
         until = time.time() + 60
         while time.time() < until:
             try:
-                # XXX Load the proper config file to find the server address
-                # for pinging.
                 connection = urlopen('http://launchpad.dev:8085')
                 connection.read()
             except IOError, (error_message, error):
