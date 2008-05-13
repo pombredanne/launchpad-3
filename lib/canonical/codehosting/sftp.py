@@ -113,6 +113,7 @@ class TransportSFTPFile:
         # not do nothing silently.
         pass
 
+    @with_sftp_error
     def getAttrs(self):
         """See `ISFTPFile`."""
         deferred = self.transport.stat(self.name)
@@ -215,7 +216,7 @@ class TransportSFTPServer:
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        self.openFile(path, 0, {}).setAttrs(attrs)
+        return self.openFile(path, 0, {}).setAttrs(attrs)
 
     def getAttrs(self, path, followLinks):
         """See `ISFTPServer`.

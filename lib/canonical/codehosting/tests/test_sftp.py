@@ -122,6 +122,12 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         deferred = self.sftp_server.openFile('foo', 0, {}).getAttrs()
         return deferred.addCallback(self.checkAttrs, stat_value)
 
+    def test_getAttrsError(self):
+        # Errors in getAttrs on TransportSFTPFile are translated into
+        # SFTPErrors.
+        deferred = self.sftp_server.openFile('foo', 0, {}).getAttrs()
+        return self.assertFailure(deferred, filetransfer.SFTPError)
+
     def test_serverSetAttrs(self):
         # setAttrs on the TransportSFTPServer doesn't do anything either.
         self.build_tree_contents([('foo', 'bar')])
@@ -134,6 +140,12 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         stat_value = os.stat('foo')
         deferred = self.sftp_server.getAttrs('foo', False)
         return deferred.addCallback(self.checkAttrs, stat_value)
+
+    def test_serverGetAttrsError(self):
+        # Errors in getAttrs on the TransportSFTPServer are translated into
+        # SFTPErrors.
+        deferred = self.sftp_server.getAttrs('nonexistent', False)
+        return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_removeFile(self):
         # removeFile removes the file.
