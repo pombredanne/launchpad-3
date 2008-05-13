@@ -138,6 +138,9 @@ created automatically for him, with the e-mail address marked as
 invalid.
 
     >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
+    >>> bug.messages[-1].owner == joe
+    True
+
     >>> joe.displayname
     u'Joe Bloggs'
     >>> print joe.preferredemail
@@ -147,8 +150,21 @@ invalid.
     >>> print joe.creation_comment
     when importing comments for Bugzilla *TESTING* #123456.
 
-    >>> bug.messages[-1].owner == joe
+If the poster's e-mail already is registered in Launchpad, the comment
+is associated with the existing account.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.preferredemail is not None
     True
+    >>> external_bugtracker.poster_tuple = (
+    ...     'No Priv', 'no-priv@canonical.com')
+    >>> external_bugtracker.remote_comments['no-priv-comment'] = (
+    ...     "The fifth comment.")
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'no-priv'
 
 
 == BugWatch comment importing functionality ==
