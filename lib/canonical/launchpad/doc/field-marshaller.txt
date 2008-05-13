@@ -87,7 +87,7 @@ relatively short list of enumerated values.
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
 
 The client is expected to provide the title of one of the enumerated
-values. A string that corresponds to one of the values is marshalld
+values. A string that corresponds to one of the values is marshalled
 to the appropriate value. A string that doesn't correspond to any
 enumerated value results in a helpful ValueError.
 
@@ -98,6 +98,9 @@ enumerated value results in a helpful ValueError.
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "NoSuchStatus". Acceptable values are: ...
+
+    >>> marshaller.marshall("triaged")
+    ValueError: Invalid value "triaged". Acceptable values are: ...
 
     >>> marshaller.marshall("")
     Traceback (most recent call last):
@@ -162,8 +165,9 @@ resource and not a random string.
 
 The most complicated kind of marshaller is one that manages a
 collection of objects associated with some other object. Let's do an
-example with a person's set of memberships. that's a CollectionField
-that contains a number of objects that implement IPerson.
+example with a collection of IPerson objects associated with some
+IPerson. (This might be the list of teams in which a person has a
+membership, or something like that.)
 
     >>> from zope.schema import Object
     >>> from canonical.lazr.rest.schema import CollectionField
