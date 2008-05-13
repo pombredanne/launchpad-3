@@ -130,6 +130,26 @@ form which it was imported.
     four: Yet another comment.
 
 
+== Creating Person records ==
+
+In the examples above, joe.bloggs@example.com was used as the poster of
+all the comments. Since Joe didn't have a Launchpad account, it was
+created automatically for him, with the e-mail address marked as
+invalid.
+
+    >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
+    >>> joe.displayname
+    u'Joe Bloggs'
+    >>> print joe.preferredemail
+    None
+    >>> print joe.creation_rationale.name
+    BUGIMPORT
+    >>> print joe.creation_comment
+    when importing comments for Bugzilla *TESTING* #123456.
+
+    >>> bug.messages[-1].owner == joe
+    True
+
 
 == BugWatch comment importing functionality ==
 
