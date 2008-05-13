@@ -134,12 +134,10 @@ It's not possible to vote on closed polls, even if we manually craft the URL.
     ...     team_admin_browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
     ...
-    <div>
     <p class="informational message">
           This poll is already closed.
         </p>
-    </div>
-    <BLANKLINE>
+    ...
 
     >>> team_admin_browser.getControl(name='continue')
     Traceback (most recent call last):

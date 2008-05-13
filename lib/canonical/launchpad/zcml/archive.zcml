@@ -22,7 +22,7 @@
   <adapter
       for="canonical.launchpad.interfaces.IArchive"
       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-      factory="canonical.launchpad.browser.archive_to_structualheading"
+      factory="canonical.launchpad.browser.archive_to_structuralheading"
       />
 
   <adapter

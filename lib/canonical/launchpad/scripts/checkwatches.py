@@ -18,10 +18,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, InvalidBugId, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError)
+    get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
+    UnknownRemoteStatusError)
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
@@ -32,24 +32,6 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-
-
-_exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (socket.timeout, BugWatchErrorType.TIMEOUT)]
-
-
-def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchErrorType` for a given error."""
-    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
-        if isinstance(error, exc_type):
-            return bugwatcherrortype
-    else:
-        return BugWatchErrorType.UNKNOWN
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -107,8 +89,7 @@ def report_warning(message, properties=None, info=None):
     """Create and report a warning as an OOPS.
 
     If no exception info is passed in this will create a generic
-    `BugWatchUpdateWarning` to record. The reason is that the stack
-    trace may be useful for later diagnosis.
+    `BugWatchUpdateWarning` to record.
 
     :param message: See `report_oops`.
     :param properties: See `report_oops`.
@@ -116,9 +97,9 @@ def report_warning(message, properties=None, info=None):
     """
     if info is None:
         # Raise and catch the exception so that sys.exc_info will
-        # return our warning and stack trace.
+        # return our warning.
         try:
-            raise BugWatchUpdateWarning
+            raise BugWatchUpdateWarning(message)
         except BugWatchUpdateWarning:
             return report_oops(message, properties)
     else:
@@ -463,6 +444,16 @@ class BugWatchUpdater(object):
                             ('local_ids', local_ids)] +
                             self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
+                except PrivateRemoteBug:
+                    error = BugWatchErrorType.PRIVATE_REMOTE_BUG
+                    self.warning(
+                        "Remote bug %r on %s is private (local bugs: %s)." %
+                            (bug_id, remotesystem.baseurl, local_ids),
+                        properties=[
+                            ('bug_id', bug_id),
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
+                        info=sys.exc_info())
 
                 for bug_watch in bug_watches:
                     bug_watch.last_error_type = error
@@ -602,6 +593,17 @@ class BugWatchUpdater(object):
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
 
+    def _formatRemoteComment(self, external_bugtracker, bug_watch, message):
+        """Format a comment for a remote bugtracker and return it."""
+        comment_template = get_email_template(
+            external_bugtracker.comment_template)
+
+        return comment_template % {
+            'launchpad_bug': bug_watch.bug.id,
+            'comment_author': message.owner.displayname,
+            'comment_body': message.text_contents,
+            }
+
     def pushBugComments(self, external_bugtracker, bug_watch):
         """Push Launchpad comments to the remote bug.
 
@@ -624,9 +626,15 @@ class BugWatchUpdater(object):
             # the bug watch.
             if (bug_message.remote_comment_id is None and
                 bug_message.bugwatch == bug_watch):
+                # Format the comment so that it includes information
+                # about the Launchpad bug.
+                formatted_comment = self._formatRemoteComment(
+                    external_bugtracker, bug_watch, message)
+
                 bug_message.remote_comment_id = (
                     external_bugtracker.addRemoteComment(
-                        bug_watch.remotebug, message))
+                        bug_watch.remotebug, formatted_comment,
+                        message.rfc822msgid))
 
                 pushed_comments += 1
 

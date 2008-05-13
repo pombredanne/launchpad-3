@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 
-import StringIO
-import sys
 import unittest
 
 from twisted.internet import defer, error, task
@@ -15,6 +13,7 @@ from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.testing import TwistedLayer
+from canonical.twistedsupport import suppress_stderr
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocol, ProcessMonitorProtocolWithTimeout,
     ProcessProtocolWithTwoStageKill)
@@ -29,21 +28,6 @@ def makeFailure(exception_factory, *args, **kwargs):
         raise exception_factory(*args, **kwargs)
     except:
         return failure.Failure()
-
-
-def suppress_stderr(test_method):
-    """Deferred friendly decorator that suppresses output from a test method.
-    """
-    def set_stderr(result, stream):
-        sys.stderr = stream
-        return result
-    def wrapper(self):
-        saved_stderr = sys.stderr
-        ignored_stream = StringIO.StringIO()
-        sys.stderr = ignored_stream
-        return defer.maybeDeferred(test_method, self).addBoth(
-            set_stderr, saved_stderr)
-    return wrapper
 
 
 class ProcessTestsMixin:

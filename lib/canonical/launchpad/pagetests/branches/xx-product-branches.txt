@@ -1,10 +1,5 @@
 = Product Branches Overview =
 
-Branch listing pages now hide dormant branches by default.  Dormant
-branches are branches that have not been updated or committed to for
-some time.  Since this is a time based change all the branches
-are reset here to be recently updated.
-
     >>> from canonical.launchpad.ftests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
@@ -96,7 +91,7 @@ browse the code, and shown a simple command line to get the branch.
     3 branches ...
     You can browse the source code for development focus branch,
     or get a copy of the branch using the command:
-       bzr branch lp:evolution
+       bzr branch lp://dev/evolution
 
     >>> print summary.a['href']
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
@@ -123,9 +118,9 @@ once, but both series are shown in the listing.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    ~name12/firefox/main
-      Series: trunk, 1.0            New ...
-    ~sabdfl/firefox/release--0.9.1  New ...
+    lp://dev/firefox
+      Series: trunk, 1.0                     New ...
+    lp://dev/~sabdfl/firefox/release--0.9.1  New ...
 
 Firstly lets associate release--0.9.1 with the 1.0 series.
 
@@ -137,9 +132,9 @@ Firstly lets associate release--0.9.1 with the 1.0 series.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    ~name12/firefox/main
+    lp://dev/firefox
       Series: trunk                 New ...
-    ~sabdfl/firefox/release--0.9.1
+    lp://dev/firefox/1.0
       Series: 1.0                   New ...
 
 Now if both of these branches are marked as Abandoned, then the first will
@@ -159,9 +154,9 @@ be shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    ~name12/firefox/main
-      Series: trunk                 Abandoned ...
-    ~sabdfl/firefox/release-0.8     New ...
+    lp://dev/firefox
+      Series: trunk                          Abandoned ...
+    lp://dev/~sabdfl/firefox/release-0.8     New ...
 
 
 == Floating buttons ==
@@ -215,6 +210,27 @@ shows correct singular and plural forms.
 # XXX: thumper 2008-04-24
 # There is no easy way to change the database user in the pagetests
 # in order to add revisions to the branches to show commits by users.
+
+
+== Product has Branches, but none initially visible ==
+
+It is a bit of an edge case, but if there are branches for a product but all
+of them are either merged or abandoned and there is no development focus
+branch, then they will not appear on the initial branch listing.
+
+    >>> admin_browser.open('http://code.launchpad.dev/~carlos/iso-codes/0.35')
+    >>> admin_browser.getLink('Change branch details').click()
+    >>> admin_browser.getControl('Abandoned').click()
+    >>> admin_browser.getControl('Change Branch').click()
+
+    >>> browser.open('http://code.launchpad.dev/iso-codes')
+    >>> print extract_text(get_summary(browser))
+    1 branch owned by 1 person, 0 commits in the last month
+
+    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+    >>> print extract_text(message)
+    There are branches registered for iso-codes but none of them match the
+    current filter criteria for this page. Try filtering on "Any Status".
 
 
 == Getting to the branch listing for a product ==

@@ -99,25 +99,31 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+from canonical.widgets import (
+    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
+    PasswordChangeWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
-    CannotSubscribe, CannotUnsubscribe,
+    AccountStatus, BranchListingSort,
+    BranchPersonSearchContext, BranchPersonSearchRestriction,
+    BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
-    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    GPGKeyNotFoundError, ICountry, IEmailAddress,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
+    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
+    IPOTemplateSet, IPasswordEncryptor, IPerson,
+    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, PersonVisibility, QuestionParticipation,
-    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, MailingListAutoSubscribePolicy,
+    NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
@@ -138,7 +144,6 @@ from canonical.launchpad.browser.mailinglists import (
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
-
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -2817,6 +2822,12 @@ class TeamJoinView(PersonView):
         return not (self.userIsActiveMember() or self.userIsProposedMember())
 
     @property
+    def user_wants_list_subscriptions(self):
+        """Is the user interested in subscribing to mailing lists?"""
+        return (self.user.mailing_list_auto_subscribe_policy !=
+                MailingListAutoSubscribePolicy.NEVER)
+
+    @property
     def team_is_moderated(self):
         """Is this team a moderated team?
 
@@ -2833,7 +2844,10 @@ class TeamJoinView(PersonView):
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
-            user.join(context)
+            # Shut off mailing list auto-subscription - we want direct
+            # control over it.
+            user.join(context, may_subscribe_to_list=False)
+
             if self.team_is_moderated:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
@@ -2863,26 +2877,25 @@ class TeamJoinView(PersonView):
         """Subscribe the user to the team's mailing list."""
         response = self.request.response
 
-        if not self.user_can_subscribe_to_list:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-            return
-
-        try:
+        if self.user_can_subscribe_to_list:
+            # 'user_can_subscribe_to_list' should have dealt with
+            # all of the error cases.
             self.context.mailing_list.subscribe(self.user)
-        except CannotSubscribe, error:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-        else:
+
             if self.team_is_moderated:
                 response.addInfoNotification(
-                    _('Your mailing list subscription is awaiting '
-                      'approval.'))
+                    _('Your mailing list subscription is '
+                      'awaiting approval.'))
             else:
                 response.addInfoNotification(
                     structured(
-                        _("You have been subscribed to this team&#x2019;s "
-                          "mailing list.")))
+                        _("You have been subscribed to this "
+                          "team&#x2019;s mailing list.")))
+        else:
+            # A catch-all case, perhaps from stale or mangled
+            # form data.
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):
@@ -2997,6 +3010,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
+    custom_widget('mailing_list_auto_subscribe_policy',
+                  LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
         """Set up fields for this view.
@@ -3010,7 +3025,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                             self._unvalidated_emails_field() +
                             FormFields(TextLine(__name__='newemail',
                                                 title=u'Add a new address'))
-                            + self._mailing_list_fields())
+                            + self._mailing_list_fields()
+                            + self._autosubscribe_policy_fields())
 
     @property
     def initial_values(self):
@@ -3024,14 +3040,27 @@ class PersonEditEmailsView(LaunchpadFormView):
         address: then, that address is used as the default validated
         email address.
         """
+        # Defaults for the user's email addresses.
         validated = self.context.preferredemail
         if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        return dict(VALIDATED_SELECTED=validated,
-                    UNVALIDATED_SELECTED=unvalidated)
+        initial = dict(VALIDATED_SELECTED=validated,
+                       UNVALIDATED_SELECTED=unvalidated)
+
+        # Defaults for the mailing list autosubscribe buttons.
+        policy = self.context.mailing_list_auto_subscribe_policy
+        initial.update(mailing_list_auto_subscribe_policy=policy)
+
+        return initial
+
+    def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
+        super(PersonEditEmailsView, self).setUpWidgets(context)
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        widget.display_label = False
 
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
@@ -3112,6 +3141,16 @@ class PersonEditEmailsView(LaunchpadFormView):
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
         return FormFields(*fields)
+
+    def _autosubscribe_policy_fields(self):
+        """Create a field for each mailing list auto-subscription option."""
+        return FormFields(
+            Choice(__name__='mailing_list_auto_subscribe_policy',
+                   title=_('When should launchpad automatically subscribe '
+                           'you to a team&#x2019;s mailing list?'),
+                   source=MailingListAutoSubscribePolicy),
+            custom_widget=self.custom_widgets[
+                    'mailing_list_auto_subscribe_policy'])
 
     @property
     def mailing_list_widgets(self):
@@ -3405,6 +3444,28 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "Subscriptions updated.")
         self.next_url = self.action_url
 
+    def validate_action_update_autosubscribe_policy(self, action, data):
+        """Ensure that the requested auto-subscribe setting is valid."""
+        # XXX mars 2008-04-27:
+        # This validator appears pointless and untestable, but it is
+        # required for LaunchpadFormView to tell apart the three <form>
+        # elements on the page.  See bug #223303.
+
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        self.validate_widgets(data, widget.name)
+        return self.errors
+
+    @action(
+        _('Update Policy'),
+        name="update_autosubscribe_policy",
+        validator=validate_action_update_autosubscribe_policy)
+    def action_update_autosubscribe_policy(self, action, data):
+        newpolicy = data['mailing_list_auto_subscribe_policy']
+        self.context.mailing_list_auto_subscribe_policy = newpolicy
+        self.request.response.addInfoNotification(
+            'Your auto-subscription policy has been updated.')
+        self.next_url = self.action_url
+
 
 class TeamReassignmentView(ObjectReassignmentView):
 
@@ -3691,16 +3752,6 @@ class PersonBranchesView(BranchListingView):
 
     heading_template = 'Bazaar branches related to %(displayname)s'
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
-
-    @cachedproperty
-    def _subscribed_branches(self):
-        return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, [], self.user))
-
 
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
@@ -3708,10 +3759,11 @@ class PersonRegisteredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.REGISTERED)
 
 
 class PersonOwnedBranchesView(BranchListingView):
@@ -3720,10 +3772,11 @@ class PersonOwnedBranchesView(BranchListingView):
     heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.OWNED)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3731,10 +3784,11 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
 
 
 class PersonTeamBranchesView(LaunchpadView):

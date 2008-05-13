@@ -72,6 +72,13 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     if pubrec.archive.require_virtualized:
         legal_archserieses = [
             arch for arch in legal_archserieses if arch.supports_virtualized]
+        # Cope with no virtualization support at all. It usually happens when
+        # a distroseries is created and initialized, by default no
+        # architecture supports its. Distro-team might take some time to
+        # decide which architecture will be allowed for PPAs and queue-builder
+        # will continue to work meanwhile.
+        if not legal_archserieses:
+            return []
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
@@ -130,7 +137,7 @@ class BuilddMaster:
 
     def addDistroArchSeries(self, distroarchseries):
         """Setting up a workable DistroArchSeries for this session."""
-        self._logger.info("Adding DistroArchSeries %s/%s/%s"
+        self._logger.debug("Adding DistroArchSeries %s/%s/%s"
                           % (distroarchseries.distroseries.distribution.name,
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
@@ -188,7 +195,7 @@ class BuilddMaster:
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
-        self._logger.debug("Processing %s" % distroseries.name)
+        self._logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroserieses with no nominatedarchindep
         # they can't build architecture independent packages properly.
         if not distroseries.nominatedarchindep:
