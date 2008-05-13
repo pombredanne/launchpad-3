@@ -11,20 +11,18 @@ from canonical.librarian.storage import LibraryFileUpload, DuplicateFileIDError
 from canonical.librarian import db
 from canonical.database.sqlbase import begin, flush_database_updates
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import LaunchpadLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 class LibrarianStorageDBTests(unittest.TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestSetup().setUp('librarian')
+        self.layer.switchDbUser('librarian')
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        LaunchpadZopelessTestSetup().tearDown()
 
     def test_addFile(self):
         data = 'data ' * 50
