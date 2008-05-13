@@ -898,7 +898,7 @@ class TestRequestJobUIRaces(unittest.TestCase):
         user = logged_in_for_code_imports(self.factory.makePerson)(
             password='test')
         user_browser = setupBrowser(
-            auth="Basic %s:test" % user.preferredemail.email)
+            auth="Basic %s:test" % str(user.preferredemail.email))
         user_browser.open(url)
         return user_browser
 
