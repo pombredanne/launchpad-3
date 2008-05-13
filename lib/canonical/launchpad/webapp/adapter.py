@@ -224,8 +224,10 @@ class LaunchpadDatabase(Postgres):
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
-        isolation_level = isolation_level_map.get(
-            dbconfig.isolation_level, ISOLATION_LEVEL_SERIALIZABLE)
+        if dbconfig.isolation_level is None:
+            isolation_level = ISOLATION_LEVEL_SERIALIZABLE
+        else:
+            isolation_level = isolation_level_map[dbconfig.isolation_level]
         raw_connection.set_isolation_level(isolation_level)
 
         _reset_dirty_commit_flags(*flags)
