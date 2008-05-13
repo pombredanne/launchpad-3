@@ -17,3 +17,5 @@ TAGS
 cover.txt
 lint.txt
 .shelf
+development-nohup.out
+testrunner-appserver-quiet.log

@@ -1,0 +1,6 @@
+= launchpadlib =
+
+    >>> from urllib import urlopen
+    >>> connection = urlopen('http://launchpad.dev:8085')
+    >>> connection.read()[:9]
+    '<!DOCTYPE'

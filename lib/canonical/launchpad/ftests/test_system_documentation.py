@@ -29,8 +29,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-    FunctionalLayer)
+    AppServerLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -761,6 +761,11 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+    'launchpadlib.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=setUp, tearDown=tearDown,
+        )
     }
 
 
