@@ -13,6 +13,7 @@ __all__ = [
     'BranchDeletionView',
     'BranchEditView',
     'BranchEditWhiteboardView',
+    'BranchRequestImportView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -27,7 +28,8 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.component import getUtility
+from zope.app.traversing.interfaces import IPathAdapter
+from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
@@ -46,6 +48,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
     BranchType,
     BranchVisibilityRule,
+    CodeImportJobState,
     IBranch,
     IBranchMergeProposal,
     IBranchSet,
@@ -53,6 +56,7 @@ from canonical.launchpad.interfaces import (
     IBugBranch,
     IBugSet,
     ICodeImportSet,
+    ICodeImportJobWorkflow,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
     IPersonSet,
@@ -1001,3 +1005,52 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'dependent_branch',
                     "The dependent branch must belong to the same project "
                     "as the source branch.")
+
+
+class BranchRequestImportView(LaunchpadFormView):
+    """The view to provide an 'Import now' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is being actively imported and where there is a import scheduled at
+    some point in the future.
+    """
+
+    schema = IBranch
+    field_names = []
+
+    form_style = "display: inline"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Import Now', name='request')
+    def request_import_action(self, action, data):
+        if self.context.code_import.import_job is None:
+            self.request.response.addNotification(
+                "This import is no longer being updated automatically.")
+        elif self.context.code_import.import_job.state != \
+                 CodeImportJobState.PENDING:
+            assert self.context.code_import.import_job.state == \
+                   CodeImportJobState.RUNNING
+            self.request.response.addNotification(
+                "The import is already running.")
+        elif self.context.code_import.import_job.requesting_user is not None:
+            user = self.context.code_import.import_job.requesting_user
+            adapter = queryAdapter(user, IPathAdapter, 'fmt')
+            self.request.response.addNotification(
+                structured("The import has already been requested by %s." %
+                           adapter.link('')))
+        else:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.context.code_import.import_job, self.user)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "request%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/@@+request-import" % canonical_url(self.context)

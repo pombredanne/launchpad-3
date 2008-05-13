@@ -82,7 +82,7 @@ The elements of a collection can be looked up by unique identifier:
    (u'self_link', u'http://api.launchpad.dev/beta/~admins'),
    (u'team_memberships_collection_link',
     u'http://api.launchpad.dev/beta/~admins/team_memberships'),
-   (u'teamowner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
+   (u'team_owner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
 
 A collection may be scoped to an element:
 

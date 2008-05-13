@@ -5,13 +5,14 @@
 __metaclass__ = type
 __all__ = [
     'CollectionField',
-    'DateTimeFieldDeserializer',
-    'IntFieldDeserializer',
-    'ObjectLookupFieldDeserializer',
-    'SimpleFieldDeserializer',
-    'SimpleVocabularyLookupFieldDeserializer',
+    'CollectionFieldMarshaller',
+    'DateTimeFieldMarshaller',
+    'IntFieldMarshaller',
+    'ObjectLookupFieldMarshaller',
+    'SimpleFieldMarshaller',
+    'SimpleVocabularyLookupFieldMarshaller',
     'URLDereferencingMixin',
-    'VocabularyLookupFieldDeserializer',
+    'VocabularyLookupFieldMarshaller',
     ]
 
 from datetime import datetime
@@ -31,9 +32,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.interfaces.rest import ICollectionField
-from canonical.lazr.interfaces.field import IFieldDeserializer
+from canonical.lazr.interfaces.field import IFieldMarshaller
 
 
 class CollectionField(AbstractCollection):
@@ -102,46 +104,52 @@ class URLDereferencingMixin:
         return request.traverse(publication.getApplication(self.request))
 
 
-class SimpleFieldDeserializer:
-    """A deserializer that returns the same value it's served.
+class SimpleFieldMarshaller:
+    """A marshaller that returns the same value it's served.
 
     The only exception is that the empty string is treated as the lack
     of a value; i.e. None.
     """
-    implements(IFieldDeserializer)
+    implements(IFieldMarshaller)
 
     def __init__(self, field, request):
         self.field = field
         self.request = request
 
-    def serialize(self, name, entry, value):
-        return (name, value)
-
-    def deserialize(self, value):
-        "Make sure the value is a string and then call _deserialize()."
+    def marshall(self, value):
+        "Make sure the value is a string and then call _marshall()."
         if value is None:
             return None
         assert isinstance(value, basestring), 'Deserializing a non-string'
-        return self._deserialize(value)
+        return self._marshall(value)
 
-    def _deserialize(self, value):
+    def representationName(self, field_name):
+        "Return the field name as is."
+        return field_name
+
+    def unmarshall(self, entry, field_name, value):
+        "Return the value as is."
+        return value
+
+    def _marshall(self, value):
         """Return the value as is, unless it's empty; then return None."""
         if value == "":
             return None
         return value
 
 
-class IntFieldDeserializer(SimpleFieldDeserializer):
-    """A deserializer that transforms its value into an integer."""
+class IntFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
 
-    def _deserialize(self, value):
+    def _marshall(self, value):
         """Try to convert the value into an integer."""
         return int(value)
 
-class DateTimeFieldDeserializer(SimpleFieldDeserializer):
-    """A deserializer that transforms its value into an integer."""
 
-    def _deserialize(self, value):
+class DateTimeFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
+
+    def _marshall(self, value):
         try:
             value = DateTimeParser().parse(value)
             (year, month, day, hours, minutes, secondsAndMicroseconds,
@@ -157,27 +165,37 @@ class DateTimeFieldDeserializer(SimpleFieldDeserializer):
             raise ValueError("Value doesn't look like a date.")
 
 
-def VocabularyLookupFieldDeserializer(field, request):
-    """A deserializer that uses the underlying vocabulary.
+class CollectionFieldMarshaller(SimpleFieldMarshaller):
+
+    def representationName(self, field_name):
+        "Make it clear that the value is a link to a collection."
+        return field_name + '_collection_link'
+
+    def unmarshall(self, entry, field_name, value):
+        return "%s/%s" % (canonical_url(entry.context), field_name)
+
+
+def VocabularyLookupFieldMarshaller(field, request):
+    """A marshaller that uses the underlying vocabulary.
 
     This is just a factory function that does another adapter lookup
-    for a deserializer, one that can take into account the vocabulary
+    for a marshaller, one that can take into account the vocabulary
     in addition to the field type (presumably Choice) and the request.
     """
     return getMultiAdapter((field, request, field.vocabulary),
-                           IFieldDeserializer)
+                           IFieldMarshaller)
 
 
-class SimpleVocabularyLookupFieldDeserializer(SimpleFieldDeserializer):
-    """A deserializer for vocabulary lookup by title."""
+class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller for vocabulary lookup by title."""
 
     def __init__(self, field, request, vocabulary):
-        """Initialize the deserializer with the vocabulary it'll use."""
-        super(SimpleVocabularyLookupFieldDeserializer, self).__init__(
+        """Initialize the marshaller with the vocabulary it'll use."""
+        super(SimpleVocabularyLookupFieldMarshaller, self).__init__(
             field, request)
         self.vocabulary = vocabulary
 
-    def _deserialize(self, value):
+    def _marshall(self, value):
         """Find an item in the vocabulary by title."""
         valid_titles = []
         for item in self.field.vocabulary.items:
@@ -189,19 +207,30 @@ class SimpleVocabularyLookupFieldDeserializer(SimpleFieldDeserializer):
             (value, ', '.join(valid_titles)))
 
 
-class ObjectLookupFieldDeserializer(SimpleVocabularyLookupFieldDeserializer,
-                                    URLDereferencingMixin):
-    """A deserializer that turns URLs into data model objects.
+class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
+                                  URLDereferencingMixin):
+    """A marshaller that turns URLs into data model objects.
 
-    This deserializer can be used with a IChoice field (initialized
+    This marshaller can be used with a IChoice field (initialized
     with a vocabulary) or with an IObject field (no vocabulary).
     """
 
     def __init__(self, field, request, vocabulary=None):
-        super(ObjectLookupFieldDeserializer, self).__init__(
+        super(ObjectLookupFieldMarshaller, self).__init__(
             field, request, vocabulary)
 
-    def _deserialize(self, value):
+    def representationName(self, field_name):
+        "Make it clear that the value is a link to an object, not an object."
+        return field_name + '_link'
+
+    def unmarshall(self, entry, field_name, value):
+        "Represent an object as the URL to that object"
+        repr_value = None
+        if value is not None:
+            repr_value = canonical_url(value)
+        return repr_value
+
+    def _marshall(self, value):
         """Look up the data model object by URL."""
         try:
             resource = self.dereference_url(value)

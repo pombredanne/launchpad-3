@@ -246,6 +246,13 @@
       template="../templates/branch-edit-subscription.pt" />
 
   <browser:page
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchRequestImportView"
+      name="+request-import"
+      template="../templates/inline-form-only-buttons.pt"
+      permission="launchpad.AnyPerson" />
+
+  <browser:page
       for="canonical.launchpad.interfaces.IBranchBatchNavigator"
       name="+branch-listing"
       template="../templates/branch-listing.pt"
