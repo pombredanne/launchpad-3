@@ -13,9 +13,9 @@ import operator
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IComponentSet, IHasQueueItems, IPackageUploadSet, ISectionSet,
-    NotFoundError, PackagePublishingPriority, QueueInconsistentStateError,
-    UnexpectedFormData, PackageUploadStatus)
+    IArchivePermissionSet, IComponentSet, IHasQueueItems, IPackageUploadSet,
+    ISectionSet, NotFoundError, PackagePublishingPriority,
+    QueueInconsistentStateError, UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -139,6 +139,14 @@ class QueueItemsView(LaunchpadView):
             self.error = "Invalid component: %s" % component_override
             return
 
+        # Get a list of components that the user has righs to accept and
+        # override to or from.
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.context.main_archive, self.user)
+        allowed_components = set(
+            permission.component for permission in permissions)
+
         try:
             if section_override:
                 new_section = getUtility(ISectionSet)[section_override]
@@ -171,12 +179,43 @@ class QueueItemsView(LaunchpadView):
         failure = []
         for queue_id in queue_ids:
             queue_item = queue_set.get(int(queue_id))
+            # First check that the user has rights to accept/reject this
+            # item by virtue of which component it has.
+            existing_components = set()
+            if queue_item.contains_source:
+                existing_components.add(
+                    queue_item.sourcepackagerelease.component)
+            else:
+                # For builds we need to iterate through all its binaries
+                # and collect each component.
+                for build in queue_item.builds:
+                    for binary in build.build.binarypackages:
+                        existing_components.add(binary.component)
+
+            existing_component_names = ", ".join(
+                component.name for component in existing_components)
+
+            # The intersection of allowed_components and
+            # existing_components must be equal to existing_components
+            # to allow the operation to go ahead.
+            if (allowed_components.intersection(existing_components)
+                != existing_components):
+                failure.append("FAILED: %s (You have no rights to accept component(s) '%s')"
+                    % (queue_item.displayname, existing_component_names))
+                continue
+
             # Sources and binaries are mutually exclusive when it comes to
             # overriding, so only one of these will be set.
-            source_overridden = queue_item.overrideSource(
-                new_component, new_section)
-            binary_overridden = queue_item.overrideBinaries(
-                new_component, new_section, new_priority)
+            try:
+                source_overridden = queue_item.overrideSource(
+                    new_component, new_section, allowed_components)
+                binary_overridden = queue_item.overrideBinaries(
+                    new_component, new_section, new_priority,
+                    allowed_components)
+            except QueueInconsistentStateError, info:
+                failure.append("FAILED: %s (%s)" %
+                               (queue_item.displayname, info))
+                continue
 
             feedback_interpolations = {
                 "name"      : queue_item.displayname,
