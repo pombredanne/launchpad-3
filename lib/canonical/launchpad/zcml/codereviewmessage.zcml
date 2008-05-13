@@ -25,6 +25,11 @@
         permission="zope.Public"
         template="../templates/codereviewmessage-index.pt"
         />
+  <browser:page
+      for="canonical.launchpad.interfaces.ICodeReviewMessage"
+      name="+macros"
+      permission="zope.Public"
+      template="../templates/codereviewmessage-macros.pt" />
     <browser:page
         name="+reply"
         facet="branches"
