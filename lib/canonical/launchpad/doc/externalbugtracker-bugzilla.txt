@@ -76,7 +76,7 @@ returned.
     >>> external_bugzilla.convertRemoteStatus('FOO').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: FOO
 
 
 Updating Bug Watches
