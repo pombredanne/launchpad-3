@@ -404,8 +404,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
-            repr_name, repr_value = marshaller.unmarshall(
-                self.entry, name, value)
+            repr_name = marshaller.representation_name(name)
+            repr_value = marshaller.unmarshall(self.entry, name, value)
             data[repr_name] = repr_value
         return data
 
@@ -484,10 +484,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # read-only), or is marked read-only. It's okay for
                 # the client to omit a value for this attribute.
                 continue
-            if self._fieldValueIsObject(field):
-                repr_name = name + '_link'
-            else:
-                repr_name = name
+            field = field.bind(self.context)
+            marshaller = getMultiAdapter((field, self.request),
+                                         IFieldMarshaller)
+            repr_name = marshaller.representation_name(name)
             if (changeset.get(repr_name) is None
                 and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
@@ -559,12 +559,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 errors.append("%s: You tried to modify a nonexistent "
                               "attribute." % repr_name)
                 continue
-
             # Around this point the specific value provided by the client
             # becomes relevant, so we marshall it.
             element = element.bind(self.context)
             marshaller = getMultiAdapter((element, self.request),
-                                           IFieldMarshaller)
+                                         IFieldMarshaller)
             try:
                 value = marshaller.marshall(value)
             except (ValueError, ValidationError), e:

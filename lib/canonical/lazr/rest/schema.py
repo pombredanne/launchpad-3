@@ -123,9 +123,13 @@ class SimpleFieldMarshaller:
         assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._marshall(value)
 
+    def representation_name(self, field_name):
+        "Return the field name as is."
+        return field_name
+
     def unmarshall(self, entry, field_name, value):
-        "Return the field name and value as they are."
-        return (field_name, value)
+        "Return the value as is."
+        return value
 
     def _marshall(self, value):
         """Return the value as is, unless it's empty; then return None."""
@@ -163,10 +167,12 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
+    def representation_name(self, field_name):
+        "Make it clear that the value is a link to a collection."
+        return field_name + '_collection_link'
+
     def unmarshall(self, entry, field_name, value):
-        repr_name = field_name + '_collection_link'
-        repr_value = "%s/%s" % (canonical_url(entry.context), field_name)
-        return (repr_name, repr_value)
+        return "%s/%s" % (canonical_url(entry.context), field_name)
 
 
 def VocabularyLookupFieldMarshaller(field, request):
@@ -213,13 +219,16 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
         super(ObjectLookupFieldMarshaller, self).__init__(
             field, request, vocabulary)
 
+    def representation_name(self, field_name):
+        "Make it clear that the value is a link to an object, not an object."
+        return field_name + '_link'
+
     def unmarshall(self, entry, field_name, value):
         "Represent an object as the URL to that object"
-        repr_name = field_name + '_link'
         repr_value = None
         if value is not None:
             repr_value = canonical_url(value)
-        return (repr_name, repr_value)
+        return repr_value
 
     def _marshall(self, value):
         """Look up the data model object by URL."""
