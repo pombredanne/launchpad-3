@@ -57,7 +57,8 @@ class TestSFTPAdapter(TrialTestCase):
     def test_canAdaptToSFTPServer(self):
         server = ISFTPServer(self.makeLaunchpadAvatar())
         self.assertIsInstance(server, TransportSFTPServer)
-        deferred = server.makeDirectory('~testuser/firefox/baz/.bzr', 0777)
+        deferred = server.makeDirectory(
+            '~testuser/firefox/baz/.bzr', {'permissions': 0777})
         self.addCleanup(shutil.rmtree, config.codehosting.branches_root)
         return deferred
 
@@ -188,6 +189,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
             'foo', {'permissions': 0777})
         def assertDirectoryExists(ignored):
             self.assertTrue(os.path.isdir('foo'), 'foo is not a directory')
+            self.assertEqual(040777, os.stat('foo').st_mode)
         return deferred.addCallback(assertDirectoryExists)
 
     def test_makeDirectoryError(self):

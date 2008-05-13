@@ -242,7 +242,7 @@ class TransportSFTPServer:
     @with_sftp_error
     def makeDirectory(self, path, attrs):
         """See `ISFTPServer`."""
-        return self.transport.mkdir(path)
+        return self.transport.mkdir(path, attrs['permissions'])
 
     @with_sftp_error
     def removeDirectory(self, path):
