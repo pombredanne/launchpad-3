@@ -125,6 +125,25 @@ defaults = [
     '--package=canonical',
     ]
 
+# Monkey-patch os.listdir to randomise the results
+original_listdir = os.listdir
+
+import random
+
+def listdir(path):
+    """Randomise the results of os.listdir.
+
+    It uses random.suffle to randomise os.listdir results, this way tests
+    relying on unstable ordering will have a higher chance to fail in the
+    development environment.
+    """
+    directory_contents = original_listdir(path)
+    random.shuffle(directory_contents)
+    return directory_contents
+
+os.listdir = listdir
+
+
 if __name__ == '__main__':
 
     # Extract arguments so we can see them too. We need to strip

@@ -12,7 +12,8 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options', 'FakeLogger']
+__all__ = ['log', 'logger', 'logger_options', 'FakeLogger',
+           'QuietFakeLogger']
 
 import logging
 import re
@@ -60,6 +61,18 @@ class FakeLogger:
 
     def debug(self, *stuff, **kw):
         self.message('DEBUG', *stuff, **kw)
+
+
+class QuietFakeLogger(FakeLogger):
+    """Extra quiet FakeLogger.
+
+    Does not print DEBUG and INFO messages.
+    """
+    def info(self, *stuff, **kw):
+        pass
+
+    def debug(self, *stuff, **kw):
+        pass
 
 
 class LibrarianFormatter(logging.Formatter):

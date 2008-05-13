@@ -8,7 +8,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IArchive, IBazaarApplication, IBranch,
+    ArchivePurpose, IAnnouncement, IArchive, IBazaarApplication, IBranch,
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
@@ -910,13 +910,12 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportJobWorkflow
 
 
-class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportMachine.
+class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
+    """Control who can edit the object view of a CodeImportMachine.
 
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
+    Access is restricted to members of ~vcs-imports and Launchpad admins.
     """
-    permission = 'launchpad.View'
+    permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
 
 
@@ -1133,7 +1132,7 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def checkAuthenticated(self, user):
+    def _ppaCheckAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
@@ -1142,6 +1141,28 @@ class EditBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
+    def checkAuthenticated(self, user):
+        """Check write access for user and different kinds of archives.
+
+        Allow
+        
+            * BuilddAdmins and PPA owner for PPAs
+            * users with upload permissions (for the respective distribution)
+              otherwise.
+        """
+        # Is this a PPA? Call the respective method if so.
+        if self.obj.archive.purpose == ArchivePurpose.PPA:
+            return self._ppaCheckAuthenticated(user)
+
+        # Primary or partner section here: is the user in question allowed
+        # to upload to the respective component? Allow user to retry build
+        # if so.
+        if self.obj.archive.canUpload(user, self.obj.current_component):
+            return True
+        else:
+            return self.obj.archive.canUpload(
+                user, self.obj.sourcepackagerelease.sourcepackagename)
 
 
 class ViewBuildRecord(EditBuildRecord):

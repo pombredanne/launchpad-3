@@ -15,6 +15,9 @@ from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *
+from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
@@ -100,6 +103,7 @@ from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.mailinglist import *
+from canonical.launchpad.interfaces.mailinglistsubscription import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
@@ -174,7 +178,4 @@ from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
-from canonical.launchpad.interfaces.distrocomponentuploader import *
-from canonical.launchpad.interfaces.archive import *
-from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.packagediff import *

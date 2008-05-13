@@ -108,45 +108,6 @@ class TestBranchSet(TestCase):
             logout()
 
 
-class TestBranchSetDormancyClause(TestCase):
-    """Test that the dormancy clause correctly selects branches."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        login(ANONYMOUS)
-        factory = LaunchpadObjectFactory()
-        self.branch_owner = factory.makePerson()
-
-        dormant_days = config.launchpad.branch_dormant_days
-        dormant_cutoff = datetime.now(pytz.UTC) - timedelta(dormant_days)
-
-        # Make two new branches on either side of the cut off period.
-        for delta in [-10, -1, 1, 10]:
-            date_created = dormant_cutoff + timedelta(days=delta)
-            factory.makeBranch(
-                owner=self.branch_owner, date_created=date_created)
-
-    def tearDown(self):
-        logout()
-
-    def test_showDormantBranchClause(self):
-        """Four branches should be returned if showing dormant branches."""
-        branch_set = getUtility(IBranchSet)
-        branch_count = branch_set.getBranchesForPerson(
-            self.branch_owner, hide_dormant=False).count()
-        self.assertEqual(4, branch_count,
-                         "Expected 4 branches, got %d" % branch_count)
-
-    def test_hideDormantBranchClause(self):
-        """Two branches should be returned if showing dormant branches."""
-        branch_set = getUtility(IBranchSet)
-        branch_count = branch_set.getBranchesForPerson(
-            self.branch_owner, hide_dormant=True).count()
-        self.assertEqual(2, branch_count,
-                         "Expected 2 branches, got %d" % branch_count)
-
-
 class TestBranchSetNewNameValidation(TestCase):
     """Test of the validation of the branch name done by BranchSet.new()."""
 
@@ -1043,8 +1004,8 @@ class TestBranchSetGetBranches(TestCase):
             BranchSet().getBranch(branch.owner, None, branch.name))
 
 
-class TestBranchCreation(TestCase):
-    """Make sure that creation rules are followed."""
+class TestBranchSetIsBranchNameAvailable(TestCase):
+    """Make sure that isBranchNameAvailable enforces uniqueness."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -1056,45 +1017,56 @@ class TestBranchCreation(TestCase):
         logout()
         TestCase.tearDown(self)
 
-    def test_different_owners_same_product_same_name_fails(self):
+    def test_different_owners_same_product_same_name_ok(self):
         factory = LaunchpadObjectFactory()
         product = factory.makeProduct()
-        branch = factory.makeBranch(product=product, name="sample-branch")
-        self.assertRaises(
-            BranchCreationException,
-            factory.makeBranch,
-            product=product,
-            name="sample-branch")
+        bob = factory.makePerson(name="bob")
+        mary = factory.makePerson(name="mary")
+        b1 = factory.makeBranch(
+            owner=bob, product=product, name="sample-branch")
+        self.assertTrue(
+            BranchSet().isBranchNameAvailable(
+                owner=mary, product=product, branch_name="sample-branch"))
 
     def test_different_owners_junk_same_name_ok(self):
         factory = LaunchpadObjectFactory()
         product = factory.makeProduct()
         name = "sample-branch"
-        b1 = factory.makeBranch(explicit_junk=True, name=name)
+        bob = factory.makePerson(name="bob")
+        mary = factory.makePerson(name="mary")
+        b1 = factory.makeBranch(owner=bob, explicit_junk=True, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 
-        b2 = factory.makeBranch(explicit_junk=True, name=name)
-        self.assertTrue(b2.product is None)
-        self.assertEqual(name, b2.name)
+        self.assertTrue(
+            BranchSet().isBranchNameAvailable(
+                owner=mary, product=None, branch_name=name))
 
-        self.assertTrue(b1.owner != b2.owner)
-
-    def test_same_owner_junk_same_name_fails(self):
+    def test_same_owner_junk_same_name_not_available(self):
         factory = LaunchpadObjectFactory()
-        product = factory.makeProduct()
         owner = factory.makePerson()
         name = "sample-branch"
         b1 = factory.makeBranch(owner=owner, explicit_junk=True, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 
-        self.assertRaises(
-            BranchCreationException,
-            factory.makeBranch,
-            owner=owner,
-            explicit_junk=True,
-            name="sample-branch")
+        self.assertFalse(
+            BranchSet().isBranchNameAvailable(
+                owner=owner, product=None, branch_name=name))
+
+    def test_same_owner_same_project_same_name_not_available(self):
+        factory = LaunchpadObjectFactory()
+        product = factory.makeProduct()
+        owner = factory.makePerson()
+        name = "sample-branch"
+        b1 = factory.makeBranch(owner=owner, product=product, name=name)
+        self.assertEqual(product, b1.product)
+        self.assertEqual(name, b1.name)
+        self.assertEqual(owner, b1.owner)
+
+        self.assertFalse(
+            BranchSet().isBranchNameAvailable(
+                owner=owner, product=product, branch_name=name))
 
 
 def test_suite():

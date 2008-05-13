@@ -116,6 +116,11 @@ announcement so there is a "Latest news" portlet:
     >>> 'Tomcat announcement' in latest_news(priv_browser.contents)
     True
 
+Let's make sure that the announcement is presented as a link.
+
+    >>> print priv_browser.getLink('Tomcat announcement headline').url
+    http://launchpad.dev/tomcat/+announcement/...
+
 We'll repeat the process for Derby, an IProduct that is part of the
 Apache project, but this time we won't specify a URL, and we'll make the
 announcement immediately:

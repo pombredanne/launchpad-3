@@ -16,6 +16,8 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+import os
+
 from twisted.internet import defer, reactor
 from twisted.python import log
 
@@ -32,6 +34,9 @@ class CodeImportWorker(LaunchpadScript):
         set_up_oops_reporting(name)
 
     def main(self):
+        # XXX: MichaelHudson 2008-05-07 bug=227586: Setting up the component
+        # architecture overrides $GNUPGHOME to something stupid.
+        os.environ['GNUPGHOME'] = ''
         reactor.callWhenRunning(self._run_reactor)
         reactor.run()
 
@@ -45,5 +50,5 @@ class CodeImportWorker(LaunchpadScript):
         return CodeImportWorkerMonitor(int(arg), self.logger).run()
 
 if __name__ == '__main__':
-    script = CodeImportWorker('codeimportworker')
+    script = CodeImportWorker('codeimportworker', dbuser='codeimportworker')
     script.run()

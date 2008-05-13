@@ -241,7 +241,7 @@ be raised.
     >>> print external_debbugs.convertRemoteStatus('open')
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: open
 
 
 == Importing bugs ==

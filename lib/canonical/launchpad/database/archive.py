@@ -33,9 +33,9 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
-    IHasOwner, IHasBuildRecords, IBuildSet, ILaunchpadCelebrities,
-    PackagePublishingStatus)
+    ArchiveDependencyError, ArchivePermissionType, ArchivePurpose, IArchive,
+    IArchivePermissionSet, IArchiveSet, IHasOwner, IHasBuildRecords,
+    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -609,6 +609,26 @@ class Archive(SQLBase):
                 "This dependency is already recorded.")
 
         return ArchiveDependency(archive=self, dependency=dependency)
+
+    def canUpload(self, user, component_or_package=None):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return user.inTeam(self.owner)
+        else:
+            return self._authenticate(
+                user, component_or_package, ArchivePermissionType.UPLOAD)
+
+    def canAdministerQueue(self, user, component):
+        """See `IArchive`."""
+        return self._authenticate(
+            user, component, ArchivePermissionType.QUEUE_ADMIN)
+
+    def _authenticate(self, user, component, permission):
+        """Private helper method to check permissions."""
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.checkAuthenticated(
+            user, self, permission, component)
+        return permissions.count() > 0
 
 
 class ArchiveSet:
