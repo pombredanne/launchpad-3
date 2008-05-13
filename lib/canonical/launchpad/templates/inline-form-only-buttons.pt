@@ -5,7 +5,7 @@
 
   <form action="."
         tal:attributes="action view/action_url;
-                        style view/style|nothing"
+                        form_style view/style|nothing"
         name="launchpadform"
         method="post"
         enctype="multipart/form-data"

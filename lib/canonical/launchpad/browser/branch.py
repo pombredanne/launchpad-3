@@ -1012,7 +1012,7 @@ class BranchRequestImportView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
-    style = "display: inline"
+    form_style = "display: inline"
 
     @property
     def next_url(self):
@@ -1022,7 +1022,7 @@ class BranchRequestImportView(LaunchpadFormView):
     def request_import_action(self, action, data):
         if self.context.code_import.import_job is None:
             self.request.response.addNotification(
-                "The import job for this import has been deleted.")
+                "This import is no longer being updated automatically.")
         elif self.context.code_import.import_job.state != \
                  CodeImportJobState.PENDING:
             assert self.context.code_import.import_job.state == \

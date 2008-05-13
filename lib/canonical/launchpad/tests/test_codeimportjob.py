@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, EmailAddressStatus, ICodeImportEventSet,
     ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
-from canonical.launchpad.ftests import login, logout, sync
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import)
@@ -869,15 +869,23 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
                     code_import.branch.next_mirror_time is None)
 
 
-def logged_in_for_code_imports(function):
-    """Wrap function so that it runs logged in as a member of ~vcs-imports."""
-    def decorated(*args, **kw):
-        login_for_code_imports()
-        try:
-            return function(*args, **kw)
-        finally:
-            logout()
-    return mergeFunctionMetadata(function, decorated)
+def logged_in_as(email):
+    """Return a decorator that wraps functions to runs logged in as `email`.
+    """
+    def decorator(function):
+        def decorated(*args, **kw):
+            login(email)
+            try:
+                return function(*args, **kw)
+            finally:
+                logout()
+        return mergeFunctionMetadata(function, decorated)
+    return decorator
+
+
+# This is a dependence on the sample data: David Allouche is a member of the
+# ~vcs-imports celebrity team.
+logged_in_for_code_imports = logged_in_as('david.allouche@canonical.com')
 
 
 class TestRequestJobUIRaces(unittest.TestCase):
@@ -895,7 +903,7 @@ class TestRequestJobUIRaces(unittest.TestCase):
 
     def getUserBrowserAtPage(self, url):
         """Return a Browser object for a logged in user opened at `url`."""
-        user = logged_in_for_code_imports(self.factory.makePerson)(
+        user = logged_in_as(ANONYMOUS)(self.factory.makePerson)(
             password='test')
         user_browser = setupBrowser(
             auth="Basic %s:test" % str(user.preferredemail.email))
@@ -911,7 +919,7 @@ class TestRequestJobUIRaces(unittest.TestCase):
         code_import_id = code_import.id
         return code_import_id, branch_url
 
-    @logged_in_for_code_imports
+    @logged_in_as('no-priv@canonical.com')
     def requestJobByUserWithDisplayName(self, code_import_id, displayname):
         """Record a request for the job by a user with the given name."""
         getUtility(ICodeImportJobWorkflow).requestJob(
@@ -929,7 +937,7 @@ class TestRequestJobUIRaces(unittest.TestCase):
             {}, user)
         flush_database_updates()
 
-    @logged_in_for_code_imports
+    @logged_in_as(ANONYMOUS)
     def startJob(self, code_import_id):
         """Mark the job as started on an arbitrary machine."""
         getUtility(ICodeImportJobWorkflow).startJob(
@@ -956,7 +964,7 @@ class TestRequestJobUIRaces(unittest.TestCase):
         self.deleteJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
-            [u'The import job for this import has been deleted.'],
+            [u'This import is no longer being updated automatically.'],
             get_feedback_messages(user_browser.contents))
 
     def test_pressButtonJobStarted(self):
