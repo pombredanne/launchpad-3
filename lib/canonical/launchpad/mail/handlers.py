@@ -247,7 +247,7 @@ class MaloneHandler:
                             bug_event = None
 
                         bug, bug_event = command.execute(
-                            signed_msg, filealias, commands)
+                            signed_msg, filealias)
                         if add_comment_to_bug:
                             messageset = getUtility(IMessageSet)
                             message = messageset.fromEmail(
@@ -301,6 +301,7 @@ class MaloneHandler:
                 try:
                     notify(bug_event)
                 except CreatedBugWithNoBugTasksError:
+                    rollback()
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:

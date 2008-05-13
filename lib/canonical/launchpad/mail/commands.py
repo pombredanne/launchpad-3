@@ -124,7 +124,7 @@ class BugEmailCommand(EmailCommand):
 
     _numberOfArguments = 1
 
-    def execute(self, parsed_msg, filealias, commands):
+    def execute(self, parsed_msg, filealias):
         """See IBugEmailCommand."""
         self._ensureNumberOfArguments()
         bugid = self.string_args[0]
@@ -135,11 +135,7 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
-            no_affects_command = [
-                command for command in commands
-                if isinstance(command, AffectsEmailCommand)] == []
-            if (message.text_contents.strip() == '' or
-                no_affects_command):
+            if message.text_contents.strip() == '':
                 # The report for a new bug must contain an affects command,
                 # since the bug must have at least one task
                 raise EmailProcessingError(
