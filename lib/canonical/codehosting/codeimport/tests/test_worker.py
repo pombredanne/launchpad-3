@@ -54,7 +54,7 @@ class WorkerTest(TestCaseWithTransport):
             for path, ignored, ignored in os.walk(directory):
                 yield path[len(directory):]
         self.assertEqual(
-            list(list_files(directory1)), list(list_files(directory2)))
+            sorted(list_files(directory1)), sorted(list_files(directory2)))
 
     @cachedproperty
     def factory(self):

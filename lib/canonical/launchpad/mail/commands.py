@@ -136,8 +136,11 @@ class BugEmailCommand(EmailCommand):
                 filealias=filealias,
                 parsed_message=parsed_msg)
             if message.text_contents.strip() == '':
+                # The report for a new bug must contain an affects command,
+                # since the bug must have at least one task
                 raise EmailProcessingError(
-                    get_error_message('no-affects-target-on-submit.txt'))
+                    get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
 
             params = CreateBugParams(
                 msg=message, title=message.title,

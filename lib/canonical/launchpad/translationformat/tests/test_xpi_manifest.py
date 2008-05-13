@@ -7,7 +7,6 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.translationformat.xpi_manifest import XpiManifest
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class XpiManifestTestCase(unittest.TestCase):
@@ -17,7 +16,7 @@ class XpiManifestTestCase(unittest.TestCase):
         # Parse and use minimal manifest.
         manifest = XpiManifest("locale chromepath en-US directory/")
         self.assertEqual(len(manifest._locales), 1)
-        chrome_path, locale = manifest.get_chrome_path_and_locale(
+        chrome_path, locale = manifest.getChromePathAndLocale(
             'directory/file.dtd')
         self.failIf(chrome_path is None, "Failed to match simple path")
         self.assertEqual(
@@ -26,7 +25,7 @@ class XpiManifestTestCase(unittest.TestCase):
     def test_NonMatch(self):
         # Failure to match path.
         manifest = XpiManifest("locale chromepath en-US directory/")
-        chrome_path, locale = manifest.get_chrome_path_and_locale(
+        chrome_path, locale = manifest.getChromePathAndLocale(
             'nonexistent/file')
         self.failIf(chrome_path is not None, "Unexpected path match.")
         self.failIf(locale is not None, "Got locale without a match.")
@@ -40,9 +39,9 @@ class XpiManifestTestCase(unittest.TestCase):
             in this file.
             """)
         self.assertEqual(len(manifest._locales), 0)
-        chrome_path, locale = manifest.get_chrome_path_and_locale('lines')
+        chrome_path, locale = manifest.getChromePathAndLocale('lines')
         self.failIf(chrome_path is not None, "Empty manifest matched a path.")
-        chrome_path, locale = manifest.get_chrome_path_and_locale('')
+        chrome_path, locale = manifest.getChromePathAndLocale('')
         self.failIf(chrome_path is not None, "Matched empty path.")
 
     def _checkSortOrder(self, manifest):
@@ -66,7 +65,7 @@ class XpiManifestTestCase(unittest.TestCase):
         self._checkSortOrder(manifest)
         for dir in ['gna', 'bar', 'ixx', 'foo']:
             path = "%sdir/file.html" % dir
-            chrome_path, locale = manifest.get_chrome_path_and_locale(path)
+            chrome_path, locale = manifest.getChromePathAndLocale(path)
             self.assertEqual(chrome_path, "%s/file.html" % dir,
                 "Bad chrome path in multi-line parse.")
             self.assertEqual(
@@ -90,7 +89,7 @@ class XpiManifestTestCase(unittest.TestCase):
         self._checkSortOrder(manifest)
         for dir, dirlocale in dirs.iteritems():
             path = "%sdir/file.html" % dir
-            chrome_path, locale = manifest.get_chrome_path_and_locale(path)
+            chrome_path, locale = manifest.getChromePathAndLocale(path)
             self.assertEqual(chrome_path, "%s/file.html" % dir,
                 "Bad chrome path in multi-line parse.")
             self.assertEqual(locale, dirlocale, "Locales got mixed up.")
@@ -109,7 +108,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale incomplete fr
             """)
         self.assertEqual(len(manifest._locales), 1)
-        chrome_path, locale = manifest.get_chrome_path_and_locale('foodir/x')
+        chrome_path, locale = manifest.getChromePathAndLocale('foodir/x')
         self.failIf(chrome_path is None, "Garbage lines messed up match.")
         self.assertEqual(chrome_path, "okay/x", "Matched wrong line.")
         self.assertEqual(locale, "fr", "Inexplicably mismatched locale.")
@@ -124,7 +123,7 @@ class XpiManifestTestCase(unittest.TestCase):
 
     def _checkLookup(self, manifest, path, chrome_path, locale):
         """Helper: look up `path` in `manifest`, expect given output."""
-        found_chrome_path, found_locale = manifest.get_chrome_path_and_locale(
+        found_chrome_path, found_locale = manifest.getChromePathAndLocale(
             path)
         self.failIf(found_chrome_path is None, "No match found for " + path)
         self.assertEqual(found_chrome_path, chrome_path)
@@ -250,6 +249,19 @@ class XpiManifestTestCase(unittest.TestCase):
             manifest, 'jar:dir/x.jar!/subdir/y.jar!/deep/foo', 'y/foo', 'it')
         self._checkLookup(
             manifest, 'dir/x.jar!/subdir/z.jar!/foo', 'z/foo', 'it')
+
+    def test_ContainsLocales(self):
+        # Jar files need to be descended into if any locale line mentions a
+        # path inside them.
+        manifest = XpiManifest("locale in my jar:x/foo.jar!/y")
+        self.failIf(not manifest.containsLocales("jar:x/foo.jar!/"))
+        self.failIf(manifest.containsLocales("jar:zzz/foo.jar!/"))
+
+    def test_NormalizeContainsLocales(self):
+        # "containsLocales" lookup is normalized, just like chrome path
+        # lookup, so it's not fazed by syntactical misspellings.
+        manifest = XpiManifest("locale main kh jar:/x/foo.jar!bar.jar!")
+        self.failIf(not manifest.containsLocales("x/foo.jar!//bar.jar!/"))
 
 
 def test_suite():

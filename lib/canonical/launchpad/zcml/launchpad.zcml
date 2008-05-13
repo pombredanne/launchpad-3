@@ -79,6 +79,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- InvalidBatchSizeError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-invalidbatchsize.pt"
+      class="canonical.launchpad.webapp.error.InvalidBatchSizeView"
+      />
+
   <!-- TranslationUnavailable -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.TranslationUnavailable"

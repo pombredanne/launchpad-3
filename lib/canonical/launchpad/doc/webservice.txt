@@ -38,6 +38,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> class ICookbook(ICommentTarget):
     ...     name = TextLine(title=u"Name", required=True)
     ...     author = Object(schema=IAuthor)
+    ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
     ...     recipes = Attribute("List of recipes published in this cookbook.")
 
     >>> class IDish(Interface):
@@ -102,11 +103,12 @@ and IRecipe.
 
     >>> class Cookbook:
     ...     implements(ICookbook)
-    ...     def __init__(self, name, author):
+    ...     def __init__(self, name, author, cuisine=None):
     ...         self.name = name
     ...         self.author = author
     ...         self.recipes = []
     ...         self.comments = []
+    ...         self.cuisine = cuisine
     >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
 
     >>> class Dish:
@@ -162,12 +164,12 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...     def __init__(self):
     ...         self.cookbooks = COOKBOOKS
     ...
-    ...     def newCookbook(self, author_name, title):
+    ...     def newCookbook(self, author_name, title, cuisine):
     ...         authors = AuthorSet()
     ...         author = authors.getAuthor(author_name)
     ...         if author is None:
     ...             author = authors.newAuthor(author_name)
-    ...         cookbook = Cookbook(title, author)
+    ...         cookbook = Cookbook(title, author, cuisine)
     ...         self.cookbooks.append(cookbook)
     ...         return cookbook
     ...
@@ -424,6 +426,7 @@ recipe to its cookbook.
 
     >>> class ICookbookEntry(IEntry):
     ...     name = TextLine(title=u"Name", required=True)
+    ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
     ...     author = Object(schema=IAuthor)
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
     ...     comments = CollectionField(value_type=Object(schema=IComment))
@@ -636,18 +639,21 @@ a named factory operation for creating a new cookbook.
 
     >>> from canonical.lazr.rest import ResourcePOSTOperation
     >>> class CookbookFactoryOperation(ResourcePOSTOperation):
-    ...    """An operation that creates a new cookbook."""
-    ...    params = (
-    ...        TextLine(__name__='author_name'),
-    ...        TextLine(__name__='title'),
-    ...    )
-    ...
-    ...    def call(self, author_name, title):
-    ...        cookbook = CookbookSet().newCookbook(author_name, title)
-    ...        self.request.response.setStatus(201)
-    ...        self.request.response.setHeader(
-    ...            "Location", canonical_url(cookbook))
-    ...        return cookbook
+    ...     """An operation that creates a new cookbook."""
+    ...     params = (
+    ...         TextLine(__name__='author_name'),
+    ...         TextLine(__name__='title'),
+    ...         TextLine(
+    ...             __name__='cuisine', default=u'Brazilian', required=False),
+    ...     )
+    ...   
+    ...     def call(self, author_name, title, cuisine):
+    ...         cookbook = CookbookSet().newCookbook(
+    ...             author_name, title, cuisine)
+    ...         self.request.response.setStatus(201)
+    ...         self.request.response.setHeader(
+    ...             "Location", canonical_url(cookbook))
+    ...         return cookbook
 
     >>> from canonical.lazr.interfaces import IResourcePOSTOperation
     >>> provideAdapter(CookbookFactoryOperation,
@@ -928,26 +934,38 @@ The same way collections are wrapped into CollectionResource, navigating
 to an object that has an IEntry adapter, will wrap it into an
 EntryResource.
 
-For instance, requesting "/cookbooks/The%20Joy%20of%20Cooking" will wrap
-the "Joy of Cooking" cookbook object into an EntryResource.
+For instance, creating a new cookbook and making a request to its URL
+will wrap it into an EntryResource.
 
+    >>> body = ("ws_op=create_cookbook&title=Feijoada&"
+    ...         "author_name=Fernando%20Yokota")
     >>> request = create_web_service_request(
-    ...     quote('/beta/cookbooks/The Joy of Cooking'))
-    >>> joy_resource = request.traverse(app)
-    >>> joy_resource
+    ...     '/beta/cookbooks', 'POST', body,
+    ...     {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
+    >>> operation_resource = request.traverse(app)
+    >>> result = operation_resource()
+    >>> request.response.getHeader('Location')
+    'http://api.launchpad.dev/beta/cookbooks/Feijoada'
+    >>> request = create_web_service_request('/beta/cookbooks/Feijoada')
+    >>> feijoada_resource = request.traverse(app)
+    >>> feijoada_resource
     <canonical.lazr.rest.resource.EntryResource object ...>
+    >>> feijoada = simplejson.loads(feijoada_resource())
 
-    >>> joy = simplejson.loads(joy_resource())
-    >>> sorted(joy.items())
+Notice how the request above didn't specify the book's cuisine,
+but since that is not a required field Launchpad used the default
+value (Brazilian) specified in CookbookFactoryOperation for it.
+
+    >>> sorted(feijoada.items())
     [(u'author_link',
-      u'http://api.launchpad.dev/beta/authors/Irma%20S.%20Rombauer'),
+      u'http://api.launchpad.dev/beta/authors/Fernando%20Yokota'),
      (u'comments_collection_link',
-      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking/comments'),
-     (u'name', u'The Joy of Cooking'),
+      u'http://api.launchpad.dev/beta/cookbooks/Feijoada/comments'),
+     (u'cuisine', u'Brazilian'),
+     (u'name', u'Feijoada'),
      (u'recipes_collection_link',
-      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking/recipes'),
-     (u'self_link',
-      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking')]
+      u'http://api.launchpad.dev/beta/cookbooks/Feijoada/recipes'),
+     (u'self_link', u'http://api.launchpad.dev/beta/cookbooks/Feijoada')]
 
 You can also traverse from an entry to an item in a scoped collection:
 

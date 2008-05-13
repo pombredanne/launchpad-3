@@ -84,7 +84,7 @@ def print_remote_bugtasks(content):
         for key, value in img.attrs:
             if '@@/bug-remote' in value:
                 target = extract_text(img.findAllPrevious('td')[-2])
-                print target, extract_text(img.findPrevious('a'))
+                print target, extract_text(img.findNext('a'))
 
 
 def print_bugs_table(content, table_id):

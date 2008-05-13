@@ -102,9 +102,9 @@ class FeedBase(LaunchpadView):
         """
         # Get the creation date, if available.  Otherwise use a fixed date, as
         # allowed by the RFC.
-        if hasattr(self.context, 'datecreated'):
+        if getattr(self.context, 'datecreated', None) is not None:
             datecreated = self.context.datecreated.date().isoformat()
-        elif hasattr(self.context, 'date_created'):
+        elif getattr(self.context, 'date_created', None) is not None:
             datecreated = self.context.date_created.date().isoformat()
         else:
             datecreated = "2008"

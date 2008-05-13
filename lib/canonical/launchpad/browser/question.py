@@ -64,7 +64,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.widgets import LaunchpadRadioWidget
+from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
@@ -968,6 +968,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     field_names = ['title', 'keywords', 'content']
 
+    custom_widget('keywords', TokensTextWidget)
     custom_widget("message", TextAreaWidget, height=5)
 
     @property

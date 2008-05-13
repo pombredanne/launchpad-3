@@ -8,6 +8,7 @@ __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
     'CodeImportNewView',
+    'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
     ]
@@ -30,13 +31,26 @@ from canonical.launchpad.interfaces import (
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
+    Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+
+
+class CodeImportSetNavigation(Navigation):
+    """Navigation methods for IBuilder."""
+    usedfor = ICodeImportSet
+
+    @stepto('+machines')
+    def bugs(self):
+        return getUtility(ICodeImportMachineSet)
+
+    def breadcrumb(self):
+        return u'Code Import System'
 
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
