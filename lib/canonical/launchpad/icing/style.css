@@ -651,6 +651,44 @@ So it's hidden initially, and then revealed if JavaScript is available.
   padding-top: 10px;
 }
 
+/* Navigation menus appear as a segmented pill overlaid on a groove: */
+.navigation.menu {
+  background: url(/+icing/navigation-menu-groove.png) repeat-x center left;
+  margin-bottom: 2em;
+  text-align: center;
+}
+/* Segments have slight padding, and are normally mid-blue: */
+.navigation.menu * {background: #2064ef; padding: 0.25em 0;}
+/* But the selected element is slightly darker: */
+.navigation.menu strong * {background-color: #888;}
+/* The segments have a thin separator, and padding around their text: */
+.navigation.menu * * {border-right: 1px solid #ccc; padding: 0.25em 0.5em;}
+/* All text in the navigation menu is white, even the links: */
+.navigation.menu, .navigation.menu a {color: #fff;}
+/* The first segment, whether active or inactive, has a rounded cap: */
+.navigation.menu > :first-child {
+  background: url(/+icing/navigation-nw-w-normal.png) top left no-repeat;
+}
+/* The bottom right corner is placed over top of the bottom border: */
+.navigation.menu > :first-child::before {
+  content: '';
+  background: url(/+icing/navigation-sw-normal.png) no-repeat bottom left;
+  vertical-align: -1px;
+  padding: 0.25em 2px;
+}
+/* The last segment, whether selected or not, has a rounded cap: */
+.navigation.menu > :last-child {
+  background: url(/+icing/navigation-ne-e-normal.png) top right no-repeat;
+}
+.navigation.menu > :last-child * {border-right: none;}
+/* The bottom right corner is placed over top of the bottom border: */
+.navigation.menu > :last-child::after {
+  content: '';
+  background: url(/+icing/navigation-se-normal.png) no-repeat bottom left;
+  vertical-align: -1px;
+  padding: 0.25em 2px;
+}
+
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */

@@ -1,13 +1,11 @@
-<ul
+<div
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:lpm="http://ns.launchpad.net/lpm"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  >
-  <li tal:repeat="link view/links">
-    <tal:link-content replace="structure link/@@+link">
-      Link
-    </tal:link-content>
-  </li>
-</ul>
+  class="navigation menu"
+>
+  <tal:item repeat="link view/links"
+  ><tal:link-content replace="structure link/@@+link" /></tal:item>
+</div>
