@@ -299,8 +299,8 @@ class DatabaseConfig:
     _config_section = None
     _db_config_attrs = frozenset([
         'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',
-        'db_statement_timeout_precision', 'soft_request_timeout',
-        'randomise_select_results'])
+        'db_statement_timeout_precision', 'isolation_level',
+        'randomise_select_results', 'soft_request_timeout'])
     _db_config_required_attrs = frozenset(['dbuser', 'dbname'])
 
     def setConfigSection(self, section_name):

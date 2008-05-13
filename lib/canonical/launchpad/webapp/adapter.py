@@ -13,7 +13,9 @@ from time import time
 import warnings
 
 import psycopg2
-import psycopg2.extensions
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
 
 from storm.database import register_scheme
 from storm.databases.postgres import Postgres, PostgresTimeoutTracer
@@ -200,6 +202,12 @@ def break_main_thread_db_access(*ignored):
 
 # ---- Storm database classes
 
+isolation_level_map = {
+    'autocommit': ISOLATION_LEVEL_AUTOCOMMIT,
+    'read_committed': ISOLATION_LEVEL_READ_COMMITTED,
+    'serializable': ISOLATION_LEVEL_SERIALIZABLE,
+    }
+
 class LaunchpadDatabase(Postgres):
 
     def raw_connect(self):
@@ -215,6 +223,11 @@ class LaunchpadDatabase(Postgres):
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
+
+        isolation_level = isolation_level_map.get(
+            dbconfig.isolation_level, ISOLATION_LEVEL_SERIALIZABLE)
+        raw_connection.set_isolation_level(isolation_level)
+
         _reset_dirty_commit_flags(*flags)
         return raw_connection
 
@@ -229,8 +242,7 @@ class LaunchpadSessionDatabase(Postgres):
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
-        raw_connection.set_isolation_level(
-            psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        raw_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         _reset_dirty_commit_flags(*flags)
         return raw_connection
 
@@ -286,7 +298,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         # connections.
         if not isinstance(connection._database, LaunchpadDatabase):
             return
-        if isinstance(error, psycopg2.extensions.QueryCanceledError):
+        if isinstance(error, QueryCanceledError):
             OpStats.stats['timeouts'] += 1
             raise TimeoutError(statement, params)
 
