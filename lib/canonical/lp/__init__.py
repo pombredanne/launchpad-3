@@ -41,8 +41,11 @@ def isZopeless():
     return ZopelessTransactionManager._installed is not None
 
 
-def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
-                 implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
+_IGNORED = object()
+
+
+def initZopeless(debug=_IGNORED, dbname=None, dbhost=None, dbuser=None,
+                 implicitBegin=_IGNORED, isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     if dbuser is None:
         # Nothing calling initZopeless should be connecting as the
@@ -60,15 +63,5 @@ def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
     if dbuser is None:
         dbuser = globals()['dbuser']
 
-    # If the user has been specified in the dbhost, it overrides.
-    # Might want to remove this backwards compatibility feature at some
-    # point.
-    if '@' in dbhost or not dbuser:
-        dbuser = ''
-    else:
-        dbuser = dbuser + '@'
-
-    return ZopelessTransactionManager('postgres://%s%s/%s' % (
-        dbuser, dbhost, dbname,
-        ), debug=debug, implicitBegin=implicitBegin, isolation=isolation)
-
+    return ZopelessTransactionManager.initZopeless(
+        dbname=dbname, dbhost=dbhost, dbuser=dbuser, isolation=isolation)
