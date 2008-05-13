@@ -123,7 +123,7 @@ class SimpleFieldMarshaller:
         assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._marshall(value)
 
-    def representation_name(self, field_name):
+    def representationName(self, field_name):
         "Return the field name as is."
         return field_name
 
@@ -167,7 +167,7 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
-    def representation_name(self, field_name):
+    def representationName(self, field_name):
         "Make it clear that the value is a link to a collection."
         return field_name + '_collection_link'
 
@@ -219,7 +219,7 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
         super(ObjectLookupFieldMarshaller, self).__init__(
             field, request, vocabulary)
 
-    def representation_name(self, field_name):
+    def representationName(self, field_name):
         "Make it clear that the value is a link to an object, not an object."
         return field_name + '_link'
 

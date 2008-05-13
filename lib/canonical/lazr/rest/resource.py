@@ -405,7 +405,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
-            repr_name = marshaller.representation_name(name)
+            repr_name = marshaller.representationName(name)
             repr_value = marshaller.unmarshall(self.entry, name, value)
             data[repr_name] = repr_value
         return data
@@ -488,7 +488,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representation_name(name)
+            repr_name = marshaller.representationName(name)
             if (changeset.get(repr_name) is None
                 and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
@@ -541,7 +541,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representation_name(name)
+            repr_name = marshaller.representationName(name)
             if not changeset.has_key(repr_name):
                 # The client didn't try to set a value for this field.
                 continue
@@ -561,11 +561,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # to the right kind of object.
             if (IObject.providedBy(field)
                 and not ICollectionField.providedBy(field)):
-                # TODO leonardr 2008-15-04
-                # blueprint=api-wadl-description: This should be moved
-                # into the ObjectLookupFieldMarshaller, once we make
-                # it possible for Vocabulary fields to specify a
-                # schema class the way IObject fields can.
+                # XXX leonardr 2008-15-04 blueprint=api-wadl-description:
+                # This should be moved into the
+                # ObjectLookupFieldMarshaller, once we make it
+                # possible for Vocabulary fields to specify a schema
+                # class the way IObject fields can.
                 if not field.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
