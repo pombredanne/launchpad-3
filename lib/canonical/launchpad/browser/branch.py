@@ -1033,7 +1033,7 @@ class BranchRequestImportView(LaunchpadFormView):
             user = self.context.code_import.import_job.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(
-                structured("The import has already been requested by %s" %
+                structured("The import has already been requested by %s." %
                            adapter.link('')))
         else:
             getUtility(ICodeImportJobWorkflow).requestJob(
