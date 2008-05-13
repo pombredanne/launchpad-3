@@ -98,7 +98,7 @@ warnings.filterwarnings(
         )
 # This warning can be removed once we upgrade PQM to hardy.
 warnings.filterwarnings(
-        'ignore', 'docutils.utils.Reporter.set_conditions', DeprecationWarning
+        'ignore', 'docutils', DeprecationWarning
         )
 
 # This warning will be triggered if the beforeTraversal hook fails. We
