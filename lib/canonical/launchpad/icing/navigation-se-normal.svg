@@ -17,7 +17,7 @@
    version="1.0"
    sodipodi:docname="navigation-se-normal.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-05-translation/lib/canonical/launchpad/images/navigation-se-normal.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-05-translation/lib/canonical/launchpad/icing/navigation-se-normal.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -115,6 +115,13 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect3201"
+       width="4"
+       height="4"
+       x="0"
+       y="0" />
     <path
        sodipodi:type="arc"
        style="fill:#2064ef;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
