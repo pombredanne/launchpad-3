@@ -57,22 +57,21 @@ from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
     AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
-    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
-    IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
-    IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
-    INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress, InvalidName,
-    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
-    IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    BugTaskStatus, EmailAddressStatus, IArchivePermissionSet, IBugTarget,
+    IBugTaskSet, IDistribution, IDistributionSet, IEmailAddress,
+    IEmailAddressSet, IGPGKeySet, IHWSubmissionSet, IHasIcon, IHasLogo,
+    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
+    IMailingListSet, INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress,
+    InvalidName, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
+    IProduct, IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    MailingListAutoSubscribePolicy, NameAlreadyTaken,
-    PackagePublishingStatus, PersonCreationRationale, PersonVisibility,
-    PersonalStanding, PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH,
-    SSHKeyType, ShipItConstants, ShippingRequestStatus,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    MailingListAutoSubscribePolicy, NameAlreadyTaken, PackagePublishingStatus,
+    PersonCreationRationale, PersonVisibility, PersonalStanding,
+    PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -2045,10 +2044,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def isUploader(self, distribution):
         """See `IPerson`."""
-        for acl in distribution.uploaders:
-            if self in acl:
-                return True
-        return False
+        permissions = getUtility(IArchivePermissionSet).componentsForUploader(
+            distribution.main_archive, self)
+        return permissions.count() > 0
 
     @cachedproperty
     def is_ubuntero(self):

@@ -1705,6 +1705,26 @@ An empty unsigned mail to new@malone:
     You didn't specify the project, distribution, or package that the bug is
     ...
 
+If we submit a bug with no valid affects command, it is be rejected.
+
+    >>> from canonical.launchpad.database import Bug
+    >>> before_count = Bug.select().count()
+    >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: new@bugs.launchpad.ubuntu.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: A bug with no affects
+    ... I'm abusing ltsp-build-client to build a diskless fat client, but dint
+    ... of --late-packages ubuntu-desktop. The dpkg --configure step for eg. HAL
+    ... will try to start the daemon and failing, due to the lack of /proc. This
+    ... is just the tip of the iceberg; I'll file more bugs as I go along.
+    ...
+    ... ~ affects ubuntu/evolution
+    ... """
+
+    >>> process_email(submit_mail)
+    >>> before_count == Bug.select().count()
+    True
+
 Let's take a closer look at send_process_error_notification(), which is
 used to send the error messages. It needs the message that caused the
 error, so let's create one.

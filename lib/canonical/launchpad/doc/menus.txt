@@ -277,52 +277,6 @@ are as we expect.
     url: http://launchpad.dev/sesamestreet/+bar
 
 
-== Enabled links and disabled links ==
-
-Often, we want to make a facet menu that uses the standard facet menu links,
-but with only some of them enabled.
-
-To do this, we make a new menu class that extends an existing one.  We need
-to provide a set of link names that are to be enabled.  All other links will
-be disabled.
-
-    >>> class OnlySomeEnabledFacets(Facets):
-    ...
-    ...     enable_only = ['foo']
-
-Now, we can make an instance of this class.
-
-    >>> onlysomeenabledfacetmenu = OnlySomeEnabledFacets(street)
-
-We look at the links, to make sure they are as we expect.
-
-    >>> for link in onlysomeenabledfacetmenu.iterlinks():
-    ...     print '--- link %s ---' % link.name
-    ...     print 'enabled:', link.enabled
-    --- link foo ---
-    enabled: True
-    --- link bar ---
-    enabled: False
-
-If 'enable_only' contains a link name that does not appear in 'links', we
-should get a warning.
-
-    >>> class UnknownEnableOnlyFacets(Facets):
-    ...
-    ...     enable_only = ['bar', 'quux']
-
-Now, we can make an instance of this class.
-
-    >>> unknownenableonlyfacets = UnknownEnableOnlyFacets(street)
-
-    >>> for link in unknownenableonlyfacets.iterlinks():
-    ...     print '--- link %s ---' % link.name
-    ...     print 'enabled:', link.enabled
-    Traceback (most recent call last):
-    ...
-    AssertionError: Links in 'enable_only' not found in 'links': quux
-
-
 == The MenuLink and FacetLink adapter classes ==
 
 The menus system needs to be able to adapt ILinkData objects to
