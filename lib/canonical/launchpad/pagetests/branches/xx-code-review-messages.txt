@@ -40,10 +40,13 @@ We can reply to a comment.
     >>> nopriv_browser.getLink('Reply').click()
     >>> nopriv_browser.url == message_url + '/+reply'
     True
+    >>> nopriv_browser.getControl('Subject').value = 'Subjects are nice.'
     >>> nopriv_browser.getControl('Comment').value = 'I like this'
     >>> nopriv_browser.getControl('Add').click()
 
 After this, we are taken to the view page for that comment.
 
+    >>> print_tag('comment-subject', nopriv_browser)
+    Subjects are nice.
     >>> print_tag('comment-body', nopriv_browser)
     I like this

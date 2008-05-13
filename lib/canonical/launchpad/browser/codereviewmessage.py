@@ -24,6 +24,10 @@ class CodeReviewMessageView(LaunchpadView):
 
 
 class IEditCodeReviewMessage(Interface):
+    subject = Text(
+        title=_('Subject'), required=False, description=_(
+        "This will be rendered as help text"))
+
     comment = Text(
         title=_('Comment'), required=False, description=_(
         "This will be rendered as help text"))
@@ -37,5 +41,5 @@ class CodeReviewMessageAddView(LaunchpadFormView):
     def add_action(self, action, data):
         """Create the comment..."""
         message = self.context.branch_merge_proposal.createMessage(
-            self.user, '', data['comment'], parent=self.context)
+            self.user, data['subject'], data['comment'], parent=self.context)
         self.next_url = canonical_url(message)
