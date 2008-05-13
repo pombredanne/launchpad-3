@@ -43,6 +43,7 @@
       Whiteboard text goes here.
     </div>
   </tal:whiteboard>
+  <a href="#" tal:attributes="href view/comment_location">Add comment</a>
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">
@@ -57,7 +58,6 @@
     <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
-    <a href="#" tal:attributes="href view/comment_location">Comment</a>
   </div>
 </div>
 
