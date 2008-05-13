@@ -10,7 +10,7 @@ Set up required objects
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(merge_proposal_url)
-    >>> nopriv_browser.getLink('Comment').click()
+    >>> nopriv_browser.getLink('Add comment').click()
     >>> nopriv_browser.getControl('Comment').value = 'my body'
     >>> nopriv_browser.getControl('Add').click()
     >>> message_url = nopriv_browser.url
