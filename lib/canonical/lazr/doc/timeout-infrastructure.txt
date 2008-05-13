@@ -1,0 +1,46 @@
+= Timing-out on external resources =
+
+When making a request to an external resource (web service, external
+process), we want to make sure that this request is interrupted if it
+takes to long to complete.
+
+The canonical.lazr.timeout module provides a @with_timeout decorator
+that makes implementing that kind of behaviour easy.
+
+The time to wait can be passed using the timeout parameter to the
+decorator.
+
+    >>> from select import select
+    >>> from canonical.lazr.timeout import with_timeout
+
+    >>> @with_timeout(timeout=0.5)
+    ... def wait_for(time):
+    ...     """Function that wait for a number of seconds."""
+    ...     select((), (), (), time)
+    ...     return "Succeeded."
+
+    >>> wait_for(0.1)
+    'Succeeded.'
+
+If the operation cannot be completed in the alloted time, a TimeoutError
+is raised.
+
+    >>> wait_for(1)
+    Traceback (most recent call last):
+    ...
+    TimeoutError: timeout exceeded.
+
+== Cleanup ==
+
+There should be at most one thread alive at the end of this test (the
+select() that timed out.)
+
+    >>> import threading
+    >>> count = 0
+    >>> for thread in threading.enumerate():
+    ...     if not thread.isAlive() or thread is threading.currentThread():
+    ...         continue
+    ...     thread.join()
+    ...     count += 1
+    >>> count
+    1
