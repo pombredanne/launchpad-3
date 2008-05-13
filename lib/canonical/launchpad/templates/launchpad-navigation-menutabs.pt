@@ -6,6 +6,9 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="navigation menu"
 >
-  <tal:item repeat="link view/links"
+  <tal:XXX replace="nothing">
+    20080513 mpt: The HTML comment works around bug 229931.
+  </tal:XXX>
+  <!-- :-) --><tal:item repeat="link view/links"
   ><tal:link-content replace="structure link/@@+link" /></tal:item>
 </div>
