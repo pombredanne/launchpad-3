@@ -240,5 +240,3 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `import_job`.heartbeat == UTC_NOW.
         :postcondition: A START `CodeImportEvent` was created.
         """
-
-
