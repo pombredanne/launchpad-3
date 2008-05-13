@@ -63,6 +63,8 @@ required. Lines that start with a hash (#) are comments.
     # This section has a name similar to a category.
     [section_33]
     key1: fnord
+    key2: multiline value 1
+       multiline value 2
 
     >>> schema = ConfigSchema(base_conf)
     >>> verifyObject(IConfigSchema, schema)
@@ -981,3 +983,14 @@ hex notation is not supported.
     '0.5'
     >>> convert('0x100')
     '0x100'
+
+Multiline values are always strings:
+
+    >>> convert("""multiline value 1
+    ...     multiline value 2""")
+    'multiline value 1\n    multiline value 2'
+
+    >>> implicit_config['section_33'].key2
+    'multiline value 1\nmultiline value 2'
+
+

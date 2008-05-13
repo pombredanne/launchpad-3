@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -163,6 +163,7 @@ class ProtocolErrorView(SystemErrorView):
             self.request.response.setHeader(header, value)
         return self.index()
 
+
 class NotFoundView(SystemErrorView):
 
     response_code = 404
@@ -173,7 +174,7 @@ class NotFoundView(SystemErrorView):
     @cachedproperty
     def referrer(self):
         """If there is a referring page, return its URL.
-        
+
         Otherwise return None.
         """
         referrer = self.request.get('HTTP_REFERER')
@@ -193,6 +194,21 @@ class RequestExpiredView(SystemErrorView):
         # is really just a guess and I don't think any clients actually
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
+
+
+class InvalidBatchSizeView(SystemErrorView):
+    """View rendered when an InvalidBatchSizeError is raised."""
+
+    response_code = 400
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False
+
+    @property
+    def max_batch_size(self):
+        """Return the maximum configured batch size."""
+        return config.launchpad.max_batch_size
 
 
 class TranslationUnavailableView(SystemErrorView):

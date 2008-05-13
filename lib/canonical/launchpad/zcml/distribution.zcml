@@ -326,10 +326,6 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
-      name="+portlet-uploaders"
-      template="../templates/distribution-portlet-uploaders.pt"
-      />
-    <browser:page
       name="+portlet-bounties"
       template="../templates/object-portlet-bounties.pt"
       />

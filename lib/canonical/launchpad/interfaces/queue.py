@@ -285,6 +285,23 @@ class IPackageUploadSource(Interface):
             readonly=False,
             )
 
+    def getSourceAncestry():
+        """Return a suitable ancestry publication for this context.
+
+        The possible ancestries locations for a give source upload, assuming
+        that only PRIMARY archive allows post-RELEASE pockets are:
+
+         1. original archive and pocket (old DEVELOPMENT/SRU/PPA uploads)
+         2. primary_archive and release (NEW SRU/PPA uploads fallback)
+
+        We lookup a source publication with the same name in those location
+        and in that order. If an ancestry is found it is returned, otherwise
+        it returns None.
+
+        :return: `SourcePackagePublishingHistory` for the corresponding
+             ancestry or None if it wasn't found.
+        """
+
     def verifyBeforeAccept():
         """Perform overall checks before promoting source to ACCEPTED queue.
 

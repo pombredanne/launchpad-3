@@ -57,19 +57,32 @@ can be used to generate a bug tracker name when a bugtracker is
 automatically created. make_bugtracker_name() accepts a single
 parameter, uri, which is used as the basis for the auto-generated name.
 
-Passing a URL in the URI parameter will produce a name based on the host
-name of that URL.
+Passing in a URI will produce a name based on the host name part of
+that URL.
 
     >>> from canonical.launchpad.database.bugtracker import (
     ...     make_bugtracker_name)
     >>> make_bugtracker_name('http://bugs.example.com/shrubbery')
     'auto-bugs.example.com'
 
-Passing a mailto:URI will produce a name based on the local part of the
-email address.
+Passing in a mailto: URI will produce a name based on the local part
+of the email address.
 
     >>> make_bugtracker_name('mailto:foo.bar@canonical.com')
     'auto-foo.bar'
+
+Similarly, there is also make_bugtracker_title(), which does something
+similar, but for the title.
+
+    >>> from canonical.launchpad.database.bugtracker import (
+    ...     make_bugtracker_title)
+    >>> make_bugtracker_title('http://bugs.example.com/shrubbery')
+    'bugs.example.com/shrubbery'
+
+For email addresses, it uses the first part of the domain too.
+
+    >>> make_bugtracker_title('mailto:foo.bar@canonical.com')
+    'Email to foo.bar@canonical'
 
 The IBugTrackerSet interface provides a method, ensureBugTracker(),
 which will retrieve or create a bug tracker for the parameters passed to
@@ -117,29 +130,21 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
 == Getting Bug Trackers ==
 
-You can get a specific bug tracker from the database by querying by its
-base URL.
+You can get a specific bug tracker from the database by querying by
+its base URL.
 
-    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'https://bugzilla.mozilla.org/')
-    >>> mozilla_bugzilla.baseurl
-    u'https://bugzilla.mozilla.org/'
+    >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'http://bugzilla.ubuntu.com/bugs/')
+    >>> ubuntu_bugzilla.baseurl
+    u'http://bugzilla.ubuntu.com/bugs/'
 
 It's necessary to specify the exact URL, differences in the schema
 (http vs. https) and trailing slashes are accepted.
 
-    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'http://bugzilla.mozilla.org')
-    >>> mozilla_bugzilla.baseurl
-    u'https://bugzilla.mozilla.org/'
-
-If the exact bugtracker isn't found but a the url searched for
-is a substring of an existing bugtracker, we use the first match.
-
-    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'zilla.mozilla.org')
-    >>> mozilla_bugzilla.baseurl
-    u'https://bugzilla.mozilla.org/'
+    >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'https://bugzilla.ubuntu.com/bugs')
+    >>> ubuntu_bugzilla.baseurl
+    u'http://bugzilla.ubuntu.com/bugs/'
 
 If no bug tracker can be found None is returned.
 

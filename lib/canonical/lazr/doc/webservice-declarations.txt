@@ -19,10 +19,10 @@ persons, teams, articles, etc.
 
 Only entries are exported as data. You can mark that one of your content
 interface is exported on the web service as an entry, by using the
-export_entry declaration.
+export_as_webservice_entry() declaration.
 
 You can mark the fields that should be part of the entry data model by
-using the export_field directive. It takes an optional 'as' parameter
+using the exported() wrapper. It takes an optional 'exported_as' parameter
 that can be used to change the name under which the field will be
 exported.
 
@@ -33,19 +33,18 @@ field, but not the inventory_number field.
     >>> from zope.interface import Interface
     >>> from zope.schema import TextLine, Float
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_entry, export_field)
+    ...     export_as_webservice_entry, exported)
     >>> class IBook(Interface):
     ...     """A simple book data model."""
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
-    ...     title = TextLine(title=u'The book title')
-    ...     export_field(title)
+    ...     title = exported(TextLine(title=u'The book title'))
     ...
-    ...     author = TextLine(title=u"The book's author.")
-    ...     export_field(author)
+    ...     author = exported(TextLine(title=u"The book's author."))
     ...
-    ...     base_price = Float(title=u"The regular price of the book.")
-    ...     export_field(base_price, export_as='price')
+    ...     base_price = exported(Float(
+    ...         title=u"The regular price of the book."),
+    ...         exported_as='price')
     ...
     ...     inventory_number = TextLine(title=u'The inventory part number.')
 
@@ -86,33 +85,34 @@ Only IField can be exported as entry fields.
 
     >>> from zope.interface import Attribute
     >>> class NotAField1(Interface):
-    ...     an_attribute = Attribute('A standard attribute')
-    ...     export_field(an_attribute)
+    ...     an_attribute = exported(Attribute('A standard attribute'))
     Traceback (most recent call last):
       ...
-    TypeError: export_field() can only be used on IFields.
+    TypeError: exported() can only be used on IFields.
 
-In the same vein, export_entry() can only be used on Interface.
+In the same vein, export_as_webservice_entry() can only be used on
+Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     Traceback (most recent call last):
       ...
-    TypeError: export_entry() can only be used on an interface.
+    TypeError: export_as_webservice_entry() can only be used on an
+    interface.
 
 And from within a class declaration.
 
-    >>> export_entry()
+    >>> export_as_webservice_entry()
     Traceback (most recent call last):
       ...
-    TypeError: export_entry() can only be used from within an interface
-    definition.
+    TypeError: export_as_webservice_entry() can only be used from within
+    an interface definition.
 
 
 === Exporting a collection ===
 
 Collections scoped to an entry are exported simply by using
-export_field() on the CollectionField containing the scoped collection
+exported() on the CollectionField containing the scoped collection
 items:
 
     >>> class ISimpleComment(Interface):
@@ -123,52 +123,76 @@ items:
     >>> from canonical.lazr.rest.schema import CollectionField
     >>> class IBookWithComments(IBook):
     ...     """A book with some comments."""
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
-    ...     comments = CollectionField(
-    ...         value_type=Object(schema=ISimpleComment))
-    ...     export_field(comments)
+    ...     comments = exported(CollectionField(
+    ...         value_type=Object(schema=ISimpleComment)))
 
 Top-level collections are different though, they are exported by using
-the export_collection() in the *Set class. The method that returns all
-of the collection items must be tagged with @collection_default_content
-decorator.
+the export_as_webservice_collection() in the *Set class. The method that
+returns all of the collection items must be tagged with
+@collection_default_content decorator.
 
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_collection, collection_default_content)
+    ...     export_as_webservice_collection, collection_default_content,
+    ...     REQUEST_USER)
     >>> class IBookSet(Interface):
     ...     """Set of all the books in the system."""
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     ...
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     def getAllBooks():
     ...         """Return an iterator over all the books."""
 
-Like for entries, this adds tagged value in the 'lazr.webservice'
-namespace.
+In case the method to call requires parameters, the value to use can be
+specified using parameters to the decorator constructor. There is a
+special REQUEST_USER marker that can be used to specify that this
+parameter should contain the logged in user.
+
+    >>> class ICheckedOutBookSet(Interface):
+    ...     """Give access to the checked out books."""
+    ...     export_as_webservice_collection()
+    ...
+    ...     @collection_default_content(user=REQUEST_USER, title='')
+    ...     def getByTitle(title, user):
+    ...         """Return checked out books.
+    ...         :param title: String to match against the book title.
+    ...             The empty string matches everything.
+    ...         :param user: The user who should have checked the book out.
+    ...         """
+
+Like for entries, this adds keys in the 'lazr.webservice.exported'
+tagged value.
 
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
+    collection_default_content_params: {}
+    type: 'collection'
+
+    >>> print_export_tag(ICheckedOutBookSet)
+    collection_default_content: 'getByTitle'
+    collection_default_content_params: {'user': <object...>,
+    'title': ''}
     type: 'collection'
 
 It's an error to try to export a collection without marking a method as
 exporting the default content.
 
     >>> class MissingDefaultContent(Interface):
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     Traceback (most recent call last):
       ...
-    TypeError: export_collection() is missing a method tagged with
-    @collection_default_content.
+    TypeError: export_as_webservice_collection() is missing a method
+    tagged with @collection_default_content.
 
 As it is an error, to mark more than one methods:
 
     >>> class TwoDefaultContent(Interface):
-    ...     export_collection()
-    ...     @collection_default_content
+    ...     export_as_webservice_collection()
+    ...     @collection_default_content()
     ...     def getAll1():
     ...         """A first getAll()."""
-    ...     @collection_default_content
+    ...     @collection_default_content()
     ...     def getAll2():
     ...         """Another getAll()."""
     Traceback (most recent call last):
@@ -176,26 +200,27 @@ As it is an error, to mark more than one methods:
     TypeError: only one method should be marked with
     @collection_default_content.
 
-export_collection() can only be used on Interface.
+export_as_webservice_collection() can only be used on Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     Traceback (most recent call last):
       ...
-    TypeError: export_collection() can only be used on an interface.
+    TypeError: export_as_webservice_collection() can only be used on an
+    interface.
 
 And from within a class declaration.
 
-    >>> export_collection()
+    >>> export_as_webservice_collection()
     Traceback (most recent call last):
       ...
-    TypeError: export_collection() can only be used from within an interface
-    definition.
+    TypeError: export_as_webservice_collection() can only be used from
+    within an interface definition.
 
 collection_default_content() can only be used from within an Interface
 declaration:
 
-    >>> @collection_default_content
+    >>> @collection_default_content()
     ... def a_function(): pass
     Traceback (most recent call last):
       ...
@@ -205,8 +230,8 @@ declaration:
 And the interface must have been exported as a collection:
 
     >>> class NotExported(Interface):
-    ...     export_entry()
-    ...     @collection_default_content
+    ...     export_as_webservice_entry()
+    ...     @collection_default_content()
     ...     def a_function(): pass
     Traceback (most recent call last):
       ...
@@ -225,68 +250,71 @@ exported.
 
 1. @export_read_operation
 
-This will mark the method as available as a GET operation on the
-exported resource.
+    This will mark the method as available as a GET operation on the
+    exported resource.
 
 2. @export_write_operation
 
-This will mark the method as available as a POST operation on the
-exported resource.
+    This will mark the method as available as a POST operation on the
+    exported resource.
 
-3. @export_factory_operation
+3. @export_factory_operation(schema, fields)
 
-Like the @export_write_operation decorator, this will mark the method as
-available as a POST operation on the exported resource, with the
-addition that the result of the method is a new object and the HTTP
-status code will be set appropriately.
+    Like the @export_write_operation decorator, this will mark the
+    method as available as a POST operation on the exported resource,
+    with the addition that the result of the method is a new object and
+    the HTTP status code will be set appropriately.
+
+    This decorator takes as parameters the schema of the object it is
+    creating and the name of the fields in the schema that are passed as
+    parameters.
 
 The specification of the web service's acceptable method
-parameters should be described using decorator arguments, which are
-normal IField instances.
+parameters should be described using the @operation_parameters
+decorator, which takes normal IField instances.
 
     >>> from canonical.lazr.rest.declarations import (
-    ...     export_as, export_factory_operation, export_read_operation,
-    ...     export_parameters_as)
+    ...     export_operation_as, export_factory_operation,
+    ...     export_read_operation, operation_parameters, rename_parameters_as)
+    >>> from canonical.lazr.interface import copy_field
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
-    ...     export_collection()
+    ...     export_as_webservice_collection()
     ...
-    ...     @collection_default_content
-    ...     @export_read_operation(
-    ...         text=TextLine(title=u'Text to search for.'))
+    ...     @collection_default_content()
+    ...     @operation_parameters(
+    ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
+    ...     @export_read_operation()
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""
     ...
-    ...     @export_as('create_book')
-    ...     @export_parameters_as(base_price='price')
+    ...     @export_operation_as('create_book')
+    ...     @rename_parameters_as(base_price='price')
     ...     @export_factory_operation(
-    ...         author=TextLine(title=u"The author's name."),
-    ...         base_price=Float(title=u"The price."),
-    ...         title=TextLine(title=u"The title."))
+    ...         IBook, ['author', 'base_price', 'title'])
     ...     def new(author, base_price, title):
     ...         """Create a new book."""
 
 In the above example, the exported new() method demonstrates two
 features to support having different names on the web service than in
 the internal API.  It is possible to export a method under a different
-name by using the @export_as decorator which takes the name under which
-the method should be exported.
+name by using the @export_operation_as decorator which takes the name
+under which the method should be exported.
 
-The @export_parameters_as decorator can be used to rename the method
+The @rename_parameters_as decorator can be used to rename the method
 parameters on the web service.  In the example, the 'base_price' parameter
 will be called 'price' when exported on the web service.
 
 When some required parameters of the method should not be provided by
 the webservice client, it is possible to use the @call_with decorator to
-specify the value to use. There is a special REQUEST_USER marker that
-can be used to specify that this parameter should contain the logged in
-user.
+specify the value to use. The special REQUEST_USER marker can be used to
+specify that this parameter should contain the logged in user.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     call_with, export_write_operation, REQUEST_USER)
     >>> class IBookOnSteroids(IBook):
     ...     """IBook with some methods."""
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
     ...     @call_with(who=REQUEST_USER, kind='normal')
     ...     @export_write_operation()
@@ -299,6 +327,7 @@ method.
     >>> print_export_tag(IBookSetOnSteroids['new'])
     as: 'create_book'
     call_with: {}
+    creates: <...IBook...>
     params: {'author': <...TextLine...>,
         'base_price': <...Float...>,
         'title': <...TextLine...>}
@@ -316,8 +345,7 @@ method.
     params: {}
     type: 'write_operation'
 
-Parameters for which the exported __name__ wasn't specified are
-exported under the same name:
+Parameters that are not renamed are exported under the same name:
 
     >>> for name, param in sorted(IBookSetOnSteroids['new'].getTaggedValue(
     ...     'lazr.webservice.exported')['params'].items()):
@@ -326,13 +354,85 @@ exported under the same name:
     base_price: price
     title: title
 
-These decorators can only be used from within an interface definition:
+It is possible to use @operation_parameters with
+@export_factory_operation to specify parameters that are not part of the
+schema.
 
-    >>> @export_as('test')
+    >>> class ComplexBookFactory(Interface):
+    ...     export_as_webservice_entry()
+    ...
+    ...     @operation_parameters(collection=TextLine())
+    ...     @export_factory_operation(IBook, ['author', 'title'])
+    ...     def create_book(author, title, collection):
+    ...         """Create a book in a collection."""
+
+    >>> print_export_tag(ComplexBookFactory['create_book'])
+    as: 'create_book'
+    call_with: {}
+    creates: <...IBook...>
+    params: {'author': <...TextLine...>,
+        'collection': <...TextLine...>,
+        'title': <...TextLine...>}
+    type: 'factory'
+
+Parameters default and required attributes are set automatically based
+on the method signature.
+
+    >>> class ComplexParameterDefinition(Interface):
+    ...     export_as_webservice_entry()
+    ...
+    ...     @operation_parameters(
+    ...         required1=TextLine(),
+    ...         required2=TextLine(default=u'Not required'),
+    ...         optional1=TextLine(required=True),
+    ...         optional2=TextLine(),
+    ...         )
+    ...     @export_read_operation()
+    ...     def a_method(required1, required2, optional1='Default',
+    ...                  optional2='Default2'):
+    ...         """Method demonstrating how required/default are set."""
+
+In this example, the required1 definition will be automatically
+considered required.
+
+    >>> param_defs = ComplexParameterDefinition['a_method'].getTaggedValue(
+    ...     'lazr.webservice.exported')['params']
+    >>> param_defs['required1'].required
+    True
+
+But required2 will not be considered required because a default value
+was provided.
+
+    >>> param_defs['required2'].required
+    False
+
+NOTE: It's not possible to make an optional parameter required on the
+webservice. In the above case, required=True was specified on
+"optional1", but that will be overridden. The reason for that is that by
+default required is always True, so it's not possible to distinguish
+between the case where required was set to True, and required is True
+because it's the default value.
+
+    >>> param_defs['optional1'].required
+    False
+    >>> param_defs['optional1'].default
+    u'Default'
+
+And optional2 was exported with the same default than the method:
+
+    >>> param_defs['optional2'].required
+    False
+    >>> param_defs['optional2'].default
+    u'Default2'
+
+All these decorators can only be used from within an interface
+definition:
+
+    >>> @export_operation_as('test')
     ... def a_method1(self): pass
     Traceback (most recent call last):
       ...
-    TypeError: export_as() can only be used from within an interface
+    TypeError: export_operation_as() can only be used from within an interface
     definition.
 
     >>> @export_read_operation()
@@ -346,9 +446,11 @@ An error is also reported if not enough parameters are defined as
 exported:
 
     >>> class MissingParameter(Interface):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...     @call_with(param1=1)
-    ...     @export_read_operation(param2=TextLine())
+    ...     @operation_parameters(
+    ...         param2=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(param1, param2, param3, param4): pass
     Traceback (most recent call last):
       ...
@@ -359,8 +461,10 @@ Defining a parameter not available on the method also results in an
 error:
 
     >>> class BadParameter(Interface):
-    ...     export_entry()
-    ...     @export_read_operation(no_such_param=TextLine())
+    ...     export_as_webservice_entry()
+    ...     @operation_parameters(
+    ...         no_such_param=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(): pass
     Traceback (most recent call last):
       ...
@@ -371,15 +475,50 @@ But that's not a problem if the exported method actually takes arbitrary
 keyword parameters:
 
     >>> class AnyParameter(Interface):
-    ...     export_entry()
-    ...     @export_read_operation(param1=TextLine())
+    ...     export_as_webservice_entry()
+    ...     @operation_parameters(
+    ...         param1=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(**kwargs): pass
+
+When using @export_factory_operation, TypeError will also be raised if
+one of the field doesn't exists in the schema:
+
+    >>> class MissingParameter(Interface):
+    ...     export_as_webservice_entry()
+    ...     @export_factory_operation(IBook, ['no_such_field'])
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: IBook doesn't define 'no_such_field'.
+
+Or if the field name doesn't represent a field:
+
+    >>> class NotAField(Interface):
+    ...     export_as_webservice_entry()
+    ...     @export_factory_operation(IBookOnSteroids, ['checkout'])
+    ...     def a_method(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: IBookOnSteroids.checkout doesn't provide IField.
+
+Or if @operation_parameters redefine a field specified in the factory:
+
+    >>> class Redefinition(Interface):
+    ...     export_as_webservice_entry()
+    ...     @operation_parameters(title=TextLine())
+    ...     @export_factory_operation(IBookOnSteroids, ['title'])
+    ...     def create_book(title): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: 'title' parameter is already defined.
 
 All parameters definitions must be schema fields:
 
     >>> class BadParameterDefinition(Interface):
-    ...     export_entry()
-    ...     @export_read_operation(a_param=object())
+    ...     export_as_webservice_entry()
+    ...     @operation_parameters(a_param=object())
+    ...     @export_read_operation()
     ...     def a_method(): pass
     Traceback (most recent call last):
       ...
@@ -389,22 +528,52 @@ All parameters definitions must be schema fields:
 Renaming a parameter that wasn't defined results in an error:
 
     >>> class NonExistentParameter(Interface):
-    ...     @export_parameters_as(param1='name', param2='name2')
-    ...     @export_read_operation(param1=TextLine())
+    ...     @rename_parameters_as(param1='name', param2='name2')
+    ...     @operation_parameters(param1=TextLine())
+    ...     @export_read_operation()
     ...     def a_method(param1): pass
     Traceback (most recent call last):
       ...
-    TypeError: export_parameters_as(): no "param2" parameter is exported.
+    TypeError: rename_parameters_as(): no "param2" parameter is exported.
 
-Trying to use @export_parameters_as without exporting the method also
+Trying to use @rename_parameters_as without exporting the method also
 results in an error.
 
     >>> class MissingMethodExport(Interface):
-    ...     @export_parameters_as(a_param='name')
+    ...     @rename_parameters_as(a_param='name')
     ...     def a_method(): pass
     Traceback (most recent call last):
       ...
     TypeError: "a_method" isn't exported on the webservice.
+
+
+=== Exporting exceptions ===
+
+When a method raises an exception, the default is to report the error as
+'500 Internal Server Error'. In many cases, that's not the case and one
+of the 4XX error would be better.
+
+Exceptions can be tagged with the webservice_error() declaration to
+state the proper HTTP status code to use for that kind of error.
+
+    >>> from canonical.lazr.rest.declarations import webservice_error
+    >>> class InvalidEmail(Exception):
+    ...     """Error happening when the email is not valid."""
+    ...     webservice_error(400)
+
+The directive sets the __lazr_webservice_error__ attribute on the
+exception which will be used by the view handling the exception.
+
+    >>> InvalidEmail.__lazr_webservice_error__
+    400
+
+Using that directive outside of a class declaration is an error:
+
+    >>> webservice_error(402)
+    Traceback (most recent call last):
+      ...
+    TypeError: webservice_error() can only be used from within an
+    exception definition.
 
 
 === Export and inheritance ===
@@ -413,20 +582,20 @@ A child interface inherits the markup of its ancestors, even when the
 base interface isn't exported itself.
 
     >>> class IHasName(Interface):
-    ...     name = TextLine()
-    ...     export_field(name)
+    ...     name = exported(TextLine())
     ...
-    ...     @export_write_operation(new_name=TextLine())
+    ...     @operation_parameters(new_name=TextLine())
+    ...     @export_write_operation()
     ...     def rename(new_name):
     ...         """Rename the object."""
 
     >>> class IUser(IHasName):
-    ...     export_entry()
+    ...     export_as_webservice_entry()
     ...
-    ...     nickname = TextLine()
-    ...     export_field(nickname)
+    ...     nickname = exported(TextLine())
     ...
-    ...     @export_write_operation(to=Object(IHasName), msg=TextLine())
+    ...     @operation_parameters(to=Object(IHasName), msg=TextLine())
+    ...     @export_write_operation()
     ...     def talk_to(to, msg):
     ...         """Sends a message to another named object."""
 
@@ -450,6 +619,7 @@ base interface isn't exported itself.
     params: {'msg': <...TextLine...>,
         'to': <...Object...>}
     type: 'write_operation'
+
 
 
 == Generating the webservice ==
@@ -601,6 +771,31 @@ with the @collection_default_content decorator.
     >>> collection_adapter.find()
     ['A book', 'Another book']
 
+If parameters were specified, they'll be passed in to the method by
+find(). The REQUEST_USER marker value will be replaced by the logged in
+user.
+
+    >>> from zope.component import provideUtility
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> class FakeLaunchBag:
+    ...     implements(ILaunchBag)
+    ...     user = 'A user'
+    >>> provideUtility(FakeLaunchBag(), ILaunchBag)
+
+    >>> class CheckedOutBookSet(object):
+    ...     """Simple ICheckedOutBookSet implementation."""
+    ...     implements(ICheckedOutBookSet)
+    ...
+    ...     def getByTitle(self, title, user):
+    ...         print '%s searched for checked out book matching "%s".' % (
+    ...             user, title)
+
+    >>> checked_out_adapter = generate_collection_adapter(
+    ...     ICheckedOutBookSet)(CheckedOutBookSet())
+
+    >>> checked_out_adapter.find()
+    A user searched for checked out book matching "".
+
 It's an error to call this function on an interface not exported on the
 web service:
 
@@ -654,7 +849,7 @@ parameters accepted by the operation.
 
 The call() method calls the underlying method and return its result.
 
-    >>> class MockResponse(object):
+    >>> class FakeResponse(object):
     ...     """Simple response wrapper object."""
     ...     def __init__(self):
     ...         self.status = 200
@@ -667,13 +862,13 @@ The call() method calls the underlying method and return its result.
     ...         self.headers[name] = value
 
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class MockRequest(object):
+    >>> class FakeRequest(object):
     ...     """Simple request object for testing purpose."""
     ...     # This makes us eligible for get_current_browser_request()
     ...     implements(IHTTPApplicationRequest)
     ...
     ...     def __init__(self):
-    ...         self.response = MockResponse()
+    ...         self.response = FakeResponse()
     ...         self.principal = None
     ...         self.interaction = None
     ...
@@ -691,7 +886,7 @@ The call() method calls the underlying method and return its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
-    >>> request = MockRequest()
+    >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(
     ...     BookSetOnSteroids(), request)
     >>> verifyObject(IResourceGETOperation, read_method_adapter)
@@ -742,7 +937,7 @@ The adapter's params property also contains the available parameters
     >>> write_method_adapter = write_method_adapter_factory(
     ...     BookOnSteroids(
     ...         'Aldous Huxley', 'The Doors of Perception', 8, 'unknown'),
-    ...     MockRequest())
+    ...     FakeRequest())
 
     >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
     True
@@ -750,13 +945,6 @@ The adapter's params property also contains the available parameters
 The call() method invokes the exported method on the context object. In
 this case, the underlying parameters were set using call_with. The
 REQUEST_USER specification is replaced by the current user.
-
-    >>> from zope.component import provideUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> class MockLaunchBag:
-    ...     implements(ILaunchBag)
-    ...     user = 'A user'
-    >>> provideUtility(MockLaunchBag(), ILaunchBag)
 
     >>> write_method_adapter.call()
     A user did a normal check out of 'The Doors of Perception'.
@@ -770,7 +958,7 @@ IResourcePOSTOperation.
     True
 
     >>> factory_method_adapter = factory_method_adapter_factory(
-    ...     BookSetOnSteroids(), MockRequest())
+    ...     BookSetOnSteroids(), FakeRequest())
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
 
@@ -834,6 +1022,26 @@ IMethod marked for export:
     TypeError: 'getAllBooks' isn't tagged for webservice export.
 
 
+=== Exceptions ===
+
+There is a generic view class that can handle exceptions during web
+service requests.
+
+    >>> from canonical.lazr.rest.declarations import WebServiceExceptionView
+
+That view returns the exception message as content, and sets the
+result code to the one specified using the webservice_error() directive.
+
+    >>> exception = InvalidEmail("foo@bar isn't a valid email address")
+    >>> error_view = WebServiceExceptionView(exception, FakeRequest())
+    >>> error_view()
+    "foo@bar isn't a valid email address"
+    >>> error_view.request.response.headers['Content-Type']
+    'text/plain'
+    >>> error_view.request.response.status
+    400
+
+
 === Security ===
 
 The adapters have checkers defined for them that grant access to all
@@ -884,6 +1092,7 @@ handler to inspect.)
     >>> bookexample.IBookOnSteroids = IBookOnSteroids
     >>> bookexample.IBookSetOnSteroids = IBookSetOnSteroids
     >>> bookexample.ISimpleComment = ISimpleComment
+    >>> bookexample.InvalidEmail = InvalidEmail
 
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
@@ -933,6 +1142,15 @@ are also available for IBookSetOnSteroids and IBookOnSteroids.
     ...     (IBookOnSteroids, WebServiceLayer), IResourcePOSTOperation,
     ...     'checkout')
     <class '...POST_IBookOnSteroids_checkout'>
+
+There is also a 'index.html' view on the WebServiceLayer registered for the
+InvalidEmail exception.
+
+    >>> from zope.interface import implementedBy
+    >>> adapter_registry.lookup(
+    ...     (implementedBy(InvalidEmail), WebServiceLayer), Interface,
+    ...         'index.html')
+    <class '...WebServiceExceptionView'>
 
 (Clean-up.)
 

@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
-    ICodeImportJobWorkflowPublic, ICodeImportResultSet)
+    ICodeImportMachineSet, ICodeImportResultSet)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -94,8 +94,14 @@ class CodeImportJobSet(object):
         except SQLObjectNotFound:
             return None
 
-    def getJobForMachine(self, machine):
+    def getJobForMachine(self, hostname):
         """See `ICodeImportJobSet`."""
+        machine = getUtility(ICodeImportMachineSet).getByHostname(hostname)
+        if machine is None:
+            machine = getUtility(ICodeImportMachineSet).new(
+                hostname, CodeImportMachineState.ONLINE)
+        elif not machine.shouldLookForJob():
+            return None
         job = CodeImportJob.selectOne(
             """id IN (SELECT id FROM CodeImportJob
                WHERE date_due <= %s AND state = %s
@@ -112,7 +118,7 @@ class CodeImportJobSet(object):
 class CodeImportJobWorkflow:
     """See `ICodeImportJobWorkflow`."""
 
-    implements(ICodeImportJobWorkflow, ICodeImportJobWorkflowPublic)
+    implements(ICodeImportJobWorkflow)
 
     def newJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""

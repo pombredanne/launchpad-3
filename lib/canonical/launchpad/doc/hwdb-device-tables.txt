@@ -254,3 +254,612 @@ Strings with less than eight characters are not allowed as SCSI vendor IDs...
     Traceback (most recent call last):
     ...
     ValueError: '123456789' is not a valid vendor ID for SCSI
+
+
+== HWDevice ==
+
+A HWDevice instance stores core data about a hardware device: The bus
+it can connect to, the vendor ID, the product ID, the human readable
+product name, variant (see below), and the number of submissions with
+a device.
+
+Aside from "real" devices like keyboards, mice, hard disks, PCI cards,
+i.e., "thingies" one can connect to and remove from a computer, we also
+store data about "systems" (computers) and "components" in the HWDevice
+table. A component is a part that is "permanently built" into a system,
+like a hard disk controller that is soldered onto the main board.
+
+A new device record is created by IHWDeviceSet.create.
+
+    >>> from canonical.launchpad.interfaces import IHWDeviceSet
+    >>> device_set = getUtility(IHWDeviceSet)
+    >>> product_name='82801GBM/GHM (ICH7 Family) USB2 EHCI Controller'
+    >>> usb_controller = device_set.create(bus=HWBus.PCI,
+    ...                                    vendor_id='0x8086',
+    ...                                    product_id='0x27cc',
+    ...                                    product_name=product_name)
+
+Bus and vendor ID are not directly stored as HWDevice attributes; we can
+access them, as well as the vendor name, via the attribute bus_vendor,
+which references HWVendorID.
+
+    >>> print usb_controller.bus_vendor.bus.title
+    PCI
+    >>> print usb_controller.bus_vendor.vendor_id_for_bus
+    0x8086
+    >>> print usb_controller.bus_vendor.vendor_name.name
+    Intel
+
+Other attributes stored in HWDevice are the product ID, the product name,
+the product variant and submissions. submissions is a counter of the
+number of submissions with this device.
+
+    >>> print usb_controller.bus_product_id
+    0x27cc
+    >>> print usb_controller.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print usb_controller.variant
+    None
+    >>> print usb_controller.submissions
+    0
+
+Like vendor IDs, product IDs of some busses have certain constraints.
+USB and PCI product IDs are 16 bit integers; SCSI IDs are strings
+with 16 characters. (Note that the IEEE1394 does _not_ define a product
+ID.)
+
+USB and PCI IDs are represented as strings with a four-digit hexadecimal
+number, prefixed by '0x'; the digits a..f must be lower cases characters.
+Other ID values raise a ValueError.
+
+    >>> another_pci_product = device_set.create(bus=HWBus.PCI,
+    ...                                         vendor_id='0x8086',
+    ...                                         product_id='0xabcd',
+    ...                                         product_name='A PCI card')
+    >>> print another_pci_product.bus_product_id
+    0xabcd
+
+    >>> another_usb_product = device_set.create(bus=HWBus.USB,
+    ...                                         vendor_id='0x8086',
+    ...                                         product_id='0xabcd',
+    ...                                         product_name='A USB device')
+    >>> print another_usb_product.bus_product_id
+    0xabcd
+
+A..F is rejected.
+
+    >>> device_set.create(bus=HWBus.PCI,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0xABCD',
+    ...                   product_name='A PCI card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xABCD' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.USB,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0xABCD',
+    ...                   product_name='A USB device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xABCD' is not a valid product ID for USB
+
+The ID must have the prefix "0x".
+
+    >>> device_set.create(bus=HWBus.PCI,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='1234',
+    ...                   product_name='A PCI card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '1234' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.USB,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='1234',
+    ...                   product_name='A USB device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '1234' is not a valid product ID for USB
+
+The number must have four digits.
+
+    >>> device_set.create(bus=HWBus.PCI,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0x123',
+    ...                   product_name='A PCI card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x123' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.USB,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0x123',
+    ...                   product_name='A USB device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x123' is not a valid product ID for USB
+
+    >>> device_set.create(bus=HWBus.PCI,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0x12345',
+    ...                   product_name='A PCI card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.USB,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0x12345',
+    ...                   product_name='A USB device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid product ID for USB
+
+Only hex digits are allowed.
+
+    >>> device_set.create(bus=HWBus.PCI,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0xblah',
+    ...                   product_name='A PCI card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xblah' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.USB,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0xblah',
+    ...                   product_name='A USB device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xblah' is not a valid product ID for USB
+
+SCSI product IDs are ASCII strings with 16 characters.
+
+    >>> scsi_device = device_set.create(bus=HWBus.SCSI,
+    ...                                 vendor_id='INTEL   ',
+    ...                                 product_id='12345678901234  ',
+    ...                                 product_name='A SCSI device')
+    >>> scsi_device.bus_product_id
+    u'12345678901234  '
+
+Strings with less than 16 characters are not allowed as SCSI product IDs...
+
+    >>> device_set.create(bus=HWBus.SCSI,
+    ...                   vendor_id='INTEL   ',
+    ...                   product_id='123456789012345',
+    ...                   product_name='A SCSI device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '123456789012345' is not a valid product ID for SCSI
+
+...as well as strings with more than 16 characters.
+
+    >>> device_set.create(bus=HWBus.SCSI,
+    ...                   vendor_id='INTEL   ',
+    ...                   product_id='12345678901234567',
+    ...                   product_name='A SCSI device')
+    Traceback (most recent call last):
+    ...
+    ValueError: '12345678901234567' is not a valid product ID for SCSI
+
+
+=== Unknown Vendor IDs ===
+
+If IHWDevice.create is called with a vendor ID that for which there
+is no IHWVendorID record, the latter is automatically created. Since
+we do not pass the vendor name to IHWDevice.create, this method
+cannot set the real vendor name for the new IHWVendorID record.
+Instead, the vendor name is set to "Unknown".
+
+Reason: IHWDevice will be populated with data collected by the
+HWDB client, which gets most of the device data from HAL, and HAL
+quite often does not know the vendor name. Hence we will populate
+and update IHWVendorID from sources like
+
+http://www.linux-usb.org/usb.ids
+http://www.pcidatabase.com/reports.php?type=csv
+http://standards.ieee.org/regauth/oui/oui.txt
+
+    >>> new_vendor_device = device_set.create(bus=HWBus.PCI,
+    ...                                       vendor_id='0x4321',
+    ...                                       product_id='0x8765',
+    ...                                       product_name='mind sensor')
+    >>> print new_vendor_device.bus_vendor.vendor_name.name
+    Unknown
+
+=== Device Variants ===
+
+While most devices can be uniquely identified by their vendor and product
+IDs, there are some cases, where different devices have identical IDs:
+
+(a) The IDs are assigned to a USB chipset that is used in different
+    devices.
+(b) A vendor may inadvertently "recycle" a product ID
+(c) A chip manufacturer who does not have its own vendor ID may "forge"
+    the vendor ID.
+
+A real world example of the first case is the scanner chipset from
+Plustek with the USB ID 0x07b3/0x0017. This chipset is used in devices
+that differ for example in the maximum scan window size.
+
+We do not necessarily know in advance that there are different devices
+with identical IDs, so we may have a HWDevice record without the variant
+attribute set.
+
+    >>> plustek_name = vendor_name_set.create('Plustek')
+    >>> plustek_usb_id = vendor_id_set.create(bus=HWBus.USB,
+    ...                                       vendor_id='0x07b3',
+    ...                                       vendor_name=plustek_name)
+    >>> some_plustek_scanner = device_set.create(bus=HWBus.USB,
+    ...                                          vendor_id='0x07b3',
+    ...                                          product_id='0x0017',
+    ...                                          product_name='some scanner')
+    >>> print some_plustek_scanner.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print some_plustek_scanner.bus_vendor.vendor_name.name
+    Plustek
+    >>> print some_plustek_scanner.name
+    some scanner
+    >>> print some_plustek_scanner.variant
+    None
+
+Once we know that (bus, vendor ID, product ID) does not uniquely
+identify a device, we can disambiguate these devices by creating
+IHWDevice records, where the attribute variant is, for example, set
+to the product name.
+
+    >>> optic_pro_ut12 = device_set.create(bus=HWBus.USB,
+    ...                                    vendor_id='0x07b3',
+    ...                                    product_id='0x0017',
+    ...                                    variant='OpticPro UT12',
+    ...                                    product_name='OpticPro UT12')
+    >>> optic_pro_ut16 = device_set.create(bus=HWBus.USB,
+    ...                                    vendor_id='0x07b3',
+    ...                                    product_id='0x0017',
+    ...                                    variant='OpticPro UT16',
+    ...                                    product_name='OpticPro UT16')
+
+For systems, we use HWBus.SYSTEM as the "bus name"; the HAL property
+system.vendor is stored as the vendor ID and vendor name, and the HAL
+property system.product is stored as the product ID and the product
+name.
+
+    >>> hal_vendor_name = 'Tonka'
+    >>> hal_product_name = 'Tuffbook 2600'
+    >>> tonka_name = vendor_name_set.create(name=hal_vendor_name)
+    >>> tonka_system_id = vendor_id_set.create(bus=HWBus.SYSTEM,
+    ...                                        vendor_id=hal_vendor_name,
+    ...                                        vendor_name=tonka_name)
+    >>> tuffbook_2600 = device_set.create(bus=HWBus.SYSTEM,
+    ...                                   vendor_id=hal_vendor_name,
+    ...                                   product_id=hal_product_name,
+    ...                                   product_name=hal_product_name)
+    >>> print tuffbook_2600.bus_vendor.bus.title
+    System
+    >>> print tuffbook_2600.bus_vendor.vendor_id_for_bus
+    Tonka
+    >>> print tuffbook_2600.bus_vendor.vendor_name.name
+    Tonka
+    >>> print tuffbook_2600.bus_product_id
+    Tuffbook 2600
+    >>> print tuffbook_2600.name
+    Tuffbook 2600
+
+The tuple (bus_vendor, bus_product_id, variant) must be unique.
+The attempt to create two rows with the same data raises a
+IntegrityError error.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> another_scanner = device_set.create(bus=HWBus.USB,
+    ...                                     vendor_id='0x07b3',
+    ...                                     product_id='0x0017',
+    ...                                     product_name='some scanner')
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevice__bus_vendor_id__bus_product_id__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> another_scanner = device_set.create(bus=HWBus.USB,
+    ...                                     vendor_id='0x07b3',
+    ...                                     product_id='0x0017',
+    ...                                     variant='OpticPro UT16',
+    ...                                     product_name='OpticPro UT16')
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevice__bus_vendor_id__bus_product_id__variant__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+
+== HWDeviceNameVariant ==
+
+Many OEM products are sold by more than one vendor under different
+product names; some manufacturers sell the same device under
+different names in different parts of the world. The support status
+of such devices does not depend on the "publicly visible" vendor and
+product name, so we consider these devices to be identical. Users will
+nevertheless want to look up devices by the vendor and product name
+they see in a store. HWDeviceNameVariant allows us to assign alternative
+vendor and product names to a device.
+
+    >>> from canonical.launchpad.interfaces import IHWDeviceNameVariantSet
+    >>> device_name_variant_set = getUtility(IHWDeviceNameVariantSet)
+    >>> variant = device_name_variant_set.create(device=optic_pro_ut16,
+    ...                                          vendor_name='Medion',
+    ...                                          product_name='MD 1234')
+    >>> print variant.device.bus_vendor.vendor_name.name
+    Plustek
+    >>> print variant.vendor_name.name
+    Medion
+    >>> print variant.product_name
+    MD 1234
+
+We count the number of submissions which told us an alternative device
+name.
+
+    >>> print variant.submissions
+    0
+
+The tuple (device, vendor_name, product_name) must be unique.
+The attempt to create two rows with the same data raises an
+IntegrityError error.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> same_variant = device_name_variant_set.create(device=optic_pro_ut16,
+    ...                                               vendor_name='Medion',
+    ...                                               product_name='MD 1234')
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+
+== HWDriver ==
+
+If a device is reported as having problems, then we are more 
+interested in which drivers are involved rather than the fact that
+there are problems. The table HWDriver stores minimal data about 
+drivers: its package name, the driver name itself and the driver's
+license. This data is linked to HWDevice records via the table 
+HWDeviceDriverLink (see below).
+
+The driver is not in every case a kernel driver, it may also be for
+example a Ghostscript driver of a printer or a Sane scanner backend.
+
+    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> from canonical.launchpad.interfaces.product import License
+    >>> driver_set = getUtility(IHWDriverSet)
+    >>> usb_driver = driver_set.create(package_name='linux-image-generic',
+    ...                                name='usb',
+    ...                                license=License.GNU_GPL_V2)
+    >>> print usb_driver.name
+    usb
+    >>> print usb_driver.package_name
+    linux-image-generic
+    >>> print usb_driver.license.title
+    GNU GPL v2
+
+The submitted data does not need to contain package information for all
+drivers, hence the field package_name may be None.
+
+    >>> driver2 = driver_set.create(package_name=None,
+    ...                             name='whatever',
+    ...                             license=License.GNU_GPL_V2)
+    >>> print driver2.name
+    whatever
+    >>> print driver2.package_name
+    None
+    >>> print driver2.license.title
+    GNU GPL v2
+
+Since we also do not always know the license of a driver, the license
+may too be None.
+
+    >>> driver3 = driver_set.create(package_name=None,
+    ...                             name='something_else',
+    ...                             license=None)
+    >>> print driver3.name
+    something_else
+    >>> print driver3.package_name
+    None
+    >>> print driver3.license
+    None
+
+The tuple (driver name, package name) must be unique.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> driver = driver_set.create(package_name='linux-image-generic',
+    ...                            name='usb',
+    ...                            license=License.GNU_GPL_V2)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdriver__package_name__name__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> driver = driver_set.create(package_name=None,
+    ...                            name='whatever',
+    ...                            license=License.GNU_GPL_V2)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdriver__name__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+== HWDeviceDriverLink ==
+
+This table links devices and drivers.
+
+    >>> from canonical.launchpad.interfaces import IHWDeviceDriverLinkSet
+    >>> device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+    >>> usb_controller_usb_link = device_driver_link_set.create(
+    ...     device=usb_controller, driver=usb_driver)
+    >>> print usb_controller_usb_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print usb_controller_usb_link.driver.name
+    usb
+
+A device may be linked to more than one driver. A USB2 host controller
+for example has two drivers, the "generic" USB driver and the ehci-hcd
+driver.
+
+    >>> ehci_hcd_driver = driver_set.create(
+    ...     package_name='linux-image-generic', name='ehci_hcd',
+    ...     license=License.GNU_GPL_V2)
+    >>> usb_controller_ehci_hcd_link = device_driver_link_set.create(
+    ...     device=usb_controller, driver=ehci_hcd_driver)
+    >>> print usb_controller_ehci_hcd_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print usb_controller_ehci_hcd_link.driver.name
+    ehci_hcd
+
+A scanner can be linked to the kernel driver for the physical interface
+and to its Sane backend.
+
+    >>> scanner_usb_driver_link = device_driver_link_set.create(
+    ...     device=optic_pro_ut12, driver=usb_driver)
+    >>> print scanner_usb_driver_link.device.name
+    OpticPro UT12
+    >>> print scanner_usb_driver_link.driver.name
+    usb
+
+    >>> sane_plustek_driver = driver_set.create(package_name='libsane',
+    ...                                         name='plustek',
+    ...                                         license=License.GNU_GPL_V2)
+    >>> scanner_sane_plustek_link = device_driver_link_set.create(
+    ...     device=optic_pro_ut12, driver=sane_plustek_driver)
+    >>> print scanner_sane_plustek_link.device.name
+    OpticPro UT12
+    >>> print scanner_sane_plustek_link.driver.name
+    plustek
+
+Devices can have alternative drivers. Let's assume that Plustek
+provides a closed-source driver for its scanners.
+
+    >>> closed_driver = driver_set.create(package_name='plustek-scanner',
+    ...                                   name='ut12',
+    ...                                   license=License.OTHER_PROPRIETARY)
+
+Now we can link the OpticPro UT12 to the closed-source driver too.
+
+    >>> link3 = device_driver_link_set.create(device=optic_pro_ut12,
+    ...                                         driver=closed_driver)
+    >>> print link3.device.name
+    OpticPro UT12
+    >>> print link3.driver.name
+    ut12
+
+We have two cases, where we do not (or can not) store driver information
+for a HWDevice record:
+  - it does not make much sense to assign drivers to an entire system;
+  - HAL can list a device without providing driver information. This is
+    for example the case for an unsupported device.
+
+Since the tables HWSubmissionDevice, HWTestAnswer and HWTestAnswerCount
+(see below) link to HWDeviceDriverLink, we need a record in the latter
+table, even when we do not know about a driver of a device or system.
+Thus we can create a HWDeviceDriverLink record, where driver is None.
+
+    >>> tuffbook_2600_device_driver_link = device_driver_link_set.create(
+    ...     device=tuffbook_2600, driver=None)
+
+The tuple (device, driver) must be unique.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> device_driver_link_set.create(device=optic_pro_ut12,
+    ...                               driver=closed_driver)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevicedriverlink__device__driver__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> device_driver_link_set.create(device=tuffbook_2600, driver=None)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key violates unique
+    constraint "hwdevicedriverlink__device__key"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+
+== HWSubmissionDevice ==
+
+This table links devices listed in a submission to the 
+HWDeviceDriverLink table. Additionally it links a device of a
+submission to its parent device, as modeled by HAL.
+
+We need a submission to which we can link HWSubmissionDevice entries.
+
+    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> sample_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'test_submission_id_1')
+
+A HWSubmissionDevice record for a system does not have any parent...
+
+    >>> from canonical.launchpad.interfaces import IHWSubmissionDeviceSet
+    >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
+    >>> submitted_tuffbook_2600 = submission_device_set.create(
+    ...     device_driver_link=tuffbook_2600_device_driver_link,
+    ...     submission=sample_submission, parent=None)
+    >>> print submitted_tuffbook_2600.device_driver_link.device.name
+    Tuffbook 2600
+    >>> print submitted_tuffbook_2600.submission.submission_key
+    test_submission_id_1
+    >>> print submitted_tuffbook_2600.parent
+    None
+
+...while ordinary device entries have the attribute parent set. The
+parent/child relationship may extend to several "generations". For
+example, our Inspiron 1234 has a USB host controller; its parent
+is the system itself.
+
+    >>> submitted_usb_ehci_hcd_controller = submission_device_set.create(
+    ...      device_driver_link=usb_controller_ehci_hcd_link,
+    ...      submission=sample_submission,
+    ...      parent=submitted_tuffbook_2600)
+
+For the "output aspect" of the USB controller, we have
+usb_controller_usb_link; its parent is submitted_usb_ehci_hcd_controller
+that we just have created.
+
+    >>> submitted_usb_controller = submission_device_set.create(
+    ...      device_driver_link=usb_controller_usb_link,
+    ...      submission=sample_submission,
+    ...      parent=usb_controller_ehci_hcd_link)
+
+The USB controller is connected to an (often internal) USB hub. We don't
+yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
+create them first.
+
+    >>> usb_hub = device_set.create(bus=HWBus.USB,
+    ...                             vendor_id='0x8086',
+    ...                             product_id='0x1234',
+    ...                             product_name='Intel USB hub')
+    >>> usb_hub_driver_link = device_driver_link_set.create(
+    ...     device=usb_hub, driver=usb_driver)
+    >>> submitted_usb_hub = submission_device_set.create(
+    ...     device_driver_link=usb_hub_driver_link,
+    ...     submission=sample_submission,
+    ...     parent=submitted_usb_controller)
+
+Finally, a scanner may be connected to the USB hub.
+
+    >>> submitted_scanner_usb = submission_device_set.create(
+    ...     device_driver_link=scanner_usb_driver_link,
+    ...     submission=sample_submission,
+    ...     parent=submitted_usb_hub)
+
+    >>> submitted_scanner_sane = submission_device_set.create(
+    ...     device_driver_link=scanner_sane_plustek_link,
+    ...     submission=sample_submission,
+    ...     parent=submitted_scanner_usb)

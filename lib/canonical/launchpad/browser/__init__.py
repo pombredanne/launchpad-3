@@ -40,6 +40,7 @@ from canonical.launchpad.browser.bugwatch import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.codeimport import *
+from canonical.launchpad.browser.codeimportmachine import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.codereviewmessage import *
 from canonical.launchpad.browser.cve import *
