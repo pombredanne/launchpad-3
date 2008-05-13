@@ -125,11 +125,14 @@ class IEmailCommand(Interface):
 class IBugEmailCommand(IEmailCommand):
     """An email command specific to getting or creating a bug."""
 
-    def execute(parsed_msg, filealias):
+    def execute(parsed_msg, filealias, commands):
         """Either create or get an exiting bug.
 
         If a bug is created, parsed_msg and filealias will be used to
         create the initial comment of the bug.
+
+        The remaining commands are examined to make sure we have
+        sufficient information for filing a new bug.
 
         The bug and an event is returned as a two-tuple.
         """

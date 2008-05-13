@@ -247,7 +247,7 @@ class MaloneHandler:
                             bug_event = None
 
                         bug, bug_event = command.execute(
-                            signed_msg, filealias)
+                            signed_msg, filealias, commands)
                         if add_comment_to_bug:
                             messageset = getUtility(IMessageSet)
                             message = messageset.fromEmail(
