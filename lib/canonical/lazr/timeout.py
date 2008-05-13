@@ -5,12 +5,29 @@
 __metaclass__ = type
 __all__ = [
     "TimeoutError",
+    "get_default_timeout_function",
+    "set_default_timeout_function",
     "with_timeout",
     ]
 
 
 import sys
 from threading import Thread
+
+
+default_timeout_function = None
+
+
+def get_default_timeout_function():
+    """Return the function returning the default timeout value to use."""
+    global default_timeout_function
+    return default_timeout_function
+
+
+def set_default_timeout_function(timeout_function):
+    """Change the function returning the default timeout value to use."""
+    global default_timeout_function
+    default_timeout_function = timeout_function
 
 
 class TimeoutError(Exception):
@@ -31,6 +48,17 @@ class ThreadCapturingResult(Thread):
         self.result = self.target(*self.args, **self.kwargs)
 
 
+class DefaultTimeout:
+    """Descriptor returning the timeout computed by the default function."""
+
+    def __get__(self, obj, type=None):
+        global default_timeout_function
+        if default_timeout_function is None:
+            raise AssertionError(
+                "no timeout set and there is no default timeout function.")
+        return default_timeout_function()
+
+
 class with_timeout:
     """Make sure the decorated function doesn't exceed a time out.
 
@@ -38,6 +66,8 @@ class with_timeout:
     doesn't complete in the timeout, a TimeoutError is raised. The clean-up
     function will be called to "stop" the thread. (If it's possible to do so.)
     """
+
+    timeout = DefaultTimeout()
 
     def __init__(self, cleanup=None, timeout=None):
         """Creates the function decorator.
@@ -56,7 +86,8 @@ class with_timeout:
                 raise TypeError(
                     "when not wrapping a method, cleanup must be a callable.")
         self.cleanup = cleanup
-        self.timeout = timeout
+        if timeout is not None:
+            self.timeout = timeout
 
     def __call__(self, f):
         """Wraps the method."""

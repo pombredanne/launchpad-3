@@ -96,6 +96,46 @@ It's an error to use a string cleanup when the function isn't a method.
       ...
     TypeError: when not wrapping a method, cleanup must be a callable.
 
+== Default time out ==
+
+If the timeout parameter isn't provided, it will default to the value
+returned by the function installed as "defaulttimeout". A function is
+used because it's useful for the timeout value to be determined
+dynamically. For example, if you want to limit the the overall
+processing to 30s and you already did 14s, you want that timeout to be
+16s.
+
+By default, there is no default_timeout_generator.
+
+    >>> from canonical.lazr.timeout import (get_default_timeout_function,
+    ...     set_default_timeout_function)
+
+    >>> print get_default_timeout_function()
+    None
+
+When there is no default timeout function, it's an error not to provide
+a default timeout argument.
+
+    >>> @with_timeout()
+    ... def no_default_timeout(): pass
+
+    >>> no_default_timeout()
+    Traceback (most recent call last):
+      ...
+    AssertionError: no timeout set and there is no default timeout
+    function.
+
+The set_default_timeout_function() takes a function that should return
+the number of seconds to wait.
+
+
+    >>> def my_default_timeout():
+    ...     print "Will use default timeout."
+    ...     return 1
+    >>> set_default_timeout_function(my_default_timeout)
+    >>> no_default_timeout()
+    Will use default timeout.
+
 
 == Cleanup ==
 
