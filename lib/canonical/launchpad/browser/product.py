@@ -1260,13 +1260,14 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
+    show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @property
     def branch_count(self):
         """The number of total branches the user can see."""
-        return getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user).count()
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
@@ -1391,8 +1392,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user,
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
@@ -1481,14 +1482,3 @@ class ProductBranchesView(ProductBranchListingView):
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.LIFECYCLE,
             }
-
-    @cachedproperty
-    def hide_dormant_initial_value(self):
-        """If there is more than one page of branches, hide dormant ones."""
-        page_size = config.launchpad.branchlisting_batch_size
-        return self.context.branches.count() > page_size
-
-    def _branches(self, lifecycle_status):
-        return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
-
