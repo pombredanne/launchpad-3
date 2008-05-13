@@ -32,7 +32,8 @@ from canonical.launchpad.ftests import login, logout, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import)
-from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.testing.pages import (
+    get_feedback_messages, setupBrowser)
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
@@ -881,11 +882,19 @@ class TestRequestJobUI(unittest.TestCase):
         login_for_code_imports()
         code_import = make_finished_import()
         branch_url = canonical_url(code_import.branch)
+        code_import_id = code_import.id
         logout()
-        user_browser1 = self.getUserBrowserAtPage(branch_url)
-        user_browser2 = self.getUserBrowserAtPage(branch_url)
-        user_browser1.getControl('Import Now').click()
-        user_browser2.getControl('Import Now').click()
+        user_browser = self.getUserBrowserAtPage(branch_url)
+        login_for_code_imports()
+        getUtility(ICodeImportJobWorkflow).requestJob(
+            getUtility(ICodeImportSet).get(code_import_id).import_job,
+            LaunchpadObjectFactory().makePerson(displayname="New User"))
+        flush_database_updates()
+        logout()
+        user_browser.getControl('Import Now').click()
+        self.assertEqual(
+            [u'The import has already been requested by New User'],
+            get_feedback_messages(user_browser.contents))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

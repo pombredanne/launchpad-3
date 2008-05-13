@@ -261,6 +261,9 @@ to run ASAP and the fact that the import has been requested is
 displayed.
 
     >>> sample_person_browser.getControl('Import Now').click()
+    >>> for msg in get_feedback_messages(sample_person_browser.contents):
+    ...     print msg
+    Import will run as soon as possible.
     >>> print_import_details(sample_person_browser)
     Status: Reviewed
     This branch is an import of the Subversion branch from
@@ -268,4 +271,3 @@ displayed.
     The next import is scheduled to run as soon as possible (requested
     by Sample Person).
     Last successful import was on 2007-09-10.
-    ...
