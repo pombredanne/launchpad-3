@@ -1,0 +1,16 @@
+<tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+  <metal:view-message define-macro="view-message">
+    <div><tt id="comment-from">From
+        <span tal:replace="structure context/message/owner/fmt:link"/>
+    </tt></div>
+    <div>
+      <tt id="comment-subject" tal:content="context/message/subject" />
+    </div>
+    <div>
+      <tt id="comment-body" tal:content="context/message/text_contents" />
+    </div>
+  </metal:view-message>
+</tal:root>

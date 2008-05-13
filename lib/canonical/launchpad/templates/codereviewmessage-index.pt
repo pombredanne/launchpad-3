@@ -18,12 +18,8 @@
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>
-  <tt id="comment-from">From
-      <span tal:replace="structure context/message/owner/fmt:link"/>
-  <tt id="comment-subject" tal:content="context/message/subject" />
-  <tt id="comment-body" tal:content="context/message/text_contents" />
+  <metal:landing-target use-macro="context/@@+macros/view-message"/>
   <a href="#" tal:attributes="href view/reply_link">Reply</a>
-
 </div>
 
 </body>
