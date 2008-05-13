@@ -12,8 +12,8 @@ __all__ = [
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ISourcePackagePublishingHistory,
-    IBinaryPackagePublishingHistory)
+    ArchivePurpose, IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory)
 from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url)
 from canonical.launchpad.interfaces import (
@@ -123,7 +123,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     def isUploadArchivePPA(self):
         """Is the package upload archive a PPA?"""
         source = self.context.sourcepackagerelease
-        return (source.upload_archive.purpose == ArchivePurpose.PPA)
+        return source.upload_archive.purpose == ArchivePurpose.PPA
 
     @property
     def allow_selection(self):
