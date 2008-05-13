@@ -195,7 +195,9 @@ class ZopelessTransactionManager(object):
         zstorm = getUtility(IZStorm)
         store = zstorm.get('main')
         zstorm.remove(store)
-        #store.close()
+        transaction.abort()
+        store.close()
+        zstorm.get('main')
 
     @classmethod
     def uninstall(cls):

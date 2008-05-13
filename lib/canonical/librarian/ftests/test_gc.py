@@ -19,8 +19,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.lp import initZopeless
-from canonical.testing import LaunchpadLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class MockLogger:
@@ -37,7 +36,7 @@ class MockLogger:
 
 
 class TestLibrarianGarbageCollection(TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.client = LibrarianClient()
@@ -45,16 +44,14 @@ class TestLibrarianGarbageCollection(TestCase):
 
         self.f1_id, self.f2_id = self._makeDupes()
 
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+        self.ztm = self.layer.txn
+
         # Make sure the files exist. We do this in setup, because we
         # need to use the get_file_path method later in the setup and we
         # want to be sure it is working correctly.
         path = librariangc.get_file_path(self.f1_id)
         self.failUnless(os.path.exists(path), "Librarian uploads failed")
-
-        # Connect to the database as a user with file upload privileges
-        self.ztm = initZopeless(
-                dbuser=config.librarian_gc.dbuser, implicitBegin=False
-                )
 
         # A value we use in a number of tests
         self.recent_past = (
@@ -83,7 +80,6 @@ class TestLibrarianGarbageCollection(TestCase):
         self.con.rollback()
         self.con.close()
         del self.con
-        self.ztm.uninstall()
         librariangc.log = None
 
     def _makeDupes(self):
@@ -94,7 +90,8 @@ class TestLibrarianGarbageCollection(TestCase):
         # Connect to the database as a user with file upload privileges,
         # in this case the PostgreSQL default user who happens to be an
         # administrator on launchpad development boxes.
-        ztm = initZopeless(dbuser='', implicitBegin=False)
+        self.layer.switchDbUser(dbuser='launchpad')
+        ztm = self.layer.txn
 
         ztm.begin()
         # Add some duplicate files
@@ -122,7 +119,6 @@ class TestLibrarianGarbageCollection(TestCase):
         del f1, f2
 
         ztm.commit()
-        ztm.uninstall()
 
         return f1_id, f2_id
 
@@ -239,8 +235,8 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Make sure both our example files are still there
         self.ztm.begin()
-        LibraryFileAlias.get(self.f1_id, None)
-        LibraryFileAlias.get(self.f2_id, None)
+        LibraryFileAlias.get(self.f1_id)
+        LibraryFileAlias.get(self.f2_id)
 
     def test_DeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an
@@ -486,12 +482,11 @@ class TestLibrarianGarbageCollection(TestCase):
 
 
 class TestBlobCollection(TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         # Add in some sample data
-        con = connect(config.launchpad.dbuser)
-        cur = con.cursor()
+        cur = cursor()
 
         # First a blob that has been unclaimed and expired.
         cur.execute("""
@@ -581,20 +576,9 @@ class TestBlobCollection(TestCase):
             """, (self.unexpired_lfa_id,))
         cur.execute("""SELECT currval('temporaryblobstorage_id_seq')""")
         self.unexpired_blob_id = cur.fetchone()[0]
-        con.commit()
-        con.close()
-
-        # Open a connection for our test
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
-        librariangc.log = MockLogger()
+        self.layer.txn.commit()
 
         # Make sure all the librarian files actually exist on disk
-        ztm = initZopeless(
-                dbuser=config.librarian_gc.dbuser, implicitBegin=False
-                )
-        ztm.begin()
         cur = cursor()
         cur.execute("SELECT id FROM LibraryFileContent")
         for content_id in (row[0] for row in cur.fetchall()):
@@ -603,8 +587,15 @@ class TestBlobCollection(TestCase):
                 if not os.path.exists(os.path.dirname(path)):
                     os.makedirs(os.path.dirname(path))
                 open(path, 'w').write('whatever')
-        ztm.abort()
-        ztm.uninstall()
+        self.layer.txn.abort()
+
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+
+        # Open a connection for our test
+        self.con = connect(config.librarian_gc.dbuser)
+        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+        librariangc.log = MockLogger()
 
     def tearDown(self):
         self.con.rollback()
