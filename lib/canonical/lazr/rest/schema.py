@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'CollectionField',
+    'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
@@ -31,6 +32,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.interfaces.rest import ICollectionField
 from canonical.lazr.interfaces.field import IFieldMarshaller
@@ -121,6 +123,10 @@ class SimpleFieldMarshaller:
         assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._marshall(value)
 
+    def unmarshall(self, entry, field_name, value):
+        "Return the field name and value as they are."
+        return (field_name, value)
+
     def _marshall(self, value):
         """Return the value as is, unless it's empty; then return None."""
         if value == "":
@@ -134,6 +140,7 @@ class IntFieldMarshaller(SimpleFieldMarshaller):
     def _marshall(self, value):
         """Try to convert the value into an integer."""
         return int(value)
+
 
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
@@ -152,6 +159,16 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
                             seconds, microseconds, pytz.utc)
         except (DateError, DateTimeError, SyntaxError):
             raise ValueError("Value doesn't look like a date.")
+
+
+class CollectionFieldMarshaller(SimpleFieldMarshaller):
+
+    def unmarshall(self, entry, field_name, value):
+        repr_name = field_name + '_collection_link'
+        repr_value = None
+        if value is not None:
+            repr_value = "%s/%s" % (canonical_url(entry.context), field_name)
+        return (repr_name, repr_value)
 
 
 def VocabularyLookupFieldMarshaller(field, request):
@@ -187,7 +204,7 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
 
 
 class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
-                                    URLDereferencingMixin):
+                                  URLDereferencingMixin):
     """A marshaller that turns URLs into data model objects.
 
     This marshaller can be used with a IChoice field (initialized
@@ -197,6 +214,14 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
     def __init__(self, field, request, vocabulary=None):
         super(ObjectLookupFieldMarshaller, self).__init__(
             field, request, vocabulary)
+
+    def unmarshall(self, entry, field_name, value):
+        "Represent an object as the URL to that object"
+        repr_name = field_name + '_link'
+        repr_value = None
+        if value is not None:
+            repr_value = canonical_url(value)
+        return (repr_name, repr_value)
 
     def _marshall(self, value):
         """Look up the data model object by URL."""

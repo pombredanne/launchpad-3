@@ -401,23 +401,13 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['self_link'] = canonical_url(self.context)
         for name, field in getFields(self.entry.schema).items():
             value = getattr(self.entry, name)
-
-            if ICollectionField.providedBy(field):
-                # The field is a collection; include a link to the
-                # collection resource.
-                if value is not None:
-                    key = name + '_collection_link'
-                    data[key] = "%s/%s" % (data['self_link'], name)
-            elif self._fieldValueIsObject(field):
-                # The field is an entry; include a link to the
-                # entry resource.
-                if value is not None:
-                    key = name + '_link'
-                    data[key] = canonical_url(value)
-            else:
-                # It's a data field; display it as part of the
-                # representation.
-                data[name] = value
+            field = field.bind(self.context)
+            marshaller = getMultiAdapter((field, self.request),
+                                          IFieldMarshaller)
+            repr_name, repr_value = marshaller.unmarshall(
+                self.entry, name, value)
+            if repr_value is not None:
+                data[repr_name] = repr_value
         return data
 
     def processAsJSONHash(self, media_type, representation):
