@@ -406,8 +406,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                           IFieldMarshaller)
             repr_name, repr_value = marshaller.unmarshall(
                 self.entry, name, value)
-            if repr_value is not None:
-                data[repr_name] = repr_value
+            data[repr_name] = repr_value
         return data
 
     def processAsJSONHash(self, media_type, representation):

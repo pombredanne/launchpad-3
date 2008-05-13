@@ -165,9 +165,7 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
     def unmarshall(self, entry, field_name, value):
         repr_name = field_name + '_collection_link'
-        repr_value = None
-        if value is not None:
-            repr_value = "%s/%s" % (canonical_url(entry.context), field_name)
+        repr_value = "%s/%s" % (canonical_url(entry.context), field_name)
         return (repr_name, repr_value)
 
 
