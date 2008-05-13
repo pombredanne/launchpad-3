@@ -21,9 +21,18 @@ from zope.testbrowser.browser import Browser
 
 
 # Should we be able to override any of these?
-AUTH_FILE = '~/.canonical_paste_auth'
+AUTH_FILE = '~/.lp_auth_cookie'
 PASTE_HOST = 'pastebin.canonical.com'
 PASTE_PATH = ''
+LP_AUTH_INSTRUCTIONS = """
+%s doesn't contain a valid LP authentication cookie.
+
+Please update this file, with the 'lp' cookie value your browser sends
+when visiting https://launchpad.net (while being logged in). It should
+look something like this:
+
+    sd33JsfeJop3esf6joi8sldfjJoIj3dssD6isfsdweJDe6i9JIKEYK
+""" % AUTH_FILE
 
 
 def parse_arguments():
@@ -53,6 +62,8 @@ def parse_arguments():
 def get_lp_auth_cookie(path):
     """Read the authentication file, and return a Cookie object."""
     path = os.path.expanduser(path)
+    if not os.path.exists(path):
+        return None
     f = open(path)
     try:
         cookie_value = f.readline().strip()
@@ -113,6 +124,9 @@ def main():
 
     # Figure out the authentication.
     lp_cookie = get_lp_auth_cookie(AUTH_FILE)
+    if lp_cookie is None:
+        print LP_AUTH_INSTRUCTIONS
+        return
     cookiejar = CookieJar()
     cookiejar.set_cookie(lp_cookie)
     browser = Browser()
@@ -123,7 +137,7 @@ def main():
     if browser.getForm(name='oid_form') is not None:
         authenticated = authenticate(browser)
         if not authenticated:
-            print "Your LP cookie is invalid. Please update %s" % AUTH_FILE
+            print LP_AUTH_INSTRUCTIONS
             return
     for name, value in form:
         browser.getControl(name=name).value = value
