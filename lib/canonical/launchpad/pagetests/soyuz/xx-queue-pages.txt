@@ -399,6 +399,30 @@ One rejection email is generated:
   >>> rejection['Subject']
   'netapplet-1.0.0.tar.gz rejected'
 
+The override controls are now available for rejected packages.
+
+Navigate to the rejected items queue.
+
+    >>> upload_manager_browser.getControl(
+    ...    name="queue_state", index=0).displayValue = ['Rejected']
+    >>> upload_manager_browser.getControl("Update").click()
+
+    >>> upload_manager_browser.getControl(
+    ...     name="queue_state", index=0).displayValue
+    ['Rejected']
+
+The various override controls are present now.
+
+    >>> upload_manager_browser.getControl(
+    ...     name="component_override").displayValue
+    ['(no change)']
+    >>> upload_manager_browser.getControl(
+    ...     name="section_override").displayValue
+    ['(no change)']
+    >>> upload_manager_browser.getControl(
+    ...     name="priority_override").displayValue
+    ['(no change)']
+
 
 == Clean up ==
 

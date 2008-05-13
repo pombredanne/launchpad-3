@@ -87,19 +87,20 @@ class QueueItemsView(LaunchpadView):
 
         Returns a list of labelled actions or an empty list.
         """
-        # states that support actions
+        # States that support actions.
         mutable_states = [
             PackageUploadStatus.NEW,
-            PackageUploadStatus.UNAPPROVED,
+            PackageUploadStatus.REJECTED,
+            PackageUploadStatus.UNAPPROVED
             ]
 
-        # return actions only for supported states and require
-        # edit permission
+        # Return actions only for supported states and require
+        # edit permission.
         if (self.state in mutable_states and
             check_permission('launchpad.Edit', self.queue)):
             return ['Accept', 'Reject']
 
-        # no actions for unsupported states
+        # No actions for unsupported states.
         return []
 
     def performQueueAction(self):
