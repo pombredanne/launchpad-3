@@ -1,11 +1,11 @@
-= LAZR's field deserializer =
+= LAZR's field marshallers =
 
-LAZR defines an interface for taking a string value that came in on an
-HTTP request, and deserializing it into a value that's appropriate for
-a particular schema field. This is similar to Zope's widget interface,
-but much smaller.
+LAZR defines an interface for converting between the string values
+that come in on an HTTP request, and the object values appropriate for
+schema fields. This is similar to Zope's widget interface, but much
+smaller.
 
-To test the various deserializers we create a dummy request and
+To test the various marshallers we create a dummy request and
 application root.
 
     >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
@@ -20,75 +20,92 @@ application root.
     >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(root)
 
-The deserializer for a TextLine field returns a string as-is, except
-that the empty string is deserialized as None.
+
+== Basic data structure marshallers ==
+
+The marshaller for a TextLine field returns a string as-is, except
+that the empty string is marshalled as None.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.lazr.interfaces import IFieldDeserializer
+    >>> from canonical.lazr.interfaces import IFieldMarshaller
     >>> from zope.schema import TextLine
     >>> field = TextLine()
-    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
-    >>> deserializer.deserialize("foo")
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> marshaller.marshall("foo")
     'foo'
-    >>> deserializer.deserialize("4")
+    >>> marshaller.marshall("4")
     '4'
-    >>> deserializer.deserialize(u"unicode\u2122")
+    >>> marshaller.marshall(u"unicode\u2122")
     u'unicode\u2122'
-    >>> print deserializer.deserialize("")
+    >>> print marshaller.marshall("")
     None
 
-The deserializer for an Int field tries to convert the given string
+When asked to convert a field value to a representation value, this
+marshaller returns the string as-is:
+
+    >>> marshaller.unmarshall(None, field.__name__, 'foo')
+    'foo'
+
+The representation name for a TextLine field is the name of the field.
+
+    >>> marshaller.representationName('field_name')
+    'field_name'
+
+The marshaller for an Int field tries to convert the given string
 into an int.
 
     >>> from zope.schema import Int
     >>> field = Int()
-    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
-    >>> deserializer.deserialize("4")
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> marshaller.marshall("4")
     4
-    >>> deserializer.deserialize(u"4")
+    >>> marshaller.marshall(u"4")
     4
 
-    >>> deserializer.deserialize("foo")
+    >>> marshaller.marshall("foo")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): foo
 
-    >>> deserializer.deserialize("4.62")
+    >>> marshaller.marshall("4.62")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): 4.62
 
-    >>> deserializer.deserialize("")
+    >>> marshaller.marshall("")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int():
 
-The deserializer for a Choice is chosen based on the Choice's
+The marshaller for a Choice is chosen based on the Choice's
 vocabulary. First, let's look at a Choice whose vocabulary is a
 relatively short list of enumerated values.
 
     >>> from zope.schema import Choice
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> field = Choice(vocabulary=BugTaskStatus)
-    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
 
 The client is expected to provide the title of one of the enumerated
-values. A string that corresponds to one of the values is deserialized
+values. A string that corresponds to one of the values is marshalld
 to the appropriate value. A string that doesn't correspond to any
 enumerated value results in a helpful ValueError.
 
-    >>> deserializer.deserialize("Triaged")
+    >>> marshaller.marshall("Triaged")
     <DBItem BugTaskStatus.TRIAGED...>
 
-    >>> deserializer.deserialize("NoSuchStatus")
+    >>> marshaller.marshall("NoSuchStatus")
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "NoSuchStatus". Acceptable values are: ...
 
-    >>> deserializer.deserialize("")
+    >>> marshaller.marshall("")
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "". Acceptable values are: ...
+
+
+== Object marshallers ==
 
 Here's a Choice whose vocabulary is a filter on a database table that
 can be very large. Futhermore, every item in the vocabulary is
@@ -97,28 +114,71 @@ published as a resource in Launchpad's web service.
     >>> from canonical.launchpad.vocabularies import (
     ...     ValidPersonOrTeamVocabulary)
     >>> field = Choice(vocabulary=ValidPersonOrTeamVocabulary())
-    >>> deserializer = getMultiAdapter((field, request), IFieldDeserializer)
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
 
 Here, the client is expected to designate a vocabulary item by its
 published URL. If the given string is a URL corresponding to a
-vocabulary item, the deserializer returns that item. Otherwise it
+vocabulary item, the marshaller returns that item. Otherwise it
 raises a ValueError.
 
     >>> from canonical.launchpad.interfaces import IPerson
-    >>> person = deserializer.deserialize(
+    >>> person = marshaller.marshall(
     ...     "http://api.launchpad.dev/beta/~salgado")
     >>> IPerson.providedBy(person)
     True
     >>> person.name
     u'salgado'
 
-    >>> deserializer.deserialize(
+    >>> marshaller.marshall(
     ...     "http://api.launchpad.dev/beta/~nosuchperson")
     Traceback (most recent call last):
     ...
     ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
 
-    >>> deserializer.deserialize("salgado")
+    >>> marshaller.marshall("salgado")
     Traceback (most recent call last):
     ...
     ValueError: No such object "salgado".
+
+Instead of unmarshall() returning the Person object (which
+wouldn't look nice in a JSON representation), this marshaller returns
+the URL to that object.
+
+    >>> from canonical.lazr.rest import EntryResource
+    >>> person_resource = EntryResource(person, request)
+
+    >>> marshaller.unmarshall(person_resource, 'some_person', person)
+    u'http://.../~salgado'
+
+This marshaller also appends '_link' to the representation name of
+this field, so that clients can know this is a link to another
+resource and not a random string.
+
+    >>> marshaller.representationName('some_person')
+    'some_person_link'
+
+
+== Collection marshallers ==
+
+The most complicated kind of marshaller is one that manages a
+collection of objects associated with some other object. Let's do an
+example with a person's set of memberships. that's a CollectionField
+that contains a number of objects that implement IPerson.
+
+    >>> from zope.schema import Object
+    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> field = CollectionField(value_type=Object(schema=IPerson))
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+
+Instead of serving the actual collection, collection marshallers serve
+a URL to that collection.
+
+    >>> marshaller.unmarshall(person_resource, 'person_memberships',
+    ...                       ["member 1", "member 2"])
+    u'http://.../~salgado/person_memberships'
+
+They also annotate the representation name of the field, so that
+clients know this is a link to a collection-type resource.
+
+    >>> marshaller.representationName('person_memberships')
+    'person_memberships_collection_link'
