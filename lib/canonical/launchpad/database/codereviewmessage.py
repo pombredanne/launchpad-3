@@ -27,3 +27,9 @@ class CodeReviewMessage(SQLBase):
         notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
     vote = EnumCol(dbName='vote', notNull=True, schema=CodeReviewVote)
+    @property
+    def title(self):
+        return ('Comment on proposed merge of %(source)s into %(target)s' %
+            {'source': self.branch_merge_proposal.source_branch.displayname,
+             'target': self.branch_merge_proposal.target_branch.displayname,
+            })
