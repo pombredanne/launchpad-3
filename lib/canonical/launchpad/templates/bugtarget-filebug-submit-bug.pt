@@ -162,7 +162,6 @@
             </div>
           </div>
         </tal:submit-new-bug>
-
       </div>
 
       <script type="text/javascript" tal:condition="view/similar_bugs">
@@ -172,12 +171,28 @@
          */
         function arrangeBugForm(event) {
           var no_radiobtn = $('bug-not-already-reported');
+          var bugtarget_package_btn = $('field.bugtarget.option.package');
 
           if (no_radiobtn.checked) {
             showElement('bug_reporting_form');
             // Try to get the whole bug form into view.
             $('field.actions.submit_bug').focus();
-            $('field.comment').focus();
+
+            if (bugtarget_package_btn != null) {
+              if (bugtarget_package_btn.checked) {
+                $('field.bugtarget.package').focus();
+              }
+              else {
+                $('field.comment').focus();
+              }
+            } else {
+              var package_name = $('field.packagename')
+              if (package_name != null) {
+                package_name.focus();
+              } else {
+                $('field.comment').focus();
+              }
+            }
           } else {
             hideElement('bug_reporting_form');
           }
