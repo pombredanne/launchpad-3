@@ -2,7 +2,8 @@
 
 Set up required objects
 
-    # We need to be admin to add a landing target to a random branch
+    >>> from canonical.launchpad.interfaces import CodeReviewVote
+    >>> # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> merge_proposal = factory.makeBranchMergeProposal()
     >>> merge_proposal_url = canonical_url(merge_proposal)
@@ -11,6 +12,7 @@ Set up required objects
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(merge_proposal_url)
     >>> nopriv_browser.getLink('Add comment').click()
+    >>> nopriv_browser.getControl('Vote').displayValue = ['Approve']
     >>> nopriv_browser.getControl('Subject').value = 'my subject'
     >>> nopriv_browser.getControl('Comment').value = 'my body'
     >>> nopriv_browser.getControl('Add').click()
@@ -32,6 +34,8 @@ Now, open its home page.
     my body
     >>> print_tag('comment-from')
     From No Privileges Person
+    >>> print_tag('comment-vote')
+    Approve
 
 Hmm.  Probably shouldn't display this...
 
@@ -48,6 +52,7 @@ We can reply to a comment.
     True
     >>> nopriv_browser.getControl('Subject').value = 'Subjects are nice.'
     >>> nopriv_browser.getControl('Comment').value = 'I like this'
+    >>> nopriv_browser.getControl('Vote').displayValue = ['Abstain']
     >>> nopriv_browser.getControl('Add').click()
 
 After this, we are taken to the view page for that comment.
@@ -56,3 +61,5 @@ After this, we are taken to the view page for that comment.
     Subjects are nice.
     >>> print_tag('comment-body', nopriv_browser)
     I like this
+    >>> print_tag('comment-vote', nopriv_browser)
+    Abstain
