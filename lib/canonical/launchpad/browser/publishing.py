@@ -12,7 +12,7 @@ __all__ = [
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url)
 from canonical.launchpad.interfaces import (

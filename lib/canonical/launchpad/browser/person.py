@@ -107,10 +107,11 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams,
-    BugTaskStatus, CannotUnsubscribe,
+    AccountStatus, BranchListingSort,
+    BranchPersonSearchContext, BranchPersonSearchRestriction,
+    BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
+    GPGKeyNotFoundError, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
     IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
     IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
@@ -3749,52 +3750,47 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
+    no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
-
-    @cachedproperty
-    def _subscribed_branches(self):
-        return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, [], self.user))
 
 
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.REGISTERED)
 
 
 class PersonOwnedBranchesView(BranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.OWNED)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
 
 
 class PersonTeamBranchesView(LaunchpadView):

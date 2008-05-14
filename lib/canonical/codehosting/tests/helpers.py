@@ -449,7 +449,7 @@ def create_branch_with_one_revision(branch_dir):
         tree = BzrDir.create_standalone_workingtree(branch_dir)
     except FileExists:
         return
-    f = open(branch_dir + 'hello', 'w')
+    f = open(os.path.join(branch_dir, 'hello'), 'w')
     f.write('foo')
     f.close()
     tree.commit('message')
