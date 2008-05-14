@@ -275,6 +275,10 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
         exception = bzr_errors.PermissionDenied('foo')
         self.do_translation_test(exception, filetransfer.FX_PERMISSION_DENIED)
 
+    def test_translateTransportNotPossible(self):
+        exception = bzr_errors.TransportNotPossible('foo')
+        self.do_translation_test(exception, filetransfer.FX_PERMISSION_DENIED)
+
     def test_translateNoSuchFile(self):
         exception = bzr_errors.NoSuchFile('foo')
         self.do_translation_test(exception, filetransfer.FX_NO_SUCH_FILE)
