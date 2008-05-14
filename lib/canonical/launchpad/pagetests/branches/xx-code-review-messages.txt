@@ -25,6 +25,6 @@ Now, open its home page.
     >>> print_tag('comment-subject')
     my subject
     >>> print_tag('comment-from')
-    From Person-name21
+    Person-name21
     >>> print_tag('comment-vote')
     Approve
