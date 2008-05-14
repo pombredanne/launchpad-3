@@ -237,7 +237,7 @@ to commit the transaction here.
     >>> import transaction
     >>> transaction.commit()
 
-The auxilliary function below will facilitate the viewing of diff results.
+The auxiliary function below will facilitate the viewing of diff results.
 
     >>> from subprocess import Popen, PIPE
     >>> import tempfile
@@ -298,6 +298,59 @@ Now we can compare the package diff outcome to the debdiff output
     <BLANKLINE>
 
 
-== Browsing Diffs ==
+== Dealing with all PackageDiff objects ==
 
+The PackageDiffSet utility implements simple auxiliary methods to deal
+directly with PackageDiff objects.
+
+Let's flush all the updates done.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Those methods are useful when the callsites are not interested only in
+PackageDiffs attached to specific SourcePackageReleases.
+
+Using the utility it's possible to iterate over all PackageDiff
+stored.
+
+    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> packagediff_set = getUtility(IPackageDiffSet)
+
+    >>> for diff in packagediff_set:
+    ...     print diff.title, diff.date_fulfilled is not None
+    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2  False
+    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8 False
+    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9 False
+    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-8 to biscuit - 1.0-1  True
+    Package diff from pmount - 0.1-2 to pmount - 0.1-1    False
+
+Or only the PackageDiffs not yet fullfilled.
+
+    >>> for diff in packagediff_set.getPendingDiffs():
+    ...     print diff.title, diff.date_fulfilled is not None
+    Package diff from pmount - 0.1-2 to pmount - 0.1-1    False
+    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9 False
+    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8 False
+    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2  False
+
+getPendingDiffs() results can optionally be limited.
+
+    >>> packagediff_set.getPendingDiffs().count()
+    6
+
+    >>> packagediff_set.getPendingDiffs(limit=2).count()
+    2
+
+A arbitrary PackageDiff object can be easily retrieved by database ID
+if necessary.
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+    >>> candidate_diff = packagediff_set.get(diff.id)
+    >>> candidate_diff == diff
+    True
 
