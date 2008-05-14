@@ -330,7 +330,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         `DistroSeries` and in the same `IArchive` and Pocket, ordered
         by architecture tag.
 
-        :return a `SelectResults` pointing to all corresponding publishing
+        :return: a `SelectResults` pointing to all corresponding publishing
             records.
         """
 
@@ -341,7 +341,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         record for any `DistroArchSeries` in this `DistroSeries` and in
         the same `IArchive` and Pocket.
 
-        :return a list containing all unique
+        :return: a list containing all unique
             `IBinaryPackagePublishingHistory`.
         """
 

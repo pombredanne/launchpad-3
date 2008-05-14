@@ -881,9 +881,8 @@ foo_2.0 version to his PPA.
     foo-bin 2.0 in hoary hppa
 
 James tries to copy some of Celso's packages that are older than
-the ones in his own PPA. He is not allowed top copy these these
-older packages since they would not be published in the destination
-anyway.
+the ones in his own PPA. He is not allowed to copy these older
+packages since they would not be published in the destination anyway.
 
     >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> jblack_browser.getLink('Copy packages').click()

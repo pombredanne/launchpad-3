@@ -243,7 +243,9 @@ class Archive(SQLBase):
             orderBy.insert(1, desc_version_order)
 
         if status is not None:
-            if type(status) not in (tuple, list):
+            try:
+                status = tuple(status)
+            except TypeError:
                 status = (status,)
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
