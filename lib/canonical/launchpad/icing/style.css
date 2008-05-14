@@ -1223,9 +1223,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
 
-.codeimportresult-success {color: Green; font-weight: bold;}
-.codeimportresult-failure {color: Red; font-weight: bold;}
-
 /* --- Bugs --- */
 
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}

@@ -213,7 +213,7 @@
           </p>
         </tal:last-successful>
 
-        <div id="import-results" tal:condition="view/last_code_import_result">
+        <div id="import-results" tal:condition="view/latest_code_import_results">
           <tal:result repeat="result view/latest_code_import_results">
             <metal:result use-macro="code_import/@@+macros/show_result"/>
           </tal:result>
