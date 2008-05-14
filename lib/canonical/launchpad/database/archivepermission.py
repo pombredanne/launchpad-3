@@ -64,19 +64,24 @@ class ArchivePermissionSet:
             """ % sqlvalues(archive, permission, user)
             ]
 
+        prejoins = []
+
         if IComponent.providedBy(item):
             clauses.append(
                 "ArchivePermission.component = %s" % sqlvalues(item))
+            prejoins.append("component")
         elif ISourcePackageName.providedBy(item):
             clauses.append(
                 "ArchivePermission.sourcepackagename = %s" % sqlvalues(item))
+            prejoins.append("sourcepackagename")
         else:
             raise TypeError(
                 "'item' is not an IComponent or an ISourcePackageName")
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
-            query, clauseTables=["TeamParticipation"], distinct=True)
+            query, clauseTables=["TeamParticipation"], distinct=True,
+            prejoins=prejoins)
 
         return auth
 
@@ -90,7 +95,8 @@ class ArchivePermissionSet:
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, permission_type, user))
+            """ % sqlvalues(archive, permission_type, user),
+            prejoins=["component"])
 
     def componentsForUploader(self, archive, user):
         """See `IArchivePermissionSet`,"""
@@ -112,22 +118,24 @@ class ArchivePermissionSet:
             clauses.append("ArchivePermission.component IS NOT NULL")
 
         query = " AND ".join(clauses)
-        return ArchivePermission.select(query)
+        return ArchivePermission.select(query, prejoins=["component"])
 
     def uploadersForPackage(self, archive, sourcepackagename):
         "See `IArchivePermissionSet`."""
         if isinstance(sourcepackagename, basestring):
             sourcepackagename = getUtility(
                 ISourcePackageNameSet)[sourcepackagename]
-        return ArchivePermission.selectBy(
+        results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.UPLOAD,
             sourcepackagename=sourcepackagename)
+        return results.prejoin(["sourcepackagename"])
 
     def queueAdminsForComponent(self, archive, component):
         "See `IArchivePermissionSet`."""
-        return ArchivePermission.selectBy(
+        results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
             component=component)
+        return results.prejoin(["component"])
 
     def componentsForQueueAdmin(self, archive, user):
         """See `IArchivePermissionSet`."""

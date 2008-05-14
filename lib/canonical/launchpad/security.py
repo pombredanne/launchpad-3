@@ -8,21 +8,22 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IArchive, IArchivePermissionSet, IBazaarApplication,
-    IBranch, IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
-    IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
-    ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportResult, ICodeImportResultSet,
-    ICodeImportSet, IDistribution, IDistributionMirror, IDistroSeries,
-    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
-    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
-    ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
-    IPOFile, IPOTemplate, IPOTemplateSubset, IPackageUpload,
-    IPackageUploadQueue, IPackaging, IPerson, IPoll, IPollOption, IPollSubset,
-    IProduct, IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISourcePackage, ISourcePackageRelease,
-    ISpecification, ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ArchivePurpose, IAnnouncement, IArchive, IArchivePermissionSet,
+    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
+    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportResult,
+    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
+    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISourcePackage, ISourcePackageRelease, ISpecification,
+    ISpecificationBranch, ISpecificationSubscription, ISprint,
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
@@ -1138,7 +1139,7 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def checkAuthenticated(self, user):
+    def _ppaCheckAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
@@ -1147,6 +1148,28 @@ class EditBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
+    def checkAuthenticated(self, user):
+        """Check write access for user and different kinds of archives.
+
+        Allow
+        
+            * BuilddAdmins and PPA owner for PPAs
+            * users with upload permissions (for the respective distribution)
+              otherwise.
+        """
+        # Is this a PPA? Call the respective method if so.
+        if self.obj.archive.purpose == ArchivePurpose.PPA:
+            return self._ppaCheckAuthenticated(user)
+
+        # Primary or partner section here: is the user in question allowed
+        # to upload to the respective component? Allow user to retry build
+        # if so.
+        if self.obj.archive.canUpload(user, self.obj.current_component):
+            return True
+        else:
+            return self.obj.archive.canUpload(
+                user, self.obj.sourcepackagerelease.sourcepackagename)
 
 
 class ViewBuildRecord(EditBuildRecord):

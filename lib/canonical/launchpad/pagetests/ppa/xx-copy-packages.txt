@@ -262,6 +262,15 @@ context.
     Files
       No files published for this package.
 
+The package was copied from the primary archive and not from a PPA.
+Hence the archive's title does not link back to the source archive
+(as would be the case with a source PPA).
+
+    >>> jblack_browser.getLink("Primary Archive for Ubuntu Linux")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 James quickly goes to the build page and confirms for himself that the
 build created during the copy is ready to be dispatched.
 
