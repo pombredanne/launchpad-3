@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = ['CommercialSubscription']
 
+import datetime
+import pytz
+
 from zope.interface import implements
 
 from sqlobject import (
@@ -37,4 +40,5 @@ class CommercialSubscription(SQLBase):
 
     @property
     def is_active(self):
-        return self.date_starts < UTC_NOW and UTC_NOW < self.date_expires
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        return self.date_starts < now and now < self.date_expires
