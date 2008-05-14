@@ -510,7 +510,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             if location in unique_binary_locations:
                 unique_binary_publications.append(pub)
                 unique_binary_locations.remove(location)
-                if not unique_binary_locations:
+                if len(unique_binary_locations) == 0:
                     break
 
         return unique_binary_publications

@@ -111,7 +111,8 @@ for packages. This is certainly not part of the doctest story.
     >>> warty = ubuntu.getSeries('warty')
     >>> trash = warty["i386"].addOrUpdateChroot(fake_chroot)
 
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> person_set = getUtility(IPersonSet)
+    >>> cprov = person_set.getByName('cprov')
     >>> grumpy = ubuntu.getSeries('grumpy')
     >>> grumpy_i386 = grumpy.newArch(
     ...     'i386', ProcessorFamily.get(1), False, cprov,
@@ -149,7 +150,7 @@ helper function will do this job in this test.
 
     >>> def getPPAPubIDsFor(owner_name, source_name=None, status=None):
     ...     login('foo.bar@canonical.com')
-    ...     owner = getUtility(IPersonSet).getByName(owner_name)
+    ...     owner = person_set.getByName(owner_name)
     ...     pubs = owner.archive.getPublishedSources(
     ...          name=source_name, status=status)
     ...     pub_ids = [str(pub.id) for pub in pubs]
@@ -342,7 +343,7 @@ will be dominated and the archive won't be changed).
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already built or building in destination archive)
+    (same version already building in the destination archive)
 
 Without thinking much James erroneously selects 'hoary' series and
 pushes the copy button. The same error is raised.
@@ -359,7 +360,7 @@ pushes the copy button. The same error is raised.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already built or building in destination archive)
+    (same version already building in the destination archive)
 
 Darn, now James being more careful and re-selects the 'pmount' source
 and 'grumpy' as Destination Series.
@@ -389,10 +390,10 @@ contents). So, this copy is not allowed.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already built or building in destination archive)
+    (same version already building in the destination archive)
 
 Now, knowing that pmount can only be copied within the same PPA if the
-binaries goes together, James executes the copy including the binaries.
+binaries go together, James executes the copy including the binaries.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -401,8 +402,8 @@ binaries goes together, James executes the copy including the binaries.
     >>> jblack_browser.getControl('Copy binaries').selected = True
     >>> jblack_browser.getControl("Copy Packages").click()
 
-Not yet, since pmount is still building in hoary there is no binaries
-to be copied.
+But this is also not allowed. Since pmount is still building in hoary,
+there are no binaries to be copied.
 
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
@@ -418,7 +419,7 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_publisher = SoyuzTestPublisher()
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
+    >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
     >>> pmount_binaries = test_publisher.buildAndPublishBinaryForSource(
     ...     pmount_build, binaryname="pmount-bin")
@@ -430,8 +431,8 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
     pmount-bin 0.1-1 in hoary hppa
     pmount-bin 0.1-1 in hoary i386
 
-Binaries published, now James can execute the copy, including
-binaries, and see that it worked.
+The binaries have now been published, so James requests the copy
+including binaries.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -469,7 +470,7 @@ delete-packages interface.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
+    >>> jblack = person_set.getByName('jblack')
     >>> for source in jblack.archive.getPublishedSources():
     ...     source.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
@@ -502,9 +503,8 @@ In the minute after James had deleted the package, he discovered that
 No problem, he goes back to the copy-package interface in his PPA and
 still able to copy the deleted source to the warty series.
 
-In a rush, James makes the mistake to issue the copy without include
-the binaries resulted of the hoary build, which are still published in
-grumpy. An error is raised.
+James mistakenly requests the copy without including the binaries
+resulting from the hoary build, which are still published in grumpy.
 
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print_ppa_packages(jblack_browser.contents)
@@ -522,12 +522,13 @@ grumpy. An error is raised.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already built or building in destination archive)
+    (same version already has published binaries in the destination archive)
 
-Since pmount was once built in his archive, the only alternative it to
-copy the binaries too otherwise a source-only copy would trigger a
-rebuild that will generate binaries that will never be published
-because they will conflict with the ones already in its archive.
+Since pmount was built in his archive, the only alternative is to
+copy the binaries too, otherwise a source-only copy would trigger a
+rebuild.  This rebuild will generate binaries that will never be
+published because they will conflict with the ones already in its
+archive.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -693,8 +694,10 @@ plural error message.
     ...     print msg
     There is 1 error.
     The following sources cannot be copied:
-    iceweasel 1.0 in hoary (same version already built or building in destination archive),
-    pmount 0.1-1 in hoary (same version already built or building in destination archive)
+    iceweasel 1.0 in hoary (same version already has published
+        binaries in the destination archive),
+    pmount 0.1-1 in hoary (same version already has published
+        binaries in the destination archive)
 
 James goes wild and decided to create a new team PPA for his sandbox
 tests.
@@ -814,7 +817,7 @@ deleted files will be re-published in his archive.
     pmount - 0.1-1              Deleted    Hoary            Editors
 
 James is not yet satisfied and to create some fun we will publish
-different varsion of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
+different version of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
 in No Privileges' PPA.
 
     >>> login('foo.bar@canonical.com')
@@ -822,10 +825,10 @@ in No Privileges' PPA.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
-    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> name16 = person_set.getByName('name16')
     >>> test_publisher.person = name16
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl = person_set.getByName('sabdfl')
     >>> sabdfl_foo_src = test_publisher.getPubSource(
     ...     version="1.1", distroseries=hoary, archive=sabdfl.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
@@ -833,7 +836,7 @@ in No Privileges' PPA.
     ...     distroseries=hoary, pub_source=sabdfl_foo_src,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov = person_set.getByName('cprov')
     >>> cprov_foo_src = test_publisher.getPubSource(
     ...     version="1.1", distroseries=hoary, archive=cprov.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
@@ -841,7 +844,7 @@ in No Privileges' PPA.
     ...     distroseries=hoary, pub_source=cprov_foo_src,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv = person_set.getByName('no-priv')
     >>> name16_foo_src = test_publisher.getPubSource(
     ...     version="2.0", distroseries=hoary, archive=no_priv.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
@@ -851,7 +854,6 @@ in No Privileges' PPA.
 
     >>> flush_database_updates()
     >>> logout()
-
 
 Good, now James goes straight to No Privileges' PPA and copies the
 foo_2.0 version to his PPA.
@@ -878,10 +880,10 @@ foo_2.0 version to his PPA.
     foo-bin 2.0 in hoary i386
     foo-bin 2.0 in hoary hppa
 
-James is intrigued if Copy UI will warn him, if he is trying to copy
-packages that are smaller than the ones already published in the
-destination. He gives it a try and go to Celso's PPA and tries to copy
-foo_1.0 to hoary in his PPA.
+James tries to copy some of Celso's packages that are older than
+the ones in his own PPA. He is not allowed top copy these these
+older packages since they would not be published in the destination
+anyway.
 
     >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
@@ -892,7 +894,6 @@ foo_1.0 to hoary in his PPA.
     foo - 1.1                   Published  Hoary            Base
     iceweasel - 1.0 2007-07-09  Published  Warty            Editors
     pmount - 0.1-1  2007-07-09  Published  Warty            Editors
-
 
     >>> foo_pub_id = getPPAPubIDsFor('cprov', 'foo')[0]
     >>> jblack_browser.getControl(
@@ -909,7 +910,7 @@ foo_1.0 to hoary in his PPA.
     (version older than the foo 2.0 in hoary published in hoary)
 
 However if he copies it to another suite is just works (tm) since PPAs
-do not enforce growing versions across suites.
+do not enforce coherent version ordering across suites.
 
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]

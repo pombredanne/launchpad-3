@@ -323,12 +323,15 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "a specific distroseries")
 
     def getPublishedBinaries():
-        """Return all resulted IBinaryPackagePublishingHistory.
+        """Return all resulted `IBinaryPackagePublishingHistory`.
 
         Follow the build record and return every PUBLISHED or PENDING
         binary publishing record for any `DistroArchSeries` in this
         `DistroSeries` and in the same `IArchive` and Pocket, ordered
-        by architecturetag.
+        by architecture tag.
+
+        :return a `SelectResults` pointing to all corresponding publishing
+            records.
         """
 
     def getBuiltBinaries():
@@ -338,7 +341,8 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         record for any `DistroArchSeries` in this `DistroSeries` and in
         the same `IArchive` and Pocket.
 
-        The result is already 'listified'.
+        :return a list containing all unique
+            `IBinaryPackagePublishingHistory`.
         """
 
     def getBuilds():
