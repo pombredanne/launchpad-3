@@ -407,7 +407,8 @@ to push and the rfc822msgid of the comment that we're pushing.
     >>> external_debbugs = TestDebBugs(
     ...     'http://example.com/', {'1234': test_debian_bug})
     >>> external_debbugs.addRemoteComment(
-    ...     '1234', 'Example comment.', '<123456@launchpad.net>')
+    ...     '1234', 'A little fermented curd will do the trick!',
+    ...     '<123456@launchpad.net>')
 
 We can look in the test_emails list for the mail that would have been
 sent.
@@ -425,7 +426,7 @@ sent.
     Subject: Re: Example bug 1234
     Date...
     <BLANKLINE>
-    Example comment.
+    A little fermented curd will do the trick!
 
 
 === Script for importing Debian bugs, linking them to Ubutu ===
