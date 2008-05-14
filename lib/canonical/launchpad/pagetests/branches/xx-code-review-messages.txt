@@ -11,6 +11,7 @@ Set up required objects
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(merge_proposal_url)
     >>> nopriv_browser.getLink('Add comment').click()
+    >>> nopriv_browser.getControl('Subject').value = 'my subject'
     >>> nopriv_browser.getControl('Comment').value = 'my body'
     >>> nopriv_browser.getControl('Add').click()
     >>> message_url = nopriv_browser.url
@@ -25,6 +26,8 @@ Now, open its home page.
     ...     print extract_text(tag)
     >>> print anon_browser.title
     Code review comment
+    >>> print_tag('comment-subject')
+    my subject
     >>> print_tag('comment-body')
     my body
     >>> print_tag('comment-from')
