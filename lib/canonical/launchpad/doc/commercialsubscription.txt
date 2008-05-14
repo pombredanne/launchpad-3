@@ -68,10 +68,11 @@ The start date did not change.
 
     >>> bzr.commercial_subscription.date_starts == old_date_starts
     True
+
+The expiration date has been increased by six months, which can be
+anywhere between 181 days and 184 days, depending on the start date.
+
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
-
-A six month extension is 182 days.
-
-    >>> expiry_diff == timedelta(182)
+    >>> timedelta(181) <= expiry_diff <= timedelta(184)
     True

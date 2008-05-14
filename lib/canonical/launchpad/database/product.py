@@ -9,6 +9,8 @@ __all__ = ['Product', 'ProductSet']
 
 import operator
 import datetime
+from dateutil.relativedelta import relativedelta
+import calendar
 import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -172,12 +174,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
 
         def add_months(start, num_months):
-            """Given a start date find the new date 'num_months' later."""
-            years, months = divmod(num_months, 12)
-            days = int((months / 12.0) * 365)
+            """Given a start date find the new date `num_months` later.
 
-            newdate = start.replace(year=start.year + years)
-            return newdate + datetime.timedelta(days)
+            If the start date day is towards the end of the month and the new
+            month does not have that many days, then the new date will be the
+            last day of the new month.
+            """
+            years, new_month = divmod(start.month + num_months, 12)
+            new_year = start.year + years
+            # If the day is not valid for the new month, make it the last day
+            # of that month, e.g. 20080131 + 1 month = 20080229.
+            weekday, days_in_month = calendar.monthrange(new_year, new_month)
+            new_day = min(days_in_month, start.day)
+            new_date = start.replace(year=new_year,
+                                     month=new_month,
+                                     day=new_day)
+            return new_date
 
         now = datetime.datetime.now(pytz.timezone('UTC'))
         if self.commercial_subscription is None:
@@ -207,26 +219,29 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.purchaser = purchaser
 
     @property
-    def requires_commercial_subscription(self):
+    def _requires_commercial_subscription(self):
+        """Determines whether a commercial subscription is required."""
         other_licenses = (License.OTHER_COMMERCIAL, License.OTHER_OPEN_SOURCE)
         if self.license_approved:
             # The license was manually approved for free hosting.
             return False
-        elif (len(self.licenses) > 0 and self.license_info == ''
-              and not self.licenses.intersection(other_licenses)):
-            # The project has a valid open source license.
+        elif (len(self.licenses) > 0 and
+              self.license_info == '' and
+              len(set(self.licenses).intersection(other_licenses)) == 0):
+            # The project has only valid open source license(s).
             return False
         else:
             return True
 
     @property
     def is_permitted(self):
-        if not self.requires_commercial_subscription:
+        if not self._requires_commercial_subscription:
             # The project qualifies for free hosting.
             return True
+        elif self.commercial_subscription is None:
+            return False
         else:
-            # The project has an active commmercial subscription.
-            return getattr(self.commercial_subscription, 'is_active', False)
+            return self.commercial_subscription.is_active
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
