@@ -329,7 +329,7 @@ overview page.
     >>> user_browser.getControl("Search").click()
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Built
-    foo - 1.0                    Superseded Hoary           Base     i386
+    foo - 1.0                    Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
 presence of 'Built Packages' and the binary filename in the 'Files'
@@ -358,7 +358,7 @@ available for deletion because it contains a PUBLISHED binary.
 
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Built
-    foo - 1.0                    Superseded Hoary           Base     i386
+    foo - 1.0                    Superseded Hoary           Base
 
     >>> details_section = find_tag_by_id(
     ...     user_browser.contents, details_section_id)
@@ -399,7 +399,7 @@ details 'Files' section and the 'Built Packages' section is omitted.
     >>> user_browser.getControl("Search").click()
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Built
-    foo - 1.0                    Deleted    Hoary           Base     i386
+    foo - 1.0                    Deleted    Hoary           Base
 
     >>> details_section = find_tag_by_id(
     ...     user_browser.contents, details_section_id)

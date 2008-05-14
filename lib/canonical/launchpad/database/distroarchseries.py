@@ -161,7 +161,7 @@ class DistroArchSeries(SQLBase):
             clauseTables=['BinaryPackagePublishingHistory',
                           'BinaryPackageName'],
             prejoinClauseTables=["BinaryPackageName"],
-            orderBy=['-rank'],
+            orderBy=['-rank', 'BinaryPackageName.name'],
             distinct=True)
         # import here to avoid circular import problems
         from canonical.launchpad.database import (

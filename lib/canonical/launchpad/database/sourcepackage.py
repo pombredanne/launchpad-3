@@ -259,6 +259,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         packages = self._getPublishingHistory(
             order_by=[SQLConstant(order_const),
                       "SourcePackagePublishingHistory.datepublished"])
+
         return [DistributionSourcePackageRelease(
                 distribution=self.distribution,
                 sourcepackagerelease=package.sourcepackagerelease)
@@ -266,11 +267,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def distinctreleases(self):
-        """Return a distinct list of sourcepackagereleases for this source
-           package.
+        """Return all distinct `SourcePackageReleases` for this sourcepackage.
+
+        The results are ordered by descending version.
         """
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
-        releases = SourcePackageRelease.select('''
+        query = """
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
@@ -278,12 +279,20 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             SourcePackageRelease.sourcepackagename = %s AND
             DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s
-            ''' % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.all_distro_archive_ids),
-            clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
-            #selectAlso="%s" % (SQLConstant(order_const)),
-            orderBy=[SQLConstant(order_const+" DESC")])
-        return releases.distinct()
+        """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.all_distro_archive_ids)
+
+        clauseTables = ['DistroSeries', 'SourcePackagePublishingHistory']
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+
+        # Selecting ordered distinct `SourcePackageReleases` requires us
+        # to 'selectAlso' the ordering index (the debversion_sort_key).
+        releases = SourcePackageRelease.select(
+            query, clauseTables=clauseTables,
+            distinct=True, selectAlso=order_const,
+            orderBy=[SQLConstant(order_const + " DESC")])
+
+        return releases
 
     @property
     def name(self):
