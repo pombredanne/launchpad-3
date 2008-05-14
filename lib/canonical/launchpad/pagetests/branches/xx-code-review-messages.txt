@@ -2,9 +2,11 @@
 
 Let's get us a code review message and canonical_url
 
-    # We need to be admin to add a landing target to a random branch
+    >>> from canonical.launchpad.interfaces import CodeReviewVote
+    >>> # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
-    >>> message = factory.makeCodeReviewMessage('my subject', 'my body')
+    >>> message = factory.makeCodeReviewMessage(
+    ... 'my subject', 'my body', CodeReviewVote.APPROVE)
     >>> message_url = canonical_url(message)
     >>> print message.message.text_contents
     my body
@@ -24,3 +26,5 @@ Now, open its home page.
     my subject
     >>> print_tag('comment-from')
     From Person-name21
+    >>> print_tag('comment-vote')
+    Approve
