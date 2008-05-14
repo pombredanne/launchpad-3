@@ -220,7 +220,8 @@ class IPackageUpload(Interface):
         :return: True if the source was overridden.
         """
 
-    def overrideBinaries(new_component, new_section, new_priority):
+    def overrideBinaries(new_component, new_section, new_priority,
+                         allowed_components):
         """Override all the binaries in a binary queue item.
 
         :param new_component: An IComponent to replace the existing one

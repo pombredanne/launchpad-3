@@ -642,7 +642,7 @@ Anonymous can view all queue items, public and private ones.
 
 A normal user can't act on both of them:
 
-  >>> login('test@canonical.com')
+  >>> login('no-priv@canonical.com')
 
   >>> pub_qitem.setDone()
   Traceback (most recent call last):
@@ -686,6 +686,10 @@ Clear existing mail stack:
 Sources and binaries for the upload may be overridden via the methods
 overrideSource() and overrideBinaries().  The former allows overriding
 of component and section and the latter both those plus the section.
+In addition to these paramters, you must also supply
+"allowed_components", which is a sequence of IComponent.  Any overrides
+must have the existing and new component in this sequence otherwise
+QueueInconsistentStateError is raised.
 
 The alsa-utils source is already in the queue with component "main"
 and section "base".
@@ -698,12 +702,36 @@ and section "base".
     ...     source.sourcepackagerelease.section.name)
     main/base
 
-We can override it to restricted/web.  overrideSource() returns
-True if it completed the task.
+Overriding to a component not in the allowed_components list results in
+an error:
 
     >>> restricted = getUtility(IComponentSet)['restricted']
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> main = getUtility(IComponentSet)['main']
     >>> web = getUtility(ISectionSet)['web']
-    >>> print item.overrideSource(new_component=restricted, new_section=web)
+    >>> print item.overrideSource(
+    ...     new_component=restricted, new_section=web,
+    ...     allowed_components=(universe,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+Allowing "restricted" still won't work because the original component
+is "main":
+
+    >>> print item.overrideSource(
+    ...     new_component=restricted, new_section=web,
+    ...     allowed_components=(restricted,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+Specifying both main and restricted allows the override to restricted/web.
+overrideSource() returns True if it completed the task.
+
+    >>> print item.overrideSource(
+    ...     new_component=restricted, new_section=web,
+    ...     allowed_components=(main,restricted))
     True
     >>> print "%s/%s" % (
     ...     source.sourcepackagerelease.component.name,
@@ -726,7 +754,26 @@ Similarly for binaries:
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
     ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA)
+    ...     new_priority=PackagePublishingPriority.EXTRA,
+    ...     allowed_components=(universe,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA,
+    ...     allowed_components=(restricted,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA,
+    ...     allowed_components=(main,restricted))
     True
     >>> print "%s/%s/%s" % (
     ...     binary_package.component.name,
