@@ -398,19 +398,21 @@ Since DebBugs manages bugs through email interchanges, pushing a comment
 to a remote DebBugs instance is merely a case of sending an email to the
 correct bug thread.
 
-The addRemoteCommentMethod() takes three parameters: The remote bug to
-which we want to push the comment, the body of the comment that we wish
-to push and the rfc822msgid of the comment that we're pushing.
-
     >>> test_debian_bug = TestDebianBug(
     ...     summary="Example bug 1234", package='evolution', id=1234,)
     >>> external_debbugs = TestDebBugs(
     ...     'http://example.com/', {'1234': test_debian_bug})
-    >>> remote_comment_id = external_debbugs.addRemoteComment(
+
+The addRemoteCommentMethod() takes three parameters: The remote bug to
+which we want to push the comment, the body of the comment that we wish
+to push and the rfc822msgid of the comment that we're pushing. It
+returns the ID of the comment on the remote bugtracker, which in this
+case will be the rfc822msgid that gets passed as a parameter.
+
+    >>> external_debbugs.addRemoteComment(
     ...     '1234', 'A little fermented curd will do the trick!',
     ...     '<123456@launchpad.net>')
-    >>> print remote_comment_id
-    <123456@launchpad.net>
+    '<123456@launchpad.net>'
 
 We can look in the test_emails list for the mail that would have been
 sent.

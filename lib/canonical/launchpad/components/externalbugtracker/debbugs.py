@@ -48,8 +48,6 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
-    import_comments = True
-
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
