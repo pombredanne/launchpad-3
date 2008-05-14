@@ -15,7 +15,6 @@ We can upload a mugshot for salgado with PUT.
     HTTP/1.1 200 Ok
     ...
 
-
 Once the mugshot has been uploaded, sending a GET to the web
 service's mugshot URL will result in a redirect to the mugshot on the
 public Internet.
@@ -31,6 +30,8 @@ PUT is also used to modify a mugshot.
     >>> print webservice.put(salgado_mugshot, 'image/png', 'image #2')
     HTTP/1.1 200 Ok
     ...
+
+The new mugshot is available at a different URL.
 
     >>> print webservice.get(salgado_mugshot)
     HTTP/1.1 303 See Other

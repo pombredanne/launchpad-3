@@ -77,7 +77,7 @@ The elements of a collection can be looked up by unique identifier:
     u'http://api.launchpad.dev/beta/~admins/member_memberships'),
    (u'members_collection_link',
       u'http://api.launchpad.dev/beta/~admins/members'),
-   (u'mugshot', None)
+   (u'mugshot_link', u'http://api.launchpad.dev/beta/~admins/mugshot'),
    (u'name', u'admins'),
    (u'self_link', u'http://api.launchpad.dev/beta/~admins'),
    (u'team_memberships_collection_link',

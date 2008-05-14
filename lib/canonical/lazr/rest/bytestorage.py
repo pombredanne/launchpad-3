@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'ByteStorageDeserializer',
+    'ByteStorageMarshaller',
     'ByteStorageResource',
 ]
 
@@ -16,7 +16,7 @@ from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.interfaces import IByteStorageResource
 from canonical.lazr.rest.resource import HTTPResource
-from canonical.lazr.rest.schema import SimpleFieldDeserializer
+from canonical.lazr.rest.schema import SimpleFieldMarshaller
 
 
 class ByteStorageResource(HTTPResource):
@@ -55,9 +55,12 @@ class ByteStorageResource(HTTPResource):
         setattr(self.context.entry, self.context.filename, None)
 
 
-class ByteStorageDeserializer(SimpleFieldDeserializer):
+class ByteStorageMarshaller(SimpleFieldMarshaller):
 
-    def serialize(self, name, entry, bytestorage):
-        """Serialize as a link to the byte storage resource."""
-        return (name + '_link', "%s/%s" % (canonical_url(entry), name))
+    def representationName(self, field_name):
+        return field_name + '_link'
+
+    def unmarshall(self, entry, field_name, bytestorage):
+        """Marshall as a link to the byte storage resource."""
+        return "%s/%s" % (canonical_url(entry.context), field_name)
 
