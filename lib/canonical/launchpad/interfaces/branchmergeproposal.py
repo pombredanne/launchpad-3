@@ -198,6 +198,8 @@ class IBranchMergeProposal(Interface):
     # Cannote use Object as this would cause circular dependencies.
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
+    all_messages = Attribute(
+        _("All messages discussing this merge proposal"))
 
     def getMessage(id):
         pass

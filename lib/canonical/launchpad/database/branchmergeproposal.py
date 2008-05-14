@@ -136,6 +136,10 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    @property
+    def all_messages(self):
+        return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
+
     def getMessage(self, id):
         return CodeReviewMessage.get(id)
 

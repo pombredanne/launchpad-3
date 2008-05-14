@@ -14,7 +14,7 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
-                       votes root_message
+                       votes root_message all_messages
                        isPersonValidReviewer isMergable getMessage
                        getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>

@@ -302,6 +302,28 @@ class TestRootMessage(TestCase):
         self.assertEqual(message3, self.merge_proposal.root_message)
 
 
+class TestMergeProposalAllMessages(TestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+
+    def test_all_messages(self):
+        message1 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+        message2 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+        message3 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+        self.assertEqual(
+            set([message1, message2, message3]),
+            set(self.merge_proposal.all_messages))
+
+
 class TestMergeProposalNotification(TestCase):
     """Test that events are created when merge proposals are manipulated"""
 
