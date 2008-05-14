@@ -94,10 +94,11 @@ for creating old bugs and printing a summary of their state.
     >>> jokosher_bugtask.bug.can_expire
     True
 
-    # A bugtask for a product with a bug watch. Note that this bugtask
-    # has otherwise the same parameters as jokosher_bugtask. The 
-    # bugwatch prevents expiration, hence this bigtask will not appear
-    # in the listings of expirable bugtasks below.
+A bugtask for a product with a bug watch. Note that this bugtask
+has otherwise the same parameters as jokosher_bugtask. The 
+bugwatch prevents expiration, hence this bugtask will not appear
+in the listings of expirable bugtasks below.
+
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
     >>> jokosher_bugtask_watched = create_old_bug('jokosher watched', 
