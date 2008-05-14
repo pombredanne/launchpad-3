@@ -185,7 +185,7 @@
            <td colspan="2" style="vertical-align: bottom">
              <input
                tal:condition="view/state/enumvalue:REJECTED"
-               disabled value="Reject" name="Reject" type="submit"/>
+               disabled="true" value="Reject" name="Reject" type="submit"/>
              <input
                tal:condition="not:view/state/enumvalue:REJECTED"
                value="Reject" name="Reject" type="submit"/>
