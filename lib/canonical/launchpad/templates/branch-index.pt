@@ -212,11 +212,11 @@
           </p>
         </tal:last-successful>
 
-        <tal:has-results condition="view/last_code_import_result">
+        <div id="import-results" tal:condition="view/last_code_import_result">
           <tal:result repeat="result view/latest_code_import_results">
             <metal:result use-macro="code_import/@@+macros/show_result"/>
           </tal:result>
-        </tal:has-results>
+        </div>
 
         <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>

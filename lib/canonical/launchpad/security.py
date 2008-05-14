@@ -930,16 +930,6 @@ class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportResultSet
 
 
-class SeeCodeImportResult(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportResult.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportResult
-
-
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 

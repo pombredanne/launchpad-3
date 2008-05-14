@@ -8,8 +8,7 @@
   <!-- CodeImportResult -->
 
   <content class="canonical.launchpad.database.CodeImportResult">
-    <require
-      permission="launchpad.View"
+    <allow
       interface="canonical.launchpad.interfaces.ICodeImportResult"
       />
   </content>

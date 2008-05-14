@@ -1,0 +1,19 @@
+= Code import results =
+
+Information about the last ten import runs for a code import are shown
+on the branch index page with the other code import details.
+
+    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    ...     make_all_result_types)
+    >>> factory = LaunchpadObjectFactory()
+    >>> code_import = factory.makeCodeImport()
+    >>> make_all_result_types(code_import, factory)
+    >>> branch_url = canonical_url(code_import.branch)
+    >>> logout()
+
+
+
+    >>> browser.open(branch_url)
+    >>> import_results = find_tag_by_id(browser.contents, 'import-results')
+    >>> print extract_text(import_results)

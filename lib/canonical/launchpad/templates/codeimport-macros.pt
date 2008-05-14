@@ -8,9 +8,9 @@
     Expects a parameter called 'result'.
   </tal:comment>
 
-  <img href="/@@/yes" tal:condition="result/status/enumvalue:SUCCESS"
+  <img src="/@@/yes" tal:condition="result/status/enumvalue:SUCCESS"
        title="Success"/>
-  <img href="/@@/no" tal:condition="result/status/enumvalue:SUCCESS"
+  <img src="/@@/no" tal:condition="not: result/status/enumvalue:SUCCESS"
        tal:attributes="title result/status/title"/>
   Import started
   <tal:when replace="result/date_job_started/fmt:displaydate">
