@@ -12,3 +12,4 @@ from canonical.launchpad.webapp import (
 
 class CodeReviewMessageView(LaunchpadView):
     """Standard view of a CodeReviewMessage"""
+    __used_for__ = ICodeReviewMessage

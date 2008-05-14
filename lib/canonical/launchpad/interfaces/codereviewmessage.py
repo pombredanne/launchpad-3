@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Object, Choice, Int
+from zope.schema import Object, Choice, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -58,3 +58,5 @@ class ICodeReviewMessage(Interface):
 
     vote = Choice(
         title=_('Reviewer says'), required=False, vocabulary=CodeReviewVote)
+
+    title = TextLine()
