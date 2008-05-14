@@ -28,8 +28,7 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import (
-    flush_database_updates, flush_database_caches)
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
@@ -311,7 +310,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         It's called after deletions to eliminate the just-deleted records
         from the widget presented.
         """
-        flush_database_updates()
         flush_database_caches()
         self.form_fields = self.form_fields.omit('selected_sources')
         self.form_fields = (
