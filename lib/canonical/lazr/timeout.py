@@ -35,7 +35,10 @@ class TimeoutError(Exception):
 
 
 class ThreadCapturingResult(Thread):
-    """Thread subclass that saves the return value of its target."""
+    """Thread subclass that saves the return value of its target.
+
+    It also saves potential exception.
+    """
 
     def __init__(self, target, args, kwargs, **opt):
         super(ThreadCapturingResult, self).__init__(**opt)
@@ -45,7 +48,13 @@ class ThreadCapturingResult(Thread):
 
     def run(self):
         """See `Thread`."""
-        self.result = self.target(*self.args, **self.kwargs)
+        try:
+            self.result = self.target(*self.args, **self.kwargs)
+        except (SystemExit, KeyboardInterrupt):
+            # Don't trap those.
+            raise
+        except Exception:
+            self.exc_info = sys.exc_info()
 
 
 class DefaultTimeout:
@@ -103,6 +112,11 @@ class with_timeout:
                     else:
                         self.cleanup()
                 raise TimeoutError("timeout exceeded.")
+            if getattr(t, 'exc_info', None) is not None:
+                exc_info = t.exc_info
+                # Remove the cyclic reference for faster GC.
+                del t.exc_info
+                raise exc_info[0], exc_info[1], exc_info[2]
             return t.result
 
         return call_with_timeout

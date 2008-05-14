@@ -30,6 +30,16 @@ is raised.
     ...
     TimeoutError: timeout exceeded.
 
+Other exceptions are reported correctly to the caller though:
+
+    >>> @with_timeout(timeout=0.5)
+    ... def call_with_error():
+    ...     raise Exception("This exception will be raised in the caller.")
+    >>> call_with_error()
+    Traceback (most recent call last):
+      ...
+    Exception: This exception will be raised in the caller.
+
 
 == Cleaning up timed out operation ==
 
@@ -147,3 +157,6 @@ the number of seconds to wait.
 
     # Reset default socket timeout.
     >>> socket.setdefaulttimeout(old_timeout)
+
+    # Reset the default timeout function.
+    >>> set_default_timeout_function(None)
