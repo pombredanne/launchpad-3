@@ -6,7 +6,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Text, Choice
+from zope.schema import Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import CodeReviewVote, ICodeReviewMessage
@@ -25,16 +25,16 @@ class CodeReviewMessageView(LaunchpadView):
 
 class IEditCodeReviewMessage(Interface):
 
-    subject = Text(
+    vote = Choice(
+        title=_('Vote'), required=False, vocabulary=CodeReviewVote)
+
+    subject = TextLine(
         title=_('Subject'), required=False, description=_(
         "This will be rendered as help text"))
 
     comment = Text(
         title=_('Comment'), required=False, description=_(
         "This will be rendered as help text"))
-
-    vote = Choice(
-        title=_('Vote'), required=False, vocabulary=CodeReviewVote)
 
 
 class CodeReviewMessageAddView(LaunchpadFormView):
