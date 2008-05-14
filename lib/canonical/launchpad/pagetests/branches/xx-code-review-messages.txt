@@ -33,7 +33,7 @@ Now, open its home page.
     >>> print_tag('comment-body')
     my body
     >>> print_tag('comment-from')
-    From No Privileges Person
+    No Privileges Person
     >>> print_tag('comment-vote')
     Approve
 
