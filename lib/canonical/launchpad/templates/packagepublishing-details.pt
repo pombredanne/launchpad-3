@@ -41,7 +41,17 @@
                   archive source/upload_archive;
                   series source/upload_distroseries;
                   distro series/distribution;
-                  message string:${distro/name} ${series/name} in ${archive/title}"
+                  message string:${distro/name} ${series/name} in "
+          replace="message" />
+        <a tal:condition="source/upload_archive/is_ppa"
+           tal:define="source context/sourcepackagerelease"
+           tal:attributes="href source/upload_archive/fmt:url"
+           tal:content="source/upload_archive/title" />
+        <tal:message
+          condition="not:source/upload_archive/is_ppa"
+          define="source context/sourcepackagerelease;
+                  archive source/upload_archive;
+                  message string:${archive/title}"
           replace="message" />
       </tal:source_original_location>
       <tal:binary_build_location condition="view/is_binary">

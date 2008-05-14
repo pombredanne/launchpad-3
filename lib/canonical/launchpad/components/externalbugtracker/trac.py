@@ -221,7 +221,7 @@ class Trac(ExternalBugTracker):
             except KeyError:
                 # Some Trac instances don't include the bug status in their
                 # CSV exports. In those cases we raise a error.
-                raise UnknownRemoteStatusError()
+                raise UnknownRemoteStatusError('Status not exported.')
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.
@@ -253,7 +253,7 @@ class Trac(ExternalBugTracker):
         try:
             return status_map[remote_status]
         except KeyError:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
 
 
 def needs_authentication(func):
@@ -337,7 +337,7 @@ class TracLPPlugin(Trac):
         time_zone, local_time, utc_time = server.launchpad.time_snapshot()
         # Return the UTC time, so we don't have to care about the time
         # zone for now.
-        trac_time = datetime.fromtimestamp(utc_time)
+        trac_time = datetime.utcfromtimestamp(utc_time)
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
 
     @needs_authentication

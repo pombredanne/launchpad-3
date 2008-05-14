@@ -489,6 +489,6 @@ class Mantis(ExternalBugTracker):
                 # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
-        raise UnknownRemoteStatusError()
+        raise UnknownRemoteStatusError(status_and_resolution)
 
 

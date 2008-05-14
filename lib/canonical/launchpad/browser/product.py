@@ -1266,8 +1266,8 @@ class ProductBranchListingView(BranchListingView):
     @property
     def branch_count(self):
         """The number of total branches the user can see."""
-        return getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user).count()
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
@@ -1304,7 +1304,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
+            'sort_by': BranchListingSort.DEFAULT,
             }
 
     @cachedproperty
@@ -1392,8 +1392,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user,
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
@@ -1466,7 +1466,19 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 class ProductBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
 
-    def _branches(self, lifecycle_status):
-        return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+    def initialize(self):
+        """Conditionally redirect to the default view.
 
+        If the branch listing requests the default listing, redirect to the
+        default view for the product.
+        """
+        ProductBranchListingView.initialize(self)
+        if self.sort_by == BranchListingSort.DEFAULT:
+            self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.LIFECYCLE,
+            }

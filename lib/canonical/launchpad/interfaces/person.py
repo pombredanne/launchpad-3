@@ -59,6 +59,7 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
@@ -532,7 +533,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     ircnicknames = Attribute("List of IRC nicknames of this Person.")
     jabberids = Attribute("List of Jabber IDs of this Person.")
     branches = Attribute(
-        "All branches related to this persion. They might be registered, "
+        "All branches related to this person. They might be registered, "
         "authored or subscribed by this person.")
     authored_branches = Attribute("The branches whose author is this person.")
     registered_branches = Attribute(
@@ -598,18 +599,19 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
-            vocabulary='ValidTeamOwner'))
+            vocabulary='ValidTeamOwner'),
+        exported_as='team_owner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
         title=_('Team Description'), required=False, readonly=False,
         description=_('Use plain text; URLs will be linkified'))
 
-    preferredemail = TextLine(
-        title=_("Preferred Email Address"),
+    preferredemail = Object(
+        title=_("Preferred email address"), readonly=True,
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
-        readonly=True)
+        schema=IEmailAddress)
 
     safe_email_or_blank = TextLine(
         title=_("Safe email for display"),
@@ -1517,7 +1519,6 @@ class IPersonSet(Interface):
         """
 
     @collection_default_content()
-    @export_operation_as('find')
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
@@ -1769,3 +1770,10 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+# Can't import IPerson in interfaces/teammembership.py, so we need to do this
+# here.
+ITeamMembership['team'].schema = IPerson
+ITeamMembership['person'].schema = IPerson
+ITeamMembership['last_changed_by'].schema = IPerson
