@@ -73,13 +73,21 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir):
             FatLocalTransport(urlutils.local_path_to_url('.')))
         self.sftp_server = TransportSFTPServer(transport)
 
+    def test_createEmptyFile(self):
+        # Opening a file with create flags and then closing it will create a
+        # new, empty file.
+        handle = self.sftp_server.openFile('foo', filetransfer.FXF_CREAT, {})
+        deferred = handle.close()
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('', 'foo'))
+
     def test_writeChunk(self):
         # writeChunk writes data to the file.
         handle = self.sftp_server.openFile('foo', 0, {})
-        handle.writeChunk(0, 'bar')
-        handle.close()
-        self.failUnlessExists('foo')
-        self.assertFileEqual('bar', 'foo')
+        deferred = handle.writeChunk(0, 'bar')
+        deferred.addCallback(lambda ignored: handle.close())
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('bar', 'foo'))
 
     def test_writeChunkError(self):
         # Errors in writeChunk are translated to SFTPErrors.

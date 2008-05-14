@@ -87,13 +87,26 @@ class TransportSFTPFile:
 
     implements(ISFTPFile)
 
-    def __init__(self, transport, name):
+    def __init__(self, transport, name, flags):
         self.name = name
         self.transport = transport
+        self._should_create = TransportSFTPFile._shouldCreate(flags)
+        self._written = False
+
+    @staticmethod
+    def _shouldCreate(flags):
+        if flags & filetransfer.FXF_WRITE == filetransfer.FXF_WRITE:
+            return True
+        if flags & filetransfer.FXF_APPEND == filetransfer.FXF_APPEND:
+            return True
+        if flags & filetransfer.FXF_CREAT == filetransfer.FXF_CREAT:
+            return True
+        return False
 
     @with_sftp_error
     def writeChunk(self, offset, data):
         """See `ISFTPFile`."""
+        self._written = True
         return self.transport.writeChunk(self.name, offset, data)
 
     @with_sftp_error
@@ -140,7 +153,8 @@ class TransportSFTPFile:
 
     def close(self):
         """See `ISFTPFile`."""
-        pass
+        if not self._written and self._should_create:
+            return self.transport.put_bytes(self.name, '')
 
 
 def _get_transport_for_dir(directory):
@@ -211,7 +225,7 @@ class TransportSFTPServer:
 
     def openFile(self, path, flags, attrs):
         """See `ISFTPServer`."""
-        return TransportSFTPFile(self.transport, path)
+        return TransportSFTPFile(self.transport, path, flags)
 
     def readLink(self, path):
         """See `ISFTPServer`."""
