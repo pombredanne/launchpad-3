@@ -255,19 +255,6 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
-    def _sendEmail(self, from_addr, to_addr, subject, body, rfc822msgid):
-        """Send an email to the remote DebBugs instance.
-
-        We implement this here for the purposes of testing. Really, it's
-        just a wrapper around simple_sendmail.
-        """
-        headers = {'Message-Id': rfc822msgid}
-
-        # We str()ify to_addr since simple_sendmail expects ASCII
-        # strings and gets awfully upset when it gets a unicode one.
-        simple_sendmail(
-            from_addr, [str(to_addr)], subject, body, headers=headers)
-
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.
 
@@ -281,6 +268,11 @@ class DebBugs(ExternalBugTracker):
         host_name = urlsplit(self.baseurl)[1]
         to_addr = "%s@%s" % (remote_bug, host_name)
 
-        self._sendEmail(
-            'debbugs@bugs.launchpad.net', to_addr, subject, comment_body,
-            rfc822msgid)
+        headers = {'Message-Id': rfc822msgid}
+
+        # We str()ify to_addr since simple_sendmail expects ASCII
+        # strings and gets awfully upset when it gets a unicode one.
+        simple_sendmail(
+            'debbugs@bugs.launchpad.net', [str(to_addr)], subject,
+            comment_body, headers=headers)
+
