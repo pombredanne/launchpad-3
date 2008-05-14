@@ -15,7 +15,8 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
+    BzrCommandError, LockFailed, NotBranchError, PermissionDenied,
+    TransportNotPossible)
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
@@ -594,7 +595,7 @@ class SmartserverTests(SSHTestCase):
         # unit tests).
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         error = self.assertTransportRaises(
-            TransportNotPossible,
+            PermissionDenied,
             self.push, self.local_branch_path, remote_url)
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
