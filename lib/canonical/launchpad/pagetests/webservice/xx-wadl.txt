@@ -479,9 +479,9 @@ The 'find' custom operation accepts one parameter in addition to
 Now let's look at how the service root WADL describes entry
 resources.
 
-    >>> sorted([entry_tuple[0].attrib['id']
-    ...         for entry_tuple in entry_resource_descriptions])
-    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntry']
+    >>> sorted([entry[0].attrib['id']
+    ...         for entry in entry_resource_descriptions])
+    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntryAdapter']
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.

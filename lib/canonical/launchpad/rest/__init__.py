@@ -6,4 +6,3 @@
 from canonical.launchpad.rest.bug import *
 from canonical.launchpad.rest.bugtask import *
 from canonical.launchpad.rest.messagetarget import *
-from canonical.launchpad.rest.teammembership import *
