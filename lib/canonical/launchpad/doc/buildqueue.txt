@@ -306,8 +306,8 @@ Moving up to the UPDATES pocket will bump the score up by another 1500.
     >>> na_bqe.lastscore
     5505
 
-And placing the build in the SECURITY pocket will push its score up by
-another 1500.
+Finally, placing the build in the SECURITY pocket will push its score
+up by another 1500.
 
     >>> na_build.pocket = PackagePublishingPocket.SECURITY
     >>> syncUpdate(na_build)
