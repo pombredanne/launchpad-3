@@ -10,13 +10,14 @@ summary of the matching launchpad.net pages.
 The GoogleSearchService implements the ISearchService.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface import verifyObject
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ISearchService
-    >>> from canonical.launchpad.utilities import GoogleSearchService
 
     >>> google_search = getUtility(ISearchService)
     >>> verifyObject(ISearchService, google_search)
     True
+    >>> google_search
+    <...GoogleSearchService ...>
 
 
 === search() ===
@@ -29,7 +30,7 @@ entered in Google search form; the terms should not be escaped.
 
     >>> all_page_matches = google_search.search(terms='svg +bugs')
     >>> all_page_matches
-    <PageMatches ...>
+    <...PageMatches ...>
 
 
 The start parameter sets the number of first match (index from 0) of the
@@ -37,7 +38,7 @@ list of page matches.
 
     >>> sliced_page_matches = google_search.search(terms='bug', start=20)
     >>> sliced_page_matches
-    <PageMatches ...>
+    <...PageMatches ...>
 
 
 == PageMatches ==
@@ -82,24 +83,25 @@ An item can be retrieved from an ISearchResults object using its
 index. An items index is relative to its the search results length.
 All the items in the collection can be iterated.
 
-    >>> sliced_page_match[1]
+    >>> sliced_page_matches[1]
     <PageMatch url='http://bugs.launchpad.dev/debian'>
 
     >>> for page_match in all_page_matches:
     ...     page_match
-    <PageMatch url='http://bugs.launchpad.dev/'>
-    <PageMatch url='http://bugs.launchpad.dev/debian'>
-    <PageMatch url='http://bugs.launchpad.dev/debian/+source/mozilla-firefox'>
-    <PageMatch url='http://bugs.launchpad.dev/firefox/+bug/1'> ...
+    <...PageMatch url='http://bugs.launchpad.dev/'>
+    <...PageMatch url='http://bugs.launchpad.dev/debian'>
+    <...PageMatch url='http://bugs.launchpad.dev/debian/+source/mozilla-firefox'>
+    <...PageMatch url='http://bugs.launchpad.dev/firefox/+bug/1'> ...
 
 
 == PageMatch ==
 
 The PageMatch object represents a single result from a search result
-set. It is created by passing a title, url, and a description. It is
+set. It is created by passing a title, url, and a summary. It is
 an implementation of ISearchResult.
 
     >>> from canonical.launchpad.interfaces import ISearchResult
+    >>> from canonical.launchpad.utilities.searchservice import PageMatch
 
     >>> page_match = PageMatch(
     ...     u'Unicode Titles in Launchpad',
@@ -109,18 +111,20 @@ an implementation of ISearchResult.
     >>> verifyObject(ISearchResult, page_match)
     True
 
-The title and description attributes contain the same text that
+The title and summary attributes contain the same text that
 initialised the object.
 
     >>> page_match.title
     u'Unicode Titles in Launchpad'
-    >>> page_match.description
+    >>> page_match.summary
     u'Unicode Titles is a modest project dedicated to using Unicode.'
 
 The URL's domain is rewitten to the so that links from launchpad.net are
 mapped to the local environment.
 
-    >>> config.vhost.mainsite
+    >>> from canonical.config import config
+
+    >>> config.vhost.mainsite.hostname
     'launchpad.dev'
     >>> page_match.url
     'http://launchpad.dev/unicode-titles'
@@ -129,13 +133,25 @@ mapped to the local environment.
 == Search configuration ==
 
 The google search service is configured by the google section in
-lazr.config.
+lazr.config. All requests are made to Google's site, but the
+configuration may set a testing site.
 
-    >>> from canonical.config import config
+    >>> from canonical.launchpad.utilities.searchservice import (
+    ...     GoogleSearchService)
+
+    >>> google_search = GoogleSearchService()
+    >>> config.google.site == google_search.site
+    True
+    >>> google_search.site
+    'http://launchpad.dev:8091/'
+
+The client_id is the client-id issued by Google for
+the GoogleSearchService to connect to the Custom Search Buiness
+Edition service.
 
     >>> config.google.client_id == google_search.client_id
     True
-    >>> google_search.client_id:
+    >>> google_search.client_id
     'zxcasdqwertyfghvbn'
 
 Several default query parameters are constant. They are kept in the
@@ -156,16 +172,8 @@ time of the search.
     num : 20
     oe : 'utf8'
     output : 'xml_no_dtd'
-    start : 0
     q : None
-
-All requests are made to Google's site, bug the configuration may
-set a testing site.
-
-    >>> config.google.site == google_search.site
-    True
-    >>> google_search.site
-    'http://www.google.com/'
+    start : 0
 
 
 == create_search_url() ==
@@ -174,29 +182,32 @@ The search url used inside the search() method is created by
 create_search_url(). It accepts two optional arguments: terms and start.
 An error is raised if any of the parameters are None.
 
-    >>> google_search.create_search_url()
+    >>> google_search.create_search_url('')
     Traceback (most recent call last):
      ...
-    GoogleParamError: Parameters cannot be None: terms.
+    GoogleParamError: Parameters must have values: q.
+
+    >>> google_search.create_search_url(None)
+    Traceback (most recent call last):
+     ...
+    GoogleParamError: Parameters must have values: q.
 
 The term parameter in this example can be defined by passing the term
 argument to the method. The argument is http quoted and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs')
-    'http://www.google.com/as_rq=launchpad.net&client=google-csbe...
-    ...client-id=zxcasdqwertyfghvbn&ie=utf8&num=20&oe=utf8...
-    ...output=xml_no_dtd&start=0&q=svg%20%2bbugs'
+    'http://launchpad.dev:8091/?as_rq=launchpad.net&client=google-csbe&client-id=zxcasdqwertyfghvbn&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=svg+%2Bbugs&start=0'
 
 Unicode characters are escaped correctly in the google request URL.
 
-    >>>  google_search.create_search_url(terms=u'Carlos Perell\xf3 Mar\xedn')
-    u'http://www.google.com/...start=20&q=Carlos+Perell%C3%B3+Mar%C3%ADn'
+    >>> google_search.create_search_url(terms=u'Carlos Perell\xf3 Mar\xedn')
+    'http://launchpad.dev:8091/...q=Carlos+Perell%C3%B3+Mar%C3%ADn&start=0'
 
 The start parameter can be changed by passing a start int argument.
 
     >>> google_search.create_search_url(terms='svg +bugs', start=20)
-    'http://www.google.com/...start=20&q=svg%20%2bbugs'
+    'http://launchpad.dev:8091/...q=svg+%2Bbugs&start=20'
 
 
 === URL rewriting ===
@@ -215,12 +226,14 @@ help.launchpad.net is only run in one environment, so links to that
 site will be preserved.
 
     >>> config.google.url_rewrite_exceptions
+    'help.launchpad.net'
+    >>> another_page_match.url_rewrite_exceptions
     ['help.launchpad.net']
 
     >>> another_page_match = PageMatch(
-    ...     u'Launchpad help',
-    ...     'https://help.launchpad.net/',
-    ...     u'Launchpad rocks.')
+    ...     u'OpenId',
+    ...     'https://help.launchpad.net/OpenID',
+    ...     u'Launchpad uses OpenID.')
     >>> another_page_match.url
-    http://help.launchpad.dev/
+    http://help.launchpad.net/OpenID
 

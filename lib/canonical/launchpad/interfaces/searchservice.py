@@ -10,22 +10,23 @@ __all__ = [
     'ISearchResults',
     'ISearchService',
     'GoogleParamError',
+    'GoogleWrongGSPVersion',
     ]
 
 from zope.interface import Interface, Attribute
 
 
-class ISearchResult:
+class ISearchResult(Interface):
     """An item that matches a search query."""
 
     title = Attribute('The title of the item.')
     url = Attribute('The full URL of the item.')
-    description = Attribute(
-        'A description of the item, possibly with information about why '
+    summary = Attribute(
+        'A summary of the item, possibly with information about why '
         'the item is considered to be a valid result for a search.')
 
 
-class ISearchResults:
+class ISearchResults(Interface):
     """A collection of `ISearchResult` items that match a search query."""
 
     total = Attribute('The total number of items that matched a search.')
@@ -45,10 +46,14 @@ class ISearchResults:
 
 
 class GoogleParamError(ValueError):
-    """Raise when a Google search parameter has a bad value."""
+    """Raised when a Google search parameter has a bad value."""
 
 
-class ISearchService:
+class GoogleWrongGSPVersion(ValueError):
+    """Raised when the content is not parsable Google Search Protocol XML."""
+
+
+class ISearchService(Interface):
     """A service that can return an `ISearchResults` for a query."""
 
     def search(terms, start=0):

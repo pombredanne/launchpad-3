@@ -1,0 +1,19 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope">
+
+  <class
+    class="canonical.launchpad.utilities.PageMatch">
+    <allow attributes="title url summary" />
+  </class>
+
+  <class
+    class="canonical.launchpad.utilities.PageMatches">
+    <allow attributes="start total __len__ __getitem__ __iter__" />
+  </class>
+
+  <securedutility
+    class="canonical.launchpad.utilities.GoogleSearchService"
+    provides="canonical.launchpad.interfaces.ISearchService">
+    <allow interface="canonical.launchpad.interfaces.ISearchService" />
+  </securedutility>
+</configure>
