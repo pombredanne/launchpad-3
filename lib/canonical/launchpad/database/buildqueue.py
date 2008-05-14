@@ -191,7 +191,7 @@ class BuildQueue(SQLBase):
 
             # Private builds get uber score.
             if self.build.archive.private:
-                score += 1000
+                score += 10000
 
         # Store current score value.
         self.lastscore = score
