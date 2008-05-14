@@ -400,6 +400,7 @@ class BugWatchUpdater(object):
             self.warning(
                 "Comment importing supported, but server time can't be"
                 " trusted. No comments will be imported.")
+
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:

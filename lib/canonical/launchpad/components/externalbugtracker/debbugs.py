@@ -48,6 +48,8 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
+    push_comments = True
+
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
@@ -262,7 +264,11 @@ class DebBugs(ExternalBugTracker):
         just a wrapper around simple_sendmail.
         """
         headers = {'Message-Id': rfc822msgid}
-        simple_sendmail(from_addr, [to_addr], subject, body, headers=headers)
+
+        # We str()ify to_addr since simple_sendmail expects ASCII
+        # strings and gets awfully upset when it gets a unicode one.
+        simple_sendmail(
+            from_addr, [str(to_addr)], subject, body, headers=headers)
 
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.
