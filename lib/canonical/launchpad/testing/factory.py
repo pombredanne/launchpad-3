@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
+    CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
@@ -445,9 +446,11 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         if hostname is None:
             hostname = self.getUniqueString('machine-')
-        machine = getUtility(ICodeImportMachineSet).new(hostname)
         if set_online:
-            machine.setOnline()
+            state = CodeImportMachineState.ONLINE
+        else:
+            state = CodeImportMachineState.OFFLINE
+        machine = getUtility(ICodeImportMachineSet).new(hostname, state)
         return machine
 
     def makeCodeImportResult(self, code_import=None, result_status=None,

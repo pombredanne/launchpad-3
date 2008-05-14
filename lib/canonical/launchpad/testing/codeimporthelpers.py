@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
     IBranchSet
@@ -96,6 +97,7 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
     if code_import.import_job.state != CodeImportJobState.RUNNING:
         machine = factory.makeCodeImportMachine(set_online=True)
         CodeImportJobWorkflow().startJob(code_import.import_job, machine)
+        sync(code_import.import_job)
 
     CodeImportJobWorkflow().finishJob(code_import.import_job, status, None)
 

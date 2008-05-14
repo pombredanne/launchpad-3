@@ -72,6 +72,19 @@
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
+    <!--
+    XXX flacoste 2008/05/09 bug=185958:
+    Ideally, we would use webservice_error() to register the view,
+    but cyclic imports prevents us from doing so. This should be fixed once we
+    move webapp stuff into LAZR.
+    -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+        type="canonical.launchpad.layers.WebServiceLayer"
+        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        name="index.html"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.rest.IBugEntry"
@@ -82,42 +95,6 @@
         for="canonical.launchpad.interfaces.IMaloneApplication"
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.BugCollection"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.rest.IPersonEntry"
-        factory="canonical.launchpad.rest.PersonEntry"
-        />
-
-    <adapter
-       for="canonical.launchpad.interfaces.IPerson
-            canonical.lazr.interfaces.rest.WebServiceLayer"
-       provides="canonical.lazr.interfaces.IResourceGETOperation"
-       factory="canonical.launchpad.rest.GetMembersByStatusOperation"
-       name="members_by_status"
-       />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IResourceGETOperation"
-        factory="canonical.launchpad.rest.GetPeopleOperation"
-        name="people"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
-        factory="canonical.launchpad.rest.PersonFactoryOperation"
-        name="create_person"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.ITeamMembership"
-        provides="canonical.launchpad.rest.ITeamMembershipEntry"
-        factory="canonical.launchpad.rest.TeamMembershipEntry"
         />
 
     <adapter
