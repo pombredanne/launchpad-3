@@ -29,8 +29,7 @@ BuildQueue entries.
 
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (
-    ...     PackagePublishingPocket, PackagePublishingStatus,
-    ...     SourcePackageUrgency)
+    ...     PackagePublishingStatus, SourcePackageUrgency)
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
