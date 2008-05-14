@@ -23,7 +23,7 @@ projects.""",
     license     = 'LGPLv2.1 or later',
     url         = 'https://help.launchpad.net/API/launchpadlib',
     download_url= 'https://launchpad.net/launchpadlib/+download',
-    packages    = find_packages()
+    packages    = find_packages(),
     include_package_data = True,
     zip_safe    = True,
     setup_requires = [

@@ -1,15 +1,29 @@
-Storm is an Object Relational Mapper for Python.
+Copyright (C) 2008 Canonical Ltd
 
-API docs, a manual, and a tutorial are available from
-http://storm.canonical.com/
+launchpadlib is a standalone Python library for scripting Launchpad through
+its web services interface.  It is the officially supported bindings to the
+Launchpad web service, but there may be third party bindings that provide
+scriptability for other languages.
 
-To run the tests, execute "./test" in the toplevel directory.  You
-will need to set the environment variables STORM_MYSQL_URI and
-STORM_POSTGRES_URI in order to run the full suite, including
-backend-specific tests. For example::
+For information on Launchpad itself, see
 
-  $ export STORM_MYSQL_URI=mysql:storm_tests
-  $ export STORM_POSTGRES_URI=postgres:storm_tests
-  $ ./test
-  Running unittests...
+    https://help.launchpad.net
 
+Launchpad is available at
+
+    https://launchpad.net
+
+More information on the Launchpad web service is available at
+
+    https://help.launchpad.net/API
+
+API documentation for launchpadlib, users guides and more is available at
+
+    https://help.launchpad.net/API/launchpadlib
+
+Please submit bug reports to
+
+    https://bugs.launchpad.net/launchpadlib
+
+launchpadlib is distributed under the terms of the GNU Lesser General Public
+License, version 2.1 or later.  See the LICENSE file for details.
