@@ -153,7 +153,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
-        "DistroComponentUploader records associated with this distribution."))
+        "ArchivePermission records for uploaders with rights to upload to "
+        "this distribution."))
 
     # properties
     currentseries = Attribute(

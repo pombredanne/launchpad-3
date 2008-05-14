@@ -3778,6 +3778,7 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
+    no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
@@ -3785,7 +3786,7 @@ class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
     @property
     def branch_search_context(self):
@@ -3798,7 +3799,7 @@ class PersonOwnedBranchesView(BranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
     @property
     def branch_search_context(self):
@@ -3811,6 +3812,7 @@ class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):
