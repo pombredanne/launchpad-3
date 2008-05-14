@@ -15,7 +15,6 @@ __all__ = []
 
 
 import os
-import sys
 import unittest
 import launchpadlib
 
