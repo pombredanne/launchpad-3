@@ -1,9 +1,11 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <content class="canonical.launchpad.database.Account">
-        <allow interface="canonical.launchpad.interfaces.IAccount" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IAccount" />
+        <require
+            permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IAccount" />
     </content>
 

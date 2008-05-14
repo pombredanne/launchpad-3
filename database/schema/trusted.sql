@@ -882,3 +882,16 @@ $$;
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugMessage maintaining the Bug.message_count column';
 
+
+CREATE OR REPLACE FUNCTION set_date_status_set() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.status <> NEW.status THEN
+        NEW.date_status_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION set_date_status_set() IS 'BEFORE UPDATE trigger on Account that maintains the Account.date_status_set column.';

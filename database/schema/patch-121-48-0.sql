@@ -27,11 +27,17 @@ CREATE TABLE Account (
     );
 
 INSERT INTO Account(
-    id, person, date_created, creation_rationale, status,
+    id, person, date_created, creation_rationale, status, date_status_set,
     status_comment, openid_identifier, displayname)
 SELECT id, id, datecreated, COALESCE(creation_rationale, 0),
-    account_status, account_status_comment, openid_identifier, displayname
+    account_status, datecreated, account_status_comment,
+    openid_identifier, displayname
     FROM Person WHERE account_status <> 10; -- Not 'No account'
+
+
+-- Add a trigger to update the date_status_set on status change
+CREATE TRIGGER set_date_status_set_t BEFORE UPDATE ON Account
+FOR EACH ROW EXECUTE PROCEDURE set_date_status_set();
 
 
 --

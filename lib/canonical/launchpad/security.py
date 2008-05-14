@@ -1,4 +1,3 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Security policies for using content objects.
 
 """
@@ -27,7 +26,7 @@ from canonical.launchpad.interfaces import (
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+    PersonVisibility, IAccount)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -63,6 +62,27 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditAccount(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IAccount
+
+    def checkAuthenticated(self, user):
+        # XXX: This is wrong as we need to give an Account rather than a
+        # Person ability to edit an account. -- StuartBishop 20080514
+        return ((self.obj.person is not None
+                    and user.id == self.obj.person.id)
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
+
+class ViewAccount(EditAccount):
+    permission = 'launchpad.View'
+    def checkAuthenticated(self, user):
+        return ((self.obj.person is not None
+                    and user.id == self.obj.person.id)
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
 
 
 class EditOAuthAccessToken(AuthorizationBase):

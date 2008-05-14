@@ -51,6 +51,11 @@ class Account(SQLBase):
 
     password = property(_get_password, _set_password)
 
+    def _set_status(self, value):
+        """Update date_status_set when status is updated."""
+        self._SO_set_status(value)
+        self.sync()
+
 
 class AccountSet:
     implements(IAccountSet)

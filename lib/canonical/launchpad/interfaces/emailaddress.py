@@ -15,7 +15,7 @@ from zope.schema import Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IAccount
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.lazr import DBEnumeratedType, DBItem
 
 

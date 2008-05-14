@@ -26,7 +26,6 @@ from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
-
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
@@ -153,6 +152,18 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self._SO_set_name(value)
 
     displayname = StringCol(dbName='displayname', notNull=True)
+
+    def _set_displayname(self, value):
+        """Update any related Account.displayname
+
+        We can't do this in a DB trigger as soon the Account table will
+        in a seperate database to the Person table.
+        """
+        account = getUtility(IAccountSet).getByPerson(self)
+        if account is not None:
+            account.displayname = value
+        self._SO_set_displayname(value)
+
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
@@ -171,7 +182,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return account.openid_identifier
 
     def _get_password(self):
-        account = getUtility(IAccountSet).getByPerson(self)
+        # We have to remove the security proxy because the password is
+        # needed before we are authenticated. I'm not overly worried because
+        # this method is scheduled for demolition -- StuartBishop 20080514
+        account = removeSecurityProxy(
+                getUtility(IAccountSet).getByPerson(self))
         if account is not None:
             return account.password
 

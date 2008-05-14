@@ -3,77 +3,94 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
->>> login('test@canonical.com')
 >>> from canonical.launchpad.interfaces import (
 ...     IAccount, IAccountSet, AccountStatus, AccountCreationRationale)
 
 Accounts are generally looked up by email address
 
+>>> login('no-priv@canonical.com')
 >>> account_set = getUtility(IAccountSet)
->>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
->>> IAccount.providedBy(stub_account)
+>>> account = account_set.getByEmail('no-priv@canonical.com')
+>>> IAccount.providedBy(account)
 True
 >>> print account_set.getByEmail('invalid@whatever')
 None
 
 
+Only admins or the person attached to an account can see or edit Account
+details. This is obviously wrong, as the account should have access rather
+than the (optional) attached person. This involves more surgery to
+Launchpad's security systems.
+
+>>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
+>>> stub_account.date_created
+Traceback (most recent call last):
+...
+Unauthorized...
+>>> del stub_account
+
+
 An Account may be linked to a Person record
 
 >>> from canonical.launchpad.interfaces import IPerson
->>> IPerson.providedBy(stub_account.person)
+>>> IPerson.providedBy(account.person)
 True
->>> stub_account.person.name
-u'stub'
+>>> account.person.name
+u'no-priv'
 
 
 An Account has an encrypted password and an OpenID identifier used to generate
 the OpenID identity URL
 
->>> stub_account.password
-u'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx'
->>> stub_account.openid_identifier
-u'stub_oid'
+>>> account.password
+u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+>>> account.openid_identifier
+u'no-priv_oid'
 
 
 And other account metadata
 
->>> stub_account.date_created
+>>> account.date_created
 datetime.datetime(...)
->>> stub_account.creation_rationale == (
+>>> account.creation_rationale == (
 ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD)
 True
->>> stub_account.status == AccountStatus.ACTIVE
+>>> account.status == AccountStatus.ACTIVE
 True
->>> stub_account.date_status_set >= stub_account.date_created
+>>> account.date_status_set >= account.date_created
 True
->>> print stub_account.status_comment
+>>> print account.status_comment
 None
->>> stub_account.displayname
-u'Stuart Bishop'
+>>> account.displayname
+u'No Privileges Person'
 
 
 When the status is changed, the date_status_set is updated
 
->>> original_date_status_set = stub_account.date_status_set
->>> stub_account.status = AccountStatus.SUSPENDED
->>> stub_account.date_status_set > original_date_status_set
+>>> original_date_status_set = account.date_status_set
+>>> account.status = AccountStatus.SUSPENDED
+>>> account.date_status_set > original_date_status_set
 True
->>> stub_account.status = AccountStatus.ACTIVE
+>>> account.status = AccountStatus.ACTIVE
 
 
 The Account's displayname is synced to the Person's displayname if there is
 one. If the Person.displayname is changed, the Account.displayname is changed
 too.
 
->>> stub_account.person.displayname = 'Something New'
->>> stub_account.displayname
-'Something New'
+>>> account.person.displayname = 'Something New'
+>>> account.displayname
+u'Something New'
 
 However, the reverse is not true. If we change the Account.displayname,
 the linked Person.displayname (if there is one) is not updated immediately.
 Instead, a cron job will sync this information later. This allows displayname
 changes to happen even when the Person table is unavailable.
 
->>> stub_account.displayname = 'Stuart Bishop'
->>> stub_account.person.displayname
-'Something New'
+>>> account.displayname = 'No Privileges Account'
+>>> account.person.displayname
+u'Something New'
+>>> account.person.displayname = 'No Privileges Person'
+>>> account.displayname
+u'No Privileges Person'
+
