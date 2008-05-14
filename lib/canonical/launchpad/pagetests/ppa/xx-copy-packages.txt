@@ -165,6 +165,7 @@ The page section id is built using "pub$ID" notation.
     >>> print extract_text(pmount_details)
     Publishing details
       Published on 2007-07-09
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -249,6 +250,7 @@ context.
     ...     jblack_browser.contents, pmount_details_id)
     >>> print extract_text(pmount_details)
     Publishing details
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -259,6 +261,15 @@ context.
       i386
     Files
       No files published for this package.
+
+The package was copied from the primary archive and not from a PPA.
+Hence the archive's title does not link back to the source archive
+(as would be the case with a source PPA).
+
+    >>> jblack_browser.getLink("Primary Archive for Ubuntu Linux")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 James quickly goes to the build page and confirms for himself that the
 build created during the copy is ready to be dispatched.

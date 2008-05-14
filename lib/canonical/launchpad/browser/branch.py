@@ -13,6 +13,7 @@ __all__ = [
     'BranchDeletionView',
     'BranchEditView',
     'BranchEditWhiteboardView',
+    'BranchRequestImportView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -27,7 +28,8 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.component import getUtility
+from zope.app.traversing.interfaces import IPathAdapter
+from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
@@ -46,6 +48,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
     BranchType,
     BranchVisibilityRule,
+    CodeImportJobState,
     IBranch,
     IBranchMergeProposal,
     IBranchSet,
@@ -53,6 +56,7 @@ from canonical.launchpad.interfaces import (
     IBugBranch,
     IBugSet,
     ICodeImportSet,
+    ICodeImportJobWorkflow,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
     IPersonSet,
@@ -302,28 +306,14 @@ class BranchView(LaunchpadView, FeedsMixin):
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
         if self.user_can_download():
-            return self.context.getBzrDownloadURL()
-        else:
-            return None
-
-    def bzr_user_download_url(self):
-        """Return the specific URL for the user to download the branch."""
-        if self.user_can_download():
-            return self.context.getBzrDownloadURL(self.user)
+            return self.context.bzr_identity
         else:
             return None
 
     def bzr_upload_url(self):
         """Return the generic URL for uploading the branch."""
         if self.user_can_upload():
-            return self.context.getBzrUploadURL()
-        else:
-            return None
-
-    def bzr_user_upload_url(self):
-        """Return the specific URL for the user to upload to the branch."""
-        if self.user_can_upload():
-            return self.context.getBzrUploadURL(self.user)
+            return self.context.bzr_identity
         else:
             return None
 
@@ -439,14 +429,19 @@ class BranchNameValidationMixin:
         if not getUtility(IBranchSet).isBranchNameAvailable(
             owner, product, branch_name):
             # There is a branch that has the branch_name specified already.
+            if owner == self.user:
+                prefix = "You already have"
+            else:
+                prefix = "%s already has" % cgi.escape(owner.displayname)
+
             if product is None:
                 message = (
-                    "You already have a junk branch called <em>%s</em>."
-                    % branch_name)
+                    "%s a junk branch called <em>%s</em>."
+                    % (prefix, branch_name))
             else:
                 message = (
-                    "There is already a branch for <em>%s</em> called "
-                    "<em>%s</em>." % (product.name, branch_name))
+                    "%s a branch for <em>%s</em> called "
+                    "<em>%s</em>." % (prefix, product.name, branch_name))
             self.setFieldError('name', structured(message))
 
 
@@ -714,10 +709,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
             # Only validate if the name has changed, or the product has
-            # changed.
+            # changed, or the owner has changed.
             if ((data['product'] != self.context.product) or
-                (data['name'] != self.context.name)):
-                self.validate_branch_name(self.context.owner,
+                (data['name'] != self.context.name) or
+                (owner != self.context.owner)):
+                self.validate_branch_name(owner,
                                           data['product'],
                                           data['name'])
 
@@ -796,11 +792,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             product.displayname)
 
     def validate(self, data):
+        owner = data['owner']
         if 'name' in data:
             self.validate_branch_name(
-                self.user, data.get('product'), data['name'])
+                owner, data.get('product'), data['name'])
 
-        owner = data['owner']
         if not self.user.inTeam(owner):
             self.setFieldError(
                 'owner',
@@ -1009,3 +1005,52 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'dependent_branch',
                     "The dependent branch must belong to the same project "
                     "as the source branch.")
+
+
+class BranchRequestImportView(LaunchpadFormView):
+    """The view to provide an 'Import now' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is being actively imported and where there is a import scheduled at
+    some point in the future.
+    """
+
+    schema = IBranch
+    field_names = []
+
+    form_style = "display: inline"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Import Now', name='request')
+    def request_import_action(self, action, data):
+        if self.context.code_import.import_job is None:
+            self.request.response.addNotification(
+                "This import is no longer being updated automatically.")
+        elif self.context.code_import.import_job.state != \
+                 CodeImportJobState.PENDING:
+            assert self.context.code_import.import_job.state == \
+                   CodeImportJobState.RUNNING
+            self.request.response.addNotification(
+                "The import is already running.")
+        elif self.context.code_import.import_job.requesting_user is not None:
+            user = self.context.code_import.import_job.requesting_user
+            adapter = queryAdapter(user, IPathAdapter, 'fmt')
+            self.request.response.addNotification(
+                structured("The import has already been requested by %s." %
+                           adapter.link('')))
+        else:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.context.code_import.import_job, self.user)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "request%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/@@+request-import" % canonical_url(self.context)

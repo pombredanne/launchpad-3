@@ -56,11 +56,11 @@
         permission="launchpad.AnyPerson"
         attributes="addSubscription addBugSubscription
                     removeBugSubscription" />
-    <!-- IHasBugcontact -->
-    <allow attributes="bugcontact" />
+    <!-- IHasBugSupervisor -->
+    <allow attributes="bug_supervisor" />
     <require
         permission="launchpad.Edit"
-        attributes="setBugContact" />
+        attributes="setBugSupervisor" />
   </content>
 
   <browser:menus
@@ -324,10 +324,6 @@
       name="+milestones"
       facet="overview"
       template="../templates/object-milestones.pt"
-      />
-    <browser:page
-      name="+portlet-uploaders"
-      template="../templates/distribution-portlet-uploaders.pt"
       />
     <browser:page
       name="+portlet-bounties"

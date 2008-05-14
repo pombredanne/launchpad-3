@@ -13,8 +13,11 @@ __all__ = [
     'SourcePackagePublishingHistory',
     ]
 
-from warnings import warn
+
+from datetime import datetime
 import os
+import pytz
+from warnings import warn
 
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
@@ -361,6 +364,11 @@ class ArchivePublisherBase:
         current.status = PackagePublishingStatus.OBSOLETE
         current.scheduleddeletiondate = UTC_NOW
         return current
+
+    @property
+    def age(self):
+        """See `IArchivePublisher`."""
+        return datetime.now(pytz.timezone('UTC')) - self.datecreated
 
 
 class IndexStanzaFields:

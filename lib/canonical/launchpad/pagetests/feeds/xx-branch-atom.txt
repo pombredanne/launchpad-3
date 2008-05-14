@@ -6,11 +6,38 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
     >>> from canonical.launchpad.ftests.feeds_helper import (
-    ...     parse_entries, parse_ids, parse_links, validate_feed)
+    ...     parse_ids, parse_links, validate_feed)
 
-Login as the Sample Person.
+== Create some specific branches to use for this test ==
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.testing import (
+    ...     LaunchpadObjectFactory, time_counter)
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> factory = LaunchpadObjectFactory()
+    >>> date_generator = time_counter(
+    ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
+    >>> def make_branch(owner, product, name):
+    ...     global factory, date_generator
+    ...     factory.makeBranch(name=name, product=product,
+    ...         owner=owner, date_created=date_generator.next())
+    >>> mike = factory.makePerson(name='mike', displayname='Mike Murphy')
+    >>> mary = factory.makePerson(name='mary', displayname='Mary Murphy')
+    >>> project = factory.makeProject(name='oh-man', displayname='Oh Man')
+    >>> product1 = factory.makeProduct(
+    ...     name='fooix', project=project, displayname="Fooix")
+    >>> product2 = factory.makeProduct(
+    ...     name='fooey', project=project, displayname="Fooey")
+    >>> make_branch(mike, product1, 'first')
+    >>> make_branch(mike, product2, 'second')
+    >>> make_branch(mike, product1, 'third')
+    >>> make_branch(mike, product2, 'fourth')
+    >>> make_branch(mary, product1, 'fifth')
+    >>> make_branch(mary, product2, 'sixth')
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> logout()
 
 
 == Feed for a person's branches ==
@@ -18,59 +45,52 @@ Login as the Sample Person.
 The feed for a person's branches will show the most recent 25 branches
 which will include an entry for each branch.
 
-    >>> browser.open('http://feeds.launchpad.dev/~name12/branches.atom')
-    >>> validate_feed(browser.contents,
-    ...              browser.headers['content-type'], browser.url)
+    >>> anon_browser.open('http://feeds.launchpad.dev/~mike/branches.atom')
+    >>> def validate_browser_feed(browser):
+    ...     validate_feed(
+    ...         browser.contents, browser.headers['content-type'], browser.url)
+    >>> validate_browser_feed(anon_browser)
     No Errors
-    >>> BSS(browser.contents).title.contents
-    [u'Branches for Sample Person']
-    >>> ids = parse_ids(browser.contents)
-    >>> for id_ in ids:
-    ...     print id_
-    <id>tag:launchpad.net,2005-06-06:/code/~name12</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/firefox/main</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/2.6</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/main</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/klingon</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~launchpad/gnome-terminal/launchpad</id>
-    <id>tag:launchpad.net,2007-03-16:/code/~name12/gnome-terminal/mirrored</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/pushed</id>
-    <id>tag:launchpad.net,2007-03-16:/code/~name12/gnome-terminal/scanned</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.dev</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.contrib</id>
+    >>> BSS(anon_browser.contents).title.contents
+    [u'Branches for Mike Murphy']
+    >>> def print_parse_ids(browser):
+    ...     for id in parse_ids(browser.contents):
+    ...         print id
+
+Ignore the date associated with the id of 'mike' as this is the date created
+of the person, which will be different each time the test is run.
+
+    >>> print_parse_ids(anon_browser)
+    <id>tag:launchpad.net,...:/code/~mike</id>
+    <id>tag:launchpad.net,2007-12-04:/code/~mike/fooey/fourth</id>
+    <id>tag:launchpad.net,2007-12-03:/code/~mike/fooix/third</id>
+    <id>tag:launchpad.net,2007-12-02:/code/~mike/fooey/second</id>
+    <id>tag:launchpad.net,2007-12-01:/code/~mike/fooix/first</id>
 
 Ensure the self link is correct and there is only one.
 
-    >>> links = parse_links(browser.contents, rel="self")
-    >>> for link in links:
-    ...     print link
-    <link rel="self" href="http://feeds.launchpad.dev/~name12/branches.atom" />
+    >>> def print_parse_links(browser):
+    ...     for link in parse_links(browser.contents, rel="self"):
+    ...         print link
+    >>> print_parse_links(anon_browser)
+    <link rel="self" href="http://feeds.launchpad.dev/~mike/branches.atom" />
 
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.
 
     >>> strainer = SoupStrainer('updated')
-    >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
+    >>> updated_dates = [extract_text(tag) for tag in BSS(anon_browser.contents,
     ...                  parseOnlyThese=strainer)]
     >>> feed_updated = updated_dates[0]
     >>> entry_dates = sorted(updated_dates[1:], reverse=True)
     >>> assert feed_updated == entry_dates[0], (
     ...     "Feed <update> value is not the same as latest entry.")
 
-Even though we are logged in, all access via feeds.launchpad.dev are
-forced to be anonymous, so the owner's email is hidden:
-
-    >>> 'foo@localhost' in browser.contents
-    False
-    >>> 'email address hidden' in browser.contents
-    True
-
 If an anonymous user fetches the same feed the email addresses will
 still be hidden:
 
     >>> anon_browser.open('http://feeds.launchpad.dev/~name12/branches.atom')
-    >>> validate_feed(anon_browser.contents,
-    ...              anon_browser.headers['content-type'], anon_browser.url)
+    >>> validate_browser_feed(anon_browser)
     No Errors
     >>> BSS(anon_browser.contents).title.contents
     [u'Branches for Sample Person']
@@ -82,28 +102,26 @@ still be hidden:
 If a branch is marked private it will not be displayed.  The Landscape
 developers team has two branches which are both private.
 
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/~landscape-developers')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
     ...     print row.first('img').get('title')
-    ~name12/landscape/feature-x  New  ...
+    lp://dev/~name12/landscape/feature-x  New  ...
     Private
-    ~landscape-developers/landscape/trunk  New  ...
+    lp://dev/~landscape-developers/landscape/trunk  New  ...
     Private
 
 If we look at the feed for landscape developers there will be no
 branches listed, just an id for the feed.
 
     >>> browser.open('http://feeds.launchpad.dev/~landscape-developers/branches.atom')
-    >>> validate_feed(browser.contents,
-    ...              browser.headers['content-type'], browser.url)
+    >>> validate_browser_feed(browser)
     No Errors
     >>> BSS(browser.contents).title.contents
     [u'Branches for Landscape Developers']
-    >>> ids = parse_ids(browser.contents)
-    >>> for id_ in ids:
-    ...     print id_
+    >>> print_parse_ids(browser)
     <id>tag:launchpad.net,2006-07-11:/code/~landscape-developers</id>
 
 
@@ -112,32 +130,25 @@ branches listed, just an id for the feed.
 The feed for a product's branches will show the most recent 25 branches
 which will include an entry for each branch.
 
-    >>> browser.open('http://feeds.launchpad.dev/firefox/branches.atom')
-    >>> validate_feed(browser.contents,
-    ...              browser.headers['content-type'], browser.url)
+    >>> anon_browser.open('http://feeds.launchpad.dev/fooix/branches.atom')
+    >>> validate_browser_feed(anon_browser)
     No Errors
-    >>> BSS(browser.contents).title.contents
-    [u'Branches for Mozilla Firefox']
-    >>> ids = parse_ids(browser.contents)
-    >>> for id_ in ids:
-    ...     print id_
-    <id>tag:launchpad.net,2004-09-24:/code/firefox</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/firefox/main</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release--0.9.1</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.8</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9.2</id>
+    >>> BSS(anon_browser.contents).title.contents
+    [u'Branches for Fooix']
+    >>> print_parse_ids(anon_browser)
+    <id>tag:launchpad.net,...:/code/fooix</id>
+    <id>tag:launchpad.net,2007-12-05:/code/~mary/fooix/fifth</id>
+    <id>tag:launchpad.net,2007-12-03:/code/~mike/fooix/third</id>
+    <id>tag:launchpad.net,2007-12-01:/code/~mike/fooix/first</id>
 
-    >>> links = parse_links(browser.contents, rel="self")
-    >>> for link in links:
-    ...     print link
-    <link rel="self" href="http://feeds.launchpad.dev/firefox/branches.atom" />
+    >>> print_parse_links(anon_browser)
+    <link rel="self" href="http://feeds.launchpad.dev/fooix/branches.atom" />
 
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.
 
     >>> strainer = SoupStrainer('updated')
-    >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
+    >>> updated_dates = [extract_text(tag) for tag in BSS(anon_browser.contents,
     ...                  parseOnlyThese=strainer)]
     >>> feed_updated = updated_dates[0]
     >>> entry_dates = sorted(updated_dates[1:], reverse=True)
@@ -150,33 +161,28 @@ updated field in all of the entries.
 The feed for a project's branches will show the most recent 25 branches
 which will include an entry for each branch.
 
-    >>> browser.open('http://feeds.launchpad.dev/mozilla/branches.atom')
-    >>> validate_feed(browser.contents,
-    ...              browser.headers['content-type'], browser.url)
+    >>> anon_browser.open('http://feeds.launchpad.dev/oh-man/branches.atom')
+    >>> validate_browser_feed(anon_browser)
     No Errors
-    >>> BSS(browser.contents).title.contents
-    [u'Branches for the Mozilla Project']
-    >>> ids = parse_ids(browser.contents)
-    >>> for id_ in ids:
-    ...     print id_
-    <id>tag:launchpad.net,2004-09-24:/code/mozilla</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/firefox/main</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release--0.9.1</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.8</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9.2</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~stevea/thunderbird/main</id>
+    >>> BSS(anon_browser.contents).title.contents
+    [u'Branches for Oh Man']
+    >>> print_parse_ids(anon_browser)
+    <id>tag:launchpad.net,...:/code/oh-man</id>
+    <id>tag:launchpad.net,2007-12-06:/code/~mary/fooey/sixth</id>
+    <id>tag:launchpad.net,2007-12-05:/code/~mary/fooix/fifth</id>
+    <id>tag:launchpad.net,2007-12-04:/code/~mike/fooey/fourth</id>
+    <id>tag:launchpad.net,2007-12-03:/code/~mike/fooix/third</id>
+    <id>tag:launchpad.net,2007-12-02:/code/~mike/fooey/second</id>
+    <id>tag:launchpad.net,2007-12-01:/code/~mike/fooix/first</id>
 
-    >>> links = parse_links(browser.contents, rel="self")
-    >>> for link in links:
-    ...     print link
-    <link rel="self" href="http://feeds.launchpad.dev/mozilla/branches.atom" />
+    >>> print_parse_links(anon_browser)
+    <link rel="self" href="http://feeds.launchpad.dev/oh-man/branches.atom" />
 
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.
 
     >>> strainer = SoupStrainer('updated')
-    >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
+    >>> updated_dates = [extract_text(tag) for tag in BSS(anon_browser.contents,
     ...                  parseOnlyThese=strainer)]
     >>> feed_updated = updated_dates[0]
     >>> entry_dates = sorted(updated_dates[1:], reverse=True)
@@ -208,12 +214,14 @@ own <id>, which in the case of a single branch feed will be identical.
     ...     print id_
     <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release--0.9.1</id>
     <id>tag:launchpad.net,2005-03-09:/code/~sabdfl/firefox/release--0.9.1/revision/1</id>
-    >>> links = parse_links(browser.contents, rel="self")
-    >>> for link in links:
-    ...     print link
+    >>> print_parse_links(browser)
     <link rel="self" href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom" />
     >>> strainer = SoupStrainer('updated')
     >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
     ...                  parseOnlyThese=strainer)]
-    >>> assert updated_dates[0] == updated_dates[1]
-    ...     "Feed <update> value is not the same as latest entry.")
+
+The update date for the entire feed (updated_dates[0]) must be equal
+to the update_date of the first entry in the feed (updated_dates[1]).
+
+    >>> updated_dates[0] == updated_dates[1]
+    True

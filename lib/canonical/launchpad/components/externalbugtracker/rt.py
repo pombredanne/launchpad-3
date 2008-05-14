@@ -211,5 +211,5 @@ class RequestTracker(ExternalBugTracker):
             remote_status = remote_status.lower()
             return status_map[remote_status]
         except KeyError:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
 

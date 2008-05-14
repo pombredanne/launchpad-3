@@ -132,6 +132,21 @@ def uploadQueueSetUp(test):
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
+def uploaderBugsSetUp(test):
+    """Set up a test suite using the 'uploader' db user.
+
+    Some aspects of the bug tracker are being used by the Soyuz uploader.
+    In order to test that these functions work as expected from the uploader,
+    we run them using the same db user used by the uploader.
+    """
+    test_dbuser = config.uploader.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+def uploaderBugsTearDown(test):
+    logout()
+
 def uploadQueueTearDown(test):
     logout()
 
@@ -371,6 +386,18 @@ special = {
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+     'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
             layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
@@ -439,10 +466,22 @@ special = {
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'bug-set-status.txt-uploader': LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
             '../doc/closing-bugs-from-changelogs.txt',
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
+            '../doc/closing-bugs-from-changelogs.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'bugtask-expiration.txt': LayeredDocFileSuite(
@@ -548,6 +587,13 @@ special = {
     'externalbugtracker-comment-imports.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-comment-imports.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-comment-pushing.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-pushing.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
@@ -710,6 +756,11 @@ special = {
             setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
             layer=LaunchpadZopelessLayer,
             ),
+    'standing.txt': LayeredDocFileSuite(
+            '../doc/standing.txt',
+            layer=LaunchpadZopelessLayer,
+            setUp=setUp, tearDown=tearDown,
+            ),
     }
 
 
@@ -737,12 +788,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
-    ]
+        ]
 
     doctests_with_logging = [
         'incomingmail.txt',
         'spec-mail-exploder.txt'
-    ]
+        ]
 
     @classmethod
     def addTestsToSpecial(cls):
@@ -794,9 +845,7 @@ def test_suite():
     suite = unittest.TestSuite()
 
     # Add special needs tests
-    keys = special.keys()
-    keys.sort()
-    for key in keys:
+    for key in sorted(special):
         special_suite = special[key]
         suite.addTest(special_suite)
 

@@ -136,8 +136,11 @@ class BugEmailCommand(EmailCommand):
                 filealias=filealias,
                 parsed_message=parsed_msg)
             if message.text_contents.strip() == '':
+                # The report for a new bug must contain an affects command,
+                # since the bug must have at least one task
                 raise EmailProcessingError(
-                    get_error_message('no-affects-target-on-submit.txt'))
+                    get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
 
             params = CreateBugParams(
                 msg=message, title=message.title,
@@ -748,9 +751,9 @@ class MilestoneEmailCommand(EditEmailCommand):
         # database class.
 
         pillar = bugtask.pillar
-        bugcontact = pillar.bugcontact
-        if user is not None and bugcontact is not None:
-            if user.inTeam(bugcontact):
+        bug_supervisor = pillar.bug_supervisor
+        if user is not None and bug_supervisor is not None:
+            if user.inTeam(bug_supervisor):
                 return True
         return check_permission("launchpad.Edit", pillar)
 
