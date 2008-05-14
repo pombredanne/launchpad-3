@@ -438,13 +438,13 @@ class LaunchpadObjectFactory:
             requesting_user, log_excerpt, log_file=None, status=status,
             date_job_started=started)
 
-    def makeCodeReviewMessage(self, subject=None, body=None):
+    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
         if subject is None:
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
         return self.makeBranchMergeProposal().createMessage(
-            self.makePerson(), subject, body)
+            self.makePerson(), subject, body, vote)
 
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):
