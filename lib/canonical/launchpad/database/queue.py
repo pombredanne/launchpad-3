@@ -876,7 +876,7 @@ class PackageUpload(SQLBase):
                 # The old or the new component is not in the list of
                 # allowed components to override.
                 raise QueueInconsistentStateError(
-                    "No rights to override from/to %s/%s" % (
+                    "No rights to override from %s to %s" % (
                         source.sourcepackagerelease.component.name,
                         new_component.name))
             source.sourcepackagerelease.override(
@@ -902,7 +902,7 @@ class PackageUpload(SQLBase):
                     # The old or the new component is not in the list of
                     # allowed components to override.
                     raise QueueInconsistentStateError(
-                        "No rights to override from/to %s/%s" % (
+                        "No rights to override from %s to %s" % (
                             binarypackage.component.name,
                             new_component.name))
                 binarypackage.override(
