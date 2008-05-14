@@ -11,7 +11,7 @@ outside the Launchpad development environment.
 """
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['test_suite']
 
 
 import os
