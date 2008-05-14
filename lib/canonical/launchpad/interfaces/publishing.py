@@ -336,32 +336,23 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         The builds are ordered by `DistroArchSeries.architecturetag`.
         """
 
-    def createMissingBuilds(ignore_pas=False, logger=None):
+    def createMissingBuilds(architectures_available=None, pas_verify=None,
+                            logger=None):
         """Create missing Build records for a published source.
 
-        P-a-s should be only initialised and considered when accepting
-        sources to the PRIMARY archive (in drescher). It explicitly ignores
-        P-a-s for sources targeted to PPAs.
+        P-a-s should be used when accepting sources to the PRIMARY archive
+        (in drescher). It explicitly ignores given P-a-s for sources
+        targeted to PPAs.
 
-        :param ignore_pas: whether or not to initialise and respect
-             Package-architecture-specific (P-a-s) for creating builds;
+        :param architectures_available: options list of `DistroArchSeries`
+            that should be considered for build creation; if not given
+            it will be calculated in place, all architectures for the
+            context distroseries with available chroot.
+        :param pas_verify: optional Package-architecture-specific (P-a-s)
+            object, to be used, when convinient, for creating builds;
         :param logger: optional context Logger object (used on DEBUG level).
 
         :return: a list of `Builds` created for this source publication.
-        """
-
-    def createMissingBuildForArchitecture(arch, logger=None):
-        """Create a build for a given architecture if it doesn't exist yet.
-
-        `createMissingBuilds` uses this method internally and deals with
-        P-a-s and calculates the active architectures in a proper way.
-
-        This method was encapsulated and made public only to be used in
-        queue-builder due to performance issues. All the other callsites
-        should use `createMissingBuilds` because simpler and safer.
-
-        Return the just-created `IBuild` record already scored or None
-        if a suitable build is already present.
         """
 
     def getSourceAndBinaryLibraryFiles():

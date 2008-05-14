@@ -23,8 +23,6 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
-from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -494,31 +492,35 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
 
-    def createMissingBuilds(self, ignore_pas=False, logger=None):
+    def createMissingBuilds(self, architectures_available=None,
+                            pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA or ignore_pas:
+        if self.archive.purpose == ArchivePurpose.PPA:
             pas_verify = None
-        else:
-            pas_verify = BuildDaemonPackagesArchSpecific(
-                config.builddmaster.root, self.distroseries)
 
-        architectures_available = [
-            arch for arch in self.distroseries.architectures
-            if arch.getPocketChroot() is not None]
+        if architectures_available is None:
+            architectures_available = [
+                arch for arch in self.distroseries.architectures
+                if arch.getPocketChroot() is not None]
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)
 
         builds = []
         for arch in build_architectures:
-            build_candidate = self.createMissingBuildForArchitecture(
+            build_candidate = self._createMissingBuildForArchitecture(
                 arch, logger=logger)
             if build_candidate is not None:
                 builds.append(build_candidate)
+
         return builds
 
-    def createMissingBuildForArchitecture(self, arch, logger=None):
-        """See `ISourcePackagePublishingHistory`."""
+    def _createMissingBuildForArchitecture(self, arch, logger=None):
+        """Create a build for a given architecture if it doesn't exist yet.
+
+        Return the just-created `IBuild` record already scored or None
+        if a suitable build is already present.
+        """
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 

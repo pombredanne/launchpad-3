@@ -236,17 +236,18 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            build_archs = determineArchitecturesToBuild(
-                pubrec, architectures_available, distroseries, pas_verify)
-            for arch in build_archs:
-                build = pubrec.createMissingBuildForArchitecture(arch)
-                if build is None:
-                    continue
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures_available,
+                pas_verify=pas_verify, logger=None)
+            if len(builds) == 0:
+                continue
+            self.commit()
+            for build in builds:
                 self._logger.debug(
                     "Created %s [%d] in %s (%d)" % (
                         build.title, build.id, build.archive.title,
                         build.buildqueue_record.lastscore))
-                self.commit()
+
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
