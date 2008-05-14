@@ -506,15 +506,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 self.request.response.setStatus(400)
                 return ("You didn't specify a value for the attribute '%s'."
                         % repr_name)
-        # XXX: self._applyChanges() may raise ComponentLookupError, which is a
-        # subclass of NotFoundError.  If we propagate it up the chain the
-        # client will end up with a 404 response, which is definitely not what
-        # we want.
-        try:
-            return self._applyChanges(changeset)
-        except Exception, e:
-            #import pdb; pdb.set_trace()
-            raise
+        return self._applyChanges(changeset)
 
     def do_PATCH(self, media_type, representation):
         """Apply a JSON patch to the entry."""
@@ -587,9 +579,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
-            except Exception, e:
-                #import pdb; pdb.set_trace()
-                raise
 
             if (IObject.providedBy(element)
                 and not ICollectionField.providedBy(element)):
