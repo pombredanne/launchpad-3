@@ -412,8 +412,7 @@ can override this for the purposes of testing.
 
 The addRemoteCommentMethod() takes three parameters: The remote bug to
 which we want to push the comment, the body of the comment that we wish
-to push and the rfc822msgid of the comment that we're pushing. The
-method 
+to push and the rfc822msgid of the comment that we're pushing.
 
     >>> test_debian_bug = TestDebianBug(
     ...     summary="Example bug 1234", package='evolution', id=1234,)

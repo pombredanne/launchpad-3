@@ -385,10 +385,16 @@ class BugWatchUpdater(object):
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
         non_modified_bugs = set(remote_ids).difference(remote_ids_to_check)
+
+        # Whether we can import and / or push comments is determined on
+        # a per-bugtracker-type level.
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.import_comments)
-        can_push_comments = ISupportsCommentPushing.providedBy(remotesystem)
+        can_push_comments = (
+            ISupportsCommentPushing.providedBy(remotesystem) and
+            remotesystem.push_comments)
+
         if can_import_comments and server_time is None:
             can_import_comments = False
             self.warning(
