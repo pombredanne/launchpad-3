@@ -48,6 +48,8 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
+    import_comments = True
+
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
@@ -272,7 +274,12 @@ class DebBugs(ExternalBugTracker):
 
         # We str()ify to_addr since simple_sendmail expects ASCII
         # strings and gets awfully upset when it gets a unicode one.
-        simple_sendmail(
+        sent_msg_id = simple_sendmail(
             'debbugs@bugs.launchpad.net', [str(to_addr)], subject,
             comment_body, headers=headers)
 
+        # We add angle-brackets to the sent_msg_id because
+        # simple_sendmail strips them out. We want to remain consistent
+        # with debbugs, which uses angle-brackets in its message IDS (as
+        # does Launchpad).
+        return "<%s>" % sent_msg_id

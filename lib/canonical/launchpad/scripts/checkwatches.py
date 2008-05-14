@@ -638,10 +638,14 @@ class BugWatchUpdater(object):
                 formatted_comment = self._formatRemoteComment(
                     external_bugtracker, bug_watch, message)
 
-                bug_message.remote_comment_id = (
+                remote_comment_id = (
                     external_bugtracker.addRemoteComment(
                         bug_watch.remotebug, formatted_comment,
                         message.rfc822msgid))
+
+                assert remote_comment_id is not None, (
+                    "A remote_comment_id must be specified.")
+                bug_message.remote_comment_id = remote_comment_id
 
                 pushed_comments += 1
 
