@@ -46,6 +46,7 @@ We can reply to a comment.
     True
     >>> nopriv_browser.getControl('Subject').value = 'Subjects are nice.'
     >>> nopriv_browser.getControl('Comment').value = 'I like this'
+    >>> nopriv_browser.getControl('Vote').displayValue = ['Abstain']
     >>> nopriv_browser.getControl('Add').click()
 
 After this, we are taken to the view page for that comment.
@@ -54,3 +55,5 @@ After this, we are taken to the view page for that comment.
     Subjects are nice.
     >>> print_tag('comment-body', nopriv_browser)
     I like this
+    >>> print_tag('comment-vote', nopriv_browser)
+    Abstain

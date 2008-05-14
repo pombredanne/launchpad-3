@@ -6,10 +6,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Text
+from zope.schema import Text, Choice
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ICodeReviewMessage
+from canonical.launchpad.interfaces import CodeReviewVote, ICodeReviewMessage
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView,
     LaunchpadView)
@@ -32,6 +32,9 @@ class IEditCodeReviewMessage(Interface):
         title=_('Comment'), required=False, description=_(
         "This will be rendered as help text"))
 
+    vote = Choice(
+        title=_('Vote'), required=False, vocabulary=CodeReviewVote)
+
 
 class CodeReviewMessageAddView(LaunchpadFormView):
 
@@ -41,5 +44,6 @@ class CodeReviewMessageAddView(LaunchpadFormView):
     def add_action(self, action, data):
         """Create the comment..."""
         message = self.context.branch_merge_proposal.createMessage(
-            self.user, data['subject'], data['comment'], parent=self.context)
+            self.user, data['subject'], data['comment'], data['vote'],
+            self.context)
         self.next_url = canonical_url(message)
