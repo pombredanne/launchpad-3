@@ -54,7 +54,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatusFilter, BranchListingSort,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
     ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -380,15 +380,15 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
+    def bugsupervisor(self):
         text = 'Change bug supervisor'
-        return Link('+bugcontact', text, icon='edit')
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
@@ -920,10 +920,10 @@ class ProductReviewView(ProductEditView):
                    "private_bugs", "reviewer_whiteboard"]
 
     def validate(self, data):
-        if data.get('private_bugs') and self.context.bugcontact is None:
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
             self.setFieldError('private_bugs',
                 structured(
-                    'Set a <a href="%s/+bugcontact">bug supervisor</a> '
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
@@ -1260,13 +1260,14 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
+    show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @property
     def branch_count(self):
         """The number of total branches the user can see."""
-        return getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user).count()
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
@@ -1303,8 +1304,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
-            'hide_dormant': False,
+            'sort_by': BranchListingSort.DEFAULT,
             }
 
     @cachedproperty
@@ -1366,15 +1366,34 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # XXX: thumper 2008-04-22
         # When bug 181157 is fixed, only get branches for non-obsolete
         # series.
-        return [series.series_branch for series in self.sorted_series_list
-                if series.series_branch is not None]
+
+        # We want to show each series branch only once, always show the
+        # development focus branch, no matter what's it lifecycle status, and
+        # skip subsequent series where the lifecycle status is Merged or
+        # Abandoned
+        sorted_series = self.sorted_series_list
+        IGNORE_STATUS = (
+            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        # The series will always have at least one series, that of the
+        # development focus.
+        dev_focus_branch = sorted_series[0].series_branch
+        result = []
+        if dev_focus_branch is not None:
+            result.append(dev_focus_branch)
+        for series in sorted_series[1:]:
+            branch = series.series_branch
+            if (branch is not None and
+                branch not in result and
+                branch.lifecycle_status not in IGNORE_STATUS):
+                result.append(branch)
+        return result
 
     @cachedproperty
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = getUtility(IBranchSet).getBranchesForProduct(
-            product=self.context, visible_by_user=self.user,
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user,
             lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
@@ -1393,7 +1412,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         series_branches.extend(branches)
         return series_branches
 
-    def _branches(self, lifecycle_status, show_dormant):
+    def _branches(self, lifecycle_status):
         """Return the series branches, followed by most recently changed."""
         # The params are ignored, and only used by the listing view.
         return self.initial_branches
@@ -1402,6 +1421,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def unseen_branch_count(self):
         """How many branches are not shown."""
         return self.branch_count - len(self.initial_branches)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """See `BranchListingView`."""
+        return self.branch_count > 0
 
     @property
     def has_development_focus_branch(self):
@@ -1443,14 +1466,19 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 class ProductBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
 
-    @cachedproperty
-    def hide_dormant_initial_value(self):
-        """If there is more than one page of branches, hide dormant ones."""
-        page_size = config.launchpad.branchlisting_batch_size
-        return self.context.branches.count() > page_size
+    def initialize(self):
+        """Conditionally redirect to the default view.
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+        If the branch listing requests the default listing, redirect to the
+        default view for the product.
+        """
+        ProductBranchListingView.initialize(self)
+        if self.sort_by == BranchListingSort.DEFAULT:
+            self.request.response.redirect(canonical_url(self.context))
 
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.LIFECYCLE,
+            }

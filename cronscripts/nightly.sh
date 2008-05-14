@@ -62,8 +62,9 @@ python expire-questions.py
 echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
-echo == Updating bug watches `date` ==
-python checkwatches.py
+# checkwatches.py is scheduled in the /code/pqm/launchpad_crontabs branch.
+### echo == Updating bug watches `date` ==
+### python checkwatches.py
 
 echo == POFile stats `date` ==
 python rosetta-pofile-stats.py

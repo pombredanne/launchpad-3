@@ -13,18 +13,21 @@ __all__ = [
     'REQUEST_USER',
     'call_with',
     'collection_default_content',
-    'export_as',
-    'export_collection',
-    'export_entry',
+    'exported',
+    'export_as_webservice_collection',
+    'export_as_webservice_entry',
     'export_factory_operation',
-    'export_field',
-    'export_parameters_as',
+    'export_operation_as',
     'export_read_operation',
     'export_write_operation',
     'generate_collection_adapter',
     'generate_entry_adapter',
     'generate_entry_interface',
     'generate_operation_adapter',
+    'operation_parameters',
+    'rename_parameters_as',
+    'webservice_error',
+    'WebServiceExceptionView',
     ]
 
 import simplejson
@@ -36,7 +39,7 @@ from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
-from zope.schema.interfaces import IField
+from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
 # XXX flacoste 2008-01-25 bug=185958:
@@ -92,20 +95,20 @@ def _get_interface_tags():
     return f_locals.setdefault(TAGGED_DATA, {})
 
 
-def export_entry():
+def export_as_webservice_entry():
     """Mark the content interface as exported on the web service as an entry.
     """
-    _check_called_from_interface_def('export_entry()')
+    _check_called_from_interface_def('export_as_webservice_entry()')
     def mark_entry(interface):
         """Class advisor that tags the interface once it is created."""
-        _check_interface('export_entry()', interface)
+        _check_interface('export_as_webservice_entry()', interface)
         interface.setTaggedValue(
             LAZR_WEBSERVICE_EXPORTED, dict(type=ENTRY_TYPE))
 
-        # Set the name of the fields that didn't specify it using the 'as'
-        # parameter in export_field. This must be done here, because the
-        # field's __name__ attribute is only set when the interface is
-        # created.
+        # Set the name of the fields that didn't specify it using the
+        # 'export_as' parameter in exported(). This must be done here,
+        # because the field's __name__ attribute is only set when the
+        # interface is created.
         for name, field in getFields(interface).items():
             tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
             if tag is None:
@@ -120,26 +123,28 @@ def export_entry():
     addClassAdvisor(mark_entry)
 
 
-def export_field(field, export_as=None):
+def exported(field, exported_as=None):
     """Mark the field as part of the entry data model.
 
-    :param as: the name under which the field is published in the entry. By
-        default, the same name is used.
+    :param exported_as: the name under which the field is published in the
+        entry. By default, the same name is used.
     :raises TypeError: if called on an object which doesn't provide IField.
+    :returns: The field with an added tagged value.
     """
     if not IField.providedBy(field):
-        raise TypeError("export_field() can only be used on IFields.")
+        raise TypeError("exported() can only be used on IFields.")
     field.setTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': export_as})
+        LAZR_WEBSERVICE_EXPORTED, {'type': FIELD_TYPE, 'as': exported_as})
+    return field
 
 
-def export_collection():
+def export_as_webservice_collection():
     """Mark the interface as exported on the web service as a collection.
 
     :raises TypeError: if the interface doesn't have a method decorated with
         @collection_default_content.
     """
-    _check_called_from_interface_def('export_collection()')
+    _check_called_from_interface_def('export_as_webservice_collection()')
 
     # Set the tag at this point, so that future declarations can
     # check it.
@@ -148,13 +153,13 @@ def export_collection():
 
     def mark_collection(interface):
         """Class advisor that tags the interface once it is created."""
-        _check_interface('export_collection()', interface)
+        _check_interface('export_as_webservice_collection()', interface)
 
         tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if 'collection_default_content' not in tag:
             raise TypeError(
-                "export_collection() is missing a method tagged with "
-                "@collection_default_content.")
+                "export_as_webservice_collection() is missing a method "
+                "tagged with @collection_default_content.")
 
         annotate_exported_methods(interface)
         return interface
@@ -162,29 +167,63 @@ def export_collection():
     addClassAdvisor(mark_collection)
 
 
-def collection_default_content(f):
+class collection_default_content:
     """Decorates the method that provides the default values of a collection.
 
     :raises TypeError: if not called from within an interface exported as a
         collection, or if used more than once in the same interface.
     """
-    _check_called_from_interface_def('@collection_default_content')
 
-    tags = _get_interface_tags()
-    tag = tags.get(LAZR_WEBSERVICE_EXPORTED)
-    if tag is None or tag['type'] != COLLECTION_TYPE:
+    def __init__(self, **params):
+        """Create the decorator marking the default collection method.
+
+        :param params: Optional parameter values to use when calling the
+            method. This is to be used when the method has required
+            parameters.
+        """
+        _check_called_from_interface_def('@collection_default_content')
+
+        tags = _get_interface_tags()
+        tag = tags.get(LAZR_WEBSERVICE_EXPORTED)
+        if tag is None or tag['type'] != COLLECTION_TYPE:
+            raise TypeError(
+                "@collection_default_content can only be used from within an "
+                "interface exported as a collection.")
+
+        if 'collection_default_content' in tag:
+            raise TypeError(
+                "only one method should be marked with "
+                "@collection_default_content.")
+
+        tag['collection_default_content_params'] = params
+
+    def __call__(self, f):
+        """Annotates the collection with the name of the method to call."""
+        tag = _get_interface_tags()[LAZR_WEBSERVICE_EXPORTED]
+        tag['collection_default_content'] = f.__name__
+        return f
+
+
+def webservice_error(status):
+    """Mark the exception with the HTTP status code to use.
+
+    That status code will be used by the view used to handle that kind of
+    exceptions on the web service.
+
+    This is only effective when the exception is raised from within a
+    published method.  For example, if the exception is raised by the field's
+    validation its specified status won't propagate to the response.
+    """
+    frame = sys._getframe(1)
+    f_locals = frame.f_locals
+
+    # Try to make sure we were called from a class def.
+    if (f_locals is frame.f_globals) or ('__module__' not in f_locals):
         raise TypeError(
-            "@collection_default_content can only be used from within an "
-            "interface exported as a collection.")
+            "webservice_error() can only be used from within an exception "
+            "definition.")
 
-    if 'collection_default_content' in tag:
-        raise TypeError(
-            "only one method should be marked with "
-            "@collection_default_content.")
-
-    tag['collection_default_content'] = f.__name__
-
-    return f
+    f_locals['__lazr_webservice_error__'] = int(status)
 
 
 class _method_annotator:
@@ -192,14 +231,9 @@ class _method_annotator:
 
     The actual method will be wrapped in an IMethod specification once the
     Interface is complete. So we save the annotations in an attribute of the
-    method, and the class advisor invoked by export_entry() and
-    export_collection() will do the final tagging.
+    method, and the class advisor invoked by export_as_webservice_entry() and
+    export_as_webservice_collection() will do the final tagging.
     """
-
-    def __init__(self, **params):
-        """All operation specify their parameters using schema fields."""
-        _check_called_from_interface_def('%s()' % self.__class__.__name__)
-        self.params = params
 
     def __call__(self, method):
         """Annotates the function with the fixed arguments."""
@@ -236,12 +270,10 @@ def annotate_exported_methods(interface):
         # Method is exported under its own name by default.
         if 'as' not in annotations:
             annotations['as'] = method.__name__
-        annotations.setdefault('call_with', {})
 
-        # __name__ will be missing for those exported under the same name.
-        for name, param in annotations['params'].items():
-            if not param.__name__:
-                param.__name__ = name
+        # It's possible that call_with or operation_parameters weren't used.
+        annotations.setdefault('call_with', {})
+        annotations.setdefault('params', {})
 
         # Make sure that all parameters exists and that we miss none.
         info = method.getSignatureInfo()
@@ -263,21 +295,53 @@ def annotate_exported_methods(interface):
                 'exported: %s' % (
                     method.__name__, ", ".join(sorted(missing_params))))
 
+        _update_default_and_required_params(annotations['params'], info)
+
+
+def _update_default_and_required_params(params, method_info):
+    """Set missing default/required based on the method signature."""
+    optional = method_info['optional']
+    required = method_info['required']
+    for name, param_def in params.items():
+        # If the method parameter is optional and the param didn't have
+        # a default, set it to the same as the method.
+        if name in optional and param_def.default is None:
+            default = optional[name]
+
+            # This is to work around the fact that all strings in
+            # zope schema are expected to be unicode, whereas it's
+            # really possible that the method's default is a simple
+            # string.
+            if isinstance(default, str) and IText.providedBy(param_def):
+                default = unicode(default)
+            param_def.default = default
+            param_def.required = False
+        elif name in required and param_def.default is not None:
+            # A default was provided, so the parameter isn't required.
+            param_def.required = False
+        else:
+            # Nothing to do for that case.
+            pass
+
 
 class call_with(_method_annotator):
     """Decorator specifying fixed parameters for exported methods."""
+
+    def __init__(self, **params):
+        """Specify fixed values for parameters."""
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
         annotations['call_with'] = self.params
 
 
-class export_as(_method_annotator):
+class export_operation_as(_method_annotator):
     """Decorator specifying the name to export the method as."""
 
     def __init__(self, name):
-        # pylint: disable-msg=W0231
-        _check_called_from_interface_def('export_as()')
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
         self.name = name
 
     def annotate_method(self, method, annotations):
@@ -285,8 +349,13 @@ class export_as(_method_annotator):
         annotations['as'] = self.name
 
 
-class export_parameters_as(_method_annotator):
+class rename_parameters_as(_method_annotator):
     """Decorator specifying the name to export the method parameters as."""
+
+    def __init__(self, **params):
+        """params is of the form method_parameter_name=webservice_name."""
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
@@ -297,9 +366,40 @@ class export_parameters_as(_method_annotator):
         for name, export_as in self.params.items():
             if name not in param_defs:
                 raise TypeError(
-                    'export_parameters_as(): no "%s" parameter is exported.' %
+                    'rename_parameters_as(): no "%s" parameter is exported.' %
                         name)
             param_defs[name].__name__ = export_as
+
+
+class operation_parameters(_method_annotator):
+    """Specify the parameters taken by the exported operation.
+
+    The decorator takes a list of `IField` describing the parameters. The name
+    of the underlying method parameter is taken from the argument name.
+    """
+    def __init__(self, **params):
+        """params is of the form method_parameter_name=Field()."""
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.params = params
+
+    def annotate_method(self, method, annotations):
+        """See `_method_annotator`."""
+        # It's possible that another decorator already created the params
+        # annotation.
+        params = annotations.setdefault('params', {})
+        for name, param in self.params.items():
+            if not IField.providedBy(param):
+                raise TypeError(
+                    'export definition of "%s" in method "%s" must '
+                    'provide IField: %r' % (name, method.__name__, param))
+            if name in params:
+                raise TypeError(
+                    "'%s' parameter is already defined." % name)
+
+            # By default, parameters are exported under their own name.
+            param.__name__ = name
+
+            params[name] = param
 
 
 class _export_operation(_method_annotator):
@@ -308,20 +408,46 @@ class _export_operation(_method_annotator):
     # Should be overriden in subclasses with the string to use as 'type'.
     type = None
 
+    def __init__(self):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
-        for name, param in self.params.items():
-            if not IField.providedBy(param):
-                raise TypeError(
-                    'export definition of "%s" in method "%s" must '
-                    'provide IField: %r' % (name, method.__name__, param))
         annotations['type'] = self.type
-        annotations['params'] = self.params
 
 
 class export_factory_operation(_export_operation):
     """Decorator marking a method as being a factory on the webservice."""
     type = 'factory'
+
+    def __init__(self, interface, field_names):
+        """Creates a factory decorator.
+
+        :param interface: The interface where fields specified in field_names
+            are looked-up.
+        :param field_names: The names of the fields in the schema that
+            are used as parameters by this factory.
+        """
+        # pylint: disable-msg=W0231
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.interface = interface
+        self.params = {}
+        for name in field_names:
+            field = interface.get(name)
+            if field is None:
+                raise TypeError("%s doesn't define '%s'." % (
+                                interface.__name__, name))
+            if not IField.providedBy(field):
+                raise TypeError("%s.%s doesn't provide IField." % (
+                                interface.__name__, name))
+            self.params[name] = copy_attribute(field)
+
+    def annotate_method(self, method, annotations):
+        """See `_method_annotator`."""
+        super(export_factory_operation, self).annotate_method(
+            method, annotations)
+        annotations['creates'] = self.interface
+        annotations['params'] = self.params
 
 
 class export_read_operation(_export_operation):
@@ -392,20 +518,54 @@ def generate_entry_adapter(content_interface, webservice_interface):
     return factory
 
 
+class BaseCollectionAdapter(Collection):
+    """Base for generated ICollection adapter."""
+
+    # These attributes will be set in the generated subclass.
+    method_name = None
+    params = None
+
+    def find(self):
+        """See `ICollection`."""
+        method = getattr(self.context, self.method_name)
+        params = self.params.copy()
+        # Handle the REQUEST_USER marker.
+        for name, value in self.params.items():
+            if value is REQUEST_USER:
+                params[name] = getUtility(ILaunchBag).user
+        return method(**params)
+
+
 def generate_collection_adapter(interface):
     """Create a class adapting from interface to ICollection."""
     _check_tagged_interface(interface, 'collection')
 
     tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-    method_name = tag['collection_default_content']
     class_dict = {
-        'find': lambda self: (getattr(self.context, method_name)()),
+        'method_name': tag['collection_default_content'],
+        'params': tag['collection_default_content_params'],
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
-    factory = type(classname, bases=(Collection,), dict=class_dict)
+    factory = type(classname, bases=(BaseCollectionAdapter,), dict=class_dict)
 
     protect_schema(factory, ICollection)
     return factory
+
+
+class WebServiceExceptionView:
+    """Generic view handling exceptions on the web service."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Generate the HTTP response describing the exception."""
+        response = self.request.response
+        response.setStatus(self.context.__lazr_webservice_error__)
+        response.setHeader('Content-Type', 'text/plain')
+
+        return str(self.context)
 
 
 class BaseResourceOperationAdapter(ResourceOperation):

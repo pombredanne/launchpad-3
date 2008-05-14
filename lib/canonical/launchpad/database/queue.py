@@ -912,7 +912,9 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
-            if binary.component not in distroseries.upload_components:
+            if (not self.packageupload.archive.is_ppa and
+                binary.component not in distroseries.upload_components):
+                # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
@@ -992,6 +994,26 @@ class PackageUploadSource(SQLBase):
         foreignKey='SourcePackageRelease'
         )
 
+    def getSourceAncestry(self):
+        """See `IPackageUploadSource`."""
+        primary_archive = self.packageupload.distroseries.main_archive
+        release_pocket = PackagePublishingPocket.RELEASE
+        ancestry_locations = [
+            (self.packageupload.archive, self.packageupload.pocket),
+            (primary_archive, release_pocket),
+            ]
+
+        ancestry = None
+        for archive, pocket in ancestry_locations:
+            ancestries = archive.getPublishedSources(
+                name=self.sourcepackagerelease.name, pocket=pocket,
+                exact_match=True)
+            if ancestries.count() == 0:
+                continue
+            ancestry = ancestries[0]
+            break
+        return ancestry
+
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
@@ -1052,7 +1074,9 @@ class PackageUploadSource(SQLBase):
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if component not in distroseries.upload_components:
+        if (not self.packageupload.archive.is_ppa and
+            component not in distroseries.upload_components):
+            # Only complain about non-PPA uploads.
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))

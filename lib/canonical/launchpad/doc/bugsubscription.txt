@@ -51,7 +51,7 @@ subscriptions work.
     >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
     >>> linux_source.bug_subscriptions
     []
-    >>> print linux_source.distribution.bugcontact
+    >>> print linux_source.distribution.bug_supervisor
     None
 
     >>> foobar = getUtility(ILaunchBag).user
@@ -163,7 +163,7 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
 
-    >>> linux_source.distribution.setBugContact(ubuntu_team, ubuntu_team)
+    >>> linux_source.distribution.setBugSupervisor(ubuntu_team, ubuntu_team)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -187,7 +187,7 @@ supervisor is also an indirect subscriber.
     <BugTask ...>
 
     >>> lifeless = personset.getByName("lifeless")
-    >>> firefox.setBugContact(lifeless, lifeless)
+    >>> firefox.setBugSupervisor(lifeless, lifeless)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -204,7 +204,7 @@ supervisor is also an indirect subscriber.
 If there were no upstream product bug subscribers, the product owner
 would be used instead.
 
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -235,7 +235,7 @@ would be used instead.
     Ubuntu Team
 
     >>> firefox.owner = previous_owner
-    >>> firefox.setBugContact(lifeless, lifeless)
+    >>> firefox.setBugSupervisor(lifeless, lifeless)
 
 3. Direct subscribers of duplicate bugs.
 
@@ -446,7 +446,7 @@ Define a function that get subscriber email addresses back conveniently:
 
 Let's have a look at an example for a distribution bug:
 
-    >>> ubuntu.setBugContact(sample_person, sample_person)
+    >>> ubuntu.setBugSupervisor(sample_person, sample_person)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -481,7 +481,7 @@ there is no security contact:
 
 Another example, this time for an upstream:
 
-    >>> firefox.setBugContact(sabdfl, sabdfl)
+    >>> firefox.setBugSupervisor(sabdfl, sabdfl)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -494,14 +494,14 @@ Again, only Foo Bar is explicitly subscribed:
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
-But the upstream Firefox bug contact, sabdfl, is implicitly added to the
+But the upstream Firefox bug supervisor, sabdfl, is implicitly added to the
 recipients list.
 
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'mark@hbd.com', 'robertc@robertcollins.net']
 
 If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
-contact will be subscribed:
+supervisor will be subscribed:
 
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
     ...     bug=new_bug, distribution=ubuntu, owner=sabdfl)
@@ -523,7 +523,7 @@ When an upstream does *not* have a specific bug supervisor set, the
 product.owner is used instead. So, if Firefox's bug supervisor is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
 
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
