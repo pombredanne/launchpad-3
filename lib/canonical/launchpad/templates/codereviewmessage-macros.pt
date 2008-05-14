@@ -4,18 +4,19 @@
    omit-tag="">
   <metal:view-message define-macro="view-message">
     <div class="boardComment">
-        <div class="boardCommentDetails"><span id="comment-from">
-            <span tal:replace="structure context/message/owner/fmt:link"/>
-            </span>
+        <div class="boardCommentDetails">
+            <span tal:replace="structure context/message/owner/fmt:link"
+                  id="comment-from" />
             <span tal:condition="context/vote" >vote:
                 <span id="comment-vote" tal:content="context/vote/title" />
             </span>
-            </div>
-        <div class="boardCommentBody">
-          <tt id="comment-subject" tal:content="context/message/subject" />
-        <div>
-          <tt id="comment-body" tal:content="context/message/text_contents" />
         </div>
+        <div class="boardCommentBody">
+            <tt id="comment-subject" tal:content="context/message/subject" />
+            <div>
+              <tt id="comment-body"
+                  tal:content="context/message/text_contents" />
+            </div>
         </div>
     </div>
   </metal:view-message>
