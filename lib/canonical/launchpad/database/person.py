@@ -800,8 +800,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             % dict(person=self.name, team=team.name))
         return member
 
-    def isTeam(self):
+    # XXX: Before landing this branch I'll replace all uses of isTeam() with
+    # is_team in this file.  I just don't want to do it now to avoid
+    # unnecessary conflicts.  Please remind me, dear reviewer.
+    @property
+    def is_team(self):
         """See `IPerson`."""
+        return self.teamowner is not None
+
+    def isTeam(self):
+        """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
     @property
@@ -3303,6 +3311,9 @@ class IrcID(SQLBase):
 
 class IrcIDSet:
     implements(IIrcIDSet)
+
+    def get(self, id):
+        return IrcID.selectOneBy(id=id)
 
     def new(self, person, network, nickname):
         return IrcID(person=person, network=network, nickname=nickname)

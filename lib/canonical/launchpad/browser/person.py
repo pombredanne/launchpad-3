@@ -282,6 +282,34 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_archive(self):
         return self.context.archive
 
+    @stepthrough('+email')
+    def traverse_email(self, email):
+        email = getUtility(IEmailAddressSet).getByEmail(email)
+        if email is None or email.person != self.context:
+            return None
+        return email
+
+    @stepthrough('+wikiname')
+    def traverse_wikiname(self, id):
+        wiki = getUtility(IWikiNameSet).get(id)
+        if wiki is None or wiki.person != self.context:
+            return None
+        return wiki
+
+    @stepthrough('+jabberid')
+    def traverse_jabberid(self, jabber_id):
+        jabber = getUtility(IJabberIDSet).getByPerson(jabber_id)
+        if jabber is None or jabber.person != self.context:
+            return None
+        return jabber
+
+    @stepthrough('+ircnick')
+    def traverse_ircnick(self, id):
+        irc_nick = getUtility(IIrcIDSet).get(id)
+        if irc_nick is None or irc_nick.person != self.context:
+            return None
+        return irc_nick
+
 
 class PersonDynMenu(DynMenu):
 

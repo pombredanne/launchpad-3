@@ -1,21 +1,25 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
+__all__ = [
+    'UBUNTU_WIKI_URL',
+    'IWikiName',
+    'IWikiNameSet',
+    ]
+
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
-__all__ = ['UBUNTU_WIKI_URL', 'IWikiName', 'IWikiNameSet']
+from canonical.lazr.rest.declarations import export_as_webservice_entry
 
-#
-# Wiki Interfaces
-#
 
 UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
 
 
 class IWikiName(Interface):
     """Wiki for Users"""
+    export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True)
     wiki = TextLine(title=_("Wiki host"), required=True)

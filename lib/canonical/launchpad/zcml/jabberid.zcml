@@ -1,4 +1,8 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.JabberID">
         <allow interface="canonical.launchpad.interfaces.IJabberID"/>
@@ -15,5 +19,11 @@
         provides="canonical.launchpad.interfaces.IJabberIDSet">
         <allow interface="canonical.launchpad.interfaces.IJabberIDSet" />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IJabberID"
+        path_expression="string:+jabberid/${jabberid}"
+        attribute_to_parent="person"
+        rootsite="mainsite" />
 
 </configure>

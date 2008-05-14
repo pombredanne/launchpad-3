@@ -10,6 +10,7 @@ __all__ = [
     'ObjectLookupFieldDeserializer',
     'SimpleFieldDeserializer',
     'SimpleVocabularyLookupFieldDeserializer',
+    'TimezoneFieldDeserializer',
     'URLDereferencingMixin',
     'VocabularyLookupFieldDeserializer',
     ]
@@ -115,10 +116,8 @@ class SimpleFieldDeserializer:
         self.request = request
 
     def deserialize(self, value):
-        "Make sure the value is a string and then call _deserialize()."
         if value is None:
             return None
-        assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._deserialize(value)
 
     def _deserialize(self, value):
@@ -128,12 +127,19 @@ class SimpleFieldDeserializer:
         return value
 
 
+class TimezoneFieldDeserializer(SimpleFieldDeserializer):
+
+    def __init__(self, field, request, vocabulary):
+        super(TimezoneFieldDeserializer, self).__init__(field, request)
+
+
 class IntFieldDeserializer(SimpleFieldDeserializer):
     """A deserializer that transforms its value into an integer."""
 
     def _deserialize(self, value):
         """Try to convert the value into an integer."""
         return int(value)
+
 
 class DateTimeFieldDeserializer(SimpleFieldDeserializer):
     """A deserializer that transforms its value into an integer."""

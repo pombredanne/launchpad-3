@@ -10,6 +10,7 @@ import os
 import re
 import simplejson
 import unittest
+from urlparse import urlsplit
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
@@ -80,7 +81,11 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def __call__(self, path, method='GET', data=None, headers=None):
+    def __call__(self, path_or_url, method='GET', data=None, headers=None):
+        if path_or_url.startswith('http:'):
+            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+        else:
+            path = path_or_url
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:

@@ -14,8 +14,12 @@ from zope.schema import Int, TextLine
 from zope.interface import Interface
 from canonical.launchpad import _
 
+from canonical.lazr.rest.declarations import export_as_webservice_entry
+
+
 class IJabberID(Interface):
     """Jabber specific user ID """
+    export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True)
     jabberid = TextLine(title=_("Jabber user ID"), required=True)

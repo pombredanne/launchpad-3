@@ -65,6 +65,14 @@
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
+             canonical.launchpad.vocabularies.timezones.TimezoneNameVocabulary"
+        provides="canonical.lazr.interfaces.IFieldDeserializer"
+        factory="canonical.lazr.rest.TimezoneFieldDeserializer"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
         provides="canonical.lazr.interfaces.IFieldDeserializer"
         factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"

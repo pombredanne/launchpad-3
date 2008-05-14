@@ -15,6 +15,7 @@ from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import export_as_webservice_entry
 
 
 class TextDirection(DBEnumeratedType):
@@ -35,6 +36,7 @@ class TextDirection(DBEnumeratedType):
 
 class ILanguage(Interface):
     """A Language."""
+    export_as_webservice_entry()
 
     id = Attribute("This Language ID.")
 
