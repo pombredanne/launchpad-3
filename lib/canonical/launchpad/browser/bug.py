@@ -192,7 +192,10 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        text = 'Add branch'
+        if len(list(self.context.bug.bug_branches)) > 0:
+            text = 'Link another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -228,20 +231,20 @@ class BugContextMenu(ContextMenu):
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'Convert to question'
+        text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
         return Link('+create-question', text, icon='edit', enabled=enabled)
 
     def removequestion(self):
         """Remove the created question from this bug."""
-        text = 'Convert back to bug'
+        text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
         return Link('+remove-question', text, icon='edit', enabled=enabled)
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'View activity log'
-        return Link('+activity', text, icon='list')
+        text = 'Activity log'
+        return Link('+activity', text)
 
 
 class MaloneView(LaunchpadFormView):

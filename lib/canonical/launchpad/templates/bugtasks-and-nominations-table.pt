@@ -39,26 +39,34 @@
 
 </table>
 
-<div style="text-align: right; margin-bottom: 1em;"
-     tal:condition="view/displayAlsoAffectsLinks"
+<div style="width: 100%; margin-bottom: 1em; margin-top: 0.33em;"
+     class="clearfix"
      tal:define="current_bugtask view/currentBugTask">
-
-  Also affects:
-  <span style="white-space: nowrap">
-      <img src="/@@/add" alt="+" />
-      <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
-         title="Record this bug as occurring in another project">
-        Project&hellip;
-      </a>
-  </span>
-
-  <span style="white-space: nowrap">
-      <img src="/@@/add" alt="+" />
-      <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
-         title="Record this bug as occurring in another distribution and/or package">
-        Distribution/Package&hellip;
-      </a>
-  </span>
-
+  <div style="text-align: left; float: left;">
+    <tal:also-affects-links condition="view/displayAlsoAffectsLinks">
+      <tal:addupstream
+          define="link context/menu:context/addupstream"
+          condition="link/enabled"
+          replace="structure link/render" />
+      <tal:adddistro
+          define="link context/menu:context/adddistro"
+          condition="link/enabled"
+          replace="structure link/render" />
+    </tal:also-affects-links>
+    <tal:nominate
+        define="link context/menu:context/nominate"
+        condition="link/enabled"
+        replace="structure link/render" />
+  </div>
+  <div style="text-align: right; float: right;">
+    <tal:linktocve
+        define="link context/menu:context/linktocve"
+        condition="link/enabled"
+        replace="structure link/render" />
+    <tal:unlinkcve
+        define="link context/menu:context/unlinkcve"
+        condition="link/enabled"
+        replace="structure link/render" />
+  </div>
 </div>
 </tal:root>
