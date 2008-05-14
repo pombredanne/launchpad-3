@@ -153,6 +153,7 @@
 
         <tal:submit-new-bug>
           <div id="bug_reporting_form">
+            <a name="form-start" />
             <table class="form">
               <metal:basic_filebug_widgets
                   metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
@@ -177,12 +178,12 @@
             showElement('bug_reporting_form');
             // Try to get the whole bug form into view.
             $('field.actions.submit_bug').focus();
+            window.location.href = '#form-start';
 
             if (bugtarget_package_btn != null) {
               if (bugtarget_package_btn.checked) {
                 $('field.bugtarget.package').focus();
-              }
-              else {
+              } else {
                 $('field.comment').focus();
               }
             } else {
