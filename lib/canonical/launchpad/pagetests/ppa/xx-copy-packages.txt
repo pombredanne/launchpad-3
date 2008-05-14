@@ -286,7 +286,7 @@ build created during the copy is ready to be dispatched.
     Status: Needs building
     Queued: ... ago
     Estimated build start: not available
-    Build score: 1005
+    Build score: 4005
     Build log: not available
     Finished: not available
 
