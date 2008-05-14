@@ -5,7 +5,7 @@
   <metal:view-message define-macro="view-message">
     <div class="boardComment">
         <div class="boardCommentDetails">
-            <span tal:replace="structure context/message/owner/fmt:link"
+            <span tal:content="structure context/message/owner/fmt:link"
                   id="comment-from" />
             <span tal:condition="context/vote" >vote:
                 <span id="comment-vote" tal:content="context/vote/title" />
