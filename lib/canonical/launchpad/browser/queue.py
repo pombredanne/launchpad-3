@@ -200,8 +200,10 @@ class QueueItemsView(LaunchpadView):
             # to allow the operation to go ahead.
             if (allowed_components.intersection(existing_components)
                 != existing_components):
-                failure.append("FAILED: %s (You have no rights to accept component(s) '%s')"
-                    % (queue_item.displayname, existing_component_names))
+                failure.append(
+                    "FAILED: %s (You have no rights to accept component(s) "
+                    "'%s')" % (queue_item.displayname,
+                               existing_component_names))
                 continue
 
             # Sources and binaries are mutually exclusive when it comes to
