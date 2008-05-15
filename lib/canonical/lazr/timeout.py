@@ -7,13 +7,15 @@ __all__ = [
     "TimeoutError",
     "get_default_timeout_function",
     "set_default_timeout_function",
+    "urlfetch",
     "with_timeout",
     ]
 
-
+import httplib
+import socket
 import sys
 from threading import Thread
-
+import urllib2
 
 default_timeout_function = None
 
@@ -120,3 +122,39 @@ class with_timeout:
             return t.result
 
         return call_with_timeout
+
+
+class CleanableHTTPHandler(urllib2.HTTPHandler):
+    """Subclass of `urllib2.HTTPHandler` that can be clean-up."""
+
+    def http_open(self, req):
+        """See `urllib2.HTTPHandler`."""
+        def connection_factory(*args, **kwargs):
+            """Save the created connection so that we can clean it up."""
+            self.__conn = httplib.HTTPConnection(*args, **kwargs)
+            return self.__conn
+        return self.do_open(connection_factory, req)
+
+    def reset_connection(self):
+        """Reset the underlying HTTP connection."""
+        self.__conn.close()
+
+
+class URLFetcher:
+    """Object fetching remote URLs with a time out."""
+
+    @with_timeout(cleanup='cleanup')
+    def fetch(self, url, data=None):
+        """Fetch the URL using a custom HTTP handler supporting timeout."""
+        self.handler = CleanableHTTPHandler()
+        opener = urllib2.build_opener(self.handler)
+        return opener.open(url, data).read()
+
+    def cleanup(self):
+        """Reset the connection when the operation timed out."""
+        self.handler.reset_connection()
+
+
+def urlfetch(url, data=None):
+    """Wrapper for `urllib2.urlopen()` that times out."""
+    return URLFetcher().fetch(url, data)

@@ -106,6 +106,7 @@ It's an error to use a string cleanup when the function isn't a method.
       ...
     TypeError: when not wrapping a method, cleanup must be a callable.
 
+
 == Default time out ==
 
 If the timeout parameter isn't provided, it will default to the value
@@ -147,9 +148,98 @@ the number of seconds to wait.
     Will use default timeout.
 
 
+=== urlfetch() ===
+
+One common use case for timing out is when fetching doing an HTTP
+request to an external site. To this end, the timeout module has a
+urlfetch() function that retrieve a URL using custom urllib2 handlers
+that will timeout using the default timeout function and clean-up the
+socket properly.
+
+    # Create a socket bounded to a random port.
+    >>> sock = socket.socket()
+    >>> sock.settimeout(2)
+    >>> sock.bind(('127.0.0.1', 0))
+
+    >>> from canonical.lazr.timeout import urlfetch
+
+    # Use 1s as default timeout.
+    >>> set_default_timeout_function(lambda: 1)
+
+Normal urllib2 exceptions are raised:
+
+    >>> http_server_url = 'http://%s:%d/' % sock.getsockname()
+    >>> urlfetch(http_server_url)
+    Traceback (most recent call last):
+      ...
+    URLError: ...'Connection refused'...
+
+After the listen() is called, connections will hang until accept() is
+called, so a TimeoutError will be raised.
+
+    >>> sock.listen(1)
+    >>> urlfetch(http_server_url)
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+
+The client socket was closed properly, as we can see by calling recv()
+twice on the connected socket. The first recv() returns the request data
+sent by the client, the second one will block until the client closes
+its end of the connection. If the client closes its socket, '' is
+received, otherwise a socket timeout
+
+    >>> client_sock, client_addr = sock.accept()
+    >>> print client_sock.recv(1024)
+    GET / HTTP/1.1...
+    >>> client_sock.recv(1024)
+    ''
+
+The function also times out if the server replies very slowly.
+(Do the server part in a separate thread.)
+
+    >>> import threading
+    >>> import time
+    >>> from textwrap import dedent
+
+    >>> def slow_reply():
+    ...     (client_sock, client_addr) = sock.accept()
+    ...     content = 'You are veeeeryyy patient!'
+    ...     client_sock.sendall(dedent('''\
+    ...         HTTP/1.0 200 Ok
+    ...         Content-Type: text/plain
+    ...         Content-Length: %d\n\n''' % len(content)))
+    ...
+    ...         # Send the body of the reply very slowly.
+    ...     for c in content:
+    ...         client_sock.send(c)
+    ...         time.sleep(0.2)
+    ...     client_sock.close()
+    >>> threading.Thread(target=slow_reply).start()
+    >>> print urlfetch(http_server_url)
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+
+When the request succeeds, the result content is returned.
+
+    >>> def success_result():
+    ...     (client_sock, client_addr) = sock.accept()
+    ...     client_sock.sendall(dedent('''\
+    ...         HTTP/1.0 200 Ok
+    ...         Content-Type: text/plain
+    ...         Content-Length: 8
+    ...
+    ...         Success.'''))
+    ...     client_sock.close()
+    >>> threading.Thread(target=success_result).start()
+    >>> print urlfetch(http_server_url)
+    Success.
+
+
 == Cleanup ==
 
-    # Reap threads that may still hang about (select call for example).
+    # Reap threads that may still hang around.
     >>> import threading
     >>> for thread in threading.enumerate():
     ...     if thread is not threading.currentThread():
