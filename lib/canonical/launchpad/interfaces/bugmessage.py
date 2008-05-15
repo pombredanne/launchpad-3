@@ -71,7 +71,7 @@ class IBugMessageSet(Interface):
 class IBugMessageAddForm(Interface):
     """Schema used to build the add form for bug comment/attachment."""
 
-    subject = Title(title=u"Subject", required=True)
+    subject = Title(title=u"Subject", required=False)
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
@@ -82,6 +82,10 @@ class IBugMessageAddForm(Interface):
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
         required=False, default=False)
+    bugwatch_id = Int(
+        title=(u"Synchronize this comment with a remote bug "
+               "tracker using the bug watch with this id."),
+        required=False, default=None)
 
 
 class IBugComment(IMessage):
@@ -104,4 +108,7 @@ class IBugComment(IMessage):
     text_for_display = Text(
         title=u'The comment text to be displayed in the UI.', readonly=True)
     display_title = Attribute('Whether or not to show the title.')
-
+    synchronized = Attribute(
+        'Has the comment been synchronized with a remote bug tracker?')
+    add_comment_url = Attribute(
+        'The URL for submitting replies to this comment.')
