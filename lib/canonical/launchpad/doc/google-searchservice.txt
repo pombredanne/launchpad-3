@@ -61,7 +61,7 @@ items in a single ISearchResults.
     >>> first_page_matches.start
     0
     >>> first_page_matches.total
-    31
+    25
     >>> len(first_page_matches)
     20
 
@@ -75,24 +75,25 @@ index of 20.
     >>> second_page_matches.start
     20
     >>> second_page_matches.total
-    31
+    25
     >>> len(second_page_matches)
-    11
+    5
 
 
 An item can be retrieved from an ISearchResults object using its
 index. An items index is relative to its the search results length.
 All the items in the collection can be iterated.
 
-    >>> second_page_matches[1]
-    <PageMatch url='http://bugs.launchpad.dev/debian'>
+    >>> second_page_matches[1].url
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
 
-    >>> for page_match in first_page_matches:
-    ...     page_match
-    <...PageMatch url='http://bugs.launchpad.dev/'>
-    <...PageMatch url='http://bugs.launchpad.dev/debian'>
-    <...PageMatch url='http://bugs.launchpad.dev/debian/+source/mozilla-firefox'>
-    <...PageMatch url='http://bugs.launchpad.dev/firefox/+bug/1'> ...
+    >>> for page_match in second_page_matches:
+    ...     page_match.url
+    'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3'
+    'http://bugs.launchpad.dev/bugs/bugtrackers'
+    'http://bugs.launchpad.dev/bugs/bugtrackers/debbugs'
 
 
 == PageMatch ==
@@ -157,13 +158,13 @@ _default_values dict. All csbe clients must set the client param to
 'google-csbe'. GoogleSearchService always requests 20 matches (the
 maximum number allowed by Google) for launchpad.net. The input and
 output encoding is UTF-8. The request states that the response XML
-should not contain a DTD. The client-id parameter is provided by the
-client_id config value. The terms and start params are provided at the
-time of the search.
+should not contain a DTD. The cx parameter is provided by the
+client_id config value. The q (terms) and start params are provided at
+the time of the search.
 
     >>> for key in sorted(google_search._default_values):
     ...     print key, ':', repr(google_search._default_values[key])
-    as_rq : 'launchpad.net'
+    as_sitesearch : 'launchpad.net'
     client : 'google-csbe'
     cx : None
     ie : 'utf8'
@@ -195,7 +196,7 @@ argument to the method. The argument is http quoted and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs')
-    'http://launchpad.dev:8091/?as_rq=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=svg+%2Bbugs&start=0'
+    'http://launchpad.dev:8091/?as_sitesearch=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=svg+%2Bbugs&start=0'
 
 Unicode characters are escaped correctly in the google request URL.
 
