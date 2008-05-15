@@ -83,6 +83,7 @@ import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 import pytz
+import subprocess
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
@@ -2465,6 +2466,20 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         if not (kind and keytext and comment):
             self.error_message = 'Invalid public key'
+            return
+
+        process = subprocess.Popen(
+            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = process.communicate(sshkey)
+        if 'compromised' in out.lower():
+            self.error_message = (
+                'This key is known to be compromised due to a security flaw '
+                'in the software used to generate it, so it will not be '
+                'accepted by Launchpad. See the full '
+                '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
+                'Notice</a> for further information and instructions on how '
+                'to generate another key.')
             return
 
         if kind == 'ssh-rsa':
