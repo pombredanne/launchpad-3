@@ -106,6 +106,20 @@ def _is_sensitive(request, name):
     return True
 
 
+def parse_iso8601_date(datestring):
+    """Parses a standard ISO 8601 format date, ignoring time zones.
+
+    Performs no validation whatsoever. It just plucks up to the first
+    7 numbers from the string and passes them to `datetime.datetime`,
+    so would in fact parse any string containing reasonable numbers.
+
+    This function can be replaced with `datetime.datetime.strptime()`
+    once we move to Python 2.5.
+    """
+    return datetime.datetime(
+        *(int(elem) for elem in re.findall('[0-9]+', datestring)[:7]))
+
+
 class ErrorReport:
     implements(IErrorReport)
 
@@ -157,7 +171,7 @@ class ErrorReport:
         id = msg.getheader('oops-id')
         exc_type = msg.getheader('exception-type')
         exc_value = msg.getheader('exception-value')
-        date = msg.getheader('date')
+        date = parse_iso8601_date(msg.getheader('date'))
         pageid = msg.getheader('page-id')
         username = msg.getheader('user')
         url = msg.getheader('url')

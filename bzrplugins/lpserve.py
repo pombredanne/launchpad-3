@@ -15,7 +15,7 @@ import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import urlutils, ui
+from bzrlib import lockdir, urlutils, ui
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
@@ -131,11 +131,14 @@ class cmd_launchpad_server(Command):
             authserver, user_id, upload_url, mirror_url)
         lp_server.setUp()
 
+        old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
             lp_transport = get_transport(lp_server.get_url())
             smart_server = self.get_smart_server(lp_transport, port, inet)
+            lockdir._DEFAULT_TIMEOUT_SECONDS = 0
             self.run_server(smart_server)
         finally:
+            lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
             lp_server.tearDown()
 
 

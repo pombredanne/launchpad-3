@@ -136,7 +136,7 @@ class BugNomination(SQLBase):
                     for upload_component in distribution.uploaders)
             for upload_component in distribution.uploaders:
                 if (upload_component.component in bug_components and
-                    person.inTeam(upload_component.uploader)):
+                    person.inTeam(upload_component.person)):
                     return True
 
         return False

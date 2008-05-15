@@ -176,7 +176,7 @@ The page section id is built using "pub$ID" notation.
       i386
     Built Packages
       pmount pmount shortdesc
-    Files
+    Download files from Librarian
       No files published for this package.
 
 James is absolutely sure that's the package he wants, he selects it.
@@ -259,8 +259,17 @@ context.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Files
+    Download files from Librarian
       No files published for this package.
+
+The package was copied from the primary archive and not from a PPA.
+Hence the archive's title does not link back to the source archive
+(as would be the case with a source PPA).
+
+    >>> jblack_browser.getLink("Primary Archive for Ubuntu Linux")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 James quickly goes to the build page and confirms for himself that the
 build created during the copy is ready to be dispatched.

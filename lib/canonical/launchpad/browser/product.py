@@ -37,6 +37,7 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductSetView',
     'ProductBranchOverviewView',
+    'ProductBranchesView',
     'PillarSearchItem',
     ]
 
@@ -1320,7 +1321,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
+            'sort_by': BranchListingSort.DEFAULT,
             }
 
     @cachedproperty
@@ -1477,3 +1478,24 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def committer_text(self):
         return self._getPluralText(
             self.committer_count, _('person'), _('people'))
+
+
+class ProductBranchesView(ProductBranchListingView):
+    """View for branch listing for a product."""
+
+    def initialize(self):
+        """Conditionally redirect to the default view.
+
+        If the branch listing requests the default listing, redirect to the
+        default view for the product.
+        """
+        ProductBranchListingView.initialize(self)
+        if self.sort_by == BranchListingSort.DEFAULT:
+            self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.LIFECYCLE,
+            }

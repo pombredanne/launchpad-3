@@ -1663,6 +1663,7 @@ class BugTaskSet:
                 SELECT BugTask.id
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
+                    LEFT JOIN BugWatch on Bug.id = BugWatch.bug
                 """ + unconfirmed_bug_join + """
                 """ + target_join + """
                 WHERE
@@ -1671,11 +1672,11 @@ class BugTaskSet:
                 """ + bug_privacy_filter + """
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
-                    AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
+                    AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
