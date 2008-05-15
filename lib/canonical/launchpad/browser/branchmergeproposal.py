@@ -265,7 +265,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         result = []
         for depth, message in Message.flattenThreads(threads):
             comment = message_to_comment[message]
-            style = 'margin-left: "%dem"' % (5 * depth)
+            style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
 
