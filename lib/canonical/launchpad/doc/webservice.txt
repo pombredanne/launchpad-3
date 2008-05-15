@@ -101,11 +101,8 @@ and IRecipe.
     ...         self.target.comments.append(self)
     >>> protect_schema(Comment, IComment, write_permission=CheckerPublic)
 
-    >>> from canonical.launchpad.rest.bytestorage import (
-    ...     LibraryBackedByteStorage)
     >>> from canonical.launchpad.database import LibraryFileAlias
     >>> class Cookbook:
-    ...     cover_id = 1
     ...     implements(ICookbook)
     ...     def __init__(self, name, author, cuisine=None):
     ...         self.name = name
@@ -113,10 +110,6 @@ and IRecipe.
     ...         self.recipes = []
     ...         self.comments = []
     ...         self.cuisine = cuisine
-    ...         self.cover = LibraryFileAlias(
-    ...             contentID=self.cover_id, filename="cover",
-    ...             mimetype="image/png")
-    ...         self.cover_id += 1
     ...         self.cover = None
     >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
 

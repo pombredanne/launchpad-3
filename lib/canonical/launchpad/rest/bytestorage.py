@@ -13,7 +13,7 @@ from cStringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.lazr.interfaces import IByteStorage, IHTTPResource
+from canonical.lazr.interfaces import IByteStorage
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
