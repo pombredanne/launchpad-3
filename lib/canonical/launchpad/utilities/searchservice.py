@@ -13,6 +13,7 @@ __all__ = [
 
 import cElementTree as ET
 import urllib
+from urlparse import urlunparse
 
 from zope.interface import implements
 
@@ -20,6 +21,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
     ISearchResult, ISearchResults, ISearchService, GoogleParamError,
     GoogleWrongGSPVersion)
+from canonical.launchpad.webapp import urlparse
 
 
 class PageMatch:
@@ -31,8 +33,28 @@ class PageMatch:
 
     @property
     def url_rewrite_exceptions(self):
-        """A list of launchpad.net URLs that must not be rewritten."""
+        """A list of launchpad.net URLs that must not be rewritten.
+
+        Configured in config.google.url_rewrite_exceptions.
+        """
         return config.google.url_rewrite_exceptions.split()
+
+    @property
+    def url_rewrite_scheme(self):
+        """The URL scheme used in rewritten URLs.
+
+        Configured in config.google.url_rewrite_scheme.
+        """
+        return config.google.url_rewrite_scheme
+
+    @property
+    def url_rewrite_hostname(self):
+        """The network location used in rewritten URLs.
+
+        Configured in config.vhost.mainsite.hostname.
+        """
+        return config.vhost.mainsite.hostname
+
 
     def __init__(self, title, url, summary):
         """initialize a PageMatch.
@@ -48,15 +70,28 @@ class PageMatch:
     def _rewrite_url(self, url):
         """Rewrite the url to the local environment.
 
-        Links with launhcpad.net are rewritten to config.vhost.mainsite,
+        Links with launhcpad.net are rewritten to the local hostname,
         except if the domain matches a domain in the
-        config.url_rewrite_exceptions
+        config.url_rewrite_exceptions.
 
         :param url: A url str that may be rewritten to the local
             launchpad environment.
         :return: A url str.
         """
-        # XXX sinzui 2008-05-13: finish this.
+        if self.url_rewrite_hostname == 'launchpad.net':
+            # Do not rewrite the url is the hostname is the public hostname.
+            return url
+        parts = urlparse(url)
+        for netloc in self.url_rewrite_exceptions:
+            # The network location is parts[1] in the tuple.
+            if netloc in parts[1]:
+                return url
+        local_scheme = self.url_rewrite_scheme
+        local_hostname = parts[1].replace(
+            'launchpad.net', self.url_rewrite_hostname)
+        local_parts = tuple(
+            [local_scheme] + [local_hostname] + list(parts[2:]))
+        return urlunparse(local_parts)
 
 
 class PageMatches:
@@ -179,11 +214,11 @@ class GoogleSearchService:
     def create_search_url(self, terms, start=0):
         """Return a Google search url."""
         self._checkParameter('q', terms)
-        search_params = dict(self._default_values)
-        search_params['client-id'] = self.client_id
         safe_terms = urllib.quote_plus(terms.encode('utf8'))
+        search_params = dict(self._default_values)
         search_params['q'] = safe_terms
         search_params['start'] = start
+        search_params['client-id'] = self.client_id
         search_param_list = []
         for name in sorted(search_params):
             value = search_params[name]

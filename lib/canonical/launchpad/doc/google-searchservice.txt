@@ -122,10 +122,6 @@ initialised the object.
 The URL's domain is rewitten to the so that links from launchpad.net are
 mapped to the local environment.
 
-    >>> from canonical.config import config
-
-    >>> config.vhost.mainsite.hostname
-    'launchpad.dev'
     >>> page_match.url
     'http://launchpad.dev/unicode-titles'
 
@@ -136,6 +132,7 @@ The google search service is configured by the google section in
 lazr.config. All requests are made to Google's site, but the
 configuration may set a testing site.
 
+    >>> from canonical.config import config
     >>> from canonical.launchpad.utilities.searchservice import (
     ...     GoogleSearchService)
 
@@ -212,28 +209,43 @@ The start parameter can be changed by passing a start int argument.
 
 === URL rewriting ===
 
+The URL scheme used in the rewritten URL is configured in
+config.google.url_rewrite_scheme. The hostname is set in shared
+key config.vhost.mainsite.hostname.
+
+    >>> config.google.url_rewrite_scheme == page_match.url_rewrite_scheme
+    True
+    >>> page_match.url_rewrite_scheme
+    'http'
+
+    >>> config.vhost.mainsite.hostname == page_match.url_rewrite_hostname
+    True
+    >>> page_match.url_rewrite_hostname
+    'launchpad.dev'
+
+URLs are rewritten to map public URL to the private hostname.
 The vhost name is preserved when the URL is rewritten.
 
-    >>> another_page_match = PageMatch(
+    >>> page_match = PageMatch(
     ...     u'Bug #456 in Unicode title: "testrunner hates Unicode"',
     ...     'https://bugs.launchpad.net/unicode-titles/+bug/456',
     ...     u'The Zope testrunner likes ASCII more than Unicode.')
-    >>> another_page_match.url
-    u'http://bugs.launchpad.dev/unicode-titles/+bug/456'
+    >>> page_match.url
+    'http://bugs.launchpad.dev/unicode-titles/+bug/456'
 
-There is a list of URLs that are not rewritten. For example,
-help.launchpad.net is only run in one environment, so links to that
-site will be preserved.
+There is a list of URLs that are not rewritten configured in
+config.google.url_rewrite_exceptions. For example, help.launchpad.net
+is only run in one environment, so links to that site will be preserved.
 
     >>> config.google.url_rewrite_exceptions
     'help.launchpad.net'
-    >>> another_page_match.url_rewrite_exceptions
+    >>> page_match.url_rewrite_exceptions
     ['help.launchpad.net']
 
-    >>> another_page_match = PageMatch(
+    >>> page_match = PageMatch(
     ...     u'OpenId',
-    ...     'https://help.launchpad.net/OpenID',
+    ...     'http://help.launchpad.net/OpenID',
     ...     u'Launchpad uses OpenID.')
-    >>> another_page_match.url
-    http://help.launchpad.net/OpenID
+    >>> page_match.url
+    'http://help.launchpad.net/OpenID'
 
