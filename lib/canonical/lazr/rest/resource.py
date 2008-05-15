@@ -519,6 +519,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         :param changeset: A dictionary. Should come from an incoming
         representation.
+
+        :return: An error message to be propagated to the client.
         """
         changeset = copy.copy(changeset)
         validated_changeset = {}
@@ -526,7 +528,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # The self link isn't part of the schema, so it's
         # handled separately.
-        if changeset.has_key('self_link'):
+        if 'self_link' in changeset:
             if changeset['self_link'] != canonical_url(self.context):
                 errors.append("self_link: You tried to modify "
                               "a read-only attribute.")
@@ -542,7 +544,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
             repr_name = marshaller.representationName(name)
-            if not changeset.has_key(repr_name):
+            if not repr_name in changeset:
                 # The client didn't try to set a value for this field.
                 continue
 
