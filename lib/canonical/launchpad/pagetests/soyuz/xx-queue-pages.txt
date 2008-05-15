@@ -7,29 +7,38 @@ control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroSeries context.
 
 
-== Controlling the upload-admin role ==
+== The upload-admin role ==
 
-Change ubuntu's upload manager to be Carlos so we can check if we are
-granting the appropriate permission to this role.
+In our sample data, Ubuntu's upload manager is "name12", who has the
+rights to administer the queue for the four main components.  This
+permissioning data has no web UI to administer it yet, so we'll create
+a Zope interaction to show it:
 
-  >>> admin_browser.open("http://launchpad.dev/ubuntu")
-  >>> admin_browser.getLink("Change upload manager").click()
-  >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
-  >>> admin_browser.getControl("Change").click()
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> login('foo.bar@canonical.com')
+  >>> from canonical.launchpad.interfaces import (
+  ...     IArchivePermissionSet, IDistributionSet, IPersonSet)
+  >>> from zope.component import getUtility
+  >>> permission_set = getUtility(IArchivePermissionSet)
+  >>> main_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
+  >>> name12 = getUtility(IPersonSet).getByName('name12')
+  >>> permissions = permission_set.componentsForQueueAdmin(
+  ...     main_archive, name12)
+  >>> from operator import attrgetter
+  >>> for permission in sorted(permissions, key=attrgetter("id")):
+  ...     print permission.component.name
+  main
+  restricted
+  universe
+  multiverse
 
-We are at "Distribution Overview" page, let's verify that Carlos is
-now the upload manager:
-
-  >>> admin_browser.url
-  'http://launchpad.dev/ubuntu'
-  >>> admin_browser.getLink("Change upload manager").click()
-  >>> admin_browser.getControl(name="field.upload_admin").value
-  'carlos'
+  >>> logout()
 
 Let's setup a browser with the defined upload-admin for future use.
+(name12 is test@canonical.com)
 
   >>> upload_manager_browser = setupBrowser(
-  ...       auth="Basic carlos@canonical.com:test")
+  ...       auth="Basic test@canonical.com:test")
 
 
 == Accessing the queues ==
@@ -53,12 +62,12 @@ Viewing the current queue, by default the NEW queue.
 
   >>> print_queue(anon_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  netapplet...ddtp... -                                      Release 2005-04-07
-  netapplet...dist... -                                      Release 2005-04-07
-  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-04-07
-  netapplet (source)  0.99.6-1    main      web     low      Release 2005-04-07
-  pmount (i386)       0.1-1                                  Release 2005-04-07
-  moz...irefox (i386) 0.9                                    Release 2006-05-24
+  netapplet...ddtp... -                                      Release 2005-...
+  netapplet...dist... -                                      Release 2005-...
+  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-...
+  netapplet (source)  0.99.6-1    main      web     low      Release 2005-...
+  pmount (i386)       0.1-1                                  Release 2005-...
+  moz...irefox (i386) 0.9                                    Release 2006-...
 
 The package name in the results list is a clickable link to the changes
 file for that upload.
@@ -83,11 +92,11 @@ UNAPPROVED one.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Pocket   When
-  lang...-de (source) 1.0       main      trans... low      Proposed 2005-04-07
-  netapplet...ddtp... -                                     Backp... 2005-04-07
-  cnews (source)      1.0       main      base     low      Release  2005-04-07
-  cnews (source)      1.0       main      base     low      Release  2005-04-07
-  netapplet...(raw-translations) -                          Updates  2005-04-07
+  lang...-de (source) 1.0       main      trans... low      Proposed 2005-...
+  netapplet...ddtp... -                                     Backp... 2005-...
+  cnews (source)      1.0       main      base     low      Release  2005-...
+  cnews (source)      1.0       main      base     low      Release  2005-...
+  netapplet...(raw-translations) -                          Updates  2005-...
 
 The results can be filtered matching source name, binary name or
 custom-upload filename.
@@ -96,14 +105,14 @@ custom-upload filename.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Pocket   When
-  lang...-de (source) 1.0       main      trans... low      Proposed 2005-04-07
+  lang...-de (source) 1.0       main      trans... low      Proposed 2005-...
 
   >>> anon_browser.getControl(name="queue_text").value = 'netapplet'
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Pocket   When
-  netapplet...(raw-translations) -                          Updates  2005-04-07
-  netapplet...ddtp... -                                     Backp... 2005-04-07
+  netapplet...(raw-translations) -                          Updates  2005-...
+  netapplet...ddtp... -                                     Backp... 2005-...
 
   >>> anon_browser.getControl(
   ...     name="queue_state", index=0).displayValue = ['New']
@@ -111,7 +120,7 @@ custom-upload filename.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Pocket   When
-  pmount (i386)       0.1-1                                 Release  2005-04-07
+  pmount (i386)       0.1-1                                 Release  2005-...
 
 
 == Queue item filelist ==
@@ -206,12 +215,12 @@ Go back to the "new" queue and accept "bar":
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  netapplet...ddtp... -                                      Release 2005-04-07
-  netapplet...dist... -                                      Release 2005-04-07
-  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-04-07
-  netapplet (source)  0.99.6-1    main      web     low      Release 2005-04-07
-  pmount (i386)       0.1-1                                  Release 2005-04-07
-  moz...irefox (i386) 0.9                                    Release 2006-05-24
+  netapplet...ddtp... -                                      Release 2005-...
+  netapplet...dist... -                                      Release 2005-...
+  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-...
+  netapplet (source)  0.99.6-1    main      web     low      Release 2005-...
+  pmount (i386)       0.1-1                                  Release 2005-...
+  moz...irefox (i386) 0.9                                    Release 2006-...
 
 Accepting queue items results in an email to the uploader and (usually) an
 email to the distroseries' announcement list (see
@@ -255,7 +264,7 @@ The item is moved to the ACCEPTED queue:
   >>> upload_manager_browser.getControl("Update").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  moz...irefox (i386) 0.9                                    Release 2006-05-24
+  moz...irefox (i386) 0.9                                    Release 2006-...
 
 Going back to the "new" queue, we can see our item has gone:
 
@@ -264,11 +273,11 @@ Going back to the "new" queue, we can see our item has gone:
   >>> upload_manager_browser.getControl("Update").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  netapplet...ddtp... -                                      Release 2005-04-07
-  netapplet...dist... -                                      Release 2005-04-07
-  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-04-07
-  netapplet (source)  0.99.6-1    main      web     low      Release 2005-04-07
-  pmount (i386)       0.1-1                                  Release 2005-04-07
+  netapplet...ddtp... -                                      Release 2005-...
+  netapplet...dist... -                                      Release 2005-...
+  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-...
+  netapplet (source)  0.99.6-1    main      web     low      Release 2005-...
+  pmount (i386)       0.1-1                                  Release 2005-...
 
 When accepting items from the unapproved queue, the page will remain on the
 unapproved list after the items are accepted, to allow piecemeal
@@ -341,9 +350,9 @@ overridden:
 
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  netapplet...ddtp... -                                      Release 2005-04-07
-  netapplet...dist... -                                      Release 2005-04-07
-  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-04-07
+  netapplet...ddtp... -                                      Release 2005-...
+  netapplet...dist... -                                      Release 2005-...
+  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2005-...
 
 Any user can now see the 'accepted' queue contains pmount with its
 overridden values.
@@ -353,7 +362,7 @@ overridden values.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  pmount (i386)       0.1-1                                  Release 2005-04-07
+  pmount (i386)       0.1-1                                  Release 2005-...
   ...
 
 The user can drill down into the file list to see the overridden binary
@@ -392,8 +401,8 @@ Rejecting 'alsa-utils' source:
 
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
-  netapplet...ddtp... -                                      Release 2005-04-07
-  netapplet...dist... -                                      Release 2005-04-07
+  netapplet...ddtp... -                                      Release 2005-...
+  netapplet...dist... -                                      Release 2005-...
 
 One rejection email is generated:
 

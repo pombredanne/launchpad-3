@@ -755,6 +755,12 @@ INSERT INTO archivepermission (id, date_created, person, permission, archive, co
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (10, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (11, '2006-10-16 18:31:43.465111', 13, 1, 1, NULL, 1);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (12, '2006-10-16 18:31:43.465111', 243620, 1, 12, 5, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (13, '2006-10-16 18:31:43.465111', 12, 2, 1, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (14, '2006-10-16 18:31:43.465111', 12, 2, 1, 2, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (15, '2006-10-16 18:31:43.465111', 12, 2, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (16, '2006-10-16 18:31:43.465111', 12, 2, 1, 4, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (17, '2006-10-16 18:31:43.465111', 243602, 2, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (18, '2006-10-16 18:31:43.465111', 243602, 2, 1, 4, NULL);
 
 
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
