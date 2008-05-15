@@ -879,7 +879,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         packager.buildSource()
         biscuit_pub = packager.uploadSourceVersion(
             '1.0-1', archive=self.name16.archive)
-        self.assertEqual(biscuit_pub.status.name, 'PENDING')
+        self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
 
         # Remove breezy/i386 PPA support.
         self.breezy['i386'].supports_virtualized = False

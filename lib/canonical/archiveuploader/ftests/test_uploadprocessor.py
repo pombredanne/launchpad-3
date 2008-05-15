@@ -102,9 +102,9 @@ class TestUploadProcessorBase(unittest.TestCase):
         try:
             callableObj(*args, **kwargs)
         except excClass, error:
-            return str(error)
+            return error
         else:
-            if hasattr(excClass, '__name__'):
+            if getattr(excClass, '__name__', None) is not None:
                 excName = excClass.__name__
             else:
                 excName = str(excClass)
@@ -863,7 +863,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
         packager.buildSource()
         biscuit_pub = packager.uploadSourceVersion('1.0-2')
-        self.assertEqual(biscuit_pub.status.name, 'PENDING')
+        self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
 
         # A auto-accepted version building only in hppa, which also doesn't
         # exist in breezy gets rejected yet in upload time (meaning, the

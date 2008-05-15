@@ -396,7 +396,7 @@ class FakePackager:
 
         If 'auto_accept' is true, accept the upload if necessary and return
         the corresponding `ISourcePackagePublishingHistory` record. Otherwise
-        returnthe corresponding `IPackageUpload`.
+        return the corresponding `IPackageUpload`.
         """
         policy = findPolicyByName(policy)
 
