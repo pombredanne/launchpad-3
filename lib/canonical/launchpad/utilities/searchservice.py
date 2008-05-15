@@ -70,13 +70,13 @@ class PageMatch:
     def _rewrite_url(self, url):
         """Rewrite the url to the local environment.
 
-        Links with launhcpad.net are rewritten to the local hostname,
-        except if the domain matches a domain in the
-        config.url_rewrite_exceptions.
+        Links with launchpad.net are rewritten to the local hostname,
+        except if the domain matches a domain in the url_rewrite_exceptions.
+        property.
 
-        :param url: A url str that may be rewritten to the local
+        :param url: A URL str that may be rewritten to the local
             launchpad environment.
-        :return: A url str.
+        :return: A URL str.
         """
         if self.url_rewrite_hostname == 'launchpad.net':
             # Do not rewrite the url is the hostname is the public hostname.
@@ -160,7 +160,7 @@ class GoogleSearchService:
     def client_id(self):
         """The client-id issued by Google.
 
-        Google requires that each client of the Google Search Enging
+        Google requires that each client of the Google Search Engine
         service to pass its id as a parameter in the request URL.
         """
         return config.google.client_id
@@ -178,7 +178,7 @@ class GoogleSearchService:
 
         The config.google.client_id is used as Google client-id in the
         search request. Search returns 20 or fewer results for each query.
-        For terms that return more than 20 results, the start param can be
+        For terms that match more than 20 results, the start param can be
         used over multiple queries to get successive sets of results.
 
         :return: `ISearchResults` (PageMatches).
@@ -186,9 +186,9 @@ class GoogleSearchService:
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
-        # XXX sinzui 2008-05-14: finish this.
-        #response = urlopen(search_url)
-        #gsp_xml = response.read()
+        # XXX sinzui 2008-05-14:
+        # Replace this fake code with the fetchurl() function created
+        # by flacoste.
         from os import path
         if terms == 'bug' and start == 0:
             file_name = 'googlesearchservice-bugs-1.xml'
@@ -202,11 +202,15 @@ class GoogleSearchService:
         gsp_xml_file = open(gsp_xml_file_name_1, 'r')
         gsp_xml = gsp_xml_file.read()
         gsp_xml_file.close()
+
+        #from canonical.lazr.timeout import urlfetch
+        #gsp_xml = urlfetch(search_url)
+
         page_matches = self._parse_google_search_protocol(gsp_xml)
         return page_matches
 
     def _checkParameter(self, name, value):
-        """Check that a parameter value is not None or and empty string."""
+        """Check that a parameter value is not None or an empty string."""
         if value in (None, ''):
             raise GoogleParamError("Parameters must have values: %s." % name)
 
@@ -224,7 +228,7 @@ class GoogleSearchService:
             self._checkParameter(name, value)
             search_param_list.append('%s=%s' % (name, value))
         query_string = '&'.join(search_param_list)
-        return config.google.site + '?' + query_string
+        return self.site + '?' + query_string
 
     def _getElementsByAttributeValue(self, doc, path, name, value):
         """Return a list of elements whose named attribute matches the value.
@@ -233,7 +237,7 @@ class GoogleSearchService:
         (@) or conditional expressions (./PARAM[@name = 'start']).
 
         :param doc: An ElementTree of an XML document.
-        :param path: A string path to match one or more elements.
+        :param path: A string path to match the first element.
         :param name: The attribute name to check.
         :param value: the string value of the named attribute.
         """
@@ -254,7 +258,7 @@ class GoogleSearchService:
     def _parse_google_search_protocol(self, gsp_xml):
         """Return a `PageMatches` object.
 
-        :param gsp_xml: A string that must be Google Search Protocol
+        :param gsp_xml: A string that should be Google Search Protocol
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).

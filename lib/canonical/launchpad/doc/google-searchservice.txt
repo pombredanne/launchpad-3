@@ -32,7 +32,6 @@ entered in Google search form; the terms should not be escaped.
     >>> first_page_matches
     <...PageMatches ...>
 
-
 The start parameter sets the number of first match (index from 0) of the
 list of page matches. The default value is 0, to get the first 20
 matching pages.
@@ -66,7 +65,7 @@ items in a single ISearchResults.
     20
 
 The search for 'bugs' returned a subset of items in the ISearchResult.
-There are 31 total items, but the results contains 11, starting from
+There are 25 total items, but the results contains 5, starting from
 index of 20.
 
     >>> verifyObject(ISearchResults, second_page_matches)
@@ -79,10 +78,8 @@ index of 20.
     >>> len(second_page_matches)
     5
 
-
 An item can be retrieved from an ISearchResults object using its
-index. An items index is relative to its the search results length.
-All the items in the collection can be iterated.
+index. All the items in the collection can be iterated.
 
     >>> second_page_matches[1].url
     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
@@ -117,7 +114,7 @@ an implementation of ISearchResult.
 
     >>> page_match = PageMatch(
     ...     u'Unicode Titles in Launchpad',
-    ...     'http://launchpad.net/unicode-titles',
+    ...     'https://launchpad.net/unicode-titles',
     ...     u'Unicode Titles is a modest project dedicated to using Unicode.')
 
     >>> verifyObject(ISearchResult, page_match)
@@ -204,8 +201,16 @@ The term parameter in this example can be defined by passing the term
 argument to the method. The argument is http quoted and used as the
 value for the 'q' (query) parameter.
 
-    >>> google_search.create_search_url(terms='svg +bugs')
-    'http://launchpad.dev:8091/?as_sitesearch=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=svg+%2Bbugs&start=0'
+    >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
+    'http://launchpad.dev:8091/?as_sitesearch=launchpad.net
+    client=google-csbe
+    cx=011948274177882366108%3Aixpjdn21yfg
+    ie=utf8
+    num=20
+    oe=utf8
+    output=xml_no_dtd
+    q=svg+%2Bbugs
+    start=0'
 
 Unicode characters are escaped correctly in the google request URL.
 
