@@ -23,6 +23,7 @@ from bzrlib import osutils, urlutils
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
+from twisted.internet import defer
 from zope.interface import implements
 
 from canonical.codehosting.transport import (
@@ -100,6 +101,8 @@ class TransportSFTPFile:
 
     def _writable(self):
         """Is this file opened writable?"""
+        # The Twisted VFS adapter creates a file when any of these flags are
+        # set. It's possible that we only need to check for FXF_CREAT.
         write_mask = (
             filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
             filetransfer.FXF_CREAT)
@@ -168,8 +171,14 @@ class TransportSFTPFile:
 
     def close(self):
         """See `ISFTPFile`."""
-        if not self._written and self._should_create:
-            return self.transport.put_bytes(self.name, '')
+        if self._written or not self._should_create:
+            return defer.succeed(None)
+
+        deferred = self.transport.has(self.name)
+        def maybe_create_file(already_exists):
+            if not already_exists:
+                return self.transport.put_bytes(self.name, '')
+        return deferred.addCallback(maybe_create_file)
 
 
 def _get_transport_for_dir(directory):

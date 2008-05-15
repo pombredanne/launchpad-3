@@ -132,6 +132,15 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('barbaz', 'foo'))
 
+    def test_openAndCloseExistingFileLeavesUnchanged(self):
+        # If we open a file with the 'create' flag and without the 'truncate'
+        # flag, the file remains unchanged.
+        self.build_tree_contents([('foo', 'bar')])
+        handle = self.openFile('foo', filetransfer.FXF_CREAT, {})
+        deferred = handle.close()
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('bar', 'foo'))
+
     def test_writeChunkError(self):
         # Errors in writeChunk are translated to SFTPErrors.
         os.mkdir('foo')
