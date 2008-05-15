@@ -14,23 +14,31 @@ comes from the current configuration.
     ...     url_to_xml_map)
     >>> routes = url_to_xml_map(xml_mapfile)
 
-    >>> skeys = sorted(routes)
-    >>> for key in skeys:
-    ...     print key, routes(key)
-    * some-default result
-    /search?foo some-result-file
-    /search?bar some-other-result
+    >>> routes
+
+    >>> for key in sorted(routes.keys()):
+    ...     print key, routes[key]
+    * ...
+    /custom?... googlesearchservice...xml
+    /custom?... googlesearchservice...xml
+
 
 The service is accessible via a local URL, also pulled from the
 config.  Accessing the default URL will return the XML file specified
 as the default route, '*'.
 
-    >>> test_url = config.google.site
-    >>> default_xml = file(routes['*']).read()
+    >>> from os.path import join
+    >>> response_dir = config.google_test_service.canned_response_directory
+    >>> def get_xml_for_url(url):
+    ...     fname = routes[url]
+    ...     fullname = join(response_dir, fname)
+    ...     return file(fullname).read()
+
+    >>> default_xml = get_xml_for_url('*')
 
     # Grab a Zope testbrowser that talks across the network.
-    >>> from zope.testbrowser.browser import browser
-    >>> from os.path import join
+    >>> from zope.testbrowser.browser import Browser
+    >>> test_url = config.google.site
     >>> browser.open(join(test_url, 'something'))
 
     >>> response = browser.contents
@@ -46,8 +54,8 @@ The returned content-type should UTF-8 encoded XML.
 
 Accessing a specific key returns the appropriate XML file:
 
-    >>> path = '/search?foo'
-    >>> xml_for_path = file(routes[path]).read()
+    >>> url = '/search?foo'
+    >>> xml_for_path = get_xml_for_url(path)
     >>> browser.open(join(test_url, path))
 
     >>> browser.headers['content-type']

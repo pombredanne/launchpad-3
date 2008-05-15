@@ -47,16 +47,14 @@ def url_to_xml_map(self):
     """Return our URL-to-XML mapping as a dictionary."""
     mapfile = config.google_test_service.mapfile
     mapping = {}
-    for line in mapfile:
+    for line in file(mapfile):
         if line.startswith('#') or len(line.strip()) == 0:
             # Skip comments and blank lines.
             continue
-        try:
-            url, fname = line.split()
-        except ValueError:
-            # We got a bad key, so skip it.
-            continue
+        url, fname = line.split()
         mapping[url.strip()] = fname.strip()
+
+    return mapping
 
 def start_as_process():
     """Start the script as a stand-alone process."""
