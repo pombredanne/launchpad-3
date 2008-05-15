@@ -10,9 +10,29 @@ launchpadlib is currently in pre-alpha release.
     >>> launchpadlib.__version__
     '0.1'
 
-launchpadlib talks to Launchpad.
+launchpadlib talks to Launchpad's API facet, but anonymous users are not
+allowed to access even the root service.
 
     >>> from urllib import urlopen
-    >>> connection = urlopen('http://launchpad.dev:8085')
-    >>> connection.read()[:9]
-    '<!DOCTYPE'
+    >>> import lxml.objectify
+    >>> def parse(url):
+    ...     connection = urlopen(url)
+    ...     try:
+    ...         tree = lxml.objectify.parse(connection)
+    ...     finally:
+    ...         connection.close()
+    ...     return tree.getroot()
+
+    >>> root = parse('http://api.launchpad.dev')
+    >>> root.head.title
+    'Forbidden'
+    >>> root.body.div[1].table.tr.td.div.text.strip()
+    u'Not logged in \u2014'
+
+Anonymous users cannot even access the beta service.
+
+    >>> root = parse('http://api.launchpad.dev/beta')
+    >>> root.head.title
+    'Forbidden'
+    >>> root.body.div[1].table.tr.td.div.text.strip()
+    u'Not logged in \u2014'
