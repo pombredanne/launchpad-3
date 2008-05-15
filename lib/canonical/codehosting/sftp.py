@@ -111,7 +111,8 @@ class TransportSFTPFile:
 
     def _shouldTruncate(self):
         """Should we truncate the file?"""
-        return bool(self._flags & filetransfer.FXF_TRUNC)
+        return (bool(self._flags & filetransfer.FXF_TRUNC)
+                and not self._written)
 
     def _shouldWrite(self):
         """Is this file opened writable?"""
@@ -120,6 +121,7 @@ class TransportSFTPFile:
 
     def _truncateFile(self):
         """Truncate this file."""
+        self._written = True
         return self.transport.put_bytes(self.name, '')
 
     @with_sftp_error
@@ -129,11 +131,11 @@ class TransportSFTPFile:
             raise filetransfer.SFTPError(
                 filetransfer.FX_PERMISSION_DENIED,
                 "%r was opened read-only." % self.name)
-        self._written = True
         if self._shouldTruncate():
             deferred = self._truncateFile()
         else:
             deferred = defer.succeed(None)
+        self._written = True
         if self._shouldAppend():
             deferred.addCallback(
                 lambda ignored:

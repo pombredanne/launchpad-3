@@ -165,7 +165,8 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
 
     def test_writeTwoChunks(self):
         # We can write one chunk after another.
-        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        deferred = self.openFile(
+            'foo', filetransfer.FXF_WRITE | filetransfer.FXF_TRUNC, {})
         def write_chunks(handle):
             deferred = handle.writeChunk(1, 'a')
             deferred.addCallback(lambda ignored: handle.writeChunk(2, 'a'))
