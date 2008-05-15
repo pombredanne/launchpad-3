@@ -32,7 +32,8 @@ INSERT INTO Account(
 SELECT id, id, datecreated, COALESCE(creation_rationale, 0),
     account_status, datecreated, account_status_comment,
     openid_identifier, displayname
-    FROM Person WHERE account_status <> 10; -- Not 'No account'
+    FROM Person
+    WHERE teamowner IS NULL; -- Not teams
 
 
 -- Add a trigger to update the date_status_set on status change
@@ -93,7 +94,7 @@ UPDATE EmailAddress SET account=Account.id
 FROM Account WHERE EmailAddress.person = Account.person;
 ALTER TABLE EmailAddress
     ADD CONSTRAINT emailaddress__account__fk
-        FOREIGN KEY (account) REFERENCES Account,
+        FOREIGN KEY (account) REFERENCES Account ON DELETE SET NULL,
     ADD CONSTRAINT emailaddress__account__person__fk
         FOREIGN KEY (account, person) REFERENCES Account(id, person);
 

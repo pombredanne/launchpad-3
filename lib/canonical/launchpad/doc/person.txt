@@ -231,12 +231,14 @@ If we look up a string not associated with any user, None is returned:
 
 Accounts that have not been validated are not returned either:
 
-    >>> person = personset.getByName('matsubara')
+    >>> person, email = personset.createPersonAndEmail(
+    ...     email='whatever@example.com', name='whatever',
+    ...     rationale=PersonCreationRationale.SOURCEPACKAGEIMPORT)
     >>> person.is_valid_person
     False
-    >>> person.openid_identifier
-    u'matsubara_oid'
-    >>> print personset.getByOpenIdIdentifier('matsubara_oid')
+    >>> person.openid_identifier is not None
+    True
+    >>> print personset.getByOpenIdIdentifier(person.openid_identifier)
     None
 
 
@@ -318,7 +320,8 @@ teams.
     True
     >>> verifyObject(ITeam, not_a_person)
     True
-    >>> print not_a_person.password
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(not_a_person).password
     None
 
 The team owner is also added as an administrator of its team.

@@ -319,7 +319,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert self.account_status == AccountStatus.NOACCOUNT, (
             "Only Person entries whose account_status is NOACCOUNT can be "
             "converted into teams.")
-        self.password = None
+        # Teams don't have Account records
+        account = Account.selectOneBy(person=self)
+        if account is not None:
+            Account.delete(account.id)
+            del account
         self.creation_rationale = None
         self.teamowner = team_owner
         alsoProvides(self, ITeam)
@@ -2351,48 +2355,89 @@ class PersonSet:
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = ("Person.account_status not in (%s)"
-                      % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
+
+        # We should benchmark this version under PG 8.3 with real data.
+        #
+        # return Person.select("""
+        #     id IN (
+        #         SELECT Person.id FROM Person
+        #         LEFT OUTER JOIN EmailAddress
+        #             ON EmailAddress.person = Person.id
+        #         LEFT OUTER JOIN Account ON Account.person = Person.id
+        #         WHERE
+        #             (teamowner IS NOT NULL OR Account.status NOT IN (%s))
+        #             AND merged IS NULL
+        #             AND (
+        #                 fti @@ ftq(%s)
+        #                 OR lower(EmailAddress.email) LIKE %s || '%%'
+        #                 )
+        #         )""" % (
+        #             ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)),
+        #             quote(text),
+        #             quote_like(text),
+        #             )
+        #         )
+
+
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        email_query = base_query + """
-            AND EmailAddress.person = Person.id
+        email_query = """
+            EmailAddress.person = Person.id
+            AND merged IS NULL
             AND lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
-        results = Person.select(email_query, clauseTables=['EmailAddress'])
-        name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
-        name_query += " AND " + base_query
-        return results.union(Person.select(name_query), orderBy=orderBy)
+        results = Person.select(
+                email_query, clauseTables=['EmailAddress'])
+        name_query = """
+            merged IS NULL AND fti @@ ftq(%s) AND merged is NULL
+            """ % quote(text)
+        results = results.union(
+                Person.select(name_query, clauseTables=['Account']),
+                orderBy=orderBy)
+        return shortlist(person for person in results
+            if person.isTeam
+                or person.account_status not in INACTIVE_ACCOUNT_STATUSES)
 
     def findPerson(
             self, text="", orderBy=None, exclude_inactive_accounts=True):
         """See `IPersonSet`."""
+        
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = """
-            Person.teamowner IS NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            """
+
+
+        base_query = "Person.teamowner IS NULL AND Person.merged IS NULL"
+        clause_tables = []
+
         if exclude_inactive_accounts:
-            base_query += (" AND Person.account_status not in (%s)"
-                           % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
-        clauseTables = ['EmailAddress']
-        if text:
-            # We use a UNION here because this makes things *a lot* faster
-            # than if we did a single SELECT with the two following clauses
-            # ORed.
-            email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
-                           % (base_query, quote_like(text)))
-            name_query = ('%s AND Person.fti @@ ftq(%s)'
-                          % (base_query, quote(text)))
-            results = Person.select(email_query, clauseTables=clauseTables)
-            results = results.union(
-                Person.select(name_query, clauseTables=clauseTables))
-        else:
-            results = Person.select(base_query, clauseTables=clauseTables)
+            clause_tables.append('Account')
+            base_query += """
+                AND Account.person = Person.id
+                AND Account.status NOT IN (%s)
+                """ % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES))
+
+        # Short circuit for returning all users in order
+        if not text:
+            return Person.select(base_query, clauseTables=clause_tables)
+
+        # We use a UNION here because this makes things *a lot* faster
+        # than if we did a single SELECT with the two following clauses
+        # ORed.
+        email_query = """
+            %s
+            AND EmailAddress.person = Person.id
+            AND lower(EmailAddress.email) LIKE %s || '%%'
+            """ % (base_query, quote_like(text))
+        name_query = """
+            %s AND Person.fti @@ ftq(%s)
+            """ % (base_query, quote(text))
+
+        results = Person.select(
+                email_query, clauseTables=clause_tables + ['EmailAddress'])
+        results = results.union(
+            Person.select(name_query, clauseTables=clause_tables))
 
         return results.orderBy(orderBy)
 

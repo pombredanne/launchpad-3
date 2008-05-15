@@ -33,7 +33,7 @@ class Account(SQLBase):
             dbName='creation_rationale', schema=AccountCreationRationale,
             notNull=True)
     status = EnumCol(
-            enum=AccountStatus, default=AccountStatus.ACTIVE,
+            enum=AccountStatus, default=AccountStatus.NOACCOUNT,
             notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
@@ -45,10 +45,24 @@ class Account(SQLBase):
     # The password is actually stored in a seperate table for security
     # reasons, so use a property to hide this implementation detail.
     def _get_password(self):
-        return AccountPassword.byAccountID(self.id).password
+        password = AccountPassword.selectOneBy(account=self)
+        if password is not None:
+            return password.password
+        else:
+            return None
 
     def _set_password(self, value):
-        AccountPassword.byAccountID(self.id).password = value
+        password = AccountPassword.selectOneBy(account=self)
+
+        if value is not None and password is None:
+            # There is currently no AccountPassword record and we need one.
+            AccountPassword(account=self, password=value)
+        elif password is None:
+            # There is an AccountPassword record that needs removing.
+            AccountPassword.delete(password.id)
+        elif value is not None:
+            # There is an AccountPassword record that needs updating.
+            password.password = value
 
     password = property(_get_password, _set_password)
 
@@ -71,7 +85,8 @@ class AccountSet:
         if encrypted_password is None and password is not None:
             encrypted_password = getUtility(IPasswordEncryptor).encrypt(
                     password)
-        AccountPassword(account=account, password=encrypted_password)
+        if encrypted_password is not None:
+            AccountPassword(account=account, password=encrypted_password)
 
         return account
 

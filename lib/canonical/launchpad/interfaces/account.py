@@ -24,22 +24,20 @@ from canonical.lazr import DBEnumeratedType, DBItem
 class AccountStatus(DBEnumeratedType):
     """The status of an account."""
 
-    # XXX: This first entry will be removed when the account_status
-    # property is removed from Person.
     NOACCOUNT = DBItem(10, """
-        No Launchpad account
+        Unactivated account
 
-        There's no Launchpad account for this Person record.
+        The account has not yet been activated.
         """)
 
     ACTIVE = DBItem(20, """
-        Active Launchpad account
+        Active account
 
         The account is active.
         """)
 
     DEACTIVATED = DBItem(30, """
-        Deactivated Launchpad account
+        Deactivated account
 
         The account has been deactivated by the account's owner.
         """)
@@ -214,8 +212,19 @@ class IAccount(Interface):
 class IAccountSet(Interface):
     """Creation of and access to IAccount providers."""
 
-    def new():
-        """Create a new IAccount."""
+    def new(
+            rationale, displayname, emailaddress,
+            plaintext_password=None, encrypted_password=None):
+        """Create a new IAccount.
+       
+        :param rationale: An AccountStatus value.
+        :param emailaddress: An IEmailAddress.
+        :param password: A plaintext password.
+        :param encrypted_password: A password encrypted using the
+            IPasswordEncryptor utility.
+
+        :return: The newly created IAccount provider.
+        """
 
     def getByEmail(email):
         """Return the IAccount linked to the given email address.
