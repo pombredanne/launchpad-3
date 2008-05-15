@@ -95,13 +95,10 @@ class TransportSFTPFile:
 
     @staticmethod
     def _shouldCreate(flags):
-        if flags & filetransfer.FXF_WRITE == filetransfer.FXF_WRITE:
-            return True
-        if flags & filetransfer.FXF_APPEND == filetransfer.FXF_APPEND:
-            return True
-        if flags & filetransfer.FXF_CREAT == filetransfer.FXF_CREAT:
-            return True
-        return False
+        create_mask = (
+            filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
+            filetransfer.FXF_CREAT)
+        return bool(flags & create_mask)
 
     @with_sftp_error
     def writeChunk(self, offset, data):
@@ -120,11 +117,10 @@ class TransportSFTPFile:
 
     def _check_for_eof(self, failure):
         failure.trap(bzr_errors.ShortReadvError)
-        # XXX: JonathanLange 2008-05-13: We return the empty string instead of
-        # the partially-returned data, since current versions of Bazaar don't
-        # actually use data from a short read (because this is always an
-        # error), so the only use of sending the partial data would be for
-        # better error reporting, which Bazaar doesn't even support.
+        # XXX: JonathanLange 2008-05-13: We might be discarding data here. But
+        # even if we weren't, current versions of Bazaar wouldn't actually use
+        # it. If Bazaar changes to include the returned data in a
+        # ShortReadvError, we should consider changing this method.
         return ''
 
     def setAttrs(self, attrs):
