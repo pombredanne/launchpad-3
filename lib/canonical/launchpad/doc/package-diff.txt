@@ -276,12 +276,9 @@ transaction before we can access the file.
 Now we can compare the package diff outcome to the debdiff output
 (obtained manually on the shell) for the packages in question.
 
-    >>> print get_diff_results(diff)
-    diff -u biscuit-1.0/contents biscuit-1.0/contents
-    --- biscuit-1.0/contents
-    +++ biscuit-1.0/contents
-    @@ -3 +2,0 @@
-    -1.0-8
+    >>> actual_diff = get_diff_results(diff)
+    >>> print actual_diff
+    ...
     diff -u biscuit-1.0/debian/changelog biscuit-1.0/debian/changelog
     --- biscuit-1.0/debian/changelog
     +++ biscuit-1.0/debian/changelog
@@ -295,7 +292,25 @@ Now we can compare the package diff outcome to the debdiff output
      biscuit (1.0-1) hoary; urgency=low
     <BLANKLINE>
        * Initial Upstream package
+    ...
     <BLANKLINE>
+
+XXX cprov 20080515: the first and the last ellipses in the text
+printed above are necessary to cope with the different ordering used
+in the dapper vs hardy `debdiff` package. They ignore the diff in the
+'biscuit-1.0/contents' file, which is presented at the end in hardy
+and at the begin in dapper. In order to be safer, we will at least
+check that the unordered chunk is included in the actual diff
+
+    >>> unordered_chunk = (
+    ...     "diff -u biscuit-1.0/contents biscuit-1.0/contents\n"
+    ...     "--- biscuit-1.0/contents\n"
+    ...     "+++ biscuit-1.0/contents\n"
+    ...     "@@ -3 +2,0 @@\n"
+    ...     "-1.0-8\n")
+
+    >>> unordered_chunk in actual_diff
+    True
 
 
 == Dealing with all PackageDiff objects ==
