@@ -180,7 +180,7 @@ class GoogleSearchService:
         search request. Search returns 20 or fewer results for each query.
         For terms that return more than 20 results, the start param can be
         used over multiple queries to get successive sets of results.
-        
+
         :return: `ISearchResults` (PageMatches).
         :raise: `GoogleParamError` when an search parameter is None.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.

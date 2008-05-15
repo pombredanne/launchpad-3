@@ -24,7 +24,7 @@ The GoogleSearchService implements the ISearchService.
 
 The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
-entered in Google search form; the terms should not be escaped. 
+entered in Google search form; the terms should not be escaped.
 
     >>> from canonical.launchpad.interfaces import ISearchResults
 

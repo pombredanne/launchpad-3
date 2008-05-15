@@ -60,7 +60,7 @@ class ISearchService(Interface):
         """Search a source for items that match the terms and.
 
         :param terms: A string of terms understood by the search service.
-        :param start: The index of the first item to return in the 
+        :param start: The index of the first item to return in the
             `ISearchResults` collection. The search service may limit the
             number of items in the results. The start parameter can be used
             to page though batches of `ISearchResults`.
