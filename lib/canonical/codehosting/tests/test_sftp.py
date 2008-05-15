@@ -137,8 +137,7 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
 
     def test_writeChunkToFile(self):
         self.build_tree_contents([('foo', 'contents')])
-        deferred = self.openFile(
-            'foo', filetransfer.FXF_WRITE, {})
+        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
         return deferred.addCallback(self._test_writeChunkToFile_callback)
 
     def _test_writeChunkToFile_callback(self, handle):
@@ -146,6 +145,17 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('cquxents', 'foo'))
+
+    def test_writeTwoChunks(self):
+        # We can write one chunk after another.
+        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        def write_chunks(handle):
+            deferred = handle.writeChunk(1, 'a')
+            deferred.addCallback(lambda ignored: handle.writeChunk(2, 'a'))
+            deferred.addCallback(lambda ignored: handle.close())
+        deferred.addCallback(write_chunks)
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual(chr(0) + 'aa', 'foo'))
 
     def test_writeChunkToNonexistentFile(self):
         # Writing a chunk of data to a non-existent file creates the file even
