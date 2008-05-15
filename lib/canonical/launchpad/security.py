@@ -1087,21 +1087,31 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.getArchive(), user)
+            self.obj.distroseries.main_archive, user)
         return permissions.count() > 0
 
-    def getArchive(self):
-        """Return the archive for the context object."""
-        return self.obj.distroseries.main_archive
 
-
-class EditPackageUpload(EditPackageUploadQueue):
+class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
 
-    def getArchive(self):
-        """Return the archive for the context object."""
-        return self.obj.archive
+    def checkAuthenticated(self, user):
+        """User must have an entry in ArchivePermission or be an admin."""
+        if AdminByAdminsTeam.checkAuthenticated(self, user):
+            return True
+
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.archive, user)
+        allowed_components = set(
+            permission.component for permission in permissions)
+        existing_components = self.obj.components
+        # The intersection of allowed_components and
+        # existing_components must be equal to existing_components
+        # to allow the operation to go ahead.
+        return (allowed_components.intersection(existing_components)
+                == existing_components)
+
 
 class AdminByBuilddAdmin(AuthorizationBase):
     permission = 'launchpad.Admin'

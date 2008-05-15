@@ -102,38 +102,6 @@ class QueueItemsView(LaunchpadView):
         # no actions for unsupported states
         return []
 
-    def checkAccessRights(self, queue_item, allowed_components):
-        """Check if the queue item's component is in allowed_components.
-
-        :param queue_item: an IPackageUpload
-        :param allowed_components: a sequence of IComponent
-
-        :return: the list of components that are not allowed in the case
-            of there being no rights, None otherwise.
-        """
-        existing_components = set()
-        if queue_item.contains_source:
-            existing_components.add(
-                queue_item.sourcepackagerelease.component)
-        else:
-            # For builds we need to iterate through all its binaries
-            # and collect each component.
-            for build in queue_item.builds:
-                for binary in build.build.binarypackages:
-                    existing_components.add(binary.component)
-
-        existing_component_names = ", ".join(
-            component.name for component in existing_components)
-
-        # The intersection of allowed_components and
-        # existing_components must be equal to existing_components
-        # to allow the operation to go ahead.
-        if (allowed_components.intersection(existing_components)
-                == existing_components):
-            return None
-        else:
-            return existing_components
-
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
 
@@ -213,11 +181,9 @@ class QueueItemsView(LaunchpadView):
             queue_item = queue_set.get(int(queue_id))
             # First check that the user has rights to accept/reject this
             # item by virtue of which component it has.
-            existing_components = self.checkAccessRights(
-                queue_item, allowed_components)
-            if existing_components is not None:
+            if not check_permission('launchpad.Edit', queue_item):
                 existing_component_names = ", ".join(
-                    component.name for component in existing_components)
+                    component.name for component in queue_item.components)
                 failure.append(
                     "FAILED: %s (You have no rights to accept component(s) "
                     "'%s')" % (queue_item.displayname,

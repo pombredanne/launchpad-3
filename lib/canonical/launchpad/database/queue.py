@@ -860,6 +860,20 @@ class PackageUpload(SQLBase):
                 extra_headers
             )
 
+    @property
+    def components(self):
+        """See `IPackageUpload`."""
+        existing_components = set()
+        if self.contains_source:
+            existing_components.add(self.sourcepackagerelease.component)
+        else:
+            # For builds we need to iterate through all its binaries
+            # and collect each component.
+            for build in self.builds:
+                for binary in build.build.binarypackages:
+                    existing_components.add(binary.component)
+        return existing_components
+
     def overrideSource(self, new_component, new_section, allowed_components):
         """See `IPackageUpload`."""
         if not self.contains_source:
