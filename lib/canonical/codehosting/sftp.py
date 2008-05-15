@@ -100,6 +100,10 @@ class TransportSFTPFile:
         """Is this file opened append?"""
         return bool(self._flags & filetransfer.FXF_APPEND)
 
+    def _truncate(self):
+        """Should we truncate the file?"""
+        return bool(self._flags & filetransfer.FXF_TRUNC)
+
     def _writable(self):
         """Is this file opened writable?"""
         # The Twisted VFS adapter creates a file when any of these flags are
@@ -124,10 +128,19 @@ class TransportSFTPFile:
                 filetransfer.FX_PERMISSION_DENIED,
                 "%r was opened read-only." % self.name)
         self._written = True
-        if self._append():
-            return self.transport.append_bytes(self.name, data)
+        if self._truncate():
+            deferred = self.transport.put_bytes(self.name, '')
         else:
-            return self.transport.writeChunk(self.name, offset, data)
+            deferred = defer.succeed(None)
+        if self._append():
+            deferred.addCallback(
+                lambda ignored:
+                self.transport.append_bytes(self.name, data))
+        else:
+            deferred.addCallback(
+                lambda ignored:
+                self.transport.writeChunk(self.name, offset, data))
+        return deferred
 
     @with_sftp_error
     def readChunk(self, offset, length):
@@ -174,6 +187,9 @@ class TransportSFTPFile:
         """See `ISFTPFile`."""
         if self._written or not self._should_create:
             return defer.succeed(None)
+
+        if self._truncate():
+            return self.transport.put_bytes(self.name, '')
 
         deferred = self.transport.has(self.name)
         def maybe_create_file(already_exists):

@@ -130,13 +130,24 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
             lambda ignored: self.assertFileEqual('bar', 'foo'))
 
     def test_writeChunkToFile(self):
-        self.build_tree_contents([('foo', 'bar')])
+        self.build_tree_contents([('foo', 'contents')])
         handle = self.openFile(
-            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_WRITE, {})
+            'foo', filetransfer.FXF_WRITE, {})
         deferred = handle.writeChunk(1, 'qux')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('bqux', 'foo'))
+            lambda ignored: self.assertFileEqual('cquxents', 'foo'))
+
+    def test_writeChunkToNonexistentFile(self):
+        # Writing a chunk of data to a non-existent file creates the file even
+        # if the create flag is not set. NOTE: This behaviour is unspecified
+        # in the SFTP drafts at
+        # http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/
+        handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        deferred = handle.writeChunk(1, 'qux')
+        deferred.addCallback(lambda ignored: handle.close())
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual(chr(0) + 'qux', 'foo'))
 
     def test_writeToReadOpenedFile(self):
         # writeChunk raises an error if we try to write to a file that has
@@ -146,6 +157,16 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         return self.assertSFTPError(
             filetransfer.FX_PERMISSION_DENIED,
             handle.writeChunk, 0, 'new content')
+
+    def test_overwriteFile(self):
+        # writeChunk overwrites a file if write, create and trunk flags are
+        # set.
+        self.build_tree_contents([('foo', 'contents')])
+        handle = self.openFile(
+            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_TRUNC | filetransfer.FXF_WRITE, {})
+        deferred = handle.writeChunk(0, 'bar')
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('bar', 'foo'))
 
     def test_writeToAppendingFileIgnoresOffset(self):
         # If a file is opened with the 'append' flag, writeChunk ignores its
@@ -165,7 +186,17 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('bar', 'foo'))
 
-    def test_writeChunkError(self):
+    def test_openAndCloseExistingFileTruncation(self):
+        # If we open a file with the 'create' flag and the 'truncate' flag,
+        # the file is reset to empty.
+        self.build_tree_contents([('foo', 'bar')])
+        handle = self.openFile(
+            'foo', filetransfer.FXF_TRUNC | filetransfer.FXF_CREAT, {})
+        deferred = handle.close()
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('', 'foo'))
+
+    def test_writeChunkOnDirectory(self):
         # Errors in writeChunk are translated to SFTPErrors.
         os.mkdir('foo')
         handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
