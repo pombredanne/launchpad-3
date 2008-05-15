@@ -39,7 +39,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     author = Object(schema=IAuthor)
     ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
     ...     recipes = Attribute("List of recipes published in this cookbook.")
-    ...     cover = Bytes("An image of the cookbook's cover.")
+    ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
 
     >>> class IDish(Interface):
     ...     name = TextLine(title=u"Name", required=True)
@@ -101,7 +101,11 @@ and IRecipe.
     ...         self.target.comments.append(self)
     >>> protect_schema(Comment, IComment, write_permission=CheckerPublic)
 
+    >>> from canonical.launchpad.rest.bytestorage import (
+    ...     LibraryBackedByteStorage)
+    >>> from canonical.launchpad.database import LibraryFileAlias
     >>> class Cookbook:
+    ...     cover_id = 1
     ...     implements(ICookbook)
     ...     def __init__(self, name, author, cuisine=None):
     ...         self.name = name
@@ -109,6 +113,11 @@ and IRecipe.
     ...         self.recipes = []
     ...         self.comments = []
     ...         self.cuisine = cuisine
+    ...         self.cover = LibraryFileAlias(
+    ...             contentID=self.cover_id, filename="cover",
+    ...             mimetype="image/png")
+    ...         self.cover_id += 1
+    ...         self.cover = None
     >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
 
     >>> class Dish:
@@ -434,6 +443,7 @@ recipe to its cookbook.
     ...     author = Object(schema=IAuthor)
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
     ...     comments = CollectionField(value_type=Object(schema=IComment))
+    ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
 
 
 == Implementing the resources ==
@@ -677,7 +687,7 @@ a named factory operation for creating a new cookbook.
     ...         TextLine(
     ...             __name__='cuisine', default=u'Brazilian', required=False),
     ...     )
-    ...   
+    ...
     ...     def call(self, author_name, title, cuisine):
     ...         cookbook = CookbookSet().newCookbook(
     ...             author_name, title, cuisine)
@@ -989,10 +999,13 @@ entry's resource), and possibly links to associated resources.
     >>> entries[0]['self_link']
     u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread'
 
-Each cookbook, for instance, has a link to its author.
+Each cookbook, for instance, has a link to its author and a link to a
+cover image.
 
     >>> entries[0]['author_link']
     u'http://api.launchpad.dev/beta/authors/James%20Beard'
+    >>> entries[0]['cover_link']
+    u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread/cover'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -1032,6 +1045,8 @@ value (Brazilian) specified in CookbookFactoryOperation for it.
       u'http://api.launchpad.dev/beta/authors/Fernando%20Yokota'),
      (u'comments_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/comments'),
+     (u'cover_link',
+      u'http://api.launchpad.dev/beta/cookbooks/Feijoada/cover'),
      (u'cuisine', u'Brazilian'),
      (u'name', u'Feijoada'),
      (u'recipes_collection_link',
@@ -1088,6 +1103,66 @@ across cookbooks.
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
+
+
+== Stored file resources ==
+
+Binary files, such as the covers of cookbooks, are stored on an
+external server, but they have addresses within the web service. A
+newly created cookbook has no cover.
+
+    >>> cover_url = quote('/beta/cookbooks/The Joy of Cooking/cover')
+    >>> get_request = create_web_service_request(cover_url)
+    >>> file_resource = get_request.traverse(app)
+    >>> file_resource()
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: 'cover'
+
+    >>> print C2.cover
+    None
+
+A cookbook can be given a cover with PUT.
+
+    >>> headers = {'CONTENT_TYPE' : 'image/png'}
+    >>> body = 'Pretend this is an image.'
+    >>> put_request = create_web_service_request(
+    ...     cover_url, body=body, environ=headers, method='PUT')
+    >>> file_resource = put_request.traverse(app)
+    >>> file_resource()
+    ''
+
+    >>> C2.cover
+    <LibraryFileAlias ...>
+
+At this point it exists:
+
+    >>> get_request = create_web_service_request(cover_url)
+    >>> file_resource = get_request.traverse(app)
+    >>> file_resource()
+    ''
+    >>> get_request.response.getStatus()
+    303
+    >>> get_request.response.getHeader('Location')
+    'http://localhost:58000/96/cover'
+
+The cover can be deleted with DELETE.
+
+    >>> delete_request = create_web_service_request(
+    ...     cover_url, method='DELETE')
+    >>> file_resource = delete_request.traverse(app)
+    >>> file_resource()
+    ''
+
+    >>> get_request = create_web_service_request(cover_url)
+    >>> file_resource = get_request.traverse(app)
+    >>> file_resource()
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: 'cover'
+
+    >>> print C2.cover
+    None
 
 
 == Requesting non available resources ==

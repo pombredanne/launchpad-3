@@ -14,6 +14,19 @@
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
+    <!-- Registration for the class that manages an entry's byte
+         storage fields. -->
+    <adapter
+        for="canonical.lazr.interfaces.IEntry
+             zope.schema.interfaces.IField"
+        provides="canonical.lazr.interfaces.IByteStorage"
+        factory="canonical.launchpad.rest.LibraryBackedByteStorage"
+        />
+
+    <class class="canonical.launchpad.rest.LibraryBackedByteStorage">
+        <allow interface='canonical.lazr.interfaces.IByteStorage' />
+    </class>
+
     <!-- TALES namespaces for WADL generation -->
     <adapter
         for="canonical.lazr.interfaces.IHTTPResource"

@@ -34,25 +34,25 @@ class ByteStorageResource(HTTPResource):
         elif self.request.method == "DELETE":
             return self.do_DELETE()
         else:
-
             allow_string = "GET PUT DELETE"
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", allow_string)
 
     def do_GET(self):
-        file_object = getattr(self.context.entry, self.context.filename)
-        if file_object is None:
+        if not self.context.is_stored:
             # No stored document exists here yet.
-            raise NotFound(self.context, '', self.request)
+            raise NotFound(self.context, self.context.filename, self.request)
         self.request.response.setStatus(303) # See Other
-        self.request.response.setHeader('Location', file_object.getURL())
+        self.request.response.setHeader('Location', self.context.alias_url)
+        return ''
 
     def do_PUT(self, type, representation):
-        file_object = self.context.create_stored(type, representation)
-        setattr(self.context.entry, self.context.filename, file_object)
+        self.context.createStored(type, representation)
+        return ''
 
     def do_DELETE(self):
-        setattr(self.context.entry, self.context.filename, None)
+        self.context.deleteStored()
+        return ''
 
 
 class ByteStorageMarshaller(SimpleFieldMarshaller):

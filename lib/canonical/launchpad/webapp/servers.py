@@ -18,7 +18,8 @@ from zope.app.publication.requestpublicationregistry import (
     factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.component import getUtility, queryAdapter, queryMultiAdapter
+from zope.component import (
+    getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
@@ -36,7 +37,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IFeed, IHTTPResource)
+    IByteStorage, ICollection, ICollectionField, IEntry, IFeed,
+    IHTTPResource)
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryResource, ScopedCollection)
 
@@ -45,7 +47,6 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
     OAuthPermission, NonceAlreadyUsed)
-from canonical.launchpad.rest import LibraryBackedByteStorage
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -960,8 +961,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # Even if the library file is None, we want to allow
         # traversal, because the request might be a PUT request
         # creating a file here.
-        byte_storage = LibraryBackedByteStorage(entry, field.bind(entry))
-        return byte_storage
+        return getMultiAdapter((entry, field.bind(entry)), IByteStorage)
 
     def _traverseToScopedCollection(self, request, entry, field, name):
         """Try to traverse to a collection in entry.

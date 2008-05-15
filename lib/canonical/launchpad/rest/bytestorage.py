@@ -23,25 +23,33 @@ class LibraryBackedByteStorage:
     implements(IByteStorage)
 
     def __init__(self, entry, field):
-        """See IByteStorage."""
+        """Initialize as the backing storage for one entry's field."""
         self.entry = entry
         self.field = field
+        self.file_alias = getattr(self.entry, self.filename)
 
     @property
-    def url(self):
+    def alias_url(self):
         """See IByteStorage."""
-        return self.get_stored().getURL()
+        return self.file_alias.getURL()
 
     @property
     def filename(self):
         """See IByteStorage."""
         return self.field.__name__
 
-    def create_stored(self, type, representation):
+    @property
+    def is_stored(self):
         """See IByteStorage."""
-        return getUtility(ILibraryFileAliasSet).create(
+        return self.file_alias is not None
+
+    def createStored(self, type, representation):
+        """See IByteStorage."""
+        stored = getUtility(ILibraryFileAliasSet).create(
             name=self.filename, size=len(representation),
             file=StringIO(representation), contentType=type)
+        setattr(self.entry, self.filename, stored)
 
-    def _getLibraryStorage(self):
-        return getattr(self.entry, self.context.filename)
+    def deleteStored(self):
+        """See IByteStorage."""
+        setattr(self.entry, self.filename, None)

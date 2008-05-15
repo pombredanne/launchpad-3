@@ -168,10 +168,10 @@ class IByteStorage(Interface):
     by the web service.
     """
 
-    url = Attribute("The external URL to the byte stream.")
+    alias_url = Attribute("The external URL to the byte stream.")
     filename = Attribute("Filename for the byte stream.")
 
-    def create_stored(type, representation):
+    def createStored(type, representation):
         """Create a new stored bytestream."""
 
 
