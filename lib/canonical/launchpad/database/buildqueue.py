@@ -153,6 +153,8 @@ class BuildQueue(SQLBase):
             (300, 5),
         ]
 
+        private_archive_increment = 10000
+
         score = 0
         msg = "%s (%d) -> " % (self.build.title, self.lastscore)
 
@@ -191,7 +193,7 @@ class BuildQueue(SQLBase):
 
             # Private builds get uber score.
             if self.build.archive.private:
-                score += 10000
+                score += private_archive_increment
 
         # Store current score value.
         self.lastscore = score

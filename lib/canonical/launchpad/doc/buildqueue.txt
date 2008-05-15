@@ -259,62 +259,6 @@ as intended.
     hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
     i386 build of netapplet 1.0-1 in ubuntu hoary RELEASE (0, 5)
 
-After restoring the original section for the 'netapplet' build the
-score will be bigger than zero.
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> na_spr.section = na_spr_original_section
-    >>> syncUpdate(na_spr)
-    >>> print na_bqe.build.pocket.name
-    RELEASE
-    >>> na_bqe.score()
-    >>> na_bqe.lastscore
-    4005
-
-Let's see how the score varies for different publishing pockets.
-
-We will start with the lowest priority pocket: proposed.
-
-    >>> na_build.pocket = PackagePublishingPocket.PROPOSED
-    >>> syncUpdate(na_build)
-    >>> na_bqe.score()
-    >>> na_bqe.lastscore
-    1005
-
-The score will increase by 1500 for the next ranked pocket: backports.
-
-    >>> na_build.pocket = PackagePublishingPocket.BACKPORTS
-    >>> syncUpdate(na_build)
-    >>> na_bqe.score()
-    >>> na_bqe.lastscore
-    2505
-
-Going to the next ranked pocket (RELEASE) there will be another score
-increase of 1500.
-
-    >>> na_build.pocket = PackagePublishingPocket.RELEASE
-    >>> syncUpdate(na_build)
-    >>> na_bqe.score()
-    >>> na_bqe.lastscore
-    4005
-
-Moving up to the UPDATES pocket will bump the score up by another 1500.
-
-    >>> na_build.pocket = PackagePublishingPocket.UPDATES
-    >>> syncUpdate(na_build)
-    >>> na_bqe.score()
-    >>> na_bqe.lastscore
-    5505
-
-Finally, placing the build in the SECURITY pocket will push its score
-up by another 1500.
-
-    >>> na_build.pocket = PackagePublishingPocket.SECURITY
-    >>> syncUpdate(na_build)
-    >>> na_bqe.score()
-    >>> na_bqe.lastscore
-    7005
-
 Restricting the domain to only hoary/hppa:
 
     >>> archseries = [hoary['hppa']]

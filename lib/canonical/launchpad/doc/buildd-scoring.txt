@@ -29,7 +29,8 @@ BuildQueue entries.
 
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (
-    ...     PackagePublishingStatus, SourcePackageUrgency)
+    ...     PackagePublishingPocket, PackagePublishingStatus,
+    ...     SourcePackageUrgency)
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
@@ -46,6 +47,7 @@ BuildQueue entries.
 
     >>> def setUpBuildQueueEntry(
     ...     component_name='main', urgency=SourcePackageUrgency.HIGH,
+    ...     pocket=PackagePublishingPocket.RELEASE,
     ...     date_created=LOCAL_NOW, manual=False):
     ...     global version
     ...     commit()
@@ -53,7 +55,7 @@ BuildQueue entries.
     ...     pub = test_publisher.getPubSource(
     ...        sourcename='test-build', version=str(version),
     ...        distroseries=hoary, component=component_name,
-    ...        urgency=urgency,
+    ...        urgency=urgency, pocket=pocket,
     ...        status=PackagePublishingStatus.PUBLISHED)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
@@ -88,8 +90,6 @@ If the archive is private, its score is boosted by 10000:
     >>> bq0.lastscore
     14015
 
-    >>> bq0.build.archive.private = False
-    >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 
@@ -177,3 +177,47 @@ rescored, which allows us to set an arbitrary value on it.
 
     >>> bq6.lastscore
     5000
+
+Let's see how the score varies for different publishing pockets.
+
+We will start with the lowest priority pocket: proposed.
+
+    >>> bq7 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+    >>> bq7.score()
+    >>> bq7.lastscore
+    1015
+
+The score will increase by 1500 for the next ranked pocket: backports.
+
+    >>> bq8 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.BACKPORTS)
+    >>> bq8.score()
+    >>> bq8.lastscore
+    2515
+
+Going to the next ranked pocket (RELEASE) there will be another score
+increase of 1500.
+
+    >>> bq9 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> bq9.score()
+    >>> bq9.lastscore
+    4015
+
+Moving up to the UPDATES pocket will bump the score up by another 1500.
+
+    >>> bqa = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.UPDATES)
+    >>> bqa.score()
+    >>> bqa.lastscore
+    5515
+
+Finally, placing the build in the SECURITY pocket will push its score
+up by another 1500.
+
+    >>> bqb = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> bqb.score()
+    >>> bqb.lastscore
+    7015
