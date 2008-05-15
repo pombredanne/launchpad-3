@@ -1,5 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Explicit is better than implicit.
+# pylint: disable-msg=W0602,W0603
 """Helpers to time out external operations."""
 
 __metaclass__ = type
@@ -12,7 +13,6 @@ __all__ = [
     ]
 
 import httplib
-import socket
 import sys
 from threading import Thread
 import urllib2
