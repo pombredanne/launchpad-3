@@ -17,6 +17,7 @@ __metaclass__ = type
 
 import errno
 import os
+import stat
 
 from bzrlib import errors as bzr_errors
 from bzrlib import osutils, urlutils
@@ -265,10 +266,18 @@ class TransportSFTPServer:
         deferred = self.transport.list_dir(path)
         return deferred.addCallback(DirectoryListing)
 
+    @with_sftp_error
     def openFile(self, path, flags, attrs):
         """See `ISFTPServer`."""
-        return defer.succeed(
-            TransportSFTPFile(self.transport, path, flags))
+        directory = os.path.dirname(path)
+        deferred = self.transport.stat(directory)
+        def open_file(stat_result):
+            if stat.S_ISDIR(stat_result):
+                return TransportSFTPFile(self.transport, path, flags)
+            else:
+                raise filetransfer.SFTPError(
+                    filetransfer.FX_NO_SUCH_FILE, directory)
+        return deferred.addCallback(open_file)
 
     def readLink(self, path):
         """See `ISFTPServer`."""

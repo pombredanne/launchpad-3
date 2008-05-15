@@ -112,6 +112,23 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
     def openFile(self, path, flags, attrs):
         return self._sftp_server.openFile(path, flags, attrs)
 
+    def test_openFileInNonexistingDirectory(self):
+        # openFile fails with a no such file error if we try to open a file in
+        # a directory that doesn't exist. The flags passed to openFile() do
+        # not have any effect.
+        return self.assertSFTPError(
+            filetransfer.FX_NO_SUCH_FILE,
+            self.openFile, 'doesntexist/foo', 0, {})
+
+    def test_openFileInNonDirectory(self):
+        # openFile fails with a no such file error if we try to open a file in
+        # a directory that doesn't exist. The flags passed to openFile() do
+        # not have any effect.
+        self.build_tree_contents([('filename', 'content')])
+        return self.assertSFTPError(
+            filetransfer.FX_NO_SUCH_FILE,
+            self.openFile, 'filename/foo', 0, {})
+
     def test_createEmptyFile(self):
         # Opening a file with create flags and then closing it will create a
         # new, empty file.
