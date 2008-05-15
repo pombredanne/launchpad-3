@@ -53,8 +53,8 @@ def reset_logging():
 
 # Imported here to avoid circular import issues
 from canonical.testing.layers import (
-    ExperimentalLaunchpadZopelessLayer,
-    BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
+    ExperimentalLaunchpadZopelessLayer, BaseLayer, DatabaseLayer,
+    LibrarianLayer, FunctionalLayer, GoogleServiceLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer,
-    TwistedLaunchpadZopelessLayer)
+    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer,
+    LaunchpadScriptLayer, TwistedLaunchpadZopelessLayer)
