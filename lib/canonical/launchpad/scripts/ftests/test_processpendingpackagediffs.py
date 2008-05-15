@@ -19,8 +19,8 @@ from canonical.launchpad.scripts.packagediff import (
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestProcessingPendingPackageDiffsScript(unittest.TestCase):
-    """Test the processing-pending-packagediffs.py script."""
+class TestProcessPendingPackageDiffsScript(unittest.TestCase):
+    """Test the process-pending-packagediffs.py script."""
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
 
@@ -40,7 +40,6 @@ class TestProcessingPendingPackageDiffsScript(unittest.TestCase):
 
     def uploadTestPackages(self):
         """Upload packages for testing `PackageDiff` generation script.
-
 
         Upload zeca_1.0-1 and zeca_1.0-2 sources, so a `PackageDiff` between
         them is created.
@@ -78,8 +77,8 @@ class TestProcessingPendingPackageDiffsScript(unittest.TestCase):
         """Pending `PackageDiff` available."""
         return getUtility(IPackageDiffSet).getPendingDiffs()
 
-    def runProcessingPendingPackageDiffs(self, extra_args=None):
-        """Run processing-pending-packagediffs.py.
+    def runProcessPendingPackageDiffs(self, extra_args=None):
+        """Run process-pending-packagediffs.py.
 
         Returns a tuple of the process's return code, stdout output and
         stderr output."""
@@ -96,7 +95,7 @@ class TestProcessingPendingPackageDiffsScript(unittest.TestCase):
 
     def testSimpleScriptRun(self):
         """Try a simple processing-pending-packagediffs.py run."""
-        returncode, out, err = self.runProcessingPendingPackageDiffs()
+        returncode, out, err = self.runProcessPendingPackageDiffs()
         if returncode != 0:
             print "\nStdout:\n%s\nStderr\n%s\n" % (out, err)
         self.assertEqual(0, returncode)
@@ -107,12 +106,12 @@ class TestProcessingPendingPackageDiffsScript(unittest.TestCase):
         self.assertEqual(self.getPendingDiffs().count(), 0)
 
     def getDiffProcessor(self, limit=None):
-        """Return a ProcessPendingPackageDiffs instance.
+        """Return a `ProcessPendingPackageDiffs` instance.
 
         :param limit: if passed, it will be used as the 'limit' script
            argument.
 
-        :return the initialised script object using QuietFakeLogger and
+        :return the initialised script object using `QuietFakeLogger` and
            the given parameters.
         """
         test_args = []
