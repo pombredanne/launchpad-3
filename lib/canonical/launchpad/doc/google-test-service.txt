@@ -1,0 +1,56 @@
+= The Google stub webservice =
+
+The Google stub web service is a stand-alone process that returns
+XML documents for a pre-determined set of URLs.
+
+The URL mapping is specified in a stand-alone text file, whose path
+comes from the current configuration.
+
+    >>> from canonical.config import config
+    >>> routing_file = config.google_test_service.routing_file
+
+    >>> from canonical.launchpad.testing.googletestservice import (
+    ...     parse_routes)
+    >>> routes = parse_routes(routing_file)
+
+    >>> skeys = sorted(routes)
+    >>> for key in skeys:
+    ...     print key, routes(key)
+    * some-default result
+    /search?foo some-result-file
+    /search?bar some-other-result
+
+The service is accessible via a local URL, also pulled from the
+config.  Accessing the default URL will return the XML file specified
+as the default route, '*'.
+
+    >>> test_url = config.google_test_service.test_url
+    >>> default_xml = file(routes['*']).read()
+
+    # Grab a Zope testbrowser that talks across the network.
+    >>> from zope.testbrowser.browser import browser
+    >>> from os.path import join
+    >>> browser.open(join(test_url, 'something'))
+
+    >>> response = browser.contents
+    >>> len(response) is not 0
+    True
+    >>> response == default_xml
+    True
+
+The returned content-type should UTF-8 encoded XML.
+
+    >>> browser.headers['content-type']
+    'text/xml; charset=UTF-8'
+
+Accessing a specific key returns the appropriate XML file:
+
+    >>> path = '/search?foo'
+    >>> xml_for_path = file(routes[path]).read()
+    >>> browser.open(join(test_url, path))
+
+    >>> browser.headers['content-type']
+    'text/xml; charset=UTF-8'
+
+    >>> browser.contents == xml_for_path
+    True
