@@ -15,10 +15,13 @@ class ISalesforceVoucherProxy(Interface):
 
     def getUnredeemedVouchers(user):
         """Get the unredeemed vouchers for the user."""
+
     def getAllVouchers(user):
         """Get all of the vouchers for the user."""
+
     def getServerStatus():
         """Get the server status."""
+
     def redeemVoucher(voucher_id, user, project):
         """Redeem a voucher.
 
@@ -29,6 +32,7 @@ class ISalesforceVoucherProxy(Interface):
             integer representing the number of months the subscription
             allows.
         """
+
     def updateProjectName(project):
         """Update the name of a project in Salesforce.
 

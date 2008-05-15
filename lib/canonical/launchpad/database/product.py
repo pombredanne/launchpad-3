@@ -175,9 +175,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         def add_months(start, num_months):
             """Given a start date find the new date `num_months` later.
 
-            If the start date day is towards the end of the month and the new
+            If the start date day is the last day of the month and the new
             month does not have that many days, then the new date will be the
-            last day of the new month.
+            last day of the new month.  February is handled correctly too,
+            including leap years, where th 28th-31st maps to the 28th or
+            29th.
             """
             years, new_month = divmod(start.month + num_months, 12)
             new_year = start.year + years
@@ -219,7 +221,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def requires_commercial_subscription(self):
-        """Determines whether a commercial subscription is required."""
+        """See `IProduct`."""
         other_licenses = (License.OTHER_PROPRIETARY,
                           License.OTHER_OPEN_SOURCE)
         if self.license_approved:
@@ -235,6 +237,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def is_permitted(self):
+        """See `IProduct`."""
         if not self.requires_commercial_subscription:
             # The project qualifies for free hosting.
             return True

@@ -33,9 +33,16 @@ attribute is correct.
     asdf123
 
 The expiration date can be extended by redeeming another voucher.  In
-real life this would be done nearer to the expiration date.
+real life this would be done nearer to the expiration date.  For
+testing consistency, let's force the start and expiry dates to a known
+date.
 
-    >>> from datetime import timedelta
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
     >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12, 'notes')
@@ -47,16 +54,16 @@ The start date should not have changed.
     >>> bzr.commercial_subscription.date_starts == old_date_starts
     True
 
-The difference between the expiration dates should be one year, either
-365 days or 366 days during leap years.
+The difference between the expiration dates is one year -- 365 days
+for 2009.
 
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
-    >>> expiry_diff in [timedelta(365), timedelta(366)]
+    >>> expiry_diff == timedelta(365)
     True
 
 A voucher can be redeemed for any number of months (as reported by the
-Salesforce proxy).
+Salesforce proxy).  Test for a 6 month subscription.
 
     >>> old_date_expires = bzr.commercial_subscription.date_expires
     >>> old_date_starts = bzr.commercial_subscription.date_starts
@@ -69,17 +76,18 @@ The start date did not change.
     >>> bzr.commercial_subscription.date_starts == old_date_starts
     True
 
-The expiration date has been increased by six months, which can be
-anywhere between 181 days and 184 days, depending on the start date.
+The expiration date has been increased by six months, from Jan-15-2010
+to Jul-15-2010.
 
     >>> expiry_diff = (bzr.commercial_subscription.date_expires -
     ...                old_date_expires)
-    >>> timedelta(181) <= expiry_diff <= timedelta(184)
+    >>> expiry_diff == (datetime(2010,7,15) - datetime(2010,1,15))
     True
 
-The requires_commercial_subscription attribute should be True
-if the license qualifies there is no license. The is_permitted
-will only be true if there is an active subscription.
+The requires_commercial_subscription attribute is true if the license
+does not qualifies or there is no license.  The is_permitted
+attribute is true if a commercial subscription is not required or if a
+subscription is required and there is an active subscription.
 
     >>> login('foo.bar@canonical.com')
     >>> bzr.licenses
@@ -92,7 +100,6 @@ will only be true if there is an active subscription.
     True
     >>> bzr.is_permitted
     True
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
     >>> subscription.date_expires = subscription.date_starts
     >>> bzr.commercial_subscription.is_active
@@ -102,7 +109,7 @@ will only be true if there is an active subscription.
 
 The requires_commercial_subscription attribute should be True
 if the product has License.OTHER_PROPRIETARY or
-License.OTHER_OPEN_SOURCE or description of another license
+License.OTHER_OPEN_SOURCE or a description of another license
 in product.license_info.
 
     >>> from canonical.launchpad.interfaces import License

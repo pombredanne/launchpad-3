@@ -61,9 +61,12 @@ The interface `ISalesforceVoucherProxy` defines the interaction with
 the Salesforce proxy.
 
     >>> from canonical.launchpad.interfaces import ISalesforceVoucherProxy
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> sfv = getUtility(ISalesforceVoucherProxy)
+    >>> verifyObject(ISalesforceVoucherProxy, sfv)
+    True
 
-The interace can now be exercised.
+The interface can now be exercised.
 
 The status of the proxy server can be checked.
 
@@ -115,12 +118,26 @@ Attempting to redeem an already redeemed voucher is unsuccessful.
     >>> print result
     False
 
-Attempting to redeem an bogus voucher is also unsuccessful.
+Attempting to redeem a bogus voucher is also unsuccessful.
 
     >>> voucher_id = "hownowbrowncow"
     >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
     >>> print result
     False
+
+Using None for the project results in an error.
+
+    >>> result = sfv.redeemVoucher(voucher_id, mark, None)
+    Traceback (most recent call last):
+      ...
+    AttributeError:...
+
+Using None for the person results in an error.
+
+    >>> result = sfv.redeemVoucher(voucher_id, None, firefox)
+    Traceback (most recent call last):
+      ...
+    AttributeError:...
 
 If a project's name changes we can communicate that to Salesforce.
 
