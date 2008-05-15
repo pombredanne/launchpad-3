@@ -335,7 +335,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductBranchListingView"
+    class="canonical.launchpad.browser.ProductBranchesView"
     facet="branches"
     permission="zope.Public"
     name="+branches"
