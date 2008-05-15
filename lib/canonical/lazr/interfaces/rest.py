@@ -170,20 +170,21 @@ class IByteStorage(Interface):
 
     alias_url = Attribute("The external URL to the byte stream.")
     filename = Attribute("Filename for the byte stream.")
+    is_stored = Attribute("Whether or not there's a previously created "
+                          "external byte stream here.")
 
     def createStored(type, representation):
         """Create a new stored bytestream."""
 
+    def deleteSTored():
+        """Delete an existing stored bytestream."""
+
 
 class IByteStorageResource(IHTTPResource):
-    """A resource that represents an individual object."""
+    """A resource that represents an external binary file."""
 
     def do_GET():
-        """Retrieve the bytestream.
-
-        :return: A string representation. The outgoing
-        Content-Type header should be set appropriately.
-        """
+        """Redirect the client to the externally hosted file."""
 
     def do_PUT(media_type, representation):
         """Update the stored bytestream.

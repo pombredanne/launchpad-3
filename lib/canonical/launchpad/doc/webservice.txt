@@ -101,7 +101,6 @@ and IRecipe.
     ...         self.target.comments.append(self)
     >>> protect_schema(Comment, IComment, write_permission=CheckerPublic)
 
-    >>> from canonical.launchpad.database import LibraryFileAlias
     >>> class Cookbook:
     ...     implements(ICookbook)
     ...     def __init__(self, name, author, cuisine=None):
@@ -1137,7 +1136,7 @@ At this point it exists:
     >>> get_request.response.getStatus()
     303
     >>> get_request.response.getHeader('Location')
-    'http://localhost:58000/96/cover'
+    'http://localhost:58000/90/cover'
 
 The cover can be deleted with DELETE.
 

@@ -39,6 +39,7 @@ class ByteStorageResource(HTTPResource):
             self.request.response.setHeader("Allow", allow_string)
 
     def do_GET(self):
+        """See IByteStorageResource."""
         if not self.context.is_stored:
             # No stored document exists here yet.
             raise NotFound(self.context, self.context.filename, self.request)
@@ -46,7 +47,8 @@ class ByteStorageResource(HTTPResource):
         self.request.response.setHeader('Location', self.context.alias_url)
         return ''
 
-    def do_PUT(self, type, representation):
+    def do_PUT(self, type, representation)
+        """See IByteStorageResource."""
         try:
             self.context.field.validate(representation)
         except ValidationError, e:
@@ -56,6 +58,7 @@ class ByteStorageResource(HTTPResource):
         return ''
 
     def do_DELETE(self):
+        """See IByteStorageResource."""
         self.context.deleteStored()
         return ''
 
