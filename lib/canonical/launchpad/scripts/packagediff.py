@@ -18,8 +18,8 @@ class ProcessPendingPackageDiffs(LaunchpadCronScript):
 
     def add_my_options(self):
         # 50 diffs seems to be more them enough to process all uploaded
-        # packages for two upload cycles (10 minutes) for ubuntu primary
-        # archive, security and PPAs in general.
+        # source packages for 1 hour (average upload rate) for ubuntu
+        # primary archive, security and PPAs in general.
         self.parser.add_option(
             "-l", "--limit", type="int", default=50,
             help="Maximum number of requests to be processed in this run.")
