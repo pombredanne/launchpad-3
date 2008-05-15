@@ -116,7 +116,7 @@ class IPackageUpload(Interface):
         "Return True if this PackageUpload is a PPA upload.")
 
     components = Attribute(
-        """Return a set of the components used in this upload.
+        """The set of components used in this upload.
 
         For sources, this is the component on the associated
         sourcepackagerelease.  For binaries, this is all the components

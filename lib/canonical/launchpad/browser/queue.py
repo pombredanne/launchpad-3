@@ -185,8 +185,9 @@ class QueueItemsView(LaunchpadView):
                 existing_component_names = ", ".join(
                     component.name for component in queue_item.components)
                 failure.append(
-                    "FAILED: %s (You have no rights to accept component(s) "
+                    "FAILED: %s (You have no rights to %s component(s) "
                     "'%s')" % (queue_item.displayname,
+                               action,
                                existing_component_names))
                 continue
 

@@ -128,7 +128,7 @@ class IArchivePermissionSet(Interface):
         """
 
     def componentsForQueueAdmin(archive, user):
-        """`ArchivePermission` records for the user's queue admin components.
+        """Return `ArchivePermission`s for the user's queue admin components.
 
         :param archive: The context `IArchive` for the permission check.
         :param user: An `IPerson` for whom you want to find out which

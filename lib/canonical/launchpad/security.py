@@ -1026,7 +1026,7 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
-        Admins and Translations admins have access, as do the owner of
+        Admins and Translations admins have access, as does the owner of
         the translation group (if applicable).
         """
         translation_group = self.obj.distribution.translationgroup
@@ -1096,7 +1096,7 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """User must have an entry in ArchivePermission or be an admin."""
+        """Return True if user has an ArchivePermission or is an admin."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 

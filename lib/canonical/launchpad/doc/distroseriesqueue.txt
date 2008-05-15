@@ -686,7 +686,7 @@ Clear existing mail stack:
 Sources and binaries for the upload may be overridden via the methods
 overrideSource() and overrideBinaries().  The former allows overriding
 of component and section and the latter both those plus the section.
-In addition to these paramters, you must also supply
+In addition to these parameters, you must also supply
 "allowed_components", which is a sequence of IComponent.  Any overrides
 must have the existing and new component in this sequence otherwise
 QueueInconsistentStateError is raised.
