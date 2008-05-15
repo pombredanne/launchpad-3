@@ -272,7 +272,7 @@ class TransportSFTPServer:
         directory = os.path.dirname(path)
         deferred = self.transport.stat(directory)
         def open_file(stat_result):
-            if stat.S_ISDIR(stat_result):
+            if stat.S_ISDIR(stat_result.st_mode):
                 return TransportSFTPFile(self.transport, path, flags)
             else:
                 raise filetransfer.SFTPError(
