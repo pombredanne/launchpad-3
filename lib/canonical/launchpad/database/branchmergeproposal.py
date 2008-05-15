@@ -144,6 +144,8 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
+        owner_recipients = NotificationRecipientSet()
+
         branches = [self.source_branch, self.target_branch]
         if self.dependent_branch is not None:
             branches.append(self.dependent_branch)
@@ -155,6 +157,30 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = (subscription, rationale)
+
+        owner_recipients = NotificationRecipientSet()
+        owner_recipients.add(
+            self.source_branch.owner,
+            'You are the owner of %s' % self.source_branch,
+            None,
+            )
+        owner_recipients.add(
+            self.target_branch.owner,
+            'You are the owner of %s' % self.target_branch,
+            None,
+            )
+        if self.dependent_branch is not None:
+            owner_recipients.add(
+                self.dependent_branch.owner,
+                'You are the owner of %s' % self.dependent_branch,
+                'Dependent Branch Owner'
+                )
+
+        for recipient in owner_recipients:
+            subscription, rationale = owner_recipients.getReason(
+                recipient)
+            recipients[recipient] = (subscription, rationale)
+
         return recipients
 
     def isValidTransition(self, next_state, user=None):
