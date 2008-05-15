@@ -86,7 +86,7 @@ class with_timeout:
         :param cleanup: That may be a callable or a string. If it's a string,
             a method under that name will be looked up. That callable will
             be called if the timeout is exceeded.
-        :param timeout: The number of seconds to wait for. Defaults is 5.
+        :param timeout: The number of seconds to wait for.
         """
         if isinstance(cleanup, basestring):
             frame = sys._getframe(1)
@@ -125,7 +125,7 @@ class with_timeout:
 
 
 class CleanableHTTPHandler(urllib2.HTTPHandler):
-    """Subclass of `urllib2.HTTPHandler` that can be clean-up."""
+    """Subclass of `urllib2.HTTPHandler` that can be cleaned-up."""
 
     def http_open(self, req):
         """See `urllib2.HTTPHandler`."""

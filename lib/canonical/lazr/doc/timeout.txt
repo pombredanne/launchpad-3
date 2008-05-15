@@ -43,7 +43,7 @@ Other exceptions are reported correctly to the caller though:
 
 == Cleaning up timed out operation ==
 
-Since we want to time out operation involving an external resource
+Since we want to time out operations involving an external resource
 (subprocess, remote site), we need a way to clean-up these resources
 once they time out. To this end, the with_timeout decorator takes a
 cleanup parameter taking a callable that will be invoked if the
@@ -110,13 +110,13 @@ It's an error to use a string cleanup when the function isn't a method.
 == Default time out ==
 
 If the timeout parameter isn't provided, it will default to the value
-returned by the function installed as "defaulttimeout". A function is
-used because it's useful for the timeout value to be determined
-dynamically. For example, if you want to limit the the overall
-processing to 30s and you already did 14s, you want that timeout to be
-16s.
+returned by the function installed as "default_timeout_function". A
+function is used because it's useful for the timeout value to be
+determined dynamically. For example, if you want to limit the
+overall processing to 30s and you already did 14s, you want that timeout
+to be 16s.
 
-By default, there is no default_timeout_generator.
+By default, there is no default_timeout_function.
 
     >>> from canonical.lazr.timeout import (get_default_timeout_function,
     ...     set_default_timeout_function)
@@ -139,7 +139,6 @@ a default timeout argument.
 The set_default_timeout_function() takes a function that should return
 the number of seconds to wait.
 
-
     >>> def my_default_timeout():
     ...     print "Will use default timeout."
     ...     return 1
@@ -150,8 +149,8 @@ the number of seconds to wait.
 
 === urlfetch() ===
 
-One common use case for timing out is when fetching doing an HTTP
-request to an external site. To this end, the timeout module has a
+One common use case for timing out is when making an HTTP request to an
+external site to fetch content. To this end, the timeout module has a
 urlfetch() function that retrieve a URL using custom urllib2 handlers
 that will timeout using the default timeout function and clean-up the
 socket properly.
@@ -187,7 +186,7 @@ The client socket was closed properly, as we can see by calling recv()
 twice on the connected socket. The first recv() returns the request data
 sent by the client, the second one will block until the client closes
 its end of the connection. If the client closes its socket, '' is
-received, otherwise a socket timeout
+received, otherwise a socket timeout will occur.
 
     >>> client_sock, client_addr = sock.accept()
     >>> print client_sock.recv(1024)
@@ -210,7 +209,8 @@ The function also times out if the server replies very slowly.
     ...         Content-Type: text/plain
     ...         Content-Length: %d\n\n''' % len(content)))
     ...
-    ...         # Send the body of the reply very slowly.
+    ...     # Send the body of the reply very slowly, so that
+    ...     # it times out in read() and not urlopen.
     ...     for c in content:
     ...         client_sock.send(c)
     ...         time.sleep(0.2)
