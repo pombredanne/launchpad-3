@@ -85,7 +85,7 @@ class ILanguage(Interface):
         """
 
     def removeCountry(country):
-        """Remove a country from a list of countries this language is spoken in.
+        """Remove country from list of countries this language is spoken in.
 
         Provided by SQLObject.
         """
