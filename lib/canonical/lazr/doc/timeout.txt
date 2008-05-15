@@ -236,6 +236,13 @@ When the request succeeds, the result content is returned.
     >>> print urlfetch(http_server_url)
     Success.
 
+urlfetch() only supports http urls:
+
+    >>> urlfetch('ftp://localhost')
+    Traceback (most recent call last):
+      ...
+    AssertionError: only http is supported.
+
 
 == Cleanup ==
 

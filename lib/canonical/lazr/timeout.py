@@ -146,6 +146,7 @@ class URLFetcher:
     @with_timeout(cleanup='cleanup')
     def fetch(self, url, data=None):
         """Fetch the URL using a custom HTTP handler supporting timeout."""
+        assert url.startswith('http://'), "only http is supported."
         self.handler = CleanableHTTPHandler()
         opener = urllib2.build_opener(self.handler)
         return opener.open(url, data).read()
