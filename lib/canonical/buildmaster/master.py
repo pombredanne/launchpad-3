@@ -206,7 +206,8 @@ class BuilddMaster:
                 "No nominatedarchindep for %s, skipping" % distroseries.name)
             return
 
-        # listify to avoid hitting this MultipleJoin multiple times
+        # Listify the architectures to avoid hitting this MultipleJoin
+        # multiple times.
         distroseries_architectures = list(distroseries.architectures)
         if not distroseries_architectures:
             self._logger.debug(
@@ -238,16 +239,10 @@ class BuilddMaster:
         for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures_available,
-                pas_verify=pas_verify, logger=None)
+                pas_verify=pas_verify, logger=self._logger)
             if len(builds) == 0:
                 continue
             self.commit()
-            for build in builds:
-                self._logger.debug(
-                    "Created %s [%d] in %s (%d)" % (
-                        build.title, build.id, build.archive.title,
-                        build.buildqueue_record.lastscore))
-
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

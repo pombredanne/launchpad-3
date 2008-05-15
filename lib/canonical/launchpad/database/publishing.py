@@ -529,14 +529,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
              build_candidate.buildstate == BuildStatus.FULLYBUILT)):
             return None
 
-        if logger is not None:
-            logger.debug("Creating PENDING build for %s."
-                         % arch.architecturetag)
-
         build = self.sourcepackagerelease.createBuild(
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
         build_queue = build.createBuildQueueEntry()
         build_queue.score()
+
+        if logger is not None:
+            logger.debug(
+                "Created %s [%d] in %s (%d)"
+                % (build.title, build.id, build.archive.title,
+                   build_queue.lastscore))
 
         return build
 
