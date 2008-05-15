@@ -43,12 +43,12 @@
                   distro series/distribution;
                   message string:${distro/name} ${series/name} in "
           replace="message" />
-        <a tal:condition="view/isUploadArchivePPA"
+        <a tal:condition="source/upload_archive/is_ppa"
            tal:define="source context/sourcepackagerelease"
            tal:attributes="href source/upload_archive/fmt:url"
            tal:content="source/upload_archive/title" />
         <tal:message
-          condition="not:view/isUploadArchivePPA"
+          condition="not:source/upload_archive/is_ppa"
           define="source context/sourcepackagerelease;
                   archive source/upload_archive;
                   message string:${archive/title}"

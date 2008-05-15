@@ -399,6 +399,7 @@ class NoContextBranchListingView(BranchListingView):
     """A branch listing that has no associated product or person."""
 
     field_names = ['lifecycle']
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
     no_branch_message = (
         'There are no branches that match the current status filter.')
