@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Text, TextLine
+from zope.schema import Bool, Datetime, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -59,3 +59,7 @@ class ICommercialSubscription(Interface):
     whiteboard = Text(
         title=_("Whiteboard"), required=False,
         description=_("Notes on this project subscription."))
+
+    is_active = Bool(
+        title=_('Active'),
+        description=_("Whether this subscription is active."))

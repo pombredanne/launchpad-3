@@ -9,7 +9,6 @@ __all__ = ['Product', 'ProductSet']
 
 import operator
 import datetime
-from dateutil.relativedelta import relativedelta
 import calendar
 import pytz
 from sqlobject import (
@@ -219,14 +218,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.purchaser = purchaser
 
     @property
-    def _requires_commercial_subscription(self):
+    def requires_commercial_subscription(self):
         """Determines whether a commercial subscription is required."""
-        other_licenses = (License.OTHER_COMMERCIAL, License.OTHER_OPEN_SOURCE)
+        other_licenses = (License.OTHER_PROPRIETARY,
+                          License.OTHER_OPEN_SOURCE)
         if self.license_approved:
             # The license was manually approved for free hosting.
             return False
         elif (len(self.licenses) > 0 and
-              self.license_info == '' and
+              self.license_info in ('', None) and
               len(set(self.licenses).intersection(other_licenses)) == 0):
             # The project has only valid open source license(s).
             return False
@@ -235,7 +235,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def is_permitted(self):
-        if not self._requires_commercial_subscription:
+        if not self.requires_commercial_subscription:
             # The project qualifies for free hosting.
             return True
         elif self.commercial_subscription is None:
