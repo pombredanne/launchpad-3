@@ -1,15 +1,8 @@
-#!/usr/bin/env python2.4
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.4
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 """
-This script runs a simple HTTP server that can simulate a number of
-nasty network failures.
-
-It works by POSTing a set of configuration variables to a URL, along
-with a representation.
-
-For example, you may post an XML file along with the option
-'limit-rate=50'.  Visiting any other URL on the server will return the
-XML file at 50 bytes per second.
+This script runs a simple HTTP server. The server returns XML files
+when given certain user-configurable URLs.
 """
 
 
@@ -75,7 +68,7 @@ def start_as_process():
 
 def get_service_endpoint():
     """Return the host and port that the service is running on."""
-    return hostpair(config.google_test_service.test_url)
+    return hostpair(config.google.site)
 
 def service_is_available(timeout=10.0):
     """Return True if the service is up and running."""

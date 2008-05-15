@@ -25,7 +25,7 @@ The service is accessible via a local URL, also pulled from the
 config.  Accessing the default URL will return the XML file specified
 as the default route, '*'.
 
-    >>> test_url = config.google_test_service.test_url
+    >>> test_url = config.google.site
     >>> default_xml = file(routes['*']).read()
 
     # Grab a Zope testbrowser that talks across the network.
