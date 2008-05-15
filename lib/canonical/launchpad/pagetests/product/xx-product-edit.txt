@@ -104,7 +104,7 @@ Then a product named newproductname2.
 Now we try to change newproductname2's name to newproductname.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/newproductname2/+review')
+    ...     'http://launchpad.dev/newproductname2/+admin')
     >>> admin_browser.getControl('Name').value = 'newproductname'
     >>> admin_browser.getControl(name='field.actions.change').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'error'):
@@ -167,15 +167,15 @@ again have zero licenses.
     Select all licenses for this software or select
     Other/Proprietary or Other/Open Source.
 
-== Admin can use the reviewer whiteboard on +review page ==
+== Commercial Admin can use the reviewer whiteboard on +review-license page ==
 
-A Commercial Admin can use the reviewer whiteboard on the +review page
+A Commercial Admin can use the reviewer whiteboard on the +review-license page
 for storing random notes about a project. At first the whiteboard is
 empty, then we store some insightful notes in it.
 
     >>> commercial_browser = setupBrowser(
     ...     auth='Basic commercial-member@canonical.com:test')
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+review')
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
     >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
     ''
     >>> commercial_browser.getControl(
@@ -184,7 +184,7 @@ empty, then we store some insightful notes in it.
     ... Contacted the upstream maintainer (bart@foo.com) to discuss handing
     ... over this project 2007-12-04."""
     >>> commercial_browser.getControl(name='field.actions.change').click()
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+review')
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
     >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
     'Registered by https://launchpad.net/kurt but orphaned...'
 

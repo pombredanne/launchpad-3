@@ -541,11 +541,11 @@ class LaunchpadRootNavigation(Navigation):
                 canonical_url(self.context) + canonical_name(name),
                 status=301)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
+        commercial_admins = getUtility(ILaunchpadCelebrities).commercial_admin
         user = getUtility(ILaunchBag).user
         ignore_inactive = True
-        if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too.
+        if user and user.inTeam(commercial_admins):
+            # Commercial Admins should be able to access deactivated projects.
             ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=ignore_inactive)
