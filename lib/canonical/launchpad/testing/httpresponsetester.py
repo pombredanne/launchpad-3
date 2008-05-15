@@ -22,12 +22,43 @@ import time
 import socket
 
 
-class TrivialRequestHandler(BaseHTTPRequestHandler):
+class ConfigurableRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        self.send_response(200)
+        self.route('GET')
+
+    def do_POST(self):
+        self.route('POST')
+
+    def route(self, http_method):
+        """Route a HTTP request to the correct resource handler."""
+        if self.path.startswith('/configuration'):
+            mbase = 'do_configuration_'
+        else:
+            mbase = 'do_default_'
+
+        method = mbase + http_method
+        getattr(self, method)()
+
+    def do_default_GET(self):
+        """Handle HTTP GET to an arbitrary resource."""
+        self.send_response(405) # HTTP Status 405: Method not allowed.
         self.end_headers()
-        self.wfile.write("Hello World!")
+
+    def do_default_POST(self):
+        """Handle HTTP POST to an abitrary resource."""
+        self.send_response(405) # HTTP Status 405: Method not allowed.
+        self.end_headers()
+
+    def do_configuration_GET(self):
+        """Handle HTTP GET requests to the 'configuration' resource."""
+        self.send_response(405) # HTTP Status 405: Method not allowed.
+        self.end_headers()
+
+    def do_configuration_POST(self):
+        """Handle HTTP POST requests to the 'configuration' resource."""
+        self.send_response(405) # HTTP Status 405: Method not allowed.
+        self.end_headers()
 
 
 def start_as_process():
@@ -99,7 +130,7 @@ def hostpair(url):
 def main():
     """Run the HTTP server."""
     host, port = get_service_endpoint()
-    server = HTTPServer((host, port), TrivialRequestHandler)
+    server = HTTPServer((host, port), ConfigurableRequestHandler)
 
     print "Starting HTTP Google webservice server on port", port
     server.serve_forever()
