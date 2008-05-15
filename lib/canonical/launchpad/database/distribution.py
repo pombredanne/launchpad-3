@@ -138,12 +138,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    upload_sender = StringCol(
-        dbName='upload_sender', notNull=False, default=None)
-    upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person',
-        validator=public_person_validator, default=None,
-        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
