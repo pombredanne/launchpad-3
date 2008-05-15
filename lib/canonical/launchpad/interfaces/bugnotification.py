@@ -15,6 +15,7 @@ from zope.schema import Bool, Datetime, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField
+from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
@@ -25,7 +26,8 @@ class IBugNotification(IHasOwner):
     message = Attribute(
         "The message containing the text representation of the changes"
         " to the bug.")
-    bug = BugField(title=u"The bug this notification is for.", required=True)
+    bug = BugField(title=u"The bug this notification is for.",
+                   required=True, schema=IBug)
     is_comment = Bool(
         title=u"Comment", description=u"Is the message a comment?",
         required=True)

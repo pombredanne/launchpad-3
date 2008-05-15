@@ -67,11 +67,11 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
-    Tuple)
+    Bool, Bytes, Choice, Datetime, Int, Object, Password, Text,
+    TextLine, Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IPassword, IText,
-    ITextLine)
+    ConstraintNotSatisfied, IBytes, IDatetime, IInt, IObject,
+    IPassword, IText, ITextLine)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -106,8 +106,8 @@ class IWhiteboard(IText):
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
-class IBugField(IField):
-    """A Field that allows entry of a Bug number or nickname"""
+class IBugField(IObject):
+    """A field that allows entry of a Bug number or nickname"""
 
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
@@ -271,7 +271,7 @@ class TimeInterval(TextLine):
         return 1
 
 
-class BugField(Field):
+class BugField(Object):
     implements(IBugField)
 
 

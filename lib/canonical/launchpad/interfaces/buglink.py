@@ -27,8 +27,8 @@ from canonical.launchpad.interfaces.launchpad import IHasBug
 class IBugLink(IHasBug):
     """An entity representing a link between a bug and its target."""
 
-    bug = BugField(title=_("The bug that is linked to."), required=True,
-                   readonly=True)
+    bug = BugField(title=_("The bug that is linked to."),
+                   required=True, readonly=True, schema=IBug)
 
     target = Object(title=_("The object to which the bug is linked."),
                     required=True, readonly=True, schema=Interface)
@@ -69,7 +69,7 @@ class IBugLinkForm(Interface):
     """Schema for the unlink bugs form."""
 
     bug = BugField(
-        title=_('Bug ID'), required=True)
+        title=_('Bug ID'), required=True, schema=IBug)
 
 
 # XXX flacoste 2006-08-29: To remain consistent with the existing source
