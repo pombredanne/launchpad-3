@@ -7,7 +7,7 @@ The URL mapping is specified in a stand-alone text file, whose path
 comes from the current configuration.
 
     >>> from canonical.config import config
-    >>> xml_mapfile = config.google_test_service.xml_mapfile
+    >>> xml_mapfile = config.google_test_service.mapfile
 
     # Fetch our URL-to-XML file mapping table.
     >>> from canonical.launchpad.testing.googletestservice import (
