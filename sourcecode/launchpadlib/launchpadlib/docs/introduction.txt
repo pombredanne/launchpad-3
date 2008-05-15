@@ -9,3 +9,10 @@ launchpadlib is currently in pre-alpha release.
     >>> import launchpadlib
     >>> launchpadlib.__version__
     '0.1'
+
+launchpadlib talks to Launchpad.
+
+    >>> from urllib import urlopen
+    >>> connection = urlopen('http://launchpad.dev:8085')
+    >>> connection.read()[:9]
+    '<!DOCTYPE'

@@ -761,11 +761,6 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
-    'launchpadlib.txt': LayeredDocFileSuite(
-        '../doc/launchpadlib.txt',
-        layer=AppServerLayer,
-        setUp=setUp, tearDown=tearDown,
-        )
     }
 
 
