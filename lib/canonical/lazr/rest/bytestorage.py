@@ -66,6 +66,7 @@ class ByteStorageResource(HTTPResource):
 class ByteStorageMarshaller(SimpleFieldMarshaller):
 
     def representationName(self, field_name):
+        """Represent as a link to another resource."""
         return field_name + '_link'
 
     def unmarshall(self, entry, field_name, bytestorage):
