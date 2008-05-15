@@ -591,7 +591,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             prejoins=preJoins)
         binariesQuery = LibraryFileAlias.select(
             binariesClause, clauseTables=binariesClauseTables,
-            prejoins=preJoins)
+            prejoins=preJoins, distinct=True)
 
         # I would like to use UNION here to merge the two result sets, but
         # that silently drops the preJoins.
