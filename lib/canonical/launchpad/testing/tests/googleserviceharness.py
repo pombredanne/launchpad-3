@@ -16,7 +16,7 @@ import signal
 class GoogleServiceTestSetup:
     """Set up the Google web service stub for use in functional tests.
 
-    >>> from canonical.launchpad.testing.httpresponsetester import (
+    >>> from canonical.launchpad.testing.googletestservice import (
     ...     service_is_available)
     >>> from canonical.config import config
 
@@ -57,8 +57,8 @@ class GoogleServiceTestSetup:
     def startService(cls):
         """Start the webservice."""
         assert not cls.service  # Sanity check.
-        from canonical.launchpad.testing import httpresponsetester
-        cls.service = httpresponsetester.start_as_process()
+        from canonical.launchpad.testing import googletestservice
+        cls.service = googletestservice.start_as_process()
         assert cls.service, "The Search service process did not start."
 
     @classmethod
