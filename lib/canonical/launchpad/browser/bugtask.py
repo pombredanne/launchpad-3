@@ -2426,6 +2426,11 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # Insert bug nominations in between the appropriate tasks.
         bugtasks_and_nominations = []
+        # Having getNominations() get the list of bug nominations each
+        # time it gets called in the for loop is expensive. Get the
+        # nominations here, so we can pass it to getNominations() later
+        # on.
+        nominations = list(bug.getNominations())
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(bugtasks)
             bugtasks_and_nominations.append(
@@ -2436,9 +2441,11 @@ class BugTasksAndNominationsView(LaunchpadView):
             if not target:
                 continue
 
+            target_nominations = bug.getNominations(
+                target, nominations=nominations)
             bugtasks_and_nominations += [
                 {'row_context': nomination, 'is_conjoined_slave': False}
-                for nomination in bug.getNominations(target)
+                for nomination in target_nominations
                 if (nomination.status !=
                     BugNominationStatus.APPROVED)
                 ]

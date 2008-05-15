@@ -421,12 +421,16 @@ class IBug(IMessageTarget, ICanBeMentored):
         Returns True or False.
         """
 
-    def getNominationFor(nomination_target):
+    def getNominationFor(nomination_target, nominations=None):
         """Return the IBugNomination for the target.
 
         If no nomination is found, a NotFoundError is raised.
 
-        :nomination_target: An IDistroSeries or IProductSeries.
+        :param nomination_target: An IDistroSeries or IProductSeries.
+        :param nominations: The list of nominations to search through.
+            If none is given, the bug's nominations are looked through.
+            This can be useful when having to call this method multiple
+            times, to avoid getting the list of nominations each time.
         """
 
     def getNominations(target=None):
