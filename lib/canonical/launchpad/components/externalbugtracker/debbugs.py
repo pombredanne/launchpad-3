@@ -48,6 +48,8 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
+    sync_comments = config.checkwatches.sync_debbugs_comments
+
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(

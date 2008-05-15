@@ -87,7 +87,7 @@ tested later.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
-    >>> external_debbugs.import_comments = False
+    >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches on http://...

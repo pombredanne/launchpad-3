@@ -390,10 +390,10 @@ class BugWatchUpdater(object):
         # a per-bugtracker-type level.
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
-            remotesystem.import_comments)
+            remotesystem.sync_comments)
         can_push_comments = (
             ISupportsCommentPushing.providedBy(remotesystem) and
-            remotesystem.push_comments)
+            remotesystem.sync_comments)
 
         if can_import_comments and server_time is None:
             can_import_comments = False
@@ -666,7 +666,7 @@ class BugWatchUpdater(object):
         """
         return [('batch_size', remotesystem.batch_size),
                 ('batch_query_threshold', remotesystem.batch_query_threshold),
-                ('import_comments', remotesystem.import_comments),
+                ('sync_comments', remotesystem.sync_comments),
                 ('externalbugtracker', remotesystem.__class__.__name__),
                 ('baseurl', remotesystem.baseurl)]
 

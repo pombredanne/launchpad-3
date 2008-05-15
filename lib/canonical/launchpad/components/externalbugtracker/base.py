@@ -140,8 +140,7 @@ class ExternalBugTracker:
     batch_query_threshold = config.checkwatches.batch_query_threshold
     batch_size = 100
     comment_template = 'default_remotecomment_template.txt'
-    import_comments = config.checkwatches.import_comments
-    push_comments = config.checkwatches.push_comments
+    sync_comments = config.checkwatches.sync_comments
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
