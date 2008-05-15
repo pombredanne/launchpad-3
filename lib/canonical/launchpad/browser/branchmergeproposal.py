@@ -32,6 +32,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.database import Message
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
@@ -252,6 +253,21 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @property
     def comment_location(self):
         return canonical_url(self.context, view_name='+comment')
+
+    @property
+    def comments(self):
+        message_to_comment = {}
+        messages = []
+        for comment in self.context.all_messages:
+            message_to_comment[comment.message] = comment
+            messages.append(comment.message)
+        threads = Message.threadMessages(messages)
+        result = []
+        for depth, message in Message.flattenThreads(threads):
+            comment = message_to_comment[message]
+            style = 'margin-left: "%dem"' % (5 * depth)
+            result.append(dict(style=style, comment=comment))
+        return result
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
