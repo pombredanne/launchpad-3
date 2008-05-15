@@ -8,9 +8,11 @@ __all__ = [
     'ByteStorageResource',
 ]
 
+from StringIO import StringIO
 
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.schema import ValidationError
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -47,6 +49,12 @@ class ByteStorageResource(HTTPResource):
         return ''
 
     def do_PUT(self, type, representation):
+        try:
+            self.context.field.validate(StringIO(representation))
+        except (ValidationError), e:
+            error = str(e)
+            self.request.response.setStatus(400) # Bad Request
+            return error
         self.context.createStored(type, representation)
         return ''
 
