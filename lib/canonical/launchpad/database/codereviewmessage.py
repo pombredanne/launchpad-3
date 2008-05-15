@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['CodeReviewMessage', 'graph_dict']
+__all__ = ['CodeReviewMessage']
 
 from zope.interface import implements
 
@@ -33,16 +33,3 @@ class CodeReviewMessage(SQLBase):
             {'source': self.branch_merge_proposal.source_branch.displayname,
              'target': self.branch_merge_proposal.target_branch.displayname,
             })
-
-
-def graph_dict(messages):
-    message_to_code = dict(
-        (code_review.message, code_review) for code_review in messages)
-    result = {}
-    for code_review in messages:
-        if code_review.message.parent is None:
-            parents = []
-        else:
-            parents = [message_to_code[code_review.message.parent]]
-        result[code_review] = parents
-    return result

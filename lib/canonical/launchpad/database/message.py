@@ -100,6 +100,57 @@ class Message(SQLBase):
     # interface because it is used as a UI field in MessageAddView
     content = None
 
+    @staticmethod
+    def _parentToChild(messages):
+        """Return a mapping from parent to child and list of root messages."""
+        result = {}
+        roots = []
+        for message in messages:
+            if message.parent is None:
+                roots.append(message)
+            else:
+                result.setdefault(message.parent, []).append(message)
+            result.setdefault(message, [])
+        return result, roots
+
+    @classmethod
+    def threadMessages(klass, messages):
+        """Return a threaded version of supplied message list.
+
+        Return value is a recursive list structure.
+        Each parent entry in the top-level list is a tuple of
+        (parent, children), where children is a list of parents.  (Parents
+        may be childless.)
+
+        Example:
+        [(parent, [(child1, [(grandchild1, [])]), (child2, [])])]
+        """
+        result, roots = klass._parentToChild(messages)
+        def get_children(node):
+            children = []
+            for child in result[node]:
+                children.append((child, get_children(child)))
+            return children
+        threads = []
+        for root in roots:
+            threads.append((root, get_children(root)))
+        return threads
+
+    @classmethod
+    def flattenThreads(klass, threaded_messages, _depth=0):
+        """Convert threaded messages into a flat, indented form.
+
+        Take a thread (in the form produced by threadMessages) and
+        iterate through a series of (depth, message) tuples.  The ordering
+        will match that implied by the input structure, with all replies
+        to a message appearing after that message.
+        """
+        for message, children in threaded_messages:
+            yield (_depth, message)
+            for depth, message in klass.flattenThreads(children, _depth + 1):
+                yield depth, message
+
+
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.
 

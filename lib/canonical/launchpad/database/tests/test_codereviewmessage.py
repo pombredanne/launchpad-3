@@ -8,7 +8,6 @@ from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.database import graph_dict
 
 class TestCodeReviewMessage(unittest.TestCase):
 
@@ -61,12 +60,6 @@ class TestCodeReviewMessage(unittest.TestCase):
                           self.reviewer, 'Reply subject', 'Reply content',
                           CodeReviewVote.ABSTAIN, message)
 
-    def test_graph_dict(self):
-        message1 = self.bmp.createMessage(self.submitter, 'Message subject')
-        message2 = self.bmp.createMessage(
-            self.submitter, 'Reply subject', parent=message1)
-        result = graph_dict([message1, message2])
-        self.assertEqual({message2: [message1], message1: []}, result)
 
 
 def test_suite():
