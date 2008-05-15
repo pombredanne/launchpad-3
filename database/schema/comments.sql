@@ -591,8 +591,8 @@ considered to be the product series branch';
 -- ProductSeriesCodeImportMapping
 
 COMMENT ON TABLE ProductSeriesCodeImportMapping IS 'A record of which ProductSeries'' import data a CodeImport was constructed from.';
-COMMENT ON TABLE ProductSeriesCodeImportMapping.productseries IS 'The source ProductSeries.';
-COMMENT ON TABLE ProductSeriesCodeImportMapping.codeimport IS 'The CodeImport that was constructed from the ProductSeries.';
+COMMENT ON COLUMN ProductSeriesCodeImportMapping.productseries IS 'The source ProductSeries.';
+COMMENT ON COLUMN ProductSeriesCodeImportMapping.codeimport IS 'The CodeImport that was constructed from the ProductSeries.';
 
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
