@@ -59,6 +59,7 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -507,6 +508,18 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         title=_('Timezone'), required=True, readonly=False,
         description=_('The timezone of where you live.'),
         vocabulary='TimezoneName')
+
+    openid_identifier = TextLine(
+        title=_("Key used to generate opaque OpenID identities."),
+        readonly=True, required=False)
+
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=False, vocabulary=AccountStatus)
+
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=False)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
@@ -1387,6 +1400,8 @@ class IPersonSet(Interface):
 
         The newly created EmailAddress will have a status of NEW and will be
         linked to the newly created Person.
+
+        An Account is also created, but this will change in the future!
 
         If the given name is None, we generate a unique nickname from the
         email address given.

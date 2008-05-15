@@ -100,10 +100,12 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person, status=EmailAddressStatus.NEW):
+    def new(email, person=None, status=EmailAddressStatus.NEW):
         """Create a new EmailAddress with the given email, pointing to person.
 
         The given status must be an item of EmailAddressStatus.
+
+        :raises InvalidEmailAddress: If the email address is invalid.
         """
 
     def getByPerson(person):

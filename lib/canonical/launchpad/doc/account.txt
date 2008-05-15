@@ -57,6 +57,7 @@ datetime.datetime(...)
 True
 >>> account.status == AccountStatus.ACTIVE
 True
+
 >>> account.date_status_set >= account.date_created
 True
 >>> print account.status_comment
@@ -65,10 +66,14 @@ None
 u'No Privileges Person'
 
 
-When the status is changed, the date_status_set is updated
+When the status is changed, the date_status_set is updated in the database.
+XXX: With Storm, this should be fixed so we don't need the sync() call
+    -- StuartBishop 20080515
 
 >>> original_date_status_set = account.date_status_set
 >>> account.status = AccountStatus.SUSPENDED
+>>> from zope.security.proxy import removeSecurityProxy
+>>> removeSecurityProxy(account).sync()
 >>> account.date_status_set > original_date_status_set
 True
 >>> account.status = AccountStatus.ACTIVE

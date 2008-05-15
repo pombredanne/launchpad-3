@@ -24,6 +24,14 @@ from canonical.lazr import DBEnumeratedType, DBItem
 class AccountStatus(DBEnumeratedType):
     """The status of an account."""
 
+    # XXX: This first entry will be removed when the account_status
+    # property is removed from Person.
+    NOACCOUNT = DBItem(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
     ACTIVE = DBItem(20, """
         Active Launchpad account
 

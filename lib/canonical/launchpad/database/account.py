@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
@@ -15,7 +16,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
         AccountCreationRationale, AccountStatus,
-        IAccount, IAccountSet)
+        IAccount, IAccountSet, IPasswordEncryptor)
 
 
 class Account(SQLBase):
@@ -26,7 +27,7 @@ class Account(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     displayname = StringCol(dbName='displayname', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person')
+    person = ForeignKey(dbName='person', foreignKey='Person', default=None)
 
     creation_rationale = EnumCol(
             dbName='creation_rationale', schema=AccountCreationRationale,
@@ -35,7 +36,7 @@ class Account(SQLBase):
             enum=AccountStatus, default=AccountStatus.ACTIVE,
             notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    status_comment = StringCol(dbName='status_comment')
+    status_comment = StringCol(dbName='status_comment', default=None)
 
     openid_identifier = StringCol(
             dbName='openid_identifier', notNull=True, default=DEFAULT)
@@ -51,17 +52,28 @@ class Account(SQLBase):
 
     password = property(_get_password, _set_password)
 
-    def _set_status(self, value):
-        """Update date_status_set when status is updated."""
-        self._SO_set_status(value)
-        self.sync()
-
 
 class AccountSet:
     implements(IAccountSet)
 
-    def new(self):
+    def new(self, rationale, displayname, emailaddress,
+            plaintext_password=None, encrypted_password=None):
         """See IAccountSet."""
+
+        account = Account(
+                displayname=displayname, creation_rationale=rationale,
+                person=emailaddress.person)
+
+        # Link the EmailAddress to the Account.
+        emailaddress.account = account
+
+        # Create the password record
+        if encrypted_password is None and password is not None:
+            encrypted_password = getUtility(IPasswordEncryptor).encrypt(
+                    password)
+        AccountPassword(account=account, password=encrypted_password)
+
+        return account
 
     def getByEmail(self, email):
         """See IAccountSet."""
@@ -73,6 +85,8 @@ class AccountSet:
 
     def getByPerson(self, person):
         """See IAccountSet."""
+        if person.isTeam():
+            return None
         return Account.selectOneBy(person=person)
 
 

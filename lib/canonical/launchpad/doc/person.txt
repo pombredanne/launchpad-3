@@ -229,17 +229,6 @@ If we look up a string not associated with any user, None is returned:
     >>> print personset.getByOpenIdIdentifier('no-such-identifier')
     None
 
-While an identifier may be assigned to a team, it will not be
-returned:
-
-    >>> team = personset.getByName('simple-team')
-    >>> team.isTeam()
-    True
-    >>> team.openid_identifier
-    u'simple-team_oid'
-    >>> print personset.getByOpenIdIdentifier('simple-team_oid')
-    None
-
 Accounts that have not been validated are not returned either:
 
     >>> person = personset.getByName('matsubara')

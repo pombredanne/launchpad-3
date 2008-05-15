@@ -43,6 +43,7 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -61,8 +62,8 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, IGPGKeySet, IHWSubmissionSet, IHasIcon, IHasLogo,
     IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
-    IMailingListSet, INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress,
-    InvalidName, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
+    IMailingListSet, INACTIVE_ACCOUNT_STATUSES,
+    InvalidName, IPerson, IPersonSet, IPillarNameSet,
     IProduct, IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
@@ -72,7 +73,8 @@ from canonical.launchpad.interfaces import (
     ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, IAccountSet)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, IAccountSet,
+    AccountCreationRationale)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -103,7 +105,6 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (
     public_person_validator, visibility_validator)
@@ -173,29 +174,59 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
    
-    # XXX: The openid_identifier and password properties should go
-    # -- StuartBishop 20080513
+    # XXX: The openid_identifier, password, account_status and
+    # account_status_comment properties should go. Note that they override
+    # the current strict controls on Account, allowing access via Person to
+    # use the less strinct controls on that interface. Part of the process
+    # of removing these methods from Person will be losening the permissions
+    # on Account or fixing the callsites -- StuartBishop 20080513
     @property
     def openid_identifier(self):
         account = getUtility(IAccountSet).getByPerson(self)
         if account is not None:
-            return account.openid_identifier
+            return removeSecurityProxy(account).openid_identifier
 
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        account = removeSecurityProxy(
-                getUtility(IAccountSet).getByPerson(self))
+        account = getUtility(IAccountSet).getByPerson(self)
         if account is not None:
-            return account.password
+            return removeSecurityProxy(account).password
 
     def _set_password(self, value):
         account = getUtility(IAccountSet).getByPerson(self)
-        assert account is not None
-        account.password = value
+        assert account is not None, 'No account for this Person'
+        removeSecurityProxy(account).password = value
 
     password = property(_get_password, _set_password)
+
+    def _get_account_status(self):
+        account = getUtility(IAccountSet).getByPerson(self)
+        if account is not None:
+            return removeSecurityProxy(account).status
+        else:
+            return AccountStatus.NOACCOUNT
+
+    def _set_account_status(self, value):
+        account = getUtility(IAccountSet).getByPerson(self)
+        assert account is not None, 'No account for this Person'
+        removeSecurityProxy(account).status = value
+
+    account_status = property(_get_account_status, _set_account_status)
+
+    def _get_account_status_comment(self):
+        account = getUtility(IAccountSet).getByPerson(self)
+        if account is not None:
+            return removeSecurityProxy(account).status_comment
+
+    def _set_account_status_comment(self, value):
+        account = getUtility(IAccountSet).getByPerson(self)
+        assert account is not None, 'No account for this Person'
+        removeSecurityProxy(account).status_comment = value
+
+    account_status_comment = property(
+            _get_account_status_comment, _set_account_status_comment)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -2202,44 +2233,45 @@ class PersonSet:
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
-        if not valid_email(email):
-            raise InvalidEmailAddress(
-                "%s is not a valid email address." % email)
 
         if name is None:
             name = nickname.generate_nick(email)
         elif not valid_name(name):
-            raise InvalidName(
-                "%s is not a valid name for a person." % name)
-        else:
-            # The name should be okay, move on...
-            pass
-        if self.getByName(name, ignore_merged=False) is not None:
-            raise NameAlreadyTaken(
-                "The name '%s' is already taken." % name)
-
-        if not passwordEncrypted and password is not None:
-            password = getUtility(IPasswordEncryptor).encrypt(password)
+            raise InvalidName("%s is not a valid name for a person." % name)
+        elif self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken("The name '%s' is already taken." % name)
 
         if not displayname:
             displayname = name.capitalize()
+
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
-            comment=comment, password=password, registrant=registrant)
+            comment=comment, registrant=registrant)
 
         email = getUtility(IEmailAddressSet).new(email, person)
+
+        # Convert the PersonCreationRationale to an AccountCreationRationale
+        account_rationale = getattr(AccountCreationRationale, rationale.name)
+
+        account = getUtility(IAccountSet).new(
+                account_rationale, displayname, email,
+                plaintext_password=password,
+                encrypted_password=passwordEncrypted)
+
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, password=None, registrant=None):
+                   rationale, comment=None, registrant=None):
         """Create and return a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
+
+        Also generates an Account, but this will change!
         """
         assert self.getByName(name, ignore_merged=False) is None
         person = Person(
-            name=name, displayname=displayname, password=password,
+            name=name, displayname=displayname,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
 
@@ -2269,9 +2301,9 @@ class PersonSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None."""
-        person = Person.selectOneBy(openid_identifier=openid_identifier)
-        if person is not None and person.is_valid_person:
-            return person
+        account = Account.selectOneBy(openid_identifier=openid_identifier)
+        if account is not None and account.person.is_valid_person:
+            return account.person
         else:
             return None
 
