@@ -115,6 +115,14 @@ class IPackageUpload(Interface):
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
 
+    components = Attribute(
+        """Return a set of the components used in this upload.
+
+        For sources, this is the component on the associated
+        sourcepackagerelease.  For binaries, this is all the components
+        on all the binarypackagerelease records arising from the build.
+        """)
+
     def setNew():
         """Set queue state to NEW."""
 
@@ -198,14 +206,6 @@ class IPackageUpload(Interface):
             data needs to be obtained from the changes file.
 
         :param logger: Specify a logger object if required.  Mainly for tests.
-        """
-
-    def components():
-        """Return a set of the components used in this upload.
-
-        For sources, this is the component on the associated
-        sourcepackagerelease.  For binaries, this is all the components
-        on all the binarypackagerelease records arising from the build.
         """
 
     def overrideSource(new_component, new_section, allowed_components):

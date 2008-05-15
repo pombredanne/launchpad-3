@@ -1103,6 +1103,8 @@ class EditPackageUpload(AdminByAdminsTeam):
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.archive, user)
+        if permissions.count() == 0:
+            return False
         allowed_components = set(
             permission.component for permission in permissions)
         existing_components = self.obj.components
