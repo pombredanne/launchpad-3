@@ -147,7 +147,7 @@ class GoogleSearchService:
     _default_values = {
         'as_rq' : 'launchpad.net',
         'client' : 'google-csbe',
-        'client-id' : None,
+        'cx' : None,
         'ie' : 'utf8',
         'num' : 20,
         'oe' : 'utf8',
@@ -160,14 +160,14 @@ class GoogleSearchService:
     def client_id(self):
         """The client-id issued by Google.
 
-        Google requires that each client of the Google Search Business
-        Edition service to pass its id as a parameter in the request URL.
+        Google requires that each client of the Google Search Enging
+        service to pass its id as a parameter in the request URL.
         """
         return config.google.client_id
 
     @property
     def site(self):
-        """The URL to the Google Search Business Edition service.
+        """The URL to the Google Search Engine service.
 
         The URL is probably http://www.google.com/search.
         """
@@ -218,7 +218,7 @@ class GoogleSearchService:
         search_params = dict(self._default_values)
         search_params['q'] = safe_terms
         search_params['start'] = start
-        search_params['client-id'] = self.client_id
+        search_params['cx'] = self.client_id
         search_param_list = []
         for name in sorted(search_params):
             value = search_params[name]

@@ -20,7 +20,7 @@ The GoogleSearchService implements the ISearchService.
     <...GoogleSearchService ...>
 
 
-=== search() ===
+=== GoogleSearchService search() ===
 
 The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
@@ -28,16 +28,17 @@ entered in Google search form; the terms should not be escaped.
 
     >>> from canonical.launchpad.interfaces import ISearchResults
 
-    >>> all_page_matches = google_search.search(terms='svg +bugs')
-    >>> all_page_matches
+    >>> first_page_matches = google_search.search(terms='bug')
+    >>> first_page_matches
     <...PageMatches ...>
 
 
 The start parameter sets the number of first match (index from 0) of the
-list of page matches.
+list of page matches. The default value is 0, to get the first 20
+matching pages.
 
-    >>> sliced_page_matches = google_search.search(terms='bug', start=20)
-    >>> sliced_page_matches
+    >>> second_page_matches = google_search.search(terms='bug', start=20)
+    >>> second_page_matches
     <...PageMatches ...>
 
 
@@ -46,7 +47,7 @@ list of page matches.
 The PageMatches object returned by GoogleSearchService.search()
 implements ISearchResults.
 
-    >>> verifyObject(ISearchResults, all_page_matches)
+    >>> verifyObject(ISearchResults, first_page_matches)
     True
 
 ISearchResults defines a few useful attributes for working with search
@@ -54,28 +55,28 @@ results. The total attribute is the number of results for the search,
 which is not necessarily the number in the returned collection. The
 start attribute is the index of the first item in the collection
 relative to the total number. The length of the collection is the actual
-number of items return. The search for 'svg +bugs' returned all the
+number of items return. The search for 'bugs' returned all the
 items in a single ISearchResults.
 
-    >>> all_page_matches.start
+    >>> first_page_matches.start
     0
-    >>> all_page_matches.total
-    4
-    >>> len(all_page_matches)
-    4
+    >>> first_page_matches.total
+    31
+    >>> len(first_page_matches)
+    20
 
 The search for 'bugs' returned a subset of items in the ISearchResult.
 There are 31 total items, but the results contains 11, starting from
 index of 20.
 
-    >>> verifyObject(ISearchResults, sliced_page_matches)
+    >>> verifyObject(ISearchResults, second_page_matches)
     True
 
-    >>> sliced_page_matches.start
+    >>> second_page_matches.start
     20
-    >>> sliced_page_matches.total
+    >>> second_page_matches.total
     31
-    >>> len(sliced_page_matches)
+    >>> len(second_page_matches)
     11
 
 
@@ -83,10 +84,10 @@ An item can be retrieved from an ISearchResults object using its
 index. An items index is relative to its the search results length.
 All the items in the collection can be iterated.
 
-    >>> sliced_page_matches[1]
+    >>> second_page_matches[1]
     <PageMatch url='http://bugs.launchpad.dev/debian'>
 
-    >>> for page_match in all_page_matches:
+    >>> for page_match in first_page_matches:
     ...     page_match
     <...PageMatch url='http://bugs.launchpad.dev/'>
     <...PageMatch url='http://bugs.launchpad.dev/debian'>
@@ -149,7 +150,7 @@ Edition service.
     >>> config.google.client_id == google_search.client_id
     True
     >>> google_search.client_id
-    'zxcasdqwertyfghvbn'
+    '011948274177882366108%3Aixpjdn21yfg'
 
 Several default query parameters are constant. They are kept in the
 _default_values dict. All csbe clients must set the client param to
@@ -164,7 +165,7 @@ time of the search.
     ...     print key, ':', repr(google_search._default_values[key])
     as_rq : 'launchpad.net'
     client : 'google-csbe'
-    client-id : None
+    cx : None
     ie : 'utf8'
     num : 20
     oe : 'utf8'
@@ -194,7 +195,7 @@ argument to the method. The argument is http quoted and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs')
-    'http://launchpad.dev:8091/?as_rq=launchpad.net&client=google-csbe&client-id=zxcasdqwertyfghvbn&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=svg+%2Bbugs&start=0'
+    'http://launchpad.dev:8091/?as_rq=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=svg+%2Bbugs&start=0'
 
 Unicode characters are escaped correctly in the google request URL.
 
