@@ -22,44 +22,41 @@ import time
 import socket
 
 
-class ConfigurableRequestHandler(BaseHTTPRequestHandler):
+class GoogleRequestHandler(BaseHTTPRequestHandler):
+
+    default_content_type = 'text/xml; charset=UTF-8'
 
     def do_GET(self):
-        self.route('GET')
-
-    def do_POST(self):
-        self.route('POST')
-
-    def route(self, http_method):
-        """Route a HTTP request to the correct resource handler."""
-        if self.path.startswith('/configuration'):
-            mbase = 'do_configuration_'
+        urlmap = url_to_xml_map()
+        if self.path in urlmap:
+            self.return_file(urlmap[self.path])
         else:
-            mbase = 'do_default_'
+            # Return our default route.
+            self.return_file(urlmap['*'])
 
-        method = mbase + http_method
-        getattr(self, method)()
+    def return_file(self, filename):
+        """Return a HTTP response with `filename' for content.
 
-    def do_default_GET(self):
-        """Handle HTTP GET to an arbitrary resource."""
-        self.send_response(405) # HTTP Status 405: Method not allowed.
+        `filename' is searched for in the default canned-data storage
+        location, specified in the service configuration.
+        """
+        self.send_response(200)
+        self.send_header('Content-Type', default_content_type)
         self.end_headers()
 
-    def do_default_POST(self):
-        """Handle HTTP POST to an abitrary resource."""
-        self.send_response(405) # HTTP Status 405: Method not allowed.
-        self.end_headers()
+        content_dir = config.google_test_service.canned_response_directory
+        filepath = os.path.join(content_dir, filename)
+        content_body = file(filepath).read()
+        self.wfile.write(content_body)
 
-    def do_configuration_GET(self):
-        """Handle HTTP GET requests to the 'configuration' resource."""
-        self.send_response(405) # HTTP Status 405: Method not allowed.
-        self.end_headers()
 
-    def do_configuration_POST(self):
-        """Handle HTTP POST requests to the 'configuration' resource."""
-        self.send_response(405) # HTTP Status 405: Method not allowed.
-        self.end_headers()
-
+def url_to_xml_map(self):
+    """Return our URL-to-XML mapping table."""
+    mapfile = config.google_test_service.mapfile
+    mapping = {}
+    for line in mapfile:
+        url, fname = line.split(':')
+        mapping[url.strip()] = fname.strip()
 
 def start_as_process():
     """Start the script as a stand-alone process."""
@@ -130,7 +127,7 @@ def hostpair(url):
 def main():
     """Run the HTTP server."""
     host, port = get_service_endpoint()
-    server = HTTPServer((host, port), ConfigurableRequestHandler)
+    server = HTTPServer((host, port), GoogleRequestHandler)
 
     print "Starting HTTP Google webservice server on port", port
     server.serve_forever()

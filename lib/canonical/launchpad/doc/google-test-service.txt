@@ -7,11 +7,12 @@ The URL mapping is specified in a stand-alone text file, whose path
 comes from the current configuration.
 
     >>> from canonical.config import config
-    >>> routing_file = config.google_test_service.routing_file
+    >>> xml_mapfile = config.google_test_service.xml_mapfile
 
+    # Fetch our URL-to-XML file mapping table.
     >>> from canonical.launchpad.testing.googletestservice import (
-    ...     parse_routes)
-    >>> routes = parse_routes(routing_file)
+    ...     url_to_xml_map)
+    >>> routes = url_to_xml_map(xml_mapfile)
 
     >>> skeys = sorted(routes)
     >>> for key in skeys:
